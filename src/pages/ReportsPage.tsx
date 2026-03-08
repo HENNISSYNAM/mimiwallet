@@ -90,7 +90,7 @@ export default function ReportsPage() {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${(d.amount / 800_000_000) * 100}%` }}
-                    transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] as const }}
                     className="h-3 rounded-full"
                     style={{ background: d.color }}
                   />

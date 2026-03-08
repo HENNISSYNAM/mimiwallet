@@ -214,7 +214,7 @@ export default function LoansPage() {
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${l.progress}%` }}
-                          transition={{ duration: 1, delay: 0.3 + i * 0.1, ease: [0.4, 0, 0.2, 1] }}
+                          transition={{ duration: 1, delay: 0.3 + i * 0.1, ease: [0.4, 0, 0.2, 1] as const }}
                           className="h-2 rounded-full"
                           style={{
                             background: l.progress === 100 ? 'hsl(var(--green-500))' : 'hsl(var(--blue-500))',

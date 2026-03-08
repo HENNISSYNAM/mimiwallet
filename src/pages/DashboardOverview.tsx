@@ -119,7 +119,7 @@ export default function DashboardOverview() {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: '83%' }}
-                transition={{ duration: 1.2, delay: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                transition={{ duration: 1.2, delay: 0.4, ease: [0.4, 0, 0.2, 1] as const }}
                 className="bg-primary h-1.5 rounded-full"
               />
             </div>
