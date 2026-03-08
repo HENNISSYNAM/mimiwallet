@@ -11,7 +11,7 @@ import { Download, ArrowRight } from 'lucide-react';
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
   hidden: { opacity: 0, y: 16, filter: 'blur(4px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } },
+  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const } },
 };
 
 const ChartTooltip = ({ active, payload, label }: any) => {

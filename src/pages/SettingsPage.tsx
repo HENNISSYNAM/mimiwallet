@@ -7,7 +7,7 @@ import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut } from '
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
   hidden: { opacity: 0, y: 16, filter: 'blur(4px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } },
+  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const } },
 };
 
 function SettingsSection({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
