@@ -64,8 +64,8 @@ export default function ReportsPage() {
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={revenueExpenseData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border)/0.3)" />
-              <XAxis dataKey="month" tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 12, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 10, fontFamily: 'Geist Mono' }} axisLine={false} tickLine={false} tickFormatter={(v) => formatVNDShort(v)} />
+              <XAxis dataKey="month" tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 12, fontFamily: 'Inter, -apple-system, sans-serif' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 10, fontFamily: 'JetBrains Mono, SF Mono, monospace' }} axisLine={false} tickLine={false} tickFormatter={(v) => formatVNDShort(v)} />
               <Tooltip content={<ChartTooltip />} />
               <Bar dataKey="revenue" name="Thu nhập" fill="hsl(var(--blue-500))" radius={[6, 6, 0, 0]} barSize={18} />
               <Bar dataKey="expense" name="Chi phí" fill="hsl(var(--bg-card-hover))" radius={[6, 6, 0, 0]} barSize={18} />
