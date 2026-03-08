@@ -381,11 +381,27 @@ export default function Landing() {
             </motion.div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto">
-              <input value={ctaEmail} onChange={e => setCtaEmail(e.target.value)} placeholder="Email doanh nghiệp" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" />
-              <input value={ctaCompany} onChange={e => setCtaCompany(e.target.value)} placeholder="Tên công ty" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" />
+              <input value={ctaEmail} onChange={e => setCtaEmail(e.target.value)} placeholder="Email doanh nghiệp" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsla(var(--blue-500)/0.08)] transition-all" />
+              <input value={ctaCompany} onChange={e => setCtaCompany(e.target.value)} placeholder="Tên công ty" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsla(var(--blue-500)/0.08)] transition-all" />
               <button
-                onClick={() => { if (ctaEmail && ctaCompany) setCtaSubmitted(true); }}
-                className="w-full sm:w-auto bg-primary text-primary-foreground px-6 py-3 rounded-lg font-display font-bold text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                onClick={async () => {
+                  if (!ctaEmail || !ctaCompany) return;
+                  try {
+                    const params = new URLSearchParams(window.location.search);
+                    await supabase.from('waitlist').insert({
+                      email: ctaEmail,
+                      company_name: ctaCompany,
+                      utm_source: params.get('utm_source'),
+                      utm_medium: params.get('utm_medium'),
+                      utm_campaign: params.get('utm_campaign'),
+                    });
+                    setCtaSubmitted(true);
+                    toast.success('Đã đăng ký thành công!');
+                  } catch {
+                    toast.error('Có lỗi xảy ra, vui lòng thử lại.');
+                  }
+                }}
+                className="w-full sm:w-auto bg-primary text-primary-foreground px-6 py-3 rounded-xl font-display font-bold text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2"
               >
                 Bắt đầu ngay <ArrowRight size={14} />
               </button>

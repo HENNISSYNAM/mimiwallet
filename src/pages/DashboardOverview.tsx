@@ -53,8 +53,8 @@ function CreditScoreRing() {
           <stop offset="100%" stopColor="hsl(var(--green-500))" />
         </linearGradient>
       </defs>
-      <text x="50" y="48" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--text-primary))" fontFamily="Syne" fontWeight="800" fontSize="15">782</text>
-      <text x="50" y="62" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="DM Sans" fontSize="7">/ 1000</text>
+      <text x="50" y="48" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="15">782</text>
+      <text x="50" y="62" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="Inter, -apple-system, sans-serif" fontSize="7">/ 1000</text>
     </svg>
   );
 }
