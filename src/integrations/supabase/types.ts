@@ -14,7 +14,249 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          connected_banks: Json | null
+          created_at: string
+          credit_limit: number | null
+          credit_score: number | null
+          employee_count: string | null
+          id: string
+          industry: string | null
+          monthly_revenue: number | null
+          name: string
+          province: string | null
+          tax_id: string | null
+          updated_at: string
+          user_id: string
+          years_operating: string | null
+        }
+        Insert: {
+          connected_banks?: Json | null
+          created_at?: string
+          credit_limit?: number | null
+          credit_score?: number | null
+          employee_count?: string | null
+          id?: string
+          industry?: string | null
+          monthly_revenue?: number | null
+          name: string
+          province?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id: string
+          years_operating?: string | null
+        }
+        Update: {
+          connected_banks?: Json | null
+          created_at?: string
+          credit_limit?: number | null
+          credit_score?: number | null
+          employee_count?: string | null
+          id?: string
+          industry?: string | null
+          monthly_revenue?: number | null
+          name?: string
+          province?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string
+          years_operating?: string | null
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          advanced_amount: number | null
+          advanced_at: string | null
+          amount: number
+          client_name: string
+          client_tax_id: string | null
+          company_id: string
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issued_date: string
+          status: string
+          total: number
+          updated_at: string
+          vat_rate: number | null
+        }
+        Insert: {
+          advanced_amount?: number | null
+          advanced_at?: string | null
+          amount: number
+          client_name: string
+          client_tax_id?: string | null
+          company_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          issued_date: string
+          status?: string
+          total: number
+          updated_at?: string
+          vat_rate?: number | null
+        }
+        Update: {
+          advanced_amount?: number | null
+          advanced_at?: string | null
+          amount?: number
+          client_name?: string
+          client_tax_id?: string | null
+          company_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issued_date?: string
+          status?: string
+          total?: number
+          updated_at?: string
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_applications: {
+        Row: {
+          amount: number
+          amount_repaid: number | null
+          applied_at: string
+          approved_at: string | null
+          company_id: string
+          disbursed_at: string | null
+          due_date: string | null
+          id: string
+          loan_type: string
+          purpose: string | null
+          status: string
+          term_days: number
+        }
+        Insert: {
+          amount: number
+          amount_repaid?: number | null
+          applied_at?: string
+          approved_at?: string | null
+          company_id: string
+          disbursed_at?: string | null
+          due_date?: string | null
+          id?: string
+          loan_type: string
+          purpose?: string | null
+          status?: string
+          term_days: number
+        }
+        Update: {
+          amount?: number
+          amount_repaid?: number | null
+          applied_at?: string
+          approved_at?: string | null
+          company_id?: string
+          disbursed_at?: string | null
+          due_date?: string | null
+          id?: string
+          loan_type?: string
+          purpose?: string | null
+          status?: string
+          term_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_applications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: string | null
+          company_id: string
+          created_at: string
+          id: string
+          merchant_name: string | null
+          reference_id: string | null
+          source_bank: string | null
+          transaction_date: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          merchant_name?: string | null
+          reference_id?: string | null
+          source_bank?: string | null
+          transaction_date: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          merchant_name?: string | null
+          reference_id?: string | null
+          source_bank?: string | null
+          transaction_date?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waitlist: {
+        Row: {
+          company_name: string
+          created_at: string
+          email: string
+          id: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          email: string
+          id?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
