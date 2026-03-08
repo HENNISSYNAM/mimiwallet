@@ -8,6 +8,8 @@ import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { miniChartData } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
