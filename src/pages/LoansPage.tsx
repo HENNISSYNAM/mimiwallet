@@ -46,7 +46,7 @@ export default function LoansPage() {
                 fill="none" stroke="url(#loanGauge)" strokeWidth="10" strokeLinecap="round"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
+                transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] as const }}
               />
               <defs>
                 <linearGradient id="loanGauge" x1="0" y1="0" x2="1" y2="0">
