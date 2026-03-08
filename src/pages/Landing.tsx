@@ -307,7 +307,7 @@ export default function Landing() {
                   <path d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="hsl(220,25%,18%)" strokeWidth="8" strokeLinecap="round" />
                   <path d="M 15 70 A 50 50 0 0 1 95 35" fill="none" stroke="url(#gaugeGrad)" strokeWidth="8" strokeLinecap="round" />
                   <defs><linearGradient id="gaugeGrad"><stop offset="0%" stopColor="hsl(225,100%,57%)" /><stop offset="100%" stopColor="hsl(158,100%,43%)" /></linearGradient></defs>
-                  <text x="60" y="65" textAnchor="middle" fill="hsl(214,100%,97%)" fontFamily="Syne" fontWeight="800" fontSize="18">782</text>
+                  <text x="60" y="65" textAnchor="middle" fill="hsl(0,0%,98%)" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="18">782</text>
                 </svg>
               </div>
             </div>
