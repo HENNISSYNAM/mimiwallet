@@ -10,7 +10,7 @@ import { FileText, Download } from 'lucide-react';
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, delay, ease: [0.4, 0, 0.2, 1] },
+  transition: { duration: 0.4, delay, ease: [0.4, 0, 0.2, 1] as const },
 });
 
 const ChartTooltip = ({ active, payload, label }: any) => {

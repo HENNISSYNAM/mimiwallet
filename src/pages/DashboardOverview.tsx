@@ -8,7 +8,7 @@ import { AreaChart, Area, BarChart, Bar, ComposedChart, ResponsiveContainer, XAx
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, delay, ease: [0.4, 0, 0.2, 1] },
+  transition: { duration: 0.4, delay, ease: [0.4, 0, 0.2, 1] as const },
 });
 
 function KPICard({ icon: Icon, label, value, sub, subColor = 'text-kapiva-green', delay, children }: { icon: any; label: string; value: string; sub: string; subColor?: string; delay: number; children?: React.ReactNode }) {
