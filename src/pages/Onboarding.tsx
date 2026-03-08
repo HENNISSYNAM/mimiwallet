@@ -390,7 +390,7 @@ export default function Onboarding() {
                   className="h-full bg-primary rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: i <= step ? '100%' : '0%' }}
-                  transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                  transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] as const }}
                 />
               </motion.div>
             ))}
