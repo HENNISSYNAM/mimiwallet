@@ -55,8 +55,8 @@ export default function LoansPage() {
                   <stop offset="100%" stopColor="hsl(var(--green-500))" />
                 </linearGradient>
               </defs>
-              <text x="100" y="90" textAnchor="middle" fill="hsl(var(--text-primary))" fontFamily="Syne" fontWeight="800" fontSize="36">782</text>
-              <text x="100" y="110" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="DM Sans" fontSize="12">Hạng A — Xuất sắc</text>
+              <text x="100" y="90" textAnchor="middle" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="36">782</text>
+              <text x="100" y="110" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="Inter, -apple-system, sans-serif" fontSize="12">Hạng A — Xuất sắc</text>
             </svg>
             <p className="text-xs text-muted-foreground">Cập nhật: 09/03/2026</p>
             <p className="text-xs text-muted-foreground mt-1">Cao hơn 84% doanh nghiệp cùng ngành</p>

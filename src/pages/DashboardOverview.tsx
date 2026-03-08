@@ -53,8 +53,8 @@ function CreditScoreRing() {
           <stop offset="100%" stopColor="hsl(var(--green-500))" />
         </linearGradient>
       </defs>
-      <text x="50" y="48" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--text-primary))" fontFamily="Syne" fontWeight="800" fontSize="15">782</text>
-      <text x="50" y="62" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="DM Sans" fontSize="7">/ 1000</text>
+      <text x="50" y="48" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="15">782</text>
+      <text x="50" y="62" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="Inter, -apple-system, sans-serif" fontSize="7">/ 1000</text>
     </svg>
   );
 }
@@ -154,8 +154,8 @@ export default function DashboardOverview() {
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={cashFlowData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border)/0.3)" />
-                <XAxis dataKey="month" tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 12, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 10, fontFamily: 'Geist Mono' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1e6).toFixed(0)}M`} />
+                <XAxis dataKey="month" tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 12, fontFamily: 'Inter, -apple-system, sans-serif' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 10, fontFamily: 'JetBrains Mono, SF Mono, monospace' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1e6).toFixed(0)}M`} />
                 <Tooltip content={<CustomTooltip />} />
                 <ReferenceLine y={0} stroke="hsla(0,0%,100%,0.06)" strokeDasharray="3 3" />
                 <Bar dataKey="income" fill="hsl(var(--blue-500))" radius={[6, 6, 0, 0]} barSize={14} name="income" />

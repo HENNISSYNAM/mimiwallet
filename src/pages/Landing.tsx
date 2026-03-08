@@ -8,6 +8,8 @@ import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { miniChartData } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
@@ -305,7 +307,7 @@ export default function Landing() {
                   <path d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="hsl(220,25%,18%)" strokeWidth="8" strokeLinecap="round" />
                   <path d="M 15 70 A 50 50 0 0 1 95 35" fill="none" stroke="url(#gaugeGrad)" strokeWidth="8" strokeLinecap="round" />
                   <defs><linearGradient id="gaugeGrad"><stop offset="0%" stopColor="hsl(225,100%,57%)" /><stop offset="100%" stopColor="hsl(158,100%,43%)" /></linearGradient></defs>
-                  <text x="60" y="65" textAnchor="middle" fill="hsl(214,100%,97%)" fontFamily="Syne" fontWeight="800" fontSize="18">782</text>
+                  <text x="60" y="65" textAnchor="middle" fill="hsl(0,0%,98%)" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="18">782</text>
                 </svg>
               </div>
             </div>
@@ -379,11 +381,27 @@ export default function Landing() {
             </motion.div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto">
-              <input value={ctaEmail} onChange={e => setCtaEmail(e.target.value)} placeholder="Email doanh nghiệp" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" />
-              <input value={ctaCompany} onChange={e => setCtaCompany(e.target.value)} placeholder="Tên công ty" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" />
+              <input value={ctaEmail} onChange={e => setCtaEmail(e.target.value)} placeholder="Email doanh nghiệp" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsla(var(--blue-500)/0.08)] transition-all" />
+              <input value={ctaCompany} onChange={e => setCtaCompany(e.target.value)} placeholder="Tên công ty" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsla(var(--blue-500)/0.08)] transition-all" />
               <button
-                onClick={() => { if (ctaEmail && ctaCompany) setCtaSubmitted(true); }}
-                className="w-full sm:w-auto bg-primary text-primary-foreground px-6 py-3 rounded-lg font-display font-bold text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                onClick={async () => {
+                  if (!ctaEmail || !ctaCompany) return;
+                  try {
+                    const params = new URLSearchParams(window.location.search);
+                    await supabase.from('waitlist').insert({
+                      email: ctaEmail,
+                      company_name: ctaCompany,
+                      utm_source: params.get('utm_source'),
+                      utm_medium: params.get('utm_medium'),
+                      utm_campaign: params.get('utm_campaign'),
+                    });
+                    setCtaSubmitted(true);
+                    toast.success('Đã đăng ký thành công!');
+                  } catch {
+                    toast.error('Có lỗi xảy ra, vui lòng thử lại.');
+                  }
+                }}
+                className="w-full sm:w-auto bg-primary text-primary-foreground px-6 py-3 rounded-xl font-display font-bold text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2"
               >
                 Bắt đầu ngay <ArrowRight size={14} />
               </button>

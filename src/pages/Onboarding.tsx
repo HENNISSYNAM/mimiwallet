@@ -93,7 +93,7 @@ function ProgressRing({ progress }: { progress: number }) {
         </linearGradient>
       </defs>
       <text x="60" y="60" textAnchor="middle" dominantBaseline="central"
-        fill="hsl(var(--text-primary))" fontFamily="Syne" fontWeight="800" fontSize="18">
+        fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="18">
         {Math.round(progress)}%
       </text>
     </svg>
