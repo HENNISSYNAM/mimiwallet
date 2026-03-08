@@ -4,12 +4,12 @@
 
 @layer base {
   :root {
-    --bg-base: 220 40% 4%;
-    --bg-surface: 220 30% 8%;
-    --bg-card: 220 25% 11%;
-    --bg-card-hover: 220 22% 14%;
+    --bg-base: 222 47% 5%;
+    --bg-surface: 222 35% 8%;
+    --bg-card: 222 28% 11%;
+    --bg-card-hover: 222 24% 14%;
 
-    --border-subtle: 220 20% 18%;
+    --border-subtle: 222 15% 18%;
     --border-active: 225 90% 57%;
 
     --blue-500: 225 100% 57%;
@@ -21,9 +21,9 @@
     --amber-500: 38 92% 50%;
     --red-500: 0 84% 60%;
 
-    --text-primary: 214 100% 97%;
-    --text-secondary: 215 19% 62%;
-    --text-muted: 215 17% 35%;
+    --text-primary: 0 0% 98%;
+    --text-secondary: 215 16% 58%;
+    --text-muted: 215 12% 40%;
 
     --background: var(--bg-base);
     --foreground: var(--text-primary);
@@ -55,9 +55,9 @@
     --sidebar-border: var(--border-subtle);
     --sidebar-ring: var(--blue-500);
 
-    --font-display: 'Syne', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
-    --font-mono: 'Geist Mono', monospace;
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
 
     --shadow-card: 0 1px 3px hsla(0,0%,0%,0.4), 0 0 0 1px hsl(var(--border-subtle));
     --shadow-blue: 0 0 20px hsla(var(--blue-glow)/0.2), 0 0 60px hsla(var(--blue-glow)/0.05);
@@ -72,21 +72,27 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    letter-spacing: -0.025em;
   }
 }
 
 @layer utilities {
   .font-display {
     font-family: var(--font-display);
+    letter-spacing: -0.025em;
   }
   .font-body {
     font-family: var(--font-body);
   }
   .font-mono {
     font-family: var(--font-mono);
+    letter-spacing: -0.02em;
   }
   .text-gradient {
     background: linear-gradient(135deg, hsl(var(--blue-500)), hsl(var(--green-500)));
@@ -101,7 +107,7 @@
     box-shadow: var(--shadow-green);
   }
   .card-base {
-    @apply bg-card border border-border rounded-xl;
+    @apply bg-card border border-border rounded-2xl;
     box-shadow: var(--shadow-card);
   }
   .card-hover {
@@ -117,7 +123,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    opacity: 0.04;
+    opacity: 0.03;
     pointer-events: none;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   }
