@@ -76,7 +76,7 @@ export default function LoansPage() {
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${f.score}%` }}
-                    transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] as const }}
                     className="h-2 rounded-full"
                     style={{
                       background: f.score >= 85 ? 'hsl(var(--green-500))' : f.score >= 70 ? 'hsl(var(--blue-500))' : 'hsl(var(--amber-500))',
