@@ -929,20 +929,26 @@ export default function Landing() {
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
                 <NetworkGraph labels={['ESG Data', 'Carbon', 'Green Fund', 'Credit']} />
                 <motion.div 
-                  className="mt-4 relative overflow-hidden rounded-xl"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.4 }}
+                  className="mt-4 relative overflow-hidden rounded-xl group/ai cursor-pointer"
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
                   <motion.img 
                     src={aiGreenAnalysis} 
                     alt="AI Green Analysis" 
-                    className="w-full rounded-xl"
-                    initial={{ opacity: 0, scale: 1.1 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
+                    className="w-full rounded-xl transition-all duration-700 group-hover/ai:scale-110 group-hover/ai:brightness-110"
+                    initial={{ opacity: 0, scale: 1.15, filter: 'blur(6px)' }}
+                    whileInView={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.8 }}
+                    transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent pointer-events-none" />
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(225,100%,57%,0.06) 50%, transparent 70%)' }}
+                    animate={{ backgroundPosition: ['0% 0%', '200% 200%'] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent pointer-events-none" />
                 </motion.div>
               </div>
             </motion.div>
