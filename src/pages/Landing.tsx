@@ -755,7 +755,12 @@ export default function Landing() {
               className="relative"
             >
               <div className="absolute -inset-10 bg-gradient-to-br from-primary/10 to-kapiva-green/10 blur-3xl opacity-50 rounded-full" />
-              <img src={aiAnalysis} alt="AI Analysis" className="relative w-full rounded-2xl shadow-2xl" />
+              <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
+                <NetworkGraph labels={['Bank Data', 'Invoices', 'Cash Flow', 'Credit']} />
+                <div className="mt-4">
+                  <img src={aiAnalysis} alt="AI Analysis" className="w-full rounded-xl opacity-90" />
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
