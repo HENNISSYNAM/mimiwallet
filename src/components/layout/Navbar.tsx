@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import kapivaLogo from '@/assets/kapiva-logo.png';
+import mimiLogo from '@/assets/mimi-wallet-logo.png';
 
 const navLinks = [
   { label: 'Giải pháp', href: '#solutions' },
