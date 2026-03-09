@@ -16,6 +16,8 @@ import dashboardPreview from '@/assets/dashboard-preview.png';
 import featureSteps from '@/assets/feature-steps.png';
 import aiAnalysis from '@/assets/ai-analysis.png';
 import securityShield from '@/assets/security-shield.png';
+import AnimatedStepFlow from '@/components/onboarding/AnimatedStepFlow';
+import NetworkGraph from '@/components/onboarding/NetworkGraph';
 
 /* ─── Animation variants ─── */
 const fadeUp = (delay = 0) => ({
