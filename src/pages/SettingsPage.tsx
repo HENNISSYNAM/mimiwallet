@@ -46,9 +46,9 @@ export default function SettingsPage() {
       </motion.div>
 
       <SettingsSection icon={User} title="Thông tin cá nhân">
-        <InfoRow label="Họ và tên" value={user?.name || 'Anh Minh'} />
-        <InfoRow label="Email" value={user?.email || 'minh@ducphat.vn'} />
-        <InfoRow label="Số điện thoại" value="0912 345 678" />
+        <InfoRow label="Họ và tên" value={user?.user_metadata?.full_name || 'Người dùng'} />
+        <InfoRow label="Email" value={user?.email || ''} />
+        <InfoRow label="Số điện thoại" value={user?.user_metadata?.phone || ''} />
       </SettingsSection>
 
       <SettingsSection icon={Building} title="Doanh nghiệp">
