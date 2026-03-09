@@ -575,15 +575,15 @@ export default function Landing() {
             <p className="text-muted-foreground mt-4 max-w-xl mx-auto">Quy trình tự động hoàn toàn, không giấy tờ, không phỏng vấn</p>
           </motion.div>
 
-          {/* Feature steps illustration */}
+          {/* Animated feature steps */}
           <motion.div
-            className="max-w-4xl mx-auto mb-16 rounded-2xl overflow-hidden shadow-xl"
+            className="max-w-3xl mx-auto mb-16 bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl overflow-hidden shadow-xl"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <img src={featureSteps} alt="3 bước đơn giản" className="w-full" />
+            <AnimatedStepFlow activeStep={-1} />
           </motion.div>
 
           <ProcessFlow />
