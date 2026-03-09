@@ -15,12 +15,9 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <span className="font-display font-extrabold text-primary-foreground text-sm">K</span>
-              </div>
-              <span className="font-display font-bold text-foreground text-lg">KAPIVA</span>
+              <img src={mimiLogo} alt="MIMI WALLET" className="h-8 w-auto" />
             </Link>
-            <p className="text-sm text-muted-foreground mb-4">Vốn thông minh cho doanh nghiệp Việt.</p>
+            <p className="text-sm text-muted-foreground mb-4">Ví xanh cho tương lai bền vững.</p>
           </div>
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
