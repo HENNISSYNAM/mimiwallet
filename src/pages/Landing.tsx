@@ -504,8 +504,8 @@ export default function Landing() {
           </motion.h1>
 
           <motion.p {...fadeUp(0.2)} className="mt-8 text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            KAPIVA phân tích dòng tiền, hoá đơn và lịch sử giao dịch — cấp vốn lưu động trong 24 giờ.{' '}
-            <span className="text-foreground font-medium">Không cần tài sản thế chấp.</span>
+            MIMI WALLET kết hợp tài chính xanh, tín chỉ carbon và vốn lưu động thông minh.{' '}
+            <span className="text-foreground font-medium">Hướng tới Net Zero cùng doanh nghiệp Việt.</span>
           </motion.p>
 
           {/* CTA */}
