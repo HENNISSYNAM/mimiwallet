@@ -15,6 +15,7 @@ import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import featureSteps from '@/assets/feature-steps.png';
 import aiAnalysis from '@/assets/ai-analysis.png';
+import aiGreenAnalysis from '@/assets/ai-green-analysis.png';
 import securityShield from '@/assets/security-shield.png';
 import greenFinanceDashboard from '@/assets/green-finance-dashboard.png';
 import carbonCreditsVisual from '@/assets/carbon-credits-visual.png';
