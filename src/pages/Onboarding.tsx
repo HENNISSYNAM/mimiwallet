@@ -107,7 +107,7 @@ export default function Onboarding() {
   const [completed, setCompleted] = useState(false);
   const [direction, setDirection] = useState(1);
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
 
   // Step 1
   const [fullName, setFullName] = useState('');
