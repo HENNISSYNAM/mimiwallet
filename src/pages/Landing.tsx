@@ -529,10 +529,10 @@ export default function Landing() {
           {/* Trust badges */}
           <motion.div {...fadeUp(0.4)} className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
             {[
-              { icon: <Shield size={14} className="text-primary" />, text: 'Bảo mật ISO 27001' },
-              { icon: <Clock size={14} className="text-kapiva-amber" />, text: 'Giải ngân 24h' },
+              { icon: <Leaf size={14} className="text-kapiva-green" />, text: 'Tài chính xanh' },
+              { icon: <TreePine size={14} className="text-emerald-500" />, text: 'Tín chỉ Carbon' },
               { icon: <Brain size={14} className="text-violet-500" />, text: 'AI Credit Scoring' },
-              { icon: <Lock size={14} className="text-kapiva-green" />, text: 'Không thế chấp' },
+              { icon: <Recycle size={14} className="text-primary" />, text: 'Net Zero 2050' },
             ].map((t, i) => (
               <span key={i} className="flex items-center gap-2 bg-card border border-border/60 px-3 py-1.5 rounded-lg">
                 {t.icon} <span className="font-medium">{t.text}</span>
