@@ -694,12 +694,21 @@ export default function Landing() {
               icon={<Shield size={18} />}
               delay={0.24}
             >
-              <motion.img
-                src={securityShield}
-                alt="Security"
-                className="w-20 h-20 mx-auto mt-3 rounded-xl object-cover"
-                whileHover={{ scale: 1.05 }}
-              />
+              <motion.div className="relative w-24 h-24 mx-auto mt-3">
+                <motion.img
+                  src={securityShield}
+                  alt="Security"
+                  className="w-full h-full rounded-xl object-cover shadow-lg"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                />
+                <motion.div
+                  className="absolute -inset-3 rounded-2xl"
+                  style={{ background: 'radial-gradient(circle, hsla(225,100%,57%,0.1) 0%, transparent 70%)' }}
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.2, 0.6] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              </motion.div>
             </BentoCard>
 
             <BentoCard
