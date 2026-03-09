@@ -519,8 +519,12 @@ export default function Onboarding() {
                       <div className="relative">
                         <FloatingInput label="Mã số thuế *" value={taxId} onChange={(v) => setTaxId(v.replace(/\D/g, '').slice(0, 10))} placeholder="10 chữ số" />
                         {taxId.length === 10 && (
-                          <button className="absolute right-3 top-3.5 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium hover:bg-primary/20 transition-colors">
-                            🔍 Tra cứu
+                          <button 
+                            onClick={lookupTaxId}
+                            disabled={lookingUpTax}
+                            className="absolute right-3 top-3.5 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium hover:bg-primary/20 transition-colors flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {lookingUpTax ? <Loader2 size={10} className="animate-spin" /> : '🔍'} Tra cứu
                           </button>
                         )}
                       </div>
