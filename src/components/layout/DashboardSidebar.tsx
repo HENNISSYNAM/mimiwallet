@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, TrendingUp, FileText, CreditCard,
-  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint,
+  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { companyProfile } from '@/lib/mockData';
@@ -15,6 +15,7 @@ const navItems = [
   { icon: CreditCard, label: 'Vay vốn', path: '/dashboard/loans' },
   { icon: ShieldCheck, label: 'Credit Score', path: '/dashboard/credit' },
   { icon: Fingerprint, label: 'Fintech Hub', path: '/dashboard/fintech' },
+  { icon: Cpu, label: 'Thiết bị M2M', path: '/dashboard/m2m' },
   { icon: BarChart3, label: 'Báo cáo', path: '/dashboard/reports' },
   { icon: Settings, label: 'Cài đặt', path: '/dashboard/settings' },
 ];

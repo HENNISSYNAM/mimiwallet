@@ -17,6 +17,7 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CreditScoringPage = lazy(() => import("./pages/CreditScoringPage"));
 const FintechPage = lazy(() => import("./pages/FintechPage"));
+const M2MDevicesPage = lazy(() => import("./pages/M2MDevicesPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -74,6 +75,7 @@ const App = () => (
                 <Route path="cashflow" element={<DashboardOverview />} />
                 <Route path="credit" element={<CreditScoringPage />} />
                 <Route path="fintech" element={<FintechPage />} />
+                <Route path="m2m" element={<M2MDevicesPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

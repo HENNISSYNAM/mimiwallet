@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, FileText, ShieldCheck, ArrowUpRight, ArrowDownRight, AlertTriangle, Lightbulb, Bell, ArrowRight } from 'lucide-react';
+import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
 import { formatVND, formatVNDShort } from '@/lib/formatters';
 import { companyProfile, cashFlowData, transactions, miniChartData } from '@/lib/mockData';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -251,6 +252,9 @@ export default function DashboardOverview() {
             ))}
           </div>
         </motion.div>
+
+        {/* M2M Widget */}
+        <M2MDashboardWidget />
       </motion.div>
     </motion.div>
   );
