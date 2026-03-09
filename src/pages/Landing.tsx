@@ -790,35 +790,44 @@ export default function Landing() {
             >
               <div className="mt-4 grid md:grid-cols-2 gap-4">
                 <motion.div 
-                  className="relative overflow-hidden rounded-xl"
-                  whileHover={{ scale: 1.03, rotate: 1 }}
-                  transition={{ duration: 0.4 }}
+                  className="relative overflow-hidden rounded-xl group/carbon cursor-pointer"
+                  whileHover={{ scale: 1.04, rotate: 1, y: -4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
                   <motion.img 
                     src={carbonCreditsVisual} 
                     alt="Carbon Credits" 
-                    className="w-full h-40 object-cover rounded-xl"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    className="w-full h-40 object-cover rounded-xl transition-all duration-700 group-hover/carbon:scale-110 group-hover/carbon:brightness-110"
+                    initial={{ opacity: 0, scale: 1.2, filter: 'blur(8px)' }}
+                    whileInView={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
+                    transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   />
                   <motion.div 
-                    className="absolute inset-0 bg-gradient-to-t from-emerald-900/60 to-transparent pointer-events-none"
+                    className="absolute inset-0 bg-gradient-to-t from-emerald-900/70 via-emerald-900/20 to-transparent pointer-events-none"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8, delay: 0.4 }}
                   />
+                  {/* Shimmer effect */}
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(105deg, transparent 40%, hsla(158,100%,43%,0.1) 48%, hsla(158,100%,43%,0.2) 50%, hsla(158,100%,43%,0.1) 52%, transparent 60%)' }}
+                    initial={{ x: '-150%' }}
+                    whileInView={{ x: '250%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 2, delay: 1, ease: 'easeInOut' }}
+                  />
                   <motion.div
                     className="absolute bottom-3 left-3 right-3"
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
+                    transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <p className="text-white font-display font-bold text-sm">Net Zero 2050</p>
-                    <p className="text-white/70 text-xs">Hướng tới tương lai bền vững</p>
+                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">Net Zero 2050</p>
+                    <p className="text-white/80 text-xs drop-shadow-md">Hướng tới tương lai bền vững</p>
                   </motion.div>
                 </motion.div>
                 <div className="flex flex-col justify-center space-y-3">
