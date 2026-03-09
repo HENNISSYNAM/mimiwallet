@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 
+import mimiLogo from '@/assets/mimi-wallet-logo.png';
+
 const footerLinks = {
-  'Sản phẩm': ['Invoice Financing', 'Vay vốn', 'Dashboard', 'API'],
+  'Sản phẩm': ['Invoice Financing', 'Vay vốn', 'Tài chính xanh', 'Tín chỉ Carbon', 'API'],
   'Công ty': ['Về chúng tôi', 'Blog', 'Tuyển dụng', 'Liên hệ'],
   'Pháp lý': ['Điều khoản sử dụng', 'Bảo mật', 'Cookie'],
 };
