@@ -13,6 +13,8 @@ const navItems = [
   { icon: TrendingUp, label: 'Dòng tiền', path: '/dashboard/cashflow' },
   { icon: FileText, label: 'Hóa đơn', path: '/dashboard/invoices' },
   { icon: CreditCard, label: 'Vay vốn', path: '/dashboard/loans' },
+  { icon: ShieldCheck, label: 'Credit Score', path: '/dashboard/credit' },
+  { icon: Fingerprint, label: 'Fintech Hub', path: '/dashboard/fintech' },
   { icon: BarChart3, label: 'Báo cáo', path: '/dashboard/reports' },
   { icon: Settings, label: 'Cài đặt', path: '/dashboard/settings' },
 ];
