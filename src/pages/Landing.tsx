@@ -490,11 +490,10 @@ export default function Landing() {
 
           {/* Headline */}
           <motion.h1 {...fadeUp(0.1)} className="font-display font-extrabold text-foreground leading-[1.05] tracking-tight max-w-4xl mx-auto" style={{ fontSize: 'clamp(2.8rem, 6vw, 5.5rem)' }}>
-            Vốn thông minh{' '}
+            Ví xanh cho{' '}
             <br className="hidden md:block" />
-            cho{' '}
             <span className="relative inline-block">
-              <span className="text-gradient">doanh nghiệp Việt</span>
+              <span className="text-gradient">tương lai bền vững</span>
               <motion.span
                 className="absolute -bottom-2 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-kapiva-green rounded-full"
                 initial={{ scaleX: 0 }}
