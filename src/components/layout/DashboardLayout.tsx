@@ -18,6 +18,8 @@ const pageTitles: Record<string, string> = {
   '/dashboard/cashflow': 'Dòng tiền',
   '/dashboard/invoices': 'Hóa đơn',
   '/dashboard/loans': 'Vay vốn',
+  '/dashboard/credit': 'Credit Score',
+  '/dashboard/fintech': 'Fintech Hub',
   '/dashboard/reports': 'Báo cáo',
   '/dashboard/settings': 'Cài đặt',
 };

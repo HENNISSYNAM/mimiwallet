@@ -15,6 +15,8 @@ const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const CreditScoringPage = lazy(() => import("./pages/CreditScoringPage"));
+const FintechPage = lazy(() => import("./pages/FintechPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -70,6 +72,8 @@ const App = () => (
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="cashflow" element={<DashboardOverview />} />
+                <Route path="credit" element={<CreditScoringPage />} />
+                <Route path="fintech" element={<FintechPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
