@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -6,6 +6,8 @@ import { industries, provinces } from '@/lib/mockData';
 import { formatVND } from '@/lib/formatters';
 import { getPasswordStrength } from '@/lib/validators';
 import { Check, ArrowRight, Upload, Camera, Pen, X, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const steps = ['Tạo tài khoản', 'Doanh nghiệp', 'Kết nối dữ liệu', 'Nhu cầu vốn', 'Xác minh eKYC'];
 
