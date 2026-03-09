@@ -1,8 +1,11 @@
 import { motion } from 'framer-motion';
 import { companyProfile } from '@/lib/mockData';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
 import { useNavigate } from 'react-router-dom';
-import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut } from 'lucide-react';
+import { useEffect } from 'react';
+import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown } from 'lucide-react';
+import { toast } from 'sonner';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -33,6 +36,125 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function SubscriptionSection() {
+  const { subscribed, productId, subscriptionEnd, loading, checkSubscription, createCheckout, openPortal } = useSubscriptionStore();
+
+  useEffect(() => { checkSubscription(); }, [checkSubscription]);
+
+  const currentTier = Object.values(TIERS).find(t => t.product_id === productId);
+
+  const handleCheckout = async (priceId: string) => {
+    try {
+      await createCheckout(priceId);
+    } catch {
+      toast.error('Không thể tạo phiên thanh toán');
+    }
+  };
+
+  const handlePortal = async () => {
+    try {
+      await openPortal();
+    } catch {
+      toast.error('Không thể mở cổng quản lý');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="animate-spin text-muted-foreground" size={20} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Current status */}
+      {subscribed && currentTier && (
+        <div className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/20">
+          <div className="flex items-center gap-3">
+            <Crown size={18} className="text-primary" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">{currentTier.name}</p>
+              <p className="text-xs text-muted-foreground">
+                Hết hạn: {subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString('vi-VN') : '—'}
+              </p>
+            </div>
+          </div>
+          <motion.button
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handlePortal}
+            className="flex items-center gap-1.5 text-xs bg-accent text-foreground px-4 py-2 rounded-xl font-medium hover:brightness-110 transition-all"
+          >
+            Quản lý <ExternalLink size={12} />
+          </motion.button>
+        </div>
+      )}
+
+      {/* Tiers */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {Object.entries(TIERS).map(([key, tier]) => {
+          const isActive = productId === tier.product_id;
+          return (
+            <div
+              key={key}
+              className={`relative p-5 rounded-xl border transition-all ${
+                isActive 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-border/40 bg-card/40 hover:border-border'
+              }`}
+            >
+              {isActive && (
+                <div className="absolute -top-2.5 left-4 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                  Đang dùng
+                </div>
+              )}
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-display font-bold text-foreground">{tier.name}</h4>
+                {key === 'growth' && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Phổ biến</span>}
+              </div>
+              <p className="text-2xl font-mono font-bold text-foreground">
+                {tier.price.toLocaleString('vi-VN')}₫
+                <span className="text-xs text-muted-foreground font-normal">/tháng</span>
+              </p>
+              <ul className="mt-3 space-y-1.5">
+                {(key === 'starter'
+                  ? ['Phân tích dòng tiền', 'AI Chatbot cơ bản', 'Báo cáo tháng']
+                  : ['Tất cả Starter', 'Dự báo AI nâng cao', 'Ứng vốn hóa đơn', 'Tin tức thị trường']
+                ).map(f => (
+                  <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check size={12} className="text-primary shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              {!isActive && (
+                <motion.button
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleCheckout(tier.price_id)}
+                  className={`mt-4 w-full text-xs py-2.5 rounded-xl font-medium transition-all ${
+                    key === 'growth'
+                      ? 'bg-primary text-primary-foreground hover:brightness-110'
+                      : 'bg-accent text-foreground hover:brightness-110'
+                  }`}
+                >
+                  {subscribed ? 'Chuyển gói' : 'Đăng ký'}
+                </motion.button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Refresh */}
+      <button onClick={checkSubscription} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+        Làm mới trạng thái ↻
+      </button>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -59,19 +181,7 @@ export default function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection icon={CreditCard} title="Gói dịch vụ">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-foreground font-semibold">Growth ⭐</p>
-            <p className="text-xs text-muted-foreground mt-0.5">990,000₫/tháng · Thanh toán tiếp 01/04/2026</p>
-          </div>
-          <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ scale: 0.98 }}
-            className="text-xs bg-primary text-primary-foreground px-5 py-2 rounded-xl font-medium hover:brightness-110 transition-all"
-          >
-            Nâng cấp
-          </motion.button>
-        </div>
+        <SubscriptionSection />
       </SettingsSection>
 
       <SettingsSection icon={Bell} title="Thông báo">
