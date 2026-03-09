@@ -701,6 +701,50 @@ export default function Landing() {
                 transition={{ duration: 0.6 }}
               />
             </BentoCard>
+
+            {/* Green Finance Cards */}
+            <BentoCard
+              title="Tài chính xanh"
+              desc="Vốn ưu đãi cho dự án ESG và phát triển bền vững"
+              icon={<Leaf size={18} />}
+              delay={0.4}
+            >
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Lãi suất', value: '-0.5%', color: 'text-kapiva-green' },
+                  { label: 'Hạn mức', value: '₫20 tỷ', color: 'text-primary' },
+                ].map((m) => (
+                  <div key={m.label} className="bg-kapiva-green/5 border border-kapiva-green/10 rounded-xl p-3 text-center">
+                    <p className="text-xs text-muted-foreground">{m.label}</p>
+                    <p className={`text-sm font-mono font-bold ${m.color}`}>{m.value}</p>
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
+
+            <BentoCard
+              title="Tín chỉ Carbon"
+              desc="Giao dịch, theo dõi và báo cáo carbon footprint"
+              icon={<TreePine size={18} />}
+              className="md:col-span-2"
+              delay={0.48}
+            >
+              <div className="mt-4 flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Recycle size={18} className="text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Carbon Credits</p>
+                    <p className="text-xs text-muted-foreground">Verified Carbon Standard (VCS)</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-lg font-bold text-emerald-500">1,247 tCO2e</p>
+                  <p className="text-xs text-muted-foreground">Đã offset</p>
+                </div>
+              </div>
+            </BentoCard>
           </div>
         </div>
       </section>
