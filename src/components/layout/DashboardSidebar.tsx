@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, TrendingUp, FileText, CreditCard,
-  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight,
+  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { companyProfile } from '@/lib/mockData';
