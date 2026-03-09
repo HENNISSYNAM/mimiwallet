@@ -877,10 +877,23 @@ export default function Landing() {
             >
               <div className="absolute -inset-10 bg-gradient-to-br from-primary/10 to-kapiva-green/10 blur-3xl opacity-50 rounded-full" />
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
-                <NetworkGraph labels={['Bank Data', 'Invoices', 'Cash Flow', 'Credit']} />
-                <div className="mt-4">
-                  <img src={aiAnalysis} alt="AI Analysis" className="w-full rounded-xl opacity-90" />
-                </div>
+                <NetworkGraph labels={['ESG Data', 'Carbon', 'Green Fund', 'Credit']} />
+                <motion.div 
+                  className="mt-4 relative overflow-hidden rounded-xl"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <motion.img 
+                    src={aiGreenAnalysis} 
+                    alt="AI Green Analysis" 
+                    className="w-full rounded-xl"
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8 }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent pointer-events-none" />
+                </motion.div>
               </div>
             </motion.div>
           </div>
