@@ -747,20 +747,26 @@ export default function Landing() {
               delay={0.4}
             >
               <motion.div 
-                className="mt-4 relative overflow-hidden rounded-xl"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
+                className="mt-4 relative overflow-hidden rounded-xl group/green cursor-pointer"
+                whileHover={{ scale: 1.03, y: -4 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               >
                 <motion.img 
                   src={greenFinanceDashboard} 
                   alt="Green Finance Dashboard" 
-                  className="w-full rounded-xl opacity-90"
-                  initial={{ scale: 1.1, opacity: 0 }}
-                  whileInView={{ scale: 1, opacity: 0.9 }}
+                  className="w-full rounded-xl transition-all duration-700 group-hover/green:scale-110 group-hover/green:brightness-110"
+                  initial={{ scale: 1.15, opacity: 0, filter: 'blur(6px)' }}
+                  whileInView={{ scale: 1, opacity: 0.95, filter: 'blur(0px)' }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(158,100%,43%,0.08) 50%, transparent 70%)' }}
+                  animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/20 to-transparent pointer-events-none" />
               </motion.div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {[
