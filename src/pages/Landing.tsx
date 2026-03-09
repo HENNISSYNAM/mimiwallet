@@ -195,9 +195,12 @@ function ProcessFlow() {
             {activeStep === 1 && (
               <motion.div className="bg-card border border-border rounded-2xl p-6 shadow-xl">
                 <div className="text-center mb-4">
-                  <motion.img src={aiAnalysis} alt="AI Analysis" className="w-32 h-32 mx-auto rounded-2xl object-cover mb-4"
-                    initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2 }}
-                  />
+                 <motion.div className="relative inline-block">
+                    <motion.img src={aiAnalysis} alt="AI Analysis" className="w-32 h-32 mx-auto rounded-2xl object-cover mb-4 shadow-lg"
+                      initial={{ scale: 0.6, opacity: 0, rotateY: -30 }} animate={{ scale: 1, opacity: 1, rotateY: 0 }} transition={{ delay: 0.2, duration: 0.8, type: 'spring' }}
+                    />
+                    <motion.div className="absolute -inset-2 rounded-2xl border border-primary/20 pointer-events-none" animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 3, repeat: Infinity }} />
+                  </motion.div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
@@ -275,19 +278,31 @@ function HeroMockup() {
       <div className="absolute -inset-10 bg-gradient-to-r from-primary/20 via-transparent to-kapiva-green/20 blur-3xl opacity-40 pointer-events-none" />
       
       <motion.div
-        className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl"
-        style={{ boxShadow: '0 50px 100px -20px rgba(0,0,0,0.15), 0 0 50px hsla(225,100%,57%,0.08)' }}
-        initial={{ opacity: 0, y: 40, rotateX: 8 }}
-        animate={{ opacity: 1, y: 0, rotateX: 0 }}
-        transition={{ duration: 1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl group cursor-pointer"
+        style={{ boxShadow: '0 50px 100px -20px rgba(0,0,0,0.15), 0 0 50px hsla(225,100%,57%,0.08)', perspective: '1200px' }}
+        initial={{ opacity: 0, y: 60, rotateX: 12, scale: 0.92 }}
+        animate={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+        transition={{ duration: 1.2, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        whileHover={{ y: -8, rotateX: 2, scale: 1.01, boxShadow: '0 60px 120px -20px rgba(0,0,0,0.2), 0 0 80px hsla(225,100%,57%,0.12)' }}
       >
-        <img
+        <motion.img
           src={dashboardPreview}
           alt="MIMI WALLET Dashboard"
-          className="w-full"
+          className="w-full transition-transform duration-700 group-hover:scale-[1.03]"
+          initial={{ scale: 1.08 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        />
+        {/* Shimmer overlay */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(105deg, transparent 40%, hsla(0,0%,100%,0.08) 45%, hsla(0,0%,100%,0.15) 50%, hsla(0,0%,100%,0.08) 55%, transparent 60%)' }}
+          initial={{ x: '-100%' }}
+          animate={{ x: '200%' }}
+          transition={{ duration: 2.5, delay: 1.5, ease: 'easeInOut' }}
         />
         {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent pointer-events-none" />
       </motion.div>
 
       {/* Floating badges */}
@@ -679,12 +694,21 @@ export default function Landing() {
               icon={<Shield size={18} />}
               delay={0.24}
             >
-              <motion.img
-                src={securityShield}
-                alt="Security"
-                className="w-20 h-20 mx-auto mt-3 rounded-xl object-cover"
-                whileHover={{ scale: 1.05 }}
-              />
+              <motion.div className="relative w-24 h-24 mx-auto mt-3">
+                <motion.img
+                  src={securityShield}
+                  alt="Security"
+                  className="w-full h-full rounded-xl object-cover shadow-lg"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                />
+                <motion.div
+                  className="absolute -inset-3 rounded-2xl"
+                  style={{ background: 'radial-gradient(circle, hsla(225,100%,57%,0.1) 0%, transparent 70%)' }}
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.2, 0.6] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              </motion.div>
             </BentoCard>
 
             <BentoCard
@@ -694,15 +718,25 @@ export default function Landing() {
               className="md:col-span-2"
               delay={0.32}
             >
-              <motion.img
-                src={dashboardPreview}
-                alt="Dashboard"
-                className="w-full rounded-xl mt-3 opacity-90"
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 0.9, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              />
+              <motion.div className="relative overflow-hidden rounded-xl mt-3 group/dash">
+                <motion.img
+                  src={dashboardPreview}
+                  alt="Dashboard"
+                  className="w-full rounded-xl transition-transform duration-700 group-hover/dash:scale-105"
+                  initial={{ opacity: 0, scale: 1.1, filter: 'blur(8px)' }}
+                  whileInView={{ opacity: 0.95, scale: 1, filter: 'blur(0px)' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                />
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(105deg, transparent 35%, hsla(0,0%,100%,0.06) 45%, hsla(0,0%,100%,0.12) 50%, hsla(0,0%,100%,0.06) 55%, transparent 65%)' }}
+                  initial={{ x: '-120%' }}
+                  whileInView={{ x: '220%' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 2, delay: 0.8, ease: 'easeInOut' }}
+                />
+              </motion.div>
             </BentoCard>
 
             {/* Green Finance Cards */}
@@ -713,20 +747,26 @@ export default function Landing() {
               delay={0.4}
             >
               <motion.div 
-                className="mt-4 relative overflow-hidden rounded-xl"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
+                className="mt-4 relative overflow-hidden rounded-xl group/green cursor-pointer"
+                whileHover={{ scale: 1.03, y: -4 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               >
                 <motion.img 
                   src={greenFinanceDashboard} 
                   alt="Green Finance Dashboard" 
-                  className="w-full rounded-xl opacity-90"
-                  initial={{ scale: 1.1, opacity: 0 }}
-                  whileInView={{ scale: 1, opacity: 0.9 }}
+                  className="w-full rounded-xl transition-all duration-700 group-hover/green:scale-110 group-hover/green:brightness-110"
+                  initial={{ scale: 1.15, opacity: 0, filter: 'blur(6px)' }}
+                  whileInView={{ scale: 1, opacity: 0.95, filter: 'blur(0px)' }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(158,100%,43%,0.08) 50%, transparent 70%)' }}
+                  animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/20 to-transparent pointer-events-none" />
               </motion.div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {[
@@ -750,35 +790,44 @@ export default function Landing() {
             >
               <div className="mt-4 grid md:grid-cols-2 gap-4">
                 <motion.div 
-                  className="relative overflow-hidden rounded-xl"
-                  whileHover={{ scale: 1.03, rotate: 1 }}
-                  transition={{ duration: 0.4 }}
+                  className="relative overflow-hidden rounded-xl group/carbon cursor-pointer"
+                  whileHover={{ scale: 1.04, rotate: 1, y: -4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
                   <motion.img 
                     src={carbonCreditsVisual} 
                     alt="Carbon Credits" 
-                    className="w-full h-40 object-cover rounded-xl"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    className="w-full h-40 object-cover rounded-xl transition-all duration-700 group-hover/carbon:scale-110 group-hover/carbon:brightness-110"
+                    initial={{ opacity: 0, scale: 1.2, filter: 'blur(8px)' }}
+                    whileInView={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
+                    transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   />
                   <motion.div 
-                    className="absolute inset-0 bg-gradient-to-t from-emerald-900/60 to-transparent pointer-events-none"
+                    className="absolute inset-0 bg-gradient-to-t from-emerald-900/70 via-emerald-900/20 to-transparent pointer-events-none"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8, delay: 0.4 }}
                   />
+                  {/* Shimmer effect */}
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(105deg, transparent 40%, hsla(158,100%,43%,0.1) 48%, hsla(158,100%,43%,0.2) 50%, hsla(158,100%,43%,0.1) 52%, transparent 60%)' }}
+                    initial={{ x: '-150%' }}
+                    whileInView={{ x: '250%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 2, delay: 1, ease: 'easeInOut' }}
+                  />
                   <motion.div
                     className="absolute bottom-3 left-3 right-3"
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
+                    transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <p className="text-white font-display font-bold text-sm">Net Zero 2050</p>
-                    <p className="text-white/70 text-xs">Hướng tới tương lai bền vững</p>
+                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">Net Zero 2050</p>
+                    <p className="text-white/80 text-xs drop-shadow-md">Hướng tới tương lai bền vững</p>
                   </motion.div>
                 </motion.div>
                 <div className="flex flex-col justify-center space-y-3">
@@ -880,20 +929,26 @@ export default function Landing() {
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
                 <NetworkGraph labels={['ESG Data', 'Carbon', 'Green Fund', 'Credit']} />
                 <motion.div 
-                  className="mt-4 relative overflow-hidden rounded-xl"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.4 }}
+                  className="mt-4 relative overflow-hidden rounded-xl group/ai cursor-pointer"
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
                   <motion.img 
                     src={aiGreenAnalysis} 
                     alt="AI Green Analysis" 
-                    className="w-full rounded-xl"
-                    initial={{ opacity: 0, scale: 1.1 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
+                    className="w-full rounded-xl transition-all duration-700 group-hover/ai:scale-110 group-hover/ai:brightness-110"
+                    initial={{ opacity: 0, scale: 1.15, filter: 'blur(6px)' }}
+                    whileInView={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.8 }}
+                    transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent pointer-events-none" />
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(225,100%,57%,0.06) 50%, transparent 70%)' }}
+                    animate={{ backgroundPosition: ['0% 0%', '200% 200%'] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent pointer-events-none" />
                 </motion.div>
               </div>
             </motion.div>
