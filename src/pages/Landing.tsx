@@ -4,12 +4,16 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
-import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { miniChartData } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import kapivaLogo from '@/assets/kapiva-logo.png';
+import heroIllustration from '@/assets/hero-illustration.png';
+import dashboardPreview from '@/assets/dashboard-preview.png';
+import featureSteps from '@/assets/feature-steps.png';
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
@@ -40,25 +44,37 @@ function HeroMockup() {
     <motion.div
       {...fadeUp(0.5)}
       className="relative mt-12 mx-auto max-w-[600px]"
-      style={{ animation: 'float-slow 6s ease-in-out infinite' }}
     >
-      <div className="card-base rounded-2xl p-4 shadow-2xl relative overflow-hidden" style={{ boxShadow: '0 40px 80px rgba(0,0,0,0.6), 0 0 40px hsla(225,100%,57%,0.1)' }}>
+      {/* Hero illustration behind the card */}
+      <motion.img
+        src={heroIllustration}
+        alt="KAPIVA Financial Intelligence"
+        className="absolute -top-20 -left-20 -right-20 w-[calc(100%+160px)] opacity-40 blur-sm pointer-events-none"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 0.4, scale: 1 }}
+        transition={{ duration: 1.2, delay: 0.3 }}
+      />
+      <motion.div
+        className="card-base rounded-2xl p-4 shadow-2xl relative overflow-hidden backdrop-blur-sm"
+        style={{ boxShadow: '0 40px 80px rgba(0,0,0,0.3), 0 0 40px hsla(225,100%,57%,0.1)' }}
+        whileHover={{ y: -4, transition: { duration: 0.3 } }}
+      >
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-full bg-kapiva-green/20 flex items-center justify-center text-xs font-bold text-kapiva-green">CH</div>
+          <img src={kapivaLogo} alt="KAPIVA" className="w-8 h-8 rounded-full" />
           <div>
             <p className="text-sm font-semibold text-foreground">Cà phê Highlands</p>
             <p className="text-xs text-muted-foreground">TP. Hồ Chí Minh</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-accent rounded-lg p-3">
+          <motion.div className="bg-accent rounded-lg p-3" whileHover={{ scale: 1.02 }}>
             <p className="text-xs text-muted-foreground">Số dư</p>
             <p className="font-mono text-lg font-bold text-foreground">₫2.8 tỷ</p>
-          </div>
-          <div className="bg-accent rounded-lg p-3">
+          </motion.div>
+          <motion.div className="bg-accent rounded-lg p-3" whileHover={{ scale: 1.02 }}>
             <p className="text-xs text-muted-foreground">Credit Score</p>
             <p className="font-mono text-lg font-bold text-kapiva-green">782</p>
-          </div>
+          </motion.div>
         </div>
         <div className="h-20 mb-3">
           <ResponsiveContainer width="100%" height="100%">
@@ -74,15 +90,21 @@ function HeroMockup() {
           </ResponsiveContainer>
         </div>
         <div className="space-y-2">
-          {mockInvoices.map((inv) => (
-            <div key={inv.name} className="flex items-center justify-between bg-accent rounded-lg px-3 py-2">
+          {mockInvoices.map((inv, i) => (
+            <motion.div
+              key={inv.name}
+              className="flex items-center justify-between bg-accent rounded-lg px-3 py-2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 + i * 0.15 }}
+            >
               <span className="text-xs text-foreground">{inv.name}</span>
               <span className="font-mono text-xs text-foreground">{inv.amount}</span>
               <span className={`text-xs ${inv.color}`}>{inv.status}</span>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -95,6 +117,7 @@ function StepCard({ step, icon, title, desc, tags, delay }: { step: number; icon
       initial={{ opacity: 0, y: 30 }}
       animate={isVisible ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay }}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
       className="card-base card-hover p-6 text-center"
     >
       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl mx-auto mb-4">{icon}</div>
@@ -115,7 +138,10 @@ function StepCard({ step, icon, title, desc, tags, delay }: { step: number; icon
 function PricingCard({ name, price, features, cta, highlighted, annual }: { name: string; price: string; features: string[]; cta: string; highlighted?: boolean; annual: boolean }) {
   const navigate = useNavigate();
   return (
-    <div className={`card-base p-6 flex flex-col ${highlighted ? 'border-primary ring-1 ring-primary/30 scale-[1.02]' : ''}`}>
+    <motion.div
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className={`card-base p-6 flex flex-col ${highlighted ? 'border-primary ring-1 ring-primary/30 scale-[1.02]' : ''}`}
+    >
       <h3 className="font-display font-bold text-foreground text-lg">{name} {highlighted && '⭐'}</h3>
       <p className="font-mono text-2xl font-bold text-foreground mt-2">
         {price === 'Liên hệ' ? price : annual && price !== 'Miễn phí' ? `${Math.round(parseInt(price.replace(/\D/g, '')) * 0.8).toLocaleString('vi-VN')}₫/tháng` : price}
@@ -136,7 +162,7 @@ function PricingCard({ name, price, features, cta, highlighted, annual }: { name
       >
         {cta}
       </button>
-    </div>
+    </motion.div>
   );
 }
 
@@ -148,6 +174,7 @@ function TestimonialCard({ initials, name, role, quote, metric, delay }: { initi
       initial={{ opacity: 0, y: 20 }}
       animate={isVisible ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className="card-base card-hover p-6"
     >
       <div className="flex items-center gap-3 mb-4">
@@ -174,19 +201,19 @@ export default function Landing() {
   const [ctaSubmitted, setCtaSubmitted] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen landing-light">
       <Navbar />
 
       {/* HERO */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden grain-overlay">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden grain-overlay bg-background">
         {/* BG layers */}
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 60% 40%, hsla(225,100%,57%,0.12) 0%, transparent 60%)' }} />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 80%, hsla(158,100%,43%,0.06) 0%, transparent 50%)' }} />
-        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(hsla(0,0%,100%,0.05) 1px, transparent 1px), linear-gradient(90deg, hsla(0,0%,100%,0.05) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 60% 40%, hsla(225,100%,57%,0.08) 0%, transparent 60%)' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 80%, hsla(158,100%,43%,0.05) 0%, transparent 50%)' }} />
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'linear-gradient(hsla(220,30%,20%,0.06) 1px, transparent 1px), linear-gradient(90deg, hsla(220,30%,20%,0.06) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
         {/* Floating particles */}
-        {[...Array(20)].map((_, i) => (
-          <div
+        {[...Array(15)].map((_, i) => (
+          <motion.div
             key={i}
             className="absolute rounded-full"
             style={{
@@ -195,16 +222,24 @@ export default function Landing() {
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               background: i % 3 === 0 ? 'hsl(158,100%,43%)' : 'hsl(225,100%,57%)',
-              opacity: 0.3 + Math.random() * 0.3,
-              animation: `float ${8 + Math.random() * 12}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 5}s`,
+              opacity: 0.25,
+            }}
+            animate={{
+              y: [0, -20, 0],
+              x: [0, Math.random() * 10 - 5, 0],
+            }}
+            transition={{
+              duration: 8 + Math.random() * 12,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: Math.random() * 5,
             }}
           />
         ))}
 
         <div className="relative z-10 container mx-auto px-4 text-center pt-20">
           <motion.div {...fadeUp(0)} className="inline-flex items-center gap-2 border border-kapiva-green/30 bg-kapiva-green/10 px-4 py-1.5 rounded-full mb-6">
-            <span className="text-sm">🏆 Nền tảng vốn SME #1 Việt Nam</span>
+            <span className="text-sm text-foreground">🏆 Nền tảng vốn SME #1 Việt Nam</span>
           </motion.div>
 
           <motion.h1 {...fadeUp(0.1)} className="font-display font-extrabold text-foreground leading-tight" style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}>
@@ -217,15 +252,20 @@ export default function Landing() {
           </motion.p>
 
           <motion.div {...fadeUp(0.3)} className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
+            <motion.button
               onClick={() => navigate('/register')}
-              className="bg-primary text-primary-foreground px-7 py-3.5 rounded-xl font-display font-bold text-base hover:brightness-110 hover:-translate-y-0.5 transition-all bg-glow-blue"
+              className="bg-primary text-primary-foreground px-7 py-3.5 rounded-xl font-display font-bold text-base hover:brightness-110 transition-all bg-glow-blue"
+              whileHover={{ y: -2, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               → Bắt đầu miễn phí
-            </button>
-            <button className="border border-border text-foreground px-7 py-3.5 rounded-xl font-body text-sm hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center gap-2">
+            </motion.button>
+            <motion.button
+              className="border border-border text-foreground px-7 py-3.5 rounded-xl font-body text-sm hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center gap-2"
+              whileHover={{ y: -2 }}
+            >
               <Play size={14} /> Xem demo 2 phút
-            </button>
+            </motion.button>
           </motion.div>
 
           <motion.div {...fadeUp(0.4)} className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
@@ -257,11 +297,21 @@ export default function Landing() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="py-24" id="features">
+      <section className="py-24 bg-background" id="features">
         <div className="container mx-auto px-4">
-          <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground text-center mb-16">
+          <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground text-center mb-4">
             Từ đăng ký đến nhận tiền — <span className="text-gradient">3 bước</span>
           </h2>
+          {/* Feature steps illustration */}
+          <motion.div
+            className="max-w-3xl mx-auto mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <img src={featureSteps} alt="3 bước đơn giản" className="w-full rounded-2xl" />
+          </motion.div>
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <StepCard step={1} icon="🔌" title="Kết nối dữ liệu" desc="Liên kết tài khoản ngân hàng, phần mềm kế toán hoặc sàn thương mại điện tử trong 5 phút" tags={['Vietcombank', 'BIDV', 'MISA', 'Shopee']} delay={0} />
             <StepCard step={2} icon="🧠" title="AI phân tích" desc="Thuật toán AI phân tích 200+ điểm dữ liệu, chấm điểm tín dụng thời gian thực" tags={['Chỉ 90 giây']} delay={0.1} />
@@ -277,7 +327,10 @@ export default function Landing() {
             Mọi công cụ vốn <span className="text-gradient">bạn cần</span>
           </h2>
           <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            <div className="md:col-span-2 card-base card-hover p-6 relative overflow-hidden">
+            <motion.div
+              className="md:col-span-2 card-base card-hover p-6 relative overflow-hidden"
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            >
               <h3 className="font-display font-bold text-foreground text-lg mb-2">Cash Flow Intelligence</h3>
               <p className="text-sm text-muted-foreground mb-4">AI dự báo dòng tiền 90 ngày tới với độ chính xác 94%</p>
               <div className="h-32">
@@ -293,49 +346,53 @@ export default function Landing() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            </div>
-            <div className="card-base card-hover p-6">
+            </motion.div>
+            <motion.div className="card-base card-hover p-6" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
               <h3 className="font-display font-bold text-foreground text-lg mb-2">Invoice Financing</h3>
               <p className="text-sm text-muted-foreground">Ứng tiền từ hóa đơn trong 4 giờ. Lên đến 80% giá trị hóa đơn.</p>
               <div className="mt-4 text-4xl text-center">💴 → 🏦</div>
-            </div>
-            <div className="card-base card-hover p-6">
+            </motion.div>
+            <motion.div className="card-base card-hover p-6" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
               <h3 className="font-display font-bold text-foreground text-lg mb-2">Vay Vốn Lưu Động</h3>
               <p className="text-sm text-muted-foreground mb-3">Hạn mức đến ₫10 tỷ</p>
               <div className="flex items-center justify-center">
                 <svg viewBox="0 0 120 80" className="w-24">
-                  <path d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="hsl(220,25%,18%)" strokeWidth="8" strokeLinecap="round" />
+                  <path d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="hsl(220,13%,91%)" strokeWidth="8" strokeLinecap="round" />
                   <path d="M 15 70 A 50 50 0 0 1 95 35" fill="none" stroke="url(#gaugeGrad)" strokeWidth="8" strokeLinecap="round" />
                   <defs><linearGradient id="gaugeGrad"><stop offset="0%" stopColor="hsl(225,100%,57%)" /><stop offset="100%" stopColor="hsl(158,100%,43%)" /></linearGradient></defs>
-                  <text x="60" y="65" textAnchor="middle" fill="hsl(0,0%,98%)" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="18">782</text>
+                  <text x="60" y="65" textAnchor="middle" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="18">782</text>
                 </svg>
               </div>
-            </div>
-            <div className="card-base card-hover p-6">
+            </motion.div>
+            <motion.div className="card-base card-hover p-6" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
               <h3 className="font-display font-bold text-foreground text-lg mb-2">Không thế chấp</h3>
               <p className="text-sm text-muted-foreground">Chấp thuận dựa trên dữ liệu kinh doanh, không phải tài sản.</p>
               <div className="mt-3 flex justify-center">
                 <CheckCircle size={48} className="text-kapiva-green" />
               </div>
-            </div>
-            <div className="md:col-span-2 card-base card-hover p-6">
+            </motion.div>
+            <motion.div
+              className="md:col-span-2 card-base card-hover p-6 relative overflow-hidden"
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            >
               <h3 className="font-display font-bold text-foreground text-lg mb-2">Real-time Dashboard</h3>
               <p className="text-sm text-muted-foreground mb-4">Theo dõi toàn bộ sức khỏe tài chính từ một màn hình</p>
-              <div className="bg-accent rounded-lg p-3 space-y-2">
-                {['Highlands Coffee +₫48M', 'EVN -₫8.5M', 'KAPIVA +₫500M'].map((t) => (
-                  <div key={t} className="flex items-center justify-between bg-card rounded px-3 py-1.5 text-xs">
-                    <span className="text-foreground">{t.split(' ')[0] + ' ' + (t.split(' ')[1] || '')}</span>
-                    <span className={`font-mono ${t.includes('+') ? 'text-positive' : 'text-negative'}`}>{t.split(' ').pop()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              <motion.img
+                src={dashboardPreview}
+                alt="KAPIVA Dashboard Preview"
+                className="w-full rounded-xl opacity-90"
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 0.9, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              />
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* PRICING */}
-      <section className="py-24" id="pricing">
+      <section className="py-24 bg-background" id="pricing">
         <div className="container mx-auto px-4">
           <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground text-center mb-4">Bảng giá</h2>
           <div className="flex items-center justify-center gap-3 mb-12">
@@ -369,8 +426,8 @@ export default function Landing() {
       </section>
 
       {/* CTA */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-kapiva-green/10" />
+      <section className="py-24 relative overflow-hidden bg-background">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-kapiva-green/5" />
         <div className="relative z-10 container mx-auto px-4 text-center">
           <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground mb-4">Sẵn sàng tăng tốc dòng tiền?</h2>
           <p className="text-muted-foreground mb-8">Đăng ký miễn phí — không cần thẻ tín dụng</p>
@@ -383,7 +440,7 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto">
               <input value={ctaEmail} onChange={e => setCtaEmail(e.target.value)} placeholder="Email doanh nghiệp" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsla(var(--blue-500)/0.08)] transition-all" />
               <input value={ctaCompany} onChange={e => setCtaCompany(e.target.value)} placeholder="Tên công ty" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsla(var(--blue-500)/0.08)] transition-all" />
-              <button
+              <motion.button
                 onClick={async () => {
                   if (!ctaEmail || !ctaCompany) return;
                   try {
@@ -402,9 +459,11 @@ export default function Landing() {
                   }
                 }}
                 className="w-full sm:w-auto bg-primary text-primary-foreground px-6 py-3 rounded-xl font-display font-bold text-sm hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 Bắt đầu ngay <ArrowRight size={14} />
-              </button>
+              </motion.button>
             </div>
           )}
         </div>

@@ -63,6 +63,44 @@
     --shadow-blue: 0 0 20px hsla(var(--blue-glow)/0.2), 0 0 60px hsla(var(--blue-glow)/0.05);
     --shadow-green: 0 0 20px hsla(var(--green-glow)/0.15);
   }
+
+  .landing-light {
+    --bg-base: 0 0% 98%;
+    --bg-surface: 220 14% 96%;
+    --bg-card: 0 0% 100%;
+    --bg-card-hover: 220 14% 96%;
+
+    --border-subtle: 220 13% 91%;
+    --border-active: 225 90% 57%;
+
+    --text-primary: 222 47% 11%;
+    --text-secondary: 215 16% 47%;
+    --text-muted: 215 12% 65%;
+
+    --background: var(--bg-base);
+    --foreground: var(--text-primary);
+    --card: var(--bg-card);
+    --card-foreground: var(--text-primary);
+    --popover: var(--bg-card);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--blue-500);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--bg-surface);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bg-surface);
+    --muted-foreground: var(--text-secondary);
+    --accent: var(--bg-card-hover);
+    --accent-foreground: var(--text-primary);
+    --destructive: var(--red-500);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--border-subtle);
+    --input: var(--border-subtle);
+    --ring: var(--blue-500);
+
+    --shadow-card: 0 1px 3px hsla(0,0%,0%,0.08), 0 0 0 1px hsl(var(--border-subtle));
+    --shadow-blue: 0 0 20px hsla(var(--blue-glow)/0.15), 0 0 60px hsla(var(--blue-glow)/0.05);
+    --shadow-green: 0 0 20px hsla(var(--green-glow)/0.1);
+  }
 }
 
 @layer base {
