@@ -252,6 +252,9 @@ export default function DashboardOverview() {
             ))}
           </div>
         </motion.div>
+
+        {/* M2M Widget */}
+        <M2MDashboardWidget />
       </motion.div>
     </motion.div>
   );
