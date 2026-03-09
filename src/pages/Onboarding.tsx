@@ -140,10 +140,35 @@ export default function Onboarding() {
   const [eKYCConfirm, setEKYCConfirm] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([]);
 
+  // Tax lookup
+  const [lookingUpTax, setLookingUpTax] = useState(false);
+
   // Signature canvas
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
+
+  const lookupTaxId = async () => {
+    if (taxId.length !== 10 || lookingUpTax) return;
+    setLookingUpTax(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('firecrawl-scrape', {
+        body: { taxId },
+      });
+      if (data?.success && data?.data?.markdown) {
+        // Parse for company name from markdown
+        const markdown = data.data.markdown;
+        const nameMatch = markdown.match(/Tên công ty[:\s]+([^\n]+)/i) || markdown.match(/Tên doanh nghiệp[:\s]+([^\n]+)/i);
+        if (nameMatch) setCompanyName(nameMatch[1].trim());
+        toast.success('Đã tra cứu thông tin MST');
+      } else {
+        toast.info('Không tìm thấy thông tin, vui lòng nhập thủ công');
+      }
+    } catch {
+      toast.error('Lỗi tra cứu MST');
+    }
+    setLookingUpTax(false);
+  };
 
   const pwStrength = getPasswordStrength(password);
   const strengthLabels = ['', 'Yếu', 'Trung bình', 'Mạnh', 'Rất mạnh'];
