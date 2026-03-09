@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import kapivaLogo from '@/assets/kapiva-logo.png';
 
 const navLinks = [
   { label: 'Giải pháp', href: '#solutions' },
@@ -31,9 +32,7 @@ export default function Navbar() {
       >
         <div className="container mx-auto flex items-center justify-between px-4 lg:px-8">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="font-display font-extrabold text-primary-foreground text-sm">K</span>
-            </div>
+            <img src={kapivaLogo} alt="KAPIVA" className="w-8 h-8" />
             <span className="font-display font-bold text-foreground text-lg">KAPIVA</span>
           </Link>
 
