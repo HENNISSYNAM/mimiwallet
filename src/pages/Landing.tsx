@@ -5,12 +5,12 @@ import Footer from '@/components/layout/Footer';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Star } from 'lucide-react';
+import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Star, Leaf, TreePine, Recycle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { miniChartData } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import kapivaLogo from '@/assets/kapiva-logo.png';
+import mimiLogo from '@/assets/mimi-wallet-logo.png';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import featureSteps from '@/assets/feature-steps.png';
@@ -280,7 +280,7 @@ function HeroMockup() {
       >
         <img
           src={dashboardPreview}
-          alt="KAPIVA Dashboard"
+          alt="MIMI WALLET Dashboard"
           className="w-full"
         />
         {/* Overlay gradient */}
@@ -485,16 +485,15 @@ export default function Landing() {
           {/* Badge */}
           <motion.div {...fadeUp(0)} className="inline-flex items-center gap-2 border border-primary/20 bg-primary/5 px-5 py-2 rounded-full mb-8">
             <span className="w-2 h-2 rounded-full bg-kapiva-green animate-pulse" />
-            <span className="text-sm text-foreground font-medium">Nền tảng vốn SME #1 Việt Nam — Được 1,247+ doanh nghiệp tin dùng</span>
+            <span className="text-sm text-foreground font-medium">🌱 Nền tảng tài chính xanh #1 Việt Nam — Tín chỉ carbon & vốn bền vững</span>
           </motion.div>
 
           {/* Headline */}
           <motion.h1 {...fadeUp(0.1)} className="font-display font-extrabold text-foreground leading-[1.05] tracking-tight max-w-4xl mx-auto" style={{ fontSize: 'clamp(2.8rem, 6vw, 5.5rem)' }}>
-            Vốn thông minh{' '}
+            Ví xanh cho{' '}
             <br className="hidden md:block" />
-            cho{' '}
             <span className="relative inline-block">
-              <span className="text-gradient">doanh nghiệp Việt</span>
+              <span className="text-gradient">tương lai bền vững</span>
               <motion.span
                 className="absolute -bottom-2 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-kapiva-green rounded-full"
                 initial={{ scaleX: 0 }}
@@ -505,8 +504,8 @@ export default function Landing() {
           </motion.h1>
 
           <motion.p {...fadeUp(0.2)} className="mt-8 text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            KAPIVA phân tích dòng tiền, hoá đơn và lịch sử giao dịch — cấp vốn lưu động trong 24 giờ.{' '}
-            <span className="text-foreground font-medium">Không cần tài sản thế chấp.</span>
+            MIMI WALLET kết hợp tài chính xanh, tín chỉ carbon và vốn lưu động thông minh.{' '}
+            <span className="text-foreground font-medium">Hướng tới Net Zero cùng doanh nghiệp Việt.</span>
           </motion.p>
 
           {/* CTA */}
@@ -530,10 +529,10 @@ export default function Landing() {
           {/* Trust badges */}
           <motion.div {...fadeUp(0.4)} className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
             {[
-              { icon: <Shield size={14} className="text-primary" />, text: 'Bảo mật ISO 27001' },
-              { icon: <Clock size={14} className="text-kapiva-amber" />, text: 'Giải ngân 24h' },
+              { icon: <Leaf size={14} className="text-kapiva-green" />, text: 'Tài chính xanh' },
+              { icon: <TreePine size={14} className="text-emerald-500" />, text: 'Tín chỉ Carbon' },
               { icon: <Brain size={14} className="text-violet-500" />, text: 'AI Credit Scoring' },
-              { icon: <Lock size={14} className="text-kapiva-green" />, text: 'Không thế chấp' },
+              { icon: <Recycle size={14} className="text-primary" />, text: 'Net Zero 2050' },
             ].map((t, i) => (
               <span key={i} className="flex items-center gap-2 bg-card border border-border/60 px-3 py-1.5 rounded-lg">
                 {t.icon} <span className="font-medium">{t.text}</span>
@@ -702,6 +701,50 @@ export default function Landing() {
                 transition={{ duration: 0.6 }}
               />
             </BentoCard>
+
+            {/* Green Finance Cards */}
+            <BentoCard
+              title="Tài chính xanh"
+              desc="Vốn ưu đãi cho dự án ESG và phát triển bền vững"
+              icon={<Leaf size={18} />}
+              delay={0.4}
+            >
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Lãi suất', value: '-0.5%', color: 'text-kapiva-green' },
+                  { label: 'Hạn mức', value: '₫20 tỷ', color: 'text-primary' },
+                ].map((m) => (
+                  <div key={m.label} className="bg-kapiva-green/5 border border-kapiva-green/10 rounded-xl p-3 text-center">
+                    <p className="text-xs text-muted-foreground">{m.label}</p>
+                    <p className={`text-sm font-mono font-bold ${m.color}`}>{m.value}</p>
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
+
+            <BentoCard
+              title="Tín chỉ Carbon"
+              desc="Giao dịch, theo dõi và báo cáo carbon footprint"
+              icon={<TreePine size={18} />}
+              className="md:col-span-2"
+              delay={0.48}
+            >
+              <div className="mt-4 flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Recycle size={18} className="text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Carbon Credits</p>
+                    <p className="text-xs text-muted-foreground">Verified Carbon Standard (VCS)</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-lg font-bold text-emerald-500">1,247 tCO2e</p>
+                  <p className="text-xs text-muted-foreground">Đã offset</p>
+                </div>
+              </div>
+            </BentoCard>
           </div>
         </div>
       </section>
@@ -805,9 +848,9 @@ export default function Landing() {
             <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">Được tin tưởng bởi 1,247+ doanh nghiệp</h2>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <TestimonialCard initials="NT" name="Nguyễn Thành" role="CEO, Phúc Lộc Foods" quote="Trước đây mỗi tháng đều lo tiền nhập hàng. Giờ KAPIVA lo hết, tôi chỉ cần focus bán hàng." metric="45→8 ngày" delay={0} />
-            <TestimonialCard initials="MC" name="Minh Châu" role="CFO, Chuỗi nhà hàng 9 chi nhánh" quote="Dashboard dự báo dòng tiền giúp tôi tránh được một lần thiếu hụt tiền lương nhân viên." metric="-3 ngày/tháng" delay={0.1} />
-            <TestimonialCard initials="ĐH" name="Đức Huy" role="Founder, XNK Đức Phát" quote="Hóa đơn xuất khẩu ứng được 80%, giải ngân trong 4 tiếng. Không ngân hàng nào làm được vậy." metric="₫2.4 tỷ ứng vốn" delay={0.2} />
+            <TestimonialCard initials="NT" name="Nguyễn Thành" role="CEO, Phúc Lộc Foods" quote="MIMI WALLET giúp chúng tôi theo dõi carbon footprint và tiếp cận vốn xanh dễ dàng hơn bao giờ hết." metric="−30% CO2" delay={0} />
+            <TestimonialCard initials="MC" name="Minh Châu" role="CFO, Chuỗi nhà hàng 9 chi nhánh" quote="Dashboard tài chính xanh giúp tôi chứng minh ESG với nhà đầu tư quốc tế." metric="ESG Score: A" delay={0.1} />
+            <TestimonialCard initials="ĐH" name="Đức Huy" role="Founder, XNK Đức Phát" quote="Tín chỉ carbon từ MIMI WALLET giúp sản phẩm XK của chúng tôi đạt chuẩn EU Green Deal." metric="500 tấn CO2" delay={0.2} />
           </div>
         </div>
       </section>
