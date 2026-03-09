@@ -115,6 +115,128 @@ export type Database = {
         }
         Relationships: []
       }
+      device_rules: {
+        Row: {
+          action_params: Json
+          action_type: string
+          created_at: string | null
+          device_id: string
+          execution_count: number | null
+          id: string
+          is_active: boolean | null
+          limit_per_day: number | null
+          limit_per_month: number | null
+          limit_per_tx: number | null
+          rule_name: string
+          trigger_condition: Json
+          trigger_logic: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_params?: Json
+          action_type: string
+          created_at?: string | null
+          device_id: string
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          limit_per_day?: number | null
+          limit_per_month?: number | null
+          limit_per_tx?: number | null
+          rule_name: string
+          trigger_condition?: Json
+          trigger_logic?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_params?: Json
+          action_type?: string
+          created_at?: string | null
+          device_id?: string
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          limit_per_day?: number | null
+          limit_per_month?: number | null
+          limit_per_tx?: number | null
+          rule_name?: string
+          trigger_condition?: Json
+          trigger_logic?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_rules_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "device_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_wallets: {
+        Row: {
+          balance: number | null
+          company_id: string
+          created_at: string | null
+          currency: string | null
+          device_did: string
+          device_name: string
+          device_type: string
+          id: string
+          initial_balance: number | null
+          loan_id: string | null
+          metadata: Json | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          balance?: number | null
+          company_id: string
+          created_at?: string | null
+          currency?: string | null
+          device_did: string
+          device_name: string
+          device_type?: string
+          id?: string
+          initial_balance?: number | null
+          loan_id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          balance?: number | null
+          company_id?: string
+          created_at?: string | null
+          currency?: string | null
+          device_did?: string
+          device_name?: string
+          device_type?: string
+          id?: string
+          initial_balance?: number | null
+          loan_id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_wallets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_wallets_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           advanced_amount: number | null
@@ -283,6 +405,69 @@ export type Database = {
           },
         ]
       }
+      m2m_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          device_id: string
+          id: string
+          metadata: Json | null
+          recipient_id: string | null
+          recipient_name: string | null
+          rule_id: string | null
+          settlement_ms: number | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          tx_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          device_id: string
+          id?: string
+          metadata?: Json | null
+          recipient_id?: string | null
+          recipient_name?: string | null
+          rule_id?: string | null
+          settlement_ms?: number | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          tx_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          device_id?: string
+          id?: string
+          metadata?: Json | null
+          recipient_id?: string | null
+          recipient_name?: string | null
+          rule_id?: string | null
+          settlement_ms?: number | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          tx_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "m2m_transactions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "device_wallets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "m2m_transactions_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "device_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -395,7 +580,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_company_ids: { Args: { uid: string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
