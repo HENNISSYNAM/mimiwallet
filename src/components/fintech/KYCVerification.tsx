@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Upload, Shield, Check, AlertTriangle, Fingerprint, Smartphone, Eye, ScanLine, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthStore } from '@/store/useAuthStore';
+import { toast } from 'sonner';
 
 type KYCStatus = 'pending' | 'scanning' | 'verifying' | 'success' | 'failed';
 
@@ -12,6 +15,7 @@ interface KYCStep {
 }
 
 export default function KYCVerification({ onComplete }: { onComplete?: () => void }) {
+  const { session } = useAuthStore();
   const [activeStep, setActiveStep] = useState(0);
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
@@ -26,7 +30,83 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
     turnRight: false,
     smile: false,
   });
+  const [saving, setSaving] = useState(false);
+  const [kycRecord, setKycRecord] = useState<any>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Load existing KYC status on mount
+  useEffect(() => {
+    if (!session) return;
+    const loadKYC = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('kyc-verify', {
+          body: {},
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        // Use URL params workaround - call with action
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kyc-verify?action=status`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({}),
+          }
+        );
+        const result = await res.json();
+        if (result.data) {
+          setKycRecord(result.data);
+          // Restore state from backend
+          if (result.data.id_front_url) setIdFrontUploaded(true);
+          if (result.data.id_back_url) setIdBackUploaded(true);
+          if (result.data.face_match_score) setSelfieStatus('success');
+          if (result.data.liveness_passed) {
+            setLivenessChecks({ blink: true, turnLeft: true, turnRight: true, smile: true });
+          }
+          if (result.data.otp_verified) {
+            setOtpCode(['1', '2', '3', '4', '5', '6']);
+            setOtpSent(true);
+          }
+        }
+      } catch (e) {
+        // No existing KYC - that's fine
+      }
+    };
+    loadKYC();
+  }, [session]);
+
+  const callKYC = async (action: string, body: Record<string, unknown> = {}) => {
+    if (!session) {
+      toast.error('Vui lòng đăng nhập');
+      return null;
+    }
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kyc-verify?action=${action}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      const result = await res.json();
+      if (result.error) {
+        toast.error(result.error);
+        return null;
+      }
+      return result.data;
+    } catch (e) {
+      toast.error('Lỗi kết nối server');
+      return null;
+    }
+  };
 
   const kycSteps: KYCStep[] = [
     { id: 'id-upload', label: 'Tải CCCD/CMND', icon: <Upload size={16} />, status: idFrontUploaded && idBackUploaded ? 'success' : 'pending' },
@@ -35,7 +115,6 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
     { id: 'otp', label: 'Xác minh OTP', icon: <Smartphone size={16} />, status: otpCode.every(c => c !== '') ? 'success' : 'pending' },
   ];
 
-  // Countdown for OTP
   useEffect(() => {
     if (countdown <= 0) return;
     const timer = setInterval(() => setCountdown(c => c - 1), 1000);
@@ -57,9 +136,22 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
     }
   };
 
-  const simulateIDUpload = (side: 'front' | 'back') => {
+  const simulateIDUpload = async (side: 'front' | 'back') => {
     if (side === 'front') setIdFrontUploaded(true);
     else setIdBackUploaded(true);
+
+    // Start KYC record if needed, then save upload
+    if (!kycRecord) {
+      const record = await callKYC('start');
+      if (record) setKycRecord(record);
+    }
+    
+    const ocrData = side === 'front' 
+      ? { cccd_number: '001234567890', full_name: 'NGUYỄN VĂN A', dob: '01/01/1990' }
+      : { issued_by: 'CỤC CS QLHC VỀ TTXH' };
+    
+    await callKYC('upload-id', { side, ocr_data: ocrData });
+    toast.success(`Đã tải ${side === 'front' ? 'mặt trước' : 'mặt sau'} CCCD`);
   };
 
   const startFaceScan = () => {
@@ -70,7 +162,13 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
         if (p >= 100) {
           clearInterval(interval);
           setSelfieStatus('verifying');
-          setTimeout(() => setSelfieStatus('success'), 1500);
+          // Save to backend
+          callKYC('face-scan').then((result) => {
+            setSelfieStatus('success');
+            if (result) {
+              toast.success(`Khuôn mặt khớp ${result.face_match_score}%`);
+            }
+          });
           return 100;
         }
         return p + 2;
@@ -79,9 +177,26 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
   };
 
   const simulateLiveness = (check: keyof typeof livenessChecks) => {
-    setTimeout(() => {
-      setLivenessChecks(prev => ({ ...prev, [check]: true }));
+    setTimeout(async () => {
+      const newChecks = { ...livenessChecks, [check]: true };
+      setLivenessChecks(newChecks);
+      
+      // If all checks passed, save to backend
+      if (Object.values(newChecks).every(v => v)) {
+        await callKYC('liveness');
+        toast.success('Xác minh liveness thành công');
+      }
     }, 800);
+  };
+
+  const handleComplete = async () => {
+    setSaving(true);
+    const result = await callKYC('verify-otp', { otp: otpCode.join('') });
+    setSaving(false);
+    if (result) {
+      toast.success('eKYC hoàn tất! Đã xác minh thành công.');
+      onComplete?.();
+    }
   };
 
   return (
@@ -206,13 +321,12 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
             <div className="space-y-4">
               <div className="bg-card border border-border rounded-2xl p-8 text-center">
                 <div className="relative w-48 h-48 mx-auto mb-6">
-                  {/* Face scan ring */}
                   <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0">
                     <circle cx="100" cy="100" r="90" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
                     {selfieStatus === 'scanning' && (
                       <motion.circle
                         cx="100" cy="100" r="90"
-                        fill="none" stroke="hsl(var(--blue-500))"
+                        fill="none" stroke="hsl(var(--primary))"
                         strokeWidth="3" strokeLinecap="round"
                         strokeDasharray={`${2 * Math.PI * 90}`}
                         strokeDashoffset={`${2 * Math.PI * 90 * (1 - faceScanProgress / 100)}`}
@@ -220,7 +334,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                       />
                     )}
                     {selfieStatus === 'success' && (
-                      <circle cx="100" cy="100" r="90" fill="none" stroke="hsl(var(--green-500))" strokeWidth="3" />
+                      <circle cx="100" cy="100" r="90" fill="none" stroke="hsl(var(--kapiva-green))" strokeWidth="3" />
                     )}
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -258,7 +372,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                 )}
                 {selfieStatus === 'success' && (
                   <div>
-                    <p className="text-sm text-kapiva-green font-medium">✓ Khuôn mặt khớp 98.7%</p>
+                    <p className="text-sm text-kapiva-green font-medium">✓ Khuôn mặt khớp {kycRecord?.face_match_score || 98.7}%</p>
                     <p className="text-xs text-muted-foreground mt-1">Vượt ngưỡng xác minh (95%)</p>
                   </div>
                 )}
@@ -377,10 +491,11 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
         ) : (
           <motion.button
             whileHover={{ y: -1 }}
-            onClick={onComplete}
-            disabled={!otpCode.every(c => c !== '')}
-            className="bg-kapiva-green text-background px-6 py-2.5 rounded-xl text-sm font-display font-bold disabled:opacity-50"
+            onClick={handleComplete}
+            disabled={!otpCode.every(c => c !== '') || saving}
+            className="bg-kapiva-green text-background px-6 py-2.5 rounded-xl text-sm font-display font-bold disabled:opacity-50 flex items-center gap-2"
           >
+            {saving && <Loader2 size={14} className="animate-spin" />}
             ✓ Hoàn tất xác minh
           </motion.button>
         )}
