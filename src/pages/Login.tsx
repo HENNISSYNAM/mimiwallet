@@ -2,22 +2,30 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login();
-    navigate('/dashboard');
-  };
-
-  const handleDemo = () => {
-    login();
-    navigate('/dashboard');
+    if (!email || !password) {
+      toast.error('Vui lòng nhập email và mật khẩu');
+      return;
+    }
+    setLoading(true);
+    const { error } = await login(email, password);
+    setLoading(false);
+    if (error) {
+      toast.error(error === 'Invalid login credentials' ? 'Email hoặc mật khẩu không đúng' : error);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -58,18 +66,13 @@ export default function Login() {
           </div>
           <button
             type="submit"
-            className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-display font-bold hover:brightness-110 transition-all"
+            disabled={loading}
+            className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-display font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
           >
+            {loading && <Loader2 size={16} className="animate-spin" />}
             Đăng nhập
           </button>
         </form>
-
-        <button
-          onClick={handleDemo}
-          className="w-full mt-4 border border-border py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-        >
-          🚀 Dùng thử demo
-        </button>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
           Chưa có tài khoản?{' '}
