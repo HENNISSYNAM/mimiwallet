@@ -718,15 +718,25 @@ export default function Landing() {
               className="md:col-span-2"
               delay={0.32}
             >
-              <motion.img
-                src={dashboardPreview}
-                alt="Dashboard"
-                className="w-full rounded-xl mt-3 opacity-90"
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 0.9, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              />
+              <motion.div className="relative overflow-hidden rounded-xl mt-3 group/dash">
+                <motion.img
+                  src={dashboardPreview}
+                  alt="Dashboard"
+                  className="w-full rounded-xl transition-transform duration-700 group-hover/dash:scale-105"
+                  initial={{ opacity: 0, scale: 1.1, filter: 'blur(8px)' }}
+                  whileInView={{ opacity: 0.95, scale: 1, filter: 'blur(0px)' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                />
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(105deg, transparent 35%, hsla(0,0%,100%,0.06) 45%, hsla(0,0%,100%,0.12) 50%, hsla(0,0%,100%,0.06) 55%, transparent 65%)' }}
+                  initial={{ x: '-120%' }}
+                  whileInView={{ x: '220%' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 2, delay: 0.8, ease: 'easeInOut' }}
+                />
+              </motion.div>
             </BentoCard>
 
             {/* Green Finance Cards */}
