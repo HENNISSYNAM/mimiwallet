@@ -74,6 +74,9 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* AI Chat Widget */}
+        <AIChatWidget />
       </div>
     </div>
   );
