@@ -3,6 +3,7 @@ import DashboardSidebar from './DashboardSidebar';
 import { Bell, Search, LayoutDashboard, FileText, CreditCard, BarChart3, Settings, TrendingUp } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { NavLink } from 'react-router-dom';
+import AIChatWidget from '@/components/AIChatWidget';
 
 const mobileNav = [
   { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
