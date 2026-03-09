@@ -275,19 +275,31 @@ function HeroMockup() {
       <div className="absolute -inset-10 bg-gradient-to-r from-primary/20 via-transparent to-kapiva-green/20 blur-3xl opacity-40 pointer-events-none" />
       
       <motion.div
-        className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl"
-        style={{ boxShadow: '0 50px 100px -20px rgba(0,0,0,0.15), 0 0 50px hsla(225,100%,57%,0.08)' }}
-        initial={{ opacity: 0, y: 40, rotateX: 8 }}
-        animate={{ opacity: 1, y: 0, rotateX: 0 }}
-        transition={{ duration: 1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl group cursor-pointer"
+        style={{ boxShadow: '0 50px 100px -20px rgba(0,0,0,0.15), 0 0 50px hsla(225,100%,57%,0.08)', perspective: '1200px' }}
+        initial={{ opacity: 0, y: 60, rotateX: 12, scale: 0.92 }}
+        animate={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+        transition={{ duration: 1.2, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        whileHover={{ y: -8, rotateX: 2, scale: 1.01, boxShadow: '0 60px 120px -20px rgba(0,0,0,0.2), 0 0 80px hsla(225,100%,57%,0.12)' }}
       >
-        <img
+        <motion.img
           src={dashboardPreview}
           alt="MIMI WALLET Dashboard"
-          className="w-full"
+          className="w-full transition-transform duration-700 group-hover:scale-[1.03]"
+          initial={{ scale: 1.08 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        />
+        {/* Shimmer overlay */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(105deg, transparent 40%, hsla(0,0%,100%,0.08) 45%, hsla(0,0%,100%,0.15) 50%, hsla(0,0%,100%,0.08) 55%, transparent 60%)' }}
+          initial={{ x: '-100%' }}
+          animate={{ x: '200%' }}
+          transition={{ duration: 2.5, delay: 1.5, ease: 'easeInOut' }}
         />
         {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent pointer-events-none" />
       </motion.div>
 
       {/* Floating badges */}
