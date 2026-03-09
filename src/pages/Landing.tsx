@@ -15,7 +15,10 @@ import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import featureSteps from '@/assets/feature-steps.png';
 import aiAnalysis from '@/assets/ai-analysis.png';
+import aiGreenAnalysis from '@/assets/ai-green-analysis.png';
 import securityShield from '@/assets/security-shield.png';
+import greenFinanceDashboard from '@/assets/green-finance-dashboard.png';
+import carbonCreditsVisual from '@/assets/carbon-credits-visual.png';
 import AnimatedStepFlow from '@/components/onboarding/AnimatedStepFlow';
 import NetworkGraph from '@/components/onboarding/NetworkGraph';
 
@@ -709,7 +712,23 @@ export default function Landing() {
               icon={<Leaf size={18} />}
               delay={0.4}
             >
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <motion.div 
+                className="mt-4 relative overflow-hidden rounded-xl"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.img 
+                  src={greenFinanceDashboard} 
+                  alt="Green Finance Dashboard" 
+                  className="w-full rounded-xl opacity-90"
+                  initial={{ scale: 1.1, opacity: 0 }}
+                  whileInView={{ scale: 1, opacity: 0.9 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+              </motion.div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 {[
                   { label: 'Lãi suất', value: '-0.5%', color: 'text-kapiva-green' },
                   { label: 'Hạn mức', value: '₫20 tỷ', color: 'text-primary' },
@@ -729,19 +748,79 @@ export default function Landing() {
               className="md:col-span-2"
               delay={0.48}
             >
-              <div className="mt-4 flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <Recycle size={18} className="text-emerald-500" />
+              <div className="mt-4 grid md:grid-cols-2 gap-4">
+                <motion.div 
+                  className="relative overflow-hidden rounded-xl"
+                  whileHover={{ scale: 1.03, rotate: 1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <motion.img 
+                    src={carbonCreditsVisual} 
+                    alt="Carbon Credits" 
+                    className="w-full h-40 object-cover rounded-xl"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                  />
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-t from-emerald-900/60 to-transparent pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                  />
+                  <motion.div
+                    className="absolute bottom-3 left-3 right-3"
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                  >
+                    <p className="text-white font-display font-bold text-sm">Net Zero 2050</p>
+                    <p className="text-white/70 text-xs">Hướng tới tương lai bền vững</p>
+                  </motion.div>
+                </motion.div>
+                <div className="flex flex-col justify-center space-y-3">
+                  <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <motion.div 
+                        className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                      >
+                        <Recycle size={18} className="text-emerald-500" />
+                      </motion.div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Carbon Credits</p>
+                        <p className="text-xs text-muted-foreground">Verified Carbon Standard</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-mono text-lg font-bold text-emerald-500">1,247 tCO2e</p>
+                      <p className="text-xs text-muted-foreground">Đã offset</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Carbon Credits</p>
-                    <p className="text-xs text-muted-foreground">Verified Carbon Standard (VCS)</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Scope 1', value: '320', unit: 'tCO2' },
+                      { label: 'Scope 2', value: '580', unit: 'tCO2' },
+                      { label: 'Scope 3', value: '347', unit: 'tCO2' },
+                    ].map((s, i) => (
+                      <motion.div 
+                        key={s.label}
+                        className="bg-card/50 border border-border/50 rounded-lg p-2 text-center"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                      >
+                        <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                        <p className="text-xs font-mono font-bold text-foreground">{s.value}</p>
+                        <p className="text-[9px] text-muted-foreground">{s.unit}</p>
+                      </motion.div>
+                    ))}
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono text-lg font-bold text-emerald-500">1,247 tCO2e</p>
-                  <p className="text-xs text-muted-foreground">Đã offset</p>
                 </div>
               </div>
             </BentoCard>
@@ -799,10 +878,23 @@ export default function Landing() {
             >
               <div className="absolute -inset-10 bg-gradient-to-br from-primary/10 to-kapiva-green/10 blur-3xl opacity-50 rounded-full" />
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
-                <NetworkGraph labels={['Bank Data', 'Invoices', 'Cash Flow', 'Credit']} />
-                <div className="mt-4">
-                  <img src={aiAnalysis} alt="AI Analysis" className="w-full rounded-xl opacity-90" />
-                </div>
+                <NetworkGraph labels={['ESG Data', 'Carbon', 'Green Fund', 'Credit']} />
+                <motion.div 
+                  className="mt-4 relative overflow-hidden rounded-xl"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <motion.img 
+                    src={aiGreenAnalysis} 
+                    alt="AI Green Analysis" 
+                    className="w-full rounded-xl"
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8 }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent pointer-events-none" />
+                </motion.div>
               </div>
             </motion.div>
           </div>

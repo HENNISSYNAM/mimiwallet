@@ -60,6 +60,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        mimi: {
+          blue: "hsl(var(--blue-500))",
+          "blue-light": "hsl(var(--blue-400))",
+          green: "hsl(var(--green-500))",
+          "green-light": "hsl(var(--green-400))",
+          amber: "hsl(var(--amber-500))",
+          red: "hsl(var(--red-500))",
+        },
         kapiva: {
           blue: "hsl(var(--blue-500))",
           "blue-light": "hsl(var(--blue-400))",

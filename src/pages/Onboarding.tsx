@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -27,9 +27,9 @@ const pageVariants = {
 };
 
 /* ─── Floating Input ─── */
-function FloatingInput({ label, type = 'text', value, onChange, placeholder, warn, icon }: {
+const FloatingInput = forwardRef<HTMLInputElement, {
   label: string; type?: string; value: string; onChange: (v: string) => void; placeholder?: string; warn?: string; icon?: React.ReactNode;
-}) {
+}>(({ label, type = 'text', value, onChange, placeholder, warn, icon }, ref) => {
   const [focused, setFocused] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const active = focused || value.length > 0;
@@ -45,6 +45,7 @@ function FloatingInput({ label, type = 'text', value, onChange, placeholder, war
         </div>
       )}
       <input
+        ref={ref}
         type={isPassword && showPw ? 'text' : type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -67,13 +68,14 @@ function FloatingInput({ label, type = 'text', value, onChange, placeholder, war
         </button>
       )}
       {warn && (
-        <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-[11px] text-kapiva-amber mt-1.5 ml-1 flex items-center gap-1">
+        <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-[11px] text-mimi-amber mt-1.5 ml-1 flex items-center gap-1">
           <Sparkles size={10} /> {warn}
         </motion.p>
       )}
     </div>
   );
-}
+});
+FloatingInput.displayName = 'FloatingInput';
 
 /* ─── Pill Selector ─── */
 function PillSelector({ options, value, onChange, multi = false }: {

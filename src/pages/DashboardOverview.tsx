@@ -129,7 +129,7 @@ export default function DashboardOverview() {
         <KPICard icon={FileText} label="Hóa đơn chờ thanh toán" value="₫1,847,000,000" sub="3 hóa đơn sắp đến hạn" subColor="text-kapiva-amber">
           <p className="text-xs text-muted-foreground mt-1">14 hóa đơn đang hoạt động</p>
         </KPICard>
-        <KPICard icon={ShieldCheck} label="KAPIVA Credit Score" value="" sub="Hạng A — ↑ +12 điểm">
+        <KPICard icon={ShieldCheck} label="MIMI Credit Score" value="" sub="Hạng A — ↑ +12 điểm">
           <div className="flex items-center gap-4 -mt-1">
             <CreditScoreRing />
             <div>
