@@ -75,6 +75,7 @@ const App = () => (
                 <Route path="cashflow" element={<DashboardOverview />} />
                 <Route path="credit" element={<CreditScoringPage />} />
                 <Route path="fintech" element={<FintechPage />} />
+                <Route path="m2m" element={<M2MDevicesPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

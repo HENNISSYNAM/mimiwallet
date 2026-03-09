@@ -20,6 +20,7 @@ const pageTitles: Record<string, string> = {
   '/dashboard/loans': 'Vay vốn',
   '/dashboard/credit': 'Credit Score',
   '/dashboard/fintech': 'Fintech Hub',
+  '/dashboard/m2m': 'Thiết bị M2M',
   '/dashboard/reports': 'Báo cáo',
   '/dashboard/settings': 'Cài đặt',
 };
