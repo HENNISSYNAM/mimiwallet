@@ -33,13 +33,11 @@ export default function DashboardSidebar() {
       className="hidden lg:flex flex-col h-screen sticky top-0 bg-secondary border-r border-border"
     >
       <div className="p-4 flex items-center gap-3 border-b border-border">
-        <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          <span className="font-display font-bold text-primary-foreground text-sm">ĐP</span>
-        </div>
+        <img src={mimiLogo} alt="MIMI WALLET" className="h-9 w-auto shrink-0" />
         {!collapsed && (
           <div className="overflow-hidden">
             <p className="text-sm font-semibold text-foreground truncate">{companyProfile.name.substring(0, 20)}</p>
-            <p className="text-xs text-kapiva-amber">Gói Growth ⭐</p>
+            <p className="text-xs text-kapiva-green flex items-center gap-1"><Leaf size={10} /> Gói Green ⭐</p>
           </div>
         )}
       </div>
