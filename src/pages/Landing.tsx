@@ -280,7 +280,7 @@ function HeroMockup() {
       >
         <img
           src={dashboardPreview}
-          alt="KAPIVA Dashboard"
+          alt="MIMI WALLET Dashboard"
           className="w-full"
         />
         {/* Overlay gradient */}
