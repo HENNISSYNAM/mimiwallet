@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -6,6 +6,8 @@ import { industries, provinces } from '@/lib/mockData';
 import { formatVND } from '@/lib/formatters';
 import { getPasswordStrength } from '@/lib/validators';
 import { Check, ArrowRight, Upload, Camera, Pen, X, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const steps = ['Tạo tài khoản', 'Doanh nghiệp', 'Kết nối dữ liệu', 'Nhu cầu vốn', 'Xác minh eKYC'];
 
@@ -105,7 +107,7 @@ export default function Onboarding() {
   const [completed, setCompleted] = useState(false);
   const [direction, setDirection] = useState(1);
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
 
   // Step 1
   const [fullName, setFullName] = useState('');
@@ -138,10 +140,35 @@ export default function Onboarding() {
   const [eKYCConfirm, setEKYCConfirm] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([]);
 
+  // Tax lookup
+  const [lookingUpTax, setLookingUpTax] = useState(false);
+
   // Signature canvas
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
+
+  const lookupTaxId = async () => {
+    if (taxId.length !== 10 || lookingUpTax) return;
+    setLookingUpTax(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('firecrawl-scrape', {
+        body: { taxId },
+      });
+      if (data?.success && data?.data?.markdown) {
+        // Parse for company name from markdown
+        const markdown = data.data.markdown;
+        const nameMatch = markdown.match(/Tên công ty[:\s]+([^\n]+)/i) || markdown.match(/Tên doanh nghiệp[:\s]+([^\n]+)/i);
+        if (nameMatch) setCompanyName(nameMatch[1].trim());
+        toast.success('Đã tra cứu thông tin MST');
+      } else {
+        toast.info('Không tìm thấy thông tin, vui lòng nhập thủ công');
+      }
+    } catch {
+      toast.error('Lỗi tra cứu MST');
+    }
+    setLookingUpTax(false);
+  };
 
   const pwStrength = getPasswordStrength(password);
   const strengthLabels = ['', 'Yếu', 'Trung bình', 'Mạnh', 'Rất mạnh'];
@@ -178,9 +205,33 @@ export default function Onboarding() {
     setUploadedDocs(prev => [...prev, docType]);
   };
 
-  const handleComplete = () => {
+  const [registering, setRegistering] = useState(false);
+
+  const handleComplete = async () => {
+    setRegistering(true);
+    const { error } = await register(email, password, { full_name: fullName, phone });
+    if (error) {
+      toast.error(error);
+      setRegistering(false);
+      return;
+    }
+    // Save company data
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('companies').insert({
+        user_id: user.id,
+        name: companyName,
+        tax_id: taxId,
+        industry,
+        province,
+        years_operating: yearsOp,
+        monthly_revenue: revenue,
+        employee_count: empCount,
+        connected_banks: connectedBanks,
+      });
+    }
+    setRegistering(false);
     setCompleted(true);
-    login();
   };
 
   const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 4)); };
@@ -468,8 +519,12 @@ export default function Onboarding() {
                       <div className="relative">
                         <FloatingInput label="Mã số thuế *" value={taxId} onChange={(v) => setTaxId(v.replace(/\D/g, '').slice(0, 10))} placeholder="10 chữ số" />
                         {taxId.length === 10 && (
-                          <button className="absolute right-3 top-3.5 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium hover:bg-primary/20 transition-colors">
-                            🔍 Tra cứu
+                          <button 
+                            onClick={lookupTaxId}
+                            disabled={lookingUpTax}
+                            className="absolute right-3 top-3.5 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium hover:bg-primary/20 transition-colors flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {lookingUpTax ? <Loader2 size={10} className="animate-spin" /> : '🔍'} Tra cứu
                           </button>
                         )}
                       </div>
