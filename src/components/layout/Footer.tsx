@@ -33,7 +33,7 @@ export default function Footer() {
           ))}
         </div>
         <div className="border-t border-border pt-6 text-center text-xs text-muted-foreground">
-          © 2025 KAPIVA Technology JSC | Được cấp phép bởi NHNN Việt Nam | MST: 0123456789
+          © 2025 MIMI WALLET Technology JSC | Được cấp phép bởi NHNN Việt Nam | MST: 0123456789
         </div>
       </div>
     </footer>

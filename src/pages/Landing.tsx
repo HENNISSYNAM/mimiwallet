@@ -804,9 +804,9 @@ export default function Landing() {
             <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">Được tin tưởng bởi 1,247+ doanh nghiệp</h2>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <TestimonialCard initials="NT" name="Nguyễn Thành" role="CEO, Phúc Lộc Foods" quote="Trước đây mỗi tháng đều lo tiền nhập hàng. Giờ KAPIVA lo hết, tôi chỉ cần focus bán hàng." metric="45→8 ngày" delay={0} />
-            <TestimonialCard initials="MC" name="Minh Châu" role="CFO, Chuỗi nhà hàng 9 chi nhánh" quote="Dashboard dự báo dòng tiền giúp tôi tránh được một lần thiếu hụt tiền lương nhân viên." metric="-3 ngày/tháng" delay={0.1} />
-            <TestimonialCard initials="ĐH" name="Đức Huy" role="Founder, XNK Đức Phát" quote="Hóa đơn xuất khẩu ứng được 80%, giải ngân trong 4 tiếng. Không ngân hàng nào làm được vậy." metric="₫2.4 tỷ ứng vốn" delay={0.2} />
+            <TestimonialCard initials="NT" name="Nguyễn Thành" role="CEO, Phúc Lộc Foods" quote="MIMI WALLET giúp chúng tôi theo dõi carbon footprint và tiếp cận vốn xanh dễ dàng hơn bao giờ hết." metric="−30% CO2" delay={0} />
+            <TestimonialCard initials="MC" name="Minh Châu" role="CFO, Chuỗi nhà hàng 9 chi nhánh" quote="Dashboard tài chính xanh giúp tôi chứng minh ESG với nhà đầu tư quốc tế." metric="ESG Score: A" delay={0.1} />
+            <TestimonialCard initials="ĐH" name="Đức Huy" role="Founder, XNK Đức Phát" quote="Tín chỉ carbon từ MIMI WALLET giúp sản phẩm XK của chúng tôi đạt chuẩn EU Green Deal." metric="500 tấn CO2" delay={0.2} />
           </div>
         </div>
       </section>

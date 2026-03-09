@@ -32,8 +32,7 @@ export default function Navbar() {
       >
         <div className="container mx-auto flex items-center justify-between px-4 lg:px-8">
           <Link to="/" className="flex items-center gap-2">
-            <img src={kapivaLogo} alt="KAPIVA" className="w-8 h-8" />
-            <span className="font-display font-bold text-foreground text-lg">KAPIVA</span>
+            <img src={mimiLogo} alt="MIMI WALLET" className="h-8 w-auto" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
