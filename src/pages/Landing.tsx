@@ -195,9 +195,12 @@ function ProcessFlow() {
             {activeStep === 1 && (
               <motion.div className="bg-card border border-border rounded-2xl p-6 shadow-xl">
                 <div className="text-center mb-4">
-                  <motion.img src={aiAnalysis} alt="AI Analysis" className="w-32 h-32 mx-auto rounded-2xl object-cover mb-4"
-                    initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2 }}
-                  />
+                 <motion.div className="relative inline-block">
+                    <motion.img src={aiAnalysis} alt="AI Analysis" className="w-32 h-32 mx-auto rounded-2xl object-cover mb-4 shadow-lg"
+                      initial={{ scale: 0.6, opacity: 0, rotateY: -30 }} animate={{ scale: 1, opacity: 1, rotateY: 0 }} transition={{ delay: 0.2, duration: 0.8, type: 'spring' }}
+                    />
+                    <motion.div className="absolute -inset-2 rounded-2xl border border-primary/20 pointer-events-none" animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 3, repeat: Infinity }} />
+                  </motion.div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
