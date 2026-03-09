@@ -180,9 +180,33 @@ export default function Onboarding() {
     setUploadedDocs(prev => [...prev, docType]);
   };
 
-  const handleComplete = () => {
+  const [registering, setRegistering] = useState(false);
+
+  const handleComplete = async () => {
+    setRegistering(true);
+    const { error } = await register(email, password, { full_name: fullName, phone });
+    if (error) {
+      toast.error(error);
+      setRegistering(false);
+      return;
+    }
+    // Save company data
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('companies').insert({
+        user_id: user.id,
+        name: companyName,
+        tax_id: taxId,
+        industry,
+        province,
+        years_operating: yearsOp,
+        monthly_revenue: revenue,
+        employee_count: empCount,
+        connected_banks: connectedBanks,
+      });
+    }
+    setRegistering(false);
     setCompleted(true);
-    login();
   };
 
   const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 4)); };
