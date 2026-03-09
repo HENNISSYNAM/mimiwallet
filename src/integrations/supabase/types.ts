@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_connections: {
+        Row: {
+          accounts: Json | null
+          bank_code: string
+          bank_name: string
+          company_id: string
+          consent_expires_at: string | null
+          consent_granted: boolean | null
+          created_at: string
+          id: string
+          last_synced_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accounts?: Json | null
+          bank_code: string
+          bank_name: string
+          company_id: string
+          consent_expires_at?: string | null
+          consent_granted?: boolean | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accounts?: Json | null
+          bank_code?: string
+          bank_name?: string
+          company_id?: string
+          consent_expires_at?: string | null
+          consent_granted?: boolean | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_connections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           connected_banks: Json | null
@@ -120,6 +170,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_verifications: {
+        Row: {
+          company_id: string
+          created_at: string
+          face_match_score: number | null
+          id: string
+          id_back_url: string | null
+          id_front_url: string | null
+          liveness_passed: boolean | null
+          ocr_data: Json | null
+          otp_verified: boolean | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          face_match_score?: number | null
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          liveness_passed?: boolean | null
+          ocr_data?: Json | null
+          otp_verified?: boolean | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          face_match_score?: number | null
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          liveness_passed?: boolean | null
+          ocr_data?: Json | null
+          otp_verified?: boolean | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_verifications_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
