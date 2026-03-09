@@ -485,7 +485,7 @@ export default function Landing() {
           {/* Badge */}
           <motion.div {...fadeUp(0)} className="inline-flex items-center gap-2 border border-primary/20 bg-primary/5 px-5 py-2 rounded-full mb-8">
             <span className="w-2 h-2 rounded-full bg-kapiva-green animate-pulse" />
-            <span className="text-sm text-foreground font-medium">Nền tảng vốn SME #1 Việt Nam — Được 1,247+ doanh nghiệp tin dùng</span>
+            <span className="text-sm text-foreground font-medium">🌱 Nền tảng tài chính xanh #1 Việt Nam — Tín chỉ carbon & vốn bền vững</span>
           </motion.div>
 
           {/* Headline */}
