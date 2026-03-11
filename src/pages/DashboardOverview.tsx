@@ -168,7 +168,7 @@ export default function DashboardOverview() {
           <div className="mt-4 bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-start gap-3">
             <span className="text-base mt-0.5">🧠</span>
             <div className="flex-1">
-              <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="font-mono font-semibold text-kapiva-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
+              <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="font-mono font-semibold text-mimi-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
               <button className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
                 Xem giải pháp <ArrowRight size={10} />
               </button>
