@@ -24,7 +24,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Bạn là trợ lý tài chính AI của KAPIVA — nền tảng vốn thông minh cho SME Việt Nam.
+            content: `Bạn là trợ lý tài chính AI của MIMI WALLET — nền tảng tài chính xanh cho SME Việt Nam.
 Trả lời bằng tiếng Việt. Phân tích dữ liệu doanh nghiệp và đưa ra lời khuyên ngắn gọn, thực tế.
 Bạn có thể:
 - Phân tích dòng tiền và doanh thu

@@ -145,7 +145,7 @@ export default function AIChatWidget() {
                   <span className="text-primary-foreground font-bold text-xs">AI</span>
                 </div>
                 <div>
-                  <p className="text-sm font-display font-bold text-foreground">Trợ lý KAPIVA</p>
+                  <p className="text-sm font-display font-bold text-foreground">Trợ lý MIMI</p>
                   <p className="text-[10px] text-muted-foreground">Tư vấn tài chính AI</p>
                 </div>
               </div>

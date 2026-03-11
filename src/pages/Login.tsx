@@ -39,7 +39,7 @@ export default function Login() {
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div 
-          className="absolute bottom-20 right-20 w-96 h-96 bg-kapiva-green/20 rounded-full blur-3xl"
+          className="absolute bottom-20 right-20 w-96 h-96 bg-mimi-green/20 rounded-full blur-3xl"
           animate={{ scale: [1.2, 1, 1.2], y: [0, -30, 0] }}
           transition={{ duration: 10, repeat: Infinity }}
         />
@@ -62,7 +62,7 @@ export default function Login() {
           />
           <h1 className="font-display font-bold text-2xl text-foreground">Đăng nhập MIMI WALLET</h1>
           <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1">
-            <Leaf size={14} className="text-kapiva-green" /> Ví xanh cho tương lai bền vững
+            <Leaf size={14} className="text-mimi-green" /> Ví xanh cho tương lai bền vững
           </p>
         </div>
 
@@ -96,7 +96,7 @@ export default function Login() {
           <motion.button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-primary to-kapiva-green text-primary-foreground py-2.5 rounded-lg text-sm font-display font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg"
+            className="w-full bg-gradient-to-r from-primary to-mimi-green text-primary-foreground py-2.5 rounded-lg text-sm font-display font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

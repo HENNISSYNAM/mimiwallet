@@ -37,7 +37,7 @@ export default function DashboardSidebar() {
         {!collapsed && (
           <div className="overflow-hidden">
             <p className="text-sm font-semibold text-foreground truncate">{companyProfile.name.substring(0, 20)}</p>
-            <p className="text-xs text-kapiva-green flex items-center gap-1"><Leaf size={10} /> Gói Green ⭐</p>
+            <p className="text-xs text-mimi-green flex items-center gap-1"><Leaf size={10} /> Gói Green ⭐</p>
           </div>
         )}
       </div>
