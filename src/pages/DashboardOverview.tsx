@@ -134,7 +134,7 @@ export default function DashboardOverview() {
             <CreditScoreRing />
             <div>
               <p className="font-mono text-lg font-bold text-foreground">782</p>
-              <p className="text-xs text-kapiva-green font-medium">Rất tốt</p>
+              <p className="text-xs text-mimi-green font-medium">Rất tốt</p>
             </div>
           </div>
         </KPICard>
