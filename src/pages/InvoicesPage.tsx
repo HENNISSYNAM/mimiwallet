@@ -11,16 +11,16 @@ const fadeUp = {
 };
 
 const statusConfig: Record<string, { label: string; dot: string; bg: string }> = {
-  pending: { label: 'Chưa TT', dot: 'bg-kapiva-amber', bg: 'bg-kapiva-amber/8 text-kapiva-amber' },
-  overdue: { label: 'Quá hạn', dot: 'bg-kapiva-red', bg: 'bg-kapiva-red/8 text-kapiva-red' },
-  paid: { label: 'Đã TT', dot: 'bg-kapiva-green', bg: 'bg-kapiva-green/8 text-kapiva-green' },
+  pending: { label: 'Chưa TT', dot: 'bg-mimi-amber', bg: 'bg-mimi-amber/8 text-mimi-amber' },
+  overdue: { label: 'Quá hạn', dot: 'bg-mimi-red', bg: 'bg-mimi-red/8 text-mimi-red' },
+  paid: { label: 'Đã TT', dot: 'bg-mimi-green', bg: 'bg-mimi-green/8 text-mimi-green' },
   advanced: { label: 'Đã ứng vốn', dot: 'bg-primary', bg: 'bg-primary/8 text-primary' },
 };
 
 const stats = [
   { label: 'Tổng hóa đơn', value: 3_240_000_000, color: 'text-foreground' },
-  { label: 'Chưa thanh toán', value: 1_847_000_000, color: 'text-kapiva-amber' },
-  { label: 'Quá hạn', value: 420_000_000, color: 'text-kapiva-red' },
+  { label: 'Chưa thanh toán', value: 1_847_000_000, color: 'text-mimi-amber' },
+  { label: 'Quá hạn', value: 420_000_000, color: 'text-mimi-red' },
   { label: 'Đã ứng vốn', value: 800_000_000, color: 'text-primary' },
 ];
 
