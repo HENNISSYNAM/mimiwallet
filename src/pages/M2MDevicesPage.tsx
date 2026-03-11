@@ -16,8 +16,8 @@ const DEVICE_TYPES = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-kapiva-green/15 text-kapiva-green border-kapiva-green/30',
-  suspended: 'bg-kapiva-amber/15 text-kapiva-amber border-kapiva-amber/30',
+  active: 'bg-mimi-green/15 text-mimi-green border-mimi-green/30',
+  suspended: 'bg-mimi-amber/15 text-mimi-amber border-mimi-amber/30',
   deleted: 'bg-destructive/15 text-destructive border-destructive/30',
 };
 
