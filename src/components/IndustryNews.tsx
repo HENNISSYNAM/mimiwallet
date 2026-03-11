@@ -49,8 +49,8 @@ export default function IndustryNews({ industry = 'SME' }: { industry?: string }
   useEffect(() => { fetchNews(); }, [industry]);
 
   const getImpactIcon = (impact: string) => {
-    if (impact === 'positive') return <TrendingUp size={14} className="text-kapiva-green" />;
-    if (impact === 'negative') return <TrendingDown size={14} className="text-kapiva-red" />;
+    if (impact === 'positive') return <TrendingUp size={14} className="text-mimi-green" />;
+    if (impact === 'negative') return <TrendingDown size={14} className="text-mimi-red" />;
     return <Minus size={14} className="text-muted-foreground" />;
   };
 
