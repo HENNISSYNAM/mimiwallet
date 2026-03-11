@@ -75,8 +75,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const statusColors: Record<string, string> = {
-  'Đã thu': 'text-kapiva-green',
-  'Đã chi': 'text-kapiva-red',
+  'Đã thu': 'text-mimi-green',
+  'Đã chi': 'text-mimi-red',
   'Đã nhận': 'text-primary',
 };
 
