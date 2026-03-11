@@ -181,9 +181,9 @@ export default function M2MDevicesPage() {
       {/* Stats */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Thiết bị hoạt động', value: devices.filter(d => d.status === 'active').length.toString(), icon: Activity, color: 'text-kapiva-green' },
+          { label: 'Thiết bị hoạt động', value: devices.filter(d => d.status === 'active').length.toString(), icon: Activity, color: 'text-mimi-green' },
           { label: 'Tổng số dư ví', value: formatVND(devices.reduce((s, d) => s + (d.balance || 0), 0)), icon: Wallet, color: 'text-primary' },
-          { label: 'Tổng thiết bị', value: devices.length.toString(), icon: Cpu, color: 'text-kapiva-amber' },
+          { label: 'Tổng thiết bị', value: devices.length.toString(), icon: Cpu, color: 'text-mimi-amber' },
           { label: 'Cần nạp thêm', value: devices.filter(d => d.initial_balance > 0 && d.balance < d.initial_balance * 0.2).length.toString(), icon: AlertTriangle, color: 'text-destructive' },
         ].map((stat) => (
           <div key={stat.label} className="bg-card/60 border border-border/60 rounded-2xl p-4">
