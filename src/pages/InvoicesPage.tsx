@@ -241,7 +241,7 @@ export default function InvoicesPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Tiền về trong</span>
-                        <span className="text-kapiva-green font-semibold">4 giờ</span>
+                        <span className="text-mimi-green font-semibold">4 giờ</span>
                       </div>
                     </div>
                     <motion.button

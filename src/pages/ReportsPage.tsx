@@ -123,7 +123,7 @@ export default function ReportsPage() {
       </motion.div>
 
       {/* AI Summary */}
-      <motion.div variants={fadeUp} className="bg-gradient-to-r from-primary/5 to-kapiva-green/5 border border-primary/10 rounded-2xl p-6">
+      <motion.div variants={fadeUp} className="bg-gradient-to-r from-primary/5 to-mimi-green/5 border border-primary/10 rounded-2xl p-6">
         <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2 mb-4">🧠 Tóm tắt từ AI — Tháng 03/2026</h3>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
           Doanh thu tháng 3 đạt ₫8.32 tỷ, tăng 15.5% so với tháng trước. Chi phí nhập hàng tăng 8% do giá nguyên liệu tăng.

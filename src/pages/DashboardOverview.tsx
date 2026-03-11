@@ -179,9 +179,9 @@ export default function DashboardOverview() {
         <motion.div variants={fadeUp} className="lg:col-span-2 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6 space-y-4">
           <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">🧠 Insights từ AI</h3>
           {[
-            { icon: AlertTriangle, color: 'text-kapiva-red', bgColor: 'bg-kapiva-red/5 border-kapiva-red/10', badge: '⚠️ Cảnh báo', msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay' },
+            { icon: AlertTriangle, color: 'text-mimi-red', bgColor: 'bg-mimi-red/5 border-mimi-red/10', badge: '⚠️ Cảnh báo', msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay' },
             { icon: Lightbulb, color: 'text-primary', bgColor: 'bg-primary/5 border-primary/10', badge: '💡 Cơ hội', msg: 'Doanh thu T3 tăng 23%. Đây là thời điểm tốt để đề xuất tăng hạn mức vay.', cta: 'Xem hạn mức' },
-            { icon: Bell, color: 'text-kapiva-amber', bgColor: 'bg-kapiva-amber/5 border-kapiva-amber/10', badge: '🔔 Nhắc nhở', msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở' },
+            { icon: Bell, color: 'text-mimi-amber', bgColor: 'bg-mimi-amber/5 border-mimi-amber/10', badge: '🔔 Nhắc nhở', msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở' },
           ].map((insight, i) => (
             <div key={i} className={`${insight.bgColor} border rounded-xl p-4 transition-all hover:shadow-sm`}>
               <p className="text-xs font-semibold mb-1.5"><span className={insight.color}>{insight.badge}</span></p>
