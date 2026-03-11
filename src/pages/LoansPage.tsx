@@ -11,9 +11,9 @@ const fadeUp = {
 };
 
 const statusLabel: Record<string, { text: string; cls: string; dot: string }> = {
-  on_track: { text: 'Đúng hạn', cls: 'text-kapiva-green', dot: 'bg-kapiva-green' },
-  completed: { text: 'Hoàn thành', cls: 'text-kapiva-green', dot: 'bg-kapiva-green' },
-  due_soon: { text: 'Sắp đến hạn', cls: 'text-kapiva-amber', dot: 'bg-kapiva-amber' },
+  on_track: { text: 'Đúng hạn', cls: 'text-mimi-green', dot: 'bg-mimi-green' },
+  completed: { text: 'Hoàn thành', cls: 'text-mimi-green', dot: 'bg-mimi-green' },
+  due_soon: { text: 'Sắp đến hạn', cls: 'text-mimi-amber', dot: 'bg-mimi-amber' },
 };
 
 const scoreFactors = [
