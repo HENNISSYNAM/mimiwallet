@@ -17,7 +17,7 @@ const fadeUp = {
   show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const } },
 };
 
-function KPICard({ icon: Icon, label, value, sub, subColor = 'text-kapiva-green', children }: {
+function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', children }: {
   icon: any; label: string; value: string; sub: string; subColor?: string; children?: React.ReactNode;
 }) {
   return (
