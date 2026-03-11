@@ -17,7 +17,7 @@ const fadeUp = {
   show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const } },
 };
 
-function KPICard({ icon: Icon, label, value, sub, subColor = 'text-kapiva-green', children }: {
+function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', children }: {
   icon: any; label: string; value: string; sub: string; subColor?: string; children?: React.ReactNode;
 }) {
   return (
@@ -75,8 +75,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const statusColors: Record<string, string> = {
-  'Đã thu': 'text-kapiva-green',
-  'Đã chi': 'text-kapiva-red',
+  'Đã thu': 'text-mimi-green',
+  'Đã chi': 'text-mimi-red',
   'Đã nhận': 'text-primary',
 };
 
@@ -126,7 +126,7 @@ export default function DashboardOverview() {
             </div>
           </div>
         </KPICard>
-        <KPICard icon={FileText} label="Hóa đơn chờ thanh toán" value="₫1,847,000,000" sub="3 hóa đơn sắp đến hạn" subColor="text-kapiva-amber">
+        <KPICard icon={FileText} label="Hóa đơn chờ thanh toán" value="₫1,847,000,000" sub="3 hóa đơn sắp đến hạn" subColor="text-mimi-amber">
           <p className="text-xs text-muted-foreground mt-1">14 hóa đơn đang hoạt động</p>
         </KPICard>
         <KPICard icon={ShieldCheck} label="MIMI Credit Score" value="" sub="Hạng A — ↑ +12 điểm">
@@ -134,7 +134,7 @@ export default function DashboardOverview() {
             <CreditScoreRing />
             <div>
               <p className="font-mono text-lg font-bold text-foreground">782</p>
-              <p className="text-xs text-kapiva-green font-medium">Rất tốt</p>
+              <p className="text-xs text-mimi-green font-medium">Rất tốt</p>
             </div>
           </div>
         </KPICard>
@@ -168,7 +168,7 @@ export default function DashboardOverview() {
           <div className="mt-4 bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-start gap-3">
             <span className="text-base mt-0.5">🧠</span>
             <div className="flex-1">
-              <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="font-mono font-semibold text-kapiva-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
+              <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="font-mono font-semibold text-mimi-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
               <button className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
                 Xem giải pháp <ArrowRight size={10} />
               </button>
@@ -179,9 +179,9 @@ export default function DashboardOverview() {
         <motion.div variants={fadeUp} className="lg:col-span-2 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6 space-y-4">
           <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">🧠 Insights từ AI</h3>
           {[
-            { icon: AlertTriangle, color: 'text-kapiva-red', bgColor: 'bg-kapiva-red/5 border-kapiva-red/10', badge: '⚠️ Cảnh báo', msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay' },
+            { icon: AlertTriangle, color: 'text-mimi-red', bgColor: 'bg-mimi-red/5 border-mimi-red/10', badge: '⚠️ Cảnh báo', msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay' },
             { icon: Lightbulb, color: 'text-primary', bgColor: 'bg-primary/5 border-primary/10', badge: '💡 Cơ hội', msg: 'Doanh thu T3 tăng 23%. Đây là thời điểm tốt để đề xuất tăng hạn mức vay.', cta: 'Xem hạn mức' },
-            { icon: Bell, color: 'text-kapiva-amber', bgColor: 'bg-kapiva-amber/5 border-kapiva-amber/10', badge: '🔔 Nhắc nhở', msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở' },
+            { icon: Bell, color: 'text-mimi-amber', bgColor: 'bg-mimi-amber/5 border-mimi-amber/10', badge: '🔔 Nhắc nhở', msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở' },
           ].map((insight, i) => (
             <div key={i} className={`${insight.bgColor} border rounded-xl p-4 transition-all hover:shadow-sm`}>
               <p className="text-xs font-semibold mb-1.5"><span className={insight.color}>{insight.badge}</span></p>

@@ -11,9 +11,9 @@ const fadeUp = {
 };
 
 const statusLabel: Record<string, { text: string; cls: string; dot: string }> = {
-  on_track: { text: 'Đúng hạn', cls: 'text-kapiva-green', dot: 'bg-kapiva-green' },
-  completed: { text: 'Hoàn thành', cls: 'text-kapiva-green', dot: 'bg-kapiva-green' },
-  due_soon: { text: 'Sắp đến hạn', cls: 'text-kapiva-amber', dot: 'bg-kapiva-amber' },
+  on_track: { text: 'Đúng hạn', cls: 'text-mimi-green', dot: 'bg-mimi-green' },
+  completed: { text: 'Hoàn thành', cls: 'text-mimi-green', dot: 'bg-mimi-green' },
+  due_soon: { text: 'Sắp đến hạn', cls: 'text-mimi-amber', dot: 'bg-mimi-amber' },
 };
 
 const scoreFactors = [
@@ -148,11 +148,11 @@ export default function LoansPage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-primary/5 to-kapiva-green/5 border border-primary/10 rounded-2xl p-6 flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-primary/5 to-mimi-green/5 border border-primary/10 rounded-2xl p-6 flex flex-col justify-between">
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Số tiền nhận được</p>
-                <p className="font-mono text-3xl font-bold text-kapiva-green">{formatVND(received)}</p>
+                <p className="font-mono text-3xl font-bold text-mimi-green">{formatVND(received)}</p>
               </div>
               <div className="border-t border-border/30 pt-4 space-y-3">
                 <div className="flex justify-between text-sm">

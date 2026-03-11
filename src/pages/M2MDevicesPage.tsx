@@ -16,8 +16,8 @@ const DEVICE_TYPES = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-kapiva-green/15 text-kapiva-green border-kapiva-green/30',
-  suspended: 'bg-kapiva-amber/15 text-kapiva-amber border-kapiva-amber/30',
+  active: 'bg-mimi-green/15 text-mimi-green border-mimi-green/30',
+  suspended: 'bg-mimi-amber/15 text-mimi-amber border-mimi-amber/30',
   deleted: 'bg-destructive/15 text-destructive border-destructive/30',
 };
 
@@ -181,9 +181,9 @@ export default function M2MDevicesPage() {
       {/* Stats */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Thiết bị hoạt động', value: devices.filter(d => d.status === 'active').length.toString(), icon: Activity, color: 'text-kapiva-green' },
+          { label: 'Thiết bị hoạt động', value: devices.filter(d => d.status === 'active').length.toString(), icon: Activity, color: 'text-mimi-green' },
           { label: 'Tổng số dư ví', value: formatVND(devices.reduce((s, d) => s + (d.balance || 0), 0)), icon: Wallet, color: 'text-primary' },
-          { label: 'Tổng thiết bị', value: devices.length.toString(), icon: Cpu, color: 'text-kapiva-amber' },
+          { label: 'Tổng thiết bị', value: devices.length.toString(), icon: Cpu, color: 'text-mimi-amber' },
           { label: 'Cần nạp thêm', value: devices.filter(d => d.initial_balance > 0 && d.balance < d.initial_balance * 0.2).length.toString(), icon: AlertTriangle, color: 'text-destructive' },
         ].map((stat) => (
           <div key={stat.label} className="bg-card/60 border border-border/60 rounded-2xl p-4">
@@ -237,7 +237,7 @@ export default function M2MDevicesPage() {
                       <div className="flex items-center gap-2 mt-1">
                         <div className="w-16 h-1.5 bg-border rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${isLow ? 'bg-destructive' : 'bg-kapiva-green'}`}
+                            className={`h-full rounded-full transition-all ${isLow ? 'bg-destructive' : 'bg-mimi-green'}`}
                             style={{ width: `${Math.min(budgetPct, 100)}%` }}
                           />
                         </div>

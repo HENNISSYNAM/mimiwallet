@@ -11,16 +11,16 @@ const fadeUp = {
 };
 
 const statusConfig: Record<string, { label: string; dot: string; bg: string }> = {
-  pending: { label: 'Chưa TT', dot: 'bg-kapiva-amber', bg: 'bg-kapiva-amber/8 text-kapiva-amber' },
-  overdue: { label: 'Quá hạn', dot: 'bg-kapiva-red', bg: 'bg-kapiva-red/8 text-kapiva-red' },
-  paid: { label: 'Đã TT', dot: 'bg-kapiva-green', bg: 'bg-kapiva-green/8 text-kapiva-green' },
+  pending: { label: 'Chưa TT', dot: 'bg-mimi-amber', bg: 'bg-mimi-amber/8 text-mimi-amber' },
+  overdue: { label: 'Quá hạn', dot: 'bg-mimi-red', bg: 'bg-mimi-red/8 text-mimi-red' },
+  paid: { label: 'Đã TT', dot: 'bg-mimi-green', bg: 'bg-mimi-green/8 text-mimi-green' },
   advanced: { label: 'Đã ứng vốn', dot: 'bg-primary', bg: 'bg-primary/8 text-primary' },
 };
 
 const stats = [
   { label: 'Tổng hóa đơn', value: 3_240_000_000, color: 'text-foreground' },
-  { label: 'Chưa thanh toán', value: 1_847_000_000, color: 'text-kapiva-amber' },
-  { label: 'Quá hạn', value: 420_000_000, color: 'text-kapiva-red' },
+  { label: 'Chưa thanh toán', value: 1_847_000_000, color: 'text-mimi-amber' },
+  { label: 'Quá hạn', value: 420_000_000, color: 'text-mimi-red' },
   { label: 'Đã ứng vốn', value: 800_000_000, color: 'text-primary' },
 ];
 
@@ -228,7 +228,7 @@ export default function InvoicesPage() {
                 </div>
 
                 {(selectedInvoice.status === 'pending' || selectedInvoice.status === 'overdue') && (
-                  <div className="bg-gradient-to-br from-primary/5 to-kapiva-green/5 border border-primary/15 rounded-2xl p-5">
+                  <div className="bg-gradient-to-br from-primary/5 to-mimi-green/5 border border-primary/15 rounded-2xl p-5">
                     <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">💡 Ứng vốn hóa đơn</p>
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       <div className="flex justify-between">
@@ -241,7 +241,7 @@ export default function InvoicesPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Tiền về trong</span>
-                        <span className="text-kapiva-green font-semibold">4 giờ</span>
+                        <span className="text-mimi-green font-semibold">4 giờ</span>
                       </div>
                     </div>
                     <motion.button

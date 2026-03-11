@@ -174,16 +174,16 @@
   .text-negative {
     color: hsl(var(--red-500));
   }
-  .text-kapiva-green {
+  .text-mimi-green {
     color: hsl(var(--green-500));
   }
-  .bg-kapiva-green {
+  .bg-mimi-green {
     background-color: hsl(var(--green-500));
   }
-  .text-kapiva-amber {
+  .text-mimi-amber {
     color: hsl(var(--amber-500));
   }
-  .text-kapiva-red {
+  .text-mimi-red {
     color: hsl(var(--red-500));
   }
 }

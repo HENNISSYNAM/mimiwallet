@@ -40,7 +40,7 @@ export default function AdminPage() {
 
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'kapiva2025') {
+    if (password === 'mimi2025') {
       setAuthenticated(true);
     } else {
       setShake(true);
@@ -83,14 +83,14 @@ export default function AdminPage() {
           {[
             { icon: Users, label: 'Leads hôm nay', value: '24', sub: '+8 vs hôm qua', color: 'text-primary' },
             { icon: Users, label: 'Total users', value: '1,247', sub: '', color: 'text-foreground' },
-            { icon: CreditCard, label: 'Active loans', value: '₫12.4 tỷ', sub: '', color: 'text-kapiva-green' },
-            { icon: DollarSign, label: 'Revenue MTD', value: '₫284M', sub: '', color: 'text-kapiva-amber' },
+            { icon: CreditCard, label: 'Active loans', value: '₫12.4 tỷ', sub: '', color: 'text-mimi-green' },
+            { icon: DollarSign, label: 'Revenue MTD', value: '₫284M', sub: '', color: 'text-mimi-amber' },
           ].map((kpi) => (
             <motion.div key={kpi.label} {...fadeUp(0)} className="card-base p-4">
               <kpi.icon size={16} className="text-muted-foreground mb-2" />
               <p className="text-xs text-muted-foreground">{kpi.label}</p>
               <p className={`font-mono text-xl font-bold ${kpi.color}`}>{kpi.value}</p>
-              {kpi.sub && <p className="text-xs text-kapiva-green">{kpi.sub}</p>}
+              {kpi.sub && <p className="text-xs text-mimi-green">{kpi.sub}</p>}
             </motion.div>
           ))}
         </div>
