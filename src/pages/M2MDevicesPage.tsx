@@ -237,7 +237,7 @@ export default function M2MDevicesPage() {
                       <div className="flex items-center gap-2 mt-1">
                         <div className="w-16 h-1.5 bg-border rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${isLow ? 'bg-destructive' : 'bg-kapiva-green'}`}
+                            className={`h-full rounded-full transition-all ${isLow ? 'bg-destructive' : 'bg-mimi-green'}`}
                             style={{ width: `${Math.min(budgetPct, 100)}%` }}
                           />
                         </div>

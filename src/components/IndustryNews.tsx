@@ -71,7 +71,7 @@ export default function IndustryNews({ industry = 'SME' }: { industry?: string }
       </div>
 
       {error && (
-        <p className="text-sm text-kapiva-red">{error}</p>
+        <p className="text-sm text-mimi-red">{error}</p>
       )}
 
       {loading && news.length === 0 && (
