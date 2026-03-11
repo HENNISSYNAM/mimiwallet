@@ -228,7 +228,7 @@ export default function InvoicesPage() {
                 </div>
 
                 {(selectedInvoice.status === 'pending' || selectedInvoice.status === 'overdue') && (
-                  <div className="bg-gradient-to-br from-primary/5 to-kapiva-green/5 border border-primary/15 rounded-2xl p-5">
+                  <div className="bg-gradient-to-br from-primary/5 to-mimi-green/5 border border-primary/15 rounded-2xl p-5">
                     <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">💡 Ứng vốn hóa đơn</p>
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       <div className="flex justify-between">
