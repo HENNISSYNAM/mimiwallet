@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-wallet-logo.png';
 
 const navLinks = [
-  { label: 'Giải pháp', href: '#solutions' },
-  { label: 'Tính năng', href: '#features' },
-  { label: 'Bảng giá', href: '#pricing' },
+  { labelKey: 'nav.solutions', href: '#solutions' },
+  { labelKey: 'nav.features', href: '#features' },
+  { labelKey: 'nav.pricing', href: '#pricing' },
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+
+  const toggleLang = () => {
+    i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
+  };
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 80);
@@ -38,11 +44,11 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((l) => (
               <a
-                key={l.label}
+                key={l.labelKey}
                 href={l.href}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
               >
-                {l.label}
+                {t(l.labelKey)}
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
               </a>
             ))}
@@ -50,25 +56,41 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-3">
             <button
+              onClick={toggleLang}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-accent"
+              title={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+            >
+              <Globe size={15} />
+              <span className="font-medium">{i18n.language === 'vi' ? 'EN' : 'VI'}</span>
+            </button>
+            <button
               onClick={() => navigate('/login')}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
             >
-              Đăng nhập
+              {t('nav.login')}
             </button>
             <button
               onClick={() => navigate('/register')}
               className="text-sm font-display font-bold bg-primary text-primary-foreground px-5 py-2.5 rounded-lg hover:brightness-110 transition-all hover:-translate-y-0.5"
             >
-              Bắt đầu miễn phí →
+              {t('nav.startFree')}
             </button>
           </div>
 
-          <button
-            className="md:hidden text-foreground"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu size={24} />
-          </button>
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={toggleLang}
+              className="text-muted-foreground hover:text-foreground p-1.5"
+            >
+              <Globe size={20} />
+            </button>
+            <button
+              className="text-foreground"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -88,19 +110,19 @@ export default function Navbar() {
             </button>
             {navLinks.map((l) => (
               <a
-                key={l.label}
+                key={l.labelKey}
                 href={l.href}
                 className="text-2xl font-display font-bold text-foreground"
                 onClick={() => setMobileOpen(false)}
               >
-                {l.label}
+                {t(l.labelKey)}
               </a>
             ))}
             <button
               onClick={() => { setMobileOpen(false); navigate('/register'); }}
               className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-display font-bold text-lg"
             >
-              Bắt đầu miễn phí
+              {t('nav.startFreeMobile')}
             </button>
           </motion.div>
         )}
