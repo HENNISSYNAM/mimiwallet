@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { Loader2, Leaf } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-wallet-logo.png';
 
 export default function Login() {
@@ -12,18 +13,19 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Vui lòng nhập email và mật khẩu');
+      toast.error(t('login.errorEmpty'));
       return;
     }
     setLoading(true);
     const { error } = await login(email, password);
     setLoading(false);
     if (error) {
-      toast.error(error === 'Invalid login credentials' ? 'Email hoặc mật khẩu không đúng' : error);
+      toast.error(error === 'Invalid login credentials' ? t('login.errorInvalid') : error);
     } else {
       navigate('/dashboard');
     }
@@ -31,7 +33,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background */}
       <div className="absolute inset-0 opacity-30">
         <motion.div 
           className="absolute top-20 left-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl"
@@ -60,9 +61,9 @@ export default function Login() {
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
           />
-          <h1 className="font-display font-bold text-2xl text-foreground">Đăng nhập MIMI WALLET</h1>
+          <h1 className="font-display font-bold text-2xl text-foreground">{t('login.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1">
-            <Leaf size={14} className="text-mimi-green" /> Ví xanh cho tương lai bền vững
+            <Leaf size={14} className="text-mimi-green" /> {t('login.tagline')}
           </p>
         </div>
 
@@ -74,17 +75,17 @@ export default function Login() {
           transition={{ delay: 0.3 }}
         >
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">Email</label>
+            <label className="text-sm text-muted-foreground mb-1 block">{t('login.email')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@company.vn"
+              placeholder={t('login.emailPlaceholder')}
               className="w-full bg-accent border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
             />
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">Mật khẩu</label>
+            <label className="text-sm text-muted-foreground mb-1 block">{t('login.password')}</label>
             <input
               type="password"
               value={password}
@@ -101,13 +102,13 @@ export default function Login() {
             whileTap={{ scale: 0.98 }}
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
-            Đăng nhập
+            {t('login.submit')}
           </motion.button>
         </motion.form>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Chưa có tài khoản?{' '}
-          <button onClick={() => navigate('/register')} className="text-primary hover:underline font-medium">Đăng ký miễn phí</button>
+          {t('login.noAccount')}{' '}
+          <button onClick={() => navigate('/register')} className="text-primary hover:underline font-medium">{t('login.register')}</button>
         </p>
       </motion.div>
     </div>

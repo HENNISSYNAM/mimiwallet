@@ -25,10 +25,8 @@ const queryClient = new QueryClient();
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center animate-pulse">
-        <span className="font-display font-extrabold text-primary-foreground text-sm">K</span>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+      <img src="/mimi-favicon.png" alt="MIMI WALLET" className="w-10 h-10 animate-pulse" />
     </div>
   );
 }

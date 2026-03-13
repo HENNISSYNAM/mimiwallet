@@ -333,10 +333,10 @@ export default function Onboarding() {
           {/* Logo */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-[0_2px_12px_hsla(var(--blue-500)/0.3)]">
-              <span className="font-display font-extrabold text-primary-foreground text-sm">K</span>
+              <img src="/mimi-favicon.png" alt="MIMI" className="w-6 h-6" />
             </div>
             <div>
-              <span className="font-display font-bold text-foreground text-lg tracking-tight">KAPIVA</span>
+              <span className="font-display font-bold text-foreground text-lg tracking-tight">MIMI WALLET</span>
               <p className="text-[10px] text-muted-foreground -mt-0.5">Vốn thông minh cho SME</p>
             </div>
           </motion.div>
