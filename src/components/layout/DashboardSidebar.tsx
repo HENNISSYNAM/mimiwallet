@@ -7,24 +7,26 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 import { companyProfile } from '@/lib/mockData';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-wallet-logo.png';
-
-const navItems = [
-  { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
-  { icon: TrendingUp, label: 'Dòng tiền', path: '/dashboard/cashflow' },
-  { icon: FileText, label: 'Hóa đơn', path: '/dashboard/invoices' },
-  { icon: CreditCard, label: 'Vay vốn', path: '/dashboard/loans' },
-  { icon: ShieldCheck, label: 'Credit Score', path: '/dashboard/credit' },
-  { icon: Fingerprint, label: 'Fintech Hub', path: '/dashboard/fintech' },
-  { icon: Cpu, label: 'Thiết bị M2M', path: '/dashboard/m2m' },
-  { icon: BarChart3, label: 'Báo cáo', path: '/dashboard/reports' },
-  { icon: Settings, label: 'Cài đặt', path: '/dashboard/settings' },
-];
 
 export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const navItems = [
+    { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
+    { icon: TrendingUp, label: t('sidebar.cashflow'), path: '/dashboard/cashflow' },
+    { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
+    { icon: CreditCard, label: t('sidebar.loans'), path: '/dashboard/loans' },
+    { icon: ShieldCheck, label: t('sidebar.creditScore'), path: '/dashboard/credit' },
+    { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
+    { icon: Cpu, label: t('sidebar.m2mDevices'), path: '/dashboard/m2m' },
+    { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
+    { icon: Settings, label: t('sidebar.settings'), path: '/dashboard/settings' },
+  ];
 
   return (
     <motion.aside
@@ -37,7 +39,7 @@ export default function DashboardSidebar() {
         {!collapsed && (
           <div className="overflow-hidden">
             <p className="text-sm font-semibold text-foreground truncate">{companyProfile.name.substring(0, 20)}</p>
-            <p className="text-xs text-mimi-green flex items-center gap-1"><Leaf size={10} /> Gói Green ⭐</p>
+            <p className="text-xs text-mimi-green flex items-center gap-1"><Leaf size={10} /> {t('sidebar.greenPlan')}</p>
           </div>
         )}
       </div>
@@ -65,14 +67,14 @@ export default function DashboardSidebar() {
       <div className="border-t border-border p-3 space-y-2">
         <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full">
           <HelpCircle size={18} className="shrink-0" />
-          {!collapsed && <span>Hỗ trợ</span>}
+          {!collapsed && <span>{t('sidebar.support')}</span>}
         </button>
         <button
           onClick={() => { logout(); navigate('/'); }}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full"
         >
           <LogOut size={18} className="shrink-0" />
-          {!collapsed && <span>Đăng xuất</span>}
+          {!collapsed && <span>{t('sidebar.logout')}</span>}
         </button>
       </div>
 

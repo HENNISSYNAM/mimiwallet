@@ -5,6 +5,7 @@ import { formatVND, formatVNDShort } from '@/lib/formatters';
 import { companyProfile, cashFlowData, transactions, miniChartData } from '@/lib/mockData';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
 const stagger = {
@@ -60,20 +61,6 @@ function CreditScoreRing() {
   );
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-card border border-border rounded-xl p-3 shadow-xl text-xs space-y-1">
-      <p className="text-muted-foreground font-medium">{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }}>
-          {p.name === 'income' ? 'Thu' : p.name === 'expense' ? 'Chi' : 'Ròng'}: {formatVNDShort(p.value)}
-        </p>
-      ))}
-    </div>
-  );
-};
-
 const statusColors: Record<string, string> = {
   'Đã thu': 'text-mimi-green',
   'Đã chi': 'text-mimi-red',
@@ -83,19 +70,34 @@ const statusColors: Record<string, string> = {
 export default function DashboardOverview() {
   const now = new Date();
   const navigate = useNavigate();
-  const dateStr = now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+  const { t, i18n } = useTranslation();
+  const dateStr = now.toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-card border border-border rounded-xl p-3 shadow-xl text-xs space-y-1">
+        <p className="text-muted-foreground font-medium">{label}</p>
+        {payload.map((p: any) => (
+          <p key={p.name} style={{ color: p.color }}>
+            {p.name === 'income' ? t('dashboard.income') : p.name === 'expense' ? t('dashboard.expense') : t('dashboard.net')}: {formatVNDShort(p.value)}
+          </p>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       {/* Greeting */}
       <motion.div variants={fadeUp}>
-        <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Xin chào, Anh Minh 👋</h2>
-        <p className="text-sm text-muted-foreground mt-1">{dateStr} · Cập nhật lần cuối: 14:32</p>
+        <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t('dashboard.greeting')}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{dateStr} · {t('dashboard.lastUpdate')}</p>
       </motion.div>
 
       {/* KPI Row */}
       <motion.div variants={stagger} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={Wallet} label="Tổng số dư" value="₫2,847,500,000" sub="+₫124M so với hôm qua">
+        <KPICard icon={Wallet} label={t('dashboard.totalBalance')} value="₫2,847,500,000" sub="+₫124M so với hôm qua">
           <div className="h-10 mt-3 -mx-1">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={miniChartData}>
@@ -110,10 +112,10 @@ export default function DashboardOverview() {
             </ResponsiveContainer>
           </div>
         </KPICard>
-        <KPICard icon={TrendingUp} label="Doanh thu tháng này" value="₫8,320,000,000" sub="83% target ₫10B">
+        <KPICard icon={TrendingUp} label={t('dashboard.monthlyRevenue')} value="₫8,320,000,000" sub="83% target ₫10B">
           <div className="mt-3">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-              <span>Tiến độ</span>
+              <span>{t('dashboard.progress')}</span>
               <span className="font-mono">83%</span>
             </div>
             <div className="w-full bg-accent rounded-full h-1.5 overflow-hidden">
@@ -126,15 +128,15 @@ export default function DashboardOverview() {
             </div>
           </div>
         </KPICard>
-        <KPICard icon={FileText} label="Hóa đơn chờ thanh toán" value="₫1,847,000,000" sub="3 hóa đơn sắp đến hạn" subColor="text-mimi-amber">
-          <p className="text-xs text-muted-foreground mt-1">14 hóa đơn đang hoạt động</p>
+        <KPICard icon={FileText} label={t('dashboard.pendingInvoices')} value="₫1,847,000,000" sub={`3 ${t('dashboard.invoicesDue')}`} subColor="text-mimi-amber">
+          <p className="text-xs text-muted-foreground mt-1">14 {t('dashboard.invoicesActive')}</p>
         </KPICard>
-        <KPICard icon={ShieldCheck} label="MIMI Credit Score" value="" sub="Hạng A — ↑ +12 điểm">
+        <KPICard icon={ShieldCheck} label={t('dashboard.creditScoreLabel')} value="" sub={t('dashboard.rankA')}>
           <div className="flex items-center gap-4 -mt-1">
             <CreditScoreRing />
             <div>
               <p className="font-mono text-lg font-bold text-foreground">782</p>
-              <p className="text-xs text-mimi-green font-medium">Rất tốt</p>
+              <p className="text-xs text-mimi-green font-medium">{t('dashboard.veryGood')}</p>
             </div>
           </div>
         </KPICard>
@@ -144,7 +146,7 @@ export default function DashboardOverview() {
       <motion.div variants={stagger} className="grid lg:grid-cols-5 gap-4">
         <motion.div variants={fadeUp} className="lg:col-span-3 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-display font-bold text-foreground text-lg">Dòng tiền</h3>
+            <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.cashFlowTitle')}</h3>
             <div className="flex gap-1 bg-accent/50 rounded-xl p-1">
               {['7N', '30N', '90N', '12T'].map((p, i) => (
                 <button key={p} className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${i === 1 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{p}</button>
@@ -170,18 +172,18 @@ export default function DashboardOverview() {
             <div className="flex-1">
               <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="font-mono font-semibold text-mimi-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
               <button className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
-                Xem giải pháp <ArrowRight size={10} />
+                {t('dashboard.viewSolution')} <ArrowRight size={10} />
               </button>
             </div>
           </div>
         </motion.div>
 
         <motion.div variants={fadeUp} className="lg:col-span-2 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6 space-y-4">
-          <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">🧠 Insights từ AI</h3>
+          <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">{t('dashboard.aiInsights')}</h3>
           {[
-            { icon: AlertTriangle, color: 'text-mimi-red', bgColor: 'bg-mimi-red/5 border-mimi-red/10', badge: '⚠️ Cảnh báo', msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay' },
-            { icon: Lightbulb, color: 'text-primary', bgColor: 'bg-primary/5 border-primary/10', badge: '💡 Cơ hội', msg: 'Doanh thu T3 tăng 23%. Đây là thời điểm tốt để đề xuất tăng hạn mức vay.', cta: 'Xem hạn mức' },
-            { icon: Bell, color: 'text-mimi-amber', bgColor: 'bg-mimi-amber/5 border-mimi-amber/10', badge: '🔔 Nhắc nhở', msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở' },
+            { icon: AlertTriangle, color: 'text-mimi-red', bgColor: 'bg-mimi-red/5 border-mimi-red/10', badge: t('dashboard.warning'), msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay' },
+            { icon: Lightbulb, color: 'text-primary', bgColor: 'bg-primary/5 border-primary/10', badge: t('dashboard.opportunity'), msg: 'Doanh thu T3 tăng 23%. Đây là thời điểm tốt để đề xuất tăng hạn mức vay.', cta: 'Xem hạn mức' },
+            { icon: Bell, color: 'text-mimi-amber', bgColor: 'bg-mimi-amber/5 border-mimi-amber/10', badge: t('dashboard.reminder'), msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở' },
           ].map((insight, i) => (
             <div key={i} className={`${insight.bgColor} border rounded-xl p-4 transition-all hover:shadow-sm`}>
               <p className="text-xs font-semibold mb-1.5"><span className={insight.color}>{insight.badge}</span></p>
@@ -198,32 +200,32 @@ export default function DashboardOverview() {
       <motion.div variants={stagger} className="grid lg:grid-cols-5 gap-4">
         <motion.div variants={fadeUp} className="lg:col-span-3 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-display font-bold text-foreground text-lg">Giao dịch gần đây</h3>
+            <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.recentTx')}</h3>
             <button onClick={() => {}} className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
-              Xem tất cả <ArrowRight size={10} />
+              {t('dashboard.viewAll')} <ArrowRight size={10} />
             </button>
           </div>
           <div className="space-y-1">
-            {transactions.slice(0, 8).map((t, i) => (
+            {transactions.slice(0, 8).map((tx, i) => (
               <motion.div
-                key={t.id}
+                key={tx.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + i * 0.04 }}
                 className="flex items-center gap-4 py-3 px-3 -mx-3 rounded-xl hover:bg-accent/40 transition-colors group cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-sm font-bold text-foreground shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                  {t.merchantName[0]}
+                  {tx.merchantName[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground font-medium truncate">{t.merchantName}</p>
-                  <p className="text-xs text-muted-foreground">{t.category}</p>
+                  <p className="text-sm text-foreground font-medium truncate">{tx.merchantName}</p>
+                  <p className="text-xs text-muted-foreground">{tx.category}</p>
                 </div>
                 <div className="text-right">
-                  <p className={`font-mono text-sm font-semibold ${t.amount > 0 ? 'text-positive' : 'text-negative'}`}>
-                    {t.amount > 0 ? '+' : ''}{formatVNDShort(t.amount)}
+                  <p className={`font-mono text-sm font-semibold ${tx.amount > 0 ? 'text-positive' : 'text-negative'}`}>
+                    {tx.amount > 0 ? '+' : ''}{formatVNDShort(tx.amount)}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">{t.date.slice(5)}</p>
+                  <p className="text-[10px] text-muted-foreground">{tx.date.slice(5)}</p>
                 </div>
               </motion.div>
             ))}
@@ -231,13 +233,13 @@ export default function DashboardOverview() {
         </motion.div>
 
         <motion.div variants={fadeUp} className="lg:col-span-2 space-y-4">
-          <h3 className="font-display font-bold text-foreground text-lg">Thao tác nhanh</h3>
+          <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.quickActions')}</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: '🧾', label: 'Tạo hóa đơn mới', path: '/dashboard/invoices' },
-              { icon: '💰', label: 'Ứng vốn hóa đơn', path: '/dashboard/invoices' },
-              { icon: '📊', label: 'Xem báo cáo', path: '/dashboard/reports' },
-              { icon: '💳', label: 'Đăng ký vay vốn', path: '/dashboard/loans' },
+              { icon: '🧾', label: t('dashboard.createInvoice'), path: '/dashboard/invoices' },
+              { icon: '💰', label: t('dashboard.advanceInvoice'), path: '/dashboard/invoices' },
+              { icon: '📊', label: t('dashboard.viewReports'), path: '/dashboard/reports' },
+              { icon: '💳', label: t('dashboard.applyLoan'), path: '/dashboard/loans' },
             ].map((a) => (
               <motion.button
                 key={a.label}
