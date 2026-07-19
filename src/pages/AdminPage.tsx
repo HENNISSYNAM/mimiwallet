@@ -33,6 +33,20 @@ const mockLeads = [
   { time: '09:30', name: 'Vũ Thị Hoa', company: 'Hoa Sen Retail', industry: 'Bán lẻ', revenue: '₫3.2 tỷ', email: 'hoa@hoasen.vn' },
 ];
 
+function exportLeadsCsv() {
+  const header = ['time', 'name', 'company', 'industry', 'revenue', 'email'];
+  const lines = [header.join(',')].concat(
+    mockLeads.map((l) => [l.time, l.name, l.company, l.industry, l.revenue, l.email].join(','))
+  );
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -99,7 +113,7 @@ export default function AdminPage() {
         <motion.div {...fadeUp(0.1)} className="card-base overflow-hidden">
           <div className="p-4 flex items-center justify-between border-b border-border">
             <h3 className="font-display font-bold text-foreground">Leads gần đây</h3>
-            <button className="text-xs bg-card border border-border px-3 py-1.5 rounded-lg text-muted-foreground flex items-center gap-1">
+            <button onClick={exportLeadsCsv} className="text-xs bg-card border border-border px-3 py-1.5 rounded-lg text-muted-foreground flex items-center gap-1">
               <Download size={12} /> Export CSV
             </button>
           </div>

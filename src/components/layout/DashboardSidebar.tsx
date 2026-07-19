@@ -65,10 +65,13 @@ export default function DashboardSidebar() {
       </nav>
 
       <div className="border-t border-border p-3 space-y-2">
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full">
+        <a
+          href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
+        >
           <HelpCircle size={18} className="shrink-0" />
           {!collapsed && <span>{t('sidebar.support')}</span>}
-        </button>
+        </a>
         <button
           onClick={() => { logout(); navigate('/'); }}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full"

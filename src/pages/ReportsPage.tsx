@@ -7,6 +7,21 @@ import {
   PieChart, Pie, Cell, Legend, Line, ComposedChart,
 } from 'recharts';
 import { Download, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
+
+function exportReportCsv() {
+  const header = ['month', 'revenue', 'expense', 'profit'];
+  const lines = [header.join(',')].concat(
+    revenueExpenseData.map((r: any) => [r.month, r.revenue, r.expense, r.profit].join(','))
+  );
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bao-cao-doanh-thu-chi-phi-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -51,7 +66,7 @@ export default function ReportsPage() {
               </button>
             ))}
           </div>
-          <button className="bg-card/60 border border-border/60 px-3 py-1.5 rounded-xl text-xs text-muted-foreground flex items-center gap-1.5 hover:border-primary/20 transition-all">
+          <button onClick={exportReportCsv} className="bg-card/60 border border-border/60 px-3 py-1.5 rounded-xl text-xs text-muted-foreground flex items-center gap-1.5 hover:border-primary/20 transition-all">
             <Download size={12} /> Export
           </button>
         </div>
@@ -143,7 +158,10 @@ export default function ReportsPage() {
             </div>
           ))}
         </div>
-        <button className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+        <button
+          onClick={() => toast('Báo cáo chi tiết đang được phát triển, sẽ ra mắt sớm')}
+          className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
+        >
           Xem báo cáo đầy đủ <ArrowRight size={10} />
         </button>
       </motion.div>

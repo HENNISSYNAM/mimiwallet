@@ -1,12 +1,16 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { companyProfile } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+
+type NotificationPrefs = { invoice_due: boolean; disbursement: boolean; cashflow: boolean };
+const DEFAULT_PREFS: NotificationPrefs = { invoice_due: true, disbursement: true, cashflow: false };
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -154,11 +158,150 @@ function SubscriptionSection() {
   );
 }
 
+function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    if (password.length < 6) {
+      toast.error('Mật khẩu cần tối thiểu 6 ký tự');
+      return;
+    }
+    if (password !== confirm) {
+      toast.error('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success('Đã đổi mật khẩu thành công');
+    setPassword('');
+    setConfirm('');
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-display font-bold text-foreground">Đổi mật khẩu</h3>
+              <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Mật khẩu mới</label>
+                <input
+                  type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Xác nhận mật khẩu</label>
+                <input
+                  type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary/50"
+                />
+              </div>
+              <button
+                onClick={handleSubmit} disabled={saving}
+                className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {saving && <Loader2 size={14} className="animate-spin" />} Xác nhận đổi mật khẩu
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function NotificationToggles() {
+  const session = useAuthStore((s) => s.session);
+  const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session) return;
+    supabase
+      .from('profiles')
+      .select('notification_prefs')
+      .eq('user_id', session.user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.notification_prefs) setPrefs({ ...DEFAULT_PREFS, ...(data.notification_prefs as Partial<NotificationPrefs>) });
+        setLoading(false);
+      });
+  }, [session]);
+
+  const toggle = async (key: keyof NotificationPrefs) => {
+    if (!session) return;
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ notification_prefs: next })
+      .eq('user_id', session.user.id);
+    if (error) {
+      setPrefs(prefs);
+      toast.error('Không lưu được cài đặt thông báo');
+    }
+  };
+
+  const { t } = useTranslation();
+  const items: { key: keyof NotificationPrefs; label: string }[] = [
+    { key: 'invoice_due', label: t('settings.notifInvoiceDue') },
+    { key: 'disbursement', label: t('settings.notifDisbursement') },
+    { key: 'cashflow', label: t('settings.notifCashflow') },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {items.map((n) => (
+        <div key={n.key} className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">{n.label}</span>
+          <button
+            disabled={loading}
+            onClick={() => toggle(n.key)}
+            className={`w-10 h-6 rounded-full relative transition-colors disabled:opacity-50 ${prefs[n.key] ? 'bg-primary' : 'bg-accent'}`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-primary-foreground absolute top-1 transition-all ${prefs[n.key] ? 'right-1' : 'left-1'}`} />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  const securityItems = [
+    { label: t('settings.changePassword'), onClick: () => setShowPasswordModal(true) },
+    { label: t('settings.twoFactor'), onClick: () => toast('Tính năng xác thực 2 lớp đang được phát triển, sẽ ra mắt sớm') },
+    { label: t('settings.manageDevices'), onClick: () => toast('Tính năng quản lý thiết bị đang được phát triển, sẽ ra mắt sớm') },
+  ];
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6 max-w-2xl">
@@ -185,27 +328,18 @@ export default function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection icon={Bell} title={t('settings.notifications')}>
-        <div className="space-y-4">
-          {[
-            { label: t('settings.notifInvoiceDue'), checked: true },
-            { label: t('settings.notifDisbursement'), checked: true },
-            { label: t('settings.notifCashflow'), checked: false },
-          ].map((n) => (
-            <div key={n.label} className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{n.label}</span>
-              <div className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors ${n.checked ? 'bg-primary' : 'bg-accent'}`}>
-                <div className={`w-4 h-4 rounded-full bg-primary-foreground absolute top-1 transition-all ${n.checked ? 'right-1' : 'left-1'}`} />
-              </div>
-            </div>
-          ))}
-        </div>
+        <NotificationToggles />
       </SettingsSection>
 
       <SettingsSection icon={Shield} title={t('settings.securityTitle')}>
         <div className="space-y-1">
-          {[t('settings.changePassword'), t('settings.twoFactor'), t('settings.manageDevices')].map((item) => (
-            <button key={item} className="w-full flex items-center justify-between py-3 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {item}
+          {securityItems.map((item) => (
+            <button
+              key={item.label}
+              onClick={item.onClick}
+              className="w-full flex items-center justify-between py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {item.label}
               <ChevronRight size={14} />
             </button>
           ))}
@@ -220,6 +354,8 @@ export default function SettingsPage() {
           <LogOut size={14} /> {t('sidebar.logout')}
         </button>
       </motion.div>
+
+      <ChangePasswordModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
     </motion.div>
   );
 }

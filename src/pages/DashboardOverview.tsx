@@ -6,6 +6,8 @@ import { companyProfile, cashFlowData, transactions, miniChartData } from '@/lib
 import { useCountUp } from '@/hooks/useCountUp';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
 const stagger = {
@@ -71,6 +73,7 @@ export default function DashboardOverview() {
   const now = new Date();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const [selectedRange, setSelectedRange] = useState(1);
   const dateStr = now.toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -149,7 +152,13 @@ export default function DashboardOverview() {
             <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.cashFlowTitle')}</h3>
             <div className="flex gap-1 bg-accent/50 rounded-xl p-1">
               {['7N', '30N', '90N', '12T'].map((p, i) => (
-                <button key={p} className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${i === 1 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{p}</button>
+                <button
+                  key={p}
+                  onClick={() => setSelectedRange(i)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${i === selectedRange ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  {p}
+                </button>
               ))}
             </div>
           </div>
@@ -171,7 +180,7 @@ export default function DashboardOverview() {
             <span className="text-base mt-0.5">🧠</span>
             <div className="flex-1">
               <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="font-mono font-semibold text-mimi-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
-              <button className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
+              <button onClick={() => navigate('/dashboard/loans')} className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
                 {t('dashboard.viewSolution')} <ArrowRight size={10} />
               </button>
             </div>
@@ -181,14 +190,14 @@ export default function DashboardOverview() {
         <motion.div variants={fadeUp} className="lg:col-span-2 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6 space-y-4">
           <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">{t('dashboard.aiInsights')}</h3>
           {[
-            { icon: AlertTriangle, color: 'text-mimi-red', bgColor: 'bg-mimi-red/5 border-mimi-red/10', badge: t('dashboard.warning'), msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay' },
-            { icon: Lightbulb, color: 'text-primary', bgColor: 'bg-primary/5 border-primary/10', badge: t('dashboard.opportunity'), msg: 'Doanh thu T3 tăng 23%. Đây là thời điểm tốt để đề xuất tăng hạn mức vay.', cta: 'Xem hạn mức' },
-            { icon: Bell, color: 'text-mimi-amber', bgColor: 'bg-mimi-amber/5 border-mimi-amber/10', badge: t('dashboard.reminder'), msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở' },
+            { icon: AlertTriangle, color: 'text-mimi-red', bgColor: 'bg-mimi-red/5 border-mimi-red/10', badge: t('dashboard.warning'), msg: 'Tuần tới bạn có 3 khoản chi tổng ₫420M. Số dư hiện tại có thể không đủ.', cta: 'Ứng vốn ngay', action: () => navigate('/dashboard/invoices') },
+            { icon: Lightbulb, color: 'text-primary', bgColor: 'bg-primary/5 border-primary/10', badge: t('dashboard.opportunity'), msg: 'Doanh thu T3 tăng 23%. Đây là thời điểm tốt để đề xuất tăng hạn mức vay.', cta: 'Xem hạn mức', action: () => navigate('/dashboard/loans') },
+            { icon: Bell, color: 'text-mimi-amber', bgColor: 'bg-mimi-amber/5 border-mimi-amber/10', badge: t('dashboard.reminder'), msg: 'Khách hàng ABC Corp chưa thanh toán hóa đơn #INV-2841 (quá hạn 8 ngày)', cta: 'Gửi nhắc nhở', action: () => toast('Tính năng gửi nhắc nhở tự động đang được phát triển, sẽ ra mắt sớm') },
           ].map((insight, i) => (
             <div key={i} className={`${insight.bgColor} border rounded-xl p-4 transition-all hover:shadow-sm`}>
               <p className="text-xs font-semibold mb-1.5"><span className={insight.color}>{insight.badge}</span></p>
               <p className="text-sm text-muted-foreground leading-relaxed">{insight.msg}</p>
-              <button className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
+              <button onClick={insight.action} className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
                 {insight.cta} <ArrowRight size={10} />
               </button>
             </div>
@@ -201,7 +210,7 @@ export default function DashboardOverview() {
         <motion.div variants={fadeUp} className="lg:col-span-3 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.recentTx')}</h3>
-            <button onClick={() => {}} className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+            <button onClick={() => navigate('/dashboard/reports')} className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
               {t('dashboard.viewAll')} <ArrowRight size={10} />
             </button>
           </div>

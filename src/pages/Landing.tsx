@@ -537,6 +537,7 @@ export default function Landing() {
               Bắt đầu miễn phí — 5 phút →
             </motion.button>
             <motion.button
+              onClick={() => navigate('/dashboard')}
               className="border border-border text-foreground px-8 py-4 rounded-xl font-body text-sm hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center gap-2"
               whileHover={{ y: -2 }}
             >

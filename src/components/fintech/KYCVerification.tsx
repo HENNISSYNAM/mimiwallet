@@ -23,6 +23,8 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
   const [faceScanProgress, setFaceScanProgress] = useState(0);
   const [idFrontUploaded, setIdFrontUploaded] = useState(false);
   const [idBackUploaded, setIdBackUploaded] = useState(false);
+  const [uploadingSide, setUploadingSide] = useState<'front' | 'back' | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [selfieStatus, setSelfieStatus] = useState<KYCStatus>('pending');
   const [livenessChecks, setLivenessChecks] = useState({
     blink: false,
@@ -33,80 +35,61 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
   const [saving, setSaving] = useState(false);
   const [kycRecord, setKycRecord] = useState<any>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Load existing KYC status on mount
-  useEffect(() => {
-    if (!session) return;
-    const loadKYC = async () => {
-      try {
-        const { data } = await supabase.functions.invoke('kyc-verify', {
-          body: {},
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        // Use URL params workaround - call with action
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kyc-verify?action=status`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            },
-            body: JSON.stringify({}),
-          }
-        );
-        const result = await res.json();
-        if (result.data) {
-          setKycRecord(result.data);
-          // Restore state from backend
-          if (result.data.id_front_url) setIdFrontUploaded(true);
-          if (result.data.id_back_url) setIdBackUploaded(true);
-          if (result.data.face_match_score) setSelfieStatus('success');
-          if (result.data.liveness_passed) {
-            setLivenessChecks({ blink: true, turnLeft: true, turnRight: true, smile: true });
-          }
-          if (result.data.otp_verified) {
-            setOtpCode(['1', '2', '3', '4', '5', '6']);
-            setOtpSent(true);
-          }
-        }
-      } catch (e) {
-        // No existing KYC - that's fine
-      }
-    };
-    loadKYC();
-  }, [session]);
+  const fileInputRefs = { front: useRef<HTMLInputElement | null>(null), back: useRef<HTMLInputElement | null>(null) };
 
   const callKYC = async (action: string, body: Record<string, unknown> = {}) => {
     if (!session) {
       toast.error('Vui lòng đăng nhập');
       return null;
     }
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kyc-verify?action=${action}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify(body),
-        }
-      );
-      const result = await res.json();
-      if (result.error) {
-        toast.error(result.error);
-        return null;
-      }
-      return result.data;
-    } catch (e) {
-      toast.error('Lỗi kết nối server');
+    const { data, error } = await supabase.functions.invoke(`kyc-verify?action=${action}`, { body });
+    if (error) {
+      toast.error(error.message || 'Lỗi kết nối server');
       return null;
     }
+    if (data?.error) {
+      toast.error(data.error);
+      return null;
+    }
+    return data?.data;
   };
+
+  // Resolve the caller's own company (needed to build the RLS-scoped storage path).
+  useEffect(() => {
+    if (!session) return;
+    const loadCompany = async () => {
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .limit(1);
+      if (companies && companies.length > 0) setCompanyId(companies[0].id);
+    };
+    loadCompany();
+  }, [session]);
+
+  // Load existing KYC status on mount
+  useEffect(() => {
+    if (!session) return;
+    const loadKYC = async () => {
+      const result = await callKYC('status');
+      if (result) {
+        setKycRecord(result);
+        // Restore state from backend
+        if (result.id_front_url) setIdFrontUploaded(true);
+        if (result.id_back_url) setIdBackUploaded(true);
+        if (result.face_match_score) setSelfieStatus('success');
+        if (result.liveness_passed) {
+          setLivenessChecks({ blink: true, turnLeft: true, turnRight: true, smile: true });
+        }
+        if (result.otp_verified) {
+          setOtpCode(['1', '2', '3', '4', '5', '6']);
+          setOtpSent(true);
+        }
+      }
+    };
+    loadKYC();
+  }, [session]);
 
   const kycSteps: KYCStep[] = [
     { id: 'id-upload', label: 'Tải CCCD/CMND', icon: <Upload size={16} />, status: idFrontUploaded && idBackUploaded ? 'success' : 'pending' },
@@ -136,22 +119,51 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
     }
   };
 
-  const simulateIDUpload = async (side: 'front' | 'back') => {
-    if (side === 'front') setIdFrontUploaded(true);
-    else setIdBackUploaded(true);
-
-    // Start KYC record if needed, then save upload
-    if (!kycRecord) {
-      const record = await callKYC('start');
-      if (record) setKycRecord(record);
+  const handleFileUpload = async (side: 'front' | 'back', file: File) => {
+    if (!session || !companyId) {
+      toast.error('Không xác định được doanh nghiệp của bạn');
+      return;
     }
-    
-    const ocrData = side === 'front' 
-      ? { cccd_number: '001234567890', full_name: 'NGUYỄN VĂN A', dob: '01/01/1990' }
-      : { issued_by: 'CỤC CS QLHC VỀ TTXH' };
-    
-    await callKYC('upload-id', { side, ocr_data: ocrData });
-    toast.success(`Đã tải ${side === 'front' ? 'mặt trước' : 'mặt sau'} CCCD`);
+
+    setUploadingSide(side);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const storagePath = `${companyId}/kyc/${side}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('secure-documents')
+        .upload(storagePath, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) {
+        toast.error(`Tải ảnh thất bại: ${uploadError.message}`);
+        return;
+      }
+
+      // Start KYC record if needed, then record the upload
+      if (!kycRecord) {
+        const record = await callKYC('start');
+        if (record) setKycRecord(record);
+      }
+
+      const updated = await callKYC('upload-id', { side, storagePath });
+      if (!updated) return;
+
+      if (side === 'front') setIdFrontUploaded(true);
+      else setIdBackUploaded(true);
+      toast.success(`Đã tải ${side === 'front' ? 'mặt trước' : 'mặt sau'} CCCD`);
+    } finally {
+      setUploadingSide(null);
+    }
+  };
+
+  const triggerFileSelect = (side: 'front' | 'back') => {
+    fileInputRefs[side].current?.click();
+  };
+
+  const onFileInputChange = (side: 'front' | 'back') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) handleFileUpload(side, file);
   };
 
   const startFaceScan = () => {
@@ -258,24 +270,37 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
               <div className="grid grid-cols-2 gap-4">
                 {(['front', 'back'] as const).map(side => {
                   const uploaded = side === 'front' ? idFrontUploaded : idBackUploaded;
+                  const isUploading = uploadingSide === side;
                   return (
                     <motion.div
                       key={side}
                       whileHover={{ y: -2 }}
-                      onClick={() => simulateIDUpload(side)}
+                      onClick={() => !isUploading && triggerFileSelect(side)}
                       className={`relative rounded-2xl p-8 text-center cursor-pointer transition-all ${
                         uploaded
                           ? 'bg-kapiva-green/5 border-2 border-kapiva-green/30'
                           : 'border-2 border-dashed border-border hover:border-primary/40'
                       }`}
                     >
-                      {uploaded ? (
+                      <input
+                        ref={fileInputRefs[side]}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={onFileInputChange(side)}
+                      />
+                      {isUploading ? (
+                        <div>
+                          <Loader2 size={32} className="text-primary mx-auto mb-3 animate-spin" />
+                          <p className="text-sm text-muted-foreground">Đang tải lên...</p>
+                        </div>
+                      ) : uploaded ? (
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
                           <div className="w-14 h-14 rounded-2xl bg-kapiva-green/15 flex items-center justify-center mx-auto mb-3">
                             <Check size={24} className="text-kapiva-green" />
                           </div>
                           <p className="text-sm text-kapiva-green font-medium">Đã tải lên ✓</p>
-                          <p className="text-xs text-muted-foreground mt-1">OCR đang xử lý...</p>
+                          <p className="text-xs text-muted-foreground mt-1">Lưu trữ mã hóa an toàn</p>
                         </motion.div>
                       ) : (
                         <>
@@ -283,7 +308,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                           <p className="text-sm text-foreground font-medium">
                             {side === 'front' ? 'CCCD Mặt trước' : 'CCCD Mặt sau'}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">Chụp hoặc tải lên</p>
+                          <p className="text-xs text-muted-foreground mt-1">Chọn ảnh để tải lên</p>
                         </>
                       )}
                     </motion.div>
@@ -297,20 +322,10 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-card border border-border rounded-xl p-4"
                 >
-                  <p className="text-sm font-medium text-foreground mb-3">📋 Thông tin OCR trích xuất</p>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    {[
-                      { label: 'Số CCCD', value: '001234567890' },
-                      { label: 'Họ tên', value: 'NGUYỄN VĂN A' },
-                      { label: 'Ngày sinh', value: '01/01/1990' },
-                      { label: 'Nơi cấp', value: 'CỤC CS QLHC VỀ TTXH' },
-                    ].map(item => (
-                      <div key={item.label}>
-                        <p className="text-xs text-muted-foreground">{item.label}</p>
-                        <p className="font-mono text-foreground">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm font-medium text-foreground mb-1">📋 Tài liệu đã tải lên</p>
+                  <p className="text-xs text-muted-foreground">
+                    Ảnh CCCD đã được lưu trữ mã hóa. Dữ liệu OCR (số CCCD, họ tên, ngày sinh) sẽ hiển thị tại đây sau khi xử lý.
+                  </p>
                 </motion.div>
               )}
             </div>

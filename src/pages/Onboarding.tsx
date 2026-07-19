@@ -662,7 +662,12 @@ export default function Onboarding() {
                               <div className="w-9 h-9 rounded-lg bg-accent/50 flex items-center justify-center text-sm font-bold text-foreground">{s[0]}</div>
                               <span className="text-sm text-foreground font-medium">{s}</span>
                             </div>
-                            <button className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all">Kết nối</button>
+                            <button
+                              onClick={() => toast(`Kết nối ${s} đang được phát triển, sẽ ra mắt sớm`)}
+                              className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all"
+                            >
+                              Kết nối
+                            </button>
                           </div>
                         ))}
                         <div className="border-2 border-dashed border-border/40 rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer group">
@@ -680,7 +685,12 @@ export default function Onboarding() {
                               <div className="w-9 h-9 rounded-lg bg-accent/50 flex items-center justify-center text-sm font-bold text-foreground">{s[0]}</div>
                               <span className="text-sm text-foreground font-medium">{s}</span>
                             </div>
-                            <button className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all">Kết nối</button>
+                            <button
+                              onClick={() => toast(`Kết nối ${s} đang được phát triển, sẽ ra mắt sớm`)}
+                              className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all"
+                            >
+                              Kết nối
+                            </button>
                           </div>
                         ))}
                       </div>

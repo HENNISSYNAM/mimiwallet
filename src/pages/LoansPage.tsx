@@ -1,8 +1,33 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { loans } from '@/lib/mockData';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthStore } from '@/store/useAuthStore';
 import { formatVND, formatDateShort } from '@/lib/formatters';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface LoanApplication {
+  id: string;
+  amount: number;
+  loan_type: string;
+  status: string;
+  applied_at: string;
+  disbursed_at: string | null;
+  due_date: string | null;
+  amount_repaid: number | null;
+}
+
+const LOAN_TYPE_LABELS = ['Vốn lưu động', 'Ứng hóa đơn', 'Mở rộng KD'];
+
+function progressAndStatus(l: LoanApplication): { progress: number; status: 'on_track' | 'completed' | 'due_soon' | 'pending' } {
+  if (l.status === 'pending' || l.status === 'approved') return { progress: 0, status: 'pending' };
+  if (l.status === 'completed') return { progress: 100, status: 'completed' };
+  const repaid = l.amount_repaid ?? 0;
+  const progress = l.amount > 0 ? Math.min(100, Math.round((repaid / l.amount) * 100)) : 0;
+  const dueSoon = l.due_date ? new Date(l.due_date).getTime() - Date.now() < 7 * 86400000 : false;
+  return { progress, status: dueSoon ? 'due_soon' : 'on_track' };
+}
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -14,6 +39,7 @@ const statusLabel: Record<string, { text: string; cls: string; dot: string }> = 
   on_track: { text: 'Đúng hạn', cls: 'text-mimi-green', dot: 'bg-mimi-green' },
   completed: { text: 'Hoàn thành', cls: 'text-mimi-green', dot: 'bg-mimi-green' },
   due_soon: { text: 'Sắp đến hạn', cls: 'text-mimi-amber', dot: 'bg-mimi-amber' },
+  pending: { text: 'Chờ duyệt', cls: 'text-muted-foreground', dot: 'bg-muted-foreground' },
 };
 
 const scoreFactors = [
@@ -24,12 +50,62 @@ const scoreFactors = [
 ];
 
 export default function LoansPage() {
+  const session = useAuthStore((s) => s.session);
+  const navigate = useNavigate();
   const [loanAmount, setLoanAmount] = useState(1_000_000_000);
   const [loanTerm, setLoanTerm] = useState(90);
   const [loanType, setLoanType] = useState(0);
+  const [loanList, setLoanList] = useState<LoanApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const fee = loanAmount * 0.02;
   const received = loanAmount - fee;
+
+  const loadLoans = async () => {
+    if (!session) return;
+    setLoading(true);
+    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).limit(1);
+    const companyId = companies?.[0]?.id;
+    if (companyId) {
+      const { data } = await supabase
+        .from('loan_applications')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('applied_at', { ascending: false });
+      setLoanList((data as LoanApplication[]) ?? []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadLoans(); }, [session]);
+
+  const handleApply = async () => {
+    if (!session) return;
+    setSubmitting(true);
+    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).limit(1);
+    const companyId = companies?.[0]?.id;
+    if (!companyId) {
+      toast.error('Không tìm thấy doanh nghiệp của bạn');
+      setSubmitting(false);
+      return;
+    }
+    const { error } = await supabase.from('loan_applications').insert({
+      company_id: companyId,
+      amount: loanAmount,
+      term_days: loanTerm,
+      loan_type: LOAN_TYPE_LABELS[loanType],
+      status: 'pending',
+      due_date: new Date(Date.now() + loanTerm * 86400000).toISOString().slice(0, 10),
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(`Đăng ký vay thất bại: ${error.message}`);
+      return;
+    }
+    toast.success('Đã gửi yêu cầu vay, đang chờ duyệt');
+    loadLoans();
+  };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
@@ -86,7 +162,7 @@ export default function LoansPage() {
               </div>
             ))}
           </div>
-          <button className="mt-5 text-xs text-primary hover:underline font-medium flex items-center gap-1">
+          <button onClick={() => navigate('/dashboard/credit')} className="mt-5 text-xs text-primary hover:underline font-medium flex items-center gap-1">
             3 cách để tăng điểm ngay <ArrowRight size={10} />
           </button>
         </motion.div>
@@ -172,9 +248,11 @@ export default function LoansPage() {
             <motion.button
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-[0_4px_16px_hsla(var(--blue-500)/0.25)] mt-6"
+              onClick={handleApply}
+              disabled={submitting}
+              className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-[0_4px_16px_hsla(var(--blue-500)/0.25)] mt-6 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              Đăng ký vay ngay →
+              {submitting && <Loader2 size={14} className="animate-spin" />} Đăng ký vay ngay →
             </motion.button>
           </div>
         </div>
@@ -183,19 +261,31 @@ export default function LoansPage() {
       {/* Active Loans */}
       <motion.div variants={fadeUp} className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl overflow-hidden">
         <div className="p-6 border-b border-border/30">
-          <h3 className="font-display font-bold text-foreground text-lg">Khoản vay đang hoạt động ({loans.length})</h3>
+          <h3 className="font-display font-bold text-foreground text-lg">Khoản vay đang hoạt động ({loanList.length})</h3>
         </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={20} className="animate-spin text-primary" />
+          </div>
+        ) : loanList.length === 0 ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-sm text-foreground font-medium">Chưa có khoản vay nào</p>
+            <p className="text-xs text-muted-foreground mt-1">Dùng công cụ tính toán ở trên để đăng ký khoản vay đầu tiên.</p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/30">
-                {['Mã vay', 'Số tiền', 'Loại', 'Giải ngân', 'Đến hạn', 'Tiến độ', 'Trạng thái'].map((h) => (
+                {['Loại', 'Số tiền', 'Ngày đăng ký', 'Đến hạn', 'Tiến độ trả nợ', 'Trạng thái'].map((h) => (
                   <th key={h} className="text-left text-xs text-muted-foreground/70 font-medium px-5 py-4 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {loans.map((l, i) => (
+              {loanList.map((l, i) => {
+                const { progress, status } = progressAndStatus(l);
+                return (
                 <motion.tr
                   key={l.id}
                   initial={{ opacity: 0 }}
@@ -203,38 +293,39 @@ export default function LoansPage() {
                   transition={{ delay: i * 0.05 }}
                   className="border-b border-border/20 last:border-0 hover:bg-accent/30 transition-colors"
                 >
-                  <td className="px-5 py-4 font-mono text-foreground font-medium">{l.code}</td>
+                  <td className="px-5 py-4 text-foreground font-medium">{l.loan_type}</td>
                   <td className="px-5 py-4 font-mono text-foreground">{formatVND(l.amount)}</td>
-                  <td className="px-5 py-4 text-muted-foreground">{l.type}</td>
-                  <td className="px-5 py-4 text-muted-foreground">{formatDateShort(l.disbursedDate)}</td>
-                  <td className="px-5 py-4 text-muted-foreground">{formatDateShort(l.dueDate)}</td>
+                  <td className="px-5 py-4 text-muted-foreground">{formatDateShort(l.applied_at)}</td>
+                  <td className="px-5 py-4 text-muted-foreground">{l.due_date ? formatDateShort(l.due_date) : '—'}</td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-24 bg-accent rounded-full h-2 overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${l.progress}%` }}
+                          animate={{ width: `${progress}%` }}
                           transition={{ duration: 1, delay: 0.3 + i * 0.1, ease: [0.4, 0, 0.2, 1] as const }}
                           className="h-2 rounded-full"
                           style={{
-                            background: l.progress === 100 ? 'hsl(var(--green-500))' : 'hsl(var(--blue-500))',
+                            background: progress === 100 ? 'hsl(var(--green-500))' : 'hsl(var(--blue-500))',
                           }}
                         />
                       </div>
-                      <span className="text-xs font-mono text-muted-foreground w-8">{l.progress}%</span>
+                      <span className="text-xs font-mono text-muted-foreground w-8">{progress}%</span>
                     </div>
                   </td>
                   <td className="px-5 py-4">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${statusLabel[l.status].cls}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusLabel[l.status].dot}`} />
-                      {statusLabel[l.status].text}
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${statusLabel[status].cls}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusLabel[status].dot}`} />
+                      {statusLabel[status].text}
                     </span>
                   </td>
                 </motion.tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
+        )}
       </motion.div>
     </motion.div>
   );

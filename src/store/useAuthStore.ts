@@ -30,7 +30,27 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     });
     // Then get current session
-    const { data: { session } } = await supabase.auth.getSession();
+    let { data: { session } } = await supabase.auth.getSession();
+
+    // Demo mode: if no session and demo credentials are configured, sign in
+    // silently so the login form never has to be shown. No-op (and no
+    // regression to normal auth) unless both env vars are set.
+    if (!session) {
+      const demoEmail = import.meta.env.VITE_DEMO_EMAIL;
+      const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
+      if (demoEmail && demoPassword) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: demoEmail,
+          password: demoPassword,
+        });
+        if (error) {
+          console.warn('Demo auto-login failed:', error.message);
+        } else {
+          session = data.session;
+        }
+      }
+    }
+
     set({
       isAuthenticated: !!session,
       user: session?.user ?? null,

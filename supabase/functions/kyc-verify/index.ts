@@ -1,10 +1,22 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptJson, encryptJson, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+function getPqcKeys() {
+  const publicKey = Deno.env.get("PQC_KYC_PUBLIC_KEY");
+  const privateKey = Deno.env.get("PQC_KYC_PRIVATE_KEY");
+  if (!publicKey || !privateKey) {
+    throw new Error(
+      "PQC_KYC_PUBLIC_KEY/PQC_KYC_PRIVATE_KEY not configured. Run scripts/generate-pqc-keypair.ts and set them via `supabase secrets set`."
+    );
+  }
+  return { publicKey, privateKey };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -80,26 +92,43 @@ Deno.serve(async (req) => {
       }
 
       case "upload-id": {
-        const { side, ocr_data } = body;
+        const { side, storagePath, ocr_data } = body;
+        if (!storagePath) {
+          return new Response(JSON.stringify({ error: "storagePath required (upload the file to secure-documents first)" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         const updateData: Record<string, unknown> = {};
-        
+
         if (side === "front") {
-          updateData.id_front_url = "mock://cccd-front-uploaded";
+          updateData.id_front_url = storagePath;
         } else {
-          updateData.id_back_url = "mock://cccd-back-uploaded";
+          updateData.id_back_url = storagePath;
         }
 
         if (ocr_data) {
-          // Get existing ocr_data and merge
+          const { publicKey, privateKey } = getPqcKeys();
+
+          // Get existing encrypted ocr_data and merge before re-encrypting
           const { data: existing } = await supabase
             .from("kyc_verifications")
-            .select("ocr_data")
+            .select("ocr_data_encrypted")
             .eq("company_id", company.id)
             .order("created_at", { ascending: false })
             .limit(1)
             .single();
 
-          updateData.ocr_data = { ...(existing?.ocr_data as Record<string, unknown> || {}), ...ocr_data };
+          const existingBlob = existing?.ocr_data_encrypted as EncryptedBlob | null;
+          const existingOcrData = existingBlob
+            ? await decryptJson<Record<string, unknown>>(existingBlob, privateKey)
+            : {};
+
+          updateData.ocr_data_encrypted = await encryptJson(
+            { ...existingOcrData, ...ocr_data },
+            publicKey
+          );
         }
 
         updateData.status = "id_uploaded";
@@ -182,7 +211,16 @@ Deno.serve(async (req) => {
           .limit(1)
           .single();
 
-        result = kyc;
+        if (kyc?.ocr_data_encrypted) {
+          const { privateKey } = getPqcKeys();
+          const ocr_data = await decryptJson<Record<string, unknown>>(
+            kyc.ocr_data_encrypted as EncryptedBlob,
+            privateKey
+          );
+          result = { ...kyc, ocr_data };
+        } else {
+          result = kyc;
+        }
         break;
       }
 

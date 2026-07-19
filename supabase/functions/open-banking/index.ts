@@ -57,7 +57,9 @@ function generateMockTransactions(bankCode: string, count: number = 20) {
     
     transactions.push({
       id: crypto.randomUUID(),
-      type: isCredit ? "credit" : "debit",
+      // Must match the transactions table's CHECK constraint (income|expense|loan)
+      // so this data is usable by real feature engineering (credit-scoring function).
+      type: isCredit ? "income" : "expense",
       amount: isCredit ? amount : -amount,
       category: categories[Math.floor(Math.random() * categories.length)],
       merchant_name: merchants[Math.floor(Math.random() * merchants.length)],

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Smartphone, QrCode, Check, ArrowRight, Shield, Globe } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface PaymentMethod {
   id: string;
@@ -12,7 +13,7 @@ interface PaymentMethod {
 }
 
 export default function PaymentMethods() {
-  const [methods] = useState<PaymentMethod[]>([
+  const [methods, setMethods] = useState<PaymentMethod[]>([
     { id: 'vnpay', name: 'VNPay', icon: '🇻🇳', type: 'domestic', status: 'active', description: 'QR Pay, Internet Banking, thẻ ATM nội địa' },
     { id: 'momo', name: 'MoMo', icon: '📱', type: 'domestic', status: 'active', description: 'Ví MoMo, QR code, thanh toán 1 chạm' },
     { id: 'zalopay', name: 'ZaloPay', icon: '💙', type: 'domestic', status: 'inactive', description: 'Ví ZaloPay, QR code, chuyển khoản' },
@@ -87,7 +88,14 @@ export default function PaymentMethods() {
               {method.status === 'active' ? (
                 <Check size={18} className="text-kapiva-green" />
               ) : (
-                <button className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                <button
+                  className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium flex items-center gap-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMethods((prev) => prev.map((m) => (m.id === method.id ? { ...m, status: 'active' } : m)));
+                    toast.success(`Đã kích hoạt ${method.name} (chế độ demo — cần liên kết tài khoản thật để nhận thanh toán)`);
+                  }}
+                >
                   Kích hoạt <ArrowRight size={10} />
                 </button>
               )}

@@ -4,6 +4,7 @@ import { Bell, Search, LayoutDashboard, FileText, CreditCard, BarChart3, Setting
 import { useAuthStore } from '@/store/useAuthStore';
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
+import { toast } from 'sonner';
 
 const mobileNav = [
   { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
@@ -44,9 +45,11 @@ export default function DashboardLayout() {
                 className="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground w-48"
               />
             </div>
-            <button className="relative text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onClick={() => toast('Chưa có thông báo mới')}
+              className="relative text-muted-foreground hover:text-foreground transition-colors"
+            >
               <Bell size={20} />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full border-2 border-secondary" />
             </button>
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
               <span className="text-xs font-bold text-primary-foreground">AM</span>
