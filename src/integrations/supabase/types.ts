@@ -481,6 +481,38 @@ export type Database = {
           },
         ]
       }
+      learning_progress: {
+        Row: {
+          company_id: string
+          completed_at: string
+          id: string
+          lesson_id: string
+          quiz_score: number | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string
+          id?: string
+          lesson_id: string
+          quiz_score?: number | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string
+          id?: string
+          lesson_id?: string
+          quiz_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       m2m_transactions: {
         Row: {
           amount: number

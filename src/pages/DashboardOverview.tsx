@@ -246,9 +246,9 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { icon: '🧾', label: t('dashboard.createInvoice'), path: '/dashboard/invoices' },
-              { icon: '💰', label: t('dashboard.advanceInvoice'), path: '/dashboard/invoices' },
-              { icon: '📊', label: t('dashboard.viewReports'), path: '/dashboard/reports' },
               { icon: '💳', label: t('dashboard.applyLoan'), path: '/dashboard/loans' },
+              { icon: '📊', label: t('dashboard.viewReports'), path: '/dashboard/reports' },
+              { icon: '🎓', label: 'Học Fintech', path: '/dashboard/learn' },
             ].map((a) => (
               <motion.button
                 key={a.label}

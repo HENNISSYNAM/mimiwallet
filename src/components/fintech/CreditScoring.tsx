@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, BarChart3, Clock, FileText, Wallet, Loader2, Zap, Cpu } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, BarChart3, Clock, FileText, Wallet, Loader2, Zap, Cpu, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { formatVNDShort } from '@/lib/formatters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -115,6 +116,7 @@ function RiskFactor({ label, value, level }: { label: string; value: number; lev
 
 export default function CreditScoring() {
   const { session } = useAuthStore();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [computing, setComputing] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -397,11 +399,17 @@ export default function CreditScoring() {
             const tip = IMPROVEMENT_TIPS[f.factor_name] ?? { icon: '💡', title: f.factor_name, desc: 'Cải thiện chỉ số này để tăng điểm' };
             const potentialImpact = Math.round((100 - f.normalized_score) * f.weight * 5.5);
             return (
-              <div key={f.factor_name} className="bg-card/50 border border-border/60 rounded-xl p-4">
+              <div key={f.factor_name} className="bg-card/50 border border-border/60 rounded-xl p-4 flex flex-col">
                 <span className="text-2xl">{tip.icon}</span>
                 <h4 className="text-sm font-semibold text-foreground mt-2">{tip.title}</h4>
-                <p className="text-xs text-muted-foreground mt-1">{tip.desc}</p>
-                <span className="inline-block mt-2 text-xs font-mono font-bold text-mimi-green bg-mimi-green/10 px-2 py-0.5 rounded">+{potentialImpact} điểm</span>
+                <p className="text-xs text-muted-foreground mt-1 flex-1">{tip.desc}</p>
+                <span className="inline-block w-fit mt-2 text-xs font-mono font-bold text-mimi-green bg-mimi-green/10 px-2 py-0.5 rounded">+{potentialImpact} điểm</span>
+                <button
+                  onClick={() => navigate(`/dashboard/learn?focus=${f.factor_name}`)}
+                  className="mt-3 text-xs font-semibold text-primary hover:underline flex items-center gap-1 pressable"
+                >
+                  Học ngay <ArrowRight size={12} />
+                </button>
               </div>
             );
           })}

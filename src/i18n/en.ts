@@ -199,6 +199,7 @@ const en = {
     fintechHub: 'Fintech Hub',
     m2mDevices: 'M2M Devices',
     technology: 'Technology',
+    learn: 'Learn Fintech',
     reports: 'Reports',
     settings: 'Settings',
     support: 'Support',

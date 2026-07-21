@@ -199,6 +199,7 @@ const vi = {
     fintechHub: 'Fintech Hub',
     m2mDevices: 'Thiết bị M2M',
     technology: 'Công nghệ',
+    learn: 'Học Fintech',
     reports: 'Báo cáo',
     settings: 'Cài đặt',
     support: 'Hỗ trợ',
