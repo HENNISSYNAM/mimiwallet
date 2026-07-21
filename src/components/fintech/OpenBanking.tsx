@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link2, Shield, Check, Loader2, RefreshCw, Lock, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 
 interface BankAccount {
   type: string;
@@ -48,13 +49,13 @@ export default function OpenBanking() {
     }
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/open-banking?action=${action}`,
+        `${SUPABASE_URL}/functions/v1/open-banking?action=${action}`,
         {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            apikey: SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify(body),
         }

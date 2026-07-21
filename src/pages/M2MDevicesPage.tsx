@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Cpu, Truck, Bot, Radio, Plane, MoreHorizontal, Wallet, Zap, Activity, RefreshCw, X, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatVND } from '@/lib/formatters';
+import { SUPABASE_PROJECT_ID } from '@/lib/env';
 import { useToast } from '@/hooks/use-toast';
 import M2MRuleEngine from '@/components/m2m/M2MRuleEngine';
 
@@ -85,7 +86,7 @@ export default function M2MDevicesPage() {
     setSubmitting(true);
 
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const projectId = SUPABASE_PROJECT_ID;
       const { data: { session } } = await supabase.auth.getSession();
 
       const res = await fetch(
@@ -123,7 +124,7 @@ export default function M2MDevicesPage() {
 
   const topUpDevice = async (deviceId: string, amount: number) => {
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const projectId = SUPABASE_PROJECT_ID;
       const { data: { session } } = await supabase.auth.getSession();
 
       const res = await fetch(

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { DEMO_EMAIL, DEMO_PASSWORD } from '@/lib/env';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -36,12 +37,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     // silently so the login form never has to be shown. No-op (and no
     // regression to normal auth) unless both env vars are set.
     if (!session) {
-      const demoEmail = import.meta.env.VITE_DEMO_EMAIL;
-      const demoPassword = import.meta.env.VITE_DEMO_PASSWORD;
-      if (demoEmail && demoPassword) {
+      if (DEMO_EMAIL && DEMO_PASSWORD) {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: demoEmail,
-          password: demoPassword,
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD,
         });
         if (error) {
           console.warn('Demo auto-login failed:', error.message);

@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Send, Volume2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat`;
+const TTS_URL = `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
 const SUGGESTIONS = [
   'Vì sao điểm tín dụng của tôi như vậy?',
@@ -34,9 +35,9 @@ export default function AIChatWidget() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        apikey: SUPABASE_PUBLISHABLE_KEY,
         // Send the user's session so the AI can read their real business data.
-        Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${session?.access_token ?? SUPABASE_PUBLISHABLE_KEY}`,
       },
       body: JSON.stringify({ messages: allMessages }),
     });
@@ -111,8 +112,8 @@ export default function AIChatWidget() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ text: lastAssistant.content.slice(0, 1000) }),
       });
