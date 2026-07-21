@@ -198,6 +198,7 @@ const en = {
     creditScore: 'Credit Score',
     fintechHub: 'Fintech Hub',
     m2mDevices: 'M2M Devices',
+    technology: 'Technology',
     reports: 'Reports',
     settings: 'Settings',
     support: 'Support',

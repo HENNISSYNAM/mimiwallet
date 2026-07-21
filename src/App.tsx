@@ -18,6 +18,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CreditScoringPage = lazy(() => import("./pages/CreditScoringPage"));
 const FintechPage = lazy(() => import("./pages/FintechPage"));
 const M2MDevicesPage = lazy(() => import("./pages/M2MDevicesPage"));
+const TechnologyPage = lazy(() => import("./pages/TechnologyPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -74,6 +75,7 @@ const App = () => (
                 <Route path="credit" element={<CreditScoringPage />} />
                 <Route path="fintech" element={<FintechPage />} />
                 <Route path="m2m" element={<M2MDevicesPage />} />
+                <Route path="tech" element={<TechnologyPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -31,7 +31,7 @@ function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', 
           <Icon size={16} className="text-primary" />
         </div>
       </div>
-      <p className="font-mono text-2xl font-bold text-foreground tracking-tight">{value}</p>
+      <p className="font-mono text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">{value}</p>
       <p className={`text-xs mt-1.5 ${subColor} font-medium`}>{sub}</p>
       {children}
     </motion.div>
@@ -100,7 +100,7 @@ export default function DashboardOverview() {
 
       {/* KPI Row */}
       <motion.div variants={stagger} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={Wallet} label={t('dashboard.totalBalance')} value="₫2,847,500,000" sub="+₫124M so với hôm qua">
+        <KPICard icon={Wallet} label={t('dashboard.totalBalance')} value="₫2.85 tỷ" sub="+₫124M so với hôm qua">
           <div className="h-10 mt-3 -mx-1">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={miniChartData}>
@@ -115,7 +115,7 @@ export default function DashboardOverview() {
             </ResponsiveContainer>
           </div>
         </KPICard>
-        <KPICard icon={TrendingUp} label={t('dashboard.monthlyRevenue')} value="₫8,320,000,000" sub="83% target ₫10B">
+        <KPICard icon={TrendingUp} label={t('dashboard.monthlyRevenue')} value="₫8.32 tỷ" sub="83% target ₫10 tỷ">
           <div className="mt-3">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
               <span>{t('dashboard.progress')}</span>
@@ -131,7 +131,7 @@ export default function DashboardOverview() {
             </div>
           </div>
         </KPICard>
-        <KPICard icon={FileText} label={t('dashboard.pendingInvoices')} value="₫1,847,000,000" sub={`3 ${t('dashboard.invoicesDue')}`} subColor="text-mimi-amber">
+        <KPICard icon={FileText} label={t('dashboard.pendingInvoices')} value="₫1.85 tỷ" sub={`3 ${t('dashboard.invoicesDue')}`} subColor="text-mimi-amber">
           <p className="text-xs text-muted-foreground mt-1">14 {t('dashboard.invoicesActive')}</p>
         </KPICard>
         <KPICard icon={ShieldCheck} label={t('dashboard.creditScoreLabel')} value="" sub={t('dashboard.rankA')}>

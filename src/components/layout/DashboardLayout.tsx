@@ -1,7 +1,6 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
-import { Bell, Search, LayoutDashboard, FileText, CreditCard, BarChart3, Settings, TrendingUp } from 'lucide-react';
-import { useAuthStore } from '@/store/useAuthStore';
+import { Bell, Search, LayoutDashboard, FileText, ShieldCheck, BarChart3, Sparkles } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
 import { toast } from 'sonner';
@@ -9,9 +8,9 @@ import { toast } from 'sonner';
 const mobileNav = [
   { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
   { icon: FileText, label: 'Hóa đơn', path: '/dashboard/invoices' },
-  { icon: CreditCard, label: 'Vay vốn', path: '/dashboard/loans' },
+  { icon: ShieldCheck, label: 'Điểm', path: '/dashboard/credit' },
   { icon: BarChart3, label: 'Báo cáo', path: '/dashboard/reports' },
-  { icon: Settings, label: 'Cài đặt', path: '/dashboard/settings' },
+  { icon: Sparkles, label: 'Công nghệ', path: '/dashboard/tech' },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -19,11 +18,12 @@ const pageTitles: Record<string, string> = {
   '/dashboard/cashflow': 'Dòng tiền',
   '/dashboard/invoices': 'Hóa đơn',
   '/dashboard/loans': 'Vay vốn',
-  '/dashboard/credit': 'Credit Score',
+  '/dashboard/credit': 'Điểm tín dụng',
   '/dashboard/fintech': 'Fintech Hub',
   '/dashboard/m2m': 'Thiết bị M2M',
   '/dashboard/reports': 'Báo cáo',
   '/dashboard/settings': 'Cài đặt',
+  '/dashboard/tech': 'Công nghệ',
 };
 
 export default function DashboardLayout() {
@@ -35,48 +35,60 @@ export default function DashboardLayout() {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-16 border-b border-border flex items-center justify-between px-4 lg:px-6 bg-secondary/50 backdrop-blur-sm sticky top-0 z-30">
-          <h1 className="font-display font-bold text-lg text-foreground">{title}</h1>
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
+        <header className="h-16 border-b hairline flex items-center justify-between px-4 lg:px-6 glass sticky top-0 z-30 safe-top">
+          <h1 className="font-display font-bold text-[19px] text-foreground tracking-tight">{title}</h1>
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 bg-accent rounded-xl px-3 py-2">
               <Search size={14} className="text-muted-foreground" />
               <input
                 placeholder="Tìm hóa đơn, giao dịch..."
-                className="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground w-48"
+                className="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground w-44"
               />
             </div>
             <button
               onClick={() => toast('Chưa có thông báo mới')}
-              className="relative text-muted-foreground hover:text-foreground transition-colors"
+              className="md:hidden w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
+              aria-label="Tìm kiếm"
             >
-              <Bell size={20} />
+              <Search size={19} />
             </button>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">AM</span>
+            <button
+              onClick={() => toast('Chưa có thông báo mới')}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
+              aria-label="Thông báo"
+            >
+              <Bell size={19} />
+            </button>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm">
+              <span className="text-xs font-bold text-white">AM</span>
             </div>
           </div>
         </header>
 
         {/* Main content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
+        <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6">
           <Outlet />
         </main>
 
-        {/* Mobile bottom nav */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-secondary border-t border-border flex justify-around py-2 z-40">
+        {/* Mobile bottom nav — iOS tab bar */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 glass border-t hairline flex justify-around z-40 safe-bottom">
           {mobileNav.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === '/dashboard'}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 px-3 py-1 text-xs transition-colors ${
+                `flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[52px] py-1.5 text-[11px] font-medium transition-colors pressable ${
                   isActive ? 'text-primary' : 'text-muted-foreground'
                 }`
               }
             >
-              <item.icon size={18} />
-              <span>{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  <item.icon size={22} strokeWidth={isActive ? 2.4 : 1.9} />
+                  <span>{item.label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>

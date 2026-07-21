@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, TrendingUp, FileText, CreditCard,
-  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf,
+  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf, Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { companyProfile } from '@/lib/mockData';
@@ -24,6 +24,7 @@ export default function DashboardSidebar() {
     { icon: ShieldCheck, label: t('sidebar.creditScore'), path: '/dashboard/credit' },
     { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
     { icon: Cpu, label: t('sidebar.m2mDevices'), path: '/dashboard/m2m' },
+    { icon: Sparkles, label: t('sidebar.technology'), path: '/dashboard/tech' },
     { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
     { icon: Settings, label: t('sidebar.settings'), path: '/dashboard/settings' },
   ];

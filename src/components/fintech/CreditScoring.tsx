@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, BarChart3, Clock, FileText, Wallet, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, BarChart3, Clock, FileText, Wallet, Loader2, Zap, Cpu } from 'lucide-react';
 import { formatVNDShort } from '@/lib/formatters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import TransactionUpload from './TransactionUpload';
+import TechBadge from '@/components/ui/TechBadge';
 import { toast } from 'sonner';
 
 const fadeUp = {
@@ -251,15 +252,19 @@ export default function CreditScoring() {
       <motion.div variants={fadeUp} className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Mimi Credit Score</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Điểm tín dụng tính từ dữ liệu thật • Cập nhật: {new Date(snapshot.computed_at).toLocaleString('vi-VN')}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <TechBadge icon={Zap} label="Tính trong ~3 giây" tone="green" />
+            <TechBadge icon={Cpu} label="Mô hình ML · giải thích được" tone="blue" />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Cập nhật: {new Date(snapshot.computed_at).toLocaleString('vi-VN')}
           </p>
         </div>
         <motion.button
           whileHover={{ y: -1 }}
           onClick={handleCompute}
           disabled={computing}
-          className="flex items-center gap-2 bg-accent hover:bg-accent/70 text-foreground px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+          className="flex items-center gap-2 bg-accent hover:bg-accent/70 text-foreground px-3 py-2 rounded-xl text-xs font-medium disabled:opacity-50 pressable"
         >
           {computing ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
           Tính lại điểm
@@ -368,7 +373,7 @@ export default function CreditScoring() {
                 transition={{ duration: 0.8, delay: i * 0.05 }}
                 style={{ minHeight: 8 }}
               />
-              <span className="text-[8px] text-muted-foreground font-mono">L{i + 1}</span>
+              <span className="text-[10px] text-muted-foreground font-mono">L{i + 1}</span>
             </motion.div>
           ))}
         </div>

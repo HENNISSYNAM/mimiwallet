@@ -11,6 +11,9 @@ import { miniChartData } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import mimiLogo from '@/assets/mimi-wallet-logo.png';
+import quantumLockImg from '@/assets/il-quantum-lock.svg';
+import mlSpeedImg from '@/assets/il-ml-speed.svg';
+import rlsShieldImg from '@/assets/il-rls-shield.svg';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import featureSteps from '@/assets/feature-steps.png';
@@ -579,6 +582,44 @@ export default function Landing() {
           <MetricItem value={2.8} suffix=" Nghìn tỷ" label="Vốn đã giải ngân" sub="↑ từ ₫1.2T năm 2024" delay={0.1} />
           <MetricItem value={24} suffix=" giờ" label="Thời gian giải ngân" sub="Trung bình toàn hệ thống" delay={0.2} />
           <MetricItem value={97} suffix="%" label="Tỷ lệ hài lòng" sub="NPS Score: 72" delay={0.3} />
+        </div>
+      </section>
+
+      {/* ═══ CORE TECHNOLOGY ═══ */}
+      <section className="py-24 bg-background" id="technology">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold">Công nghệ lõi</span>
+            <h2 className="mt-4 font-display font-extrabold text-foreground tracking-tight" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.75rem)' }}>
+              Nhanh gọn, minh bạch, an toàn chuẩn quốc tế
+            </h2>
+            <p className="mt-4 text-muted-foreground text-lg">Ba trụ cột công nghệ được hiển thị rõ ngay trên ứng dụng.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { img: quantumLockImg, title: 'Mã hóa kháng lượng tử', tag: 'ML-KEM-768 · NIST FIPS 203', desc: 'Dữ liệu định danh an toàn kể cả trước máy tính lượng tử tương lai.' },
+              { img: mlSpeedImg, title: 'Chấm điểm AI ~3 giây', tag: 'Machine Learning · giải thích được', desc: 'Điểm tín dụng tính từ 12 tháng dữ liệu thật, kèm phân tích yếu tố.' },
+              { img: rlsShieldImg, title: 'Bảo mật theo doanh nghiệp', tag: 'Row-Level Security', desc: 'Mỗi doanh nghiệp chỉ thấy đúng dữ liệu của mình, áp ở tầng CSDL.' },
+            ].map((c, i) => (
+              <motion.div
+                key={c.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+                className="bg-card border border-border/60 rounded-3xl overflow-hidden"
+              >
+                <div className="p-5 bg-secondary/40 flex items-center justify-center">
+                  <img src={c.img} alt={c.title} className="w-full max-w-[280px]" />
+                </div>
+                <div className="p-6">
+                  <p className="text-[11px] font-semibold text-muted-foreground font-mono">{c.tag}</p>
+                  <h3 className="mt-1 text-lg font-display font-bold text-foreground">{c.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 

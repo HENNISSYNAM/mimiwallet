@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, Shield, Check, AlertTriangle, Fingerprint, Smartphone, Eye, ScanLine, Loader2 } from 'lucide-react';
+import { Camera, Upload, Shield, Check, AlertTriangle, Fingerprint, Smartphone, Eye, ScanLine, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
+import TechBadge from '@/components/ui/TechBadge';
 import { toast } from 'sonner';
 
 type KYCStatus = 'pending' | 'scanning' | 'verifying' | 'success' | 'failed';
@@ -215,13 +216,11 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
     <div className="space-y-6">
       {/* KYC Progress */}
       <div className="bg-card border border-border rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">
             <Shield size={18} className="text-primary" /> Xác minh eKYC
           </h3>
-          <span className="text-xs text-muted-foreground font-mono">
-            Chuẩn NHNN — Thông tư 16/2020
-          </span>
+          <TechBadge icon={Lock} label="Mã hóa kháng lượng tử ML-KEM-768" tone="blue" />
         </div>
         <div className="flex gap-2">
           {kycSteps.map((s, i) => (
@@ -300,7 +299,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                             <Check size={24} className="text-kapiva-green" />
                           </div>
                           <p className="text-sm text-kapiva-green font-medium">Đã tải lên ✓</p>
-                          <p className="text-xs text-muted-foreground mt-1">Lưu trữ mã hóa an toàn</p>
+                          <p className="text-xs text-mimi-green mt-1 flex items-center justify-center gap-1"><Lock size={10} /> Mã hóa kháng lượng tử</p>
                         </motion.div>
                       ) : (
                         <>

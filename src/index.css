@@ -3,27 +3,28 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Default: LIGHT theme (Apple-style) ── */
   :root {
-    --bg-base: 222 47% 5%;
-    --bg-surface: 222 35% 8%;
-    --bg-card: 222 28% 11%;
-    --bg-card-hover: 222 24% 14%;
+    --bg-base: 240 6% 96%;        /* #F4F4F6 Apple system gray */
+    --bg-surface: 0 0% 100%;
+    --bg-card: 0 0% 100%;
+    --bg-card-hover: 240 6% 97%;
 
-    --border-subtle: 222 15% 18%;
-    --border-active: 225 90% 57%;
+    --border-subtle: 240 6% 90%;
+    --border-active: 211 100% 50%;
 
-    --blue-500: 225 100% 57%;
-    --blue-400: 217 91% 60%;
-    --blue-glow: 225 100% 57%;
-    --green-500: 158 100% 43%;
-    --green-400: 160 84% 39%;
-    --green-glow: 158 100% 43%;
-    --amber-500: 38 92% 50%;
-    --red-500: 0 84% 60%;
+    --blue-500: 211 100% 50%;     /* #007AFF Apple system blue */
+    --blue-400: 211 100% 55%;
+    --blue-glow: 211 100% 50%;
+    --green-500: 145 63% 42%;     /* #34C759 → toned for light bg */
+    --green-400: 145 63% 47%;
+    --green-glow: 145 63% 42%;
+    --amber-500: 35 100% 50%;     /* #FF9500 */
+    --red-500: 3 100% 59%;        /* #FF3B30 */
 
-    --text-primary: 0 0% 98%;
-    --text-secondary: 215 16% 58%;
-    --text-muted: 215 12% 40%;
+    --text-primary: 240 6% 10%;   /* near-black label */
+    --text-secondary: 240 4% 46%; /* secondary label */
+    --text-muted: 240 4% 64%;     /* tertiary label */
 
     --background: var(--bg-base);
     --foreground: var(--text-primary);
@@ -37,20 +38,20 @@
     --secondary-foreground: var(--text-primary);
     --muted: var(--bg-surface);
     --muted-foreground: var(--text-secondary);
-    --accent: var(--bg-card-hover);
+    --accent: 240 6% 94%;
     --accent-foreground: var(--text-primary);
     --destructive: var(--red-500);
     --destructive-foreground: 0 0% 100%;
     --border: var(--border-subtle);
     --input: var(--border-subtle);
     --ring: var(--blue-500);
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: var(--bg-surface);
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: var(--text-secondary);
     --sidebar-primary: var(--blue-500);
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: var(--bg-card);
+    --sidebar-accent: 240 6% 96%;
     --sidebar-accent-foreground: var(--text-primary);
     --sidebar-border: var(--border-subtle);
     --sidebar-ring: var(--blue-500);
@@ -59,47 +60,29 @@
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
 
-    --shadow-card: 0 1px 3px hsla(0,0%,0%,0.4), 0 0 0 1px hsl(var(--border-subtle));
-    --shadow-blue: 0 0 20px hsla(var(--blue-glow)/0.2), 0 0 60px hsla(var(--blue-glow)/0.05);
-    --shadow-green: 0 0 20px hsla(var(--green-glow)/0.15);
+    /* Soft, layered Apple shadows */
+    --shadow-card: 0 1px 2px hsla(240,6%,10%,0.04), 0 8px 24px hsla(240,6%,10%,0.06);
+    --shadow-blue: 0 8px 24px hsla(var(--blue-glow)/0.18);
+    --shadow-green: 0 8px 24px hsla(var(--green-glow)/0.14);
   }
 
-  .landing-light {
-    --bg-base: 0 0% 98%;
-    --bg-surface: 220 14% 96%;
-    --bg-card: 0 0% 100%;
-    --bg-card-hover: 220 14% 96%;
+  /* landing-light kept as an alias so existing Landing markup stays valid */
+  .landing-light { /* inherits :root light tokens */ }
 
-    --border-subtle: 220 13% 91%;
-    --border-active: 225 90% 57%;
-
-    --text-primary: 222 47% 11%;
-    --text-secondary: 215 16% 47%;
-    --text-muted: 215 12% 65%;
-
-    --background: var(--bg-base);
-    --foreground: var(--text-primary);
-    --card: var(--bg-card);
-    --card-foreground: var(--text-primary);
-    --popover: var(--bg-card);
-    --popover-foreground: var(--text-primary);
-    --primary: var(--blue-500);
-    --primary-foreground: 0 0% 100%;
-    --secondary: var(--bg-surface);
-    --secondary-foreground: var(--text-primary);
-    --muted: var(--bg-surface);
-    --muted-foreground: var(--text-secondary);
+  /* Opt-in dark theme (legacy look), not used by default */
+  .theme-dark {
+    --bg-base: 222 47% 5%;
+    --bg-surface: 222 35% 8%;
+    --bg-card: 222 28% 11%;
+    --bg-card-hover: 222 24% 14%;
+    --border-subtle: 222 15% 18%;
+    --text-primary: 0 0% 98%;
+    --text-secondary: 215 16% 58%;
+    --text-muted: 215 12% 40%;
     --accent: var(--bg-card-hover);
-    --accent-foreground: var(--text-primary);
-    --destructive: var(--red-500);
-    --destructive-foreground: 0 0% 100%;
-    --border: var(--border-subtle);
-    --input: var(--border-subtle);
-    --ring: var(--blue-500);
-
-    --shadow-card: 0 1px 3px hsla(0,0%,0%,0.08), 0 0 0 1px hsl(var(--border-subtle));
-    --shadow-blue: 0 0 20px hsla(var(--blue-glow)/0.15), 0 0 60px hsla(var(--blue-glow)/0.05);
-    --shadow-green: 0 0 20px hsla(var(--green-glow)/0.1);
+    --sidebar-background: var(--bg-surface);
+    --sidebar-accent: var(--bg-card);
+    --shadow-card: 0 1px 3px hsla(0,0%,0%,0.4), 0 0 0 1px hsl(var(--border-subtle));
   }
 }
 
@@ -154,6 +137,23 @@
   .card-hover:hover {
     @apply bg-accent border-primary/40;
   }
+  /* iOS-style frosted glass surface (headers, tab bars) */
+  .glass {
+    background: hsla(var(--bg-surface) / 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  /* Tactile press feedback for buttons/tap targets */
+  .pressable {
+    @apply transition-transform duration-100 active:scale-[0.97];
+  }
+  /* Hairline separators (crisp 0.5px on retina) */
+  .hairline {
+    border-color: hsla(var(--text-primary) / 0.08);
+  }
+  /* Respect iOS safe areas */
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .grain-overlay {
     position: relative;
   }
@@ -218,3 +218,7 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* Hide custom scrollbars for a cleaner Apple look */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
