@@ -11,14 +11,14 @@ const steps = [
   {
     icon: Brain,
     label: 'AI\nPhân tích',
-    gradient: 'from-blue-400 to-kapiva-green',
+    gradient: 'from-blue-400 to-mimi-green',
     bgGlow: 'bg-blue-400/20',
   },
   {
     icon: Banknote,
     label: 'Nhận\nVốn 24h',
-    gradient: 'from-kapiva-green to-green-400',
-    bgGlow: 'bg-kapiva-green/20',
+    gradient: 'from-mimi-green to-green-400',
+    bgGlow: 'bg-mimi-green/20',
   },
 ];
 
@@ -120,7 +120,7 @@ export default function AnimatedStepFlow({ activeStep = -1 }: { activeStep?: num
                   animate={{ x: [0, 6, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  <div className="h-[2px] w-8 bg-gradient-to-r from-primary/40 to-kapiva-green/40 rounded-full" />
+                  <div className="h-[2px] w-8 bg-gradient-to-r from-primary/40 to-mimi-green/40 rounded-full" />
                   <ArrowRight size={12} className="text-muted-foreground" />
                 </motion.div>
               </motion.div>

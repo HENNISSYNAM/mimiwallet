@@ -49,15 +49,15 @@ const TRIGGER_FIELDS = [
 ];
 
 const ACTION_TYPES = [
-  { value: 'AUTO_PAY', label: 'Tự động thanh toán', color: 'text-kapiva-green' },
+  { value: 'AUTO_PAY', label: 'Tự động thanh toán', color: 'text-mimi-green' },
   { value: 'TRANSFER', label: 'Chuyển khoản', color: 'text-primary' },
-  { value: 'ALERT', label: 'Cảnh báo', color: 'text-kapiva-amber' },
+  { value: 'ALERT', label: 'Cảnh báo', color: 'text-mimi-amber' },
   { value: 'BLOCK', label: 'Chặn giao dịch', color: 'text-destructive' },
 ];
 
 const TX_STATUS_COLORS: Record<string, string> = {
-  completed: 'bg-kapiva-green/15 text-kapiva-green',
-  pending: 'bg-kapiva-amber/15 text-kapiva-amber',
+  completed: 'bg-mimi-green/15 text-mimi-green',
+  pending: 'bg-mimi-amber/15 text-mimi-amber',
   failed: 'bg-destructive/15 text-destructive',
 };
 
@@ -184,7 +184,7 @@ export default function M2MRuleEngine({
             <div className="flex items-center gap-2 mt-1 justify-end">
               <div className="w-24 h-2 bg-border rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${budgetPct < 20 ? 'bg-destructive' : 'bg-kapiva-green'}`}
+                  className={`h-full rounded-full ${budgetPct < 20 ? 'bg-destructive' : 'bg-mimi-green'}`}
                   style={{ width: `${Math.min(budgetPct, 100)}%` }}
                 />
               </div>
@@ -199,7 +199,7 @@ export default function M2MRuleEngine({
           >
             <Wallet size={13} /> Nạp tiền
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-kapiva-green/10 text-kapiva-green rounded-lg text-xs font-medium">
+          <button className="flex items-center gap-1.5 px-3 py-2 bg-mimi-green/10 text-mimi-green rounded-lg text-xs font-medium">
             <Activity size={13} /> {device.status}
           </button>
         </div>
@@ -252,7 +252,7 @@ export default function M2MRuleEngine({
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Zap size={14} className={rule.is_active ? 'text-kapiva-amber' : 'text-muted-foreground'} />
+                        <Zap size={14} className={rule.is_active ? 'text-mimi-amber' : 'text-muted-foreground'} />
                         <span className="font-semibold text-sm text-foreground">{rule.rule_name}</span>
                         <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                           {rule.execution_count}x thực thi
@@ -264,7 +264,7 @@ export default function M2MRuleEngine({
                           className="p-1.5 rounded-lg hover:bg-accent transition-colors"
                           title={rule.is_active ? 'Tạm dừng' : 'Kích hoạt'}
                         >
-                          {rule.is_active ? <Pause size={13} className="text-kapiva-amber" /> : <Play size={13} className="text-kapiva-green" />}
+                          {rule.is_active ? <Pause size={13} className="text-mimi-amber" /> : <Play size={13} className="text-mimi-green" />}
                         </button>
                         <button
                           onClick={() => deleteRule(rule.id)}
@@ -322,7 +322,7 @@ export default function M2MRuleEngine({
 
                     {/* IF condition */}
                     <div className="bg-secondary/50 p-4 rounded-xl">
-                      <p className="text-xs font-semibold text-kapiva-amber mb-3">⚡ IF (Điều kiện)</p>
+                      <p className="text-xs font-semibold text-mimi-amber mb-3">⚡ IF (Điều kiện)</p>
                       <div className="grid grid-cols-3 gap-2">
                         <select value={triggerField} onChange={(e) => setTriggerField(e.target.value)}
                           className="bg-background border border-border rounded-lg px-2 py-2 text-xs text-foreground outline-none">
@@ -344,7 +344,7 @@ export default function M2MRuleEngine({
 
                     {/* THEN action */}
                     <div className="bg-secondary/50 p-4 rounded-xl">
-                      <p className="text-xs font-semibold text-kapiva-green mb-3">→ THEN (Hành động)</p>
+                      <p className="text-xs font-semibold text-mimi-green mb-3">→ THEN (Hành động)</p>
                       <div className="grid grid-cols-2 gap-2 mb-3">
                         {ACTION_TYPES.map(a => (
                           <button key={a.value} onClick={() => setActionType(a.value)}
@@ -412,7 +412,7 @@ export default function M2MRuleEngine({
                 <div key={tx.id} className="bg-card/60 border border-border/60 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${
-                      tx.tx_type === 'top_up' ? 'bg-kapiva-green/15 text-kapiva-green' : 'bg-primary/10 text-primary'
+                      tx.tx_type === 'top_up' ? 'bg-mimi-green/15 text-mimi-green' : 'bg-primary/10 text-primary'
                     }`}>
                       {tx.tx_type === 'top_up' ? '↓' : '↑'}
                     </div>
@@ -426,7 +426,7 @@ export default function M2MRuleEngine({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-mono text-sm font-bold ${tx.tx_type === 'top_up' ? 'text-kapiva-green' : 'text-foreground'}`}>
+                    <p className={`font-mono text-sm font-bold ${tx.tx_type === 'top_up' ? 'text-mimi-green' : 'text-foreground'}`}>
                       {tx.tx_type === 'top_up' ? '+' : '-'}{formatVND(tx.amount)}
                     </p>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${TX_STATUS_COLORS[tx.status] || ''}`}>

@@ -68,6 +68,17 @@ export default {
           amber: "hsl(var(--amber-500))",
           red: "hsl(var(--red-500))",
         },
+        // Alias for the project's former name. 132 `kapiva-*` classes survived the
+        // rename with nothing defining them, so they emitted no CSS and the
+        // elements silently fell back to body text colour — positive amounts were
+        // rendering black instead of green. Usages are now `mimi-*`; this alias
+        // stays so any stray one resolves rather than failing quietly again.
+        kapiva: {
+          blue: "hsl(var(--blue-500))",
+          green: "hsl(var(--green-500))",
+          amber: "hsl(var(--amber-500))",
+          red: "hsl(var(--red-500))",
+        },
         surface: "hsl(var(--bg-surface))",
       },
       borderRadius: {

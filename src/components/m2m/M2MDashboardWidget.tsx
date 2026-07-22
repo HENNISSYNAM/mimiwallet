@@ -116,7 +116,7 @@ export default function M2MDashboardWidget() {
                   {tx.tx_type === 'top_up' ? 'Nạp tiền' : tx.tx_type === 'auto_pay' ? 'Auto-pay' : tx.tx_type}
                 </span>
               </div>
-              <span className={`font-mono ${tx.tx_type === 'top_up' ? 'text-kapiva-green' : 'text-foreground'}`}>
+              <span className={`font-mono ${tx.tx_type === 'top_up' ? 'text-mimi-green' : 'text-foreground'}`}>
                 {tx.tx_type === 'top_up' ? '+' : '-'}{formatVNDShort(tx.amount)}
               </span>
             </div>

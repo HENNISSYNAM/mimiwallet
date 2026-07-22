@@ -168,7 +168,7 @@ export default function OpenBanking() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Ngân hàng kết nối', value: `${connectedCount}/6`, color: 'text-primary' },
-          { label: 'Tổng số dư', value: totalBalance > 0 ? `₫${(totalBalance / 1e9).toFixed(2)} tỷ` : '—', color: 'text-kapiva-green' },
+          { label: 'Tổng số dư', value: totalBalance > 0 ? `₫${(totalBalance / 1e9).toFixed(2)} tỷ` : '—', color: 'text-mimi-green' },
           { label: 'Trạng thái API', value: 'Active', color: 'text-foreground' },
         ].map(stat => (
           <div key={stat.label} className="bg-card/60 border border-border/60 rounded-xl p-4">
@@ -187,7 +187,7 @@ export default function OpenBanking() {
             <p className="text-xs text-muted-foreground">Tuân thủ Thông tư 09/2024 NHNN • Mã hóa AES-256 • OAuth 2.0</p>
           </div>
         </div>
-        <Lock size={16} className="text-kapiva-green" />
+        <Lock size={16} className="text-mimi-green" />
       </div>
 
       {/* Bank List */}
@@ -197,7 +197,7 @@ export default function OpenBanking() {
             key={bank.code}
             layout
             className={`bg-card/60 border rounded-2xl overflow-hidden transition-all ${
-              bank.status === 'connected' ? 'border-kapiva-green/20' :
+              bank.status === 'connected' ? 'border-mimi-green/20' :
               bank.code === connecting ? 'border-primary/30' : 'border-border/60'
             }`}
           >
@@ -207,7 +207,7 @@ export default function OpenBanking() {
             >
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold ${
-                  bank.status === 'connected' ? 'bg-kapiva-green/10 text-kapiva-green' : 'bg-accent text-foreground'
+                  bank.status === 'connected' ? 'bg-mimi-green/10 text-mimi-green' : 'bg-accent text-foreground'
                 }`}>
                   {bank.code}
                 </div>
@@ -300,7 +300,7 @@ export default function OpenBanking() {
                     'Xem thông tin chủ tài khoản',
                   ].map(perm => (
                     <div key={perm} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check size={14} className="text-kapiva-green shrink-0" />
+                      <Check size={14} className="text-mimi-green shrink-0" />
                       {perm}
                     </div>
                   ))}
@@ -308,7 +308,7 @@ export default function OpenBanking() {
               </div>
 
               <div className="flex items-start gap-2 mb-6 text-xs text-muted-foreground">
-                <Lock size={12} className="shrink-0 mt-0.5 text-kapiva-green" />
+                <Lock size={12} className="shrink-0 mt-0.5 text-mimi-green" />
                 <span>Dữ liệu được mã hóa AES-256 và chỉ sử dụng cho mục đích đánh giá tín dụng. Bạn có thể hủy bất cứ lúc nào.</span>
               </div>
 

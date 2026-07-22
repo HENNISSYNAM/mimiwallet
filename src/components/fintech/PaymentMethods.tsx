@@ -34,7 +34,7 @@ export default function PaymentMethods() {
           <h3 className="font-display font-bold text-foreground text-lg">Phương thức thanh toán</h3>
           <p className="text-sm text-muted-foreground mt-1">Quản lý thanh toán subscription và dịch vụ</p>
         </div>
-        <div className="flex items-center gap-2 bg-kapiva-green/10 text-kapiva-green px-3 py-1.5 rounded-lg text-xs font-medium">
+        <div className="flex items-center gap-2 bg-mimi-green/10 text-mimi-green px-3 py-1.5 rounded-lg text-xs font-medium">
           <Shield size={12} /> PCI DSS Level 1
         </div>
       </div>
@@ -67,7 +67,7 @@ export default function PaymentMethods() {
             whileHover={{ y: -2 }}
             onClick={() => setSelectedMethod(selectedMethod === method.id ? null : method.id)}
             className={`bg-card/60 border rounded-2xl p-5 cursor-pointer transition-all ${
-              method.status === 'active' ? 'border-kapiva-green/20' : 'border-border/60'
+              method.status === 'active' ? 'border-mimi-green/20' : 'border-border/60'
             } ${selectedMethod === method.id ? 'ring-1 ring-primary/20' : ''}`}
           >
             <div className="flex items-center justify-between">
@@ -79,14 +79,14 @@ export default function PaymentMethods() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-foreground">{method.name}</p>
                     {method.status === 'active' && (
-                      <span className="text-[10px] bg-kapiva-green/10 text-kapiva-green px-2 py-0.5 rounded-full font-medium">Hoạt động</span>
+                      <span className="text-[10px] bg-mimi-green/10 text-mimi-green px-2 py-0.5 rounded-full font-medium">Hoạt động</span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{method.description}</p>
                 </div>
               </div>
               {method.status === 'active' ? (
-                <Check size={18} className="text-kapiva-green" />
+                <Check size={18} className="text-mimi-green" />
               ) : (
                 <button
                   className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium flex items-center gap-1"
@@ -118,7 +118,7 @@ export default function PaymentMethods() {
                   ))}
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Shield size={10} className="text-kapiva-green" /> Phí: 1.1% + ₫1,650/GD • Giải ngân T+1
+                  <Shield size={10} className="text-mimi-green" /> Phí: 1.1% + ₫1,650/GD • Giải ngân T+1
                 </div>
               </motion.div>
             )}
@@ -166,7 +166,7 @@ export default function PaymentMethods() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-mono font-medium text-foreground">{tx.amount}</p>
-                <p className="text-xs text-kapiva-green">{tx.status}</p>
+                <p className="text-xs text-mimi-green">{tx.status}</p>
               </div>
             </div>
           ))}

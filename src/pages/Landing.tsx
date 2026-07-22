@@ -88,7 +88,7 @@ function MetricItem({
         {suffix}
       </p>
       <p className="text-sm text-muted-foreground mt-2 font-medium">{label}</p>
-      <p className="text-xs text-kapiva-green mt-1 font-mono">{sub}</p>
+      <p className="text-xs text-mimi-green mt-1 font-mono">{sub}</p>
     </motion.div>
   );
 }
@@ -113,9 +113,9 @@ function ProcessFlow() {
       desc: 'Liên kết ngân hàng & kế toán trong 5 phút',
       detail: 'API bảo mật kết nối trực tiếp với 40+ ngân hàng VN',
       tags: ['Vietcombank', 'BIDV', 'MISA', 'Shopee'],
-      color: 'from-blue-500 to-cyan-400',
-      bgColor: 'bg-blue-500/10',
-      textColor: 'text-blue-500',
+      color: 'from-primary to-mimi-blue-light',
+      bgColor: 'bg-primary/10',
+      textColor: 'text-primary',
     },
     {
       icon: <Brain className="w-6 h-6" />,
@@ -123,9 +123,9 @@ function ProcessFlow() {
       desc: '200+ điểm dữ liệu, chấm điểm tín dụng real-time',
       detail: 'Machine learning xử lý trong 90 giây',
       tags: ['Credit Score', 'Cash Flow', 'Risk'],
-      color: 'from-violet-500 to-purple-400',
-      bgColor: 'bg-violet-500/10',
-      textColor: 'text-violet-500',
+      color: 'from-primary to-mimi-blue-light',
+      bgColor: 'bg-primary/10',
+      textColor: 'text-primary',
     },
     {
       icon: <Zap className="w-6 h-6" />,
@@ -133,9 +133,9 @@ function ProcessFlow() {
       desc: 'Vốn chuyển vào tài khoản trong 24 giờ',
       detail: 'Từ ₫100M đến ₫10 tỷ, không thế chấp',
       tags: ['₫100M — ₫10 tỷ', '24h'],
-      color: 'from-emerald-500 to-green-400',
-      bgColor: 'bg-emerald-500/10',
-      textColor: 'text-emerald-500',
+      color: 'from-mimi-green to-mimi-green-light',
+      bgColor: 'bg-mimi-green/10',
+      textColor: 'text-mimi-green',
     },
   ];
 
@@ -145,7 +145,7 @@ function ProcessFlow() {
       <div className="hidden md:flex items-center justify-between max-w-2xl mx-auto mb-16 relative">
         <div className="absolute top-5 left-[16%] right-[16%] h-[2px] bg-border" />
         <motion.div 
-          className="absolute top-5 left-[16%] h-[2px] bg-gradient-to-r from-primary to-kapiva-green"
+          className="absolute top-5 left-[16%] h-[2px] bg-gradient-to-r from-primary to-mimi-green"
           animate={{ width: `${activeStep * 34}%` }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         />
@@ -222,9 +222,9 @@ function ProcessFlow() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: i * 0.1 + 0.5 }}
-                        className="w-6 h-6 rounded-full bg-kapiva-green/20 flex items-center justify-center"
+                        className="w-6 h-6 rounded-full bg-mimi-green/20 flex items-center justify-center"
                       >
-                        <Check size={12} className="text-kapiva-green" />
+                        <Check size={12} className="text-mimi-green" />
                       </motion.div>
                     </motion.div>
                   ))}
@@ -243,10 +243,10 @@ function ProcessFlow() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'Credit Score', value: '701', color: 'text-kapiva-green' },
-                    { label: 'Risk Level', value: 'Thấp', color: 'text-kapiva-green' },
+                    { label: 'Credit Score', value: '701', color: 'text-mimi-green' },
+                    { label: 'Risk Level', value: 'Thấp', color: 'text-mimi-green' },
                     { label: 'Cash Flow', value: '+15.5%', color: 'text-primary' },
-                    { label: 'Approval', value: '98%', color: 'text-kapiva-green' },
+                    { label: 'Approval', value: '98%', color: 'text-mimi-green' },
                   ].map((m, i) => (
                     <motion.div
                       key={m.label}
@@ -265,7 +265,7 @@ function ProcessFlow() {
             {activeStep === 2 && (
               <motion.div className="bg-card border border-border rounded-2xl p-6 shadow-xl">
                 <motion.div
-                  className="bg-gradient-to-r from-primary/10 to-kapiva-green/10 rounded-xl p-6 text-center mb-4"
+                  className="bg-gradient-to-r from-primary/10 to-mimi-green/10 rounded-xl p-6 text-center mb-4"
                   initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }}
                 >
                   <p className="text-xs text-muted-foreground mb-1">Số tiền giải ngân</p>
@@ -275,7 +275,7 @@ function ProcessFlow() {
                   >
                     ₫2,500,000,000
                   </motion.p>
-                  <p className="text-xs text-kapiva-green mt-1 font-medium">✓ Đã chuyển thành công</p>
+                  <p className="text-xs text-mimi-green mt-1 font-medium">✓ Đã chuyển thành công</p>
                 </motion.div>
                 <div className="space-y-2">
                   {[
@@ -291,8 +291,8 @@ function ProcessFlow() {
                       className="flex items-center justify-between text-sm"
                     >
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-kapiva-green/20 flex items-center justify-center">
-                          <Check size={10} className="text-kapiva-green" />
+                        <div className="w-5 h-5 rounded-full bg-mimi-green/20 flex items-center justify-center">
+                          <Check size={10} className="text-mimi-green" />
                         </div>
                         <span className="text-foreground">{s.step}</span>
                       </div>
@@ -350,12 +350,12 @@ function HeroMockup() {
         transition={{ delay: 1.2, duration: 0.6 }}
         style={{ animation: 'float 6s ease-in-out infinite' }}
       >
-        <div className="w-8 h-8 rounded-full bg-kapiva-green/20 flex items-center justify-center">
-          <TrendingUp size={14} className="text-kapiva-green" />
+        <div className="w-8 h-8 rounded-full bg-mimi-green/20 flex items-center justify-center">
+          <TrendingUp size={14} className="text-mimi-green" />
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Dòng tiền</p>
-          <p className="text-sm font-mono font-bold text-kapiva-green">+₫1.2 tỷ</p>
+          <p className="text-sm font-mono font-bold text-mimi-green">+₫1.2 tỷ</p>
         </div>
       </motion.div>
 
@@ -429,7 +429,7 @@ function PricingCard({ name, price, features, cta, highlighted, annual, badge }:
       }`}
     >
       {badge && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-kapiva-green text-primary-foreground text-xs font-bold px-4 py-1 rounded-full">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-mimi-green text-primary-foreground text-xs font-bold px-4 py-1 rounded-full">
           {badge}
         </div>
       )}
@@ -444,7 +444,7 @@ function PricingCard({ name, price, features, cta, highlighted, annual, badge }:
       <ul className="space-y-3 flex-1">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-3 text-sm text-muted-foreground">
-            <Check size={14} className="text-kapiva-green mt-0.5 shrink-0" />
+            <Check size={14} className="text-mimi-green mt-0.5 shrink-0" />
             {f}
           </li>
         ))}
@@ -687,8 +687,8 @@ export default function Landing() {
                   <FileText size={24} className="text-primary" />
                 </div>
                 <ArrowRight size={20} className="text-muted-foreground" />
-                <div className="w-16 h-16 rounded-xl bg-kapiva-green/10 flex items-center justify-center">
-                  <CreditCard size={24} className="text-kapiva-green" />
+                <div className="w-16 h-16 rounded-xl bg-mimi-green/10 flex items-center justify-center">
+                  <CreditCard size={24} className="text-mimi-green" />
                 </div>
               </div>
             </BentoCard>
@@ -803,7 +803,7 @@ export default function Landing() {
               </motion.div>
               {/* No rate or limit here: green lending is not live, so any number
                   would be a promise we cannot honour. */}
-              <div className="mt-3 rounded-xl border border-kapiva-green/10 bg-kapiva-green/5 p-3">
+              <div className="mt-3 rounded-xl border border-mimi-green/10 bg-mimi-green/5 p-3">
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   Lãi suất và hạn mức ưu đãi sẽ được công bố khi hợp tác với tổ chức tín dụng xanh
                   hoàn tất.
@@ -835,7 +835,7 @@ export default function Landing() {
                     transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   />
                   <motion.div 
-                    className="absolute inset-0 bg-gradient-to-t from-emerald-900/70 via-emerald-900/20 to-transparent pointer-events-none"
+                    className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-foreground/15 to-transparent pointer-events-none"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
@@ -862,10 +862,10 @@ export default function Landing() {
                   </motion.div>
                 </motion.div>
                 <div className="flex flex-col justify-center space-y-3">
-                  <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                  <div className="flex items-center justify-between bg-mimi-green/5 border border-mimi-green/10 rounded-xl p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <Recycle size={18} className="text-emerald-500" />
+                      <div className="w-10 h-10 rounded-full bg-mimi-green/15 flex items-center justify-center">
+                        <Recycle size={18} className="text-mimi-green" />
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-foreground">Tín chỉ Carbon</p>
@@ -889,7 +889,7 @@ export default function Landing() {
                         viewport={{ once: true }}
                         transition={{ delay: 0.3 + i * 0.1 }}
                       >
-                        <Leaf size={13} className="text-emerald-500 shrink-0 mt-0.5" />
+                        <Leaf size={13} className="text-mimi-green shrink-0 mt-0.5" />
                         <p className="text-[11px] leading-snug text-muted-foreground">{s}</p>
                       </motion.div>
                     ))}
@@ -997,7 +997,7 @@ export default function Landing() {
               />
             </button>
             <span className={`text-sm font-medium ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Hàng năm <span className="text-kapiva-green font-mono text-xs ml-1">-20%</span>
+              Hàng năm <span className="text-mimi-green font-mono text-xs ml-1">-20%</span>
             </span>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -1059,7 +1059,7 @@ export default function Landing() {
       {/* ═══ CTA ═══ */}
       <section className="py-24 relative overflow-hidden bg-background">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-kapiva-green/5" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-mimi-green/5" />
           <div className="absolute inset-0 opacity-[0.02]" style={{
             backgroundImage: 'radial-gradient(hsl(var(--text-primary)/0.3) 1px, transparent 1px)',
             backgroundSize: '24px 24px',
@@ -1071,8 +1071,8 @@ export default function Landing() {
             <p className="text-muted-foreground text-lg mb-10">Đăng ký miễn phí — không cần thẻ tín dụng, setup trong 5 phút</p>
           </motion.div>
           {ctaSubmitted ? (
-            <motion.div {...fadeUp(0)} className="bg-card border border-kapiva-green/30 rounded-2xl p-8">
-              <CheckCircle size={48} className="text-kapiva-green mx-auto mb-4" />
+            <motion.div {...fadeUp(0)} className="bg-card border border-mimi-green/30 rounded-2xl p-8">
+              <CheckCircle size={48} className="text-mimi-green mx-auto mb-4" />
               <p className="text-foreground font-display font-bold text-lg">Cảm ơn bạn!</p>
               <p className="text-muted-foreground text-sm mt-1">Chúng tôi sẽ liên hệ trong 24 giờ.</p>
             </motion.div>

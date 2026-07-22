@@ -17,8 +17,8 @@ export default function ComplianceDashboard() {
   ];
 
   const statusConfig = {
-    passed: { color: 'text-kapiva-green', bg: 'bg-kapiva-green/10', icon: <Check size={14} />, label: 'Đạt' },
-    'in-progress': { color: 'text-kapiva-amber', bg: 'bg-kapiva-amber/10', icon: <Clock size={14} />, label: 'Đang xử lý' },
+    passed: { color: 'text-mimi-green', bg: 'bg-mimi-green/10', icon: <Check size={14} />, label: 'Đạt' },
+    'in-progress': { color: 'text-mimi-amber', bg: 'bg-mimi-amber/10', icon: <Clock size={14} />, label: 'Đang xử lý' },
     pending: { color: 'text-muted-foreground', bg: 'bg-accent', icon: <Clock size={14} />, label: 'Chờ' },
   };
 
@@ -31,12 +31,12 @@ export default function ComplianceDashboard() {
       <motion.div variants={fadeUp} className="grid md:grid-cols-4 gap-4">
         <div className="bg-card/60 border border-border/60 rounded-xl p-4">
           <p className="text-xs text-muted-foreground">Compliance Score</p>
-          <p className="font-mono text-3xl font-extrabold text-kapiva-green">{score}%</p>
+          <p className="font-mono text-3xl font-extrabold text-mimi-green">{score}%</p>
           <p className="text-xs text-muted-foreground mt-1">{passedCount}/{complianceItems.length} tiêu chuẩn</p>
         </div>
         <div className="bg-card/60 border border-border/60 rounded-xl p-4">
           <p className="text-xs text-muted-foreground">Mã hóa dữ liệu</p>
-          <p className="text-lg font-bold text-foreground flex items-center gap-2"><Lock size={16} className="text-kapiva-green" /> AES-256</p>
+          <p className="text-lg font-bold text-foreground flex items-center gap-2"><Lock size={16} className="text-mimi-green" /> AES-256</p>
           <p className="text-xs text-muted-foreground mt-1">End-to-end encryption</p>
         </div>
         <div className="bg-card/60 border border-border/60 rounded-xl p-4">
@@ -57,7 +57,7 @@ export default function ComplianceDashboard() {
           <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">
             <Shield size={18} className="text-primary" /> Tuân thủ pháp lý
           </h3>
-          <span className="text-xs bg-kapiva-green/10 text-kapiva-green px-3 py-1 rounded-full font-medium">
+          <span className="text-xs bg-mimi-green/10 text-mimi-green px-3 py-1 rounded-full font-medium">
             {passedCount}/{complianceItems.length} đạt chuẩn
           </span>
         </div>
@@ -102,7 +102,7 @@ export default function ComplianceDashboard() {
               { label: 'Xóa dữ liệu', desc: 'Người dùng có quyền yêu cầu xóa dữ liệu bất cứ lúc nào' },
             ].map(policy => (
               <div key={policy.label} className="flex items-start gap-3 p-3 bg-accent/30 rounded-lg">
-                <Check size={14} className="text-kapiva-green mt-0.5 shrink-0" />
+                <Check size={14} className="text-mimi-green mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-foreground">{policy.label}</p>
                   <p className="text-xs text-muted-foreground">{policy.desc}</p>
@@ -127,7 +127,7 @@ export default function ComplianceDashboard() {
             ].map((log, i) => (
               <div key={i} className="flex items-center justify-between py-2 px-3 text-xs rounded-lg hover:bg-accent/30 transition-colors">
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-kapiva-green" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-mimi-green" />
                   <span className="text-foreground">{log.action}</span>
                 </div>
                 <div className="flex items-center gap-3 text-muted-foreground">

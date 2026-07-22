@@ -231,7 +231,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                 i === activeStep
                   ? 'bg-primary/10 text-primary border border-primary/20'
                   : s.status === 'success'
-                  ? 'bg-kapiva-green/10 text-kapiva-green border border-kapiva-green/20'
+                  ? 'bg-mimi-green/10 text-mimi-green border border-mimi-green/20'
                   : 'bg-accent text-muted-foreground border border-transparent'
               }`}
             >
@@ -277,7 +277,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                       onClick={() => !isUploading && triggerFileSelect(side)}
                       className={`relative rounded-2xl p-8 text-center cursor-pointer transition-all ${
                         uploaded
-                          ? 'bg-kapiva-green/5 border-2 border-kapiva-green/30'
+                          ? 'bg-mimi-green/5 border-2 border-mimi-green/30'
                           : 'border-2 border-dashed border-border hover:border-primary/40'
                       }`}
                     >
@@ -295,10 +295,10 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                         </div>
                       ) : uploaded ? (
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                          <div className="w-14 h-14 rounded-2xl bg-kapiva-green/15 flex items-center justify-center mx-auto mb-3">
-                            <Check size={24} className="text-kapiva-green" />
+                          <div className="w-14 h-14 rounded-2xl bg-mimi-green/15 flex items-center justify-center mx-auto mb-3">
+                            <Check size={24} className="text-mimi-green" />
                           </div>
-                          <p className="text-sm text-kapiva-green font-medium">Đã tải lên ✓</p>
+                          <p className="text-sm text-mimi-green font-medium">Đã tải lên ✓</p>
                           <p className="text-xs text-mimi-green mt-1 flex items-center justify-center gap-1"><Lock size={10} /> Mã hóa kháng lượng tử</p>
                         </motion.div>
                       ) : (
@@ -348,7 +348,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                       />
                     )}
                     {selfieStatus === 'success' && (
-                      <circle cx="100" cy="100" r="90" fill="none" stroke="hsl(var(--kapiva-green))" strokeWidth="3" />
+                      <circle cx="100" cy="100" r="90" fill="none" stroke="hsl(var(--mimi-green))" strokeWidth="3" />
                     )}
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -362,7 +362,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                     {selfieStatus === 'verifying' && <Loader2 size={40} className="text-primary animate-spin" />}
                     {selfieStatus === 'success' && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                        <Fingerprint size={48} className="text-kapiva-green" />
+                        <Fingerprint size={48} className="text-mimi-green" />
                       </motion.div>
                     )}
                   </div>
@@ -386,7 +386,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                 )}
                 {selfieStatus === 'success' && (
                   <div>
-                    <p className="text-sm text-kapiva-green font-medium">✓ Khuôn mặt khớp {kycRecord?.face_match_score || 98.7}%</p>
+                    <p className="text-sm text-mimi-green font-medium">✓ Khuôn mặt khớp {kycRecord?.face_match_score || 98.7}%</p>
                     <p className="text-xs text-muted-foreground mt-1">Vượt ngưỡng xác minh (95%)</p>
                   </div>
                 )}
@@ -411,7 +411,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                     onClick={() => !livenessChecks[check.key] && simulateLiveness(check.key)}
                     className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all ${
                       livenessChecks[check.key]
-                        ? 'bg-kapiva-green/5 border border-kapiva-green/20'
+                        ? 'bg-mimi-green/5 border border-mimi-green/20'
                         : 'bg-card border border-border hover:border-primary/20'
                     }`}
                   >
@@ -421,7 +421,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                     </div>
                     {livenessChecks[check.key] ? (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                        <Check size={18} className="text-kapiva-green" />
+                        <Check size={18} className="text-mimi-green" />
                       </motion.div>
                     ) : (
                       <span className="text-xs text-muted-foreground">Nhấn để bắt đầu</span>
@@ -430,8 +430,8 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
                 ))}
               </div>
               {Object.values(livenessChecks).every(v => v) && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-kapiva-green/10 border border-kapiva-green/20 rounded-xl p-4 text-center">
-                  <p className="text-sm text-kapiva-green font-medium">✓ Xác minh liveness thành công</p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-mimi-green/10 border border-mimi-green/20 rounded-xl p-4 text-center">
+                  <p className="text-sm text-mimi-green font-medium">✓ Xác minh liveness thành công</p>
                 </motion.div>
               )}
             </div>
@@ -507,7 +507,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
             whileHover={{ y: -1 }}
             onClick={handleComplete}
             disabled={!otpCode.every(c => c !== '') || saving}
-            className="bg-kapiva-green text-background px-6 py-2.5 rounded-xl text-sm font-display font-bold disabled:opacity-50 flex items-center gap-2"
+            className="bg-mimi-green text-background px-6 py-2.5 rounded-xl text-sm font-display font-bold disabled:opacity-50 flex items-center gap-2"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             ✓ Hoàn tất xác minh

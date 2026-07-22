@@ -176,7 +176,7 @@ export default function Onboarding() {
 
   const pwStrength = getPasswordStrength(password);
   const strengthLabels = ['', 'Yếu', 'Trung bình', 'Mạnh', 'Rất mạnh'];
-  const strengthColors = ['bg-muted', 'bg-kapiva-red', 'bg-kapiva-amber', 'bg-kapiva-green', 'bg-kapiva-green'];
+  const strengthColors = ['bg-muted', 'bg-mimi-red', 'bg-mimi-amber', 'bg-mimi-green', 'bg-mimi-green'];
   const emailWarn = email && /(@gmail|@yahoo|@hotmail)/i.test(email) ? 'Nên dùng email doanh nghiệp để tăng điểm tín dụng' : '';
 
   const banks = ['Vietcombank', 'BIDV', 'Techcombank', 'MB Bank', 'VPBank', 'Agribank', 'ACB', 'Sacombank', 'TPBank'];
@@ -265,8 +265,8 @@ export default function Onboarding() {
         ))}
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', duration: 0.6 }} className="text-center max-w-lg relative z-10">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2, stiffness: 200 }}
-            className="w-24 h-24 rounded-full bg-kapiva-green/10 border-2 border-kapiva-green/30 flex items-center justify-center mx-auto mb-8">
-            <Check size={40} className="text-kapiva-green" strokeWidth={3} />
+            className="w-24 h-24 rounded-full bg-mimi-green/10 border-2 border-mimi-green/30 flex items-center justify-center mx-auto mb-8">
+            <Check size={40} className="text-mimi-green" strokeWidth={3} />
           </motion.div>
           <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Hồ sơ đã được gửi thành công!</h2>
           <p className="text-muted-foreground mb-6">AI đang phân tích dữ liệu của bạn</p>
@@ -284,7 +284,7 @@ export default function Onboarding() {
                 <item.icon size={16} className="text-muted-foreground shrink-0" />
                 <span className="text-sm text-muted-foreground flex-1">{item.text}</span>
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: item.delay + 0.6, type: 'spring' }}>
-                  <div className="w-5 h-5 rounded-full bg-kapiva-green/20 flex items-center justify-center"><Check size={12} className="text-kapiva-green" /></div>
+                  <div className="w-5 h-5 rounded-full bg-mimi-green/20 flex items-center justify-center"><Check size={12} className="text-mimi-green" /></div>
                 </motion.div>
               </motion.div>
             ))}
@@ -297,7 +297,7 @@ export default function Onboarding() {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 4.2, duration: 0.5 }}>
             <p className="text-sm text-muted-foreground mb-1">Dự kiến hạn mức</p>
-            <p className="font-mono text-4xl font-bold text-kapiva-green mb-1">₫1,500,000,000</p>
+            <p className="font-mono text-4xl font-bold text-mimi-green mb-1">₫1,500,000,000</p>
             <p className="text-sm text-muted-foreground mb-8">Chúng tôi sẽ liên hệ trong 24 giờ</p>
             <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
               onClick={() => navigate('/dashboard')}
@@ -369,7 +369,7 @@ export default function Onboarding() {
                 >
                   <motion.div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 ${
-                      isDone ? 'bg-kapiva-green/12 text-kapiva-green' :
+                      isDone ? 'bg-mimi-green/12 text-mimi-green' :
                       isActive ? 'bg-primary text-primary-foreground shadow-[0_2px_12px_hsla(var(--blue-500)/0.3)]' :
                       'bg-card/50 border border-border/60 text-muted-foreground'
                     }`}
@@ -412,8 +412,8 @@ export default function Onboarding() {
           {/* Trust badge */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
             className="bg-card/30 backdrop-blur-sm border border-border/30 rounded-xl p-4 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-kapiva-green/10 flex items-center justify-center shrink-0">
-              <Shield size={14} className="text-kapiva-green" />
+            <div className="w-8 h-8 rounded-lg bg-mimi-green/10 flex items-center justify-center shrink-0">
+              <Shield size={14} className="text-mimi-green" />
             </div>
             <div>
               <p className="text-xs text-foreground font-medium">Bảo mật ISO 27001</p>
@@ -439,7 +439,7 @@ export default function Onboarding() {
           <div className="flex gap-1.5">
             {stepsMeta.map((_, i) => (
               <div key={i} className="h-1 flex-1 rounded-full overflow-hidden bg-accent/50">
-                <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-kapiva-green"
+                <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-mimi-green"
                   initial={{ width: 0 }} animate={{ width: i <= step ? '100%' : '0%' }}
                   transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                 />
@@ -487,7 +487,7 @@ export default function Onboarding() {
                                 />
                               ))}
                             </div>
-                            <p className={`text-[11px] font-medium ${pwStrength >= 3 ? 'text-kapiva-green' : pwStrength >= 2 ? 'text-kapiva-amber' : 'text-kapiva-red'}`}>
+                            <p className={`text-[11px] font-medium ${pwStrength >= 3 ? 'text-mimi-green' : pwStrength >= 2 ? 'text-mimi-amber' : 'text-mimi-red'}`}>
                               {strengthLabels[pwStrength]}
                             </p>
                           </div>
@@ -582,12 +582,12 @@ export default function Onboarding() {
                     </div>
 
                     {/* Connection status */}
-                    <motion.div layout className="relative overflow-hidden bg-gradient-to-r from-primary/5 via-blue-400/5 to-kapiva-green/5 border border-primary/15 rounded-2xl p-5">
+                    <motion.div layout className="relative overflow-hidden bg-gradient-to-r from-primary/5 via-blue-400/5 to-mimi-green/5 border border-primary/15 rounded-2xl p-5">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <motion.div
-                              className="w-2 h-2 rounded-full bg-kapiva-green"
+                              className="w-2 h-2 rounded-full bg-mimi-green"
                               animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
@@ -599,7 +599,7 @@ export default function Onboarding() {
                         <div className="flex -space-x-2">
                           {connectedBanks.slice(0, 4).map((b) => (
                             <motion.div key={b} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
-                              className="w-8 h-8 rounded-full bg-kapiva-green/15 border-2 border-background flex items-center justify-center text-[10px] font-bold text-kapiva-green">
+                              className="w-8 h-8 rounded-full bg-mimi-green/15 border-2 border-background flex items-center justify-center text-[10px] font-bold text-mimi-green">
                               {b[0]}
                             </motion.div>
                           ))}
@@ -607,7 +607,7 @@ export default function Onboarding() {
                       </div>
                       {/* Animated progress bar */}
                       <div className="mt-3 h-1 bg-border/30 rounded-full overflow-hidden">
-                        <motion.div className="h-full bg-gradient-to-r from-primary to-kapiva-green rounded-full"
+                        <motion.div className="h-full bg-gradient-to-r from-primary to-mimi-green rounded-full"
                           animate={{ width: `${Math.min(connectedBanks.length / 3 * 100, 100)}%` }}
                           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         />
@@ -633,18 +633,18 @@ export default function Onboarding() {
                             <motion.button key={b} whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.97 }}
                               onClick={() => connectBank(b)} disabled={connected || connecting}
                               className={`relative rounded-xl p-3.5 text-center transition-all duration-300 ${
-                                connected ? 'bg-kapiva-green/5 border-2 border-kapiva-green/30' :
+                                connected ? 'bg-mimi-green/5 border-2 border-mimi-green/30' :
                                 connecting ? 'bg-primary/5 border-2 border-primary/30' :
                                 'bg-card/30 border border-border/40 hover:border-primary/30 hover:shadow-[0_6px_20px_hsla(var(--blue-500)/0.08)]'
                               }`}>
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-1.5 text-sm font-bold transition-all ${
-                                connected ? 'bg-kapiva-green/12 text-kapiva-green' : 'bg-accent/50 text-foreground'
+                                connected ? 'bg-mimi-green/12 text-mimi-green' : 'bg-accent/50 text-foreground'
                               }`}>
                                 {connecting ? <Loader2 size={16} className="animate-spin text-primary" /> : b[0] + b[1]}
                               </div>
                               <p className="text-[11px] text-foreground font-medium truncate">{b}</p>
                               <p className={`text-[9px] mt-0.5 font-medium ${
-                                connected ? 'text-kapiva-green' : connecting ? 'text-primary' : 'text-muted-foreground'
+                                connected ? 'text-mimi-green' : connecting ? 'text-primary' : 'text-muted-foreground'
                               }`}>
                                 {connected ? '✓ Đã kết nối' : connecting ? 'Đang...' : 'Kết nối'}
                               </p>
@@ -743,9 +743,9 @@ export default function Onboarding() {
                       />
                       <div className="flex justify-between text-[10px] text-muted-foreground px-1"><span>₫100M</span><span>₫10 tỷ</span></div>
                       <motion.div key={desiredAmount} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="bg-kapiva-green/5 border border-kapiva-green/15 rounded-lg p-2.5 flex items-center gap-2">
-                        <Sparkles size={12} className="text-kapiva-green shrink-0" />
-                        <p className="text-[11px] text-kapiva-green font-medium">
+                        className="bg-mimi-green/5 border border-mimi-green/15 rounded-lg p-2.5 flex items-center gap-2">
+                        <Sparkles size={12} className="text-mimi-green shrink-0" />
+                        <p className="text-[11px] text-mimi-green font-medium">
                           AI ước tính: <span className="font-mono font-bold">{formatVND(Math.min(desiredAmount * 1.5, 10_000_000_000))}</span>
                         </p>
                       </motion.div>
@@ -778,15 +778,15 @@ export default function Onboarding() {
                           <motion.div key={side} whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={() => simulateUpload(side)}
                             className={`relative rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
-                              uploaded ? 'bg-kapiva-green/5 border-2 border-kapiva-green/30' :
+                              uploaded ? 'bg-mimi-green/5 border-2 border-mimi-green/30' :
                               'border-2 border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/3'
                             }`}>
                             {uploaded ? (
                               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
-                                <div className="w-10 h-10 rounded-xl bg-kapiva-green/12 flex items-center justify-center mx-auto mb-2">
-                                  <Check size={18} className="text-kapiva-green" strokeWidth={3} />
+                                <div className="w-10 h-10 rounded-xl bg-mimi-green/12 flex items-center justify-center mx-auto mb-2">
+                                  <Check size={18} className="text-mimi-green" strokeWidth={3} />
                                 </div>
-                                <p className="text-xs text-kapiva-green font-semibold">Đã tải lên</p>
+                                <p className="text-xs text-mimi-green font-semibold">Đã tải lên</p>
                               </motion.div>
                             ) : (
                               <>
@@ -803,15 +803,15 @@ export default function Onboarding() {
                     {/* Selfie */}
                     <motion.div whileHover={{ y: -2 }} onClick={() => simulateUpload('selfie')}
                       className={`rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
-                        uploadedDocs.includes('selfie') ? 'bg-kapiva-green/5 border-2 border-kapiva-green/30' :
+                        uploadedDocs.includes('selfie') ? 'bg-mimi-green/5 border-2 border-mimi-green/30' :
                         'border-2 border-dashed border-border/40 hover:border-primary/40'
                       }`}>
                       {uploadedDocs.includes('selfie') ? (
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
-                          <div className="w-14 h-14 rounded-full bg-kapiva-green/12 flex items-center justify-center mx-auto mb-2">
-                            <Check size={22} className="text-kapiva-green" strokeWidth={3} />
+                          <div className="w-14 h-14 rounded-full bg-mimi-green/12 flex items-center justify-center mx-auto mb-2">
+                            <Check size={22} className="text-mimi-green" strokeWidth={3} />
                           </div>
-                          <p className="text-xs text-kapiva-green font-semibold">Ảnh selfie đã tải lên</p>
+                          <p className="text-xs text-mimi-green font-semibold">Ảnh selfie đã tải lên</p>
                         </motion.div>
                       ) : (
                         <>
@@ -870,7 +870,7 @@ export default function Onboarding() {
                 </motion.button>
               ) : (
                 <motion.button whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleComplete} disabled={registering}
-                  className="bg-gradient-to-r from-primary to-kapiva-green text-primary-foreground px-8 py-3 rounded-xl text-sm font-display font-bold hover:brightness-110 transition-all shadow-[0_4px_20px_hsla(var(--green-500)/0.25)] flex items-center gap-2 disabled:opacity-50">
+                  className="bg-gradient-to-r from-primary to-mimi-green text-primary-foreground px-8 py-3 rounded-xl text-sm font-display font-bold hover:brightness-110 transition-all shadow-[0_4px_20px_hsla(var(--green-500)/0.25)] flex items-center gap-2 disabled:opacity-50">
                   {registering && <Loader2 size={14} className="animate-spin" />} Hoàn tất đăng ký
                 </motion.button>
               )}

@@ -5,26 +5,36 @@
 @layer base {
   /* ── Default: LIGHT theme (Apple-style) ── */
   :root {
-    --bg-base: 240 6% 96%;        /* #F4F4F6 Apple system gray */
+    --bg-base: 220 8% 96%;        /* Apple system gray, retuned to the 220 neutral */
     --bg-surface: 0 0% 100%;
     --bg-card: 0 0% 100%;
-    --bg-card-hover: 240 6% 97%;
+    --bg-card-hover: 220 8% 97%;
 
-    --border-subtle: 240 6% 90%;
+    --border-subtle: 220 8% 90%;
     --border-active: 211 100% 50%;
 
-    --blue-500: 211 100% 50%;     /* #007AFF Apple system blue */
+    /*
+     * Semantic hues, set at the lightness where each one actually passes WCAG AA
+     * (4.5:1) on white — measured, not eyeballed. The vivid iOS values were all
+     * failing as text: green 2.84, amber 2.20, red 3.59, blue 3.98. That is why
+     * coloured figures read washed out; "+₫124M" and "sắp đến hạn" are body-size
+     * text, not decoration. Dropping lightness a few points fixes legibility and
+     * leaves the hue recognisably the same.
+     */
+    --blue-500: 211 100% 46%;     /* 4.60:1 — was 50%, 3.98:1 */
     --blue-400: 211 100% 55%;
     --blue-glow: 211 100% 50%;
-    --green-500: 145 63% 42%;     /* #34C759 → toned for light bg */
-    --green-400: 145 63% 47%;
+    --green-500: 145 63% 32%;     /* 4.66:1 — was 42%, 2.84:1 */
+    --green-400: 145 63% 41%;
     --green-glow: 145 63% 42%;
-    --amber-500: 35 100% 50%;     /* #FF9500 */
-    --red-500: 3 100% 59%;        /* #FF3B30 */
+    --amber-500: 35 100% 34%;     /* 4.53:1 — was 50%, 2.20:1 */
+    --red-500: 3 100% 46%;        /* 4.51:1 — was 59%, 3.59:1 */
 
-    --text-primary: 240 6% 10%;   /* near-black label */
-    --text-secondary: 240 4% 46%; /* secondary label */
-    --text-muted: 240 4% 64%;     /* tertiary label */
+    /* Neutrals sat at hue 240 while the accent is 211, which cast a faint violet
+       over every grey. 220 puts them at the same temperature as the blue. */
+    --text-primary: 220 8% 10%;   /* near-black label */
+    --text-secondary: 220 6% 42%; /* secondary label */
+    --text-muted: 220 6% 55%;     /* tertiary label — was 64%, only 2.60:1 */
 
     --background: var(--bg-base);
     --foreground: var(--text-primary);
@@ -38,7 +48,7 @@
     --secondary-foreground: var(--text-primary);
     --muted: var(--bg-surface);
     --muted-foreground: var(--text-secondary);
-    --accent: 240 6% 94%;
+    --accent: 220 8% 94%;
     --accent-foreground: var(--text-primary);
     --destructive: var(--red-500);
     --destructive-foreground: 0 0% 100%;
@@ -51,7 +61,7 @@
     --sidebar-foreground: var(--text-secondary);
     --sidebar-primary: var(--blue-500);
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 6% 96%;
+    --sidebar-accent: 220 8% 96%;
     --sidebar-accent-foreground: var(--text-primary);
     --sidebar-border: var(--border-subtle);
     --sidebar-ring: var(--blue-500);
@@ -68,13 +78,13 @@
     /* Many near-invisible layers rather than one dark drop — the surface reads
        as lifted without a visible grey smear under it. */
     --shadow-soft:
-      0 1px 2px hsla(240, 6%, 10%, 0.03),
-      0 4px 10px hsla(240, 6%, 10%, 0.025),
-      0 12px 28px hsla(240, 6%, 10%, 0.02),
-      0 28px 60px hsla(240, 6%, 10%, 0.018);
+      0 1px 2px hsla(220, 8%, 10%, 0.03),
+      0 4px 10px hsla(220, 8%, 10%, 0.025),
+      0 12px 28px hsla(220, 8%, 10%, 0.02),
+      0 28px 60px hsla(220, 8%, 10%, 0.018);
 
     /* Soft, layered Apple shadows */
-    --shadow-card: 0 1px 2px hsla(240,6%,10%,0.04), 0 8px 24px hsla(240,6%,10%,0.06);
+    --shadow-card: 0 1px 2px hsla(220,8%,10%,0.04), 0 8px 24px hsla(220,8%,10%,0.06);
     --shadow-blue: 0 8px 24px hsla(var(--blue-glow)/0.18);
     --shadow-green: 0 8px 24px hsla(var(--green-glow)/0.14);
   }
