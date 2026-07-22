@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
-import { GraduationCap, Clock, Check, ChevronRight, X, Loader2, Sparkles, Award, ArrowRight } from 'lucide-react';
+import { Clock, Check, ChevronRight, X, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LESSONS, LESSON_BY_ID, FACTOR_LABEL, FACTOR_EMOJI, LEVEL_LABEL, type Lesson, type FactorKey } from '@/lib/lessons';
-import TechBadge from '@/components/ui/TechBadge';
+import LearnHero from '@/components/learn/LearnHero';
 import { toast } from 'sonner';
 
 const fadeUp = {
@@ -22,11 +22,14 @@ function capabilityFromScore(score: number | null): { label: string; tone: 'blue
   return { label: 'Mới bắt đầu', tone: 'violet' };
 }
 
+// min-w-0 on the button: as a grid item it defaults to min-width:auto, so the
+// nowrap `truncate` title inside propagated its full width upward and pushed the
+// page 23px wider than a 390px phone viewport.
 function LessonCard({ lesson, done, reason, onOpen }: { lesson: Lesson; done: boolean; reason?: string; onOpen: () => void }) {
   return (
     <button
       onClick={onOpen}
-      className="w-full text-left bg-card border hairline rounded-2xl p-4 hover:bg-accent/40 transition-colors pressable"
+      className="w-full min-w-0 text-left bg-card border hairline rounded-2xl p-4 hover:bg-accent/40 transition-colors pressable"
       style={{ boxShadow: 'var(--shadow-card)' }}
     >
       <div className="flex items-start gap-3">
@@ -228,7 +231,6 @@ export default function LearnPage() {
   const cap = capabilityFromScore(score);
   const doneCount = completed.size;
   const total = LESSONS.length;
-  const pct = Math.round((doneCount / total) * 100);
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin text-primary" /></div>;
@@ -236,27 +238,9 @@ export default function LearnPage() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <motion.div variants={fadeUp} className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-2xl bg-primary/10 flex items-center justify-center"><GraduationCap size={19} className="text-primary" /></div>
-            <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Học Fintech</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1.5">Lộ trình cá nhân hóa theo đúng điểm yếu tín dụng của bạn.</p>
-        </div>
-        <TechBadge icon={Award} label={`Cấp độ: ${cap.label}`} tone={cap.tone} />
-      </motion.div>
-
-      {/* Progress */}
-      <motion.div variants={fadeUp} className="bg-card border hairline rounded-3xl p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
-        <div className="flex items-center justify-between mb-2.5">
-          <span className="text-sm font-semibold text-foreground">Tiến độ học tập</span>
-          <span className="text-sm font-mono font-bold text-primary">{doneCount}/{total} bài</span>
-        </div>
-        <div className="w-full h-2.5 bg-accent rounded-full overflow-hidden">
-          <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-mimi-green" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }} />
-        </div>
+      {/* Gamified hero — level, progress and floating rewards in one block */}
+      <motion.div variants={fadeUp}>
+        <LearnHero capLabel={cap.label} doneCount={doneCount} total={total} />
       </motion.div>
 
       {/* Recommended */}

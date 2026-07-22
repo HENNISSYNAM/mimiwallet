@@ -219,6 +219,80 @@
   animation: shimmer 1.5s infinite;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Playful motion kit — used by the gamified Learn hero.
+   Each object floats on its own clock so the group never marches
+   in lockstep: set --float-dur / --float-delay per element.
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes float-bob {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--float-rot, 0deg)); }
+  50%      { transform: translate3d(0, var(--float-rise, -10px), 0) rotate(var(--float-rot-mid, var(--float-rot, 0deg))); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(1.12); }
+}
+
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.6) translateY(8px); }
+  60%  { opacity: 1; transform: scale(1.06) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-float-bob {
+  animation: float-bob var(--float-dur, 4s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+  will-change: transform;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse var(--float-dur, 6s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+}
+
+.animate-pop-in {
+  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: var(--float-delay, 0s);
+}
+
+/* Gloss sweep for a hero CTA. The highlight rides across on top of
+   whatever background the button already has. */
+.shimmer-sweep {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.shimmer-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    hsl(0 0% 100% / 0.35) 45%,
+    hsl(0 0% 100% / 0.35) 55%,
+    transparent 80%
+  );
+  background-size: 250% 100%;
+  animation: shimmer 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Respect the system setting — Apple HIG treats this as a hard requirement,
+   and a page of bobbing coins is exactly what it protects against. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-bob,
+  .animate-glow-pulse,
+  .animate-pop-in,
+  .shimmer-sweep::after {
+    animation: none !important;
+  }
+  .animate-pop-in { opacity: 1; transform: none; }
+}
+
 /* Hide custom scrollbars for a cleaner Apple look */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
