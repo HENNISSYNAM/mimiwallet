@@ -15,7 +15,44 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      #root starts with a boot screen instead of being empty. React's render()
+      replaces these children on mount, so it is invisible in the happy path.
+      If the bundle throws at import time (a stale cached build, a missing env
+      var) React never mounts and this stays on screen — a readable message
+      instead of a blank white page.
+    -->
+    <div id="root">
+      <div id="boot-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,system-ui,-apple-system,sans-serif;background:#F4F4F6;color:#1c1c1e">
+        <div style="max-width:320px;width:100%;text-align:center">
+          <div id="boot-spinner" style="width:36px;height:36px;margin:0 auto;border:3px solid rgba(0,0,0,.1);border-top-color:#007AFF;border-radius:50%;animation:boot-spin .8s linear infinite"></div>
+          <div id="boot-failed" style="display:none">
+            <div style="font-size:28px;margin-bottom:12px">🔄</div>
+            <h1 style="font-size:17px;font-weight:700;margin:0">Ứng dụng cần tải lại</h1>
+            <p style="font-size:14px;line-height:1.5;color:#6b6b70;margin:8px 0 20px">
+              Trình duyệt có thể đang giữ phiên bản cũ. Nhấn nút bên dưới để tải bản mới nhất.
+            </p>
+            <button onclick="try{localStorage.clear();sessionStorage.clear()}catch(e){};location.reload(true)"
+                    style="width:100%;height:48px;border:0;border-radius:16px;background:#007AFF;color:#fff;font-size:15px;font-weight:600;cursor:pointer">
+              Tải lại ứng dụng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <style>@keyframes boot-spin{to{transform:rotate(360deg)}}</style>
+    <script>
+      // If React has not replaced the boot screen after 10s, the bundle failed
+      // to execute — swap the spinner for an actionable recovery message.
+      setTimeout(function () {
+        var s = document.getElementById('boot-spinner');
+        var f = document.getElementById('boot-failed');
+        if (s && f && document.body.contains(s)) {
+          s.style.display = 'none';
+          f.style.display = 'block';
+        }
+      }, 10000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
