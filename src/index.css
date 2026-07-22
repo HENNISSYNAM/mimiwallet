@@ -150,41 +150,89 @@
   .card-hover:hover {
     @apply bg-accent border-primary/40;
   }
-  /* iOS-style frosted glass surface (headers, tab bars) */
-  .glass {
-    background: hsla(var(--bg-surface) / 0.72);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-  }
+  /* ─────────────────────────────────────────────────────────────
+     Liquid Glass
+     ─────────────────────────────────────────────────────────────
+     This material belongs to the floating control layer only — nav
+     bars, tab bars, sheets, toolbars. Content stays opaque, and glass
+     is never nested inside glass.
+
+     That is not just style guidance: --bg-base is a flat #F4F4F6, so
+     glass laid over a static card has nothing behind it to blur and
+     costs a compositor layer for no visible gain. The material only
+     resolves when content actually travels underneath it, which is
+     exactly what a sticky header and a fixed tab bar do.
+     ───────────────────────────────────────────────────────────── */
 
   /*
-   * Glass panel, iOS-style. What separates this from plain `.glass` is the
-   * specular edge: a bright inset hairline along the top and a dim one along
-   * the bottom, which is what makes a translucent surface read as a lit pane
-   * of glass rather than a blurred rectangle.
+   * Shared optics: specular rim, outer hairline, ambient lift.
+   *
+   * Deliberately sets no `position`. Every surface that wears this is already
+   * `sticky` or `fixed`, and those Tailwind utilities are single classes too —
+   * so a `position: relative` here wins on source order and silently unpins
+   * them. It did exactly that: the sticky header scrolled away and the fixed
+   * tab bar left the screen. `isolation` alone gives ::after the stacking
+   * context it needs.
    */
-  .glass-card {
-    position: relative;
-    background: hsla(0 0% 100% / 0.62);
-    backdrop-filter: saturate(180%) blur(24px);
-    -webkit-backdrop-filter: saturate(180%) blur(24px);
-    border: 1px solid hsla(var(--text-primary) / 0.06);
-    border-radius: var(--radius-2xl);
+  .lg-surface {
+    isolation: isolate;
     box-shadow:
-      inset 0 1px 0 hsla(0 0% 100% / 0.7),
-      inset 0 -1px 0 hsla(var(--text-primary) / 0.03),
+      inset 0 1px 0 hsla(0 0% 100% / 0.75),          /* top edge catches light */
+      inset 0 -1px 0 hsla(var(--text-primary) / 0.04), /* bottom edge falls off */
+      0 0 0 0.5px hsla(var(--text-primary) / 0.07),  /* outer hairline */
       var(--shadow-soft);
   }
 
-  /* Brand-tinted variant for hero/credential surfaces. */
-  .glass-card--tinted {
-    background:
-      linear-gradient(
-        135deg,
-        hsla(var(--blue-500) / 0.06),
-        hsla(var(--green-500) / 0.05)
-      ),
-      hsla(0 0% 100% / 0.66);
+  /*
+   * The rim reads as thickness. A second backdrop pass, masked down to
+   * just the outer band, blurs the edge harder than the middle — which
+   * is how the eye infers a pane with depth rather than a flat wash.
+   * Chrome can do true refraction via `backdrop-filter: url(#svg)`, but
+   * Safari on iOS cannot, and most judges will be on an iPhone, so this
+   * stays pure CSS and looks identical on both.
+   */
+  .lg-surface::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    padding: 6px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Regular — the default. Legible over anything. */
+  .lg-regular {
+    background: hsla(0 0% 100% / 0.72);
+    /* The high saturate is what makes the pane pick up colour from whatever
+       passes beneath it, rather than greying it out. */
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.04);
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.04);
+  }
+
+  /* Clear — thinner, for panes sitting over busy or colourful content. */
+  .lg-clear {
+    background: hsla(0 0% 100% / 0.42);
+    backdrop-filter: blur(16px) saturate(200%);
+    -webkit-backdrop-filter: blur(16px) saturate(200%);
+  }
+
+  /* Concentric nesting: an inner radius shares its centre with the outer one. */
+  .lg-inner-radius {
+    border-radius: calc(var(--radius-2xl) - 12px);
+  }
+
+  /* Legacy alias so existing control-layer markup keeps working. */
+  .glass {
+    background: hsla(var(--bg-surface) / 0.72);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
   }
 
   /*
@@ -193,10 +241,27 @@
    */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass,
-    .glass-card,
-    .glass-card--tinted {
+    .lg-regular,
+    .lg-clear {
       background: hsl(var(--bg-card));
     }
+    .lg-surface::after { display: none; }
+  }
+
+  /*
+   * Some people get motion sick or lose legibility with translucency, and both
+   * macOS and iOS expose a system switch for it. Honour it: opaque surface, no
+   * second backdrop pass.
+   */
+  @media (prefers-reduced-transparency: reduce) {
+    .glass,
+    .lg-regular,
+    .lg-clear {
+      background: hsl(var(--bg-card));
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .lg-surface::after { display: none; }
   }
   /* Tactile press feedback for buttons/tap targets */
   .pressable {

@@ -1034,7 +1034,8 @@ export default function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ delay: i * 0.09, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="glass-card p-6 text-center"
+                className="rounded-5xl border hairline bg-card p-6 text-center"
+                style={{ boxShadow: 'var(--shadow-soft)' }}
               >
                 <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
                   <m.icon size={22} />

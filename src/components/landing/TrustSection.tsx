@@ -58,7 +58,8 @@ function CredentialCard({ c, index }: { c: Credential; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ delay: index * 0.09, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="glass-card glass-card--tinted p-5 sm:p-6 text-left"
+      className="rounded-5xl border hairline bg-card p-5 sm:p-6 text-left"
+      style={{ boxShadow: 'var(--shadow-soft)' }}
     >
       <div className="flex items-start gap-4">
         <span className="shrink-0 grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">

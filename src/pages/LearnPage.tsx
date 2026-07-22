@@ -85,7 +85,7 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
         onClick={(e) => e.stopPropagation()}
         className="bg-card w-full sm:max-w-lg max-h-[88vh] rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col safe-bottom"
       >
-        <div className="px-5 py-4 border-b hairline flex items-center justify-between glass shrink-0">
+        <div className="px-5 py-4 border-b hairline flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             {(() => { const Icon = FACTOR_ICON[lesson.factor]; return <Icon size={18} className="text-muted-foreground shrink-0" />; })()}
             <div className="min-w-0">

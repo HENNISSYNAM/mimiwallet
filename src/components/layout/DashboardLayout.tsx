@@ -4,6 +4,7 @@ import { Bell, Search, LayoutDashboard, FileText, ShieldCheck, BarChart3, Sparkl
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
 import { toast } from 'sonner';
+import { useScrolled } from '@/hooks/useScrolled';
 
 const mobileNav = [
   { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
@@ -30,13 +31,19 @@ const pageTitles: Record<string, string> = {
 export default function DashboardLayout() {
   const location = useLocation();
   const title = pageTitles[location.pathname] || 'Dashboard';
+  // The header only takes definition once content is travelling beneath it.
+  const scrolled = useScrolled(8);
 
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-16 border-b hairline flex items-center justify-between px-4 lg:px-6 glass sticky top-0 z-30 safe-top">
+        <header
+          className={`h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 safe-top transition-[background-color,box-shadow,border-color] duration-300 ${
+            scrolled ? 'lg-surface lg-regular border-b hairline' : 'bg-background border-b border-transparent'
+          }`}
+        >
           <h1 className="font-display font-bold text-[19px] text-foreground tracking-tight">{title}</h1>
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 bg-accent rounded-xl px-3 py-2">
@@ -72,7 +79,8 @@ export default function DashboardLayout() {
         </main>
 
         {/* Mobile bottom nav — iOS tab bar */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 glass border-t hairline flex justify-around z-40 safe-bottom">
+        {/* Tab bar always has content underneath, so it always reads as glass. */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 lg-surface lg-regular border-t hairline flex justify-around z-40 safe-bottom">
           {mobileNav.map((item) => (
             <NavLink
               key={item.path}

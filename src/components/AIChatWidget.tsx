@@ -151,7 +151,7 @@ export default function AIChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed z-50 flex flex-col overflow-hidden bg-card border hairline shadow-2xl
+            className="fixed z-50 flex flex-col overflow-hidden lg-surface lg-regular
                        inset-x-0 bottom-0 rounded-t-3xl max-h-[82vh] safe-bottom
                        sm:inset-x-auto sm:bottom-24 lg:sm:bottom-24 sm:right-6 sm:w-[380px] sm:max-h-[560px] sm:rounded-3xl"
           >
@@ -161,7 +161,7 @@ export default function AIChatWidget() {
             </div>
 
             {/* Header */}
-            <div className="px-4 py-3 border-b hairline flex items-center justify-between glass">
+            <div className="px-4 py-3 border-b hairline flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center">
                   <Sparkles size={16} className="text-white" />

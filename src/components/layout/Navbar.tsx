@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useScrolled } from '@/hooks/useScrolled';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +13,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
+  const scrolled = useScrolled(80);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -21,18 +22,12 @@ export default function Navbar() {
     i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
   };
 
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 80);
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
-  }, []);
-
   return (
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 h-16 flex items-center transition-all duration-300 ${
           scrolled
-            ? 'bg-background/85 backdrop-blur-xl border-b border-border'
+            ? 'lg-surface lg-regular border-b hairline'
             : 'bg-transparent'
         }`}
       >
