@@ -3,6 +3,16 @@
 // LearnPage can surface lessons targeting a company's weakest factors first.
 // Content is intentionally static (no LLM dependency) for reliability.
 
+import {
+  RevenueTrend,
+  CostRatio,
+  InvoiceDoc,
+  BankPillars,
+  FlowWave,
+  LearnCap,
+  type BrandIconProps,
+} from '@/components/illustrations/BrandIcons';
+
 export type FactorKey =
   | 'revenueTrend'
   | 'expenseToIncomeRatio'
@@ -39,13 +49,17 @@ export const FACTOR_LABEL: Record<FactorKey, string> = {
   general: 'Kiến thức nền',
 };
 
-export const FACTOR_EMOJI: Record<FactorKey, string> = {
-  revenueTrend: '📈',
-  expenseToIncomeRatio: '📊',
-  invoicePunctuality: '💳',
-  loanRepaymentRatio: '🏦',
-  cashFlowVolatility: '🌊',
-  general: '📚',
+/**
+ * Line icons rather than emoji: emoji render differently on every platform,
+ * cannot inherit colour, and read as placeholder art next to a real UI.
+ */
+export const FACTOR_ICON: Record<FactorKey, (p: BrandIconProps) => JSX.Element> = {
+  revenueTrend: RevenueTrend,
+  expenseToIncomeRatio: CostRatio,
+  invoicePunctuality: InvoiceDoc,
+  loanRepaymentRatio: BankPillars,
+  cashFlowVolatility: FlowWave,
+  general: LearnCap,
 };
 
 export const LEVEL_LABEL: Record<Level, string> = {

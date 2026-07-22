@@ -5,7 +5,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { industries, provinces } from '@/lib/mockData';
 import { formatVND } from '@/lib/formatters';
 import { getPasswordStrength } from '@/lib/validators';
-import { Check, ArrowRight, Upload, Camera, Pen, X, Loader2, Shield, Sparkles, Zap, Globe, Brain, Banknote, Lock, Eye, EyeOff } from 'lucide-react';
+import { Check, ArrowRight, Upload, Camera, Pen, X, Loader2, Shield, Sparkles, Zap, Globe, Brain, Banknote, Lock, Eye, EyeOff, Package, Users, Wrench, ShieldCheck, Search, Smartphone } from 'lucide-react';
+import { InvoiceDoc, RevenueTrend, ScoringBolt, InsightSpark } from '@/components/illustrations/BrandIcons';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import AnimatedStepFlow from '@/components/onboarding/AnimatedStepFlow';
@@ -181,12 +182,12 @@ export default function Onboarding() {
   const banks = ['Vietcombank', 'BIDV', 'Techcombank', 'MB Bank', 'VPBank', 'Agribank', 'ACB', 'Sacombank', 'TPBank'];
 
   const purposeOptions = [
-    { icon: '📦', label: 'Nhập hàng tồn kho', desc: 'Vòng quay hàng hóa' },
-    { icon: '🧾', label: 'Ứng tiền hóa đơn', desc: 'Nhận trước 80%' },
-    { icon: '📈', label: 'Mở rộng kinh doanh', desc: 'Chi nhánh, sản phẩm mới' },
-    { icon: '👥', label: 'Trả lương nhân viên', desc: 'Giữ chân nhân tài' },
-    { icon: '🔧', label: 'Đầu tư thiết bị', desc: 'Máy móc, công nghệ' },
-    { icon: '🛡️', label: 'Dự phòng dòng tiền', desc: 'An toàn tài chính' },
+    { icon: Package, label: 'Nhập hàng tồn kho', desc: 'Vòng quay hàng hóa' },
+    { icon: InvoiceDoc, label: 'Ứng tiền hóa đơn', desc: 'Nhận trước 80%' },
+    { icon: RevenueTrend, label: 'Mở rộng kinh doanh', desc: 'Chi nhánh, sản phẩm mới' },
+    { icon: Users, label: 'Trả lương nhân viên', desc: 'Giữ chân nhân tài' },
+    { icon: Wrench, label: 'Đầu tư thiết bị', desc: 'Máy móc, công nghệ' },
+    { icon: ShieldCheck, label: 'Dự phòng dòng tiền', desc: 'An toàn tài chính' },
   ];
 
   const connectBank = (bank: string) => {
@@ -273,14 +274,14 @@ export default function Onboarding() {
           {/* Animated analysis steps */}
           <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 mb-6 text-left space-y-4">
             {[
-              { text: 'Phân tích dữ liệu ngân hàng...', icon: '🔍', delay: 0.8 },
-              { text: 'Tính toán điểm tín dụng AI...', icon: '🤖', delay: 1.6 },
-              { text: 'Xác định hạn mức phù hợp...', icon: '💡', delay: 2.4 },
-              { text: 'Gửi kết quả qua SMS/Email...', icon: '📱', delay: 3.2 },
+              { text: 'Phân tích dữ liệu ngân hàng...', icon: Search, delay: 0.8 },
+              { text: 'Tính toán điểm tín dụng AI...', icon: ScoringBolt, delay: 1.6 },
+              { text: 'Xác định hạn mức phù hợp...', icon: InsightSpark, delay: 2.4 },
+              { text: 'Gửi kết quả qua SMS/Email...', icon: Smartphone, delay: 3.2 },
             ].map((item, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: item.delay, duration: 0.4 }}
                 className="flex items-center gap-3">
-                <span className="text-lg">{item.icon}</span>
+                <item.icon size={16} className="text-muted-foreground shrink-0" />
                 <span className="text-sm text-muted-foreground flex-1">{item.text}</span>
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: item.delay + 0.6, type: 'spring' }}>
                   <div className="w-5 h-5 rounded-full bg-kapiva-green/20 flex items-center justify-center"><Check size={12} className="text-kapiva-green" /></div>
@@ -291,7 +292,7 @@ export default function Onboarding() {
 
           {/* Credit score gauge */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.5 }}>
-            <CreditScoreGauge score={782} maxScore={1000} />
+            <CreditScoreGauge score={701} maxScore={850} />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 4.2, duration: 0.5 }}>
@@ -536,7 +537,6 @@ export default function Onboarding() {
                                   ? 'bg-primary/10 border border-primary/30 text-foreground shadow-[0_0_0_2px_hsla(var(--blue-500)/0.08)]'
                                   : 'bg-card/30 border border-border/40 text-muted-foreground hover:border-primary/20'
                               }`}>
-                              <span>{ind.icon}</span>
                               <span className="truncate text-xs">{ind.label}</span>
                             </motion.button>
                           ))}
@@ -616,7 +616,7 @@ export default function Onboarding() {
 
                     {/* Tabs */}
                     <div className="bg-card/30 backdrop-blur-sm rounded-xl p-1 flex gap-1 border border-border/30">
-                      {['🏦 Ngân hàng', '📊 Kế toán', '🛒 Thương mại'].map((t, i) => (
+                      {['Ngân hàng', 'Kế toán', 'Thương mại'].map((t, i) => (
                         <button key={t} onClick={() => setDataTab(i)}
                           className={`flex-1 text-xs py-2.5 rounded-lg font-medium transition-all duration-300 ${
                             dataTab === i ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
@@ -723,7 +723,7 @@ export default function Onboarding() {
                                 <Check size={10} className="text-primary-foreground" strokeWidth={3} />
                               </motion.div>
                             )}
-                            <span className="text-xl">{p.icon}</span>
+                            <p.icon size={20} className="mx-auto text-primary" />
                             <p className="text-xs text-foreground font-semibold mt-2">{p.label}</p>
                             <p className="text-[10px] text-muted-foreground mt-0.5">{p.desc}</p>
                           </motion.button>
@@ -871,7 +871,7 @@ export default function Onboarding() {
               ) : (
                 <motion.button whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleComplete} disabled={registering}
                   className="bg-gradient-to-r from-primary to-kapiva-green text-primary-foreground px-8 py-3 rounded-xl text-sm font-display font-bold hover:brightness-110 transition-all shadow-[0_4px_20px_hsla(var(--green-500)/0.25)] flex items-center gap-2 disabled:opacity-50">
-                  {registering ? <Loader2 size={14} className="animate-spin" /> : '🚀'} Hoàn tất đăng ký
+                  {registering && <Loader2 size={14} className="animate-spin" />} Hoàn tất đăng ký
                 </motion.button>
               )}
             </div>

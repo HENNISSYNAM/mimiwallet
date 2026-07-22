@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatVND, formatDateShort } from '@/lib/formatters';
 import { Plus, Download, Search, X, ArrowRight, FileText, Loader2 } from 'lucide-react';
+import { InsightSpark } from '@/components/illustrations/BrandIcons';
 import { toast } from 'sonner';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -431,7 +432,7 @@ export default function InvoicesPage() {
 
                 {(selectedInvoice.status === 'pending' || selectedInvoice.status === 'overdue') && (
                   <div className="bg-gradient-to-br from-primary/5 to-mimi-green/5 border border-primary/15 rounded-2xl p-5">
-                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">💡 Ứng vốn hóa đơn</p>
+                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><InsightSpark size={16} className="text-primary" /> Ứng vốn hóa đơn</p>
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       <div className="flex justify-between">
                         <span>Số tiền ứng (80%)</span>

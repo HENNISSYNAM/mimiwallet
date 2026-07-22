@@ -14,7 +14,7 @@ const vi = {
 
   // Hero
   hero: {
-    badge: '🌱 Nền tảng tài chính xanh #1 Việt Nam — Tín chỉ carbon & vốn bền vững',
+    badge: 'Vốn lưu động cho doanh nghiệp nhỏ và siêu nhỏ',
     titleLine1: 'Ví xanh cho',
     titleLine2: 'tương lai bền vững',
     subtitle: 'MIMI WALLET kết hợp tài chính xanh, tín chỉ carbon và vốn lưu động thông minh.',
@@ -209,7 +209,7 @@ const vi = {
 
   // Dashboard Overview
   dashboard: {
-    greeting: 'Xin chào, Anh Minh 👋',
+    greeting: 'Xin chào, Anh Minh',
     lastUpdate: 'Cập nhật lần cuối: 14:32',
     totalBalance: 'Tổng số dư',
     monthlyRevenue: 'Doanh thu tháng này',
@@ -218,10 +218,10 @@ const vi = {
     progress: 'Tiến độ',
     invoicesActive: 'hóa đơn đang hoạt động',
     invoicesDue: 'hóa đơn sắp đến hạn',
-    rankA: 'Hạng A — ↑ +12 điểm',
-    veryGood: 'Rất tốt',
+    rankA: 'Hạng B — ↑ +12 điểm',
+    veryGood: 'Tốt',
     cashFlowTitle: 'Dòng tiền',
-    aiInsights: '🧠 Insights từ AI',
+    aiInsights: 'Insights từ AI',
     recentTx: 'Giao dịch gần đây',
     viewAll: 'Xem tất cả',
     quickActions: 'Thao tác nhanh',
@@ -229,9 +229,9 @@ const vi = {
     advanceInvoice: 'Ứng vốn hóa đơn',
     viewReports: 'Xem báo cáo',
     applyLoan: 'Đăng ký vay vốn',
-    warning: '⚠️ Cảnh báo',
-    opportunity: '💡 Cơ hội',
-    reminder: '🔔 Nhắc nhở',
+    warning: 'Cảnh báo',
+    opportunity: 'Cơ hội',
+    reminder: 'Nhắc nhở',
     viewSolution: 'Xem giải pháp',
     income: 'Thu',
     expense: 'Chi',

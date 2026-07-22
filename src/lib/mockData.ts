@@ -5,7 +5,10 @@ export const companyProfile = {
   yearsOperating: 4,
   employees: 45,
   monthlyRevenue: 8_320_000_000,
-  creditScore: 782,
+  // Matches what the deployed model returns for the demo company, so the
+  // marketing surfaces and the live Credit page cannot contradict each other.
+  creditScore: 701,
+  creditScoreMax: 850,
   creditLimit: 5_000_000_000,
   taxId: '0312345678',
   plan: 'Growth',
@@ -142,14 +145,14 @@ export const provinces = [
 ];
 
 export const industries = [
-  { icon: '🍜', label: 'F&B & Nhà hàng' },
-  { icon: '🛍️', label: 'Bán lẻ & Thương mại' },
-  { icon: '🏭', label: 'Sản xuất & Chế biến' },
-  { icon: '🚚', label: 'Logistics & Vận tải' },
-  { icon: '💊', label: 'Dược phẩm & Y tế' },
-  { icon: '🏗️', label: 'Xây dựng & Vật liệu' },
-  { icon: '📱', label: 'Công nghệ & Phần mềm' },
-  { icon: '📦', label: 'Xuất nhập khẩu' },
-  { icon: '🌾', label: 'Nông nghiệp' },
-  { icon: '⚙️', label: 'Khác' },
+  { label: 'F&B & Nhà hàng' },
+  { label: 'Bán lẻ & Thương mại' },
+  { label: 'Sản xuất & Chế biến' },
+  { label: 'Logistics & Vận tải' },
+  { label: 'Dược phẩm & Y tế' },
+  { label: 'Xây dựng & Vật liệu' },
+  { label: 'Công nghệ & Phần mềm' },
+  { label: 'Xuất nhập khẩu' },
+  { label: 'Nông nghiệp' },
+  { label: 'Khác' },
 ];

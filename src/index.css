@@ -223,6 +223,18 @@
   .vnd {
     font-family: var(--font-mono);
   }
+  /*
+   * Currency figures. JetBrains Mono has no ₫ glyph, so `font-mono` made the
+   * browser swap fonts mid-string and the symbol rendered as a mismatched đ.
+   * Inter carries ₫ and its tabular figures keep columns aligned, which is the
+   * only reason the mono face was reached for here.
+   */
+  .money {
+    font-family: var(--font-body);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    letter-spacing: -0.01em;
+  }
   .text-positive {
     color: hsl(var(--green-500));
   }

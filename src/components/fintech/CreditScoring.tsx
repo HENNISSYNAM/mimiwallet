@@ -6,6 +6,15 @@ import { formatVNDShort } from '@/lib/formatters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import TransactionUpload from './TransactionUpload';
+import {
+  RevenueTrend,
+  CostRatio,
+  InvoiceDoc,
+  BankPillars,
+  FlowWave,
+  InsightSpark,
+  type BrandIconProps,
+} from '@/components/illustrations/BrandIcons';
 import TechBadge from '@/components/ui/TechBadge';
 import { toast } from 'sonner';
 
@@ -38,12 +47,13 @@ const FACTOR_META: Record<string, { label: string; icon: React.ReactNode }> = {
   cashFlowVolatility: { label: 'Ổn định dòng tiền', icon: <BarChart3 size={16} /> },
 };
 
-const IMPROVEMENT_TIPS: Record<string, { icon: string; title: string; desc: string }> = {
-  revenueTrend: { icon: '📈', title: 'Tăng trưởng doanh thu', desc: 'Duy trì đà tăng doanh thu hàng tháng để cải thiện điểm này' },
-  expenseToIncomeRatio: { icon: '📊', title: 'Kiểm soát chi phí', desc: 'Giữ tỷ lệ chi phí dưới 60% doanh thu để tối ưu điểm' },
-  invoicePunctuality: { icon: '💳', title: 'Thanh toán đúng hạn', desc: 'Duy trì 100% hóa đơn thanh toán đúng hạn' },
-  loanRepaymentRatio: { icon: '🏦', title: 'Trả nợ đúng hạn', desc: 'Hoàn trả các khoản vay đúng tiến độ' },
-  cashFlowVolatility: { icon: '🌊', title: 'Ổn định dòng tiền', desc: 'Giảm biến động thu chi giữa các tháng' },
+type TipIcon = (p: BrandIconProps) => JSX.Element;
+const IMPROVEMENT_TIPS: Record<string, { icon: TipIcon; title: string; desc: string }> = {
+  revenueTrend: { icon: RevenueTrend, title: 'Tăng trưởng doanh thu', desc: 'Duy trì đà tăng doanh thu hàng tháng để cải thiện điểm này' },
+  expenseToIncomeRatio: { icon: CostRatio, title: 'Kiểm soát chi phí', desc: 'Giữ tỷ lệ chi phí dưới 60% doanh thu để tối ưu điểm' },
+  invoicePunctuality: { icon: InvoiceDoc, title: 'Thanh toán đúng hạn', desc: 'Duy trì 100% hóa đơn thanh toán đúng hạn' },
+  loanRepaymentRatio: { icon: BankPillars, title: 'Trả nợ đúng hạn', desc: 'Hoàn trả các khoản vay đúng tiến độ' },
+  cashFlowVolatility: { icon: FlowWave, title: 'Ổn định dòng tiền', desc: 'Giảm biến động thu chi giữa các tháng' },
 };
 
 function scoreToGrade(score: number): { grade: string; color: string; label: string } {
@@ -393,14 +403,14 @@ export default function CreditScoring() {
 
       {/* Recommendations */}
       <motion.div variants={fadeUp} className="bg-gradient-to-r from-primary/5 to-mimi-green/5 border border-primary/10 rounded-2xl p-6">
-        <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2 mb-4">🧠 Gợi ý cải thiện điểm</h3>
+        <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2 mb-4"><InsightSpark size={19} className="text-primary" /> Gợi ý cải thiện điểm</h3>
         <div className="grid md:grid-cols-3 gap-4">
           {weakestFactors.map((f) => {
-            const tip = IMPROVEMENT_TIPS[f.factor_name] ?? { icon: '💡', title: f.factor_name, desc: 'Cải thiện chỉ số này để tăng điểm' };
+            const tip = IMPROVEMENT_TIPS[f.factor_name] ?? { icon: InsightSpark, title: f.factor_name, desc: 'Cải thiện chỉ số này để tăng điểm' };
             const potentialImpact = Math.round((100 - f.normalized_score) * f.weight * 5.5);
             return (
               <div key={f.factor_name} className="bg-card/50 border border-border/60 rounded-xl p-4 flex flex-col">
-                <span className="text-2xl">{tip.icon}</span>
+                <tip.icon size={22} className="text-primary shrink-0 mt-0.5" />
                 <h4 className="text-sm font-semibold text-foreground mt-2">{tip.title}</h4>
                 <p className="text-xs text-muted-foreground mt-1 flex-1">{tip.desc}</p>
                 <span className="inline-block w-fit mt-2 text-xs font-mono font-bold text-mimi-green bg-mimi-green/10 px-2 py-0.5 rounded">+{potentialImpact} điểm</span>

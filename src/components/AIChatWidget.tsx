@@ -198,7 +198,7 @@ export default function AIChatWidget() {
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary/10 to-mimi-green/10 flex items-center justify-center mb-3">
                     <Sparkles size={24} className="text-primary" />
                   </div>
-                  <p className="text-[15px] font-semibold text-foreground">Xin chào! 👋</p>
+                  <p className="text-[15px] font-semibold text-foreground">Xin chào</p>
                   <p className="text-[13px] text-muted-foreground mt-1 max-w-[240px] mx-auto">
                     Tôi đọc được điểm tín dụng, dòng tiền và hóa đơn của bạn — hỏi tôi bất cứ điều gì.
                   </p>

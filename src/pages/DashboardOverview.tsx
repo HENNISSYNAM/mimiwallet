@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
 const stagger = {
@@ -31,7 +32,7 @@ function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', 
           <Icon size={16} className="text-primary" />
         </div>
       </div>
-      <p className="font-mono text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">{value}</p>
+      <p className="money text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">{value}</p>
       <p className={`text-xs mt-1.5 ${subColor} font-medium`}>{sub}</p>
       {children}
     </motion.div>
@@ -40,7 +41,7 @@ function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', 
 
 function CreditScoreRing() {
   const circumference = 2 * Math.PI * 38;
-  const filled = (782 / 1000) * circumference;
+  const filled = (701 / 850) * circumference;
   return (
     <svg viewBox="0 0 100 100" className="w-16 h-16">
       <circle cx="50" cy="50" r="38" fill="none" stroke="hsl(var(--border))" strokeWidth="5" />
@@ -57,8 +58,8 @@ function CreditScoreRing() {
           <stop offset="100%" stopColor="hsl(var(--green-500))" />
         </linearGradient>
       </defs>
-      <text x="50" y="48" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="15">782</text>
-      <text x="50" y="62" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="Inter, -apple-system, sans-serif" fontSize="7">/ 1000</text>
+      <text x="50" y="48" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="15">701</text>
+      <text x="50" y="62" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="Inter, -apple-system, sans-serif" fontSize="7">/ 850</text>
     </svg>
   );
 }
@@ -138,7 +139,7 @@ export default function DashboardOverview() {
           <div className="flex items-center gap-4 -mt-1">
             <CreditScoreRing />
             <div>
-              <p className="font-mono text-lg font-bold text-foreground">782</p>
+              <p className="font-mono text-lg font-bold text-foreground">701</p>
               <p className="text-xs text-mimi-green font-medium">{t('dashboard.veryGood')}</p>
             </div>
           </div>
@@ -177,9 +178,9 @@ export default function DashboardOverview() {
             </ResponsiveContainer>
           </div>
           <div className="mt-4 bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-start gap-3">
-            <span className="text-base mt-0.5">🧠</span>
+            <InsightSpark size={17} className="text-primary shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="font-mono font-semibold text-mimi-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
+              <p className="text-sm text-foreground leading-relaxed">Tháng 4 có nguy cơ thiếu hụt <span className="money font-semibold text-mimi-amber">₫340M</span> do 2 khoản thanh toán lớn trùng nhau.</p>
               <button onClick={() => navigate('/dashboard/loans')} className="text-xs text-primary mt-2 hover:underline font-medium flex items-center gap-1">
                 {t('dashboard.viewSolution')} <ArrowRight size={10} />
               </button>
@@ -231,7 +232,7 @@ export default function DashboardOverview() {
                   <p className="text-xs text-muted-foreground">{tx.category}</p>
                 </div>
                 <div className="text-right">
-                  <p className={`font-mono text-sm font-semibold ${tx.amount > 0 ? 'text-positive' : 'text-negative'}`}>
+                  <p className={`money text-sm font-semibold ${tx.amount > 0 ? 'text-positive' : 'text-negative'}`}>
                     {tx.amount > 0 ? '+' : ''}{formatVNDShort(tx.amount)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">{tx.date.slice(5)}</p>
@@ -245,10 +246,10 @@ export default function DashboardOverview() {
           <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.quickActions')}</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: '🧾', label: t('dashboard.createInvoice'), path: '/dashboard/invoices' },
-              { icon: '💳', label: t('dashboard.applyLoan'), path: '/dashboard/loans' },
-              { icon: '📊', label: t('dashboard.viewReports'), path: '/dashboard/reports' },
-              { icon: '🎓', label: 'Học Fintech', path: '/dashboard/learn' },
+              { icon: InvoiceDoc, label: t('dashboard.createInvoice'), path: '/dashboard/invoices' },
+              { icon: CapitalVault, label: t('dashboard.applyLoan'), path: '/dashboard/loans' },
+              { icon: CashflowChart, label: t('dashboard.viewReports'), path: '/dashboard/reports' },
+              { icon: LearnCap, label: 'Học Fintech', path: '/dashboard/learn' },
             ].map((a) => (
               <motion.button
                 key={a.label}
@@ -257,7 +258,7 @@ export default function DashboardOverview() {
                 onClick={() => navigate(a.path)}
                 className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-5 text-center hover:border-primary/20 hover:shadow-[0_8px_24px_hsla(var(--blue-500)/0.06)] transition-all duration-300"
               >
-                <div className="text-3xl mb-3">{a.icon}</div>
+                <a.icon size={24} className="mx-auto mb-3 text-primary" />
                 <p className="text-sm text-foreground font-medium">{a.label}</p>
               </motion.button>
             ))}

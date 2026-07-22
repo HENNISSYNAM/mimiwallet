@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Clock, Check, ChevronRight, X, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
-import { LESSONS, LESSON_BY_ID, FACTOR_LABEL, FACTOR_EMOJI, LEVEL_LABEL, type Lesson, type FactorKey } from '@/lib/lessons';
+import { LESSONS, LESSON_BY_ID, FACTOR_LABEL, FACTOR_ICON, LEVEL_LABEL, type Lesson, type FactorKey } from '@/lib/lessons';
 import LearnHero from '@/components/learn/LearnHero';
 import { toast } from 'sonner';
 
@@ -33,8 +33,8 @@ function LessonCard({ lesson, done, reason, onOpen }: { lesson: Lesson; done: bo
       style={{ boxShadow: 'var(--shadow-card)' }}
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center text-xl shrink-0">
-          {FACTOR_EMOJI[lesson.factor]}
+        <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center text-muted-foreground shrink-0">
+          {(() => { const Icon = FACTOR_ICON[lesson.factor]; return <Icon size={19} />; })()}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -87,7 +87,7 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
       >
         <div className="px-5 py-4 border-b hairline flex items-center justify-between glass shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xl">{FACTOR_EMOJI[lesson.factor]}</span>
+            {(() => { const Icon = FACTOR_ICON[lesson.factor]; return <Icon size={18} className="text-muted-foreground shrink-0" />; })()}
             <div className="min-w-0">
               <p className="text-sm font-bold text-foreground truncate">{lesson.title}</p>
               <p className="text-[11px] text-muted-foreground">{FACTOR_LABEL[lesson.factor]} · {lesson.minutes} phút</p>
@@ -140,7 +140,7 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
           {submitted && (
             <div className={`rounded-2xl p-4 text-center ${passed ? 'bg-mimi-green/10' : 'bg-mimi-amber/10'}`}>
               <p className={`text-sm font-semibold ${passed ? 'text-mimi-green' : 'text-mimi-amber'}`}>
-                {passed ? `✅ Hoàn thành! Bạn đúng ${correctCount}/${lesson.quiz.length}` : `Bạn đúng ${correctCount}/${lesson.quiz.length} — ôn lại và thử lại nhé`}
+                {passed ? `Hoàn thành — bạn đúng ${correctCount}/${lesson.quiz.length}` : `Bạn đúng ${correctCount}/${lesson.quiz.length} — ôn lại và thử lại nhé`}
               </p>
             </div>
           )}
@@ -205,7 +205,7 @@ export default function LearnPage() {
       .upsert({ company_id: companyId, lesson_id: lesson.id, quiz_score: quizScore }, { onConflict: 'company_id,lesson_id' });
     if (error) { toast.error('Không lưu được tiến độ'); return; }
     setCompleted((s) => new Set(s).add(lesson.id));
-    toast.success('Đã hoàn thành! Tiếp tục cải thiện điểm nhé 🎉');
+    toast.success('Đã hoàn thành bài học');
   };
 
   // Recommended lessons: focus param first, then weakest factors, not-yet-done first.
@@ -246,7 +246,7 @@ export default function LearnPage() {
       {/* Recommended */}
       {recommended.length > 0 && (
         <motion.div variants={fadeUp}>
-          <h3 className="text-lg font-display font-bold text-foreground mb-1">🎯 Đề xuất cho bạn</h3>
+          <h3 className="text-lg font-display font-bold text-foreground mb-1">Đề xuất cho bạn</h3>
           <p className="text-xs text-muted-foreground mb-3">Ưu tiên theo 2 yếu tố tín dụng đang thấp nhất — cải thiện chúng để tăng điểm nhanh nhất.</p>
           <div className="grid sm:grid-cols-2 gap-3">
             {recommended.map(({ lesson, reason }) => (
@@ -262,7 +262,7 @@ export default function LearnPage() {
         {grouped.map((g) => (
           <div key={g.factor}>
             <p className="text-sm font-semibold text-muted-foreground mb-2.5 flex items-center gap-2">
-              <span>{FACTOR_EMOJI[g.factor]}</span> {FACTOR_LABEL[g.factor]}
+              {(() => { const Icon = FACTOR_ICON[g.factor]; return <Icon size={15} />; })()} {FACTOR_LABEL[g.factor]}
             </p>
             <div className="grid sm:grid-cols-2 gap-3">
               {g.lessons.map((lesson) => (

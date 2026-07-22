@@ -15,7 +15,12 @@ i18n
     fallbackLng: 'vi',
     interpolation: { escapeValue: false },
     detection: {
-      order: ['localStorage', 'navigator'],
+      // localStorage only, on purpose. With 'navigator' in the chain any browser
+      // reporting en-US rendered the dashboard in English inside otherwise
+      // Vietnamese chrome — fallbackLng does not help there, because English is
+      // a supported language rather than a missing one. Vietnamese SMEs are the
+      // audience, so vi is the default until someone picks otherwise.
+      order: ['localStorage'],
       caches: ['localStorage'],
     },
   });

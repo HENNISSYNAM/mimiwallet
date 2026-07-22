@@ -131,7 +131,7 @@ export default function LoansPage() {
                   <stop offset="100%" stopColor="hsl(var(--green-500))" />
                 </linearGradient>
               </defs>
-              <text x="100" y="90" textAnchor="middle" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="36">782</text>
+              <text x="100" y="90" textAnchor="middle" fill="hsl(var(--text-primary))" fontFamily="Inter, -apple-system, sans-serif" fontWeight="800" fontSize="36">701</text>
               <text x="100" y="110" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="Inter, -apple-system, sans-serif" fontSize="12">Hạng A — Xuất sắc</text>
             </svg>
             <p className="text-xs text-muted-foreground">Cập nhật: 09/03/2026</p>

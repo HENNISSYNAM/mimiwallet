@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { RefreshCw } from 'lucide-react';
 
 /**
  * Last line of defence against a blank white screen.
@@ -46,8 +47,8 @@ export default class AppErrorBoundary extends Component<Props, State> {
     return (
       <div className="min-h-screen flex items-center justify-center px-6 bg-background">
         <div className="max-w-sm w-full text-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5 text-2xl">
-            🔄
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5 text-primary">
+            <RefreshCw size={24} />
           </div>
           <h1 className="text-lg font-display font-bold text-foreground">
             Ứng dụng cần tải lại

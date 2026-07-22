@@ -14,7 +14,7 @@ const en = {
 
   // Hero
   hero: {
-    badge: '🌱 Vietnam\'s #1 Green Finance Platform — Carbon Credits & Sustainable Capital',
+    badge: 'Working capital for small and micro businesses',
     titleLine1: 'Green wallet for a',
     titleLine2: 'sustainable future',
     subtitle: 'MIMI WALLET combines green finance, carbon credits and smart working capital.',
@@ -209,7 +209,7 @@ const en = {
 
   // Dashboard Overview
   dashboard: {
-    greeting: 'Hello, Anh Minh 👋',
+    greeting: 'Hello, Anh Minh',
     lastUpdate: 'Last updated: 14:32',
     totalBalance: 'Total balance',
     monthlyRevenue: 'Revenue this month',
@@ -218,10 +218,10 @@ const en = {
     progress: 'Progress',
     invoicesActive: 'active invoices',
     invoicesDue: 'invoices due soon',
-    rankA: 'Rank A — ↑ +12 points',
-    veryGood: 'Very Good',
+    rankA: 'Rank B — ↑ +12 points',
+    veryGood: 'Good',
     cashFlowTitle: 'Cash Flow',
-    aiInsights: '🧠 AI Insights',
+    aiInsights: 'AI Insights',
     recentTx: 'Recent transactions',
     viewAll: 'View all',
     quickActions: 'Quick actions',
@@ -229,9 +229,9 @@ const en = {
     advanceInvoice: 'Advance invoice',
     viewReports: 'View reports',
     applyLoan: 'Apply for loan',
-    warning: '⚠️ Warning',
-    opportunity: '💡 Opportunity',
-    reminder: '🔔 Reminder',
+    warning: 'Warning',
+    opportunity: 'Opportunity',
+    reminder: 'Reminder',
     viewSolution: 'View solution',
     income: 'Income',
     expense: 'Expense',

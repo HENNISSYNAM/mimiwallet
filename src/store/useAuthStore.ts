@@ -21,13 +21,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
 
   initialize: async () => {
-    // Set up listener FIRST
+    // Subscribing fires the listener immediately with INITIAL_SESSION, which on
+    // a cold load carries a null session. Clearing `loading` there let
+    // ProtectedRoute see {loading:false, isAuthenticated:false} and bounce
+    // straight to /login — before the demo sign-in below had a chance to run.
+    // Opening /dashboard directly therefore hit a login wall even though the
+    // sign-in went on to succeed. Keep `loading` owned by initialize() until the
+    // whole flow settles; the listener only tracks later auth changes.
+    let settled = false;
     supabase.auth.onAuthStateChange((_event, session) => {
       set({
         isAuthenticated: !!session,
         user: session?.user ?? null,
         session,
-        loading: false,
+        ...(settled ? { loading: false } : {}),
       });
     });
     // Then get current session
@@ -50,6 +57,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
 
+    settled = true;
     set({
       isAuthenticated: !!session,
       user: session?.user ?? null,

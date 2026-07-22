@@ -189,6 +189,62 @@ export function MentorLink(p: BrandIconProps) {
   );
 }
 
+/** Spark cluster — a machine-generated insight. Replaces the 🧠 emoji. */
+export function InsightSpark(p: BrandIconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M11 3.2l1.5 3.7 3.7 1.5-3.7 1.5L11 13.6 9.5 9.9 5.8 8.4l3.7-1.5z" />
+      <path d="M17.8 13.4l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" />
+      <path d="M5.6 16.2l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" />
+    </Svg>
+  );
+}
+
+/** Two bars with a divider — an expense-to-revenue ratio. */
+export function CostRatio(p: BrandIconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3.4" y="9" width="6" height="11.4" rx="1.4" />
+      <rect x="14.6" y="4.4" width="6" height="16" rx="1.4" />
+      <path d="M3.4 20.4h17.2" />
+      <path d="M12 5.6v9.2" strokeDasharray="2 2.4" />
+    </Svg>
+  );
+}
+
+/** Wave band — cash-flow volatility. Replaces the 🌊 emoji. */
+export function FlowWave(p: BrandIconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M2.6 8.6c2.4-3 4.8-3 7.2 0s4.8 3 7.2 0 4.8-3 4.4-.4" />
+      <path d="M2.6 14c2.4-3 4.8-3 7.2 0s4.8 3 7.2 0 4.8-3 4.4-.4" />
+      <path d="M2.6 19.4c2.4-3 4.8-3 7.2 0" opacity="0.45" />
+    </Svg>
+  );
+}
+
+/** Arrow climbing over bars — revenue trend. */
+export function RevenueTrend(p: BrandIconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M3.4 20.4h17.2" />
+      <path d="M6.6 20.4v-4.8M11 20.4v-8.4M15.4 20.4v-5.6M19.8 20.4v-11" />
+      <path d="M5.4 10.4l4.6-4.4 3.4 2.6 5.6-5" />
+    </Svg>
+  );
+}
+
+/** Wallet with a card lip — total balance. */
+export function WalletMark(p: BrandIconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M3 7.4a2.4 2.4 0 012.4-2.4h11.2a2 2 0 012 2v1.6" />
+      <rect x="3" y="7.4" width="18" height="12.6" rx="2.6" />
+      <path d="M21 12.4h-4a2 2 0 000 4h4" />
+    </Svg>
+  );
+}
+
 /** Building with a spark — an innovation centre. */
 export function InnovationHub(p: BrandIconProps) {
   return (

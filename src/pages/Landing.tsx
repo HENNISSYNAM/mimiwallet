@@ -238,12 +238,12 @@ function ProcessFlow() {
                     <motion.img src={aiAnalysis} alt="AI Analysis" className="w-32 h-32 mx-auto rounded-2xl object-cover mb-4 shadow-lg"
                       initial={{ scale: 0.6, opacity: 0, rotateY: -30 }} animate={{ scale: 1, opacity: 1, rotateY: 0 }} transition={{ delay: 0.2, duration: 0.8, type: 'spring' }}
                     />
-                    <motion.div className="absolute -inset-2 rounded-2xl border border-primary/20 pointer-events-none" animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 3, repeat: Infinity }} />
+                    <div className="absolute -inset-2 rounded-2xl border border-primary/15 pointer-events-none" />
                   </motion.div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'Credit Score', value: '782', color: 'text-kapiva-green' },
+                    { label: 'Credit Score', value: '701', color: 'text-kapiva-green' },
                     { label: 'Risk Level', value: 'Thấp', color: 'text-kapiva-green' },
                     { label: 'Cash Flow', value: '+15.5%', color: 'text-primary' },
                     { label: 'Approval', value: '98%', color: 'text-kapiva-green' },
@@ -313,8 +313,6 @@ function ProcessFlow() {
 function HeroMockup() {
   return (
     <motion.div {...fadeUp(0.5)} className="relative mt-16 mx-auto max-w-[900px]">
-      {/* Glow effect */}
-      <div className="absolute -inset-10 bg-gradient-to-r from-primary/20 via-transparent to-kapiva-green/20 blur-3xl opacity-40 pointer-events-none" />
       
       <motion.div
         className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl group cursor-pointer"
@@ -373,7 +371,7 @@ function HeroMockup() {
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Credit Score</p>
-          <p className="text-sm font-mono font-bold text-primary">782 / 850</p>
+          <p className="text-sm font-mono font-bold text-primary">701 / 850</p>
         </div>
       </motion.div>
     </motion.div>
@@ -483,81 +481,77 @@ export default function Landing() {
 
       {/* ═══ HERO ═══ */}
       <section ref={heroRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-background">
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: 'linear-gradient(hsl(var(--text-primary)/0.15) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--text-primary)/0.15) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }} />
-        {/* Gradient orbs */}
-        <motion.div className="absolute top-20 right-[20%] w-[500px] h-[500px] rounded-full blur-[120px] opacity-[0.08]"
-          style={{ background: 'hsl(225,100%,57%)' }}
-          animate={{ scale: [1, 1.15, 1], x: [0, 30, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div className="absolute bottom-20 left-[10%] w-[400px] h-[400px] rounded-full blur-[100px] opacity-[0.06]"
-          style={{ background: 'hsl(158,100%,43%)' }}
-          animate={{ scale: [1, 1.2, 1], y: [0, -20, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        />
+        {/*
+          Previously a grid overlay plus two blurred colour orbs drifting on
+          infinite loops. Ambient motion behind a headline is decoration that
+          never resolves — it pulls the eye away from the copy and is a hallmark
+          of template landing pages. A single static wash is enough to keep the
+          section from reading flat.
+        */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.04] via-transparent to-transparent" />
 
         <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 container mx-auto px-4 text-center pt-24 pb-12">
-          {/* Badge */}
-          <motion.div {...fadeUp(0)} className="inline-flex items-center gap-2 border border-primary/20 bg-primary/5 px-5 py-2 rounded-full mb-8">
-            <span className="w-2 h-2 rounded-full bg-kapiva-green animate-pulse" />
-            <span className="text-sm text-foreground font-medium">🌱 Nền tảng tài chính xanh #1 Việt Nam — Tín chỉ carbon & vốn bền vững</span>
-          </motion.div>
-
-          {/* Headline */}
-          <motion.h1 {...fadeUp(0.1)} className="font-display font-extrabold text-foreground leading-[1.05] tracking-tight max-w-4xl mx-auto" style={{ fontSize: 'clamp(2.8rem, 6vw, 5.5rem)' }}>
-            Ví xanh cho{' '}
-            <br className="hidden md:block" />
-            <span className="relative inline-block">
-              <span className="text-gradient">tương lai bền vững</span>
-              <motion.span
-                className="absolute -bottom-2 left-0 right-0 h-[3px] bg-gradient-to-r from-primary to-kapiva-green rounded-full"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.8, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </span>
-          </motion.h1>
-
-          <motion.p {...fadeUp(0.2)} className="mt-8 text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            MIMI WALLET kết hợp tài chính xanh, tín chỉ carbon và vốn lưu động thông minh.{' '}
-            <span className="text-foreground font-medium">Hướng tới Net Zero cùng doanh nghiệp Việt.</span>
+          {/* Eyebrow — states the category, makes no ranking claim. */}
+          <motion.p {...fadeUp(0)} className="text-sm font-medium text-muted-foreground mb-6">
+            Vốn lưu động cho doanh nghiệp nhỏ và siêu nhỏ
           </motion.p>
 
-          {/* CTA */}
-          <motion.div {...fadeUp(0.3)} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <motion.button
+          {/*
+            One solid colour, no gradient fill and no underline swipe. Gradient
+            headlines are the single loudest "generated page" signal; at this
+            size the typeface and the spacing around it carry the weight.
+          */}
+          <motion.h1
+            {...fadeUp(0.1)}
+            className="font-display font-extrabold text-foreground leading-[1.03] tracking-[-0.03em] max-w-4xl mx-auto"
+            style={{ fontSize: 'clamp(2.6rem, 5.5vw, 4.75rem)' }}
+          >
+            Vốn về tài khoản
+            <br className="hidden md:block" /> trước khi khách trả tiền
+          </motion.h1>
+
+          <motion.p {...fadeUp(0.2)} className="mt-6 text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+            Mimi Wallet chấm điểm tín dụng doanh nghiệp bạn từ dữ liệu giao dịch thật, rồi ứng
+            trước tới 80% giá trị hóa đơn chưa tới hạn.
+          </motion.p>
+
+          {/* One primary action; the demo sits beside it as a quiet text link. */}
+          <motion.div {...fadeUp(0.3)} className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-x-7 gap-y-4">
+            <button
               onClick={() => navigate('/register')}
-              className="shimmer-sweep bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-display font-bold text-base shadow-[0_8px_30px_hsla(225,100%,57%,0.25)] hover:shadow-[0_12px_40px_hsla(225,100%,57%,0.35)] transition-all duration-300"
-              whileHover={{ y: -3, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              className="bg-primary text-primary-foreground h-13 px-7 rounded-2xl font-display font-semibold text-[15px] pressable transition-colors hover:bg-primary/90"
+              style={{ height: '52px' }}
             >
-              Bắt đầu miễn phí — 5 phút →
-            </motion.button>
-            <motion.button
+              Bắt đầu miễn phí
+            </button>
+            <button
               onClick={() => navigate('/dashboard')}
-              className="border border-border text-foreground px-8 py-4 rounded-xl font-body text-sm hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center gap-2"
-              whileHover={{ y: -2 }}
+              className="text-[15px] font-medium text-primary hover:underline underline-offset-4 flex items-center gap-1.5"
+              style={{ minHeight: '44px' }}
             >
-              <Play size={14} className="text-primary" /> Xem demo 2 phút
-            </motion.button>
+              <Play size={13} /> Xem demo 2 phút
+            </button>
           </motion.div>
 
-          {/* Trust badges */}
-          <motion.div {...fadeUp(0.4)} className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
+          {/*
+            Monochrome and chrome-free. Four pills in four different accent
+            colours turned a supporting row into a second focal point; the icons
+            now inherit one muted tone so the eye stays on the headline and CTA.
+            Every item here is demonstrable in the live demo.
+          */}
+          <motion.div
+            {...fadeUp(0.4)}
+            className="mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[13px] text-muted-foreground"
+          >
             {[
-              // Only capabilities that are live in the app — these are the first
-              // claims a judge sees, and each one is demonstrable in the demo.
-              { icon: <ScoringBolt size={14} className="text-violet-500" />, text: 'Chấm điểm AI ~3 giây' },
-              { icon: <QuantumShield size={14} className="text-primary" />, text: 'Mã hóa kháng lượng tử' },
-              { icon: <InvoiceDoc size={14} className="text-kapiva-green" />, text: 'Ứng vốn hóa đơn' },
-              { icon: <LearnCap size={14} className="text-emerald-500" />, text: 'Học Fintech cá nhân hóa' },
-            ].map((t, i) => (
-              <span key={i} className="flex items-center gap-2 bg-card border border-border/60 px-3 py-1.5 rounded-lg">
-                {t.icon} <span className="font-medium">{t.text}</span>
+              { Icon: ScoringBolt, text: 'Chấm điểm AI ~3 giây' },
+              { Icon: QuantumShield, text: 'Mã hóa kháng lượng tử' },
+              { Icon: InvoiceDoc, text: 'Ứng vốn hóa đơn' },
+              { Icon: LearnCap, text: 'Học Fintech cá nhân hóa' },
+            ].map(({ Icon, text }) => (
+              <span key={text} className="flex items-center gap-2">
+                <Icon size={15} className="text-muted-foreground/70" />
+                {text}
               </span>
             ))}
           </motion.div>
@@ -725,7 +719,7 @@ export default function Landing() {
                       <stop offset="100%" stopColor="hsl(158,100%,43%)" />
                     </linearGradient>
                   </defs>
-                  <text x="60" y="65" textAnchor="middle" fill="hsl(var(--text-primary))" fontFamily="var(--font-mono)" fontWeight="800" fontSize="18">782</text>
+                  <text x="60" y="65" textAnchor="middle" fill="hsl(var(--text-primary))" fontFamily="var(--font-mono)" fontWeight="800" fontSize="18">701</text>
                 </svg>
               </div>
             </BentoCard>
@@ -747,8 +741,6 @@ export default function Landing() {
                 <motion.div
                   className="absolute -inset-3 rounded-2xl"
                   style={{ background: 'radial-gradient(circle, hsla(225,100%,57%,0.1) 0%, transparent 70%)' }}
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.2, 0.6] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 />
               </motion.div>
             </BentoCard>
@@ -806,8 +798,6 @@ export default function Landing() {
                 <motion.div
                   className="absolute inset-0 pointer-events-none"
                   style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(158,100%,43%,0.08) 50%, transparent 70%)' }}
-                  animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/20 to-transparent pointer-events-none" />
               </motion.div>
@@ -874,13 +864,9 @@ export default function Landing() {
                 <div className="flex flex-col justify-center space-y-3">
                   <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
                     <div className="flex items-center gap-3">
-                      <motion.div 
-                        className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center"
-                        animate={{ rotate: [0, 360] }}
-                        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                      >
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
                         <Recycle size={18} className="text-emerald-500" />
-                      </motion.div>
+                      </div>
                       <div>
                         <p className="text-sm font-semibold text-foreground">Tín chỉ Carbon</p>
                         <p className="text-xs text-muted-foreground">Chưa triển khai — dự kiến 2026</p>
@@ -963,7 +949,6 @@ export default function Landing() {
               transition={{ duration: 0.7, delay: 0.2 }}
               className="relative"
             >
-              <div className="absolute -inset-10 bg-gradient-to-br from-primary/10 to-kapiva-green/10 blur-3xl opacity-50 rounded-full" />
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
                 <NetworkGraph labels={['Giao dịch', 'Đặc trưng', 'Mô hình ML', 'Điểm số']} />
                 <motion.div 
@@ -983,8 +968,6 @@ export default function Landing() {
                   <motion.div
                     className="absolute inset-0 pointer-events-none"
                     style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(225,100%,57%,0.06) 50%, transparent 70%)' }}
-                    animate={{ backgroundPosition: ['0% 0%', '200% 200%'] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent pointer-events-none" />
                 </motion.div>
