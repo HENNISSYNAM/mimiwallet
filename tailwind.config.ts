@@ -77,6 +77,9 @@ export default {
         xl: "1rem",
         "2xl": "1.25rem",
         "3xl": "1.5rem",
+        // Oversized surfaces (hero, credential cards) — see --radius-* in index.css
+        "4xl": "var(--radius-xl)",
+        "5xl": "var(--radius-2xl)",
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },

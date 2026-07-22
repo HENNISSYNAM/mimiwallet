@@ -1,6 +1,18 @@
-import { LucideIcon } from 'lucide-react';
+import type { ComponentType } from 'react';
 
 type Tone = 'blue' | 'green' | 'amber' | 'violet';
+
+/**
+ * Structural rather than `LucideIcon`, so the badge accepts both lucide icons
+ * and our own set in `@/components/illustrations/BrandIcons` — they share this
+ * prop shape by design.
+ */
+type IconLike = ComponentType<{
+  // lucide types `size` as `string | number`; matching it keeps LucideIcon assignable.
+  size?: string | number;
+  className?: string;
+  strokeWidth?: string | number;
+}>;
 
 const TONES: Record<Tone, string> = {
   blue: 'bg-primary/10 text-primary',
@@ -16,7 +28,7 @@ export default function TechBadge({
   tone = 'blue',
   className = '',
 }: {
-  icon?: LucideIcon;
+  icon?: IconLike;
   label: string;
   tone?: Tone;
   className?: string;

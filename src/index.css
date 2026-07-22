@@ -60,6 +60,19 @@
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
 
+    /* Oversized radii for hero/credential surfaces. PayPal runs up to 53px on
+       its hero cards; the existing 3xl (24px) reads tight next to that. */
+    --radius-xl: 28px;
+    --radius-2xl: 40px;
+
+    /* Many near-invisible layers rather than one dark drop — the surface reads
+       as lifted without a visible grey smear under it. */
+    --shadow-soft:
+      0 1px 2px hsla(240, 6%, 10%, 0.03),
+      0 4px 10px hsla(240, 6%, 10%, 0.025),
+      0 12px 28px hsla(240, 6%, 10%, 0.02),
+      0 28px 60px hsla(240, 6%, 10%, 0.018);
+
     /* Soft, layered Apple shadows */
     --shadow-card: 0 1px 2px hsla(240,6%,10%,0.04), 0 8px 24px hsla(240,6%,10%,0.06);
     --shadow-blue: 0 8px 24px hsla(var(--blue-glow)/0.18);
@@ -142,6 +155,48 @@
     background: hsla(var(--bg-surface) / 0.72);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  /*
+   * Glass panel, iOS-style. What separates this from plain `.glass` is the
+   * specular edge: a bright inset hairline along the top and a dim one along
+   * the bottom, which is what makes a translucent surface read as a lit pane
+   * of glass rather than a blurred rectangle.
+   */
+  .glass-card {
+    position: relative;
+    background: hsla(0 0% 100% / 0.62);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    border: 1px solid hsla(var(--text-primary) / 0.06);
+    border-radius: var(--radius-2xl);
+    box-shadow:
+      inset 0 1px 0 hsla(0 0% 100% / 0.7),
+      inset 0 -1px 0 hsla(var(--text-primary) / 0.03),
+      var(--shadow-soft);
+  }
+
+  /* Brand-tinted variant for hero/credential surfaces. */
+  .glass-card--tinted {
+    background:
+      linear-gradient(
+        135deg,
+        hsla(var(--blue-500) / 0.06),
+        hsla(var(--green-500) / 0.05)
+      ),
+      hsla(0 0% 100% / 0.66);
+  }
+
+  /*
+   * Without backdrop-filter the translucent fill would sit on whatever is
+   * behind it and the text contrast collapses, so fall back to an opaque card.
+   */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .glass-card,
+    .glass-card--tinted {
+      background: hsl(var(--bg-card));
+    }
   }
   /* Tactile press feedback for buttons/tap targets */
   .pressable {

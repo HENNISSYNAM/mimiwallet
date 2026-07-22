@@ -2,10 +2,19 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring, AnimatePres
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import TrustSection from '@/components/landing/TrustSection';
+import {
+  ScoringBolt,
+  CashflowChart,
+  CapitalVault,
+  QuantumShield,
+  InvoiceDoc,
+  LearnCap,
+} from '@/components/illustrations/BrandIcons';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Star, Leaf, TreePine, Recycle } from 'lucide-react';
+import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { miniChartData } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,13 +52,40 @@ const scaleIn = (delay = 0) => ({
 });
 
 /* ─── Metric counter ─── */
-function MetricItem({ value, suffix, label, sub, delay }: { value: number; suffix?: string; label: string; sub: string; delay: number }) {
+/**
+ * `prefix`/`suffix` are free-form — an earlier version matched them against a
+ * hardcoded whitelist, which silently dropped anything it did not recognise.
+ *
+ * `animate={false}` skips the count-up for values that are identifiers rather
+ * than quantities (ML-KEM-768 ticking up from zero reads as a loading bar, not
+ * a fact).
+ */
+function MetricItem({
+  value,
+  prefix,
+  suffix,
+  label,
+  sub,
+  delay,
+  animate = true,
+}: {
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  label: string;
+  sub: string;
+  delay: number;
+  animate?: boolean;
+}) {
   const { ref, isVisible } = useScrollReveal();
-  const count = useCountUp(value, 1500, isVisible);
+  const count = useCountUp(value, 1500, isVisible && animate);
+  const shown = animate ? count : value;
   return (
     <motion.div ref={ref} {...fadeUp(delay)} className="text-center group">
       <p className="font-mono text-3xl md:text-5xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors duration-300">
-        {suffix === '₫' ? `₫${count.toLocaleString('vi-VN')}` : count.toLocaleString('vi-VN')}{suffix === '%' ? '%' : suffix === ' Nghìn tỷ' ? ' Nghìn tỷ' : suffix === ' giờ' ? ' giờ' : ''}
+        {prefix}
+        {shown.toLocaleString('vi-VN')}
+        {suffix}
       </p>
       <p className="text-sm text-muted-foreground mt-2 font-medium">{label}</p>
       <p className="text-xs text-kapiva-green mt-1 font-mono">{sub}</p>
@@ -345,8 +381,9 @@ function HeroMockup() {
 }
 
 /* ─── Bento Solution Card ─── */
-function BentoCard({ title, desc, icon, children, className = '', delay = 0 }: {
-  title: string; desc: string; icon: React.ReactNode; children?: React.ReactNode; className?: string; delay?: number;
+/** `badge` marks a capability as planned rather than shipped (e.g. "Lộ trình 2026"). */
+function BentoCard({ title, desc, icon, badge, children, className = '', delay = 0 }: {
+  title: string; desc: string; icon: React.ReactNode; badge?: string; children?: React.ReactNode; className?: string; delay?: number;
 }) {
   const { ref, isVisible } = useScrollReveal();
   return (
@@ -363,7 +400,14 @@ function BentoCard({ title, desc, icon, children, className = '', delay = 0 }: {
           {icon}
         </div>
         <div>
-          <h3 className="font-display font-bold text-foreground text-base">{title}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-display font-bold text-foreground text-base">{title}</h3>
+            {badge && (
+              <span className="rounded-full bg-mimi-amber/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-mimi-amber">
+                {badge}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">{desc}</p>
         </div>
       </div>
@@ -418,52 +462,6 @@ function PricingCard({ name, price, features, cta, highlighted, annual, badge }:
         {cta}
       </button>
     </motion.div>
-  );
-}
-
-/* ─── Testimonial ─── */
-function TestimonialCard({ initials, name, role, quote, metric, delay }: {
-  initials: string; name: string; role: string; quote: string; metric: string; delay: number;
-}) {
-  const { ref, isVisible } = useScrollReveal();
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={isVisible ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay }}
-      whileHover={{ y: -4 }}
-      className="bg-card border border-border/60 rounded-2xl p-6 hover:border-primary/20 transition-all duration-300"
-    >
-      <div className="flex gap-1 mb-4">
-        {[...Array(5)].map((_, i) => <Star key={i} size={14} className="fill-kapiva-amber text-kapiva-amber" />)}
-      </div>
-      <p className="text-sm text-muted-foreground mb-6 leading-relaxed italic">"{quote}"</p>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-kapiva-green flex items-center justify-center text-sm font-bold text-primary-foreground">
-            {initials}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">{name}</p>
-            <p className="text-xs text-muted-foreground">{role}</p>
-          </div>
-        </div>
-        <div className="bg-kapiva-green/10 text-kapiva-green text-xs px-3 py-1.5 rounded-lg font-mono font-medium">{metric}</div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Logo Cloud ─── */
-function LogoCloud() {
-  const logos = ['Vietcombank', 'BIDV', 'VPBank', 'Techcombank', 'MISA', 'Shopee', 'Lazada', 'Tiki'];
-  return (
-    <div className="flex items-center justify-center gap-8 flex-wrap opacity-40">
-      {logos.map(l => (
-        <span key={l} className="text-sm font-display font-semibold text-muted-foreground tracking-wider uppercase">{l}</span>
-      ))}
-    </div>
   );
 }
 
@@ -533,7 +531,7 @@ export default function Landing() {
           <motion.div {...fadeUp(0.3)} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <motion.button
               onClick={() => navigate('/register')}
-              className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-display font-bold text-base shadow-[0_8px_30px_hsla(225,100%,57%,0.25)] hover:shadow-[0_12px_40px_hsla(225,100%,57%,0.35)] transition-all duration-300"
+              className="shimmer-sweep bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-display font-bold text-base shadow-[0_8px_30px_hsla(225,100%,57%,0.25)] hover:shadow-[0_12px_40px_hsla(225,100%,57%,0.35)] transition-all duration-300"
               whileHover={{ y: -3, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -551,10 +549,12 @@ export default function Landing() {
           {/* Trust badges */}
           <motion.div {...fadeUp(0.4)} className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
             {[
-              { icon: <Leaf size={14} className="text-kapiva-green" />, text: 'Tài chính xanh' },
-              { icon: <TreePine size={14} className="text-emerald-500" />, text: 'Tín chỉ Carbon' },
-              { icon: <Brain size={14} className="text-violet-500" />, text: 'AI Credit Scoring' },
-              { icon: <Recycle size={14} className="text-primary" />, text: 'Net Zero 2050' },
+              // Only capabilities that are live in the app — these are the first
+              // claims a judge sees, and each one is demonstrable in the demo.
+              { icon: <ScoringBolt size={14} className="text-violet-500" />, text: 'Chấm điểm AI ~3 giây' },
+              { icon: <QuantumShield size={14} className="text-primary" />, text: 'Mã hóa kháng lượng tử' },
+              { icon: <InvoiceDoc size={14} className="text-kapiva-green" />, text: 'Ứng vốn hóa đơn' },
+              { icon: <LearnCap size={14} className="text-emerald-500" />, text: 'Học Fintech cá nhân hóa' },
             ].map((t, i) => (
               <span key={i} className="flex items-center gap-2 bg-card border border-border/60 px-3 py-1.5 rounded-lg">
                 {t.icon} <span className="font-medium">{t.text}</span>
@@ -567,21 +567,21 @@ export default function Landing() {
         </motion.div>
       </section>
 
-      {/* ═══ LOGO CLOUD ═══ */}
-      <section className="py-12 border-y border-border/50 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <p className="text-center text-xs text-muted-foreground mb-6 uppercase tracking-widest font-medium">Đối tác & tích hợp</p>
-          <LogoCloud />
-        </div>
+      {/* ═══ RECOGNITION & INCUBATION ═══ */}
+      <section className="py-16 border-y border-border/50 bg-secondary/30">
+        <TrustSection />
       </section>
 
-      {/* ═══ METRICS ═══ */}
+      {/* ═══ VERIFIED CAPABILITY ═══
+          Technical facts we can demonstrate on demand, rather than traction the
+          project has not earned yet — the team has no legal entity and no
+          paying customers, so usage/disbursement figures would be invented. */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <MetricItem value={1247} label="Doanh nghiệp đang dùng" sub="+23% tháng này" delay={0} />
-          <MetricItem value={2.8} suffix=" Nghìn tỷ" label="Vốn đã giải ngân" sub="↑ từ ₫1.2T năm 2024" delay={0.1} />
-          <MetricItem value={24} suffix=" giờ" label="Thời gian giải ngân" sub="Trung bình toàn hệ thống" delay={0.2} />
-          <MetricItem value={97} suffix="%" label="Tỷ lệ hài lòng" sub="NPS Score: 72" delay={0.3} />
+          <MetricItem value={3} prefix="~" suffix=" giây" label="Thời gian chấm điểm" sub="Chạy trên hạ tầng production" delay={0} />
+          <MetricItem value={768} prefix="ML-KEM-" animate={false} label="Mã hóa kháng lượng tử" sub="Chuẩn NIST FIPS 203" delay={0.1} />
+          <MetricItem value={12} suffix=" tháng" label="Dữ liệu mỗi lần chấm" sub="Giao dịch thật của doanh nghiệp" delay={0.2} />
+          <MetricItem value={24} suffix="/24" label="Kiểm thử tự động" sub="Toàn bộ đang pass" delay={0.3} />
         </div>
       </section>
 
@@ -784,7 +784,8 @@ export default function Landing() {
             {/* Green Finance Cards */}
             <BentoCard
               title="Tài chính xanh"
-              desc="Vốn ưu đãi cho dự án ESG và phát triển bền vững"
+              badge="Lộ trình 2026"
+              desc="Định hướng phát triển: vốn ưu đãi cho dự án ESG và phát triển bền vững"
               icon={<Leaf size={18} />}
               delay={0.4}
             >
@@ -810,22 +811,20 @@ export default function Landing() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/20 to-transparent pointer-events-none" />
               </motion.div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {[
-                  { label: 'Lãi suất', value: '-0.5%', color: 'text-kapiva-green' },
-                  { label: 'Hạn mức', value: '₫20 tỷ', color: 'text-primary' },
-                ].map((m) => (
-                  <div key={m.label} className="bg-kapiva-green/5 border border-kapiva-green/10 rounded-xl p-3 text-center">
-                    <p className="text-xs text-muted-foreground">{m.label}</p>
-                    <p className={`text-sm font-mono font-bold ${m.color}`}>{m.value}</p>
-                  </div>
-                ))}
+              {/* No rate or limit here: green lending is not live, so any number
+                  would be a promise we cannot honour. */}
+              <div className="mt-3 rounded-xl border border-kapiva-green/10 bg-kapiva-green/5 p-3">
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  Lãi suất và hạn mức ưu đãi sẽ được công bố khi hợp tác với tổ chức tín dụng xanh
+                  hoàn tất.
+                </p>
               </div>
             </BentoCard>
 
             <BentoCard
               title="Tín chỉ Carbon"
-              desc="Giao dịch, theo dõi và báo cáo carbon footprint"
+              badge="Lộ trình 2026"
+              desc="Định hướng phát triển: theo dõi phát thải, quy đổi tín chỉ và báo cáo"
               icon={<TreePine size={18} />}
               className="md:col-span-2"
               delay={0.48}
@@ -883,32 +882,29 @@ export default function Landing() {
                         <Recycle size={18} className="text-emerald-500" />
                       </motion.div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Carbon Credits</p>
-                        <p className="text-xs text-muted-foreground">Verified Carbon Standard</p>
+                        <p className="text-sm font-semibold text-foreground">Tín chỉ Carbon</p>
+                        <p className="text-xs text-muted-foreground">Chưa triển khai — dự kiến 2026</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-mono text-lg font-bold text-emerald-500">1,247 tCO2e</p>
-                      <p className="text-xs text-muted-foreground">Đã offset</p>
-                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Capability outline, not measurements — the product has no
+                      emissions data yet, so any figure here would be invented. */}
+                  <div className="space-y-2">
                     {[
-                      { label: 'Scope 1', value: '320', unit: 'tCO2' },
-                      { label: 'Scope 2', value: '580', unit: 'tCO2' },
-                      { label: 'Scope 3', value: '347', unit: 'tCO2' },
+                      'Theo dõi phát thải theo hoạt động kinh doanh',
+                      'Quy đổi và giao dịch tín chỉ carbon',
+                      'Xuất báo cáo phục vụ thẩm định vốn xanh',
                     ].map((s, i) => (
-                      <motion.div 
-                        key={s.label}
-                        className="bg-card/50 border border-border/50 rounded-lg p-2 text-center"
-                        initial={{ opacity: 0, scale: 0.8 }}
+                      <motion.div
+                        key={s}
+                        className="flex items-start gap-2 bg-card/50 border border-border/50 rounded-lg p-2.5"
+                        initial={{ opacity: 0, scale: 0.96 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.3 + i * 0.1 }}
                       >
-                        <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                        <p className="text-xs font-mono font-bold text-foreground">{s.value}</p>
-                        <p className="text-[9px] text-muted-foreground">{s.unit}</p>
+                        <Leaf size={13} className="text-emerald-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] leading-snug text-muted-foreground">{s}</p>
                       </motion.div>
                     ))}
                   </div>
@@ -969,7 +965,7 @@ export default function Landing() {
             >
               <div className="absolute -inset-10 bg-gradient-to-br from-primary/10 to-kapiva-green/10 blur-3xl opacity-50 rounded-full" />
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
-                <NetworkGraph labels={['ESG Data', 'Carbon', 'Green Fund', 'Credit']} />
+                <NetworkGraph labels={['Giao dịch', 'Đặc trưng', 'Mô hình ML', 'Điểm số']} />
                 <motion.div 
                   className="mt-4 relative overflow-hidden rounded-xl group/ai cursor-pointer"
                   whileHover={{ scale: 1.03, y: -4 }}
@@ -1029,18 +1025,50 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ═══ TESTIMONIALS ═══ */}
+      {/* ═══ LIVE PRODUCTION PROOF ═══
+          Replaces invented customer testimonials. Every number below is what the
+          deployed scoring model actually returned for the demo company, so it can
+          be reproduced live in front of a judge. */}
       <section className="py-24 bg-secondary/20">
         <div className="container mx-auto px-4">
-          <motion.div {...fadeUp(0)} className="text-center mb-16">
-            <span className="text-xs text-primary font-mono uppercase tracking-widest">Khách hàng</span>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">Được tin tưởng bởi 1,247+ doanh nghiệp</h2>
+          <motion.div {...fadeUp(0)} className="text-center mb-14">
+            <span className="text-xs text-primary font-mono uppercase tracking-widest">Bằng chứng vận hành</span>
+            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">Đã chạy thật, không phải mô phỏng</h2>
+            <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
+              Kết quả mô hình chấm điểm trả về cho doanh nghiệp mẫu, tính trực tiếp trên hạ tầng production từ 12 tháng dữ liệu giao dịch.
+            </p>
           </motion.div>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <TestimonialCard initials="NT" name="Nguyễn Thành" role="CEO, Phúc Lộc Foods" quote="MIMI WALLET giúp chúng tôi theo dõi carbon footprint và tiếp cận vốn xanh dễ dàng hơn bao giờ hết." metric="−30% CO2" delay={0} />
-            <TestimonialCard initials="MC" name="Minh Châu" role="CFO, Chuỗi nhà hàng 9 chi nhánh" quote="Dashboard tài chính xanh giúp tôi chứng minh ESG với nhà đầu tư quốc tế." metric="ESG Score: A" delay={0.1} />
-            <TestimonialCard initials="ĐH" name="Đức Huy" role="Founder, XNK Đức Phát" quote="Tín chỉ carbon từ MIMI WALLET giúp sản phẩm XK của chúng tôi đạt chuẩn EU Green Deal." metric="500 tấn CO2" delay={0.2} />
+
+          <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            {[
+              { icon: ScoringBolt, value: '701', unit: '/ 850', label: 'Điểm tín dụng', note: 'Hạng B — Tốt' },
+              { icon: CashflowChart, value: '34,1', unit: '%', label: 'Xác suất vỡ nợ (PD)', note: 'Hồi quy logistic' },
+              { icon: CapitalVault, value: '1,36', unit: ' tỷ ₫', label: 'Hạn mức khả dụng', note: 'Do mô hình đề xuất' },
+            ].map((m, i) => (
+              <motion.div
+                key={m.label}
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ delay: i * 0.09, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="glass-card p-6 text-center"
+              >
+                <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
+                  <m.icon size={22} />
+                </span>
+                <p className="mt-4 font-mono text-3xl font-bold tracking-tight text-foreground">
+                  {m.value}
+                  <span className="text-lg text-muted-foreground">{m.unit}</span>
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-foreground">{m.label}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{m.note}</p>
+              </motion.div>
+            ))}
           </div>
+
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Số liệu từ tài khoản demo trên hạ tầng production — mở ứng dụng để tự tính lại.
+          </p>
         </div>
       </section>
 
