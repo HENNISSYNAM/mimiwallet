@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, FileText, ShieldCheck, ArrowUpRight, ArrowDownRight, AlertTriangle, Lightbulb, Bell, ArrowRight } from 'lucide-react';
 import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
+import IndustryNews from '@/components/IndustryNews';
 import { formatVND, formatVNDShort } from '@/lib/formatters';
 import { companyProfile, cashFlowData, transactions, miniChartData } from '@/lib/mockData';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -263,6 +264,11 @@ export default function DashboardOverview() {
               </motion.button>
             ))}
           </div>
+        </motion.div>
+
+        {/* Macro headlines, read against this company's own position */}
+        <motion.div variants={fadeUp}>
+          <IndustryNews />
         </motion.div>
 
         {/* M2M Widget */}

@@ -812,9 +812,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Tín chỉ Carbon"
-              badge="Lộ trình 2026"
-              desc="Định hướng phát triển: theo dõi phát thải, quy đổi tín chỉ và báo cáo"
+              title="Dấu chân carbon"
+              desc="Ước tính phát thải từ chính giao dịch của doanh nghiệp, theo phương pháp spend-based"
               icon={<TreePine size={18} />}
               className="md:col-span-2"
               delay={0.48}

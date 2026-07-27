@@ -26,6 +26,7 @@ const pageTitles: Record<string, string> = {
   '/dashboard/settings': 'Cài đặt',
   '/dashboard/tech': 'Công nghệ',
   '/dashboard/learn': 'Học Fintech',
+  '/dashboard/carbon': 'Dấu chân carbon',
 };
 
 export default function DashboardLayout() {

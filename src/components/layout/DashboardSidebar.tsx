@@ -26,6 +26,7 @@ export default function DashboardSidebar() {
     { icon: Cpu, label: t('sidebar.m2mDevices'), path: '/dashboard/m2m' },
     { icon: Sparkles, label: t('sidebar.technology'), path: '/dashboard/tech' },
     { icon: GraduationCap, label: t('sidebar.learn'), path: '/dashboard/learn' },
+    { icon: Leaf, label: t('sidebar.carbon'), path: '/dashboard/carbon' },
     { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
     { icon: Settings, label: t('sidebar.settings'), path: '/dashboard/settings' },
   ];

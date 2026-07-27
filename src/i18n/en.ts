@@ -200,6 +200,7 @@ const en = {
     m2mDevices: 'M2M Devices',
     technology: 'Technology',
     learn: 'Learn Fintech',
+    carbon: 'Carbon Footprint',
     reports: 'Reports',
     settings: 'Settings',
     support: 'Support',

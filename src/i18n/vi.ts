@@ -200,6 +200,7 @@ const vi = {
     m2mDevices: 'Thiết bị M2M',
     technology: 'Công nghệ',
     learn: 'Học Fintech',
+    carbon: 'Dấu chân carbon',
     reports: 'Báo cáo',
     settings: 'Cài đặt',
     support: 'Hỗ trợ',

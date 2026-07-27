@@ -513,6 +513,92 @@ export type Database = {
           },
         ]
       }
+      macro_news: {
+        Row: {
+          fetched_at: string
+          id: string
+          impact: string
+          published_at: string | null
+          source: string
+          summary: string | null
+          title: string
+          topic: string
+          url: string
+        }
+        Insert: {
+          fetched_at?: string
+          id?: string
+          impact?: string
+          published_at?: string | null
+          source: string
+          summary?: string | null
+          title: string
+          topic?: string
+          url: string
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          impact?: string
+          published_at?: string | null
+          source?: string
+          summary?: string | null
+          title?: string
+          topic?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      carbon_snapshots: {
+        Row: {
+          by_category: Json
+          by_month: Json
+          company_id: string
+          created_at: string
+          factor_version: string
+          id: string
+          intensity_per_revenue: number
+          months_analysed: number
+          total_emissions: number
+          total_revenue: number
+          total_spend: number
+        }
+        Insert: {
+          by_category?: Json
+          by_month?: Json
+          company_id: string
+          created_at?: string
+          factor_version?: string
+          id?: string
+          intensity_per_revenue: number
+          months_analysed?: number
+          total_emissions: number
+          total_revenue: number
+          total_spend: number
+        }
+        Update: {
+          by_category?: Json
+          by_month?: Json
+          company_id?: string
+          created_at?: string
+          factor_version?: string
+          id?: string
+          intensity_per_revenue?: number
+          months_analysed?: number
+          total_emissions?: number
+          total_revenue?: number
+          total_spend?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carbon_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       m2m_transactions: {
         Row: {
           amount: number

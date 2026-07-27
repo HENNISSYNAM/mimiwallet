@@ -189,6 +189,16 @@ export function MentorLink(p: BrandIconProps) {
   );
 }
 
+/** Leaf over a rising stem — the carbon footprint measure. */
+export function CarbonLeaf(p: BrandIconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M20.4 4.2c.9 6.6-1.5 11.2-5.2 13.2-3.3 1.8-7.2 1-8.9-1.9-1.6-2.8-.6-6.3 2.3-8 3.3-1.9 8-1.6 11.8-3.3z" />
+      <path d="M4.6 20.4c1.2-4.3 4-8 8.2-10.6" />
+    </Svg>
+  );
+}
+
 /** Spark cluster — a machine-generated insight. Replaces the 🧠 emoji. */
 export function InsightSpark(p: BrandIconProps) {
   return (
