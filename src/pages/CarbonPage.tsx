@@ -100,7 +100,7 @@ export default function CarbonPage() {
   }));
 
   return (
-    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6 max-w-4xl">
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6 max-w-6xl">
       <motion.div variants={fadeUp} className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <div className="flex items-center gap-2">

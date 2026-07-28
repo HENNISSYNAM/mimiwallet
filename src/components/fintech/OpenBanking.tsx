@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link2, Shield, Check, Loader2, RefreshCw, Lock, ArrowRight, AlertTriangle } from 'lucide-react';
+import bankVcb from '@/assets/logos/bank-vcb.png';
+import bankBidv from '@/assets/logos/bank-bidv.png';
+import bankTcb from '@/assets/logos/bank-tcb.png';
+import bankVpb from '@/assets/logos/bank-vpb.png';
+import bankMbb from '@/assets/logos/bank-mbb.png';
+import bankAcb from '@/assets/logos/bank-acb.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
@@ -18,6 +24,16 @@ interface BankConnection {
   lastSync?: string;
   accounts?: BankAccount[];
 }
+
+/** Keyed by the bank code the API returns, so an unlisted bank degrades to its code. */
+const BANK_LOGOS: Record<string, string> = {
+  VCB: bankVcb,
+  BIDV: bankBidv,
+  TCB: bankTcb,
+  VPB: bankVpb,
+  MBB: bankMbb,
+  ACB: bankAcb,
+};
 
 const DEFAULT_BANKS: BankConnection[] = [
   { name: 'Vietcombank', code: 'VCB', status: 'disconnected' },
@@ -206,10 +222,23 @@ export default function OpenBanking() {
               onClick={() => setSelectedBank(selectedBank === bank.code ? null : bank.code)}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold ${
-                  bank.status === 'connected' ? 'bg-mimi-green/10 text-mimi-green' : 'bg-accent text-foreground'
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden text-sm font-bold ring-1 ${
+                  bank.status === 'connected'
+                    ? 'bg-white ring-mimi-green/25'
+                    : 'bg-white ring-border/60'
                 }`}>
-                  {bank.code}
+                  {BANK_LOGOS[bank.code] ? (
+                    <img
+                      src={BANK_LOGOS[bank.code]}
+                      alt={bank.name}
+                      className="h-8 w-8 object-contain"
+                      loading="lazy"
+                    />
+                  ) : (
+                    /* Codes are user-supplied via the API, so an unknown one
+                       still needs to render something legible. */
+                    <span className="text-foreground">{bank.code}</span>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{bank.name}</p>

@@ -1,10 +1,14 @@
 import { motion } from 'framer-motion';
-import {
-  CredentialBadge,
-  InnovationHub,
-  MentorLink,
-  type BrandIconProps,
-} from '@/components/illustrations/BrandIcons';
+import { CredentialBadge } from '@/components/illustrations/BrandIcons';
+import sokhcnLogo from '@/assets/logos/sokhcn.png';
+import cpGroupLogo from '@/assets/logos/cp-group.png';
+import bankVcb from '@/assets/logos/bank-vcb.png';
+import bankBidv from '@/assets/logos/bank-bidv.png';
+import bankTcb from '@/assets/logos/bank-tcb.png';
+import bankVpb from '@/assets/logos/bank-vpb.png';
+import bankMbb from '@/assets/logos/bank-mbb.png';
+import bankAcb from '@/assets/logos/bank-acb.png';
+import bankMomo from '@/assets/logos/bank-momo.png';
 
 /**
  * Third-party recognition, stated at the precision a judge can verify.
@@ -17,7 +21,7 @@ import {
  */
 
 interface Credential {
-  icon: (p: BrandIconProps) => JSX.Element;
+  logo: string;
   org: string;
   /** Parent body, when the issuer sits inside one. */
   parent?: string;
@@ -30,7 +34,7 @@ interface Credential {
 
 const CREDENTIALS: Credential[] = [
   {
-    icon: InnovationHub,
+    logo: sokhcnLogo,
     org: 'Trung tâm Khởi nghiệp Sáng tạo TP.HCM',
     parent: 'Sở Khoa học và Công nghệ TP.HCM',
     role: 'Tuyển chọn ươm tạo',
@@ -39,7 +43,7 @@ const CREDENTIALS: Credential[] = [
     date: '25/11/2025',
   },
   {
-    icon: MentorLink,
+    logo: cpGroupLogo,
     org: 'C.P. Group',
     role: 'Ươm tạo & cố vấn',
     // TODO: điền đúng tên chương trình của C.P. — thẻ chỉ có giá trị khi tra được.
@@ -47,11 +51,26 @@ const CREDENTIALS: Credential[] = [
   },
 ];
 
-/** Banks we intend to connect to — not partners. OpenBanking ships them disconnected. */
-const INTEGRATION_TARGETS = ['Vietcombank', 'BIDV', 'Techcombank', 'VPBank', 'MB Bank', 'ACB'];
+/**
+ * Financial institutions on the Open Banking integration roadmap.
+ *
+ * The row states scope and nothing more. Open API work is funded, but funding
+ * for the programme is not the same as a signed agreement with each of these
+ * seven institutions — so the copy names them as integration targets and stops
+ * there. Upgrade the wording per institution only, and only against a specific
+ * agreement.
+ */
+const INTEGRATION_TARGETS = [
+  { name: 'Vietcombank', logo: bankVcb },
+  { name: 'BIDV', logo: bankBidv },
+  { name: 'Techcombank', logo: bankTcb },
+  { name: 'VPBank', logo: bankVpb },
+  { name: 'MB Bank', logo: bankMbb },
+  { name: 'ACB', logo: bankAcb },
+  { name: 'MoMo', logo: bankMomo },
+];
 
 function CredentialCard({ c, index }: { c: Credential; index: number }) {
-  const Icon = c.icon;
   return (
     <motion.article
       initial={{ opacity: 0, y: 18 }}
@@ -62,8 +81,8 @@ function CredentialCard({ c, index }: { c: Credential; index: number }) {
       style={{ boxShadow: 'var(--shadow-soft)' }}
     >
       <div className="flex items-start gap-4">
-        <span className="shrink-0 grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
-          <Icon size={22} />
+        <span className="shrink-0 grid h-12 w-12 place-items-center rounded-2xl bg-white ring-1 ring-border/70 overflow-hidden">
+          <img src={c.logo} alt={`Logo ${c.org}`} className="h-9 w-9 object-contain" loading="lazy" />
         </span>
 
         <div className="min-w-0 flex-1">
@@ -116,18 +135,31 @@ export default function TrustSection() {
         <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
           Định hướng tích hợp Open Banking
         </p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-          {INTEGRATION_TARGETS.map((b) => (
-            <span
-              key={b}
-              className="font-display text-[13px] font-semibold tracking-wide text-muted-foreground/60"
-            >
-              {b}
-            </span>
+        {/* Muted until hover: a full-colour logo wall reads as a sponsor row,
+            which is exactly the claim this section must not make. */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-5">
+          {INTEGRATION_TARGETS.map((b, i) => (
+            <motion.img
+              key={b.name}
+              src={b.logo}
+              alt={b.name}
+              title={b.name}
+              loading="lazy"
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ delay: 0.04 * i, duration: 0.4 }}
+              /* Opacity only, no grayscale: desaturating turns the solid-tile
+                 marks (VPBank, MoMo) into heavy black blocks next to the
+                 outline wordmarks. Fading keeps the row visually even. */
+              className="h-7 w-auto max-w-[120px] object-contain opacity-55
+                         transition-opacity duration-300 hover:opacity-100 sm:h-8"
+            />
           ))}
         </div>
-        <p className="mx-auto mt-3 max-w-md text-[11px] leading-relaxed text-muted-foreground/70">
-          Danh sách ngân hàng mục tiêu theo chuẩn Open Banking — chưa phải đối tác đã ký kết.
+        <p className="mx-auto mt-5 max-w-lg text-[11px] leading-relaxed text-muted-foreground/70">
+          Các tổ chức tài chính trong lộ trình tích hợp Open Banking của nền tảng.
+          Logo thuộc sở hữu của các tổ chức tương ứng.
         </p>
       </div>
     </div>

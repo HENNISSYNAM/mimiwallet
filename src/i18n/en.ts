@@ -62,7 +62,7 @@ const en = {
       {
         title: 'AI analysis',
         desc: '200+ data points, real-time credit scoring',
-        detail: 'Machine learning processes in 90 seconds',
+        detail: 'Machine learning processes in ~3 seconds',
       },
       {
         title: 'Get funded in 24h',

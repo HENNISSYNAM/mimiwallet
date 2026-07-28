@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck, Zap, Lock, Database, Cpu, ArrowRight, CheckCircle2 } from 'lucide-react';
-import quantumLock from '@/assets/il-quantum-lock.svg';
-import mlSpeed from '@/assets/il-ml-speed.svg';
-import rlsShield from '@/assets/il-rls-shield.svg';
+import { QuantumLockArt, MLScoreArt, RLSArt } from '@/components/illustrations/TechPillars';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -16,7 +14,7 @@ const PILLARS = [
     tone: 'text-primary bg-primary/10',
     title: 'Mã hóa kháng lượng tử',
     tag: 'ML-KEM-768 · NIST FIPS 203',
-    img: quantumLock,
+    Art: QuantumLockArt,
     desc: 'Dữ liệu định danh (CCCD, họ tên) được mã hóa bằng thuật toán trao đổi khóa kháng lượng tử vừa được NIST chuẩn hóa năm 2024 — an toàn kể cả trước máy tính lượng tử tương lai.',
     points: ['Chuẩn quốc tế FIPS 203', 'Chống "harvest-now, decrypt-later"', 'Khóa quản lý qua secrets manager'],
   },
@@ -25,7 +23,7 @@ const PILLARS = [
     tone: 'text-mimi-green bg-mimi-green/10',
     title: 'Chấm điểm AI trong ~3 giây',
     tag: 'Machine Learning · giải thích được',
-    img: mlSpeed,
+    Art: MLScoreArt,
     desc: 'Mô hình học máy trích 5 đặc trưng từ 12 tháng dữ liệu giao dịch thật, cho ra điểm 300–850 kèm bảng phân tích từng yếu tố — thay vì chờ nhiều ngày thẩm định thủ công.',
     points: ['5 đặc trưng tài chính thật', 'Scorecard + hồi quy logistic', 'Mỗi điểm số đều giải thích được'],
   },
@@ -34,7 +32,7 @@ const PILLARS = [
     tone: 'text-[hsl(270_60%_50%)] bg-[hsl(270_60%_55%/0.1)]',
     title: 'Bảo mật RLS theo doanh nghiệp',
     tag: 'Row-Level Security',
-    img: rlsShield,
+    Art: RLSArt,
     desc: 'Mỗi doanh nghiệp chỉ truy cập được đúng dữ liệu của mình — quyền được áp đặt ngay ở tầng cơ sở dữ liệu, không phụ thuộc logic phía ứng dụng.',
     points: ['Cách ly dữ liệu tài chính', 'Áp ở tầng PostgreSQL', 'An toàn kể cả khi app lỗi'],
   },
@@ -91,7 +89,7 @@ export default function TechnologyPage() {
               </ul>
             </div>
             <div className="order-1 md:order-2 p-5 sm:p-6 flex items-center justify-center bg-accent/40">
-              <img src={p.img} alt={p.title} className="w-full max-w-[340px]" />
+              <div className="w-full max-w-[340px]"><p.Art play /></div>
             </div>
           </motion.div>
         ))}

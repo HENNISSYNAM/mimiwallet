@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform, useMotionValue, useSpring, useInView, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -20,9 +20,7 @@ import { miniChartData } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import mimiLogo from '@/assets/mimi-wallet-logo.png';
-import quantumLockImg from '@/assets/il-quantum-lock.svg';
-import mlSpeedImg from '@/assets/il-ml-speed.svg';
-import rlsShieldImg from '@/assets/il-rls-shield.svg';
+import { QuantumLockArt, MLScoreArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import featureSteps from '@/assets/feature-steps.png';
@@ -121,7 +119,7 @@ function ProcessFlow() {
       icon: <Brain className="w-6 h-6" />,
       title: 'AI phân tích',
       desc: '200+ điểm dữ liệu, chấm điểm tín dụng real-time',
-      detail: 'Machine learning xử lý trong 90 giây',
+      detail: 'Machine learning xử lý trong ~3 giây',
       tags: ['Credit Score', 'Cash Flow', 'Risk'],
       color: 'from-primary to-mimi-blue-light',
       bgColor: 'bg-primary/10',
@@ -463,6 +461,48 @@ function PricingCard({ name, price, features, cta, highlighted, annual, badge }:
   );
 }
 
+/* ═══════════ TECH PILLAR CARD ═══════════ */
+function TechPillarCard({
+  Art, title, tag, desc, index,
+}: {
+  Art: React.ComponentType<{ hovered?: boolean; play?: boolean }>;
+  title: string; tag: string; desc: string; index: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  // The illustration only starts once the card is genuinely on screen —
+  // otherwise the sequence plays out of sight and the visitor arrives at a
+  // finished, motionless picture.
+  const inView = useInView(ref, { once: true, amount: 0.45 });
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      whileHover={{ y: -6 }}
+      className="group bg-card border border-border/60 rounded-3xl overflow-hidden
+                 transition-shadow duration-300 hover:shadow-[0_18px_50px_-24px_hsla(211,60%,25%,0.35)]
+                 hover:border-primary/30"
+    >
+      <div className="p-5 bg-secondary/40 flex items-center justify-center overflow-hidden">
+        <div className="w-full max-w-[280px] transition-transform duration-500 group-hover:scale-[1.035]">
+          <Art hovered={hovered} play={inView} />
+        </div>
+      </div>
+      <div className="p-6">
+        <p className="text-[11px] font-semibold text-muted-foreground font-mono">{tag}</p>
+        <h3 className="mt-1 text-lg font-display font-bold text-foreground">{title}</h3>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{desc}</p>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ═══════════ MAIN ═══════════ */
 export default function Landing() {
   const navigate = useNavigate();
@@ -575,7 +615,7 @@ export default function Landing() {
           <MetricItem value={3} prefix="~" suffix=" giây" label="Thời gian chấm điểm" sub="Chạy trên hạ tầng production" delay={0} />
           <MetricItem value={768} prefix="ML-KEM-" animate={false} label="Mã hóa kháng lượng tử" sub="Chuẩn NIST FIPS 203" delay={0.1} />
           <MetricItem value={12} suffix=" tháng" label="Dữ liệu mỗi lần chấm" sub="Giao dịch thật của doanh nghiệp" delay={0.2} />
-          <MetricItem value={24} suffix="/24" label="Kiểm thử tự động" sub="Toàn bộ đang pass" delay={0.3} />
+          <MetricItem value={52} suffix="/52" label="Kiểm thử tự động" sub="Toàn bộ đang pass" delay={0.3} />
         </div>
       </section>
 
@@ -591,27 +631,11 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { img: quantumLockImg, title: 'Mã hóa kháng lượng tử', tag: 'ML-KEM-768 · NIST FIPS 203', desc: 'Dữ liệu định danh an toàn kể cả trước máy tính lượng tử tương lai.' },
-              { img: mlSpeedImg, title: 'Chấm điểm AI ~3 giây', tag: 'Machine Learning · giải thích được', desc: 'Điểm tín dụng tính từ 12 tháng dữ liệu thật, kèm phân tích yếu tố.' },
-              { img: rlsShieldImg, title: 'Bảo mật theo doanh nghiệp', tag: 'Row-Level Security', desc: 'Mỗi doanh nghiệp chỉ thấy đúng dữ liệu của mình, áp ở tầng CSDL.' },
+              { Art: QuantumLockArt, title: 'Mã hóa kháng lượng tử', tag: 'ML-KEM-768 · NIST FIPS 203', desc: 'Dữ liệu định danh an toàn kể cả trước máy tính lượng tử tương lai.' },
+              { Art: MLScoreArt, title: 'Chấm điểm AI ~3 giây', tag: 'Machine Learning · giải thích được', desc: 'Điểm tín dụng tính từ 12 tháng dữ liệu thật, kèm phân tích yếu tố.' },
+              { Art: RLSArt, title: 'Bảo mật theo doanh nghiệp', tag: 'Row-Level Security', desc: 'Mỗi doanh nghiệp chỉ thấy đúng dữ liệu của mình, áp ở tầng CSDL.' },
             ].map((c, i) => (
-              <motion.div
-                key={c.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="bg-card border border-border/60 rounded-3xl overflow-hidden"
-              >
-                <div className="p-5 bg-secondary/40 flex items-center justify-center">
-                  <img src={c.img} alt={c.title} className="w-full max-w-[280px]" />
-                </div>
-                <div className="p-6">
-                  <p className="text-[11px] font-semibold text-muted-foreground font-mono">{c.tag}</p>
-                  <h3 className="mt-1 text-lg font-display font-bold text-foreground">{c.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
-                </div>
-              </motion.div>
+              <TechPillarCard key={c.title} {...c} index={i} />
             ))}
           </div>
         </div>

@@ -237,7 +237,7 @@ export default function LearnPage() {
   }
 
   return (
-    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6 max-w-4xl">
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6 max-w-6xl">
       {/* Gamified hero — level, progress and floating rewards in one block */}
       <motion.div variants={fadeUp}>
         <LearnHero capLabel={cap.label} doneCount={doneCount} total={total} />

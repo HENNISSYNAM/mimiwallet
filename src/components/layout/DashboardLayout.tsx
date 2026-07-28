@@ -1,17 +1,24 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
-import { Bell, Search, LayoutDashboard, FileText, ShieldCheck, BarChart3, Sparkles } from 'lucide-react';
+import { Bell, Search, LayoutDashboard, FileText, ShieldCheck, BarChart3, CreditCard } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
 import { toast } from 'sonner';
 import { useScrolled } from '@/hooks/useScrolled';
 
+/**
+ * Five slots, so each one has to earn its place by being a job the owner comes
+ * here to do. "Công nghệ" was taking one: it is a showcase page that explains
+ * how the platform works, not something anyone opens twice — while "Vay vốn",
+ * the entire point of the product, was missing. It moved to the sidebar, which
+ * is where credentials belong.
+ */
 const mobileNav = [
   { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
   { icon: FileText, label: 'Hóa đơn', path: '/dashboard/invoices' },
   { icon: ShieldCheck, label: 'Điểm', path: '/dashboard/credit' },
+  { icon: CreditCard, label: 'Vay vốn', path: '/dashboard/loans' },
   { icon: BarChart3, label: 'Báo cáo', path: '/dashboard/reports' },
-  { icon: Sparkles, label: 'Công nghệ', path: '/dashboard/tech' },
 ];
 
 const pageTitles: Record<string, string> = {

@@ -62,7 +62,7 @@ const vi = {
       {
         title: 'AI phân tích',
         desc: '200+ điểm dữ liệu, chấm điểm tín dụng real-time',
-        detail: 'Machine learning xử lý trong 90 giây',
+        detail: 'Machine learning xử lý trong ~3 giây',
       },
       {
         title: 'Nhận vốn 24h',
