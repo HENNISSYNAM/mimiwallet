@@ -115,6 +115,88 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_score_factors: {
+        Row: {
+          created_at: string
+          factor_name: string
+          id: string
+          normalized_score: number
+          raw_value: number | null
+          snapshot_id: string
+          trend: number | null
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          factor_name: string
+          id?: string
+          normalized_score: number
+          raw_value?: number | null
+          snapshot_id: string
+          trend?: number | null
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          factor_name?: string
+          id?: string
+          normalized_score?: number
+          raw_value?: number | null
+          snapshot_id?: string
+          trend?: number | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_score_factors_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "credit_score_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_score_snapshots: {
+        Row: {
+          company_id: string
+          computed_at: string
+          created_at: string
+          credit_limit: number
+          id: string
+          model_version: string
+          probability_of_default: number | null
+          score: number
+        }
+        Insert: {
+          company_id: string
+          computed_at?: string
+          created_at?: string
+          credit_limit?: number
+          id?: string
+          model_version?: string
+          probability_of_default?: number | null
+          score: number
+        }
+        Update: {
+          company_id?: string
+          computed_at?: string
+          created_at?: string
+          credit_limit?: number
+          id?: string
+          model_version?: string
+          probability_of_default?: number | null
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_score_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_rules: {
         Row: {
           action_params: Json
@@ -352,6 +434,44 @@ export type Database = {
           },
         ]
       }
+      learning_progress: {
+        Row: {
+          company_id: string
+          completed_at: string
+          created_at: string
+          id: string
+          lesson_id: string
+          quiz_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          lesson_id: string
+          quiz_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          quiz_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_applications: {
         Row: {
           amount: number
@@ -474,6 +594,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          notification_prefs: Json
           phone: string | null
           updated_at: string
           user_id: string
@@ -483,6 +604,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          notification_prefs?: Json
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -492,6 +614,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          notification_prefs?: Json
           phone?: string | null
           updated_at?: string
           user_id?: string
@@ -580,7 +703,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      user_company_ids: { Args: { uid: string }; Returns: string[] }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
