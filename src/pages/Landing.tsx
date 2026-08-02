@@ -151,6 +151,7 @@ function ProcessFlow() {
           <button
             key={i}
             onClick={() => setActiveStep(i)}
+            aria-label={`Chuyển đến bước ${i + 1}: ${s.title}`}
             className="relative z-10 flex flex-col items-center gap-3 group"
           >
             <motion.div
@@ -757,7 +758,7 @@ export default function Landing() {
               <motion.div className="relative w-24 h-24 mx-auto mt-3">
                 <motion.img
                   src={securityShield}
-                  alt="Security"
+                  alt="MIMI WALLET security shield"
                   className="w-full h-full rounded-xl object-cover shadow-lg"
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ type: 'spring', stiffness: 300 }}
@@ -779,7 +780,7 @@ export default function Landing() {
               <motion.div className="relative overflow-hidden rounded-xl mt-3 group/dash">
                 <motion.img
                   src={dashboardPreview}
-                  alt="Dashboard"
+                  alt="MIMI WALLET Dashboard preview"
                   className="w-full rounded-xl transition-transform duration-700 group-hover/dash:scale-105"
                   initial={{ opacity: 0, scale: 1.1, filter: 'blur(8px)' }}
                   whileInView={{ opacity: 0.95, scale: 1, filter: 'blur(0px)' }}
