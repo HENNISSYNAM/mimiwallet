@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -117,6 +117,7 @@ export type Database = {
       }
       credit_score_factors: {
         Row: {
+          created_at: string
           factor_name: string
           id: string
           normalized_score: number
@@ -126,15 +127,17 @@ export type Database = {
           weight: number
         }
         Insert: {
+          created_at?: string
           factor_name: string
           id?: string
           normalized_score: number
           raw_value?: number | null
           snapshot_id: string
           trend?: number | null
-          weight: number
+          weight?: number
         }
         Update: {
+          created_at?: string
           factor_name?: string
           id?: string
           normalized_score?: number
@@ -157,28 +160,31 @@ export type Database = {
         Row: {
           company_id: string
           computed_at: string
+          created_at: string
           credit_limit: number
           id: string
           model_version: string
-          probability_of_default: number
+          probability_of_default: number | null
           score: number
         }
         Insert: {
           company_id: string
           computed_at?: string
+          created_at?: string
           credit_limit?: number
           id?: string
           model_version?: string
-          probability_of_default: number
+          probability_of_default?: number | null
           score: number
         }
         Update: {
           company_id?: string
           computed_at?: string
+          created_at?: string
           credit_limit?: number
           id?: string
           model_version?: string
-          probability_of_default?: number
+          probability_of_default?: number | null
           score?: number
         }
         Relationships: [
@@ -428,6 +434,44 @@ export type Database = {
           },
         ]
       }
+      learning_progress: {
+        Row: {
+          company_id: string
+          completed_at: string
+          created_at: string
+          id: string
+          lesson_id: string
+          quiz_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          lesson_id: string
+          quiz_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          quiz_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_applications: {
         Row: {
           amount: number
@@ -474,124 +518,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "loan_applications_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      learning_progress: {
-        Row: {
-          company_id: string
-          completed_at: string
-          id: string
-          lesson_id: string
-          quiz_score: number | null
-        }
-        Insert: {
-          company_id: string
-          completed_at?: string
-          id?: string
-          lesson_id: string
-          quiz_score?: number | null
-        }
-        Update: {
-          company_id?: string
-          completed_at?: string
-          id?: string
-          lesson_id?: string
-          quiz_score?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "learning_progress_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      macro_news: {
-        Row: {
-          fetched_at: string
-          id: string
-          impact: string
-          published_at: string | null
-          source: string
-          summary: string | null
-          title: string
-          topic: string
-          url: string
-        }
-        Insert: {
-          fetched_at?: string
-          id?: string
-          impact?: string
-          published_at?: string | null
-          source: string
-          summary?: string | null
-          title: string
-          topic?: string
-          url: string
-        }
-        Update: {
-          fetched_at?: string
-          id?: string
-          impact?: string
-          published_at?: string | null
-          source?: string
-          summary?: string | null
-          title?: string
-          topic?: string
-          url?: string
-        }
-        Relationships: []
-      }
-      carbon_snapshots: {
-        Row: {
-          by_category: Json
-          by_month: Json
-          company_id: string
-          created_at: string
-          factor_version: string
-          id: string
-          intensity_per_revenue: number
-          months_analysed: number
-          total_emissions: number
-          total_revenue: number
-          total_spend: number
-        }
-        Insert: {
-          by_category?: Json
-          by_month?: Json
-          company_id: string
-          created_at?: string
-          factor_version?: string
-          id?: string
-          intensity_per_revenue: number
-          months_analysed?: number
-          total_emissions: number
-          total_revenue: number
-          total_spend: number
-        }
-        Update: {
-          by_category?: Json
-          by_month?: Json
-          company_id?: string
-          created_at?: string
-          factor_version?: string
-          id?: string
-          intensity_per_revenue?: number
-          months_analysed?: number
-          total_emissions?: number
-          total_revenue?: number
-          total_spend?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "carbon_snapshots_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -777,7 +703,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      user_company_ids: { Args: { uid: string }; Returns: string[] }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
