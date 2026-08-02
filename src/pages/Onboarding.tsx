@@ -63,6 +63,7 @@ const FloatingInput = forwardRef<HTMLInputElement, {
         <button 
           type="button"
           onClick={() => setShowPw(!showPw)} 
+          aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
           className="absolute right-4 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -334,7 +335,7 @@ export default function Onboarding() {
           {/* Logo */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-[0_2px_12px_hsla(var(--blue-500)/0.3)]">
-              <img src="/mimi-favicon.png" alt="MIMI" className="w-6 h-6" />
+              <img src="/mimi-favicon.png" alt="MIMI WALLET logo" className="w-6 h-6" />
             </div>
             <div>
               <span className="font-display font-bold text-foreground text-lg tracking-tight">MIMI WALLET</span>

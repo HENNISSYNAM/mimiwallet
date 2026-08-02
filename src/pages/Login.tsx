@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-import { Loader2, Leaf } from 'lucide-react';
+import { Loader2, Leaf, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-wallet-logo.png';
 
