@@ -6,6 +6,7 @@ import { formatVND, formatDateShort } from '@/lib/formatters';
 import { Plus, Download, Search, X, ArrowRight, FileText, Loader2 } from 'lucide-react';
 import { InsightSpark } from '@/components/illustrations/BrandIcons';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -26,11 +27,11 @@ interface Invoice {
   advanced_amount: number | null;
 }
 
-const statusConfig: Record<string, { label: string; dot: string; bg: string }> = {
-  pending: { label: 'Chưa TT', dot: 'bg-mimi-amber', bg: 'bg-mimi-amber/8 text-mimi-amber' },
-  overdue: { label: 'Quá hạn', dot: 'bg-mimi-red', bg: 'bg-mimi-red/8 text-mimi-red' },
-  paid: { label: 'Đã TT', dot: 'bg-mimi-green', bg: 'bg-mimi-green/8 text-mimi-green' },
-  advanced: { label: 'Đã ứng vốn', dot: 'bg-primary', bg: 'bg-primary/8 text-primary' },
+const statusDotBg: Record<string, { dot: string; bg: string }> = {
+  pending: { dot: 'bg-mimi-amber', bg: 'bg-mimi-amber/8 text-mimi-amber' },
+  overdue: { dot: 'bg-mimi-red', bg: 'bg-mimi-red/8 text-mimi-red' },
+  paid: { dot: 'bg-mimi-green', bg: 'bg-mimi-green/8 text-mimi-green' },
+  advanced: { dot: 'bg-primary', bg: 'bg-primary/8 text-primary' },
 };
 
 function exportInvoicesCsv(rows: Invoice[]) {
@@ -48,6 +49,7 @@ function exportInvoicesCsv(rows: Invoice[]) {
 }
 
 function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const { t } = useTranslation();
   const session = useAuthStore((s) => s.session);
   const [clientName, setClientName] = useState('');
   const [amount, setAmount] = useState('');
@@ -61,14 +63,14 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
     if (!session) return;
     const amountNum = Number(amount);
     if (!clientName.trim() || !amountNum || amountNum <= 0 || !dueDate) {
-      toast.error('Vui lòng nhập đầy đủ khách hàng, số tiền và ngày đến hạn');
+      toast.error(t('fin.invoices.toast.fillRequired'));
       return;
     }
     setSaving(true);
     const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).limit(1);
     const companyId = companies?.[0]?.id;
     if (!companyId) {
-      toast.error('Không tìm thấy doanh nghiệp của bạn');
+      toast.error(t('fin.invoices.toast.companyNotFound'));
       setSaving(false);
       return;
     }
@@ -88,10 +90,10 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
     });
     setSaving(false);
     if (error) {
-      toast.error(`Tạo hóa đơn thất bại: ${error.message}`);
+      toast.error(t('fin.invoices.toast.createFailed', { error: error.message }));
       return;
     }
-    toast.success(`Đã tạo hóa đơn ${invoiceNumber}`);
+    toast.success(t('fin.invoices.toast.createSuccess', { number: invoiceNumber }));
     reset();
     onCreated();
     onClose();
@@ -111,29 +113,29 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
             className="bg-card border border-border rounded-2xl p-6 w-full max-w-md"
           >
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-display font-bold text-foreground">Tạo hóa đơn mới</h3>
+              <h3 className="font-display font-bold text-foreground">{t('fin.invoices.modal.title')}</h3>
               <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">Khách hàng</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block">{t('fin.invoices.modal.client')}</label>
                 <input
                   value={clientName} onChange={(e) => setClientName(e.target.value)}
-                  placeholder="VD: Công ty ABC"
+                  placeholder={t('fin.invoices.modal.clientPlaceholder')}
                   className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary/50"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Số tiền trước thuế</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">{t('fin.invoices.modal.amountBeforeTax')}</label>
                   <input
                     type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-                    placeholder="VD: 50000000"
+                    placeholder={t('fin.invoices.modal.amountPlaceholder')}
                     className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary/50 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">VAT (%)</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">{t('fin.invoices.modal.vat')}</label>
                   <input
                     type="number" value={vatRate} onChange={(e) => setVatRate(e.target.value)}
                     className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary/50 font-mono"
@@ -141,7 +143,7 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
                 </div>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">Ngày đến hạn</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block">{t('fin.invoices.modal.dueDate')}</label>
                 <input
                   type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
                   className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary/50"
@@ -151,7 +153,7 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
                 onClick={handleSubmit} disabled={saving}
                 className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {saving && <Loader2 size={14} className="animate-spin" />} Tạo hóa đơn
+                {saving && <Loader2 size={14} className="animate-spin" />} {t('fin.invoices.modal.submit')}
               </button>
             </div>
           </motion.div>
@@ -162,6 +164,7 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
 }
 
 export default function InvoicesPage() {
+  const { t } = useTranslation();
   const session = useAuthStore((s) => s.session);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [invoiceList, setInvoiceList] = useState<Invoice[]>([]);
@@ -194,10 +197,10 @@ export default function InvoicesPage() {
   });
 
   const stats = [
-    { label: 'Tổng hóa đơn', value: invoiceList.reduce((s, i) => s + i.total, 0), color: 'text-foreground' },
-    { label: 'Chưa thanh toán', value: invoiceList.filter((i) => i.status === 'pending').reduce((s, i) => s + i.total, 0), color: 'text-mimi-amber' },
-    { label: 'Quá hạn', value: invoiceList.filter((i) => i.status === 'overdue').reduce((s, i) => s + i.total, 0), color: 'text-mimi-red' },
-    { label: 'Đã ứng vốn', value: invoiceList.filter((i) => i.status === 'advanced').reduce((s, i) => s + (i.advanced_amount ?? 0), 0), color: 'text-primary' },
+    { label: t('fin.invoices.stats.total'), value: invoiceList.reduce((s, i) => s + i.total, 0), color: 'text-foreground' },
+    { label: t('fin.invoices.stats.pending'), value: invoiceList.filter((i) => i.status === 'pending').reduce((s, i) => s + i.total, 0), color: 'text-mimi-amber' },
+    { label: t('fin.invoices.stats.overdue'), value: invoiceList.filter((i) => i.status === 'overdue').reduce((s, i) => s + i.total, 0), color: 'text-mimi-red' },
+    { label: t('fin.invoices.stats.advanced'), value: invoiceList.filter((i) => i.status === 'advanced').reduce((s, i) => s + (i.advanced_amount ?? 0), 0), color: 'text-primary' },
   ];
 
   const handleAdvance = async () => {
@@ -210,10 +213,10 @@ export default function InvoicesPage() {
       .eq('id', selectedInvoice.id);
     setAdvancing(false);
     if (error) {
-      toast.error(`Ứng vốn thất bại: ${error.message}`);
+      toast.error(t('fin.invoices.toast.advanceFailed', { error: error.message }));
       return;
     }
-    toast.success(`Đã ứng vốn ${formatVND(advancedAmount)} cho hóa đơn ${selectedInvoice.invoice_number}`);
+    toast.success(t('fin.invoices.toast.advanceSuccess', { amount: formatVND(advancedAmount), number: selectedInvoice.invoice_number }));
     setSelectedInvoice(null);
     loadInvoices();
   };
@@ -223,8 +226,8 @@ export default function InvoicesPage() {
       {/* Header */}
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Hóa đơn</h2>
-          <p className="text-sm text-muted-foreground mt-1">{invoiceList.length} hóa đơn đang hoạt động</p>
+          <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t('fin.invoices.title')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('fin.invoices.activeCount', { count: invoiceList.length })}</p>
         </div>
         <div className="flex gap-2">
           <motion.button
@@ -233,7 +236,7 @@ export default function InvoicesPage() {
             onClick={() => setShowCreateModal(true)}
             className="bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 hover:brightness-110 transition-all shadow-[0_4px_16px_hsla(var(--blue-500)/0.2)]"
           >
-            <Plus size={14} /> Tạo hóa đơn
+            <Plus size={14} /> {t('fin.invoices.createInvoice')}
           </motion.button>
           <button
             onClick={() => exportInvoicesCsv(filtered)}
@@ -262,7 +265,7 @@ export default function InvoicesPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo khách hàng, số HĐ..."
+            placeholder={t('fin.invoices.searchPlaceholder')}
             className="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/60 flex-1"
           />
           {search && (
@@ -273,11 +276,11 @@ export default function InvoicesPage() {
         </div>
         <div className="flex gap-1 bg-accent/30 rounded-xl p-1">
           {[
-            { key: 'all', label: 'Tất cả' },
-            { key: 'pending', label: 'Chưa TT' },
-            { key: 'overdue', label: 'Quá hạn' },
-            { key: 'paid', label: 'Đã TT' },
-            { key: 'advanced', label: 'Đã ứng' },
+            { key: 'all', label: t('fin.invoices.filters.all') },
+            { key: 'pending', label: t('fin.invoices.filters.pending') },
+            { key: 'overdue', label: t('fin.invoices.filters.overdue') },
+            { key: 'paid', label: t('fin.invoices.filters.paid') },
+            { key: 'advanced', label: t('fin.invoices.filters.advanced') },
           ].map((f) => (
             <button
               key={f.key}
@@ -301,15 +304,15 @@ export default function InvoicesPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 px-6">
             <FileText size={28} className="text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-foreground font-medium">Chưa có hóa đơn nào</p>
-            <p className="text-xs text-muted-foreground mt-1">Bấm "Tạo hóa đơn" để thêm hóa đơn đầu tiên.</p>
+            <p className="text-sm text-foreground font-medium">{t('fin.invoices.emptyTitle')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('fin.invoices.emptyDesc')}</p>
           </div>
         ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/50">
-                {['Số HĐ', 'Khách hàng', 'Ngày phát', 'Đến hạn', 'Số tiền', 'Trạng thái', ''].map((h) => (
+                {[t('fin.invoices.table.number'), t('fin.invoices.table.client'), t('fin.invoices.table.issued'), t('fin.invoices.table.due'), t('fin.invoices.table.amount'), t('fin.invoices.table.status'), ''].map((h) => (
                   <th key={h} className="text-left text-xs text-muted-foreground/70 font-medium px-5 py-4 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -337,9 +340,9 @@ export default function InvoicesPage() {
                   <td className="px-5 py-4 text-muted-foreground">{formatDateShort(inv.due_date)}</td>
                   <td className="px-5 py-4 font-mono text-foreground font-medium">{formatVND(inv.total)}</td>
                   <td className="px-5 py-4">
-                    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium ${statusConfig[inv.status]?.bg ?? ''}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[inv.status]?.dot ?? ''}`} />
-                      {statusConfig[inv.status]?.label ?? inv.status}
+                    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium ${statusDotBg[inv.status]?.bg ?? ''}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusDotBg[inv.status]?.dot ?? ''}`} />
+                      {t(`fin.invoices.status.${inv.status}`, { defaultValue: inv.status })}
                     </span>
                   </td>
                   <td className="px-5 py-4">
@@ -348,7 +351,7 @@ export default function InvoicesPage() {
                         onClick={(e) => { e.stopPropagation(); setSelectedInvoice(inv); }}
                         className="text-xs text-primary hover:underline font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
                       >
-                        Ứng vốn <ArrowRight size={10} />
+                        {t('fin.invoices.advanceAction')} <ArrowRight size={10} />
                       </button>
                     )}
                   </td>
@@ -382,9 +385,9 @@ export default function InvoicesPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-display font-bold text-foreground text-xl">{selectedInvoice.invoice_number}</h3>
-                    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium mt-2 ${statusConfig[selectedInvoice.status]?.bg ?? ''}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[selectedInvoice.status]?.dot ?? ''}`} />
-                      {statusConfig[selectedInvoice.status]?.label ?? selectedInvoice.status}
+                    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium mt-2 ${statusDotBg[selectedInvoice.status]?.bg ?? ''}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusDotBg[selectedInvoice.status]?.dot ?? ''}`} />
+                      {t(`fin.invoices.status.${selectedInvoice.status}`, { defaultValue: selectedInvoice.status })}
                     </span>
                   </div>
                   <button onClick={() => setSelectedInvoice(null)} className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-all">
@@ -399,47 +402,47 @@ export default function InvoicesPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-foreground">{selectedInvoice.client_name}</p>
-                      <p className="text-xs text-muted-foreground">Khách hàng</p>
+                      <p className="text-xs text-muted-foreground">{t('fin.invoices.detail.client')}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-card/50 border border-border/50 rounded-2xl p-5 space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Số tiền trước thuế</span>
+                    <span className="text-muted-foreground">{t('fin.invoices.detail.amountBeforeTax')}</span>
                     <span className="font-mono text-foreground font-medium">{formatVND(selectedInvoice.amount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">VAT ({selectedInvoice.vat_rate}%)</span>
+                    <span className="text-muted-foreground">{t('fin.invoices.detail.vat', { rate: selectedInvoice.vat_rate })}</span>
                     <span className="font-mono text-foreground">{formatVND(selectedInvoice.total - selectedInvoice.amount)}</span>
                   </div>
                   <div className="border-t border-border/50 pt-3 flex justify-between text-sm font-semibold">
-                    <span className="text-foreground">Tổng cộng</span>
+                    <span className="text-foreground">{t('fin.invoices.detail.total')}</span>
                     <span className="font-mono text-foreground text-lg">{formatVND(selectedInvoice.total)}</span>
                   </div>
                 </div>
 
                 <div className="bg-card/50 border border-border/50 rounded-2xl p-5 space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Ngày phát hành</span>
+                    <span className="text-muted-foreground">{t('fin.invoices.detail.issuedDate')}</span>
                     <span className="text-foreground">{formatDateShort(selectedInvoice.issued_date)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Ngày đến hạn</span>
+                    <span className="text-muted-foreground">{t('fin.invoices.detail.dueDate')}</span>
                     <span className="text-foreground">{formatDateShort(selectedInvoice.due_date)}</span>
                   </div>
                 </div>
 
                 {(selectedInvoice.status === 'pending' || selectedInvoice.status === 'overdue') && (
                   <div className="bg-gradient-to-br from-primary/5 to-mimi-green/5 border border-primary/15 rounded-2xl p-5">
-                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><InsightSpark size={16} className="text-primary" /> Ứng vốn hóa đơn</p>
+                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><InsightSpark size={16} className="text-primary" /> {t('fin.invoices.detail.advanceTitle')}</p>
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       <div className="flex justify-between">
-                        <span>Số tiền ứng (80%)</span>
+                        <span>{t('fin.invoices.detail.advanceAmount')}</span>
                         <span className="font-mono text-foreground font-semibold">{formatVND(selectedInvoice.total * 0.8)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Phí (1.5% / 30 ngày)</span>
+                        <span>{t('fin.invoices.detail.advanceFee')}</span>
                         <span className="font-mono text-foreground">{formatVND(selectedInvoice.total * 0.015)}</span>
                       </div>
                     </div>
@@ -450,7 +453,7 @@ export default function InvoicesPage() {
                       disabled={advancing}
                       className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-[0_4px_16px_hsla(var(--blue-500)/0.25)] disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      {advancing && <Loader2 size={14} className="animate-spin" />} Ứng vốn ngay →
+                      {advancing && <Loader2 size={14} className="animate-spin" />} {t('fin.invoices.detail.advanceNow')}
                     </motion.button>
                   </div>
                 )}

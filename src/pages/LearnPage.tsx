@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { LESSONS, LESSON_BY_ID, FACTOR_LABEL, FACTOR_ICON, LEVEL_LABEL, type Lesson, type FactorKey } from '@/lib/lessons';
 import LearnHero from '@/components/learn/LearnHero';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -14,18 +15,19 @@ const fadeUp = {
 };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 
-function capabilityFromScore(score: number | null): { label: string; tone: 'blue' | 'green' | 'amber' | 'violet' } {
-  if (score == null) return { label: 'Chưa xác định', tone: 'violet' };
-  if (score >= 750) return { label: 'Thành thạo', tone: 'green' };
-  if (score >= 650) return { label: 'Vững vàng', tone: 'blue' };
-  if (score >= 550) return { label: 'Cơ bản', tone: 'amber' };
-  return { label: 'Mới bắt đầu', tone: 'violet' };
+function capabilityFromScore(score: number | null, t: (k: string) => string): { label: string; tone: 'blue' | 'green' | 'amber' | 'violet' } {
+  if (score == null) return { label: t('pg.learn.capability.undetermined'), tone: 'violet' };
+  if (score >= 750) return { label: t('pg.learn.capability.mastered'), tone: 'green' };
+  if (score >= 650) return { label: t('pg.learn.capability.solid'), tone: 'blue' };
+  if (score >= 550) return { label: t('pg.learn.capability.basic'), tone: 'amber' };
+  return { label: t('pg.learn.capability.beginner'), tone: 'violet' };
 }
 
 // min-w-0 on the button: as a grid item it defaults to min-width:auto, so the
 // nowrap `truncate` title inside propagated its full width upward and pushed the
 // page 23px wider than a 390px phone viewport.
 function LessonCard({ lesson, done, reason, onOpen }: { lesson: Lesson; done: boolean; reason?: string; onOpen: () => void }) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onOpen}
@@ -39,7 +41,7 @@ function LessonCard({ lesson, done, reason, onOpen }: { lesson: Lesson; done: bo
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{LEVEL_LABEL[lesson.level]}</span>
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock size={10} /> {lesson.minutes} phút</span>
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock size={10} /> {lesson.minutes} {t('pg.learn.minutesShort')}</span>
           </div>
           <p className="text-sm font-semibold text-foreground mt-0.5 truncate">{lesson.title}</p>
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{reason ?? lesson.summary}</p>
@@ -55,6 +57,7 @@ function LessonCard({ lesson, done, reason, onOpen }: { lesson: Lesson; done: bo
 }
 
 function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; done: boolean; onClose: () => void; onComplete: (score: number) => Promise<void> }) {
+  const { t } = useTranslation();
   const [answers, setAnswers] = useState<number[]>(Array(lesson.quiz.length).fill(-1));
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,7 +67,7 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
   const passed = scorePct >= 60;
 
   const submit = async () => {
-    if (answers.some((a) => a < 0)) { toast.error('Vui lòng trả lời tất cả câu hỏi'); return; }
+    if (answers.some((a) => a < 0)) { toast.error(t('pg.learn.answerAllQuestions')); return; }
     setSubmitted(true);
     if (scorePct >= 60) {
       setSaving(true);
@@ -90,7 +93,7 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
             {(() => { const Icon = FACTOR_ICON[lesson.factor]; return <Icon size={18} className="text-muted-foreground shrink-0" />; })()}
             <div className="min-w-0">
               <p className="text-sm font-bold text-foreground truncate">{lesson.title}</p>
-              <p className="text-[11px] text-muted-foreground">{FACTOR_LABEL[lesson.factor]} · {lesson.minutes} phút</p>
+              <p className="text-[11px] text-muted-foreground">{FACTOR_LABEL[lesson.factor]} · {lesson.minutes} {t('pg.learn.minutesShort')}</p>
             </div>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-accent text-muted-foreground pressable shrink-0"><X size={18} /></button>
@@ -106,7 +109,7 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
 
           {/* Quiz */}
           <div className="pt-2 border-t hairline">
-            <p className="text-sm font-bold text-foreground mb-3 flex items-center gap-2"><Sparkles size={15} className="text-primary" /> Kiểm tra nhanh</p>
+            <p className="text-sm font-bold text-foreground mb-3 flex items-center gap-2"><Sparkles size={15} className="text-primary" /> {t('pg.learn.quizTitle')}</p>
             <div className="space-y-4">
               {lesson.quiz.map((qq, qi) => (
                 <div key={qi}>
@@ -140,7 +143,9 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
           {submitted && (
             <div className={`rounded-2xl p-4 text-center ${passed ? 'bg-mimi-green/10' : 'bg-mimi-amber/10'}`}>
               <p className={`text-sm font-semibold ${passed ? 'text-mimi-green' : 'text-mimi-amber'}`}>
-                {passed ? `Hoàn thành — bạn đúng ${correctCount}/${lesson.quiz.length}` : `Bạn đúng ${correctCount}/${lesson.quiz.length} — ôn lại và thử lại nhé`}
+                {passed
+                  ? t('pg.learn.completedResult', { correct: correctCount, total: lesson.quiz.length })
+                  : t('pg.learn.failedResult', { correct: correctCount, total: lesson.quiz.length })}
               </p>
             </div>
           )}
@@ -149,12 +154,12 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
         <div className="p-4 border-t hairline shrink-0">
           {!submitted ? (
             <button onClick={submit} className="w-full py-3 bg-primary text-white rounded-2xl text-sm font-semibold hover:brightness-110 transition-all pressable flex items-center justify-center gap-2">
-              {saving && <Loader2 size={14} className="animate-spin" />} Nộp bài
+              {saving && <Loader2 size={14} className="animate-spin" />} {t('pg.learn.submit')}
             </button>
           ) : passed ? (
-            <button onClick={onClose} className="w-full py-3 bg-mimi-green text-white rounded-2xl text-sm font-semibold pressable">Xong</button>
+            <button onClick={onClose} className="w-full py-3 bg-mimi-green text-white rounded-2xl text-sm font-semibold pressable">{t('pg.learn.done')}</button>
           ) : (
-            <button onClick={() => { setSubmitted(false); setAnswers(Array(lesson.quiz.length).fill(-1)); }} className="w-full py-3 bg-accent text-foreground rounded-2xl text-sm font-semibold pressable">Thử lại</button>
+            <button onClick={() => { setSubmitted(false); setAnswers(Array(lesson.quiz.length).fill(-1)); }} className="w-full py-3 bg-accent text-foreground rounded-2xl text-sm font-semibold pressable">{t('pg.learn.retry')}</button>
           )}
         </div>
       </motion.div>
@@ -163,6 +168,7 @@ function LessonModal({ lesson, done, onClose, onComplete }: { lesson: Lesson; do
 }
 
 export default function LearnPage() {
+  const { t } = useTranslation();
   const { session } = useAuthStore();
   const [params] = useSearchParams();
   const focus = params.get('focus') as FactorKey | null;
@@ -199,13 +205,13 @@ export default function LearnPage() {
   useEffect(() => { load(); }, [load]);
 
   const markComplete = async (lesson: Lesson, quizScore: number) => {
-    if (!companyId) { setCompleted((s) => new Set(s).add(lesson.id)); toast.success('Đã hoàn thành bài học'); return; }
+    if (!companyId) { setCompleted((s) => new Set(s).add(lesson.id)); toast.success(t('pg.learn.lessonCompletedToast')); return; }
     const { error } = await supabase
       .from('learning_progress')
       .upsert({ company_id: companyId, lesson_id: lesson.id, quiz_score: quizScore }, { onConflict: 'company_id,lesson_id' });
-    if (error) { toast.error('Không lưu được tiến độ'); return; }
+    if (error) { toast.error(t('pg.learn.progressNotSavedError')); return; }
     setCompleted((s) => new Set(s).add(lesson.id));
-    toast.success('Đã hoàn thành bài học');
+    toast.success(t('pg.learn.lessonCompletedToast'));
   };
 
   // Recommended lessons: focus param first, then weakest factors, not-yet-done first.
@@ -217,7 +223,7 @@ export default function LearnPage() {
       for (const l of LESSONS.filter((x) => x.factor === f)) {
         if (seen.has(l.id)) continue;
         seen.add(l.id);
-        picks.push({ lesson: l, reason: `Điểm "${FACTOR_LABEL[f]}" của bạn đang thấp — học cách cải thiện.` });
+        picks.push({ lesson: l, reason: t('pg.learn.recommendedReason', { factor: FACTOR_LABEL[f] }) });
       }
     }
     return picks.slice(0, 4);
@@ -228,7 +234,7 @@ export default function LearnPage() {
     return order.map((f) => ({ factor: f, lessons: LESSONS.filter((l) => l.factor === f) })).filter((g) => g.lessons.length);
   }, []);
 
-  const cap = capabilityFromScore(score);
+  const cap = capabilityFromScore(score, t);
   const doneCount = completed.size;
   const total = LESSONS.length;
 
@@ -246,8 +252,8 @@ export default function LearnPage() {
       {/* Recommended */}
       {recommended.length > 0 && (
         <motion.div variants={fadeUp}>
-          <h3 className="text-lg font-display font-bold text-foreground mb-1">Đề xuất cho bạn</h3>
-          <p className="text-xs text-muted-foreground mb-3">Ưu tiên theo 2 yếu tố tín dụng đang thấp nhất — cải thiện chúng để tăng điểm nhanh nhất.</p>
+          <h3 className="text-lg font-display font-bold text-foreground mb-1">{t('pg.learn.recommendedTitle')}</h3>
+          <p className="text-xs text-muted-foreground mb-3">{t('pg.learn.recommendedSubtitle')}</p>
           <div className="grid sm:grid-cols-2 gap-3">
             {recommended.map(({ lesson, reason }) => (
               <LessonCard key={lesson.id} lesson={lesson} done={completed.has(lesson.id)} reason={reason} onOpen={() => setOpenLesson(lesson)} />
@@ -258,7 +264,7 @@ export default function LearnPage() {
 
       {/* All lessons grouped */}
       <motion.div variants={fadeUp} className="space-y-6">
-        <h3 className="text-lg font-display font-bold text-foreground">Tất cả bài học</h3>
+        <h3 className="text-lg font-display font-bold text-foreground">{t('pg.learn.allLessons')}</h3>
         {grouped.map((g) => (
           <div key={g.factor}>
             <p className="text-sm font-semibold text-muted-foreground mb-2.5 flex items-center gap-2">
@@ -276,8 +282,8 @@ export default function LearnPage() {
       {score == null && (
         <motion.div variants={fadeUp} className="bg-primary/5 border border-primary/15 rounded-2xl p-4 flex items-center gap-3">
           <Sparkles size={18} className="text-primary shrink-0" />
-          <p className="text-sm text-foreground">Tính điểm tín dụng để nhận lộ trình học cá nhân hóa theo điểm yếu của bạn.
-            <a href="/dashboard/credit" className="text-primary font-medium ml-1 inline-flex items-center gap-1">Tới trang Điểm <ArrowRight size={12} /></a>
+          <p className="text-sm text-foreground">{t('pg.learn.noScoreCta')}
+            <a href="/dashboard/credit" className="text-primary font-medium ml-1 inline-flex items-center gap-1">{t('pg.learn.goToScorePage')} <ArrowRight size={12} /></a>
           </p>
         </motion.div>
       )}

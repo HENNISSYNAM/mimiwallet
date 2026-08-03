@@ -5,22 +5,23 @@ import KYCVerification from '@/components/fintech/KYCVerification';
 import PaymentMethods from '@/components/fintech/PaymentMethods';
 import ComplianceDashboard from '@/components/fintech/ComplianceDashboard';
 import { Shield, Link2, CreditCard, Fingerprint } from 'lucide-react';
-
-const tabs = [
-  { id: 'banking', label: 'Open Banking', icon: <Link2 size={16} /> },
-  { id: 'kyc', label: 'eKYC', icon: <Fingerprint size={16} /> },
-  { id: 'payment', label: 'Thanh toán', icon: <CreditCard size={16} /> },
-  { id: 'compliance', label: 'Tuân thủ', icon: <Shield size={16} /> },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function FintechPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('banking');
+  const tabs = [
+    { id: 'banking', label: t('pg.fintech.tabs.banking'), icon: <Link2 size={16} /> },
+    { id: 'kyc', label: t('pg.fintech.tabs.kyc'), icon: <Fingerprint size={16} /> },
+    { id: 'payment', label: t('pg.fintech.tabs.payment'), icon: <CreditCard size={16} /> },
+    { id: 'compliance', label: t('pg.fintech.tabs.compliance'), icon: <Shield size={16} /> },
+  ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Fintech Hub</h2>
-        <p className="text-sm text-muted-foreground mt-1">Open Banking, eKYC, thanh toán & tuân thủ pháp lý</p>
+        <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t('pg.fintech.title')}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{t('pg.fintech.subtitle')}</p>
       </div>
 
       {/* Tab Navigation */}

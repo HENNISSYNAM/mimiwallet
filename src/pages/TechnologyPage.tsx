@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ShieldCheck, Zap, Lock, Database, Cpu, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { QuantumLockArt, MLScoreArt, RLSArt } from '@/components/illustrations/TechPillars';
 
@@ -8,63 +9,41 @@ const fadeUp = {
 };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 
-const PILLARS = [
-  {
-    icon: Lock,
-    tone: 'text-primary bg-primary/10',
-    title: 'Mã hóa kháng lượng tử',
-    tag: 'ML-KEM-768 · NIST FIPS 203',
-    Art: QuantumLockArt,
-    desc: 'Dữ liệu định danh (CCCD, họ tên) được mã hóa bằng thuật toán trao đổi khóa kháng lượng tử vừa được NIST chuẩn hóa năm 2024 — an toàn kể cả trước máy tính lượng tử tương lai.',
-    points: ['Chuẩn quốc tế FIPS 203', 'Chống "harvest-now, decrypt-later"', 'Khóa quản lý qua secrets manager'],
-  },
-  {
-    icon: Zap,
-    tone: 'text-mimi-green bg-mimi-green/10',
-    title: 'Chấm điểm AI trong ~3 giây',
-    tag: 'Machine Learning · giải thích được',
-    Art: MLScoreArt,
-    desc: 'Mô hình học máy trích 5 đặc trưng từ 12 tháng dữ liệu giao dịch thật, cho ra điểm 300–850 kèm bảng phân tích từng yếu tố — thay vì chờ nhiều ngày thẩm định thủ công.',
-    points: ['5 đặc trưng tài chính thật', 'Scorecard + hồi quy logistic', 'Mỗi điểm số đều giải thích được'],
-  },
-  {
-    icon: ShieldCheck,
-    tone: 'text-[hsl(270_60%_50%)] bg-[hsl(270_60%_55%/0.1)]',
-    title: 'Bảo mật RLS theo doanh nghiệp',
-    tag: 'Row-Level Security',
-    Art: RLSArt,
-    desc: 'Mỗi doanh nghiệp chỉ truy cập được đúng dữ liệu của mình — quyền được áp đặt ngay ở tầng cơ sở dữ liệu, không phụ thuộc logic phía ứng dụng.',
-    points: ['Cách ly dữ liệu tài chính', 'Áp ở tầng PostgreSQL', 'An toàn kể cả khi app lỗi'],
-  },
+const PILLAR_META = [
+  { icon: Lock, tone: 'text-primary bg-primary/10', tag: 'ML-KEM-768 · NIST FIPS 203', Art: QuantumLockArt },
+  { icon: Zap, tone: 'text-mimi-green bg-mimi-green/10', tag: 'Machine Learning · giải thích được', Art: MLScoreArt },
+  { icon: ShieldCheck, tone: 'text-[hsl(270_60%_50%)] bg-[hsl(270_60%_55%/0.1)]', tag: 'Row-Level Security', Art: RLSArt },
 ];
 
-const PIPELINE = [
-  { icon: Database, label: 'Dữ liệu giao dịch', sub: '12 tháng thu–chi, hóa đơn, khoản vay' },
-  { icon: Cpu, label: 'Feature engineering', sub: '5 đặc trưng chuẩn hóa 0–100' },
-  { icon: Zap, label: 'Mô hình chấm điểm', sub: 'Scorecard + logistic regression' },
-  { icon: CheckCircle2, label: 'Điểm + giải thích', sub: 'Điểm 300–850 kèm yếu tố' },
-];
+const PIPELINE_ICONS = [Database, Cpu, Zap, CheckCircle2];
+
+interface PillarText { title: string; desc: string; points: string[]; }
+interface PipelineText { label: string; sub: string; }
 
 export default function TechnologyPage() {
+  const { t } = useTranslation();
+  const pillarTexts = t('pg.tech.pillars', { returnObjects: true }) as PillarText[];
+  const pillars = PILLAR_META.map((meta, i) => ({ ...meta, ...pillarTexts[i] }));
+  const pipelineTexts = t('pg.tech.pipeline', { returnObjects: true }) as PipelineText[];
+  const pipeline = PIPELINE_ICONS.map((icon, i) => ({ icon, ...pipelineTexts[i] }));
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-8 max-w-5xl">
       {/* Hero */}
       <motion.div variants={fadeUp} className="text-center pt-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold">
-          <Cpu size={13} /> Công nghệ lõi
+          <Cpu size={13} /> {t('pg.tech.badge')}
         </span>
         <h2 className="mt-3 text-[28px] sm:text-4xl font-display font-extrabold text-foreground tracking-tight">
-          Nhanh gọn. Minh bạch. An toàn chuẩn quốc tế.
+          {t('pg.tech.heroTitle')}
         </h2>
         <p className="mt-3 text-[15px] text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Ba công nghệ nền tảng giúp doanh nghiệp nhỏ được thẩm định tín dụng trong vài giây,
-          hiểu rõ vì sao, và yên tâm dữ liệu được bảo vệ ở mức cao nhất.
+          {t('pg.tech.heroSubtitle')}
         </p>
       </motion.div>
 
       {/* Three pillars */}
       <div className="space-y-5">
-        {PILLARS.map((p) => (
+        {pillars.map((p) => (
           <motion.div
             key={p.title}
             variants={fadeUp}
@@ -98,13 +77,13 @@ export default function TechnologyPage() {
       {/* Pipeline "from data to score" */}
       <motion.div variants={fadeUp} className="bg-card border hairline rounded-3xl p-6 sm:p-8" style={{ boxShadow: 'var(--shadow-card)' }}>
         <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
-          <h3 className="text-lg font-display font-bold text-foreground">Từ dữ liệu đến điểm số</h3>
+          <h3 className="text-lg font-display font-bold text-foreground">{t('pg.tech.pipelineTitle')}</h3>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-mimi-green/10 text-mimi-green px-3 py-1 text-xs font-bold">
-            <Zap size={13} /> Toàn bộ trong ~3 giây
+            <Zap size={13} /> {t('pg.tech.pipelineBadge')}
           </span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {PIPELINE.map((step, i) => (
+          {pipeline.map((step, i) => (
             <div key={step.label} className="relative">
               <div className="bg-accent/50 rounded-2xl p-4 h-full">
                 <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center mb-2.5">
@@ -113,7 +92,7 @@ export default function TechnologyPage() {
                 <p className="text-[13px] font-semibold text-foreground leading-snug">{step.label}</p>
                 <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{step.sub}</p>
               </div>
-              {i < PIPELINE.length - 1 && (
+              {i < pipeline.length - 1 && (
                 <ArrowRight size={16} className="hidden md:block absolute top-1/2 -right-2.5 -translate-y-1/2 text-muted-foreground" />
               )}
             </div>
@@ -124,7 +103,7 @@ export default function TechnologyPage() {
       {/* Trust footer */}
       <motion.div variants={fadeUp} className="text-center pb-4">
         <p className="text-[13px] text-muted-foreground">
-          Mã nguồn công khai tại{' '}
+          {t('pg.tech.openSourceNote')}{' '}
           <a href="https://github.com/HENNISSYNAM/mimiwallet" target="_blank" rel="noreferrer" className="text-primary font-medium hover:underline">
             github.com/HENNISSYNAM/mimiwallet
           </a>

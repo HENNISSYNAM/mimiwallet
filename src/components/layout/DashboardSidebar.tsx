@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, TrendingUp, FileText, CreditCard,
-  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf, Sparkles, GraduationCap,
+  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf, Sparkles, GraduationCap, Globe,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { companyProfile } from '@/lib/mockData';
@@ -14,7 +14,7 @@ export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const navItems = [
     { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
@@ -68,6 +68,15 @@ export default function DashboardSidebar() {
       </nav>
 
       <div className="border-t border-border p-3 space-y-2">
+        <button
+          onClick={() => i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi')}
+          aria-label={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+          title={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
+        >
+          <Globe size={18} className="shrink-0" />
+          {!collapsed && <span>{i18n.language === 'vi' ? 'Tiếng Việt · VI' : 'English · EN'}</span>}
+        </button>
         <a
           href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet"
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"

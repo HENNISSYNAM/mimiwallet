@@ -1,4 +1,5 @@
 import { motion, useScroll, useTransform, useMotionValue, useSpring, useInView, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -93,6 +94,7 @@ function MetricItem({
 
 /* ─── Animated Process Flow ─── */
 function ProcessFlow() {
+  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
   const { ref, isVisible } = useScrollReveal(0.2);
 
@@ -104,33 +106,39 @@ function ProcessFlow() {
     return () => clearInterval(interval);
   }, [isVisible]);
 
+  const processSteps = t('process.steps', { returnObjects: true }) as { title: string; desc: string; detail: string }[];
+  const tagSets = [
+    t('landing.process.step1Tags', { returnObjects: true }) as string[],
+    t('landing.process.step2Tags', { returnObjects: true }) as string[],
+    t('landing.process.step3Tags', { returnObjects: true }) as string[],
+  ];
   const steps = [
     {
       icon: <Globe className="w-6 h-6" />,
-      title: 'Kết nối dữ liệu',
-      desc: 'Liên kết ngân hàng & kế toán trong 5 phút',
-      detail: 'API bảo mật kết nối trực tiếp với 40+ ngân hàng VN',
-      tags: ['Vietcombank', 'BIDV', 'MISA', 'Shopee'],
+      title: processSteps[0].title,
+      desc: processSteps[0].desc,
+      detail: processSteps[0].detail,
+      tags: tagSets[0],
       color: 'from-primary to-mimi-blue-light',
       bgColor: 'bg-primary/10',
       textColor: 'text-primary',
     },
     {
       icon: <Brain className="w-6 h-6" />,
-      title: 'AI phân tích',
-      desc: '200+ điểm dữ liệu, chấm điểm tín dụng real-time',
-      detail: 'Machine learning xử lý trong ~3 giây',
-      tags: ['Credit Score', 'Cash Flow', 'Risk'],
+      title: processSteps[1].title,
+      desc: processSteps[1].desc,
+      detail: processSteps[1].detail,
+      tags: tagSets[1],
       color: 'from-primary to-mimi-blue-light',
       bgColor: 'bg-primary/10',
       textColor: 'text-primary',
     },
     {
       icon: <Zap className="w-6 h-6" />,
-      title: 'Nhận vốn 24h',
-      desc: 'Vốn chuyển vào tài khoản trong 24 giờ',
-      detail: 'Từ ₫100M đến ₫10 tỷ, không thế chấp',
-      tags: ['₫100M — ₫10 tỷ', '24h'],
+      title: processSteps[2].title,
+      desc: processSteps[2].desc,
+      detail: processSteps[2].detail,
+      tags: tagSets[2],
       color: 'from-mimi-green to-mimi-green-light',
       bgColor: 'bg-mimi-green/10',
       textColor: 'text-mimi-green',
@@ -151,7 +159,7 @@ function ProcessFlow() {
           <button
             key={i}
             onClick={() => setActiveStep(i)}
-            aria-label={`Chuyển đến bước ${i + 1}: ${s.title}`}
+            aria-label={t('landing.process.goToStep', { num: i + 1, title: s.title })}
             className="relative z-10 flex flex-col items-center gap-3 group"
           >
             <motion.div
@@ -187,7 +195,7 @@ function ProcessFlow() {
           <div className="space-y-6">
             <div className={`inline-flex items-center gap-2 ${steps[activeStep].bgColor} px-4 py-2 rounded-full`}>
               <span className={steps[activeStep].textColor}>{steps[activeStep].icon}</span>
-              <span className={`text-sm font-semibold ${steps[activeStep].textColor}`}>Bước {activeStep + 1}/3</span>
+              <span className={`text-sm font-semibold ${steps[activeStep].textColor}`}>{t('process.step')} {activeStep + 1}/3</span>
             </div>
             <h3 className="font-display font-extrabold text-3xl text-foreground">{steps[activeStep].title}</h3>
             <p className="text-muted-foreground text-lg leading-relaxed">{steps[activeStep].desc}</p>
@@ -203,7 +211,7 @@ function ProcessFlow() {
             {activeStep === 0 && (
               <motion.div className="bg-card border border-border rounded-2xl p-6 shadow-xl">
                 <div className="space-y-3">
-                  {['Vietcombank', 'BIDV', 'Techcombank', 'VPBank'].map((bank, i) => (
+                  {(t('landing.process.bankDemo', { returnObjects: true }) as string[]).map((bank, i) => (
                     <motion.div
                       key={bank}
                       initial={{ opacity: 0, x: 20 }}
@@ -241,12 +249,7 @@ function ProcessFlow() {
                   </motion.div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Credit Score', value: '701', color: 'text-mimi-green' },
-                    { label: 'Risk Level', value: 'Thấp', color: 'text-mimi-green' },
-                    { label: 'Cash Flow', value: '+15.5%', color: 'text-primary' },
-                    { label: 'Approval', value: '98%', color: 'text-mimi-green' },
-                  ].map((m, i) => (
+                  {(t('landing.process.aiMetrics', { returnObjects: true }) as { label: string; value: string }[]).map((m, i) => (
                     <motion.div
                       key={m.label}
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -255,7 +258,7 @@ function ProcessFlow() {
                       className="bg-accent rounded-xl p-3 text-center"
                     >
                       <p className="text-xs text-muted-foreground">{m.label}</p>
-                      <p className={`text-lg font-mono font-bold ${m.color}`}>{m.value}</p>
+                      <p className={`text-lg font-mono font-bold ${i === 2 ? 'text-primary' : 'text-mimi-green'}`}>{m.value}</p>
                     </motion.div>
                   ))}
                 </div>
@@ -267,21 +270,17 @@ function ProcessFlow() {
                   className="bg-gradient-to-r from-primary/10 to-mimi-green/10 rounded-xl p-6 text-center mb-4"
                   initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }}
                 >
-                  <p className="text-xs text-muted-foreground mb-1">Số tiền giải ngân</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('process.disbursedAmount')}</p>
                   <motion.p
                     className="text-3xl font-mono font-extrabold text-foreground"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
                   >
                     ₫2,500,000,000
                   </motion.p>
-                  <p className="text-xs text-mimi-green mt-1 font-medium">✓ Đã chuyển thành công</p>
+                  <p className="text-xs text-mimi-green mt-1 font-medium">{t('process.disbursedSuccess')}</p>
                 </motion.div>
                 <div className="space-y-2">
-                  {[
-                    { step: 'Duyệt hồ sơ', time: '2 giờ', done: true },
-                    { step: 'Ký hợp đồng điện tử', time: '30 phút', done: true },
-                    { step: 'Giải ngân', time: '4 giờ', done: true },
-                  ].map((s, i) => (
+                  {(t('landing.process.timeline', { returnObjects: true }) as { step: string; time: string }[]).map((s, i) => (
                     <motion.div
                       key={s.step}
                       initial={{ opacity: 0, x: 10 }}
@@ -310,6 +309,7 @@ function ProcessFlow() {
 
 /* ─── Hero Dashboard Mockup ─── */
 function HeroMockup() {
+  const { t } = useTranslation();
   return (
     <motion.div {...fadeUp(0.5)} className="relative mt-16 mx-auto max-w-[900px]">
       
@@ -353,7 +353,7 @@ function HeroMockup() {
           <TrendingUp size={14} className="text-mimi-green" />
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Dòng tiền</p>
+          <p className="text-xs text-muted-foreground">{t('heroBadges.cashflow')}</p>
           <p className="text-sm font-mono font-bold text-mimi-green">+₫1.2 tỷ</p>
         </div>
       </motion.div>
@@ -506,6 +506,7 @@ function TechPillarCard({
 
 /* ═══════════ MAIN ═══════════ */
 export default function Landing() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [annual, setAnnual] = useState(false);
   const [ctaEmail, setCtaEmail] = useState('');
@@ -534,7 +535,7 @@ export default function Landing() {
         <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 container mx-auto px-4 text-center pt-24 pb-12">
           {/* Eyebrow — states the category, makes no ranking claim. */}
           <motion.p {...fadeUp(0)} className="text-sm font-medium text-muted-foreground mb-6">
-            Vốn lưu động cho doanh nghiệp nhỏ và siêu nhỏ
+            {t('hero.badge')}
           </motion.p>
 
           {/*
@@ -547,13 +548,12 @@ export default function Landing() {
             className="font-display font-extrabold text-foreground leading-[1.03] tracking-[-0.03em] max-w-4xl mx-auto"
             style={{ fontSize: 'clamp(2.6rem, 5.5vw, 4.75rem)' }}
           >
-            Vốn về tài khoản
-            <br className="hidden md:block" /> trước khi khách trả tiền
+            {t('landing.hero.titleLine1')}
+            <br className="hidden md:block" /> {t('landing.hero.titleLine2')}
           </motion.h1>
 
           <motion.p {...fadeUp(0.2)} className="mt-6 text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
-            Mimi Wallet chấm điểm tín dụng doanh nghiệp bạn từ dữ liệu giao dịch thật, rồi ứng
-            trước tới 80% giá trị hóa đơn chưa tới hạn.
+            {t('landing.hero.subtitle')}
           </motion.p>
 
           {/* One primary action; the demo sits beside it as a quiet text link. */}
@@ -563,14 +563,14 @@ export default function Landing() {
               className="bg-primary text-primary-foreground h-13 px-7 rounded-2xl font-display font-semibold text-[15px] pressable transition-colors hover:bg-primary/90"
               style={{ height: '52px' }}
             >
-              Bắt đầu miễn phí
+              {t('nav.startFreeMobile')}
             </button>
             <button
               onClick={() => navigate('/dashboard')}
               className="text-[15px] font-medium text-primary hover:underline underline-offset-4 flex items-center gap-1.5"
               style={{ minHeight: '44px' }}
             >
-              <Play size={13} /> Xem demo 2 phút
+              <Play size={13} /> {t('hero.ctaSecondary')}
             </button>
           </motion.div>
 
@@ -584,17 +584,15 @@ export default function Landing() {
             {...fadeUp(0.4)}
             className="mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[13px] text-muted-foreground"
           >
-            {[
-              { Icon: ScoringBolt, text: 'Chấm điểm AI ~3 giây' },
-              { Icon: QuantumShield, text: 'Mã hóa kháng lượng tử' },
-              { Icon: InvoiceDoc, text: 'Ứng vốn hóa đơn' },
-              { Icon: LearnCap, text: 'Học Fintech cá nhân hóa' },
-            ].map(({ Icon, text }) => (
+            {[ScoringBolt, QuantumShield, InvoiceDoc, LearnCap].map((Icon, i) => {
+              const text = (t('landing.hero.pills', { returnObjects: true }) as string[])[i];
+              return (
               <span key={text} className="flex items-center gap-2">
                 <Icon size={15} className="text-muted-foreground/70" />
                 {text}
               </span>
-            ))}
+              );
+            })}
           </motion.div>
 
           {/* Hero Mockup */}
@@ -613,10 +611,23 @@ export default function Landing() {
           paying customers, so usage/disbursement figures would be invented. */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <MetricItem value={3} prefix="~" suffix=" giây" label="Thời gian chấm điểm" sub="Chạy trên hạ tầng production" delay={0} />
-          <MetricItem value={768} prefix="ML-KEM-" animate={false} label="Mã hóa kháng lượng tử" sub="Chuẩn NIST FIPS 203" delay={0.1} />
-          <MetricItem value={12} suffix=" tháng" label="Dữ liệu mỗi lần chấm" sub="Giao dịch thật của doanh nghiệp" delay={0.2} />
-          <MetricItem value={52} suffix="/52" label="Kiểm thử tự động" sub="Toàn bộ đang pass" delay={0.3} />
+          {(() => {
+            const items = t('landing.metrics.items', { returnObjects: true }) as { prefix?: string; suffix?: string; label: string; sub: string }[];
+            const values = [3, 768, 12, 52];
+            const delays = [0, 0.1, 0.2, 0.3];
+            return items.map((it, i) => (
+              <MetricItem
+                key={it.label}
+                value={values[i]}
+                prefix={it.prefix}
+                suffix={it.suffix}
+                label={it.label}
+                sub={it.sub}
+                animate={i !== 1}
+                delay={delays[i]}
+              />
+            ));
+          })()}
         </div>
       </section>
 
@@ -624,20 +635,17 @@ export default function Landing() {
       <section className="py-24 bg-background" id="technology">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold">Công nghệ lõi</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold">{t('landing.tech.badge')}</span>
             <h2 className="mt-4 font-display font-extrabold text-foreground tracking-tight" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.75rem)' }}>
-              Nhanh gọn, minh bạch, an toàn chuẩn quốc tế
+              {t('landing.tech.title')}
             </h2>
-            <p className="mt-4 text-muted-foreground text-lg">Ba trụ cột công nghệ được hiển thị rõ ngay trên ứng dụng.</p>
+            <p className="mt-4 text-muted-foreground text-lg">{t('landing.tech.subtitle')}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { Art: QuantumLockArt, title: 'Mã hóa kháng lượng tử', tag: 'ML-KEM-768 · NIST FIPS 203', desc: 'Dữ liệu định danh an toàn kể cả trước máy tính lượng tử tương lai.' },
-              { Art: MLScoreArt, title: 'Chấm điểm AI ~3 giây', tag: 'Machine Learning · giải thích được', desc: 'Điểm tín dụng tính từ 12 tháng dữ liệu thật, kèm phân tích yếu tố.' },
-              { Art: RLSArt, title: 'Bảo mật theo doanh nghiệp', tag: 'Row-Level Security', desc: 'Mỗi doanh nghiệp chỉ thấy đúng dữ liệu của mình, áp ở tầng CSDL.' },
-            ].map((c, i) => (
-              <TechPillarCard key={c.title} {...c} index={i} />
-            ))}
+            {[QuantumLockArt, MLScoreArt, RLSArt].map((Art, i) => {
+              const pillar = (t('landing.tech.pillars', { returnObjects: true }) as { title: string; tag: string; desc: string }[])[i];
+              return <TechPillarCard key={pillar.title} Art={Art} title={pillar.title} tag={pillar.tag} desc={pillar.desc} index={i} />;
+            })}
           </div>
         </div>
       </section>
@@ -646,11 +654,11 @@ export default function Landing() {
       <section className="py-24 bg-secondary/20" id="features">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-16">
-            <span className="text-xs text-primary font-mono uppercase tracking-widest">Quy trình</span>
+            <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('process.sectionLabel')}</span>
             <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">
-              Từ đăng ký đến nhận tiền — <span className="text-gradient">3 bước</span>
+              {t('process.title')} <span className="text-gradient">{t('process.titleHighlight')}</span>
             </h2>
-            <p className="text-muted-foreground mt-4 max-w-xl mx-auto">Quy trình tự động hoàn toàn, không giấy tờ, không phỏng vấn</p>
+            <p className="text-muted-foreground mt-4 max-w-xl mx-auto">{t('process.subtitle')}</p>
           </motion.div>
 
           {/* Animated feature steps */}
@@ -672,16 +680,16 @@ export default function Landing() {
       <section className="py-24 bg-background" id="solutions">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-16">
-            <span className="text-xs text-primary font-mono uppercase tracking-widest">Giải pháp</span>
+            <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('solutions.sectionLabel')}</span>
             <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">
-              Mọi công cụ vốn <span className="text-gradient">bạn cần</span>
+              {t('solutions.title')} <span className="text-gradient">{t('solutions.titleHighlight')}</span>
             </h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto">
             <BentoCard
-              title="Cash Flow Intelligence"
-              desc="AI dự báo dòng tiền 90 ngày tới với độ chính xác 94%"
+              title={t('solutions.cashFlow')}
+              desc={t('solutions.cashFlowDesc')}
               icon={<TrendingUp size={18} />}
               className="md:col-span-2"
               delay={0}
@@ -702,8 +710,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Invoice Financing"
-              desc="Ứng tiền từ hóa đơn trong 4 giờ. Lên đến 80% giá trị."
+              title={t('solutions.invoice')}
+              desc={t('solutions.invoiceDesc')}
               icon={<FileText size={18} />}
               delay={0.08}
             >
@@ -719,8 +727,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Vay Vốn Lưu Động"
-              desc="Hạn mức đến ₫10 tỷ, lãi suất cạnh tranh"
+              title={t('solutions.loan')}
+              desc={t('solutions.loanDesc')}
               icon={<CreditCard size={18} />}
               delay={0.16}
             >
@@ -750,8 +758,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Bảo mật tuyệt đối"
-              desc="Mã hóa đầu cuối, chuẩn ISO 27001"
+              title={t('solutions.security')}
+              desc={t('solutions.securityDesc')}
               icon={<Shield size={18} />}
               delay={0.24}
             >
@@ -771,8 +779,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Real-time Dashboard"
-              desc="Theo dõi toàn bộ sức khỏe tài chính từ một màn hình"
+              title={t('solutions.dashboard')}
+              desc={t('solutions.dashboardDesc')}
               icon={<BarChart3 size={18} />}
               className="md:col-span-2"
               delay={0.32}
@@ -800,9 +808,9 @@ export default function Landing() {
 
             {/* Green Finance Cards */}
             <BentoCard
-              title="Tài chính xanh"
-              badge="Lộ trình 2026"
-              desc="Định hướng phát triển: vốn ưu đãi cho dự án ESG và phát triển bền vững"
+              title={t('solutions.greenFinance')}
+              badge={t('landing.solutions.greenFinanceBadge')}
+              desc={t('landing.solutions.greenFinanceDesc')}
               icon={<Leaf size={18} />}
               delay={0.4}
             >
@@ -830,15 +838,14 @@ export default function Landing() {
                   would be a promise we cannot honour. */}
               <div className="mt-3 rounded-xl border border-mimi-green/10 bg-mimi-green/5 p-3">
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  Lãi suất và hạn mức ưu đãi sẽ được công bố khi hợp tác với tổ chức tín dụng xanh
-                  hoàn tất.
+                  {t('landing.solutions.greenFinanceNote')}
                 </p>
               </div>
             </BentoCard>
 
             <BentoCard
-              title="Dấu chân carbon"
-              desc="Ước tính phát thải từ chính giao dịch của doanh nghiệp, theo phương pháp spend-based"
+              title={t('landing.solutions.carbonTitle')}
+              desc={t('landing.solutions.carbonDesc')}
               icon={<TreePine size={18} />}
               className="md:col-span-2"
               delay={0.48}
@@ -881,8 +888,8 @@ export default function Landing() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">Net Zero 2050</p>
-                    <p className="text-white/80 text-xs drop-shadow-md">Hướng tới tương lai bền vững</p>
+                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">{t('solutions.netZero')}</p>
+                    <p className="text-white/80 text-xs drop-shadow-md">{t('solutions.sustainableFuture')}</p>
                   </motion.div>
                 </motion.div>
                 <div className="flex flex-col justify-center space-y-3">
@@ -892,19 +899,15 @@ export default function Landing() {
                         <Recycle size={18} className="text-mimi-green" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Tín chỉ Carbon</p>
-                        <p className="text-xs text-muted-foreground">Chưa triển khai — dự kiến 2026</p>
+                        <p className="text-sm font-semibold text-foreground">{t('solutions.carbonCredits')}</p>
+                        <p className="text-xs text-muted-foreground">{t('landing.solutions.carbonNotDeployed')}</p>
                       </div>
                     </div>
                   </div>
                   {/* Capability outline, not measurements — the product has no
                       emissions data yet, so any figure here would be invented. */}
                   <div className="space-y-2">
-                    {[
-                      'Theo dõi phát thải theo hoạt động kinh doanh',
-                      'Quy đổi và giao dịch tín chỉ carbon',
-                      'Xuất báo cáo phục vụ thẩm định vốn xanh',
-                    ].map((s, i) => (
+                    {(t('landing.solutions.carbonFeatures', { returnObjects: true }) as string[]).map((s, i) => (
                       <motion.div
                         key={s}
                         className="flex items-start gap-2 bg-card/50 border border-border/50 rounded-lg p-2.5"
