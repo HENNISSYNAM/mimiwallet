@@ -646,10 +646,6 @@ export default function Landing() {
               const pillar = (t('landing.tech.pillars', { returnObjects: true }) as { title: string; tag: string; desc: string }[])[i];
               return <TechPillarCard key={pillar.title} Art={Art} title={pillar.title} tag={pillar.tag} desc={pillar.desc} index={i} />;
             })}
-            {false && [
-            ].map((c: any, i: number) => (
-              <TechPillarCard key={c.title} {...c} index={i} />
-            ))}
           </div>
         </div>
       </section>
