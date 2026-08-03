@@ -6,15 +6,17 @@ import { formatVND } from '@/lib/formatters';
 import { SUPABASE_PROJECT_ID } from '@/lib/env';
 import { useToast } from '@/hooks/use-toast';
 import M2MRuleEngine from '@/components/m2m/M2MRuleEngine';
+import { useTranslation } from 'react-i18next';
 
-const DEVICE_TYPES = [
-  { value: 'vehicle', label: 'Xe / Phương tiện', icon: Truck },
-  { value: 'robot', label: 'Robot', icon: Bot },
-  { value: 'iot_sensor', label: 'IoT Sensor', icon: Radio },
-  { value: 'pos_terminal', label: 'POS Terminal', icon: Cpu },
-  { value: 'drone', label: 'Drone', icon: Plane },
-  { value: 'other', label: 'Khác', icon: Cpu },
-];
+const DEVICE_TYPE_ICONS: Record<string, typeof Truck> = {
+  vehicle: Truck,
+  robot: Bot,
+  iot_sensor: Radio,
+  pos_terminal: Cpu,
+  drone: Plane,
+  other: Cpu,
+};
+const DEVICE_TYPE_VALUES = ['vehicle', 'robot', 'iot_sensor', 'pos_terminal', 'drone', 'other'] as const;
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-mimi-green/15 text-mimi-green border-mimi-green/30',
@@ -42,6 +44,8 @@ type DeviceWallet = {
 };
 
 export default function M2MDevicesPage() {
+  const { t } = useTranslation();
+  const DEVICE_TYPES = DEVICE_TYPE_VALUES.map((value) => ({ value, label: t(`pg.m2m.deviceTypes.${value}`), icon: DEVICE_TYPE_ICONS[value] }));
   const [devices, setDevices] = useState<DeviceWallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -110,13 +114,13 @@ export default function M2MDevicesPage() {
 
       if (!res.ok) throw new Error(result.error || 'Failed');
 
-      toast({ title: '✅ Đã đăng ký thiết bị', description: `DID: ${result.device.device_did}` });
+      toast({ title: t('pg.m2m.deviceRegisteredToast'), description: `DID: ${result.device.device_did}` });
       setShowModal(false);
       setFormName('');
       setFormBalance('');
       fetchCompanyAndDevices();
     } catch (err: any) {
-      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      toast({ title: t('pg.m2m.genericError'), description: err.message, variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -140,10 +144,10 @@ export default function M2MDevicesPage() {
       );
       if (!res.ok) throw new Error('Top-up failed');
 
-      toast({ title: '✅ Nạp tiền thành công', description: formatVND(amount) });
+      toast({ title: t('pg.m2m.topUpSuccessToast'), description: formatVND(amount) });
       fetchCompanyAndDevices();
     } catch (err: any) {
-      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      toast({ title: t('pg.m2m.genericError'), description: err.message, variant: 'destructive' });
     }
   };
 
@@ -168,24 +172,24 @@ export default function M2MDevicesPage() {
       {/* Header */}
       <motion.div variants={fadeUp} className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-display font-bold text-foreground">Thiết bị M2M</h2>
-          <p className="text-sm text-muted-foreground mt-1">Quản lý ví & quy tắc thanh toán tự động</p>
+          <h2 className="text-xl font-display font-bold text-foreground">{t('pg.m2m.title')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('pg.m2m.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
         >
-          <Plus size={16} /> Thêm thiết bị
+          <Plus size={16} /> {t('pg.m2m.addDevice')}
         </button>
       </motion.div>
 
       {/* Stats */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Thiết bị hoạt động', value: devices.filter(d => d.status === 'active').length.toString(), icon: Activity, color: 'text-mimi-green' },
-          { label: 'Tổng số dư ví', value: formatVND(devices.reduce((s, d) => s + (d.balance || 0), 0)), icon: Wallet, color: 'text-primary' },
-          { label: 'Tổng thiết bị', value: devices.length.toString(), icon: Cpu, color: 'text-mimi-amber' },
-          { label: 'Cần nạp thêm', value: devices.filter(d => d.initial_balance > 0 && d.balance < d.initial_balance * 0.2).length.toString(), icon: AlertTriangle, color: 'text-destructive' },
+          { label: t('pg.m2m.stats.activeDevices'), value: devices.filter(d => d.status === 'active').length.toString(), icon: Activity, color: 'text-mimi-green' },
+          { label: t('pg.m2m.stats.totalBalance'), value: formatVND(devices.reduce((s, d) => s + (d.balance || 0), 0)), icon: Wallet, color: 'text-primary' },
+          { label: t('pg.m2m.stats.totalDevices'), value: devices.length.toString(), icon: Cpu, color: 'text-mimi-amber' },
+          { label: t('pg.m2m.stats.needsTopUp'), value: devices.filter(d => d.initial_balance > 0 && d.balance < d.initial_balance * 0.2).length.toString(), icon: AlertTriangle, color: 'text-destructive' },
         ].map((stat) => (
           <div key={stat.label} className="bg-card/60 border border-border/60 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
@@ -199,12 +203,12 @@ export default function M2MDevicesPage() {
 
       {/* Device List */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Đang tải...</div>
+        <div className="text-center py-12 text-muted-foreground">{t('pg.m2m.loading')}</div>
       ) : devices.length === 0 ? (
         <motion.div variants={fadeUp} className="text-center py-16 bg-card/40 border border-border/40 rounded-2xl">
           <Cpu size={40} className="mx-auto text-muted-foreground/40 mb-4" />
-          <p className="text-muted-foreground">Chưa có thiết bị M2M nào</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">Thêm thiết bị để bắt đầu thanh toán tự động</p>
+          <p className="text-muted-foreground">{t('pg.m2m.empty')}</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">{t('pg.m2m.emptySubtitle')}</p>
         </motion.div>
       ) : (
         <motion.div variants={fadeUp} className="grid gap-3">
@@ -268,7 +272,7 @@ export default function M2MDevicesPage() {
               className="bg-card border border-border rounded-2xl p-6 w-full max-w-md"
             >
               <div className="flex items-center justify-between mb-5">
-                <h3 className="font-display font-bold text-foreground">Đăng ký thiết bị mới</h3>
+                <h3 className="font-display font-bold text-foreground">{t('pg.m2m.registerModalTitle')}</h3>
                 <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
                   <X size={18} />
                 </button>
@@ -276,16 +280,16 @@ export default function M2MDevicesPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Tên thiết bị</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">{t('pg.m2m.deviceNameLabel')}</label>
                   <input
                     value={formName} onChange={(e) => setFormName(e.target.value)}
-                    placeholder="VD: Xe TK-01, Robot Kho A..."
+                    placeholder={t('pg.m2m.deviceNamePlaceholder')}
                     className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Loại thiết bị</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">{t('pg.m2m.deviceTypeLabel')}</label>
                   <div className="grid grid-cols-3 gap-2">
                     {DEVICE_TYPES.map((dt) => (
                       <button
@@ -305,10 +309,10 @@ export default function M2MDevicesPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Số dư ban đầu (VNĐ)</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">{t('pg.m2m.initialBalanceLabel')}</label>
                   <input
                     type="number" value={formBalance} onChange={(e) => setFormBalance(e.target.value)}
-                    placeholder="VD: 5000000"
+                    placeholder={t('pg.m2m.initialBalancePlaceholder')}
                     className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/50 font-mono"
                   />
                 </div>
@@ -317,7 +321,7 @@ export default function M2MDevicesPage() {
                   onClick={registerDevice} disabled={submitting || !formName.trim()}
                   className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {submitting ? 'Đang đăng ký...' : '🔗 Đăng ký & Cấp DID'}
+                  {submitting ? t('pg.m2m.registering') : t('pg.m2m.registerAndIssueDid')}
                 </button>
               </div>
             </motion.div>

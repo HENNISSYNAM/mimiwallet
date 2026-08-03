@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { Download, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 function exportReportCsv() {
   const header = ['month', 'revenue', 'expense', 'profit'];
@@ -43,39 +44,41 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState(2);
-  const periods = ['Hôm nay', '7 ngày', 'Tháng này', 'Quý này', 'Năm này'];
+  const periods = t('fin.reports.periods', { returnObjects: true }) as Record<string, string>;
+  const periodOrder = ['today', 'sevenDays', 'thisMonth', 'thisQuarter', 'thisYear'] as const;
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Báo cáo & Phân tích</h2>
-          <p className="text-sm text-muted-foreground mt-1">Dữ liệu tổng hợp tài chính doanh nghiệp</p>
+          <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t('fin.reports.title')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('fin.reports.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <div className="flex gap-1 bg-accent/30 rounded-xl p-1">
-            {periods.map((p, i) => (
+            {periodOrder.map((key, i) => (
               <button
-                key={p}
+                key={key}
                 onClick={() => setDateRange(i)}
                 className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
                   i === dateRange ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {p}
+                {periods[key]}
               </button>
             ))}
           </div>
           <button onClick={exportReportCsv} className="bg-card/60 border border-border/60 px-3 py-1.5 rounded-xl text-xs text-muted-foreground flex items-center gap-1.5 hover:border-primary/20 transition-all">
-            <Download size={12} /> Export
+            <Download size={12} /> {t('fin.reports.export')}
           </button>
         </div>
       </motion.div>
 
       {/* Revenue vs Expenses */}
       <motion.div variants={fadeUp} className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6">
-        <h3 className="font-display font-bold text-foreground text-lg mb-6">Doanh thu & Chi phí</h3>
+        <h3 className="font-display font-bold text-foreground text-lg mb-6">{t('fin.reports.revenueExpense.title')}</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={revenueExpenseData}>
@@ -83,9 +86,9 @@ export default function ReportsPage() {
               <XAxis dataKey="month" tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 12, fontFamily: 'Inter, -apple-system, sans-serif' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 10, fontFamily: 'JetBrains Mono, SF Mono, monospace' }} axisLine={false} tickLine={false} tickFormatter={(v) => formatVNDShort(v)} />
               <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="revenue" name="Thu nhập" fill="hsl(var(--blue-500))" radius={[6, 6, 0, 0]} barSize={18} />
-              <Bar dataKey="expense" name="Chi phí" fill="hsl(var(--bg-card-hover))" radius={[6, 6, 0, 0]} barSize={18} />
-              <Line type="monotone" dataKey="profit" name="Lợi nhuận" stroke="hsl(var(--green-500))" strokeWidth={2} dot={{ fill: 'hsl(var(--green-500))', r: 3 }} />
+              <Bar dataKey="revenue" name={t('fin.reports.revenueExpense.revenue')} fill="hsl(var(--blue-500))" radius={[6, 6, 0, 0]} barSize={18} />
+              <Bar dataKey="expense" name={t('fin.reports.revenueExpense.expense')} fill="hsl(var(--bg-card-hover))" radius={[6, 6, 0, 0]} barSize={18} />
+              <Line type="monotone" dataKey="profit" name={t('fin.reports.revenueExpense.profit')} stroke="hsl(var(--green-500))" strokeWidth={2} dot={{ fill: 'hsl(var(--green-500))', r: 3 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -94,7 +97,7 @@ export default function ReportsPage() {
       <motion.div variants={stagger} className="grid lg:grid-cols-2 gap-6">
         {/* Invoice Aging */}
         <motion.div variants={fadeUp} className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6">
-          <h3 className="font-display font-bold text-foreground text-lg mb-6">Phân tích tuổi hóa đơn</h3>
+          <h3 className="font-display font-bold text-foreground text-lg mb-6">{t('fin.reports.invoiceAging.title')}</h3>
           <div className="space-y-5">
             {invoiceAgingData.map((d) => (
               <div key={d.range}>
@@ -118,7 +121,7 @@ export default function ReportsPage() {
 
         {/* Expense Breakdown */}
         <motion.div variants={fadeUp} className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6">
-          <h3 className="font-display font-bold text-foreground text-lg mb-6">Phân bổ chi phí</h3>
+          <h3 className="font-display font-bold text-foreground text-lg mb-6">{t('fin.reports.expenseBreakdown.title')}</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -140,17 +143,12 @@ export default function ReportsPage() {
 
       {/* AI Summary */}
       <motion.div variants={fadeUp} className="bg-gradient-to-r from-primary/5 to-mimi-green/5 border border-primary/10 rounded-2xl p-6">
-        <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2 mb-4"><InsightSpark size={19} className="text-primary" /> Tóm tắt từ AI — Tháng 03/2026</h3>
+        <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2 mb-4"><InsightSpark size={19} className="text-primary" /> {t('fin.reports.aiSummary.title')}</h3>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-          Doanh thu tháng 3 đạt ₫8.32 tỷ, tăng 15.5% so với tháng trước. Chi phí nhập hàng tăng 8% do giá nguyên liệu tăng.
-          Dòng tiền ròng vẫn dương nhờ thu hồi công nợ tốt.
+          {t('fin.reports.aiSummary.body')}
         </p>
         <div className="space-y-2 mb-4">
-          {[
-            'Nên đàm phán lại điều khoản thanh toán với nhà cung cấp lớn nhất',
-            '3 hóa đơn quá hạn cần theo dõi sát để giảm rủi ro nợ xấu',
-            'Cân nhắc ứng vốn hóa đơn cho khoản phải thu lớn để tối ưu dòng tiền',
-          ].map((rec, i) => (
+          {(t('fin.reports.aiSummary.recommendations', { returnObjects: true }) as string[]).map((rec, i) => (
             <div key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
               <div className="w-5 h-5 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                 <span className="text-primary text-[10px] font-bold">{i + 1}</span>
@@ -160,10 +158,10 @@ export default function ReportsPage() {
           ))}
         </div>
         <button
-          onClick={() => toast('Báo cáo chi tiết đang được phát triển, sẽ ra mắt sớm')}
+          onClick={() => toast(t('fin.reports.aiSummary.toastComingSoon'))}
           className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
         >
-          Xem báo cáo đầy đủ <ArrowRight size={10} />
+          {t('fin.reports.aiSummary.viewFullReport')} <ArrowRight size={10} />
         </button>
       </motion.div>
     </motion.div>

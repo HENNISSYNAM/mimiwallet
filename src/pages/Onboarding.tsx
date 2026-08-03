@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -13,13 +14,7 @@ import AnimatedStepFlow from '@/components/onboarding/AnimatedStepFlow';
 import NetworkGraph from '@/components/onboarding/NetworkGraph';
 import CreditScoreGauge from '@/components/onboarding/CreditScoreGauge';
 
-const stepsMeta = [
-  { title: 'Tạo tài khoản', icon: Lock, desc: 'Bảo mật & riêng tư' },
-  { title: 'Doanh nghiệp', icon: Globe, desc: 'Thông tin kinh doanh' },
-  { title: 'Kết nối dữ liệu', icon: Brain, desc: 'Tăng hạn mức vốn' },
-  { title: 'Nhu cầu vốn', icon: Banknote, desc: 'Giải pháp phù hợp' },
-  { title: 'Xác minh eKYC', icon: Shield, desc: 'Hoàn tất hồ sơ' },
-];
+const stepIcons = [Lock, Globe, Brain, Banknote, Shield];
 
 const pageVariants = {
   enter: (d: number) => ({ opacity: 0, x: d > 0 ? 60 : -60, filter: 'blur(6px)' }),
@@ -31,6 +26,7 @@ const pageVariants = {
 const FloatingInput = forwardRef<HTMLInputElement, {
   label: string; type?: string; value: string; onChange: (v: string) => void; placeholder?: string; warn?: string; icon?: React.ReactNode;
 }>(({ label, type = 'text', value, onChange, placeholder, warn, icon }, ref) => {
+  const { t } = useTranslation();
   const [focused, setFocused] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const active = focused || value.length > 0;
@@ -63,7 +59,7 @@ const FloatingInput = forwardRef<HTMLInputElement, {
         <button 
           type="button"
           onClick={() => setShowPw(!showPw)} 
-          aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+          aria-label={showPw ? t('ob.hidePassword') : t('ob.showPassword')}
           className="absolute right-4 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -114,6 +110,9 @@ function PillSelector({ options, value, onChange, multi = false }: {
 }
 
 export default function Onboarding() {
+  const { t } = useTranslation();
+  const stepsMetaRaw = t('ob.stepsMeta', { returnObjects: true }) as { title: string; desc: string }[];
+  const stepsMeta = stepsMetaRaw.map((s, i) => ({ ...s, icon: stepIcons[i] }));
   const [step, setStep] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [direction, setDirection] = useState(1);
@@ -167,29 +166,24 @@ export default function Onboarding() {
         const markdown = data.data.markdown;
         const nameMatch = markdown.match(/Tên công ty[:\s]+([^\n]+)/i) || markdown.match(/Tên doanh nghiệp[:\s]+([^\n]+)/i);
         if (nameMatch) setCompanyName(nameMatch[1].trim());
-        toast.success('Đã tra cứu thông tin MST');
+        toast.success(t('ob.taxLookupSuccess'));
       } else {
-        toast.info('Không tìm thấy, vui lòng nhập thủ công');
+        toast.info(t('ob.taxLookupNotFound'));
       }
-    } catch { toast.error('Lỗi tra cứu MST'); }
+    } catch { toast.error(t('ob.taxLookupError')); }
     setLookingUpTax(false);
   };
 
   const pwStrength = getPasswordStrength(password);
-  const strengthLabels = ['', 'Yếu', 'Trung bình', 'Mạnh', 'Rất mạnh'];
+  const strengthLabels = t('ob.strengthLabels', { returnObjects: true }) as string[];
   const strengthColors = ['bg-muted', 'bg-mimi-red', 'bg-mimi-amber', 'bg-mimi-green', 'bg-mimi-green'];
-  const emailWarn = email && /(@gmail|@yahoo|@hotmail)/i.test(email) ? 'Nên dùng email doanh nghiệp để tăng điểm tín dụng' : '';
+  const emailWarn = email && /(@gmail|@yahoo|@hotmail)/i.test(email) ? t('onboarding.emailWarn') : '';
 
-  const banks = ['Vietcombank', 'BIDV', 'Techcombank', 'MB Bank', 'VPBank', 'Agribank', 'ACB', 'Sacombank', 'TPBank'];
+  const banks = t('ob.banks', { returnObjects: true }) as string[];
 
-  const purposeOptions = [
-    { icon: Package, label: 'Nhập hàng tồn kho', desc: 'Vòng quay hàng hóa' },
-    { icon: InvoiceDoc, label: 'Ứng tiền hóa đơn', desc: 'Nhận trước 80%' },
-    { icon: RevenueTrend, label: 'Mở rộng kinh doanh', desc: 'Chi nhánh, sản phẩm mới' },
-    { icon: Users, label: 'Trả lương nhân viên', desc: 'Giữ chân nhân tài' },
-    { icon: Wrench, label: 'Đầu tư thiết bị', desc: 'Máy móc, công nghệ' },
-    { icon: ShieldCheck, label: 'Dự phòng dòng tiền', desc: 'An toàn tài chính' },
-  ];
+  const purposeIcons = [Package, InvoiceDoc, RevenueTrend, Users, Wrench, ShieldCheck];
+  const purposeOptionsRaw = t('ob.purposeOptions', { returnObjects: true }) as { label: string; desc: string }[];
+  const purposeOptions = purposeOptionsRaw.map((p, i) => ({ ...p, icon: purposeIcons[i] }));
 
   const connectBank = (bank: string) => {
     if (connectedBanks.includes(bank)) return;
@@ -269,17 +263,14 @@ export default function Onboarding() {
             className="w-24 h-24 rounded-full bg-mimi-green/10 border-2 border-mimi-green/30 flex items-center justify-center mx-auto mb-8">
             <Check size={40} className="text-mimi-green" strokeWidth={3} />
           </motion.div>
-          <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Hồ sơ đã được gửi thành công!</h2>
-          <p className="text-muted-foreground mb-6">AI đang phân tích dữ liệu của bạn</p>
+          <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.successTitle')}</h2>
+          <p className="text-muted-foreground mb-6">{t('ob.successSub')}</p>
 
           {/* Animated analysis steps */}
           <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 mb-6 text-left space-y-4">
-            {[
-              { text: 'Phân tích dữ liệu ngân hàng...', icon: Search, delay: 0.8 },
-              { text: 'Tính toán điểm tín dụng AI...', icon: ScoringBolt, delay: 1.6 },
-              { text: 'Xác định hạn mức phù hợp...', icon: InsightSpark, delay: 2.4 },
-              { text: 'Gửi kết quả qua SMS/Email...', icon: Smartphone, delay: 3.2 },
-            ].map((item, i) => (
+            {(t('ob.analysisSteps', { returnObjects: true }) as string[]).map((text, i) => ({
+              text, icon: [Search, ScoringBolt, InsightSpark, Smartphone][i], delay: 0.8 + i * 0.8,
+            })).map((item, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: item.delay, duration: 0.4 }}
                 className="flex items-center gap-3">
                 <item.icon size={16} className="text-muted-foreground shrink-0" />
@@ -297,13 +288,13 @@ export default function Onboarding() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 4.2, duration: 0.5 }}>
-            <p className="text-sm text-muted-foreground mb-1">Dự kiến hạn mức</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('ob.estimatedLimitLabel')}</p>
             <p className="font-mono text-4xl font-bold text-mimi-green mb-1">₫1,500,000,000</p>
-            <p className="text-sm text-muted-foreground mb-8">Chúng tôi sẽ liên hệ trong 24 giờ</p>
+            <p className="text-sm text-muted-foreground mb-8">{t('ob.contactIn24h')}</p>
             <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
               onClick={() => navigate('/dashboard')}
               className="bg-primary text-primary-foreground px-10 py-4 rounded-xl font-display font-bold text-base hover:brightness-110 transition-all shadow-[0_4px_24px_hsla(var(--blue-500)/0.3)]">
-              Vào Dashboard ngay →
+              {t('ob.goToDashboard')}
             </motion.button>
           </motion.div>
         </motion.div>
@@ -339,7 +330,7 @@ export default function Onboarding() {
             </div>
             <div>
               <span className="font-display font-bold text-foreground text-lg tracking-tight">MIMI WALLET</span>
-              <p className="text-[10px] text-muted-foreground -mt-0.5">Vốn thông minh cho SME</p>
+              <p className="text-[10px] text-muted-foreground -mt-0.5">{t('onboarding.smartCapital')}</p>
             </div>
           </motion.div>
 
@@ -396,16 +387,16 @@ export default function Onboarding() {
             {step === 2 && (
               <motion.div key="network" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 className="bg-card/30 backdrop-blur-sm border border-border/30 rounded-2xl p-4 mb-4">
-                <p className="text-[10px] text-primary font-semibold tracking-wider uppercase mb-2">Mô hình dữ liệu AI</p>
-                <NetworkGraph labels={['Ngân hàng', 'Hóa đơn', 'Dòng tiền', 'Tín dụng']} />
+                <p className="text-[10px] text-primary font-semibold tracking-wider uppercase mb-2">{t('ob.dataModelAI')}</p>
+                <NetworkGraph labels={t('ob.networkLabels', { returnObjects: true }) as string[]} />
               </motion.div>
             )}
             {step === 3 && (
               <motion.div key="gauge" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 className="bg-card/30 backdrop-blur-sm border border-border/30 rounded-2xl p-4 mb-4">
-                <p className="text-[10px] text-primary font-semibold tracking-wider uppercase mb-2">Điểm tín dụng ước tính</p>
+                <p className="text-[10px] text-primary font-semibold tracking-wider uppercase mb-2">{t('ob.estimatedCreditScore')}</p>
                 <CreditScoreGauge score={Math.min(500 + purposes.length * 47, 850)} maxScore={1000} />
-                <p className="text-center text-xs text-muted-foreground mt-1">Hạng {purposes.length >= 3 ? 'A' : purposes.length >= 1 ? 'B' : 'C'}</p>
+                <p className="text-center text-xs text-muted-foreground mt-1">{t('ob.rank', { rank: purposes.length >= 3 ? 'A' : purposes.length >= 1 ? 'B' : 'C' })}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -417,8 +408,8 @@ export default function Onboarding() {
               <Shield size={14} className="text-mimi-green" />
             </div>
             <div>
-              <p className="text-xs text-foreground font-medium">Bảo mật ISO 27001</p>
-              <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">Dữ liệu được mã hóa AES-256 đầu cuối</p>
+              <p className="text-xs text-foreground font-medium">{t('ob.isoSecurity')}</p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">{t('ob.isoSecurityDesc')}</p>
             </div>
           </motion.div>
         </div>
@@ -467,17 +458,17 @@ export default function Onboarding() {
                     <div>
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="inline-flex items-center gap-2 bg-primary/5 border border-primary/15 px-3 py-1.5 rounded-lg mb-4">
                         <Sparkles size={12} className="text-primary" />
-                        <span className="text-[11px] text-primary font-semibold">Miễn phí — Setup 5 phút</span>
+                        <span className="text-[11px] text-primary font-semibold">{t('ob.freeSetup')}</span>
                       </motion.div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Tạo tài khoản</h2>
-                      <p className="text-muted-foreground text-sm">Bắt đầu hành trình vốn thông minh cùng KAPIVA</p>
+                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.createAccountTitle')}</h2>
+                      <p className="text-muted-foreground text-sm">{t('ob.createAccountSub')}</p>
                     </div>
                     <div className="space-y-4">
-                      <FloatingInput label="Họ và tên *" value={fullName} onChange={setFullName} />
-                      <FloatingInput label="Email doanh nghiệp *" type="email" value={email} onChange={setEmail} placeholder="ten@congty.vn" warn={emailWarn} />
-                      <FloatingInput label="Số điện thoại *" type="tel" value={phone} onChange={setPhone} placeholder="0912 345 678" />
+                      <FloatingInput label={t('ob.fullNameLabel')} value={fullName} onChange={setFullName} />
+                      <FloatingInput label={t('ob.emailLabel')} type="email" value={email} onChange={setEmail} placeholder={t('ob.emailPlaceholder')} warn={emailWarn} />
+                      <FloatingInput label={t('ob.phoneLabel')} type="tel" value={phone} onChange={setPhone} placeholder={t('ob.phonePlaceholder')} />
                       <div className="space-y-1.5">
-                        <FloatingInput label="Mật khẩu *" type="password" value={password} onChange={setPassword} />
+                        <FloatingInput label={t('ob.passwordLabel')} type="password" value={password} onChange={setPassword} />
                         {password && (
                           <div className="px-1">
                             <div className="flex gap-1 mb-1">
@@ -494,7 +485,7 @@ export default function Onboarding() {
                           </div>
                         )}
                       </div>
-                      <FloatingInput label="Xác nhận mật khẩu *" type="password" value={confirmPw} onChange={setConfirmPw} />
+                      <FloatingInput label={t('ob.confirmPasswordLabel')} type="password" value={confirmPw} onChange={setConfirmPw} />
                     </div>
                     <label className="flex items-start gap-3 group cursor-pointer bg-card/30 p-4 rounded-xl border border-border/30 hover:border-primary/20 transition-all">
                       <div className={`mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shrink-0 ${
@@ -503,7 +494,7 @@ export default function Onboarding() {
                         {agreed && <Check size={12} className="text-primary-foreground" strokeWidth={3} />}
                       </div>
                       <span className="text-sm text-muted-foreground leading-relaxed" onClick={() => setAgreed(!agreed)}>
-                        Tôi đồng ý với <span className="text-primary hover:underline">Điều khoản</span> và <span className="text-primary hover:underline">Chính sách bảo mật</span>
+                        {t('ob.agreeTermsPrefix')} <span className="text-primary hover:underline">{t('ob.termsLink')}</span> {t('ob.andWord')} <span className="text-primary hover:underline">{t('ob.privacyPolicyLink')}</span>
                       </span>
                     </label>
                   </div>
@@ -513,22 +504,22 @@ export default function Onboarding() {
                 {step === 1 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Thông tin doanh nghiệp</h2>
-                      <p className="text-muted-foreground text-sm">Giúp AI phân tích chính xác hơn</p>
+                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.businessInfoTitle')}</h2>
+                      <p className="text-muted-foreground text-sm">{t('ob.businessInfoSub')}</p>
                     </div>
                     <div className="space-y-4">
-                      <FloatingInput label="Tên doanh nghiệp *" value={companyName} onChange={setCompanyName} />
+                      <FloatingInput label={t('ob.companyNameLabel')} value={companyName} onChange={setCompanyName} />
                       <div className="relative">
-                        <FloatingInput label="Mã số thuế *" value={taxId} onChange={(v) => setTaxId(v.replace(/\D/g, '').slice(0, 10))} placeholder="10 chữ số" />
+                        <FloatingInput label={t('ob.taxIdLabel')} value={taxId} onChange={(v) => setTaxId(v.replace(/\D/g, '').slice(0, 10))} placeholder={t('ob.taxIdPlaceholder')} />
                         {taxId.length === 10 && (
                           <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} onClick={lookupTaxId} disabled={lookingUpTax}
                             className="absolute right-3 top-3 text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-semibold hover:bg-primary/20 transition-all flex items-center gap-1.5 disabled:opacity-50">
-                            {lookingUpTax ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />} Tra cứu
+                            {lookingUpTax ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />} {t('ob.lookup')}
                           </motion.button>
                         )}
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">Ngành nghề *</label>
+                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">{t('ob.industryLabel')}</label>
                         <div className="grid grid-cols-2 gap-2">
                           {industries.map((ind) => (
                             <motion.button key={ind.label} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -544,30 +535,30 @@ export default function Onboarding() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">Tỉnh/Thành phố *</label>
+                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">{t('ob.provinceLabel')}</label>
                         <select value={province} onChange={(e) => setProvince(e.target.value)}
                           className="w-full bg-card/40 backdrop-blur-sm border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer">
-                          <option value="">Chọn tỉnh/thành</option>
+                          <option value="">{t('ob.selectProvince')}</option>
                           {provinces.map((p) => <option key={p} value={p}>{p}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">Thời gian hoạt động</label>
-                        <PillSelector options={[{ value: '<1', label: 'Dưới 1 năm' }, { value: '1-3', label: '1-3 năm' }, { value: '3-5', label: '3-5 năm' }, { value: '5+', label: 'Trên 5 năm' }]} value={yearsOp} onChange={setYearsOp} />
+                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">{t('ob.yearsOpLabel')}</label>
+                        <PillSelector options={t('ob.yearsOptions', { returnObjects: true }) as { value: string; label: string }[]} value={yearsOp} onChange={setYearsOp} />
                       </div>
                       <div>
                         <div className="flex items-baseline justify-between mb-3 ml-1">
-                          <label className="text-xs text-muted-foreground font-medium">Doanh thu hàng tháng</label>
+                          <label className="text-xs text-muted-foreground font-medium">{t('ob.monthlyRevenueLabel')}</label>
                           <span className="font-mono text-base font-bold text-foreground">{formatVND(revenue)}</span>
                         </div>
                         <input type="range" min={50_000_000} max={50_000_000_000} step={50_000_000} value={revenue}
                           onChange={(e) => setRevenue(Number(e.target.value))}
                           className="w-full accent-primary h-1.5 rounded-full appearance-none bg-accent/50 cursor-pointer [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-[0_2px_8px_hsla(var(--blue-500)/0.3)] [&::-webkit-slider-thumb]:appearance-none"
                         />
-                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1"><span>₫50M</span><span>₫50 tỷ</span></div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1"><span>{t('ob.revenueMin')}</span><span>{t('ob.revenueMax')}</span></div>
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">Số lượng nhân viên</label>
+                        <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">{t('ob.employeeCountLabel')}</label>
                         <PillSelector options={['1-5', '6-20', '21-50', '51-200', '200+'].map(v => ({ value: v, label: v }))} value={empCount} onChange={setEmpCount} />
                       </div>
                     </div>
@@ -578,8 +569,8 @@ export default function Onboarding() {
                 {step === 2 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Kết nối dữ liệu</h2>
-                      <p className="text-muted-foreground text-sm">Kết nối càng nhiều, AI phân tích càng chính xác</p>
+                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.connectDataTitle')}</h2>
+                      <p className="text-muted-foreground text-sm">{t('ob.connectDataSub')}</p>
                     </div>
 
                     {/* Connection status */}
@@ -592,10 +583,10 @@ export default function Onboarding() {
                               animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
-                            <p className="text-xs text-muted-foreground font-medium">{connectedBanks.length}/3 kết nối</p>
+                            <p className="text-xs text-muted-foreground font-medium">{t('ob.connectionsCount', { count: connectedBanks.length })}</p>
                           </div>
                           <p className="font-mono text-xl font-bold text-foreground">{formatVND(estimatedLimit)}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">Hạn mức ước tính AI</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{t('ob.estimatedLimitAI')}</p>
                         </div>
                         <div className="flex -space-x-2">
                           {connectedBanks.slice(0, 4).map((b) => (
@@ -617,11 +608,11 @@ export default function Onboarding() {
 
                     {/* Tabs */}
                     <div className="bg-card/30 backdrop-blur-sm rounded-xl p-1 flex gap-1 border border-border/30">
-                      {['Ngân hàng', 'Kế toán', 'Thương mại'].map((t, i) => (
-                        <button key={t} onClick={() => setDataTab(i)}
+                      {[t('ob.tabBanks'), t('ob.tabAccounting'), t('ob.tabCommerce')].map((tab, i) => (
+                        <button key={tab} onClick={() => setDataTab(i)}
                           className={`flex-1 text-xs py-2.5 rounded-lg font-medium transition-all duration-300 ${
                             dataTab === i ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                          }`}>{t}</button>
+                          }`}>{tab}</button>
                       ))}
                     </div>
 
@@ -647,7 +638,7 @@ export default function Onboarding() {
                               <p className={`text-[9px] mt-0.5 font-medium ${
                                 connected ? 'text-mimi-green' : connecting ? 'text-primary' : 'text-muted-foreground'
                               }`}>
-                                {connected ? '✓ Đã kết nối' : connecting ? 'Đang...' : 'Kết nối'}
+                                {connected ? t('ob.connected') : connecting ? t('ob.connecting') : t('ob.connect')}
                               </p>
                             </motion.button>
                           );
@@ -664,16 +655,16 @@ export default function Onboarding() {
                               <span className="text-sm text-foreground font-medium">{s}</span>
                             </div>
                             <button
-                              onClick={() => toast(`Kết nối ${s} đang được phát triển, sẽ ra mắt sớm`)}
+                              onClick={() => toast(t('ob.connectingIntegrationToast', { name: s }))}
                               className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all"
                             >
-                              Kết nối
+                              {t('ob.connect')}
                             </button>
                           </div>
                         ))}
                         <div className="border-2 border-dashed border-border/40 rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer group">
                           <Upload size={24} className="text-muted-foreground mx-auto mb-2 group-hover:text-primary transition-colors" />
-                          <p className="text-xs text-muted-foreground">Kéo thả file .xlsx / .csv</p>
+                          <p className="text-xs text-muted-foreground">{t('ob.dragDropFile')}</p>
                         </div>
                       </div>
                     )}
@@ -687,10 +678,10 @@ export default function Onboarding() {
                               <span className="text-sm text-foreground font-medium">{s}</span>
                             </div>
                             <button
-                              onClick={() => toast(`Kết nối ${s} đang được phát triển, sẽ ra mắt sớm`)}
+                              onClick={() => toast(t('ob.connectingIntegrationToast', { name: s }))}
                               className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all"
                             >
-                              Kết nối
+                              {t('ob.connect')}
                             </button>
                           </div>
                         ))}
@@ -703,8 +694,8 @@ export default function Onboarding() {
                 {step === 3 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Nhu cầu vốn</h2>
-                      <p className="text-muted-foreground text-sm">AI sẽ đề xuất giải pháp tối ưu cho bạn</p>
+                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.capitalNeedsTitle')}</h2>
+                      <p className="text-muted-foreground text-sm">{t('ob.capitalNeedsSub')}</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
@@ -734,7 +725,7 @@ export default function Onboarding() {
 
                     <div className="space-y-2">
                       <div className="flex items-baseline justify-between ml-1">
-                        <label className="text-xs text-muted-foreground font-medium">Hạn mức mong muốn</label>
+                        <label className="text-xs text-muted-foreground font-medium">{t('ob.desiredLimitLabel')}</label>
                         <motion.span key={desiredAmount} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
                           className="font-mono text-xl font-bold text-foreground">{formatVND(desiredAmount)}</motion.span>
                       </div>
@@ -742,22 +733,19 @@ export default function Onboarding() {
                         onChange={(e) => setDesiredAmount(Number(e.target.value))}
                         className="w-full accent-primary h-1.5 rounded-full appearance-none bg-accent/50 cursor-pointer [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-[0_2px_8px_hsla(var(--blue-500)/0.3)] [&::-webkit-slider-thumb]:appearance-none"
                       />
-                      <div className="flex justify-between text-[10px] text-muted-foreground px-1"><span>₫100M</span><span>₫10 tỷ</span></div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground px-1"><span>{t('ob.amountMin')}</span><span>{t('ob.amountMax')}</span></div>
                       <motion.div key={desiredAmount} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                         className="bg-mimi-green/5 border border-mimi-green/15 rounded-lg p-2.5 flex items-center gap-2">
                         <Sparkles size={12} className="text-mimi-green shrink-0" />
                         <p className="text-[11px] text-mimi-green font-medium">
-                          AI ước tính: <span className="font-mono font-bold">{formatVND(Math.min(desiredAmount * 1.5, 10_000_000_000))}</span>
+                          {t('ob.aiEstimate')} <span className="font-mono font-bold">{formatVND(Math.min(desiredAmount * 1.5, 10_000_000_000))}</span>
                         </p>
                       </motion.div>
                     </div>
 
                     <div>
-                      <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">Thời hạn ưa thích</label>
-                      <PillSelector options={[
-                        { value: '30', label: '30 ngày' }, { value: '60', label: '60 ngày' },
-                        { value: '90', label: '90 ngày' }, { value: '180', label: '180 ngày' },
-                      ]} value={desiredTerm} onChange={setDesiredTerm} />
+                      <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">{t('ob.preferredTermLabel')}</label>
+                      <PillSelector options={t('ob.termOptions', { returnObjects: true }) as { value: string; label: string }[]} value={desiredTerm} onChange={setDesiredTerm} />
                     </div>
                   </div>
                 )}
@@ -766,14 +754,14 @@ export default function Onboarding() {
                 {step === 4 && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Xác minh danh tính</h2>
-                      <p className="text-muted-foreground text-sm">Bước cuối cùng — eKYC nhanh chóng & bảo mật</p>
+                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.identityVerifyTitle')}</h2>
+                      <p className="text-muted-foreground text-sm">{t('ob.identityVerifySub')}</p>
                     </div>
 
                     {/* ID Cards */}
                     <div className="grid grid-cols-2 gap-3">
                       {['front', 'back'].map((side) => {
-                        const label = side === 'front' ? 'CCCD Mặt trước' : 'CCCD Mặt sau';
+                        const label = side === 'front' ? t('ob.idFront') : t('ob.idBack');
                         const uploaded = uploadedDocs.includes(side);
                         return (
                           <motion.div key={side} whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -787,13 +775,13 @@ export default function Onboarding() {
                                 <div className="w-10 h-10 rounded-xl bg-mimi-green/12 flex items-center justify-center mx-auto mb-2">
                                   <Check size={18} className="text-mimi-green" strokeWidth={3} />
                                 </div>
-                                <p className="text-xs text-mimi-green font-semibold">Đã tải lên</p>
+                                <p className="text-xs text-mimi-green font-semibold">{t('ob.uploaded')}</p>
                               </motion.div>
                             ) : (
                               <>
                                 <Camera size={22} className="text-muted-foreground mx-auto mb-2" />
                                 <p className="text-xs text-foreground font-medium">{label}</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">Chụp / tải lên</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{t('ob.captureOrUpload')}</p>
                               </>
                             )}
                           </motion.div>
@@ -812,14 +800,14 @@ export default function Onboarding() {
                           <div className="w-14 h-14 rounded-full bg-mimi-green/12 flex items-center justify-center mx-auto mb-2">
                             <Check size={22} className="text-mimi-green" strokeWidth={3} />
                           </div>
-                          <p className="text-xs text-mimi-green font-semibold">Ảnh selfie đã tải lên</p>
+                          <p className="text-xs text-mimi-green font-semibold">{t('ob.selfieUploaded')}</p>
                         </motion.div>
                       ) : (
                         <>
                           <div className="w-16 h-16 rounded-full border-2 border-border/40 mx-auto mb-2 flex items-center justify-center">
                             <Camera size={22} className="text-muted-foreground" />
                           </div>
-                          <p className="text-xs text-foreground font-medium">Chụp ảnh selfie xác thực</p>
+                          <p className="text-xs text-foreground font-medium">{t('ob.captureSelfie')}</p>
                         </>
                       )}
                     </motion.div>
@@ -827,12 +815,12 @@ export default function Onboarding() {
                     {/* Signature */}
                     <div>
                       <div className="flex items-center justify-between mb-2 ml-1">
-                        <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><Pen size={12} /> Chữ ký số</p>
-                        {hasSigned && <button onClick={clearCanvas} className="text-[10px] text-primary hover:underline font-semibold">Xóa & ký lại</button>}
+                        <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><Pen size={12} /> {t('ob.digitalSignature')}</p>
+                        {hasSigned && <button onClick={clearCanvas} className="text-[10px] text-primary hover:underline font-semibold">{t('ob.clearAndResign')}</button>}
                       </div>
                       <canvas ref={canvasRef} width={400} height={120} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
                         className="w-full h-28 bg-card/30 border border-border/40 rounded-xl cursor-crosshair hover:border-primary/30 transition-colors" />
-                      {!hasSigned && <p className="text-[10px] text-muted-foreground text-center mt-1.5">Vẽ chữ ký của bạn ở đây</p>}
+                      {!hasSigned && <p className="text-[10px] text-muted-foreground text-center mt-1.5">{t('ob.drawSignatureHere')}</p>}
                     </div>
 
                     {/* Confirmation */}
@@ -843,7 +831,7 @@ export default function Onboarding() {
                         {eKYCConfirm && <Check size={12} className="text-primary-foreground" strokeWidth={3} />}
                       </div>
                       <span className="text-xs text-muted-foreground leading-relaxed" onClick={() => setEKYCConfirm(!eKYCConfirm)}>
-                        Tôi xác nhận thông tin chính xác và đồng ý cho KAPIVA xử lý dữ liệu theo <span className="text-primary">Chính sách bảo mật</span>
+                        {t('ob.ekycConfirmPrefix')} <span className="text-primary">{t('ob.privacyPolicyLink')}</span>
                       </span>
                     </label>
                   </div>
@@ -856,23 +844,23 @@ export default function Onboarding() {
               {step > 0 ? (
                 <motion.button whileHover={{ x: -3 }} onClick={prev}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 font-medium">
-                  ← Quay lại
+                  {t('ob.back')}
                 </motion.button>
               ) : <div />}
               {step === 2 && (
                 <button onClick={next} className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium">
-                  Bỏ qua →
+                  {t('ob.skip')}
                 </button>
               )}
               {step < 4 ? (
                 <motion.button whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={next}
                   className="bg-primary text-primary-foreground px-8 py-3 rounded-xl text-sm font-display font-bold hover:brightness-110 transition-all shadow-[0_4px_20px_hsla(var(--blue-500)/0.25)] flex items-center gap-2">
-                  Tiếp tục <ArrowRight size={14} />
+                  {t('ob.continueWithArrow')} <ArrowRight size={14} />
                 </motion.button>
               ) : (
                 <motion.button whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleComplete} disabled={registering}
                   className="bg-gradient-to-r from-primary to-mimi-green text-primary-foreground px-8 py-3 rounded-xl text-sm font-display font-bold hover:brightness-110 transition-all shadow-[0_4px_20px_hsla(var(--green-500)/0.25)] flex items-center gap-2 disabled:opacity-50">
-                  {registering && <Loader2 size={14} className="animate-spin" />} Hoàn tất đăng ký
+                  {registering && <Loader2 size={14} className="animate-spin" />} {t('ob.completeRegistration')}
                 </motion.button>
               )}
             </div>
