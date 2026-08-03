@@ -654,11 +654,11 @@ export default function Landing() {
       <section className="py-24 bg-secondary/20" id="features">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-16">
-            <span className="text-xs text-primary font-mono uppercase tracking-widest">Quy trình</span>
+            <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('process.sectionLabel')}</span>
             <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">
-              Từ đăng ký đến nhận tiền — <span className="text-gradient">3 bước</span>
+              {t('process.title')} <span className="text-gradient">{t('process.titleHighlight')}</span>
             </h2>
-            <p className="text-muted-foreground mt-4 max-w-xl mx-auto">Quy trình tự động hoàn toàn, không giấy tờ, không phỏng vấn</p>
+            <p className="text-muted-foreground mt-4 max-w-xl mx-auto">{t('process.subtitle')}</p>
           </motion.div>
 
           {/* Animated feature steps */}
@@ -680,16 +680,16 @@ export default function Landing() {
       <section className="py-24 bg-background" id="solutions">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-16">
-            <span className="text-xs text-primary font-mono uppercase tracking-widest">Giải pháp</span>
+            <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('solutions.sectionLabel')}</span>
             <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">
-              Mọi công cụ vốn <span className="text-gradient">bạn cần</span>
+              {t('solutions.title')} <span className="text-gradient">{t('solutions.titleHighlight')}</span>
             </h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto">
             <BentoCard
-              title="Cash Flow Intelligence"
-              desc="AI dự báo dòng tiền 90 ngày tới với độ chính xác 94%"
+              title={t('solutions.cashFlow')}
+              desc={t('solutions.cashFlowDesc')}
               icon={<TrendingUp size={18} />}
               className="md:col-span-2"
               delay={0}
@@ -710,8 +710,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Invoice Financing"
-              desc="Ứng tiền từ hóa đơn trong 4 giờ. Lên đến 80% giá trị."
+              title={t('solutions.invoice')}
+              desc={t('solutions.invoiceDesc')}
               icon={<FileText size={18} />}
               delay={0.08}
             >
@@ -727,8 +727,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Vay Vốn Lưu Động"
-              desc="Hạn mức đến ₫10 tỷ, lãi suất cạnh tranh"
+              title={t('solutions.loan')}
+              desc={t('solutions.loanDesc')}
               icon={<CreditCard size={18} />}
               delay={0.16}
             >
@@ -758,8 +758,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Bảo mật tuyệt đối"
-              desc="Mã hóa đầu cuối, chuẩn ISO 27001"
+              title={t('solutions.security')}
+              desc={t('solutions.securityDesc')}
               icon={<Shield size={18} />}
               delay={0.24}
             >
@@ -779,8 +779,8 @@ export default function Landing() {
             </BentoCard>
 
             <BentoCard
-              title="Real-time Dashboard"
-              desc="Theo dõi toàn bộ sức khỏe tài chính từ một màn hình"
+              title={t('solutions.dashboard')}
+              desc={t('solutions.dashboardDesc')}
               icon={<BarChart3 size={18} />}
               className="md:col-span-2"
               delay={0.32}
@@ -808,9 +808,9 @@ export default function Landing() {
 
             {/* Green Finance Cards */}
             <BentoCard
-              title="Tài chính xanh"
-              badge="Lộ trình 2026"
-              desc="Định hướng phát triển: vốn ưu đãi cho dự án ESG và phát triển bền vững"
+              title={t('solutions.greenFinance')}
+              badge={t('landing.solutions.greenFinanceBadge')}
+              desc={t('landing.solutions.greenFinanceDesc')}
               icon={<Leaf size={18} />}
               delay={0.4}
             >
@@ -838,15 +838,14 @@ export default function Landing() {
                   would be a promise we cannot honour. */}
               <div className="mt-3 rounded-xl border border-mimi-green/10 bg-mimi-green/5 p-3">
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  Lãi suất và hạn mức ưu đãi sẽ được công bố khi hợp tác với tổ chức tín dụng xanh
-                  hoàn tất.
+                  {t('landing.solutions.greenFinanceNote')}
                 </p>
               </div>
             </BentoCard>
 
             <BentoCard
-              title="Dấu chân carbon"
-              desc="Ước tính phát thải từ chính giao dịch của doanh nghiệp, theo phương pháp spend-based"
+              title={t('landing.solutions.carbonTitle')}
+              desc={t('landing.solutions.carbonDesc')}
               icon={<TreePine size={18} />}
               className="md:col-span-2"
               delay={0.48}
@@ -889,8 +888,8 @@ export default function Landing() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">Net Zero 2050</p>
-                    <p className="text-white/80 text-xs drop-shadow-md">Hướng tới tương lai bền vững</p>
+                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">{t('solutions.netZero')}</p>
+                    <p className="text-white/80 text-xs drop-shadow-md">{t('solutions.sustainableFuture')}</p>
                   </motion.div>
                 </motion.div>
                 <div className="flex flex-col justify-center space-y-3">
@@ -900,19 +899,15 @@ export default function Landing() {
                         <Recycle size={18} className="text-mimi-green" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Tín chỉ Carbon</p>
-                        <p className="text-xs text-muted-foreground">Chưa triển khai — dự kiến 2026</p>
+                        <p className="text-sm font-semibold text-foreground">{t('solutions.carbonCredits')}</p>
+                        <p className="text-xs text-muted-foreground">{t('landing.solutions.carbonNotDeployed')}</p>
                       </div>
                     </div>
                   </div>
                   {/* Capability outline, not measurements — the product has no
                       emissions data yet, so any figure here would be invented. */}
                   <div className="space-y-2">
-                    {[
-                      'Theo dõi phát thải theo hoạt động kinh doanh',
-                      'Quy đổi và giao dịch tín chỉ carbon',
-                      'Xuất báo cáo phục vụ thẩm định vốn xanh',
-                    ].map((s, i) => (
+                    {(t('landing.solutions.carbonFeatures', { returnObjects: true }) as string[]).map((s, i) => (
                       <motion.div
                         key={s}
                         className="flex items-start gap-2 bg-card/50 border border-border/50 rounded-lg p-2.5"
