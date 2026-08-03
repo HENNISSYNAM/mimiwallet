@@ -279,7 +279,7 @@ export default function LoansPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/30">
-                [t('fin.loans.activeLoans.table.type'), t('fin.loans.activeLoans.table.amount'), t('fin.loans.activeLoans.table.appliedDate'), t('fin.loans.activeLoans.table.dueDate'), t('fin.loans.activeLoans.table.repaymentProgress'), t('fin.loans.activeLoans.table.status')].map((h) => (
+                {[t('fin.loans.activeLoans.table.type'), t('fin.loans.activeLoans.table.amount'), t('fin.loans.activeLoans.table.appliedDate'), t('fin.loans.activeLoans.table.dueDate'), t('fin.loans.activeLoans.table.repaymentProgress'), t('fin.loans.activeLoans.table.status')].map((h) => (
                   <th key={h} className="text-left text-xs text-muted-foreground/70 font-medium px-5 py-4 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
