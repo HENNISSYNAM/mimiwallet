@@ -312,7 +312,7 @@ export default function InvoicesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/50">
-                [t('fin.invoices.table.number'), t('fin.invoices.table.client'), t('fin.invoices.table.issued'), t('fin.invoices.table.due'), t('fin.invoices.table.amount'), t('fin.invoices.table.status'), ''].map((h) => (
+                {[t('fin.invoices.table.number'), t('fin.invoices.table.client'), t('fin.invoices.table.issued'), t('fin.invoices.table.due'), t('fin.invoices.table.amount'), t('fin.invoices.table.status'), ''].map((h) => (
                   <th key={h} className="text-left text-xs text-muted-foreground/70 font-medium px-5 py-4 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
