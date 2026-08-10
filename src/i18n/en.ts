@@ -4,6 +4,7 @@ const en = {
     solutions: 'Solutions',
     features: 'Features',
     pricing: 'Pricing',
+    about: 'About us',
     login: 'Sign In',
     startFree: 'Get Started Free →',
     startFreeMobile: 'Get Started Free',
@@ -132,7 +133,7 @@ const en = {
       cta: 'Start for Free',
     },
     growthPlan: {
-      features: ['AI Forecasting', 'Invoice advance ₫5B', 'Unlimited banks', 'Priority support 24/7', '14-day free trial', 'API Access'],
+      features: ['Score with per-factor breakdown', 'Invoice advance application', 'Unlimited bank accounts', 'Personalised macro alerts', 'Emissions profile for green credit', '14-day free trial'],
       cta: 'Try 14 days free',
     },
     enterprisePlan: {

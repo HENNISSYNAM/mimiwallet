@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { Loader2, Leaf, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-wallet-logo.png';
+import mimiLogo from '@/assets/mimi-cat.png';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -57,7 +57,8 @@ export default function Login() {
           <motion.img 
             src={mimiLogo} 
             alt="MIMI WALLET" 
-            className="h-16 w-auto mx-auto mb-4"
+            className="h-20 w-20 mx-auto mb-4"
+            style={{ filter: 'drop-shadow(0 12px 20px rgba(120,53,15,.22))' }}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}

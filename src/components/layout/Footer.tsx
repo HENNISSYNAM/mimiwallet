@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-wallet-logo.png';
+import mimiLogo from '@/assets/mimi-cat.png';
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -16,8 +16,9 @@ export default function Footer() {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <img src={mimiLogo} alt="MIMI WALLET" className="h-8 w-auto" />
+            <Link to="/" className="mimi-lockup mb-4">
+              <img src={mimiLogo} alt="" aria-hidden draggable={false} className="h-9 w-9" />
+              <span className="mimi-wordmark">MIMI WALLET</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">{t('footer.tagline')}</p>
           </div>

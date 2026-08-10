@@ -438,3 +438,43 @@
 /* Hide custom scrollbars for a cleaner Apple look */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── MetaMask-style warm hero ─────────────────────────────────────────────
+   The cat mark is orange, and orange on plain white reads as a sticker laid
+   on the page. A cream field is what lets it sit in the surface instead — the
+   same reason MetaMask never puts its fox on pure white. Kept as one static
+   wash plus one soft glow; nothing here animates behind the headline. */
+.mimi-hero-warm {
+  background:
+    radial-gradient(120% 90% at 78% 18%, hsl(28 92% 96%) 0%, transparent 58%),
+    radial-gradient(100% 80% at 12% 8%, hsl(24 90% 97%) 0%, transparent 52%),
+    hsl(36 44% 98%);
+}
+.dark .mimi-hero-warm {
+  background:
+    radial-gradient(120% 90% at 78% 18%, hsl(24 60% 14%) 0%, transparent 58%),
+    radial-gradient(100% 80% at 12% 8%, hsl(20 40% 11%) 0%, transparent 52%),
+    hsl(222 47% 7%);
+}
+
+/* Soft warm bloom sitting behind the mark, not behind the copy. */
+.mimi-hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(38% 38% at 76% 42%, hsl(24 95% 60% / 0.16), transparent 70%);
+}
+
+/* Chrome brand lockup: the head plus the wordmark, MetaMask-style. */
+.mimi-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.mimi-wordmark {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+  line-height: 1;
+  color: hsl(var(--foreground));
+}

@@ -4,6 +4,7 @@ const vi = {
     solutions: 'Giải pháp',
     features: 'Tính năng',
     pricing: 'Bảng giá',
+    about: 'Về chúng tôi',
     login: 'Đăng nhập',
     startFree: 'Bắt đầu miễn phí →',
     startFreeMobile: 'Bắt đầu miễn phí',
@@ -128,11 +129,11 @@ const vi = {
     contact: 'Liên hệ',
     free: 'Miễn phí',
     freePlan: {
-      features: ['Phân tích cơ bản', '1 tài khoản NH', 'Báo cáo tháng', 'Email support'],
+      features: ['Chấm điểm tín dụng cơ bản', '1 tài khoản ngân hàng', 'Báo cáo dòng tiền tháng', 'Hỗ trợ qua email'],
       cta: 'Bắt đầu miễn phí',
     },
     growthPlan: {
-      features: ['AI Forecasting', 'Ứng hóa đơn 5 tỷ', 'Không giới hạn NH', 'Hỗ trợ ưu tiên 24/7', '14 ngày dùng thử', 'API Access'],
+      features: ['Chấm điểm kèm phân rã từng yếu tố', 'Hồ sơ ứng vốn hóa đơn', 'Không giới hạn tài khoản ngân hàng', 'Cảnh báo vĩ mô cá nhân hóa', 'Hồ sơ phát thải cho tín dụng xanh', '14 ngày dùng thử'],
       cta: 'Dùng thử 14 ngày',
     },
     enterprisePlan: {

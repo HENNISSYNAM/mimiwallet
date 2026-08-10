@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 const Landing = lazy(() => import("./pages/Landing"));
+const About = lazy(() => import("./pages/About"));
 const Login = lazy(() => import("./pages/Login"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
@@ -57,6 +58,7 @@ const App = () => (
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Onboarding />} />
               <Route path="/admin" element={<AdminPage />} />

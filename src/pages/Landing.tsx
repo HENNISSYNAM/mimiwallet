@@ -20,7 +20,8 @@ import { useState, useRef, useEffect } from 'react';
 import { miniChartData } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import mimiLogo from '@/assets/mimi-wallet-logo.png';
+import mimiLogo from '@/assets/mimi-cat.png';
+import MimiCat from '@/components/brand/MimiCat';
 import { QuantumLockArt, MLScoreArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
@@ -522,17 +523,22 @@ export default function Landing() {
       <Navbar />
 
       {/* ═══ HERO ═══ */}
-      <section ref={heroRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-background">
+      <section ref={heroRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden mimi-hero-warm">
         {/*
-          Previously a grid overlay plus two blurred colour orbs drifting on
-          infinite loops. Ambient motion behind a headline is decoration that
-          never resolves — it pulls the eye away from the copy and is a hallmark
-          of template landing pages. A single static wash is enough to keep the
-          section from reading flat.
+          Warm ground rather than plain white, the way MetaMask stages its fox:
+          the mark is orange, so a neutral background makes it look pasted on
+          while a cream field makes it look at home. Still a static wash — no
+          drifting orbs — so nothing competes with the headline.
         */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.04] via-transparent to-transparent" />
+        <div aria-hidden className="mimi-hero-glow" />
 
-        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 container mx-auto px-4 text-center pt-24 pb-12">
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 container mx-auto px-4 pt-24 pb-12
+                     grid lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-6 items-center
+                     text-center lg:text-left"
+        >
+          <div className="order-2 lg:order-1">
           {/* Eyebrow — states the category, makes no ranking claim. */}
           <motion.p {...fadeUp(0)} className="text-sm font-medium text-muted-foreground mb-6">
             {t('hero.badge')}
@@ -545,19 +551,25 @@ export default function Landing() {
           */}
           <motion.h1
             {...fadeUp(0.1)}
-            className="font-display font-extrabold text-foreground leading-[1.03] tracking-[-0.03em] max-w-4xl mx-auto"
-            style={{ fontSize: 'clamp(2.6rem, 5.5vw, 4.75rem)' }}
+            className="font-display font-extrabold text-foreground leading-[1.05] tracking-[-0.03em] max-w-4xl mx-auto lg:mx-0"
+            // Sized against the column, not the viewport: the headline now
+            // shares the row with the mark, and a viewport-relative clamp left
+            // "tiền" stranded on a line of its own.
+            style={{ fontSize: 'clamp(2.4rem, 3.6vw, 3.9rem)' }}
           >
+            {/* Copy stays in i18n — that arrived from the other branch and is
+                the right call; only the layout is mine. The break moves to
+                `sm` because the headline now shares its row with the mark. */}
             {t('landing.hero.titleLine1')}
-            <br className="hidden md:block" /> {t('landing.hero.titleLine2')}
+            <br className="hidden sm:block" /> {t('landing.hero.titleLine2')}
           </motion.h1>
 
-          <motion.p {...fadeUp(0.2)} className="mt-6 text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+          <motion.p {...fadeUp(0.2)} className="mt-6 text-muted-foreground text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed">
             {t('landing.hero.subtitle')}
           </motion.p>
 
           {/* One primary action; the demo sits beside it as a quiet text link. */}
-          <motion.div {...fadeUp(0.3)} className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-x-7 gap-y-4">
+          <motion.div {...fadeUp(0.3)} className="mt-9 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-x-7 gap-y-4">
             <button
               onClick={() => navigate('/register')}
               className="bg-primary text-primary-foreground h-13 px-7 rounded-2xl font-display font-semibold text-[15px] pressable transition-colors hover:bg-primary/90"
@@ -582,7 +594,7 @@ export default function Landing() {
           */}
           <motion.div
             {...fadeUp(0.4)}
-            className="mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-[13px] text-muted-foreground"
+            className="mt-9 flex flex-wrap items-center justify-center lg:justify-start gap-x-7 gap-y-3 text-[13px] text-muted-foreground"
           >
             {[ScoringBolt, QuantumShield, InvoiceDoc, LearnCap].map((Icon, i) => {
               const text = (t('landing.hero.pills', { returnObjects: true }) as string[])[i];
@@ -594,9 +606,24 @@ export default function Landing() {
               );
             })}
           </motion.div>
+          </div>
 
-          {/* Hero Mockup */}
-          <HeroMockup />
+          {/*
+            The mark, staged the way MetaMask stages its fox: large, on a warm
+            ground, turning toward the pointer. It sits second in the DOM so a
+            screen reader and a phone both reach the headline first, and the
+            grid puts it first visually only from `lg` up.
+          */}
+          <motion.div
+            {...fadeUp(0.15)}
+            className="order-1 lg:order-2 mx-auto w-[210px] sm:w-[260px] lg:w-full lg:max-w-[420px]"
+          >
+            <MimiCat variant="hero" className="w-full" />
+          </motion.div>
+          {/* Spans both columns so the mockup keeps full width under the fold. */}
+          <div className="lg:col-span-2 order-3">
+            <HeroMockup />
+          </div>
         </motion.div>
       </section>
 
@@ -1028,10 +1055,22 @@ export default function Landing() {
             </span>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <PricingCard name="Free" price="Miễn phí" features={['Phân tích cơ bản', '1 tài khoản NH', 'Báo cáo tháng', 'Email support']} cta="Bắt đầu miễn phí" annual={annual} />
-            <PricingCard name="Growth" price="990,000₫" features={['AI Forecasting', 'Ứng hóa đơn 5 tỷ', 'Không giới hạn NH', 'Hỗ trợ ưu tiên 24/7', '14 ngày dùng thử', 'API Access']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
-            <PricingCard name="Enterprise" price="Liên hệ" features={['Hạn mức custom', 'White-label', 'Dedicated API', 'Account manager', 'SLA 99.9%', 'On-premise option']} cta="Liên hệ sales" annual={annual} />
+            <PricingCard name="Free" price="Miễn phí" features={['Chấm điểm tín dụng cơ bản', '1 tài khoản ngân hàng', 'Báo cáo dòng tiền tháng', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
+            <PricingCard name="Growth" price="249,000₫" features={['Chấm điểm kèm phân rã từng yếu tố', 'Hồ sơ ứng vốn hóa đơn', 'Không giới hạn tài khoản ngân hàng', 'Cảnh báo vĩ mô cá nhân hóa', 'Hồ sơ phát thải cho tín dụng xanh', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
+            <PricingCard name="Tổ chức tín dụng" price="Liên hệ" features={['API chấm điểm theo lượt gọi', 'Chấm điểm theo lô', 'Tùy chỉnh trọng số mô hình', 'Nhật ký kiểm toán từng lần chấm', 'Tích hợp hệ thống thẩm định']} cta="Liên hệ" annual={annual} />
           </div>
+
+          {/*
+            Priced against what this customer already pays for software, not
+            against what the feature list could justify. Micro-business tools in
+            Viet Nam sit at 199–299k/month (MISA CukCuk 199–299k, KiotViet
+            200–290k), so 249k lands inside a budget line that already exists.
+            The previous 990k was three to five times the segment and would have
+            been rejected before the product was even tried.
+          */}
+          <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed">
+            Phí ứng vốn do tổ chức tín dụng chi trả — doanh nghiệp không trả phí để được chấm điểm.
+          </p>
         </div>
       </section>
 
