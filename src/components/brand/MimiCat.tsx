@@ -39,7 +39,14 @@ export default function MimiCat({
   glow = 'jade',
 }: Props) {
   if (variant === 'mark') {
-    return <img src={catLogo} alt="MIMI WALLET" className={className} draggable={false} />;
+    return (
+      <img
+        src={catLogo}
+        alt="MIMI WALLET"
+        className={`no-save ${className}`}
+        draggable={false}
+      />
+    );
   }
   return <HeroCat className={className} tilt={tilt} live={variant === 'live'} glow={glow} />;
 }
@@ -193,7 +200,7 @@ function HeroCat({
             src={src}
             alt="MIMI WALLET"
             draggable={false}
-            className={`w-full h-auto select-none ${live ? 'cursor-pointer' : ''}`}
+            className={`w-full h-auto select-none no-save ${live ? 'cursor-pointer' : ''}`}
             style={{ filter: 'drop-shadow(0 24px 36px rgba(6,78,59,.30))' }}
           />
         </motion.div>

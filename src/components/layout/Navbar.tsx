@@ -51,7 +51,7 @@ export default function Navbar() {
               alt=""
               aria-hidden
               draggable={false}
-              className="h-9 w-9 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105"
+              className="h-9 w-9 no-save transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105"
             />
             <span className="mimi-wordmark">MIMI WALLET</span>
           </Link>

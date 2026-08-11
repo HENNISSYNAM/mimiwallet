@@ -243,7 +243,7 @@ export default function MimiStory() {
                   // All beats stay mounted and cross-fade. Swapping `src` on one
                   // <img> flashes white on the first showing of each pose,
                   // because the new file has not decoded yet.
-                  className={`absolute ${b.w} h-auto select-none`}
+                  className={`absolute ${b.w} h-auto select-none no-save`}
                   style={{ filter: 'drop-shadow(0 24px 40px rgba(6,78,59,.28))' }}
                   initial={false}
                   animate={{
@@ -274,7 +274,7 @@ export default function MimiStory() {
                   alt=""
                   aria-hidden
                   draggable={false}
-                  className="lg:hidden w-40 h-auto mb-5 select-none"
+                  className="lg:hidden w-40 h-auto mb-5 select-none no-save"
                 />
                 {b.kicker && (
                   <p className="text-xs font-semibold tracking-[0.16em] uppercase text-mimi-green mb-3">

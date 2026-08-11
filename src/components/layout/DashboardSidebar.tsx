@@ -38,7 +38,7 @@ export default function DashboardSidebar() {
       className="hidden lg:flex flex-col h-screen sticky top-0 bg-secondary border-r border-border"
     >
       <div className="p-4 flex items-center gap-3 border-b border-border">
-        <img src={mimiLogo} alt="MIMI WALLET" className="h-9 w-auto shrink-0" />
+        <img src={mimiLogo} alt="MIMI WALLET" className="h-9 w-auto shrink-0 no-save" draggable={false} />
         {!collapsed && (
           <div className="overflow-hidden">
             <p className="text-sm font-semibold text-foreground truncate">{companyProfile.name.substring(0, 20)}</p>

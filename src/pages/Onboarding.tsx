@@ -326,7 +326,7 @@ export default function Onboarding() {
           {/* Logo */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-[0_2px_12px_hsla(var(--blue-500)/0.3)]">
-              <img src="/mimi-favicon.png" alt="MIMI WALLET logo" className="w-6 h-6" />
+              <img src="/mimi-favicon.png" alt="MIMI WALLET logo" draggable={false} className="w-6 h-6 no-save" />
             </div>
             <div>
               <span className="font-display font-bold text-foreground text-lg tracking-tight">MIMI WALLET</span>

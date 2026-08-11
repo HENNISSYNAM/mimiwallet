@@ -17,7 +17,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="mimi-lockup mb-4">
-              <img src={mimiLogo} alt="" aria-hidden draggable={false} className="h-9 w-9" />
+              <img src={mimiLogo} alt="" aria-hidden draggable={false} className="h-9 w-9 no-save" />
               <span className="mimi-wordmark">MIMI WALLET</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">{t('footer.tagline')}</p>

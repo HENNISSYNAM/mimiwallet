@@ -127,6 +127,26 @@
 }
 
 @layer utilities {
+  /**
+   * Artwork that should behave like part of the interface, not like a file.
+   *
+   * `draggable={false}` on the <img> stops a desktop drag, but it does nothing
+   * about the press-and-hold gesture: on iOS and Android that opens the system
+   * "Save image" sheet, so resting a finger on MIMI while reading pops up a
+   * download prompt over the page. `-webkit-touch-callout` is the only thing
+   * that suppresses that sheet, and the selection rules stop the long press
+   * from turning into a text/image selection on the way there.
+   *
+   * Deliberately not `pointer-events: none` — the mascot reacts to taps, and
+   * removing pointer events would take that with it.
+   */
+  .no-save {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
   .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.025em;
