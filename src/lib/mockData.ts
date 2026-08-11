@@ -94,7 +94,7 @@ export interface Transaction {
 export const transactions: Transaction[] = [
   { id: '1', merchantName: 'Highlands Coffee', category: 'Đại lý', amount: 48_000_000, type: 'income', date: '2026-03-03', status: 'Đã thu' },
   { id: '2', merchantName: 'Công ty ABC', category: 'Nhập hàng', amount: -125_000_000, type: 'expense', date: '2026-03-03', status: 'Đã chi' },
-  { id: '3', merchantName: 'KAPIVA', category: 'Giải ngân', amount: 500_000_000, type: 'loan', date: '2026-03-02', status: 'Đã nhận' },
+  { id: '3', merchantName: 'MIMI WALLET', category: 'Giải ngân', amount: 500_000_000, type: 'loan', date: '2026-03-02', status: 'Đã nhận' },
   { id: '4', merchantName: 'EVN', category: 'Tiện ích', amount: -8_500_000, type: 'expense', date: '2026-03-01', status: 'Đã chi' },
   { id: '5', merchantName: 'Lotteria Vietnam', category: 'Đại lý', amount: 67_500_000, type: 'income', date: '2026-02-28', status: 'Đã thu' },
   { id: '6', merchantName: 'Nhân viên', category: 'Lương', amount: -180_000_000, type: 'expense', date: '2026-02-28', status: 'Đã chi' },

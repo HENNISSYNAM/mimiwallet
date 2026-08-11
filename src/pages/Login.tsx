@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { Loader2, Leaf, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.png';
+import mimiLogo from '@/assets/mimi-cat.webp';
 
 export default function Login() {
   const navigate = useNavigate();

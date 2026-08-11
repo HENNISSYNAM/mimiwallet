@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TeamSection from '@/components/landing/TeamSection';
 import MimiCat from '@/components/brand/MimiCat';
+import MimiStory from '@/components/brand/MimiStory';
 
 /**
  * "Về chúng tôi" as its own route rather than a band on the landing page.
@@ -66,11 +67,16 @@ export default function About() {
               transition={{ duration: 0.7, delay: 0.1 }}
               className="mx-auto w-[190px] sm:w-[240px] lg:w-full lg:max-w-[320px]"
             >
-              <MimiCat variant="hero" className="w-full" tilt={11} />
+              <MimiCat variant="live" className="w-full" tilt={11} />
             </motion.div>
           </div>
         </div>
       </section>
+
+      {/* Who MIMI is comes before who we are: the story explains why an SME
+          product is fronted by a cat, which the team grid otherwise leaves
+          unanswered. */}
+      <MimiStory />
 
       <TeamSection />
 

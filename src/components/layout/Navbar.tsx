@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useScrolled } from '@/hooks/useScrolled';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.png';
+import mimiLogo from '@/assets/mimi-cat.webp';
 
 const navLinks = [
   { labelKey: 'nav.solutions', href: '#solutions' },
@@ -16,6 +16,14 @@ const navLinks = [
 const navRoutes = [{ labelKey: 'nav.about', to: '/about' }];
 
 export default function Navbar() {
+  const { pathname } = useLocation();
+  // These three point at sections that only exist on the landing page, but the
+  // navbar renders on every route. A bare "#pricing" on /about matches nothing,
+  // so "Bảng giá" simply did nothing there. Prefixing with the root sends the
+  // reader home first and then to the section.
+  const onLanding = pathname === '/';
+  const anchor = (href: string) => (onLanding ? href : `/${href}`);
+
   const scrolled = useScrolled(80);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -52,7 +60,7 @@ export default function Navbar() {
             {navLinks.map((l) => (
               <a
                 key={l.labelKey}
-                href={l.href}
+                href={anchor(l.href)}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
               >
                 {t(l.labelKey)}
@@ -128,7 +136,7 @@ export default function Navbar() {
             {navLinks.map((l) => (
               <a
                 key={l.labelKey}
-                href={l.href}
+                href={anchor(l.href)}
                 className="text-2xl font-display font-bold text-foreground"
                 onClick={() => setMobileOpen(false)}
               >

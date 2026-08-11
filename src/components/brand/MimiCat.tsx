@@ -1,45 +1,78 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import catLogo from '@/assets/mimi-cat.png';
+import catLogo from '@/assets/mimi-cat.webp';
+import frIdle from '@/assets/mimi/idle.webp';
+import frBlink from '@/assets/mimi/blink.webp';
+import frContent from '@/assets/mimi/content.webp';
+import frHappy from '@/assets/mimi/happy.webp';
+import frWink from '@/assets/mimi/wink.webp';
+import frLove from '@/assets/mimi/love.webp';
 
 /**
- * The brand mark. Two variants share one image so the head never renders twice
- * from different sources.
+ * The brand mark, and MIMI as a character.
  *
  * `mark` is the flat logo used in the navbar, sidebar, footer and login — no
  * motion, because a mark that moves in chrome is noise.
  *
  * `hero` is the MetaMask-style treatment: the head tilts toward the pointer and
- * drifts slowly when the pointer is elsewhere, so the page feels alive without
- * anything sliding around under the reader.
+ * drifts when the pointer is elsewhere.
+ *
+ * `live` adds the thing a transform cannot fake — MIMI blinks, and reacts when
+ * you touch her. Blinking is what separates a mascot from a sticker, and it has
+ * to come from real drawn frames: eyelids cannot be simulated with CSS on a
+ * flat image. The frames are the sprite sheet, cut on the alpha channel.
  */
 
 type Props = {
-  variant?: 'mark' | 'hero';
+  variant?: 'mark' | 'hero' | 'live';
   className?: string;
-  /** hero only: how far the head turns, in degrees */
+  /** hero/live only: how far the head turns, in degrees */
   tilt?: number;
+  /** Colour of the halo behind the head. */
+  glow?: 'jade' | 'none';
 };
 
-export default function MimiCat({ variant = 'mark', className = '', tilt = 14 }: Props) {
+export default function MimiCat({
+  variant = 'mark',
+  className = '',
+  tilt = 14,
+  glow = 'jade',
+}: Props) {
   if (variant === 'mark') {
-    return (
-      <img
-        src={catLogo}
-        alt="MIMI WALLET"
-        className={className}
-        // Decorative in chrome where the wordmark sits next to it; the alt text
-        // above covers the case where it stands alone.
-        draggable={false}
-      />
-    );
+    return <img src={catLogo} alt="MIMI WALLET" className={className} draggable={false} />;
   }
-  return <HeroCat className={className} tilt={tilt} />;
+  return <HeroCat className={className} tilt={tilt} live={variant === 'live'} glow={glow} />;
 }
 
-function HeroCat({ className, tilt }: { className: string; tilt: number }) {
+/** Frames used by the `live` variant, all from the same ~190px head set so the
+ *  cut between them lands on the same drawing rather than jumping in style. */
+const FACE = {
+  idle: frIdle,
+  blink: frBlink,
+  content: frContent,
+  happy: frHappy,
+  wink: frWink,
+  love: frLove,
+};
+type Face = keyof typeof FACE;
+
+function HeroCat({
+  className,
+  tilt,
+  live,
+  glow,
+}: {
+  className: string;
+  tilt: number;
+  live: boolean;
+  glow: 'jade' | 'none';
+}) {
   const wrap = useRef<HTMLDivElement>(null);
   const [reduced, setReduced] = useState(false);
+  const [face, setFace] = useState<Face>('idle');
+  // Held expressions (a click, a hover) must not be wiped by a blink that was
+  // already scheduled, so the blink loop checks this before touching the face.
+  const held = useRef(false);
 
   // Raw pointer position as a fraction of the viewport, -0.5 … 0.5.
   const px = useMotionValue(0);
@@ -77,18 +110,69 @@ function HeroCat({ className, tilt }: { className: string; tilt: number }) {
     };
   }, [px, py]);
 
+  // Blinking. Irregular on purpose — a blink on a fixed interval reads as a
+  // strobe rather than a living thing, because the eye picks up the rhythm.
+  useEffect(() => {
+    if (!live || reduced) return;
+    let stop = false;
+    let t: number;
+    const loop = () => {
+      t = window.setTimeout(() => {
+        if (stop) return;
+        if (!held.current) {
+          setFace('blink');
+          window.setTimeout(() => {
+            if (!stop && !held.current) setFace('idle');
+          }, 130);
+        }
+        loop();
+      }, 2200 + Math.random() * 3800);
+    };
+    loop();
+    return () => {
+      stop = true;
+      window.clearTimeout(t);
+    };
+  }, [live, reduced]);
+
+  const hold = (f: Face, ms: number) => {
+    held.current = true;
+    setFace(f);
+    window.setTimeout(() => {
+      held.current = false;
+      setFace('idle');
+    }, ms);
+  };
+
+  const src = live ? FACE[face] : catLogo;
+
   return (
-    <div ref={wrap} className={`relative ${className}`} style={{ perspective: 900 }}>
-      {/* Warm halo behind the head. Sits in its own layer so the blur never
-          touches the artwork itself, which would soften the facets. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 blur-3xl opacity-70"
-        style={{
-          background:
-            'radial-gradient(45% 45% at 50% 45%, rgba(249,115,22,.55), transparent 70%)',
-        }}
-      />
+    <div
+      ref={wrap}
+      className={`relative ${className}`}
+      style={{ perspective: 900 }}
+      onPointerEnter={live && !reduced ? () => !held.current && setFace('content') : undefined}
+      onPointerLeave={live && !reduced ? () => !held.current && setFace('idle') : undefined}
+      onClick={live && !reduced ? () => hold('love', 1400) : undefined}
+    >
+      {/* Jade halo. The fur is orange, so an orange glow flattens the head into
+          its own background; jade is the eye colour and the complement of the
+          coat, which makes the silhouette read instead of dissolve. Its own
+          layer so the blur never touches the artwork and soften the facets. */}
+      {glow === 'jade' && (
+        <div
+          aria-hidden
+          // Pushed harder than a halo normally needs. The landing hero sits on a
+          // warm cream gradient, and at the gentler opacity the jade simply
+          // dissolved into it — the glow has to out-saturate the background it
+          // is competing with, not just exist.
+          className="pointer-events-none absolute -inset-[12%] -z-10 blur-3xl opacity-95"
+          style={{
+            background:
+              'radial-gradient(46% 46% at 50% 48%, rgba(5,180,140,.78), rgba(20,200,170,.42) 45%, transparent 72%)',
+          }}
+        />
+      )}
       {/* Two nested layers, deliberately. Putting the pointer tilt and the idle
           bob on one element froze the tilt: `animate` makes framer-motion write
           the whole `transform` itself, which overwrites the motion values bound
@@ -106,14 +190,25 @@ function HeroCat({ className, tilt }: { className: string; tilt: number }) {
           transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
         >
           <img
-            src={catLogo}
+            src={src}
             alt="MIMI WALLET"
             draggable={false}
-            className="w-full h-auto select-none"
-            style={{ filter: 'drop-shadow(0 28px 40px rgba(120,53,15,.28))' }}
+            className={`w-full h-auto select-none ${live ? 'cursor-pointer' : ''}`}
+            style={{ filter: 'drop-shadow(0 24px 36px rgba(6,78,59,.30))' }}
           />
         </motion.div>
       </motion.div>
+
+      {/* Every frame is decoded up front. Swapping to a not-yet-loaded blink
+          shows a one-frame gap where the head disappears, which is far more
+          noticeable than the blink itself. */}
+      {live && (
+        <div aria-hidden className="hidden">
+          {Object.values(FACE).map((s) => (
+            <img key={s} src={s} alt="" />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

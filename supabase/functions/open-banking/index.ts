@@ -105,12 +105,18 @@ Deno.serve(async (req) => {
     const action = url.searchParams.get("action");
     const body = req.method === "POST" ? await req.json() : {};
 
-    // Get user's company
+    // Get user's company. `.single()` was wrong here: a user can own more than
+    // one `companies` row, and when they do PostgREST returns an error rather
+    // than a row, so every action below failed with the misleading message
+    // "No company found". Oldest row wins so the choice does not change
+    // between requests.
     const { data: company } = await supabase
       .from("companies")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
     if (!company) {
       return new Response(JSON.stringify({ error: "No company found" }), {

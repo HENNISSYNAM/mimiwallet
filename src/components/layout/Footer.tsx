@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.png';
+import mimiLogo from '@/assets/mimi-cat.webp';
 
 export default function Footer() {
   const { t } = useTranslation();

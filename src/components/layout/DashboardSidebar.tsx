@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { companyProfile } from '@/lib/mockData';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.png';
+import mimiLogo from '@/assets/mimi-cat.webp';
 
 export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);

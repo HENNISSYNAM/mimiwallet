@@ -12,6 +12,10 @@ interface AuthState {
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   register: (email: string, password: string, meta?: { full_name?: string; phone?: string }) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
+  /** Signs into the shared demo account. Only ever called from a button. */
+  signInAsDemo: () => Promise<{ error: string | null }>;
+  /** Whether a demo account is configured at all, so the UI can hide the button. */
+  demoAvailable: boolean;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -20,14 +24,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   session: null,
   loading: true,
 
+  demoAvailable: !!(DEMO_EMAIL && DEMO_PASSWORD),
+
   initialize: async () => {
-    // Subscribing fires the listener immediately with INITIAL_SESSION, which on
-    // a cold load carries a null session. Clearing `loading` there let
-    // ProtectedRoute see {loading:false, isAuthenticated:false} and bounce
-    // straight to /login — before the demo sign-in below had a chance to run.
-    // Opening /dashboard directly therefore hit a login wall even though the
-    // sign-in went on to succeed. Keep `loading` owned by initialize() until the
-    // whole flow settles; the listener only tracks later auth changes.
+    // There is deliberately no automatic sign-in here any more.
+    //
+    // This function used to sign every visitor into the shared demo account
+    // whenever they arrived without a session. The guard was
+    // `if (DEMO_EMAIL && DEMO_PASSWORD)`, which reads as "only in demo builds"
+    // — but src/lib/env.ts supplied hardcoded fallbacks for both, so the
+    // condition was always true in every build. The effect was that anyone
+    // opening the site landed inside one account: the second real user would
+    // have seen the first one's transactions, and that account is now the one
+    // that holds live bank credentials. Demo access is a button
+    // (`signInAsDemo`), never an ambient default.
     let settled = false;
     supabase.auth.onAuthStateChange((_event, session) => {
       set({
@@ -37,25 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         ...(settled ? { loading: false } : {}),
       });
     });
-    // Then get current session
-    let { data: { session } } = await supabase.auth.getSession();
-
-    // Demo mode: if no session and demo credentials are configured, sign in
-    // silently so the login form never has to be shown. No-op (and no
-    // regression to normal auth) unless both env vars are set.
-    if (!session) {
-      if (DEMO_EMAIL && DEMO_PASSWORD) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: DEMO_EMAIL,
-          password: DEMO_PASSWORD,
-        });
-        if (error) {
-          console.warn('Demo auto-login failed:', error.message);
-        } else {
-          session = data.session;
-        }
-      }
-    }
+    const { data: { session } } = await supabase.auth.getSession();
 
     settled = true;
     set({
@@ -64,6 +56,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       session,
       loading: false,
     });
+  },
+
+  signInAsDemo: async () => {
+    if (!DEMO_EMAIL || !DEMO_PASSWORD) {
+      return { error: 'Tài khoản demo chưa được cấu hình' };
+    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+    });
+    return { error: error?.message ?? null };
   },
 
   login: async (email, password) => {

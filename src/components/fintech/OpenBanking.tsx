@@ -10,6 +10,7 @@ import bankAcb from '@/assets/logos/bank-acb.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import CasLink from './CasLink';
 
 interface BankAccount {
   type: string;
@@ -180,34 +181,39 @@ export default function OpenBanking() {
 
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Ngân hàng kết nối', value: `${connectedCount}/6`, color: 'text-primary' },
-          { label: 'Tổng số dư', value: totalBalance > 0 ? `₫${(totalBalance / 1e9).toFixed(2)} tỷ` : '—', color: 'text-mimi-green' },
-          { label: 'Trạng thái API', value: 'Active', color: 'text-foreground' },
-        ].map(stat => (
-          <div key={stat.label} className="bg-card/60 border border-border/60 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">{stat.label}</p>
-            <p className={`font-mono text-xl font-bold ${stat.color}`}>{stat.value}</p>
-          </div>
-        ))}
-      </div>
+      {/* The real integration. Everything below it is the demo path. */}
+      <CasLink />
 
-      {/* API Standard Badge */}
-      <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between">
+      {/* What is actually true about how the connection is secured. The
+          previous version of this badge claimed conformance to Thông tư
+          09/2024 and an "Open Banking API v3.1", neither of which Mimi has
+          been assessed against — and it sat above six banks whose data was
+          generated locally. */}
+      <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Shield size={20} className="text-primary" />
+          <Shield size={20} className="text-primary shrink-0" />
           <div>
-            <p className="text-sm font-medium text-foreground">Open Banking API v3.1</p>
-            <p className="text-xs text-muted-foreground">Tuân thủ Thông tư 09/2024 NHNN • Mã hóa AES-256 • OAuth 2.0</p>
+            <p className="text-sm font-medium text-foreground">Cách dữ liệu ngân hàng được bảo vệ</p>
+            <p className="text-xs text-muted-foreground">
+              Kết nối qua Cas · Quyền chỉ đọc · Mã truy cập mã hoá ML-KEM-768 + AES-256-GCM
+            </p>
           </div>
         </div>
-        <Lock size={16} className="text-mimi-green" />
+        <Lock size={16} className="text-mimi-green shrink-0" />
       </div>
 
-      {/* Bank List */}
+      {/* Demo grid */}
       <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Tài khoản demo</p>
+            <p className="text-xs text-muted-foreground">
+              Giao dịch mô phỏng, dùng để thử sản phẩm khi chưa liên kết ngân hàng thật.
+              {connectedCount > 0 && ` Đang bật ${connectedCount}/6.`}
+              {totalBalance > 0 && ` Tổng số dư mô phỏng ₫${(totalBalance / 1e9).toFixed(2)} tỷ.`}
+            </p>
+          </div>
+        </div>
         {banks.map(bank => (
           <motion.div
             key={bank.code}
@@ -321,7 +327,7 @@ export default function OpenBanking() {
               </div>
 
               <div className="bg-accent/50 rounded-xl p-4 mb-6">
-                <p className="text-sm text-foreground font-medium mb-3">KAPIVA yêu cầu quyền:</p>
+                <p className="text-sm text-foreground font-medium mb-3">MIMI WALLET yêu cầu quyền:</p>
                 <div className="space-y-2">
                   {[
                     'Xem số dư tài khoản',

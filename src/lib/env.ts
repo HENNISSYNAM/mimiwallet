@@ -16,5 +16,14 @@ export const SUPABASE_PUBLISHABLE_KEY =
 export const SUPABASE_PROJECT_ID =
   import.meta.env.VITE_SUPABASE_PROJECT_ID || "xzymxgdavepvygdcmfup";
 
-export const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL || "demo@mimiwallet.vn";
-export const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "MimiDemo2026!";
+/**
+ * Demo account. No fallback values, deliberately.
+ *
+ * These used to default to a real working account, which meant the "is a demo
+ * configured?" check in useAuthStore was true in every build — including
+ * production — and every visitor was signed straight into that one account. A
+ * default here is not a convenience; it is the difference between an opt-in
+ * demo and a shared login. Left unset, the demo button simply does not appear.
+ */
+export const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL || "";
+export const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "";

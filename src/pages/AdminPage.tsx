@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatVND, formatNumber } from '@/lib/formatters';
-import { Download, Users, CreditCard, TrendingUp, DollarSign } from 'lucide-react';
+import { Download, Users, CreditCard, TrendingUp, DollarSign, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 
 const fadeUp = (delay = 0) => ({
@@ -48,41 +50,61 @@ function exportLeadsCsv() {
 }
 
 export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [shake, setShake] = useState(false);
+  /**
+   * Access is decided by `profiles.role`, read from the database.
+   *
+   * This page used to compare a typed string against the literal 'mimi2025'
+   * held in the component. That string was compiled into the JavaScript bundle
+   * and served to every visitor of the site, so the lock published its own key.
+   * The role lives server-side, RLS lets a user read only their own profile,
+   * and a user cannot raise their own role — the UPDATE policy on `profiles`
+   * pins `role` to its current value.
+   *
+   * The real protection for anything sensitive belongs on the data, not here:
+   * this check controls what is rendered, and the queries behind it must be
+   * scoped on their own.
+   */
+  const [state, setState] = useState<'checking' | 'allowed' | 'denied'>('checking');
 
-  const handleAuth = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === 'mimi2025') {
-      setAuthenticated(true);
-    } else {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-    }
-  };
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (!cancelled) setState('denied');
+        return;
+      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!cancelled) setState(data?.role === 'admin' ? 'allowed' : 'denied');
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
-  if (!authenticated) {
+  if (state === 'checking') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="animate-spin text-muted-foreground" size={28} />
+      </div>
+    );
+  }
+
+  if (state === 'denied') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <motion.form
-          onSubmit={handleAuth}
-          animate={shake ? { x: [0, -10, 10, -10, 10, 0] } : {}}
-          transition={{ duration: 0.4 }}
-          className="card-base p-6 w-full max-w-sm"
-        >
-          <h2 className="font-display font-bold text-xl text-foreground text-center mb-4">Admin Access</h2>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Nhập mật khẩu"
-            className="w-full bg-accent border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors mb-4"
-          />
-          <button type="submit" className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-display font-bold">
-            Đăng nhập
-          </button>
-        </motion.form>
+        <div className="card-base p-6 w-full max-w-sm text-center">
+          <h2 className="font-display font-bold text-xl text-foreground mb-2">Không có quyền truy cập</h2>
+          <p className="text-sm text-muted-foreground">
+            Trang này chỉ dành cho tài khoản quản trị. Đăng nhập bằng tài khoản có
+            quyền admin để tiếp tục.
+          </p>
+          <Link to="/" className="inline-block mt-4 text-sm text-primary hover:underline">
+            Về trang chủ
+          </Link>
+        </div>
       </div>
     );
   }

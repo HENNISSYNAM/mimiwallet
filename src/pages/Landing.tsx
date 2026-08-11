@@ -15,12 +15,13 @@ import {
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Shield, Zap, Brain, CheckCircle, Play, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
+import { Shield, Zap, Brain, CheckCircle, Play, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { miniChartData } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import mimiLogo from '@/assets/mimi-cat.png';
+import { useAuthStore } from '@/store/useAuthStore';
+import mimiLogo from '@/assets/mimi-cat.webp';
 import MimiCat from '@/components/brand/MimiCat';
 import { QuantumLockArt, MLScoreArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';
@@ -510,6 +511,8 @@ export default function Landing() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [annual, setAnnual] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const { signInAsDemo, demoAvailable } = useAuthStore();
   const [ctaEmail, setCtaEmail] = useState('');
   const [ctaCompany, setCtaCompany] = useState('');
   const [ctaSubmitted, setCtaSubmitted] = useState(false);
@@ -577,13 +580,27 @@ export default function Landing() {
             >
               {t('nav.startFreeMobile')}
             </button>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="text-[15px] font-medium text-primary hover:underline underline-offset-4 flex items-center gap-1.5"
-              style={{ minHeight: '44px' }}
-            >
-              <Play size={13} /> {t('hero.ctaSecondary')}
-            </button>
+            {/* Navigating to /dashboard used to be enough, because every visitor
+                was already silently signed into the demo account. Now that the
+                automatic sign-in is gone, the demo has to sign itself in — and
+                only when someone asks for it. */}
+            {demoAvailable && (
+              <button
+                onClick={async () => {
+                  setDemoLoading(true);
+                  const { error } = await signInAsDemo();
+                  setDemoLoading(false);
+                  if (error) toast.error(error);
+                  else navigate('/dashboard');
+                }}
+                disabled={demoLoading}
+                className="text-[15px] font-medium text-primary hover:underline underline-offset-4 flex items-center gap-1.5 disabled:opacity-60"
+                style={{ minHeight: '44px' }}
+              >
+                {demoLoading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
+                {t('hero.ctaSecondary')}
+              </button>
+            )}
           </motion.div>
 
           {/*
@@ -618,7 +635,7 @@ export default function Landing() {
             {...fadeUp(0.15)}
             className="order-1 lg:order-2 mx-auto w-[210px] sm:w-[260px] lg:w-full lg:max-w-[420px]"
           >
-            <MimiCat variant="hero" className="w-full" />
+            <MimiCat variant="live" className="w-full" />
           </motion.div>
           {/* Spans both columns so the mockup keeps full width under the fold. */}
           <div className="lg:col-span-2 order-3">

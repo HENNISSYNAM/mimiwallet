@@ -424,7 +424,7 @@ export default function Onboarding() {
               <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                 <span className="font-display font-bold text-primary-foreground text-[10px]">K</span>
               </div>
-              <span className="font-display font-bold text-foreground text-sm">KAPIVA</span>
+              <span className="font-display font-bold text-foreground text-sm">MIMI WALLET</span>
             </div>
             <span className="text-xs text-muted-foreground font-mono bg-card/50 px-2.5 py-1 rounded-lg border border-border/40">{step + 1}/{stepsMeta.length}</span>
           </div>

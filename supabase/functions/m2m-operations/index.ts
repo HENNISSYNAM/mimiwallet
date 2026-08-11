@@ -44,8 +44,9 @@ serve(async (req) => {
         const { company_id, device_name, device_type, initial_balance, loan_id } = body;
         await verifyCompany(company_id);
 
-        // Generate DID
-        const did = `did:kapiva:${crypto.randomUUID().slice(0, 12)}`;
+        // Generate DID. The method segment is the brand and it is shown to the
+        // user on the device list, so it tracks the current name.
+        const did = `did:mimi:${crypto.randomUUID().slice(0, 12)}`;
 
         const { data: device, error } = await supabase
           .from('device_wallets')

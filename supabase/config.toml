@@ -1,1 +1,7 @@
-project_id = "eovndykfixqvvsvovmsw"
+project_id = "xzymxgdavepvygdcmfup"
+
+# SePay posts here with a shared key in the Authorization header, not a user
+# JWT, so the platform's JWT gate has to be off for this one function. The
+# function authenticates the caller itself with a constant-time key comparison.
+[functions.bank-webhook]
+verify_jwt = false

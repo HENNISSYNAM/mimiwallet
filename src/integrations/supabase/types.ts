@@ -16,6 +16,11 @@ export type Database = {
     Tables: {
       bank_connections: {
         Row: {
+          // access_token_enc is a PQC EncryptedBlob and must never be selected
+          // from the browser, even though RLS would permit the owner to read it.
+          access_token_enc: Json | null
+          account_name: string | null
+          account_number: string | null
           accounts: Json | null
           bank_code: string
           bank_name: string
@@ -23,12 +28,20 @@ export type Database = {
           consent_expires_at: string | null
           consent_granted: boolean | null
           created_at: string
+          direction_convention: string | null
+          grant_id: string | null
           id: string
+          last_reference: string | null
           last_synced_at: string | null
+          provider: string
+          revoked_at: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          access_token_enc?: Json | null
+          account_name?: string | null
+          account_number?: string | null
           accounts?: Json | null
           bank_code: string
           bank_name: string
@@ -36,12 +49,20 @@ export type Database = {
           consent_expires_at?: string | null
           consent_granted?: boolean | null
           created_at?: string
+          direction_convention?: string | null
+          grant_id?: string | null
           id?: string
+          last_reference?: string | null
           last_synced_at?: string | null
+          provider?: string
+          revoked_at?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          access_token_enc?: Json | null
+          account_name?: string | null
+          account_number?: string | null
           accounts?: Json | null
           bank_code?: string
           bank_name?: string
@@ -49,8 +70,13 @@ export type Database = {
           consent_expires_at?: string | null
           consent_granted?: boolean | null
           created_at?: string
+          direction_convention?: string | null
+          grant_id?: string | null
           id?: string
+          last_reference?: string | null
           last_synced_at?: string | null
+          provider?: string
+          revoked_at?: string | null
           status?: string
           updated_at?: string
         }
