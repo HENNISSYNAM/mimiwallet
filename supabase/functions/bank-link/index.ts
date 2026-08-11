@@ -89,6 +89,39 @@ Deno.serve(async (req) => {
     const action = new URL(req.url).searchParams.get("action");
     const body = await req.json().catch(() => ({}));
 
+    // ── Two gates that must clear before any real bank account is touched ────
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_demo")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    /**
+     * The demo account is shared and its password ships inside the JavaScript
+     * bundle, on purpose, so that anyone can try the product. Linking a real
+     * bank account to it would publish that person's statement to every visitor
+     * of the site. The flag lives in the database precisely so the browser
+     * cannot clear it.
+     */
+    const demoBlocked = profile?.is_demo === true;
+
+    /**
+     * Consent has to be recorded, not merely displayed. Nghị định 13/2023
+     * requires it to be demonstrable afterwards — which means a row with a
+     * timestamp and the version of the wording that was shown, not a checkbox
+     * that left no trace.
+     */
+    async function hasBankConsent(): Promise<boolean> {
+      const { data } = await supabase
+        .from("consents")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("kind", "bank_data")
+        .is("revoked_at", null)
+        .limit(1);
+      return !!data?.length;
+    }
+
     const cfg = bankhubConfigFromEnv();
     const publicKey = Deno.env.get("PQC_KYC_PUBLIC_KEY");
     const privateKey = Deno.env.get("PQC_KYC_PRIVATE_KEY");
@@ -102,6 +135,14 @@ Deno.serve(async (req) => {
     switch (action) {
       // ── 1. Open Cas Link ──────────────────────────────────────────────────
       case "create-token": {
+        // Refused here rather than at `exchange`, so the customer is stopped
+        // before Cas Link opens and asks them for their banking password.
+        if (demoBlocked) {
+          return json(
+            { error: "Tài khoản demo không thể liên kết ngân hàng thật. Vui lòng đăng ký tài khoản riêng.", code: "DEMO_ACCOUNT" },
+            403,
+          );
+        }
         const redirectUri = Deno.env.get("BANKHUB_REDIRECT_URI");
         if (!redirectUri) return json({ error: "BANKHUB_REDIRECT_URI is not set" }, 503);
 
@@ -130,6 +171,18 @@ Deno.serve(async (req) => {
 
       // ── 2. Turn the Link result into stored connections ───────────────────
       case "exchange": {
+        // Checked again here, not only at create-token. These are separate HTTP
+        // calls and nothing stops a client skipping the first one.
+        if (demoBlocked) {
+          return json({ error: "Tài khoản demo không thể liên kết ngân hàng thật.", code: "DEMO_ACCOUNT" }, 403);
+        }
+        if (!(await hasBankConsent())) {
+          return json(
+            { error: "Chưa ghi nhận sự đồng ý chia sẻ dữ liệu ngân hàng.", code: "CONSENT_REQUIRED" },
+            403,
+          );
+        }
+
         const publicToken = typeof body.publicToken === "string" ? body.publicToken.trim() : "";
         if (!publicToken) return json({ error: "publicToken required" }, 400);
 

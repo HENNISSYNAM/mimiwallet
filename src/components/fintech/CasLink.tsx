@@ -20,6 +20,13 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 
 const LINK_SCRIPT = 'https://cdn.bankhub.dev/link/v1/link-initialize.js';
 
+/**
+ * Bump this whenever the wording of the consent list below changes materially.
+ * Consent is to a specific text, so a stored record that cannot say which text
+ * was shown proves very little.
+ */
+const CONSENT_VERSION = '2026-08-11';
+
 interface CasLinkConfig {
   redirectUri: string;
   iframe: boolean;
@@ -161,6 +168,27 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     setConsentOpen(false);
     setLinking(true);
     try {
+      // Record the consent before anything else happens. Showing the wording
+      // and then not storing it leaves nothing to demonstrate afterwards, which
+      // is the part Nghị định 13/2023 actually asks for. The version string is
+      // stored alongside so a later change to the wording does not silently
+      // rewrite what people were shown when they agreed.
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLinking(false);
+        toast.error('Vui lòng đăng nhập');
+        return;
+      }
+      const { error: consentError } = await supabase
+        .from('consents')
+        .insert({ user_id: user.id, kind: 'bank_data', version: CONSENT_VERSION });
+      if (consentError) {
+        setLinking(false);
+        toast.error('Không ghi nhận được sự đồng ý, chưa thể liên kết');
+        return;
+      }
+
       await loadLinkScript();
       const grant = await call('create-token');
       if (!grant?.grantToken) {
