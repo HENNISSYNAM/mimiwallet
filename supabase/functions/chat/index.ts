@@ -63,11 +63,18 @@ async function buildContext(authHeader: string | null): Promise<BizContext | nul
     const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (!user) return null;
 
+    // Not `.single()`. A user may own several `companies` rows — the demo
+    // account owns four — and PostgREST answers >1 row with an error rather
+    // than a row. The context then came back null and the assistant told a
+    // signed-in user to sign in. Oldest row wins so the answer does not change
+    // between questions; same rule as _shared/company.ts callers.
     const { data: company } = await supabase
       .from("companies")
       .select("id, name")
       .eq("user_id", user.id)
-      .single();
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
     if (!company) return null;
 
     const ctx: BizContext = {
