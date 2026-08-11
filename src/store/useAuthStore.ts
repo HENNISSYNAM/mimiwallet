@@ -25,6 +25,12 @@ interface AuthState {
    * business owner does not know or care whether they registered last week.
    */
   signInWithEmailLink: (email: string) => Promise<{ error: string | null }>;
+  /**
+   * Google OAuth. Redirects away from the app, so it resolves only on failure —
+   * on success the browser has already left and the session is picked up by
+   * `initialize` when it comes back.
+   */
+  signInWithGoogle: () => Promise<{ error: string | null }>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -78,6 +84,21 @@ export const useAuthStore = create<AuthState>((set) => ({
         // were invited but have not clicked their first link yet.
         shouldCreateUser: true,
         emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    return { error: error?.message ?? null };
+  },
+
+  signInWithGoogle: async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        // Must also be listed under Authentication → URL Configuration →
+        // Redirect URLs in Supabase, for every origin the app runs on. An
+        // origin that is missing there fails after Google has already accepted
+        // the login, which reads to the user as "it logged me in and then threw
+        // me out".
+        redirectTo: `${window.location.origin}/dashboard`,
       },
     });
     return { error: error?.message ?? null };

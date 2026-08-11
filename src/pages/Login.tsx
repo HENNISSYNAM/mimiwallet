@@ -10,10 +10,12 @@ import mimiLogo from '@/assets/mimi-cat.webp';
 export default function Login() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { t } = useTranslation();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -115,6 +117,44 @@ export default function Login() {
             {t('login.submit')}
           </motion.button>
         </motion.form>
+
+        {/* Placed below the form, not above it. Google is the recommended route
+            for new accounts, but an existing password user arriving at a screen
+            whose first control is a Google button tends to press it and end up
+            with a second, empty account under the same person. */}
+        <div className="flex items-center gap-3 my-4" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">hoặc</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            setGoogleLoading(true);
+            const { error } = await signInWithGoogle();
+            // Only reached when the redirect never happened; on success the
+            // browser has already left this page.
+            if (error) {
+              setGoogleLoading(false);
+              toast.error(error);
+            }
+          }}
+          disabled={googleLoading}
+          className="w-full border border-border bg-card text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-accent transition-colors flex items-center justify-center gap-2.5 disabled:opacity-60"
+        >
+          {googleLoading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden>
+              <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.1z" />
+              <path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.3v5.7C7.9 41 15.4 46 24 46z" />
+              <path fill="#FBBC05" d="M11.6 28.1c-.4-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3A22 22 0 0 0 2 24c0 3.5.8 6.9 2.3 9.8l7.3-5.7z" />
+              <path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.1 30 2 24 2 15.4 2 7.9 7 4.3 14.2l7.3 5.7c1.7-5.2 6.6-9.1 12.4-9.1z" />
+            </svg>
+          )}
+          Tiếp tục với Google
+        </button>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
           {t('login.noAccount')}{' '}
