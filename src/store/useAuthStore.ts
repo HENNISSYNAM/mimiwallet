@@ -16,6 +16,15 @@ interface AuthState {
   signInAsDemo: () => Promise<{ error: string | null }>;
   /** Whether a demo account is configured at all, so the UI can hide the button. */
   demoAvailable: boolean;
+  /**
+   * Passwordless sign-in: Supabase mails a one-time link, and following it
+   * both creates the account and signs in. One field, no password to invent,
+   * no password to forget, and no password reset flow to build.
+   *
+   * The same call handles sign-up and sign-in, which is the point — a small
+   * business owner does not know or care whether they registered last week.
+   */
+  signInWithEmailLink: (email: string) => Promise<{ error: string | null }>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -56,6 +65,22 @@ export const useAuthStore = create<AuthState>((set) => ({
       session,
       loading: false,
     });
+  },
+
+  signInWithEmailLink: async (email) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        // Supabase creates the user on first link if this is true. Left true on
+        // purpose: the closed pilot is enforced by the invite trigger and by
+        // turning off public sign-up in the project's auth settings, not by
+        // this flag. Setting it false here would break sign-in for people who
+        // were invited but have not clicked their first link yet.
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    return { error: error?.message ?? null };
   },
 
   signInAsDemo: async () => {
