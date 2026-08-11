@@ -30,6 +30,13 @@ type Props = {
   tilt?: number;
   /** Colour of the halo behind the head. */
   glow?: 'jade' | 'none';
+  /**
+   * `live` only. Shuts MIMI's eyes and keeps them shut — used while someone is
+   * typing a password, so the mascot visibly is not looking. The idle blink
+   * loop stands down for the duration, otherwise the eyes would flick open
+   * mid-word and undo the whole gesture.
+   */
+  eyesClosed?: boolean;
 };
 
 export default function MimiCat({
@@ -37,6 +44,7 @@ export default function MimiCat({
   className = '',
   tilt = 14,
   glow = 'jade',
+  eyesClosed = false,
 }: Props) {
   if (variant === 'mark') {
     return (
@@ -48,7 +56,15 @@ export default function MimiCat({
       />
     );
   }
-  return <HeroCat className={className} tilt={tilt} live={variant === 'live'} glow={glow} />;
+  return (
+    <HeroCat
+      className={className}
+      tilt={tilt}
+      live={variant === 'live'}
+      glow={glow}
+      eyesClosed={eyesClosed}
+    />
+  );
 }
 
 /** Frames used by the `live` variant, all from the same ~190px head set so the
@@ -68,11 +84,13 @@ function HeroCat({
   tilt,
   live,
   glow,
+  eyesClosed,
 }: {
   className: string;
   tilt: number;
   live: boolean;
   glow: 'jade' | 'none';
+  eyesClosed: boolean;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [reduced, setReduced] = useState(false);
@@ -120,7 +138,7 @@ function HeroCat({
   // Blinking. Irregular on purpose — a blink on a fixed interval reads as a
   // strobe rather than a living thing, because the eye picks up the rhythm.
   useEffect(() => {
-    if (!live || reduced) return;
+    if (!live || reduced || eyesClosed) return;
     let stop = false;
     let t: number;
     const loop = () => {
@@ -140,7 +158,7 @@ function HeroCat({
       stop = true;
       window.clearTimeout(t);
     };
-  }, [live, reduced]);
+  }, [live, reduced, eyesClosed]);
 
   const hold = (f: Face, ms: number) => {
     held.current = true;
@@ -151,7 +169,9 @@ function HeroCat({
     }, ms);
   };
 
-  const src = live ? FACE[face] : catLogo;
+  // eyesClosed outranks everything, including a click-triggered hold. Someone
+  // typing a password must never see the eyes open because of an earlier tap.
+  const src = live ? FACE[eyesClosed ? 'blink' : face] : catLogo;
 
   return (
     <div

@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { Loader2, Leaf, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import MimiCat from '@/components/brand/MimiCat';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,6 +16,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Covers focus and typing, and stays on through submit — the eyes should not
+  // pop open at the exact moment the form is being sent.
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const hidingEyes = passwordFocused || loading;
   const { t } = useTranslation();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -56,15 +60,19 @@ export default function Login() {
         className="w-full max-w-sm relative z-10"
       >
         <div className="text-center mb-8">
-          <motion.img 
-            src={mimiLogo} 
-            alt="MIMI WALLET" 
+          {/* MIMI follows the pointer, and shuts her eyes the moment focus
+              lands on the password field. The gesture is the reassurance: it
+              says nobody is watching you type, in a way no line of copy does.
+              glow="none" because this page already has two blurred colour orbs
+              behind it and a third would turn the header to mush. */}
+          <motion.div
             className="h-20 w-20 mx-auto mb-4"
-            style={{ filter: 'drop-shadow(0 12px 20px rgba(120,53,15,.22))' }}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-          />
+          >
+            <MimiCat variant="live" glow="none" tilt={16} eyesClosed={hidingEyes} className="w-full" />
+          </motion.div>
           <h1 className="font-display font-bold text-2xl text-foreground">{t('login.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1">
             <Leaf size={14} className="text-mimi-green" /> {t('login.tagline')}
@@ -94,6 +102,8 @@ export default function Login() {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
               placeholder="••••••••"
               className="w-full bg-accent border border-border rounded-lg px-3 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
             />
