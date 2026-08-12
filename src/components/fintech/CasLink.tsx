@@ -31,7 +31,14 @@ interface CasLinkConfig {
   redirectUri: string;
   iframe: boolean;
   grantToken: string;
-  fiServiceType?: 'ENTERPRISE' | 'PERSONAL' | 'ALL';
+  /**
+   * Lowercase. Cas's docs table lists ENTERPRISE / PERSONAL / ALL, but the SDK
+   * compares against {enterprise, personal, all} — and the guard that should
+   * have rejected the mismatch is `if (n && !valid.includes(n) && valid.join(", "))`,
+   * a comma expression with no throw. So "ALL" sailed through validation and
+   * reached their page as an fiServiceType it does not recognise.
+   */
+  fiServiceType?: 'enterprise' | 'personal' | 'all';
   onSuccess?: (publicToken: string, state: string) => void;
   onExit?: () => void;
 }
@@ -278,7 +285,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         // created with and the value registered in the Cas console.
         redirectUri: grant.redirectUri,
         iframe: true,
-        fiServiceType: 'ALL',
+        fiServiceType: 'all',
         // Kept for the path where the SDK's own origin check does pass.
         // completeLink is idempotent enough for this: a second exchange of a
         // spent token fails and is reported, rather than corrupting anything.
