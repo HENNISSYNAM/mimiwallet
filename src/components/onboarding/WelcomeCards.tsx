@@ -66,6 +66,7 @@ export default function WelcomeCards() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +75,7 @@ export default function WelcomeCards() {
       if (!user) return;
       const { data } = await supabase
         .from('companies')
-        .select('id, onboarding_done_at')
+        .select('id, name, onboarding_done_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .limit(1)
@@ -82,6 +83,7 @@ export default function WelcomeCards() {
       // Never shown again once answered or skipped.
       if (cancelled || !data || data.onboarding_done_at) return;
       setCompanyId(data.id);
+      setName(data.name ?? '');
       setVisible(true);
     })();
     return () => { cancelled = true; };
@@ -94,8 +96,9 @@ export default function WelcomeCards() {
     await supabase
       .from('companies')
       .update({
-        // Only send fields the person actually answered — a skip must not
-        // overwrite an industry they set during an earlier sign-up.
+        // Only fields the person actually touched — a skip must not wipe an
+        // industry or a name set during an earlier sign-up.
+        ...(name.trim() ? { name: name.trim() } : {}),
         ...(final.industry ? { industry: final.industry } : {}),
         ...(final.size ? { employee_count: final.size } : {}),
         ...(final.goal ? { primary_goal: final.goal } : {}),
@@ -145,6 +148,22 @@ export default function WelcomeCards() {
             {s.hint && <p className="text-xs text-muted-foreground mt-0.5">{s.hint}</p>}
           </div>
         </div>
+
+        {/* Only on the first card, and pre-filled. The trigger names a new
+            company after the person, which is a guess — right often enough to
+            keep, wrong often enough to offer. It is the one answer that cannot
+            be a tap, so it sits above the taps rather than as its own step. */}
+        {step === 0 && (
+          <div className="mt-4">
+            <label className="text-xs text-muted-foreground mb-1.5 block">Tên cửa hàng / công ty</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ví dụ: Tạp hoá Minh Anh"
+              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+            />
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 mt-4">
           {s.options.map((o) => (
