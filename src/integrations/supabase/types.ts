@@ -101,6 +101,8 @@ export type Database = {
           industry: string | null
           monthly_revenue: number | null
           name: string
+          onboarding_done_at: string | null
+          primary_goal: string | null
           province: string | null
           tax_id: string | null
           updated_at: string
@@ -133,6 +135,8 @@ export type Database = {
           industry?: string | null
           monthly_revenue?: number | null
           name?: string
+          onboarding_done_at?: string | null
+          primary_goal?: string | null
           province?: string | null
           tax_id?: string | null
           updated_at?: string

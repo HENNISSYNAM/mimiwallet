@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, FileText, ShieldCheck, AlertTriangle, Lightbulb, Bell, ArrowRight, Loader2, Link2 } from 'lucide-react';
 import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
 import IndustryNews from '@/components/IndustryNews';
+import WelcomeCards from '@/components/onboarding/WelcomeCards';
 import { formatVNDShort } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -298,6 +299,10 @@ export default function DashboardOverview() {
           </div>
         </motion.div>
       )}
+
+      {/* Asked here, after the numbers are on screen — not as a gate in front
+          of them. Renders nothing once answered or skipped. */}
+      <motion.div variants={fadeUp}><WelcomeCards /></motion.div>
 
       <motion.div variants={stagger} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Net cash flow, not "balance". No table here stores a bank balance,
