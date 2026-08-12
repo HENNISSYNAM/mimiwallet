@@ -53,8 +53,8 @@ Và một cạm bẫy khi **đo đạc**: `-webkit-touch-callout` chỉ có trê
 
 ## Dashboard đã chạy trên dữ liệu thật (xong 12/08/2026)
 
- và  giờ truy vấn ,
-, , , . Đã gỡ
+`DashboardOverview.tsx` và `DashboardSidebar.tsx` giờ truy vấn `companies`,
+`transactions`, `invoices`, `credit_score_snapshots`, `bank_connections`. Đã gỡ
 hết số cứng: "Anh Minh", ₫2.85 tỷ, ₫8.32 tỷ, điểm 701, và ba insight bịa nhắc
 ABC Corp / INV-2841.
 
@@ -67,8 +67,8 @@ Hai quyết định giữ lại:
 Trạng thái rỗng nói thẳng "chưa có giao dịch" kèm lối đi liên kết ngân hàng, không
 hiện số 0 giả dạng số đo.
 
-**Bốn trang còn đọc :** , , ,
-. Cùng nguyên tắc: dữ liệu thật hoặc trạng thái rỗng trung thực.
+**Bốn trang còn đọc `mockData.ts`:** `ReportsPage`, `SettingsPage`, `Onboarding`,
+`Landing`. Cùng nguyên tắc: dữ liệu thật hoặc trạng thái rỗng trung thực.
 
 ## Việc tiếp theo, theo thứ tự
 
@@ -87,9 +87,8 @@ hiện số 0 giả dạng số đo.
    trọng nhất của người dùng mới.
 5. **`resolveCompany` dùng chung** (`_shared/company.ts`). `bank-link` và
    `open-banking` đang mỗi nơi một bản `.order('created_at').limit(1)`.
-6. **Gỡ mock khỏi sáu trang**: `DashboardOverview`, `ReportsPage`, `SettingsPage`,
-   `Onboarding`, `DashboardSidebar`, `Landing`. Sidebar đang hiện "Đức Phát Foods"
-   từ `mockData.ts` trong khi công ty thật tên khác.
+6. **Gỡ mock khỏi bốn trang còn lại**: `ReportsPage`, `SettingsPage`, `Onboarding`,
+   `Landing`. (`DashboardOverview` và `DashboardSidebar` đã xong 12/08.)
 7. **Phép thử cách ly hai tài khoản** — chạy được ngay khi có tài khoản admin.
    Đăng nhập A, gọi mọi edge function và mọi truy vấn REST bằng token của A,
    khẳng định không dòng nào của B lọt ra. Với một sản phẩm fintech đây là phép
