@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
+import { DEMO_EMAIL } from '@/lib/env';
 import { toast } from 'sonner';
 import { Loader2, Leaf, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +12,12 @@ export default function Login() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  // Named so the banner can say plainly which account you are in. The demo
+  // credentials are public by design, so comparing against them leaks nothing.
+  const isDemoSession = !!user?.email && user.email === DEMO_EMAIL;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -79,8 +86,41 @@ export default function Login() {
           </p>
         </div>
 
-        <motion.form 
-          onSubmit={handleLogin} 
+        {/* Someone arriving here already signed in is almost always trying to
+            switch accounts — most often out of the shared demo and into their
+            own. Without this the page just shows an empty form, gives no hint
+            that a session exists, and there is no way to tell which account you
+            are in until you land on the dashboard. */}
+        {isAuthenticated && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 rounded-2xl border border-mimi-amber/25 bg-mimi-amber/5 p-4"
+          >
+            <p className="text-sm text-foreground">
+              Bạn đang đăng nhập bằng{' '}
+              <span className="font-semibold break-all">{user?.email ?? 'một tài khoản khác'}</span>
+              {isDemoSession && <span className="text-muted-foreground"> (tài khoản demo)</span>}
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                Vào dashboard
+              </button>
+              <button
+                onClick={async () => { await logout(); toast.success('Đã đăng xuất'); }}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-accent transition-colors"
+              >
+                Đăng xuất để dùng tài khoản khác
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        <motion.form
+          onSubmit={handleLogin}
           className="card-base p-6 space-y-4 backdrop-blur-xl bg-card/80"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
