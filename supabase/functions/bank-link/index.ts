@@ -143,8 +143,42 @@ Deno.serve(async (req) => {
             403,
           );
         }
-        const redirectUri = Deno.env.get("BANKHUB_REDIRECT_URI");
-        if (!redirectUri) return json({ error: "BANKHUB_REDIRECT_URI is not set" }, 503);
+        /**
+         * The redirect URI has to match the origin the customer is actually on.
+         *
+         * A single fixed value was set to localhost during development and left
+         * there, so a link started from the deployed site handed Cas a
+         * redirectUri pointing at a machine that was not the one browsing. Cas
+         * completed the link, showed its success dialog, and then had nowhere to
+         * return the publicToken to — the iframe simply stayed open and the
+         * request log showed grant/token calls with no grant/exchange after
+         * them.
+         *
+         * The Origin header is set by the browser and cannot be rewritten by
+         * page script, so it is safe to key on. It is still checked against an
+         * allow-list: every value here must also be registered in the Cas
+         * console, and echoing back an arbitrary origin would turn this into a
+         * way to point somebody else's grant at an attacker's page.
+         */
+        const allowed = (Deno.env.get("BANKHUB_REDIRECT_URIS") ?? Deno.env.get("BANKHUB_REDIRECT_URI") ?? "")
+          .split(",")
+          .map((u) => u.trim())
+          .filter(Boolean);
+        if (!allowed.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
+
+        const origin = req.headers.get("Origin") ?? "";
+        const redirectUri =
+          allowed.find((u) => {
+            try {
+              return new URL(u).origin === origin;
+            } catch {
+              return false;
+            }
+          }) ?? allowed[0];
+
+        if (origin && !redirectUri.startsWith(origin)) {
+          console.warn(`origin ${origin} has no registered redirectUri; falling back to ${redirectUri}`);
+        }
 
         const grant = await createGrantToken(cfg, {
           redirectUri,
