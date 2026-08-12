@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Volume2, Loader2 } from 'lucide-react';
-// The alert, wide-eyed frame — the one from the story beat "Chú nhìn thấy".
-// A sparkle icon says "generic AI chatbot"; a cat watching says an agent is
-// keeping an eye on your money, which is what this actually is.
-import mimiWatch from '@/assets/mimi/watch.webp';
+// The agent's own face: black and gold, headset and heads-up display. A
+// separate character from the orange brand mascot on purpose — this one is the
+// thing working for you, not the logo.
+//
+// Cropped to the head. The source art is full-body at 2:3, and these avatars
+// render at 24–40px, where a whole seated cat becomes an unreadable smudge.
+import mimiAgent from '@/assets/mimi/agent.webp';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
@@ -146,7 +149,7 @@ export default function AIChatWidget() {
         {open ? (
           <X size={20} />
         ) : (
-          <img src={mimiWatch} alt="" aria-hidden draggable={false} className="w-8 h-8 no-save" />
+          <img src={mimiAgent} alt="" aria-hidden draggable={false} className="w-8 h-8 no-save" />
         )}
         {!open && <span className="text-sm font-semibold hidden sm:inline">Trợ lý AI</span>}
       </motion.button>
@@ -172,7 +175,7 @@ export default function AIChatWidget() {
             <div className="px-4 py-3 border-b hairline flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center">
-                  <img src={mimiWatch} alt="" aria-hidden draggable={false} className="w-6 h-6 no-save" />
+                  <img src={mimiAgent} alt="" aria-hidden draggable={false} className="w-6 h-6 no-save" />
                 </div>
                 <div>
                   <p className="text-sm font-display font-bold text-foreground">Trợ lý MIMI</p>
@@ -204,7 +207,7 @@ export default function AIChatWidget() {
               {messages.length === 0 && (
                 <div className="text-center py-6">
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary/10 to-mimi-green/10 flex items-center justify-center mb-3">
-                    <img src={mimiWatch} alt="" aria-hidden draggable={false} className="w-10 h-10 no-save" />
+                    <img src={mimiAgent} alt="" aria-hidden draggable={false} className="w-10 h-10 no-save" />
                   </div>
                   <p className="text-[15px] font-semibold text-foreground">Xin chào</p>
                   <p className="text-[13px] text-muted-foreground mt-1 max-w-[240px] mx-auto">
