@@ -10,6 +10,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 const Landing = lazy(() => import("./pages/Landing"));
 const About = lazy(() => import("./pages/About"));
 const Login = lazy(() => import("./pages/Login"));
+const BankCallback = lazy(() => import("./pages/BankCallback"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
@@ -60,6 +61,10 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
+              {/* Where Cas Link redirects with the publicToken. Not under
+                  ProtectedRoute's dashboard subtree because Cas navigates the
+                  browser here directly, and it must resolve on its own. */}
+              <Route path="/bank/callback" element={<BankCallback />} />
               <Route path="/register" element={<Onboarding />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route
