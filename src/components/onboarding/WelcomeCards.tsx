@@ -22,9 +22,33 @@ import mimiWatch from '@/assets/mimi/watch.webp';
  * the shape of the reply suits us.
  */
 
-type Step = { key: 'industry' | 'size' | 'goal'; title: string; hint?: string; options: { value: string; label: string }[] };
+type Step = {
+  key: 'account_type' | 'industry' | 'size' | 'goal';
+  title: string;
+  hint?: string;
+  options: { value: string; label: string }[];
+};
+
+/**
+ * Vietnamese tax IDs are 10 digits, or 13 when a branch suffix is present
+ * (10 digits, a dash, then 3). Checked here only for shape — confirming the
+ * code actually belongs to this business needs Cas IDKit, which is not yet
+ * enabled on the contract. Storing an unverified code is fine; presenting it as
+ * verified would not be.
+ */
+const TAX_ID_OK = (v: string) => /^\d{10}(-\d{3})?$/.test(v.replace(/\s/g, ''));
 
 const STEPS: Step[] = [
+  {
+    key: 'account_type',
+    title: 'Bạn đang dùng MIMI cho việc gì?',
+    hint: 'Quyết định phần thuế và báo cáo nào áp dụng cho bạn.',
+    options: [
+      { value: 'household', label: 'Hộ kinh doanh' },
+      { value: 'business', label: 'Doanh nghiệp' },
+      { value: 'personal', label: 'Chi tiêu cá nhân' },
+    ],
+  },
   {
     key: 'industry',
     title: 'Bạn đang kinh doanh ngành gì?',
@@ -67,6 +91,7 @@ export default function WelcomeCards() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
+  const [taxId, setTaxId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +100,7 @@ export default function WelcomeCards() {
       if (!user) return;
       const { data } = await supabase
         .from('companies')
-        .select('id, name, onboarding_done_at')
+        .select('id, name, tax_id, onboarding_done_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .limit(1)
@@ -84,6 +109,7 @@ export default function WelcomeCards() {
       if (cancelled || !data || data.onboarding_done_at) return;
       setCompanyId(data.id);
       setName(data.name ?? '');
+      setTaxId(data.tax_id ?? '');
       setVisible(true);
     })();
     return () => { cancelled = true; };
@@ -99,6 +125,8 @@ export default function WelcomeCards() {
         // Only fields the person actually touched — a skip must not wipe an
         // industry or a name set during an earlier sign-up.
         ...(name.trim() ? { name: name.trim() } : {}),
+        ...(final.account_type ? { account_type: final.account_type } : {}),
+        ...(TAX_ID_OK(taxId) ? { tax_id: taxId.replace(/\s/g, '') } : {}),
         ...(final.industry ? { industry: final.industry } : {}),
         ...(final.size ? { employee_count: final.size } : {}),
         ...(final.goal ? { primary_goal: final.goal } : {}),
@@ -153,6 +181,28 @@ export default function WelcomeCards() {
             company after the person, which is a guess — right often enough to
             keep, wrong often enough to offer. It is the one answer that cannot
             be a tap, so it sits above the taps rather than as its own step. */}
+        {/* Asked only where it is actually used. A personal account files
+            nothing, so a tax code would be a field with no purpose behind it. */}
+        {step === 1 && answers.account_type !== 'personal' && (
+          <div className="mt-4">
+            <label className="text-xs text-muted-foreground mb-1.5 block">
+              Mã số thuế <span className="text-muted-foreground/60">(có thể bỏ trống, điền sau)</span>
+            </label>
+            <input
+              value={taxId}
+              onChange={(e) => setTaxId(e.target.value)}
+              inputMode="numeric"
+              placeholder="0319436143"
+              className={`w-full bg-background border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/10 transition-all ${
+                taxId && !TAX_ID_OK(taxId) ? 'border-mimi-red' : 'border-border focus:border-primary'
+              }`}
+            />
+            {taxId && !TAX_ID_OK(taxId) && (
+              <p className="text-xs text-mimi-red mt-1">Mã số thuế gồm 10 chữ số, hoặc 13 dạng 10 chữ số + “-” + 3 chữ số.</p>
+            )}
+          </div>
+        )}
+
         {step === 0 && (
           <div className="mt-4">
             <label className="text-xs text-muted-foreground mb-1.5 block">Tên cửa hàng / công ty</label>

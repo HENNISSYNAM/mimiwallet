@@ -92,6 +92,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          account_type: string | null
           connected_banks: Json | null
           created_at: string
           credit_limit: number | null
@@ -110,6 +111,7 @@ export type Database = {
           years_operating: string | null
         }
         Insert: {
+          account_type?: string | null
           connected_banks?: Json | null
           created_at?: string
           credit_limit?: number | null
@@ -126,6 +128,7 @@ export type Database = {
           years_operating?: string | null
         }
         Update: {
+          account_type?: string | null
           connected_banks?: Json | null
           created_at?: string
           credit_limit?: number | null
