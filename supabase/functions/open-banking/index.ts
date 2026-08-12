@@ -66,6 +66,10 @@ function generateMockTransactions(bankCode: string, count: number = 20) {
       transaction_date: date.toISOString().split("T")[0],
       reference_id: `TXN${bankCode}${Date.now()}${i}`,
       source_bank: bankCode,
+      // Marks this row as generated. Everything presented as the company's own
+      // figures filters it out; without the flag a demo connection quietly
+      // inflates real revenue, which decides the 1 tỷ exemption.
+      is_synthetic: true,
     });
   }
   

@@ -42,6 +42,7 @@ const fadeUp = {
 
 interface Tx {
   id: string;
+  is_synthetic?: boolean;
   amount: number;
   type: string;
   category: string | null;
@@ -153,7 +154,7 @@ export default function DashboardOverview() {
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
       const [txRes, invRes, snapRes, bankRes] = await Promise.all([
         supabase.from('transactions')
-          .select('id, amount, type, category, merchant_name, transaction_date')
+          .select('id, amount, type, category, merchant_name, transaction_date, is_synthetic')
           .eq('company_id', company.id).gte('transaction_date', iso(yearAgo))
           .order('transaction_date', { ascending: false }),
         supabase.from('invoices')
@@ -179,9 +180,13 @@ export default function DashboardOverview() {
   }, []);
 
   const m = useMemo(() => {
+    // Every figure below describes the business, so generated rows are excluded
+    // before any of it is computed. They stay in `txs` only so the recent list
+    // can still show them, labelled.
+    const real = txs.filter((x) => !x.is_synthetic);
     const days = RANGES[rangeIdx].days;
     const from = new Date(); from.setDate(from.getDate() - days);
-    const inRange = txs.filter((x) => x.transaction_date >= iso(from));
+    const inRange = real.filter((x) => x.transaction_date >= iso(from));
 
     const income = inRange.filter(isIncome).reduce((s, x) => s + magnitude(x), 0);
     const expense = inRange.filter((x) => !isIncome(x)).reduce((s, x) => s + magnitude(x), 0);
@@ -189,9 +194,9 @@ export default function DashboardOverview() {
     const now = new Date();
     const monthStart = iso(new Date(now.getFullYear(), now.getMonth(), 1));
     const prevStart = iso(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-    const thisMonth = txs.filter((x) => isIncome(x) && x.transaction_date >= monthStart)
+    const thisMonth = real.filter((x) => isIncome(x) && x.transaction_date >= monthStart)
       .reduce((s, x) => s + magnitude(x), 0);
-    const lastMonth = txs.filter((x) => isIncome(x) && x.transaction_date >= prevStart && x.transaction_date < monthStart)
+    const lastMonth = real.filter((x) => isIncome(x) && x.transaction_date >= prevStart && x.transaction_date < monthStart)
       .reduce((s, x) => s + magnitude(x), 0);
 
     // Grouped by calendar month so the chart shows the shape of the year, not
@@ -455,7 +460,17 @@ export default function DashboardOverview() {
                     {(tx.merchant_name?.trim() || '?')[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground font-medium truncate">{tx.merchant_name || 'Không có mô tả'}</p>
+                    <p className="text-sm text-foreground font-medium truncate">
+                      {tx.merchant_name || 'Không có mô tả'}
+                      {/* Labelled where it is read, not only excluded from the
+                          maths. A row that is invisible in the totals but looks
+                          identical in the list is still misleading. */}
+                      {tx.is_synthetic && (
+                        <span className="ml-2 align-middle text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent text-muted-foreground">
+                          demo
+                        </span>
+                      )}
+                    </p>
                     <p className="text-xs text-muted-foreground">{tx.category || (isIncome(tx) ? 'Tiền vào' : 'Tiền ra')}</p>
                   </div>
                   <div className="text-right">

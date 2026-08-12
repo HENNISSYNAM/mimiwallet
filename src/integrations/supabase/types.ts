@@ -661,6 +661,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          is_synthetic: boolean
           merchant_name: string | null
           reference_id: string | null
           source_bank: string | null
@@ -673,6 +674,7 @@ export type Database = {
           company_id: string
           created_at?: string
           id?: string
+          is_synthetic?: boolean
           merchant_name?: string | null
           reference_id?: string | null
           source_bank?: string | null
@@ -685,6 +687,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           id?: string
+          is_synthetic?: boolean
           merchant_name?: string | null
           reference_id?: string | null
           source_bank?: string | null
