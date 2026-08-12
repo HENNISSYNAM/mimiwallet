@@ -5,12 +5,29 @@ import {
   BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf, Sparkles, GraduationCap, Globe,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { companyProfile } from '@/lib/mockData';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-cat.webp';
 
 export default function DashboardSidebar() {
+  /** The real company, not a constant. The sidebar used to print
+   *  "Đức Phát Foods" from mockData while the dashboard beside it showed the
+   *  signed-in company's actual name — two different companies on one screen. */
+  const [companyName, setCompanyName] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('companies').select('name').eq('user_id', user.id)
+        .order('created_at', { ascending: true }).limit(1).maybeSingle();
+      if (!cancelled && data?.name) setCompanyName(data.name.slice(0, 24));
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const [collapsed, setCollapsed] = useState(false);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
@@ -41,7 +58,7 @@ export default function DashboardSidebar() {
         <img src={mimiLogo} alt="MIMI WALLET" className="h-9 w-auto shrink-0 no-save" draggable={false} />
         {!collapsed && (
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-foreground truncate">{companyProfile.name.substring(0, 20)}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{companyName ?? '—'}</p>
             <p className="text-xs text-mimi-green flex items-center gap-1"><Leaf size={10} /> {t('sidebar.greenPlan')}</p>
           </div>
         )}

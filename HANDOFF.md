@@ -51,24 +51,24 @@ Và một cạm bẫy khi **đo đạc**: `-webkit-touch-callout` chỉ có trê
 `CSS.supports()` trên Chrome desktop trả `false`, nên kiểm bằng computed style ở
 đó sẽ luôn trông như bản sửa hỏng. Đo `user-select` thay thế.
 
-## ƯU TIÊN CAO NHẤT: dashboard hiển thị số bịa cho người dùng thật
+## Dashboard đã chạy trên dữ liệu thật (xong 12/08/2026)
 
-`src/pages/DashboardOverview.tsx` có **0 truy vấn Supabase**. Tên chào, tổng số dư
-(₫2.85 tỷ), doanh thu tháng (₫8.32 tỷ), hoá đơn chờ, điểm 701 — tất cả là hằng số
-trong `src/lib/mockData.ts`. Một người đăng nhập bằng Google của chính họ vẫn thấy
-"Xin chào, Anh Minh" và 2,85 tỷ không phải của mình.
+ và  giờ truy vấn ,
+, , , . Đã gỡ
+hết số cứng: "Anh Minh", ₫2.85 tỷ, ₫8.32 tỷ, điểm 701, và ba insight bịa nhắc
+ABC Corp / INV-2841.
 
-Đây không phải lỗi thẩm mỹ. Với sản phẩm tài chính, hiện số tiền bịa như thể là của
-người dùng là thứ nghiêm trọng nhất trong danh sách này — nặng hơn hai lỗi CSS.
+Hai quyết định giữ lại:
+- **Bỏ ô "Tổng số dư"**. Không bảng nào lưu số dư ngân hàng, nên ô đó chỉ có thể
+  là bịa. Thay bằng dòng tiền ròng — tính được thật từ giao dịch.
+- **Bỏ "target ₫10 tỷ"**. Hệ thống không có mục tiêu doanh thu nào; so với tháng
+  trước thì đo được.
 
-**Đừng sửa nửa vời.** Cụ thể: đừng chỉ thay tên chào cho đúng rồi để nguyên các con
-số. Tên thật đứng cạnh số giả làm số giả trông đáng tin hơn, tức là tệ hơn hiện tại.
-Sửa thì sửa cả màn hình cùng lúc: truy vấn `transactions`, `credit_score_snapshots`,
-`invoices`, `companies`, và hiện **trạng thái rỗng trung thực** ("Chưa có giao dịch —
-liên kết ngân hàng để bắt đầu") khi chưa có dữ liệu.
+Trạng thái rỗng nói thẳng "chưa có giao dịch" kèm lối đi liên kết ngân hàng, không
+hiện số 0 giả dạng số đo.
 
-Năm trang còn lại cũng đọc `mockData.ts`: `ReportsPage`, `SettingsPage`, `Onboarding`,
-`DashboardSidebar` (đang hiện "Đức Phát Foods"), `Landing`.
+**Bốn trang còn đọc :** , , ,
+. Cùng nguyên tắc: dữ liệu thật hoặc trạng thái rỗng trung thực.
 
 ## Việc tiếp theo, theo thứ tự
 
