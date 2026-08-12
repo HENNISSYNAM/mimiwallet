@@ -7,11 +7,7 @@ import {
   removeGrant,
   BankhubError,
 } from "../_shared/bank/bankhub.ts";
-import {
-  mapBankhubTransactions,
-  latestReference,
-  type DirectionConvention,
-} from "../_shared/bank/bankhub-map.ts";
+import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 /**
@@ -328,97 +324,18 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          let payload;
-          try {
-            /**
-             * `accounts` is only sent once there is a cursor to resume from.
-             *
-             * Cas documents the parameter as optional, but any entry inside it
-             * must carry a fromReference — a request with
-             * [{"accountNumber":"…"}] and nothing else is rejected with
-             * INVALID_PARAM "fromReference là bắt buộc". On a first sync there
-             * is no reference to send, so the whole array is left out and the
-             * date window does the work. Cas then returns every account on the
-             * grant; mapBankhubTransactions filters to this connection's own
-             * account, which it does anyway.
-             */
-            payload = await fetchTransactions(cfg, accessToken, {
-              fromDate,
-              toDate,
-              ...(conn.last_reference
-                ? { accounts: [{ accountNumber: conn.account_number, fromReference: conn.last_reference }] }
-                : {}),
-            });
-          } catch (e) {
-            if (e instanceof BankhubError && e.needsRelink) {
-              // The customer's authorisation lapsed or was withdrawn. Mark it
-              // so the UI can ask them to re-link instead of retrying forever.
-              await supabase
-                .from("bank_connections")
-                .update({ status: "needs_relink", revoked_at: new Date().toISOString() })
-                .eq("id", conn.id)
-                .eq("company_id", company.id);
-              results.push({ connection_id: conn.id, error: e.errorCode, needsRelink: true });
-              continue;
-            }
-            console.error(`connection ${conn.id}: transaction fetch failed`, e);
-            results.push({ connection_id: conn.id, error: (e as Error).message });
-            continue;
-          }
-
-          const pinned = (conn.direction_convention ?? undefined) as DirectionConvention | undefined;
-          const { rows, rejected, report, applied } = mapBankhubTransactions(payload, {
-            sourceBank: conn.bank_name,
-            accountNumber: conn.account_number,
-            convention: pinned,
-          });
-
-          if (rejected.length) {
-            console.warn(`connection ${conn.id}: skipped ${rejected.length}`, rejected.slice(0, 10));
-          }
-
-          let inserted = 0;
-          if (rows.length) {
-            const { error: writeError, count } = await supabase
-              .from("transactions")
-              .upsert(
-                rows.map((r) => ({ ...r, company_id: company.id })),
-                { onConflict: "company_id,reference_id", ignoreDuplicates: true, count: "exact" },
-              );
-            if (writeError) {
-              console.error(`connection ${conn.id}: insert failed`, writeError.message);
-              results.push({ connection_id: conn.id, error: "write failed" });
-              continue;
-            }
-            inserted = count ?? rows.length;
-          }
-
-          const update: Record<string, unknown> = { last_synced_at: new Date().toISOString() };
-          const cursor = latestReference(payload.transactions ?? [], conn.account_number);
-          if (cursor) update.last_reference = cursor;
-          // Only pin the convention once the data actually settled it. Writing
-          // the fallback here would turn a guess into a stored fact.
-          if (!pinned && report.convention !== "unknown") {
-            update.direction_convention = report.convention;
-          }
-
-          await supabase
-            .from("bank_connections")
-            .update(update)
-            .eq("id", conn.id)
-            .eq("company_id", company.id);
-
-          results.push({
-            connection_id: conn.id,
-            account_number: conn.account_number,
-            fetched: payload.transactions?.length ?? 0,
-            inserted,
-            skipped: rejected.length,
-            // Surfaced so a wrong reading is visible in the response rather
-            // than only in the numbers on a dashboard.
-            directionConvention: applied,
-            conventionEvidence: report,
-          });
+          // Fetching, mapping and storing all live in _shared/bank/ingest.ts so
+          // that a transaction arriving here by poll is written under exactly
+          // the same rules as one arriving at cas-webhook by push.
+          results.push(
+            await ingestConnection(
+              supabase,
+              cfg,
+              accessToken,
+              { ...conn, company_id: company.id },
+              { fromDate, toDate },
+            ),
+          );
         }
 
         return json({ synced: results });

@@ -1,9 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  bankhubConfigFromEnv,
-  fetchTransactions,
-  BankhubError,
-} from "../_shared/bank/bankhub.ts";
+import { bankhubConfigFromEnv } from "../_shared/bank/bankhub.ts";
+import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 /**
@@ -171,7 +168,7 @@ Deno.serve(async (req) => {
         .eq("id", event.id);
     }
     console.log(`cas webhook ${type ?? "?"}/${code ?? "?"} grant=${grantId ?? "?"}: ${outcome}`);
-    return ack({ outcome });
+    return ack({ outcome, detail: note });
   };
 
   if (!grantId) {
@@ -181,7 +178,9 @@ Deno.serve(async (req) => {
 
   const { data: conns, error: lookupError } = await supabase
     .from("bank_connections")
-    .select("id, company_id, status, access_token_enc")
+    .select(
+      "id, company_id, status, access_token_enc, account_number, bank_name, last_reference, direction_convention",
+    )
     .eq("provider", "bankhub")
     .eq("grant_id", grantId);
 
@@ -213,15 +212,20 @@ Deno.serve(async (req) => {
 
   // ── Ask Cas what is actually true ──────────────────────────────────────────
   //
-  // One cheap call per connection. A one-day window is the smallest request
-  // that exercises the grant; the result itself is discarded, only the outcome
-  // matters. /identity would also work but the `identity` scope is deliberately
-  // not requested, so it would fail for a reason unrelated to grant health.
+  // The same ingest path the customer's own "sync" button uses. Cas has to be
+  // called either way to check the grant, and the call returns transactions, so
+  // throwing them away would waste the one request per grant per minute that
+  // Cas allows. A GRANT event therefore also picks up anything recent; a
+  // TRANSACTIONS event reaches back a week in case a delivery was missed.
   const today = new Date().toISOString().slice(0, 10);
+  const back = new Date();
+  back.setDate(back.getDate() - (type === "TRANSACTIONS" ? 7 : 1));
+  const window = { fromDate: back.toISOString().slice(0, 10), toDate: today };
+
   const outcomes: string[] = [];
 
   for (const conn of conns) {
-    if (!conn.access_token_enc) {
+    if (!conn.access_token_enc || !conn.account_number) {
       outcomes.push(`${conn.id}:no-token`);
       continue;
     }
@@ -235,63 +239,54 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    try {
-      await fetchTransactions(cfg, accessToken, { fromDate: today, toDate: today });
-      // The grant answered, so it is alive whatever the payload claimed. If we
-      // had previously parked it, this is the signal to bring it back — which
-      // is exactly what a DEFAULT_UPDATE event means.
-      if (conn.status !== "connected") {
-        await supabase
-          .from("bank_connections")
-          .update({ status: "connected", revoked_at: null })
-          .eq("id", conn.id);
-        outcomes.push(`${conn.id}:restored`);
-      } else {
-        outcomes.push(`${conn.id}:alive`);
-      }
-    } catch (e) {
-      if (!(e instanceof BankhubError)) {
-        console.error(`connection ${conn.id}: verification call failed`, e);
-        outcomes.push(`${conn.id}:unverifiable`);
-        continue;
-      }
+    const result = await ingestConnection(supabase, cfg, accessToken, conn, window);
 
-      if (e.errorCode === "RATE_LIMIT") {
-        // Cas allows roughly one call per grant per minute. Not knowing is not
-        // the same as knowing the grant is dead, so nothing changes here.
-        outcomes.push(`${conn.id}:rate-limited`);
-        continue;
-      }
+    if (result.needsRelink) {
+      // ingestConnection already parked the connection; CasLink.tsx surfaces
+      // that status as a prompt to link again.
+      outcomes.push(`${conn.id}:needs-relink`);
+      continue;
+    }
 
-      if (e.errorCode === "GRANT_NOT_FOUND") {
-        // The grant is gone at Cas. The stored credential can never work again
-        // and keeping it is only liability.
-        await supabase
-          .from("bank_connections")
-          .update({
-            status: "disconnected",
-            revoked_at: new Date().toISOString(),
-            access_token_enc: null,
-            grant_id: null,
-          })
-          .eq("id", conn.id);
-        outcomes.push(`${conn.id}:disconnected`);
-        continue;
-      }
+    if (result.errorCode === "GRANT_NOT_FOUND") {
+      // The grant is gone at Cas. The stored credential can never work again
+      // and keeping it is only liability.
+      await supabase
+        .from("bank_connections")
+        .update({
+          status: "disconnected",
+          revoked_at: new Date().toISOString(),
+          access_token_enc: null,
+          grant_id: null,
+        })
+        .eq("id", conn.id);
+      outcomes.push(`${conn.id}:disconnected`);
+      continue;
+    }
 
-      if (e.needsRelink) {
-        // Still exists, but the customer has to go through Cas Link again.
-        // CasLink.tsx already surfaces this status as a prompt to re-link.
-        await supabase
-          .from("bank_connections")
-          .update({ status: "needs_relink", revoked_at: new Date().toISOString() })
-          .eq("id", conn.id);
-        outcomes.push(`${conn.id}:needs-relink`);
-        continue;
-      }
+    if (result.errorCode === "RATE_LIMIT") {
+      // Cas allows roughly one call per grant per minute. Not knowing is not
+      // the same as knowing the grant is dead, so nothing changes here.
+      outcomes.push(`${conn.id}:rate-limited`);
+      continue;
+    }
 
-      console.error(`connection ${conn.id}: Cas said ${e.errorCode}`, e.message);
-      outcomes.push(`${conn.id}:${e.errorCode}`);
+    if (result.error || result.errorCode) {
+      outcomes.push(`${conn.id}:${result.errorCode ?? "error"}`);
+      continue;
+    }
+
+    // Cas answered, so the grant is alive whatever the payload claimed. If it
+    // had previously been parked, this is the signal to bring it back — which
+    // is exactly what a DEFAULT_UPDATE event means.
+    if (conn.status !== "connected") {
+      await supabase
+        .from("bank_connections")
+        .update({ status: "connected", revoked_at: null })
+        .eq("id", conn.id);
+      outcomes.push(`${conn.id}:restored+${result.inserted}`);
+    } else {
+      outcomes.push(`${conn.id}:alive+${result.inserted}`);
     }
   }
 
