@@ -5,3 +5,9 @@ project_id = "xzymxgdavepvygdcmfup"
 # function authenticates the caller itself with a constant-time key comparison.
 [functions.bank-webhook]
 verify_jwt = false
+
+# Casso's webhook form offers no signing secret, so this endpoint carries a
+# shared key in its URL and — more importantly — verifies every claim against
+# the Cas API before changing anything. See the header of the function.
+[functions.cas-webhook]
+verify_jwt = false

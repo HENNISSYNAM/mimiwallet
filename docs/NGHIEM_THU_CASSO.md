@@ -46,28 +46,48 @@ Ba đường đi, theo thứ tự tôi khuyến nghị:
 3. Hỏi Casso xem sandbox có nới whitelist được không. Kể cả được thì production
    vẫn vướng.
 
-### 2. Không có endpoint nhận webhook của Cas — 4 case
+### 2. Endpoint nhận webhook của Cas — đã dựng 12/08, chờ đăng ký
 
-`bank-webhook` hiện chỉ hiểu payload SePay. Không có chỗ nào nhận `GRANT_DELETED`,
-`USER_PERMISSION_REVOKED`, `DEFAULT_UPDATE`, hay `TRANSACTIONS` của Cas.
+Trước 12/08 `bank-webhook` chỉ hiểu payload SePay, không có chỗ nào nhận
+`GRANT_DELETED`, `USER_PERMISSION_REVOKED`, `DEFAULT_UPDATE` hay `TRANSACTIONS`.
+Console Casso cũng trống — chưa webhook nào được tạo, nên thiếu từ cả hai đầu.
 
-Đây là phần **đáng làm nhất trong danh sách này**, kể cả khi bỏ QRPay và chuyển
-tiền. Lý do: `USER_PERMISSION_REVOKED` là cách khách hàng rút lại quyền truy cập
-tài khoản ngân hàng của họ. Không nghe được webhook đó nghĩa là MIMI vẫn gọi API
-với một liên kết khách đã huỷ, và vẫn hiển thị nó là "đang kết nối". Với sản phẩm
-đọc dữ liệu ngân hàng thì đó là lỗi phải sửa bất kể biên bản nghiệm thu nói gì.
+Đây là phần đáng làm nhất trong danh sách này, kể cả khi bỏ QRPay và chuyển tiền:
+`USER_PERMISSION_REVOKED` là cách khách hàng rút lại quyền truy cập tài khoản. Không
+nghe được nó nghĩa là MIMI vẫn gọi API với liên kết khách đã huỷ và vẫn hiện "đang
+kết nối". Đã làm xong: `supabase/functions/cas-webhook`.
 
-Ước lượng: một function mới, xác thực chữ ký, ba nhánh xử lý.
+**Một điều về thiết kế cần Casso biết.** Form tạo webhook có bốn ô — Tên, Mô tả,
+Đường dẫn, Phân loại — và **không có ô secret để ký payload**. Không có chữ ký thì
+không cách nào chứng minh một request đến từ Casso. Nên endpoint này không làm theo
+payload:
 
-### 3. Ba case xử lý mất kết nối chưa có giao diện — 3 case
+> Payload là **tín hiệu đi kiểm tra**, không phải mệnh lệnh.
 
-Đổi mật khẩu ngân hàng, ngân hàng đòi xác thực thiết bị định kỳ, khách bật chặn
-đăng nhập từ website. Cả ba đều dẫn tới cùng một trạng thái: liên kết còn trong DB
-nhưng gọi API thì hỏng. Hiện `sync` báo lỗi và dừng; không có thông báo "cần cập
-nhật thông tin đăng nhập" cũng không có lối mở lại Cas Link.
+Một body nói "grant X đã bị thu hồi" không thu hồi gì cả. Nó khiến hệ thống gọi Cas
+hỏi về grant X, rồi hành động theo câu trả lời của Cas. Webhook giả tốn đúng một
+lời gọi API và không đổi được trạng thái nào. Khoá chia sẻ trong URL chỉ là bộ lọc
+rẻ tiền để nhiễu Internet không chạm tới bước xác minh — nó không phải ranh giới
+bảo mật; lời gọi xác minh mới là.
 
-Chung một bản sửa với mục 2: khi Cas trả lỗi thuộc nhóm cần-tái-xác-thực, đánh dấu
-`bank_connections.status = 'needs_reauth'` và hiện nút mở lại Cas Link.
+Mọi payload nhận được ghi thô vào `webhook_events` **trước** khi quyết định gì, kể
+cả body không parse được. Chưa có tài liệu nào mô tả envelope của Cas, và đoán một
+schema không tài liệu chính là thứ đã tốn bốn vòng sửa sai ở luồng Cas Link. Lần gửi
+thật đầu tiên sẽ dạy ta hình dạng của nó.
+
+### 3. Ba case xử lý mất kết nối — cơ chế đã có, chưa dựng được tình huống
+
+*Đính chính bản trước: tôi ghi ba case này là "chưa hiện thực". Sai.*
+
+Trạng thái `needs_relink` đã tồn tại. Khi Cas trả `GRANT_LOGIN_REQUIRED` hoặc
+`USER_PERMISSION_REVOKED`, `sync` đánh dấu liên kết (`bank-link/index.ts:358`) và
+giao diện hiện banner "Có N tài khoản cần liên kết lại để tiếp tục đồng bộ"
+(`CasLink.tsx:415,470`) — đúng thứ mà kết quả dự kiến của case 5, 6, 7 mô tả.
+
+Thiếu hai thứ: đường **chủ động** qua webhook (nay đã có), và cách dựng tình huống
+trong sandbox. Không tự đổi được mật khẩu ngân hàng giả lập hay bật chặn đăng nhập
+từ website trên đó. Vì vậy ghi *Untested* chứ không phải *chưa hiện thực* — cần
+Casso cho biết sandbox có mô phỏng được ba trạng thái này không.
 
 ## Chi tiết từng case
 
@@ -79,9 +99,9 @@ Chung một bản sửa với mục 2: khi Cas trả lỗi thuộc nhóm cần-t
 | 2 | Trùng thông tin liên kết | *Partial* | Upsert theo `(company_id, provider, account_number)` nên **không tạo dòng mới** — phần cốt lõi đạt. Nhưng hệ thống không báo "Liên kết thất bại – Tài khoản đã tồn tại"; nó làm mới token. Cố ý: case 5 yêu cầu liên kết lại để khôi phục kết nối hỏng, mà từ chối liên kết lặp thì không khôi phục được. Hai case này mâu thuẫn nhau ở bản gốc. |
 | 3 | Xoá liên kết không cần OTP | *Chưa chạy* | Đã có mã: `disconnect` → `DELETE /grant` → `status=disconnected`, xoá token. Nút ở `CasLink.tsx:443`. Chưa bấm vì nó sẽ huỷ grant thật duy nhất đang có. |
 | 4 | Xoá liên kết cần OTP | Chưa hiện thực | `removeGrant` không xử lý nhánh trả về grantToken để nhập OTP; không có chỗ nhận `GRANT_DELETED`. |
-| 5 | Thông tin đăng nhập thay đổi | Chưa hiện thực | Xem mục 3 ở trên. |
-| 6 | Xác thực OTP/thiết bị định kỳ | Chưa hiện thực | Xem mục 3 ở trên. |
-| 7 | Chặn đăng nhập từ website | Chưa hiện thực | Xem mục 3 ở trên. |
+| 5 | Thông tin đăng nhập thay đổi | *Chưa chạy* | Cơ chế đã có (`needs_relink` + banner mời liên kết lại). Chưa dựng được tình huống trong sandbox. Xem mục 3. |
+| 6 | Xác thực OTP/thiết bị định kỳ | *Chưa chạy* | như trên |
+| 7 | Chặn đăng nhập từ website | *Chưa chạy* | như trên |
 | 8 | Liên kết thành công tại đối tác | **Passed** | Dòng `bank_connections` có `grant_id`, `access_token_enc` (ML-KEM-768 + AES-256-GCM), `status=connected`. |
 | 9 | Liên kết thành công tại Casso | **Passed** | Grant hiện trong `console.bankhub.dev → Developer → Logs` kèm `grant/exchange`. |
 
@@ -89,8 +109,8 @@ Chung một bản sửa với mục 2: khi Cas trả lỗi thuộc nhóm cần-t
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 10 | `USER_PERMISSION_REVOKED` | Chưa hiện thực | `bank-webhook` chỉ parse payload SePay. |
-| 11 | `DEFAULT_UPDATE` | Chưa hiện thực | như trên |
+| 10 | `USER_PERMISSION_REVOKED` | *Chưa chạy* | Endpoint `cas-webhook` đã dựng và deploy 12/08; đã kiểm 7 nhánh (khoá sai → 401, khoá đúng → 200, body không phải JSON → 200 bỏ qua, GET → 405). Chờ đăng ký URL bên Casso rồi bắn thử. |
+| 11 | `DEFAULT_UPDATE` | *Chưa chạy* | như trên. Nhánh "grant còn sống → khôi phục `status=connected`" đã có sẵn trong mã. |
 
 ### 3. QRPay
 
@@ -118,6 +138,23 @@ Chung một bản sửa với mục 2: khi Cas trả lỗi thuộc nhóm cần-t
 | 21 | Chuyển tiền thành công | Bị chặn | 403 `IP_NOT_ALLOWED`. |
 | 22–29 | TC01–TC08 (8 mã lỗi) | Bị chặn | Mọi lời gọi `/transfer` bị chặn ở tầng IP trước khi tới bước kiểm tham số, nên không mã lỗi nào trong TC01–TC08 quan sát được. |
 | 30 | Token không hợp lệ (transfer) | Bị chặn | 403 `IP_NOT_ALLOWED` (`Nt4JTuBQ0-J9PWVb`) thay vì `GRANT_NOT_FOUND`. |
+
+## Ghi chú về bằng chứng
+
+Ảnh chi tiết log lấy từ `console.bankhub.dev → Developer → Logs`, mốc **21:03:58
+12/08/2026 (+07:00)**. Độ trễ Casso ghi nhận là 4–7ms; con số 15–196ms trong bảng
+trên đo từ phía client nên bao gồm cả đường truyền. Cả hai đều dưới mốc 1000ms của
+case 17, và con số của Casso mới là con số nên đưa vào biên bản.
+
+**`SKXKpCPiOGMeD55b` không phải lỗi sản phẩm.** Bản ghi này hiện `/grant/token` →
+400 `INVALID_PARAM "value.split is not a function"` với `scopes` là mảng. Đó là
+script probe của tôi gửi sai kiểu. Mã thật gửi chuỗi —
+`scopes: (opts.scopes ?? [...]).join(',')` trong `_shared/bank/bankhub.ts:150` — và
+đã tạo grant thành công. Ghi ra đây để bản ghi đó không bị đọc nhầm thành defect.
+
+Nhân đây, một điều Casso nên ghi vào tài liệu: `/grant/token` nhận `scopes` dạng
+**chuỗi phân tách bằng dấu phẩy**, không phải mảng JSON. Thông báo lỗi hiện tại rò
+rỉ chi tiết cài đặt (`value.split is not a function`) thay vì nói trường nào sai.
 
 ## Đề nghị gửi Casso
 
