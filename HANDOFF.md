@@ -31,6 +31,35 @@ Mọi thứ phía dưới đã sẵn sàng nhận khoá đó.
 | Nav anchor theo route | `/about` → `/#pricing`, `/` → `#pricing` |
 | 121 test, typecheck, build | `npx vitest run`, `tsc --noEmit`, `npm run build` |
 
+## Hỏng gì liên quan Cas: mở log của họ TRƯỚC
+
+`console.bankhub.dev → Developer → Logs`, bấm mũi tên để mở chi tiết một request.
+Nó hiện nguyên `redirectUri`, query params, response code và message.
+
+Điều này không phải lời khuyên chung chung. Luồng liên kết hỏng bốn vòng liền và
+mỗi vòng tôi sửa theo suy đoán từ mã nguồn — callback ném lỗi, thiếu route
+redirect, origin không khớp, sai case `fiServiceType` — **không cái nào đúng**.
+Nguyên nhân thật (`redirectUri` trỏ localhost trong khi trình duyệt ở vercel)
+hiện ra trong một dòng ngay khi mở chi tiết grant. Sau đó mỗi vòng chỉ mất vài
+phút vì lỗi nói rõ nó cần gì.
+
+Bốn lỗi đã gặp trên đường đi, đều là lỗi phía ta:
+
+1. **`redirectUri` sai môi trường.** Secret đặt localhost lúc dev rồi để nguyên.
+   Cas hoàn tất liên kết, hiện "Thành công", rồi không có chỗ trả `publicToken`
+   về. Iframe đứng im, log có `grant/token` mà không có `grant/exchange` nào.
+   Nay `BANKHUB_REDIRECT_URIS` nhận danh sách và function chọn theo header
+   `Origin`.
+2. **Hai handler cùng đổi một `publicToken`.** Callback của SDK và listener
+   riêng của ta đều chạy; token dùng-một-lần nên lần hai thất bại và ghi đè kết
+   quả thành công. Nay khử trùng bằng `handledTokens`.
+3. **`fromReference là bắt buộc`.** Tài liệu ghi `accounts` tuỳ chọn, nhưng một
+   phần tử trong đó bắt buộc kèm con trỏ — mà lần đồng bộ đầu thì không có. Nay
+   chỉ gửi `accounts` khi đã có `last_reference`.
+4. **`RATE_LIMIT`.** Cas cho khoảng một lần gọi mỗi grant mỗi phút. Đây cũng
+   chính là một case trong biên bản nghiệm thu, chứng minh được bằng requestId
+   `p3xWQO8zGpdyMh5T`.
+
 ## Ba cạm bẫy đã gặp — đừng lặp lại
 
 **1. Giá trị mặc định vô hiệu hoá chốt bảo vệ.** `env.ts` đặt sẵn
