@@ -87,6 +87,10 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  // Every origin that posted to this window during a link attempt. If the flow
+  // stalls again, this is the evidence that says why — the previous three
+  // attempts each ended with nothing on screen to reason from.
+  const [seenOrigins, setSeenOrigins] = useState<string[]>([]);
 
   const call = useCallback(
     async (action: string, body: Record<string, unknown> = {}) => {
@@ -165,6 +169,76 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     [call, loadConnections, onSynced]
   );
 
+  /** Exchange → store → first sync. Shared by the SDK callback and our listener. */
+  const completeLink = useCallback(
+    async (publicToken: string) => {
+      setLastError(null);
+      try {
+        const exchanged = await call('exchange', { publicToken });
+        if (!exchanged) {
+          setLastError('Không lưu được liên kết. Thử lại hoặc gửi ảnh màn hình này.');
+          return;
+        }
+        toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
+        await loadConnections();
+        await runSync();
+      } catch (e) {
+        setLastError((e as Error)?.message ?? 'Lỗi không xác định khi lưu liên kết');
+      } finally {
+        setLinking(false);
+      }
+    },
+    [call, loadConnections, runSync]
+  );
+
+  /**
+   * Our own listener for the message Cas Link posts when the bank link
+   * completes, running alongside the SDK's.
+   *
+   * The SDK ignores anything whose `event.origin` is not one of exactly three
+   * hardcoded values — localhost:3000, dev.link.bankhub.dev, link.bankhub.dev —
+   * and it calls closeIframe() *before* onSuccess. The iframe was staying open,
+   * which means the message never got past that check, so onSuccess was never
+   * reached. That rules out our callback failing and points at the origin.
+   *
+   * Rather than wait for the SDK to widen its list, accept any bankhub.dev
+   * subdomain and do the work ourselves. Anything that arrives and does not
+   * match is written to the panel with its origin, so a wrong guess here
+   * produces evidence instead of another silent stall.
+   */
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      let host = '';
+      try { host = new URL(e.origin).hostname; } catch { return; }
+      setSeenOrigins((prev) => (prev.includes(e.origin) ? prev : [...prev, e.origin]));
+      if (host !== 'bankhub.dev' && !host.endsWith('.bankhub.dev')) return;
+
+      // The SDK requires a JSON *string*; be liberal and take an object too.
+      let payload: { type?: string; data?: { publicToken?: string; loading?: boolean } } | null = null;
+      try {
+        payload = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data as typeof payload);
+      } catch {
+        setLastError(`Cas gửi dữ liệu không đọc được từ ${e.origin}`);
+        return;
+      }
+      if (!payload || typeof payload !== 'object') return;
+
+      const token = payload.data?.publicToken;
+      if (payload.type === 'credential' && token) {
+        // Close it ourselves: the SDK only does so on the path it did not take.
+        document.getElementById('bankhub-iframe')?.remove();
+        void completeLink(token);
+      } else if (payload.type === 'status') {
+        document.getElementById('bankhub-iframe')?.remove();
+        setLinking(false);
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call, loadConnections]);
+
+
   const startLink = useCallback(async () => {
     setConsentOpen(false);
     setLinking(true);
@@ -205,39 +279,10 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         redirectUri: grant.redirectUri,
         iframe: true,
         fiServiceType: 'ALL',
-        onSuccess: async (publicToken: string) => {
-          /**
-           * Nothing in here may throw.
-           *
-           * This callback is handed to Cas's SDK, and a rejected promise
-           * escaping it leaves their iframe on screen with its success dialog
-           * stuck — the button says "Đồng Ý", pressing it does nothing, and the
-           * page behind sits on "Đang liên kết…" forever because the state was
-           * never cleared. The grant exists at Cas by then, so it looks like it
-           * worked while nothing was stored on our side.
-           */
-          setLastError(null);
-          try {
-            // The publicToken is single use and short-lived, so it is exchanged
-            // server-side straight away; it never gets stored in the browser.
-            const exchanged = await call('exchange', { publicToken });
-            if (!exchanged) {
-              // `call` already raised a toast, but a toast can render beneath
-              // the Cas overlay. Keep it on the panel too.
-              setLastError('Không lưu được liên kết. Thử lại hoặc gửi ảnh màn hình này.');
-              return;
-            }
-            toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
-            await loadConnections();
-            // First sync pulls twelve months, which is what the scoring model
-            // reads — so the account is scoreable the moment it is linked.
-            await runSync();
-          } catch (e) {
-            setLastError((e as Error)?.message ?? 'Lỗi không xác định khi lưu liên kết');
-          } finally {
-            setLinking(false);
-          }
-        },
+        // Kept for the path where the SDK's own origin check does pass.
+        // completeLink is idempotent enough for this: a second exchange of a
+        // spent token fails and is reported, rather than corrupting anything.
+        onSuccess: (publicToken: string) => { void completeLink(publicToken); },
         onExit: () => setLinking(false),
       });
       open();
@@ -377,6 +422,14 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Shown only while a link attempt is in flight or has just failed —
+            it is diagnostic, not something a working flow should ever display. */}
+        {(lastError || (linking && seenOrigins.length > 0)) && seenOrigins.length > 0 && (
+          <p className="mt-2 text-[11px] text-muted-foreground break-all">
+            Origin nhận được: {seenOrigins.join(', ')}
+          </p>
         )}
 
         {lastError && (
