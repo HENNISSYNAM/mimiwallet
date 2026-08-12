@@ -174,7 +174,16 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       if (failed.some((r) => r.needsRelink)) {
         toast.error('Ngân hàng yêu cầu đăng nhập lại. Vui lòng liên kết lại tài khoản.');
       } else if (failed.length) {
-        toast.error(`Đồng bộ lỗi: ${failed[0].error}`);
+        // Cas allows roughly one call per grant per minute and answers RATE_LIMIT
+        // above that. Passing their English sentence straight through tells a
+        // shop owner nothing about what to do, and the only useful action is to
+        // wait — so say that instead.
+        const msg = failed[0].error ?? '';
+        toast.error(
+          /rate limit/i.test(msg)
+            ? 'Cas giới hạn số lần gọi. Chờ khoảng 1 phút rồi đồng bộ lại.'
+            : `Đồng bộ lỗi: ${msg}`
+        );
       } else {
         toast.success(
           inserted > 0 ? `Đã nhận ${inserted} giao dịch mới` : 'Đã đồng bộ, không có giao dịch mới'
