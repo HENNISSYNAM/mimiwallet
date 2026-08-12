@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight,
@@ -98,6 +98,16 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   // stalls again, this is the evidence that says why — the previous three
   // attempts each ended with nothing on screen to reason from.
   const [seenOrigins, setSeenOrigins] = useState<string[]>([]);
+  /**
+   * Tokens already handed to `exchange`.
+   *
+   * Two paths now deliver the same publicToken — the SDK's onSuccess and our
+   * own message listener — and they both fire. A publicToken is single use, so
+   * the second exchange fails and overwrites a completed link with an error the
+   * user has no way to act on: the account was stored, the screen said it was
+   * not. Whichever path arrives first wins; the other is a no-op.
+   */
+  const handledTokens = useRef<Set<string>>(new Set());
 
   const call = useCallback(
     async (action: string, body: Record<string, unknown> = {}) => {
@@ -179,6 +189,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   /** Exchange → store → first sync. Shared by the SDK callback and our listener. */
   const completeLink = useCallback(
     async (publicToken: string) => {
+      if (handledTokens.current.has(publicToken)) return;
+      handledTokens.current.add(publicToken);
       setLastError(null);
       try {
         const exchanged = await call('exchange', { publicToken });
@@ -286,9 +298,9 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         redirectUri: grant.redirectUri,
         iframe: true,
         fiServiceType: 'all',
-        // Kept for the path where the SDK's own origin check does pass.
-        // completeLink is idempotent enough for this: a second exchange of a
-        // spent token fails and is reported, rather than corrupting anything.
+        // Kept for the path where the SDK's own origin check does pass. Both
+        // this and the message listener call completeLink; it de-duplicates by
+        // token so the loser of the race does nothing.
         onSuccess: (publicToken: string) => { void completeLink(publicToken); },
         onExit: () => setLinking(false),
       });

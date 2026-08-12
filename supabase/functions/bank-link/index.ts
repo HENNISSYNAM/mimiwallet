@@ -330,17 +330,24 @@ Deno.serve(async (req) => {
 
           let payload;
           try {
+            /**
+             * `accounts` is only sent once there is a cursor to resume from.
+             *
+             * Cas documents the parameter as optional, but any entry inside it
+             * must carry a fromReference — a request with
+             * [{"accountNumber":"…"}] and nothing else is rejected with
+             * INVALID_PARAM "fromReference là bắt buộc". On a first sync there
+             * is no reference to send, so the whole array is left out and the
+             * date window does the work. Cas then returns every account on the
+             * grant; mapBankhubTransactions filters to this connection's own
+             * account, which it does anyway.
+             */
             payload = await fetchTransactions(cfg, accessToken, {
               fromDate,
               toDate,
-              accounts: [
-                {
-                  accountNumber: conn.account_number,
-                  // Resume from what we already have; absent on the first run,
-                  // which is what makes that run a full backfill.
-                  ...(conn.last_reference ? { fromReference: conn.last_reference } : {}),
-                },
-              ],
+              ...(conn.last_reference
+                ? { accounts: [{ accountNumber: conn.account_number, fromReference: conn.last_reference }] }
+                : {}),
             });
           } catch (e) {
             if (e instanceof BankhubError && e.needsRelink) {

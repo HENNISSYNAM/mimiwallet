@@ -227,7 +227,11 @@ export function fetchTransactions(
       JSON.stringify(
         opts.accounts.map((a) => ({
           accountNumber: a.accountNumber,
-          ...(a.fromReference ? { fromReference: a.fromReference } : {}),
+          // Always a string, never omitted. Cas documents fromReference as an
+          // optional cursor, but the API rejects a request without it —
+          // "fromReference là bắt buộc, fromReference phải là chuỗi". Empty
+          // means start from the beginning, which is what a first sync wants.
+          fromReference: a.fromReference ?? '',
         }))
       )
     );
