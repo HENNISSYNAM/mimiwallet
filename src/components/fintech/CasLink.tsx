@@ -86,6 +86,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const [linking, setLinking] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const call = useCallback(
     async (action: string, body: Record<string, unknown> = {}) => {
@@ -205,23 +206,46 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         iframe: true,
         fiServiceType: 'ALL',
         onSuccess: async (publicToken: string) => {
-          // The publicToken is single use and short-lived, so it is exchanged
-          // server-side straight away; it never gets stored in the browser.
-          const exchanged = await call('exchange', { publicToken });
-          setLinking(false);
-          if (!exchanged) return;
-          toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
-          await loadConnections();
-          // First sync pulls twelve months, which is what the scoring model
-          // reads — so the account is scoreable the moment it is linked.
-          await runSync();
+          /**
+           * Nothing in here may throw.
+           *
+           * This callback is handed to Cas's SDK, and a rejected promise
+           * escaping it leaves their iframe on screen with its success dialog
+           * stuck — the button says "Đồng Ý", pressing it does nothing, and the
+           * page behind sits on "Đang liên kết…" forever because the state was
+           * never cleared. The grant exists at Cas by then, so it looks like it
+           * worked while nothing was stored on our side.
+           */
+          setLastError(null);
+          try {
+            // The publicToken is single use and short-lived, so it is exchanged
+            // server-side straight away; it never gets stored in the browser.
+            const exchanged = await call('exchange', { publicToken });
+            if (!exchanged) {
+              // `call` already raised a toast, but a toast can render beneath
+              // the Cas overlay. Keep it on the panel too.
+              setLastError('Không lưu được liên kết. Thử lại hoặc gửi ảnh màn hình này.');
+              return;
+            }
+            toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
+            await loadConnections();
+            // First sync pulls twelve months, which is what the scoring model
+            // reads — so the account is scoreable the moment it is linked.
+            await runSync();
+          } catch (e) {
+            setLastError((e as Error)?.message ?? 'Lỗi không xác định khi lưu liên kết');
+          } finally {
+            setLinking(false);
+          }
         },
         onExit: () => setLinking(false),
       });
       open();
     } catch (e) {
       setLinking(false);
-      toast.error((e as Error).message);
+      const msg = (e as Error)?.message ?? 'Lỗi không xác định';
+      setLastError(msg);
+      toast.error(msg);
     }
   }, [call, loadConnections, runSync]);
 
@@ -352,6 +376,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {lastError && (
+          <div className="mt-3 rounded-xl border border-mimi-red/25 bg-mimi-red/5 p-3">
+            <p className="text-xs text-mimi-red font-medium">Liên kết chưa hoàn tất</p>
+            <p className="text-xs text-muted-foreground mt-0.5 break-words">{lastError}</p>
           </div>
         )}
 
