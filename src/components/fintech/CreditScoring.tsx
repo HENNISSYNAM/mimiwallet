@@ -143,6 +143,7 @@ export default function CreditScoring() {
       .from('companies')
       .select('id')
       .eq('user_id', session.user.id)
+      .order('created_at', { ascending: true })
       .limit(1);
     const cId = companies?.[0]?.id ?? null;
     setCompanyId(cId);

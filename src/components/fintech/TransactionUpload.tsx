@@ -25,6 +25,7 @@ export default function TransactionUpload({ onComputed }: { onComputed?: () => v
         .from('companies')
         .select('id')
         .eq('user_id', session.user.id)
+        .order('created_at', { ascending: true })
         .limit(1);
 
       const companyId = companies?.[0]?.id;

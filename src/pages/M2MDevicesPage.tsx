@@ -71,6 +71,7 @@ export default function M2MDevicesPage() {
       .from('companies')
       .select('id')
       .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
       .limit(1);
 
     if (companies && companies.length > 0) {

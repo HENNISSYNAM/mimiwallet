@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -55,6 +57,7 @@ export function QrPayDialog({
   onPaid,
 }: Props) {
   const { toast } = useToast();
+  const { session } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [qr, setQr] = useState<QrPayment | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,34 +68,50 @@ export function QrPayDialog({
   const requested = useRef(false);
 
   const create = useCallback(async () => {
+    if (!session) {
+      setError('Vui lòng đăng nhập.');
+      return;
+    }
     setLoading(true);
     setError(null);
     setNeedsRelink(false);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke(
-        'bank-link?action=create-qr',
-        { body: { amount, description, invoice_id: invoiceId ?? null } },
-      );
-      if (fnError) throw fnError;
-      if (data?.code === 'QRPAY_SCOPE_MISSING') {
+      /*
+       * Raw fetch, not `supabase.functions.invoke`.
+       *
+       * invoke throws a generic "Edge Function returned a non-2xx status code"
+       * for anything outside 2xx and keeps the response body out of reach, so
+       * the one message worth showing — that this link predates QR and needs
+       * redoing — never reached the screen. CasLink already calls this function
+       * the same way for the same reason.
+       */
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/bank-link?action=create-qr`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ amount, description, invoice_id: invoiceId ?? null }),
+      });
+      const result = await res.json();
+
+      if (result?.code === 'QRPAY_SCOPE_MISSING') {
         setNeedsRelink(true);
-        setError(data.error);
+        setError(result.error);
         return;
       }
-      if (data?.error) throw new Error(data.error);
-      setQr(data.qr as QrPayment);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Không tạo được mã QR';
-      // The scope error arrives as a 409 body rather than a thrown error on
-      // some transports, so it is checked in both places.
-      if (message.includes('QRPAY_SCOPE_MISSING') || message.includes('liên kết lại')) {
-        setNeedsRelink(true);
+      if (!res.ok || result?.error) {
+        setError(result?.error ?? `Lỗi ${res.status}`);
+        return;
       }
-      setError(message);
+      setQr(result.qr as QrPayment);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Không tạo được mã QR');
     } finally {
       setLoading(false);
     }
-  }, [amount, description, invoiceId]);
+  }, [amount, description, invoiceId, session]);
 
   useEffect(() => {
     if (!open) {

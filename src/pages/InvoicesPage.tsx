@@ -68,7 +68,7 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
       return;
     }
     setSaving(true);
-    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).limit(1);
+    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).order('created_at', { ascending: true }).limit(1);
     const companyId = companies?.[0]?.id;
     if (!companyId) {
       toast.error(t('fin.invoices.toast.companyNotFound'));
@@ -180,7 +180,7 @@ export default function InvoicesPage() {
   const loadInvoices = async () => {
     if (!session) return;
     setLoading(true);
-    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).limit(1);
+    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).order('created_at', { ascending: true }).limit(1);
     const cId = companies?.[0]?.id ?? null;
     setCompanyId(cId);
     if (cId) {

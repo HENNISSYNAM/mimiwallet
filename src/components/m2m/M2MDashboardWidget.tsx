@@ -27,6 +27,7 @@ export default function M2MDashboardWidget() {
       .from('companies')
       .select('id')
       .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
       .limit(1);
 
     if (!companies || companies.length === 0) return;

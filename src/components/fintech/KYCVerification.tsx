@@ -63,6 +63,7 @@ export default function KYCVerification({ onComplete }: { onComplete?: () => voi
         .from('companies')
         .select('id')
         .eq('user_id', session.user.id)
+        .order('created_at', { ascending: true })
         .limit(1);
       if (companies && companies.length > 0) setCompanyId(companies[0].id);
     };
