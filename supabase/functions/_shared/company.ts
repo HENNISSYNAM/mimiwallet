@@ -1,4 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/**
+ * Wide generics on purpose.
+ *
+ * The default instantiation is `SupabaseClient<any, "public", "public", …>`, and
+ * a caller whose client was built from a slightly different specifier resolves
+ * to a different one — same library, two incompatible shapes, and the helper
+ * stopped accepting a perfectly good client. This helper only reads one table
+ * with one filter, so it has no business caring which instantiation it is given.
+ */
+type AnySupabaseClient = SupabaseClient<any, any, any, any, any>;
 
 /**
  * Resolve the company a signed-in user is acting for.
@@ -21,7 +33,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
  * the id does not have to query twice.
  */
 export async function resolveCompany<T extends { id: string }>(
-  supabase: SupabaseClient,
+  supabase: AnySupabaseClient,
   userId: string,
   columns = "id",
 ): Promise<T | null> {

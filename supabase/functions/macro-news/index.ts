@@ -134,7 +134,11 @@ async function fetchFeeds(): Promise<RawItem[]> {
 
 /** Company numbers the personalised reading needs. Null when not signed in. */
 async function loadCompanyContext(
-  admin: ReturnType<typeof createClient>,
+  // Wide on purpose — see _shared/company.ts. `ReturnType<typeof createClient>`
+  // pins this to the no-generics instantiation, which the actual client does
+  // not match once anything else in the file touches a typed table.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: import("https://esm.sh/@supabase/supabase-js@2").SupabaseClient<any, any, any, any, any>,
   authHeader: string | null
 ): Promise<CompanyContext | null> {
   if (!authHeader) return null;
@@ -175,7 +179,7 @@ async function loadCompanyContext(
   );
 
   let factorScores: Record<string, number> = {};
-  const snapshotId = snapshots?.[0]?.id;
+  const snapshotId = (snapshots as Array<{ id: string }> | null)?.[0]?.id;
   if (snapshotId) {
     const { data: factors } = await admin
       .from("credit_score_factors")

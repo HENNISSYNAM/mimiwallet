@@ -9,12 +9,14 @@ import {
   exchangePublicToken,
   fetchTransactions,
   fetchFiServices,
+  fetchGdtInvoices,
   fetchQrPayIdentity,
   removeGrant,
   BankhubError,
 } from "../_shared/bank/bankhub.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { describeBankError } from "../_shared/bank/errors.ts";
+import { mapGdtInvoices, revenueFromInvoices } from "../_shared/tax/gdt-invoice-map.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
@@ -159,6 +161,7 @@ Deno.serve(async (req) => {
       case "create-token": {
         if (!allowedRedirects.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
         const forQrPay = body.feature === "qrpay";
+        const forGdt = body.feature === "gdt";
         // Refused here rather than at `exchange`, so the customer is stopped
         // before Cas Link opens and asks them for their banking password.
         if (demoBlocked) {
@@ -201,7 +204,7 @@ Deno.serve(async (req) => {
            * product does not use. Neither asks for `transfer`: MIMI records
            * money in, it does not move money out.
            */
-          scopes: forQrPay ? ["qrpay"] : ["transaction"],
+          scopes: forGdt ? ["gdt"] : forQrPay ? ["qrpay"] : ["transaction"],
           language: "vi",
           // Opens Cas Link directly on one service instead of the bank picker.
           ...(typeof body.fi_service_id === "string" && body.fi_service_id
@@ -220,7 +223,7 @@ Deno.serve(async (req) => {
           grantToken: grant.grantToken,
           expiresAt: grant.expiredAt ?? grant.expiration ?? null,
           redirectUri,
-          scopes: forQrPay ? "qrpay" : "transaction",
+          scopes: forGdt ? "gdt" : forQrPay ? "qrpay" : "transaction",
         });
       }
 
@@ -254,6 +257,7 @@ Deno.serve(async (req) => {
         // choosing not to store it. A short window keeps the call cheap; the
         // real backfill happens in `sync`.
         const forQrPay = body.feature === "qrpay";
+        const forGdt = body.feature === "gdt";
         const probeTo = isoDate(new Date());
         const probeFromDate = new Date();
         probeFromDate.setDate(probeFromDate.getDate() - 7);
@@ -330,7 +334,7 @@ Deno.serve(async (req) => {
           status: "connected",
           consent_granted: true,
           revoked_at: null,
-          scopes: forQrPay ? "qrpay" : "transaction",
+          scopes: forGdt ? "gdt" : forQrPay ? "qrpay" : "transaction",
         }));
 
         const { data: saved, error: saveError } = await supabase
@@ -657,6 +661,98 @@ Deno.serve(async (req) => {
         );
         const res = await simulateLoginError(cfg, accessToken, errorCode);
         return json({ simulated: errorCode, requestId: res.requestId });
+      }
+
+      // ── 8. Pull e-invoices from the tax authority ─────────────────────────
+      case "gdt-sync": {
+        const { data: comp } = await supabase
+          .from("companies")
+          .select("tax_id")
+          .eq("id", company.id)
+          .maybeSingle();
+        const companyTaxCode = comp?.tax_id ?? "";
+        if (!companyTaxCode) {
+          // Without it, an invoice cannot be told from a purchase. Better to
+          // ask for the tax code than to book money on a guess.
+          return json(
+            {
+              error: "Chưa có mã số thuế của doanh nghiệp.",
+              action: "need_tax_id",
+              remedy: "Vào Cài đặt và điền mã số thuế — thiếu nó thì không phân biệt được hoá đơn bán ra và mua vào.",
+            },
+            400,
+          );
+        }
+
+        const { data: conn } = await supabase
+          .from("bank_connections")
+          .select("id, access_token_enc")
+          .eq("company_id", company.id)
+          .eq("provider", "bankhub")
+          .eq("scopes", "gdt")
+          .eq("status", "connected")
+          .is("revoked_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!conn?.access_token_enc) {
+          return json(
+            {
+              error: "Chưa kết nối Tổng Cục Thuế.",
+              action: "relink",
+              remedy: 'Vào Fintech Hub và bấm "Kết nối Tổng Cục Thuế".',
+            },
+            404,
+          );
+        }
+
+        const accessToken = await decryptField(
+          conn.access_token_enc as unknown as EncryptedBlob,
+          privateKey,
+        );
+
+        const toDate = isoDate(new Date());
+        const from = new Date();
+        from.setMonth(from.getMonth() - BACKFILL_MONTHS);
+        const fromDate = typeof body.from_date === "string" ? body.from_date : isoDate(from);
+
+        const payload = await fetchGdtInvoices(cfg, accessToken, { fromDate, toDate });
+        const { rows, rejected } = mapGdtInvoices(
+          (payload.gdtInvoices ?? []) as never[],
+          { companyTaxCode },
+        );
+
+        if (rejected.length) {
+          console.warn(`gdt sync ${company.id}: skipped ${rejected.length}`, rejected.slice(0, 10));
+        }
+
+        let stored = 0;
+        if (rows.length) {
+          const { error: writeError } = await supabase
+            .from("gdt_invoices")
+            .upsert(
+              rows.map((r) => ({ ...r, company_id: company.id, synced_at: new Date().toISOString() })),
+              { onConflict: "company_id,gdt_id" },
+            );
+          if (writeError) {
+            console.error("gdt invoice write failed:", writeError.message);
+            return json({ error: "could not store invoices" }, 500);
+          }
+          stored = rows.length;
+        }
+
+        const issued = rows.filter((r) => r.direction === "issued");
+        return json({
+          fetched: payload.gdtInvoices?.length ?? 0,
+          stored,
+          skipped: rejected.length,
+          issued: issued.length,
+          received: rows.length - issued.length,
+          // The figure the 1 tỷ threshold is measured against — now from the tax
+          // authority's own record rather than inferred from bank descriptions.
+          revenueFromInvoices: revenueFromInvoices(rows),
+          window: { fromDate, toDate },
+        });
       }
 
       // ── 4. Stop ───────────────────────────────────────────────────────────

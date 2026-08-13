@@ -272,6 +272,19 @@ export async function fetchFiServices(cfg: BankhubConfig): Promise<FiService[]> 
   return res.fiServices ?? [];
 }
 
+/**
+ * E-invoices this company issued or received, from the tax authority's own
+ * portal. Needs a grant carrying the `gdt` scope.
+ */
+export function fetchGdtInvoices(
+  cfg: BankhubConfig,
+  accessToken: string,
+  opts: { fromDate: string; toDate: string }
+): Promise<{ requestId?: string; gdtInvoices?: unknown[] }> {
+  const params = new URLSearchParams({ fromDate: opts.fromDate, toDate: opts.toDate });
+  return request(cfg, 'GET', `/gdt/invoices?${params.toString()}`, { accessToken });
+}
+
 // ── Data ────────────────────────────────────────────────────────────────────
 
 export interface IdentityResponse {

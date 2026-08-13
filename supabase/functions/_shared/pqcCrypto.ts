@@ -33,9 +33,22 @@ function fromBase64(b64: string): Uint8Array {
   return bytes;
 }
 
+/*
+ * The `as BufferSource` casts below are not papering over a bug.
+ *
+ * Since TypeScript 5.7 `Uint8Array` is generic over its backing buffer, and
+ * WebCrypto's signatures demand `ArrayBufferView<ArrayBuffer>`. An array whose
+ * type says `ArrayBufferLike` might in theory be backed by a SharedArrayBuffer,
+ * which WebCrypto rejects — but these come from `hkdf` and from base64 decoding,
+ * neither of which can produce one. The runtime behaviour has never been in
+ * question; only the type is.
+ *
+ * They are here so `deno check` passes clean, because a check with two known
+ * failures is a check nobody reads.
+ */
 async function deriveAesKey(sharedSecret: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = hkdf(sha256, sharedSecret, undefined, "mimiwallet-pqc-kyc-v1", 32);
-  return crypto.subtle.importKey("raw", keyMaterial, { name: "AES-GCM" }, false, [
+  return crypto.subtle.importKey("raw", keyMaterial as unknown as BufferSource, { name: "AES-GCM" }, false, [
     "encrypt",
     "decrypt",
   ]);
@@ -74,7 +87,11 @@ export async function decryptField(
 
   const iv = fromBase64(blob.iv);
   const aesCipherText = fromBase64(blob.aesCipherText);
-  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, aesCipherText);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: iv as unknown as BufferSource },
+    aesKey,
+    aesCipherText as unknown as BufferSource,
+  );
   return new TextDecoder().decode(decrypted);
 }
 

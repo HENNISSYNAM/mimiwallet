@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "check:functions": "npx --yes deno check supabase/functions/bank-link/index.ts supabase/functions/cas-webhook/index.ts supabase/functions/bank-webhook/index.ts supabase/functions/open-banking/index.ts supabase/functions/credit-scoring/index.ts supabase/functions/kyc-verify/index.ts supabase/functions/chat/index.ts supabase/functions/carbon-footprint/index.ts supabase/functions/macro-news/index.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
