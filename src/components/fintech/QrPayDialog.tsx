@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { track } from '@/lib/track';
 
 /**
  * Raise a QR that settles straight into the linked bank account.
@@ -111,6 +112,7 @@ export function QrPayDialog({
         setRequestId(result?.requestId ?? null);
         return;
       }
+      track('qr_created', { fromInvoice: !!invoiceId });
       setQr(result.qr as QrPayment);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Không tạo được mã QR');
@@ -156,6 +158,7 @@ export function QrPayDialog({
         .maybeSingle();
       if (data?.status === 'paid') {
         setQr((prev) => (prev ? { ...prev, status: 'paid' } : prev));
+        track('qr_paid', {});
         toast({ title: 'Đã nhận thanh toán', description: dong(amount) });
         onPaid?.();
       }

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
@@ -383,6 +384,13 @@ export default function DashboardOverview() {
             </button>
           )}
         </KPICard>
+      </motion.div>
+
+      {/* Above the charts on purpose. For a household under 1 tỷ this is the
+          only tax number that matters, and burying it below a cash-flow graph
+          would put the decoration above the decision. */}
+      <motion.div variants={fadeUp}>
+        <ThresholdClock />
       </motion.div>
 
       <motion.div variants={stagger} className="grid lg:grid-cols-5 gap-4">

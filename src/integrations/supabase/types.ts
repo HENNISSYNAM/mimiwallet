@@ -679,6 +679,24 @@ export type Database = {
           },
         ]
       }
+      product_events: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          props: Json
+          user_id: string | null
+        }
+        Insert: {
+          name: string
+          props?: Json
+          user_id?: string | null
+        }
+        Update: {
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

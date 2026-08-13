@@ -6,6 +6,7 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { track } from '@/lib/track';
 
 /**
  * Linking a real bank account through Cas (BankHub).
@@ -239,11 +240,15 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       handledTokens.current.add(publicToken);
       setLastError(null);
       try {
+        // Recorded either side of the exchange, because the gap between them is
+        // exactly where people fall out of a bank-linking flow.
         const exchanged = await call('exchange', {
           publicToken,
           ...(pendingFeature.current ? { feature: pendingFeature.current } : {}),
         });
+        if (exchanged) track('bank_link_succeeded', { feature: pendingFeature.current ?? 'bank' });
         if (!exchanged) {
+          track('bank_link_failed', { feature: pendingFeature.current ?? 'bank' });
           setLastError('Không lưu được liên kết. Thử lại hoặc gửi ảnh màn hình này.');
           return;
         }
@@ -339,6 +344,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       }
 
       await loadLinkScript();
+      track('bank_link_started', { feature });
       pendingFeature.current = feature === 'bank' ? undefined : feature;
       const grant = await call(
         'create-token',
