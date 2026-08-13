@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   bankhubConfigFromEnv,
   createGrantToken,
+  createUpdateGrantToken,
   createQrPay,
   exchangePublicToken,
   fetchTransactions,
@@ -129,9 +130,31 @@ Deno.serve(async (req) => {
       return json({ error: "server not configured for credential storage" }, 503);
     }
 
+    const allowedRedirects = (
+      Deno.env.get("BANKHUB_REDIRECT_URIS") ?? Deno.env.get("BANKHUB_REDIRECT_URI") ?? ""
+    )
+      .split(",")
+      .map((u) => u.trim())
+      .filter(Boolean);
+    const requestOrigin = req.headers.get("Origin") ?? "";
+    const redirectUri =
+      allowedRedirects.find((u) => {
+        try {
+          return new URL(u).origin === requestOrigin;
+        } catch {
+          return false;
+        }
+      }) ?? allowedRedirects[0];
+    if (requestOrigin && redirectUri && !redirectUri.startsWith(requestOrigin)) {
+      console.warn(
+        `origin ${requestOrigin} has no registered redirectUri; falling back to ${redirectUri}`,
+      );
+    }
+
     switch (action) {
       // ── 1. Open Cas Link ──────────────────────────────────────────────────
       case "create-token": {
+        if (!allowedRedirects.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
         const forQrPay = body.feature === "qrpay";
         // Refused here rather than at `exchange`, so the customer is stopped
         // before Cas Link opens and asks them for their banking password.
@@ -158,25 +181,6 @@ Deno.serve(async (req) => {
          * console, and echoing back an arbitrary origin would turn this into a
          * way to point somebody else's grant at an attacker's page.
          */
-        const allowed = (Deno.env.get("BANKHUB_REDIRECT_URIS") ?? Deno.env.get("BANKHUB_REDIRECT_URI") ?? "")
-          .split(",")
-          .map((u) => u.trim())
-          .filter(Boolean);
-        if (!allowed.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
-
-        const origin = req.headers.get("Origin") ?? "";
-        const redirectUri =
-          allowed.find((u) => {
-            try {
-              return new URL(u).origin === origin;
-            } catch {
-              return false;
-            }
-          }) ?? allowed[0];
-
-        if (origin && !redirectUri.startsWith(origin)) {
-          console.warn(`origin ${origin} has no registered redirectUri; falling back to ${redirectUri}`);
-        }
 
         const grant = await createGrantToken(cfg, {
           redirectUri,
@@ -520,6 +524,58 @@ Deno.serve(async (req) => {
         }
 
         return json({ qr: saved });
+      }
+
+      // ── 6. Re-authenticate an existing grant (Cas "Update Mode") ──────────
+      case "update-token": {
+        if (!allowedRedirects.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
+        if (demoBlocked) {
+          return json({ error: "Tài khoản demo không thể liên kết ngân hàng thật.", code: "DEMO_ACCOUNT" }, 403);
+        }
+        const connectionId = typeof body.connection_id === "string" ? body.connection_id : "";
+        if (!connectionId) return json({ error: "connection_id required" }, 400);
+
+        const { data: conn } = await supabase
+          .from("bank_connections")
+          .select("id, access_token_enc, scopes")
+          .eq("id", connectionId)
+          .eq("company_id", company.id)
+          .maybeSingle();
+        if (!conn?.access_token_enc) {
+          return json({ error: "connection not found" }, 404);
+        }
+
+        const accessToken = await decryptField(
+          conn.access_token_enc as unknown as EncryptedBlob,
+          privateKey,
+        );
+
+        try {
+          const grant = await createUpdateGrantToken(cfg, accessToken, {
+            redirectUri,
+            // The same products the grant already carries. Asking for more
+            // here would quietly widen a consent the customer gave once.
+            scopes: (conn.scopes ?? "transaction").split(","),
+          });
+          return json({
+            grantToken: grant.grantToken,
+            expiresAt: grant.expiredAt ?? grant.expiration ?? null,
+            redirectUri,
+            scopes: conn.scopes ?? "transaction",
+          });
+        } catch (e) {
+          if (e instanceof BankhubError && e.errorCode === "FI_SERVICE_ACCOUNT_CONNECTING") {
+            // Documented as "nothing to update", not a failure. The connection
+            // was parked on a stale error, so let it go back to work.
+            await supabase
+              .from("bank_connections")
+              .update({ status: "connected", revoked_at: null })
+              .eq("id", conn.id)
+              .eq("company_id", company.id);
+            return json({ upToDate: true, message: "Liên kết vẫn hoạt động, không cần cập nhật." });
+          }
+          throw e;
+        }
       }
 
       // ── 4. Stop ───────────────────────────────────────────────────────────

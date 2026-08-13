@@ -350,6 +350,54 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     }
   }, [call, loadConnections, runSync]);
 
+  /**
+   * Cas "Update Mode": re-authenticate a grant that stopped working.
+   *
+   * Deliberately not the same as linking again. A fresh link makes a new grant
+   * and a new connection row, which loses `last_reference` and re-pulls a year
+   * of statements. Update Mode keeps the connection, its id and its cursor, and
+   * only asks the customer for whatever the bank now wants — a changed
+   * password, a device check.
+   */
+  const updateLink = useCallback(
+    async (connectionId: string) => {
+      setLinking(true);
+      try {
+        await loadLinkScript();
+        const grant = await call('update-token', { connection_id: connectionId });
+        if (!grant) { setLinking(false); return; }
+
+        if (grant.upToDate) {
+          // FI_SERVICE_ACCOUNT_CONNECTING — the bank says nothing is wrong, so
+          // the connection was parked on a stale error.
+          toast.success(grant.message ?? 'Liên kết vẫn hoạt động');
+          setLinking(false);
+          await loadConnections();
+          return;
+        }
+        if (!grant.grantToken) { setLinking(false); return; }
+        if (!window.BankHub) throw new Error('Cas Link chưa sẵn sàng');
+
+        pendingFeature.current = grant.scopes === 'qrpay' ? 'qrpay' : undefined;
+        const { open } = window.BankHub.useBankHubLink({
+          grantToken: grant.grantToken,
+          redirectUri: grant.redirectUri,
+          iframe: true,
+          ...(grant.scopes === 'qrpay' ? { feature: 'qrpay' as const } : {}),
+          onSuccess: (publicToken: string) => { void completeLink(publicToken); },
+          onExit: () => setLinking(false),
+        });
+        open();
+      } catch (e) {
+        setLinking(false);
+        const msg = (e as Error)?.message ?? 'Lỗi không xác định';
+        setLastError(msg);
+        toast.error(msg);
+      }
+    },
+    [call, completeLink, loadConnections],
+  );
+
   const disconnect = useCallback(
     async (connectionId: string) => {
       const result = await call('disconnect', { connection_id: connectionId });
@@ -465,6 +513,16 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {c.status === 'needs_relink' && (
+                    <button
+                      onClick={() => void updateLink(c.id)}
+                      disabled={linking}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {linking ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                      Cập nhật
+                    </button>
+                  )}
                   {c.status === 'connected' && (
                     <button
                       onClick={() => runSync(c.id)}
@@ -509,7 +567,9 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
         {needsRelink.length > 0 && (
           <p className="text-xs text-amber-600 dark:text-amber-500 mt-3">
-            Có {needsRelink.length} tài khoản cần liên kết lại để tiếp tục đồng bộ.
+            Có {needsRelink.length} tài khoản cần xác thực lại để tiếp tục đồng bộ. Bấm
+            "Cập nhật" ở tài khoản đó — bạn không phải liên kết lại từ đầu, lịch sử giao
+            dịch đã tải về vẫn giữ nguyên.
           </p>
         )}
       </div>

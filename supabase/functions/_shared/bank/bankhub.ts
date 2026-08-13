@@ -164,6 +164,38 @@ export function createGrantToken(cfg: BankhubConfig, opts: CreateGrantOptions): 
   });
 }
 
+/**
+ * Re-authenticate an existing grant instead of replacing it — Cas's "Update Mode".
+ *
+ * Same endpoint as creating a grant, distinguished only by sending the
+ * accessToken of the grant being updated. Cas Link then opens on that account
+ * rather than the bank picker, so the customer re-enters a changed password or
+ * clears a device check without choosing their bank again and without the
+ * connection, its id, or its stored history being torn down.
+ *
+ * This is the documented remedy for GRANT_LOGIN_REQUIRED. Before it, that error
+ * only got the connection marked `needs_relink`, and the customer's only way
+ * out was to start a fresh link — which loses the cursor and re-pulls a year of
+ * statements.
+ *
+ * Calling it on a healthy grant answers FI_SERVICE_ACCOUNT_CONNECTING, which
+ * means "nothing to update" rather than a failure.
+ */
+export function createUpdateGrantToken(
+  cfg: BankhubConfig,
+  accessToken: string,
+  opts: { redirectUri: string; scopes?: string[]; language?: string }
+): Promise<GrantToken> {
+  return request<GrantToken>(cfg, 'POST', '/grant/token', {
+    accessToken,
+    body: {
+      scopes: (opts.scopes ?? ['transaction']).join(','),
+      redirectUri: opts.redirectUri,
+      language: opts.language ?? 'vi',
+    },
+  });
+}
+
 export interface ExchangeResult {
   accessToken: string;
   grantId: string;
