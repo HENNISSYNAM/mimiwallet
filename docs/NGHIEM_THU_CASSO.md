@@ -116,7 +116,7 @@ Casso cho biết sandbox có mô phỏng được ba trạng thái này không.
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 12 | Tạo mã QR Pay hợp lệ | Chưa hiện thực | Không xin scope `qrpay`, không có mã nào gọi `/qr-pay`. |
+| 12 | Tạo mã QR Pay hợp lệ | *Chờ dữ liệu sandbox* | Đã hiện thực đầy đủ 13/08: grant riêng `scopes: "qrpay"`, Cas Link mở với `feature: "qrpay"`, dò tài khoản bằng `GET /qr-pay/identity`, tạo QR bằng `POST /qr-pay`, đối soát về hoá đơn qua webhook `TRANSACTIONS`. BIDV VietQR Official nhận yêu cầu và trả **"Thông tin nhập không chính xác"** — lỗi xác thực dữ liệu, tức đã tới khâu kiểm tra của ngân hàng. Thiếu đúng một cặp số tài khoản/tên hợp lệ trong sandbox BIDV; tài liệu không công bố. |
 | 13 | Thiếu/sai trường bắt buộc | Bị chặn | Probe trả `GRANT_NOT_FOUND` (`rLDsrCRHsC8cqHcp`) chứ không phải `INVALID_PARAM`: Cas kiểm token **trước** tham số. Muốn chứng minh `INVALID_PARAM` phải có grant kèm scope `qrpay`. |
 | 14 | Token không hợp lệ | **Passed** | `POST /qr-pay` → 400 `GRANT_NOT_FOUND`, requestId `4B0BqYAD5UCMwobq`, 196ms. |
 | 15 | Webhook xác nhận thanh toán | Chưa hiện thực | Không có QRPay và không có endpoint nhận webhook Cas. |
@@ -218,6 +218,14 @@ rỉ chi tiết cài đặt (`value.split is not a function`) thay vì nói trư
    động đúng — hai thứ quan trọng nhất khi dựng sổ sách từ sao kê.
 5. Webhook không có secret để ký. Casso có kế hoạch cấp chữ ký không, hay khuyến
    nghị bên tích hợp tự xác minh ngược qua API như MIMI đang làm?
+6. **Cho xin tài khoản thử của `bidv_qrpay` trên sandbox.** Luồng QR Pay đã chạy
+   tới khâu xác thực tài khoản: Cas Link mở đúng chế độ `qrpay`, BIDV VietQR
+   Official nhận yêu cầu, và trả "Thông tin nhập không chính xác". Cặp
+   `123456789` / `NGUYEN VAN A` lấy từ ví dụ response trong tài liệu — đó là dữ
+   liệu mẫu sinh tự động, không phải tài khoản sandbox. Quickstart có tài khoản
+   thử cho luồng đăng nhập (`bankusrdemo1`/`soproudo`/`123456`) nhưng không có
+   cặp tương ứng cho luồng QR Pay, vốn xác thực bằng số tài khoản và tên chủ
+   tài khoản chứ không bằng đăng nhập.
 
 ## Việc của MIMI, theo thứ tự
 
