@@ -8,6 +8,7 @@ import {
   type SimulatedLoginError,
   exchangePublicToken,
   fetchTransactions,
+  fetchFiServices,
   fetchQrPayIdentity,
   removeGrant,
   BankhubError,
@@ -202,6 +203,10 @@ Deno.serve(async (req) => {
            */
           scopes: forQrPay ? ["qrpay"] : ["transaction"],
           language: "vi",
+          // Opens Cas Link directly on one service instead of the bank picker.
+          ...(typeof body.fi_service_id === "string" && body.fi_service_id
+            ? { fiServiceId: body.fi_service_id }
+            : {}),
           // Cas caps this at 40 characters and shows it in their console, which
           // is what makes a support ticket traceable to one customer.
           name: `mimi-${forQrPay ? "qr-" : ""}${company.id}`.slice(0, 40),
@@ -578,6 +583,38 @@ Deno.serve(async (req) => {
           }
           throw e;
         }
+      }
+
+      // ── Which banks this app can link, for a given product ────────────────
+      case "fi-services": {
+        const services = await fetchFiServices(cfg);
+        const wantQr = body.feature === "qrpay";
+        /*
+         * Cas has no product field on a service — the product lives in the
+         * `code` (`bidv_qrpay`, `vietcombank_biz_qrpay`). Matching on it is
+         * blunt but it is the only signal there is, and getting it wrong only
+         * means a service is missing from a picker rather than a wrong bank
+         * being linked: the QR call would still fail loudly at Cas.
+         */
+        const filtered = wantQr ? services.filter((f) => /qrpay|vietqr/i.test(f.code)) : services;
+        // Cas returns duplicate codes across PERSONAL/ENTERPRISE rows.
+        const seen = new Set<string>();
+        const unique = filtered.filter((f) => {
+          const key = `${f.code}:${f.type ?? ""}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        return json({
+          services: unique.map((f) => ({
+            id: f.id,
+            code: f.code,
+            name: f.name,
+            type: f.type,
+            logo: f.logo,
+            fiName: f.fiName,
+          })),
+        });
       }
 
       // ── Which Cas environment this deployment talks to ────────────────────

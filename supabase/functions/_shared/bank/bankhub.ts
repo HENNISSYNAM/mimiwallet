@@ -246,6 +246,32 @@ export function simulateLoginError(
   });
 }
 
+export interface FiService {
+  id: string;
+  code: string;
+  name: string;
+  /** PERSONAL, ENTERPRISE, or BOTH. */
+  type?: string;
+  logo?: string;
+  fiName?: string;
+  fiFullName?: string;
+  fiBin?: string;
+}
+
+/**
+ * The financial services this application is allowed to link.
+ *
+ * Client credentials only — no grant needed — so it can be read before the
+ * customer has linked anything. That matters: `fiServiceId` on /grant/token
+ * opens Cas Link straight onto one service, which turns "hunt through a list of
+ * banks and find out afterwards whether yours sells QR Pay" into "pick from the
+ * ones that do".
+ */
+export async function fetchFiServices(cfg: BankhubConfig): Promise<FiService[]> {
+  const res = await request<{ fiServices?: FiService[] }>(cfg, 'GET', '/fi-services');
+  return res.fiServices ?? [];
+}
+
 // ── Data ────────────────────────────────────────────────────────────────────
 
 export interface IdentityResponse {

@@ -114,6 +114,10 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const [consentForQrPay, setConsentForQrPay] = useState(false);
   // 'sandbox' unlocks the controls that deliberately break a connection.
   const [environment, setEnvironment] = useState<string | null>(null);
+  // QR Pay only: the services Cas will actually accept, so the customer picks
+  // from banks that sell the product instead of finding out afterwards.
+  const [qrServices, setQrServices] = useState<Array<{ id: string; name: string; fiName?: string; type?: string; logo?: string }>>([]);
+  const [chosenService, setChosenService] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   // Every origin that posted to this window during a link attempt. If the flow
   // stalls again, this is the evidence that says why — the previous three
@@ -322,7 +326,12 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
       await loadLinkScript();
       pendingFeature.current = forQrPay ? 'qrpay' : undefined;
-      const grant = await call('create-token', forQrPay ? { feature: 'qrpay' } : {});
+      const grant = await call(
+        'create-token',
+        forQrPay
+          ? { feature: 'qrpay', ...(chosenService ? { fi_service_id: chosenService } : {}) }
+          : {},
+      );
       if (!grant?.grantToken) {
         setLinking(false);
         return;
@@ -351,7 +360,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       setLastError(msg);
       toast.error(msg);
     }
-  }, [call, loadConnections, runSync]);
+  }, [call, loadConnections, runSync, chosenService]);
 
   /**
    * Cas "Update Mode": re-authenticate a grant that stopped working.
@@ -482,7 +491,14 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 statements should not be steered away from a bank that suits
                 them because it happens not to sell QR Pay. */}
             <button
-              onClick={() => { setConsentForQrPay(true); setConsentOpen(true); }}
+              onClick={() => {
+                setConsentForQrPay(true);
+                setChosenService(null);
+                setConsentOpen(true);
+                void call('fi-services', { feature: 'qrpay' }).then(
+                  (r) => r?.services && setQrServices(r.services),
+                );
+              }}
               disabled={linking}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-border text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
             >
@@ -676,6 +692,34 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   </span>
                 </li>
               </ul>
+
+              {consentForQrPay && qrServices.length > 0 && (
+                <div className="mt-5">
+                  <p className="text-xs font-medium text-foreground mb-2">
+                    Chọn ngân hàng nhận tiền ({qrServices.length} ngân hàng hỗ trợ QR)
+                  </p>
+                  <div className="max-h-44 overflow-y-auto rounded-xl border border-border divide-y divide-border/50">
+                    {qrServices.map((svc) => (
+                      <button
+                        key={`${svc.id}-${svc.type}`}
+                        onClick={() => setChosenService(svc.id)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${
+                          chosenService === svc.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50'
+                        }`}
+                      >
+                        {svc.logo && <img src={svc.logo} alt="" className="w-5 h-5 rounded-full shrink-0" />}
+                        <span className="truncate">
+                          <span className="font-medium">{svc.fiName}</span>
+                          <span className="text-muted-foreground"> · {svc.name}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Bỏ qua cũng được — khi đó Cas Link sẽ hiện danh sách để bạn chọn.
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-2 mt-6">
                 <button
