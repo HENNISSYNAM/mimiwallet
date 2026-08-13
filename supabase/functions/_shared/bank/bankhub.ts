@@ -211,8 +211,7 @@ export interface QrPayOptions {
   referenceNumber: string;
 }
 
-export interface QrPayResponse {
-  requestId?: string;
+export interface QrPayDetails {
   accountNumber?: string;
   /**
    * The one-off account the payer actually transfers to. Cas routes anything
@@ -229,6 +228,20 @@ export interface QrPayResponse {
 }
 
 /**
+ * `{ requestId, qrPay: { … } }` — the payload fields are nested, not flat.
+ *
+ * This was written flat first, from the field list in the acceptance test
+ * sheet, which names them without showing the envelope. Nothing would have
+ * failed loudly: every field would simply have read `undefined`, the row would
+ * have stored nulls, and the customer would have been shown a blank square
+ * where their QR should be.
+ */
+export interface QrPayResponse {
+  requestId?: string;
+  qrPay?: QrPayDetails;
+}
+
+/**
  * Ask Cas for a QR that settles into the linked account.
  *
  * Requires the grant to carry the `qrpay` scope. A grant issued with
@@ -236,12 +249,12 @@ export interface QrPayResponse {
  * link rather than a missing scope — so a customer who linked before QR
  * existed has to link again.
  */
-export function createQrPay(
+export async function createQrPay(
   cfg: BankhubConfig,
   accessToken: string,
   opts: QrPayOptions
-): Promise<QrPayResponse> {
-  return request<QrPayResponse>(cfg, 'POST', '/qr-pay', {
+): Promise<QrPayDetails & { requestId?: string }> {
+  const res = await request<QrPayResponse & QrPayDetails>(cfg, 'POST', '/qr-pay', {
     accessToken,
     body: {
       amount: Math.round(opts.amount),
@@ -249,6 +262,10 @@ export function createQrPay(
       referenceNumber: opts.referenceNumber,
     },
   });
+  // Flattened for callers. The `?? res` fallback costs one line and means a
+  // change of envelope on Cas's side degrades to the old shape instead of
+  // silently producing a QR made entirely of nulls.
+  return { requestId: res.requestId, ...(res.qrPay ?? res) };
 }
 
 export interface FetchTransactionsOptions {
