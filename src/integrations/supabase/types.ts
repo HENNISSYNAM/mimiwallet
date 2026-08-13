@@ -148,6 +148,64 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_payments: {
+        Row: {
+          account_number: string | null
+          amount: number
+          bin: string | null
+          company_id: string
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string | null
+          paid_at: string | null
+          paid_transaction_id: string | null
+          qr_code: string | null
+          reference_number: string
+          status: string
+          updated_at: string
+          virtual_account_number: string | null
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          description: string
+          invoice_id?: string | null
+          reference_number: string
+        }
+        Update: {
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consents: {
+        Row: {
+          created_at: string
+          granted_at: string
+          id: string
+          kind: string
+          revoked_at: string | null
+          user_id: string
+          version: string
+        }
+        Insert: {
+          kind: string
+          user_id: string
+          version: string
+        }
+        Update: {
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
       credit_score_factors: {
         Row: {
           created_at: string
@@ -627,8 +685,10 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_demo: boolean
           notification_prefs: Json
           phone: string | null
+          role: string
           updated_at: string
           user_id: string
         }
@@ -637,8 +697,10 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_demo?: boolean
           notification_prefs?: Json
           phone?: string | null
+          role?: string
           updated_at?: string
           user_id: string
         }

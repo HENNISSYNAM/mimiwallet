@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { QrPayDialog } from '@/components/fintech/QrPayDialog';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatVND, formatDateShort } from '@/lib/formatters';
-import { Plus, Download, Search, X, ArrowRight, FileText, Loader2 } from 'lucide-react';
+import { Plus, Download, Search, X, ArrowRight, FileText, Loader2, QrCode } from 'lucide-react';
 import { InsightSpark } from '@/components/illustrations/BrandIcons';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -172,6 +173,7 @@ export default function InvoicesPage() {
   const [advancing, setAdvancing] = useState(false);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [qrInvoice, setQrInvoice] = useState<Invoice | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -347,12 +349,20 @@ export default function InvoicesPage() {
                   </td>
                   <td className="px-5 py-4">
                     {(inv.status === 'pending' || inv.status === 'overdue') && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedInvoice(inv); }}
-                        className="text-xs text-primary hover:underline font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-                      >
-                        {t('fin.invoices.advanceAction')} <ArrowRight size={10} />
-                      </button>
+                      <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setQrInvoice(inv); }}
+                          className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
+                        >
+                          <QrCode size={11} /> Nhận tiền QR
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedInvoice(inv); }}
+                          className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
+                        >
+                          {t('fin.invoices.advanceAction')} <ArrowRight size={10} />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </motion.tr>
@@ -464,6 +474,16 @@ export default function InvoicesPage() {
       </AnimatePresence>
 
       <CreateInvoiceModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={loadInvoices} />
+
+      <QrPayDialog
+        open={qrInvoice !== null}
+        onOpenChange={(o) => !o && setQrInvoice(null)}
+        invoiceId={qrInvoice?.id}
+        invoiceNumber={qrInvoice?.invoice_number}
+        amount={qrInvoice?.total ?? 0}
+        description={`Thanh toan ${qrInvoice?.invoice_number ?? ''}`.trim()}
+        onPaid={() => { void loadInvoices(); }}
+      />
     </motion.div>
   );
 }
