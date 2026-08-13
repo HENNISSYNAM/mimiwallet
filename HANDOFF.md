@@ -1,7 +1,25 @@
 # Mimi Wallet — trạng thái bàn giao
 
-Cập nhật 11/08/2026. Ghi lại những gì đã kiểm chứng, những gì đang chặn, và thứ
+Cập nhật 13/08/2026. Ghi lại những gì đã kiểm chứng, những gì đang chặn, và thứ
 tự làm tiếp — để không ai phải dò lại từ đầu.
+
+## Đọc trước: sandbox Cas bịa dữ liệu mỗi lời gọi
+
+Không phát lại một sao kê cố định. Ba request 7 ngày giống hệt nhau ghi thêm 8
+dòng mỗi lần, bảng tăng 375 → 383 → 391, reference nào cũng mới.
+
+Hai điều rút ra, cả hai đều quan trọng:
+
+- **Mọi dòng `bankhub:` hiện có là dữ liệu bịa**, và đã được đánh
+  `is_synthetic = true`. `ingest.ts` đặt cờ lúc ghi, suy từ `cfg.baseUrl`, nên
+  khi có khoá production thì tự tắt. Đừng gỡ chốt đó.
+- **Không đo được khử trùng trên sandbox này.** Cơ chế đúng (UNIQUE
+  `(company_id, reference_id)`) nhưng không bao giờ kích hoạt. Đừng kết luận nó
+  hỏng khi thấy số dòng tăng — đã tốn ba vòng vì hiểu nhầm đúng chuyện này.
+
+Bài học kèm theo, lặp lại lần thứ hai trong cùng dự án: **hỏi nguồn có thẩm quyền
+trước.** Ba giả thuyết và ba lần deploy dựa trên đọc mã đều sai; bốn câu SQL giải
+quyết xong. Với Cas thì nguồn đó là console của họ; với dữ liệu thì là database.
 
 ## Chặn cứng: chưa lấy được dữ liệu ngân hàng thật
 
@@ -99,10 +117,48 @@ hiện số 0 giả dạng số đo.
 **Bốn trang còn đọc `mockData.ts`:** `ReportsPage`, `SettingsPage`, `Onboarding`,
 `Landing`. Cùng nguyên tắc: dữ liệu thật hoặc trạng thái rỗng trung thực.
 
+## Webhook Cas (làm 12–13/08)
+
+`supabase/functions/cas-webhook`, đã đăng ký hai loại `GRANT` và `TRANSACTIONS`
+bên Casso, cả hai ENABLED.
+
+**Form tạo webhook của Casso không có ô secret để ký payload.** Không chữ ký thì
+không chứng minh được request đến từ họ, nên endpoint không làm theo payload:
+
+> Payload là tín hiệu đi kiểm tra, không phải mệnh lệnh.
+
+Một body nói "grant X bị thu hồi" không thu hồi gì — nó khiến hệ thống gọi Cas
+hỏi về grant X rồi làm theo câu trả lời của Cas. **Đã kiểm chứng trên grant thật:**
+bắn `USER_PERMISSION_REVOKED` giả cho `5455fe9b-9640-11f1-b705-fa163e5398eb`, kết
+quả `verified / …:alive` — không thu hồi. Khoá trong URL chỉ là bộ lọc; lời gọi
+xác minh mới là ranh giới.
+
+Mọi payload ghi thô vào `webhook_events` trước khi quyết định gì. Tới 13/08 bảng
+có 9+ dòng và **toàn bộ do ta tự bắn** — Casso chưa gửi lần nào, vì sandbox chưa
+có sự kiện nào xảy ra. Muốn thấy envelope thật phải thu hồi quyền từ ứng dụng
+Cas ID; chuỗi đó đóng luôn bốn case nghiệm thu (xem `docs/NGHIEM_THU_CASSO.md`).
+
+## Một đường ghi giao dịch cho cả poll lẫn push
+
+`_shared/bank/ingest.ts`. Trước đó logic nằm trong `bank-link?action=sync`; nay
+`cas-webhook` dùng chung. Nếu để hai bản sao, một giao dịch tới bằng push có thể
+được ghi theo luật khác với chính nó tới bằng poll — khác quy ước dấu, khác khoá
+khử trùng — và khác biệt đó hiện ra thành tiền xuất hiện hoặc biến mất tuỳ đường
+nào chạy trước.
+
+## `resolveCompany` và con bug `.single()` còn sót
+
+`_shared/company.ts`. Bảy edge function trước đây mỗi cái tự viết một bản, nên
+cùng một lỗi ra mắt ba lần. `credit-scoring` và `kyc-verify` vẫn còn `.single()`
+tới 13/08 — tức chấm điểm tín dụng và eKYC hỏng với đúng những tài khoản sở hữu
+nhiều hơn một công ty, mà thông báo trả về là "No company found".
+
 ## Việc tiếp theo, theo thứ tự
 
-1. **Đăng ký tài khoản admin.** Invite đã tạo sẵn cho `hoc.qk2@gmail.com` — chỉ
-   cần đăng ký bằng đúng email đó, trigger tự gán `role='admin'`.
+1. **Phép thử cách ly hai tài khoản.** Chưa từng chạy, và bảy function vừa đổi
+   cách phân giải công ty nên đây đúng là lúc. Đăng nhập A, gọi mọi edge function
+   và mọi truy vấn REST bằng token của A, khẳng định không dòng nào của B lọt ra.
+   Với sản phẩm fintech đây là phép thử quan trọng nhất.
 2. **Bật Magic Link** ở Supabase → Authentication → Providers. `signInWithEmailLink`
    đã có trong `useAuthStore` nhưng sẽ lỗi tới khi bật. Cùng chỗ đó **tắt đăng ký
    công khai** cho pilot đóng — chốt thật nằm ở đây, không phải trong client.
@@ -114,8 +170,6 @@ hiện số 0 giả dạng số đo.
 4. **Tách `sync`**: 90 ngày trước để hiện ngay, phần còn lại chạy nền. Hiện kéo 12
    tháng đồng bộ trong một request và sẽ chạm timeout — đúng vào khoảnh khắc quan
    trọng nhất của người dùng mới.
-5. **`resolveCompany` dùng chung** (`_shared/company.ts`). `bank-link` và
-   `open-banking` đang mỗi nơi một bản `.order('created_at').limit(1)`.
 6. **Gỡ mock khỏi bốn trang còn lại**: `ReportsPage`, `SettingsPage`, `Onboarding`,
    `Landing`. (`DashboardOverview` và `DashboardSidebar` đã xong 12/08.)
 7. **Phép thử cách ly hai tài khoản** — chạy được ngay khi có tài khoản admin.

@@ -169,18 +169,30 @@ lại ngay.
 trên đo từ phía client nên bao gồm cả đường truyền. Cả hai đều dưới mốc 1000ms của
 case 17, và con số của Casso mới là con số nên đưa vào biên bản.
 
-**Con số "giao dịch mới" từng nói dối, đã sửa.** Trong lúc kiểm webhook, mỗi lần
-gọi lặp cùng một cửa sổ đều báo ghi thêm 2 dòng (cửa sổ 1 ngày) hoặc 8 dòng (7
-ngày). Không thể đúng: chỉ mục UNIQUE `(company_id, reference_id)` khiến bản trùng
-là bất khả. Database xác nhận sạch — **375 dòng, 375 reference riêng biệt**.
+**Sandbox sinh dữ liệu mới ở mỗi lời gọi — không phát lại một sao kê cố định.**
 
-Cả `count: "exact"` lẫn `.select("id")` đều đếm **dòng gửi đi**, không phải dòng
-được ghi; `ignoreDuplicates` lặng lẽ bỏ phần còn lại. Nay đếm bằng hiệu hai lần
-`count` trước và sau khi ghi — con số duy nhất ở đây đúng nghĩa của nó.
+Ba request 7 ngày giống hệt nhau, mỗi lần ghi thêm đúng 8 dòng; bảng `bankhub:`
+tăng 375 → 383 → 391. Mọi `reference` đều khác nhau, và không hai dòng nào trùng
+bộ (ngày, số tiền, mô tả). Kho mô tả thì cố định: chuỗi
+`TIKI PAYMENT FOR SELLER S00xxx PERIOD 22.9 30.9 CODE 1468xx` xuất hiện **15 lần**
+trải từ 08/2025 tới 08/2026, mỗi lần một số tiền khác.
 
-Đáng ghi lại vì đây là lỗi *báo cáo*, không phải lỗi *dữ liệu*: sổ sách vẫn đúng
-suốt thời gian đó, chỉ có dòng "đã đồng bộ N giao dịch mới" là sai. Nhưng với sản
-phẩm mà toàn bộ giá trị nằm ở chỗ con số nói thật, một con số nói dối vẫn phải sửa.
+Hai hệ quả cho biên bản:
+
+1. **Không nghiệm thu được tính bất biến của khử trùng trên sandbox này.** Cơ chế
+   có và đúng — chỉ mục UNIQUE `(company_id, reference_id)` — nhưng nó không bao
+   giờ kích hoạt vì sandbox không trả lại cùng một giao dịch lần thứ hai. Cần hỏi
+   Casso sandbox có chế độ dữ liệu tĩnh để lặp lại một sao kê không.
+2. **391 giao dịch bịa từng được cộng thành doanh thu của công ty.** Đã sửa: cờ
+   `is_synthetic` nay đặt lúc ghi, suy từ `baseUrl`, nên mọi dòng sandbox bị loại
+   khỏi mọi con số tự nhận là mô tả doanh nghiệp. Khi có khoá production thì tự
+   tắt. Đây là con số quyết định ngưỡng miễn thuế 1 tỷ nên không thể để lẫn.
+
+*Ghi lại một sai lầm trong quá trình, vì nó thuộc về hồ sơ:* tôi đã ba lần kết
+luận con số "8 dòng mới" là lỗi đếm và ba lần sửa mã theo suy luận đó. Cả ba đều
+sai — 8 dòng thật sự được ghi. Chỉ có bốn truy vấn thẳng vào database mới phân
+định được, và truy vấn quyết định (`merchant_name, count(*)`) lẽ ra phải là truy
+vấn đầu tiên. Không dữ liệu nào hỏng vì việc này, nhưng nó tốn ba vòng.
 
 **`SKXKpCPiOGMeD55b` không phải lỗi sản phẩm.** Bản ghi này hiện `/grant/token` →
 400 `INVALID_PARAM "value.split is not a function"` với `scopes` là mảng. Đó là
@@ -201,6 +213,11 @@ rỉ chi tiết cài đặt (`value.split is not a function`) thay vì nói trư
    serverless không có IP cố định.
 3. Bật `identity` hay không là quyết định của MIMI, không phải rào kỹ thuật — hiện
    cố tình không xin, vì không có nhu cầu dùng CCCD của khách.
+4. Sandbox có chế độ trả **dữ liệu tĩnh** không? Hiện mỗi lời gọi sinh một lô giao
+   dịch mới, nên không có cách nào chứng minh khử trùng và đồng bộ tăng dần hoạt
+   động đúng — hai thứ quan trọng nhất khi dựng sổ sách từ sao kê.
+5. Webhook không có secret để ký. Casso có kế hoạch cấp chữ ký không, hay khuyến
+   nghị bên tích hợp tự xác minh ngược qua API như MIMI đang làm?
 
 ## Việc của MIMI, theo thứ tự
 
