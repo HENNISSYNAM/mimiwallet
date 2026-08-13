@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight,
+  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
@@ -39,6 +39,22 @@ interface CasLinkConfig {
    * reached their page as an fiServiceType it does not recognise.
    */
   fiServiceType?: 'enterprise' | 'personal' | 'all';
+  /**
+   * Which product the link is for: 'qrpay' or 'kyc'.
+   *
+   * Leaving it out is what produced FI_SERVICE_NOT_FOUND on every attempt to
+   * raise a QR. Cas Link opened in its default mode, the customer picked from
+   * the full list of banks, and the one they picked does not sell QR Pay —
+   * which nothing could reveal until the first /qr-pay call failed, long after
+   * the linking screen had closed.
+   *
+   * Deliberately not set on the ordinary "link my bank" path: filtering to QR
+   * Pay banks there would hide banks that are perfectly good for reading
+   * statements, which is the product's main job.
+   */
+  feature?: 'kyc' | 'qrpay';
+  /** Random per-attempt, returned intact on onSuccess and on the redirect. */
+  state?: string;
   onSuccess?: (publicToken: string, state: string) => void;
   onExit?: () => void;
 }
@@ -93,6 +109,9 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const [linking, setLinking] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
+  // Which product the consent sheet was opened for; decides whether Cas Link
+  // filters its bank list to the ones that sell QR Pay.
+  const [consentForQrPay, setConsentForQrPay] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   // Every origin that posted to this window during a link attempt. If the flow
   // stalls again, this is the evidence that says why — the previous three
@@ -267,7 +286,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   }, [call, loadConnections]);
 
 
-  const startLink = useCallback(async () => {
+  const startLink = useCallback(async (forQrPay = false) => {
     setConsentOpen(false);
     setLinking(true);
     try {
@@ -302,6 +321,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
       const { open } = window.BankHub.useBankHubLink({
         grantToken: grant.grantToken,
+        // Only when the customer asked to link for receiving QR payments.
+        ...(forQrPay ? { feature: 'qrpay' as const } : {}),
         // Comes from the server so it always matches the value the grant was
         // created with and the value registered in the Cas console.
         redirectUri: grant.redirectUri,
@@ -369,12 +390,24 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               </button>
             )}
             <button
-              onClick={() => setConsentOpen(true)}
+              onClick={() => { setConsentForQrPay(false); setConsentOpen(true); }}
               disabled={linking}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {linking ? <Loader2 size={14} className="animate-spin" /> : <Landmark size={14} />}
               {linking ? 'Đang liên kết…' : 'Liên kết ngân hàng'}
+            </button>
+            {/* Separate entry point, not a checkbox on the one above: it shows a
+                different, shorter list of banks, and someone linking to read
+                statements should not be steered away from a bank that suits
+                them because it happens not to sell QR Pay. */}
+            <button
+              onClick={() => { setConsentForQrPay(true); setConsentOpen(true); }}
+              disabled={linking}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-border text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+            >
+              <QrCode size={14} />
+              Liên kết để nhận tiền QR
             </button>
           </div>
         </div>
@@ -543,7 +576,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   Huỷ
                 </button>
                 <button
-                  onClick={startLink}
+                  onClick={() => void startLink(consentForQrPay)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                 >
                   Đồng ý và tiếp tục
