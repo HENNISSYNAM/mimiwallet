@@ -9,6 +9,7 @@ import {
   BankhubError,
 } from "../_shared/bank/bankhub.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
+import { describeBankError } from "../_shared/bank/errors.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
@@ -404,34 +405,25 @@ Deno.serve(async (req) => {
         } catch (e) {
           if (!(e instanceof BankhubError)) throw e;
 
-          if (e.errorCode === "RATE_LIMIT") {
-            return json(
-              { error: "Cas giới hạn khoảng một lần gọi mỗi phút. Thử lại sau một phút.", errorCode: e.errorCode, requestId: e.requestId },
-              429,
-            );
-          }
-
           /*
-           * Anything else from Cas here is, in practice, a grant that predates
-           * the `qrpay` scope — every link made before this feature existed
-           * asked for `transaction` alone.
+           * Cas's own message, plus the remedy its documented code maps to.
            *
-           * Which code says so was guessed wrong once already: the handler
-           * matched GRANT_NOT_FOUND, and the live answer turned out to be
-           * "Phân quyền này không có quyền truy cập thông tin hiện tại" under a
-           * different code. So the hint no longer depends on recognising the
-           * code — Cas's own message is passed through verbatim alongside it,
-           * and the suggestion is offered as a likely cause rather than stated
-           * as fact.
+           * This used to name a cause: first "the link predates QR", then the
+           * same line again when the real answer was that the bank does not
+           * sell QR Pay at all. Two wrong diagnoses in a row, both stated as
+           * fact. The remedy now comes from the code table, and an unknown code
+           * gets no remedy rather than an invented one.
            */
+          const { action, remedy } = describeBankError(e.errorCode);
           return json(
             {
               error: e.message,
-              code: "QRPAY_SCOPE_MISSING",
               errorCode: e.errorCode,
+              action,
+              remedy,
               requestId: e.requestId,
             },
-            409,
+            action === 'wait' ? 429 : 409,
           );
         }
 

@@ -61,7 +61,7 @@ export function QrPayDialog({
   const [loading, setLoading] = useState(false);
   const [qr, setQr] = useState<QrPayment | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [needsRelink, setNeedsRelink] = useState(false);
+  const [remedy, setRemedy] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // React 18 mounts effects twice in development; without this the dialog would
@@ -75,7 +75,7 @@ export function QrPayDialog({
     }
     setLoading(true);
     setError(null);
-    setNeedsRelink(false);
+    setRemedy(null);
     setRequestId(null);
     try {
       /*
@@ -98,18 +98,17 @@ export function QrPayDialog({
       });
       const result = await res.json();
 
-      if (result?.code === 'QRPAY_SCOPE_MISSING') {
-        setNeedsRelink(true);
-        // Cas's own wording, plus the code, so a support ticket has something
-        // to quote and so a cause I did not anticipate is still visible.
-        setError(
-          [result.error, result.errorCode && `(${result.errorCode})`].filter(Boolean).join(' '),
-        );
-        setRequestId(result.requestId ?? null);
-        return;
-      }
       if (!res.ok || result?.error) {
-        setError(result?.error ?? `Lỗi ${res.status}`);
+        // Cas's own wording, plus the code, so a support ticket has something
+        // to quote. The remedy comes from the server's documented code table —
+        // never from this component guessing at a cause.
+        setError(
+          [result?.error ?? `Lỗi ${res.status}`, result?.errorCode && `(${result.errorCode})`]
+            .filter(Boolean)
+            .join(' '),
+        );
+        setRemedy(result?.remedy ?? null);
+        setRequestId(result?.requestId ?? null);
         return;
       }
       setQr(result.qr as QrPayment);
@@ -125,7 +124,8 @@ export function QrPayDialog({
       requested.current = false;
       setQr(null);
       setError(null);
-      setNeedsRelink(false);
+      setRemedy(null);
+      setRequestId(null);
       return;
     }
     if (requested.current) return;
@@ -181,21 +181,13 @@ export function QrPayDialog({
         {!loading && error && (
           <div className="space-y-3 py-4">
             <p className="text-sm text-destructive">{error}</p>
-            {needsRelink ? (
-              <p className="text-sm text-muted-foreground">
-                Dòng đỏ ở trên là câu trả lời của Cas. Hai nguyên nhân hay gặp: ngân hàng
-                đã liên kết không hỗ trợ QR-Pay — hãy liên kết thêm một ngân hàng khác — hoặc
-                liên kết được tạo trước khi có tính năng QR, khi đó vào{' '}
-                <span className="font-medium">Ngân hàng</span> liên kết lại là xong.
-                {requestId && (
-                  <span className="mt-1 block font-mono text-xs">requestId {requestId}</span>
-                )}
-              </p>
-            ) : (
-              <Button variant="outline" size="sm" onClick={() => void create()}>
-                Thử lại
-              </Button>
+            {remedy && <p className="text-sm text-muted-foreground">{remedy}</p>}
+            {requestId && (
+              <p className="font-mono text-xs text-muted-foreground">requestId {requestId}</p>
             )}
+            <Button variant="outline" size="sm" onClick={() => void create()}>
+              Thử lại
+            </Button>
           </div>
         )}
 

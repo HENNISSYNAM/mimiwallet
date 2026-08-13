@@ -33,6 +33,8 @@ export interface BankhubConfig {
  * for good. Keeping the code intact lets the caller tell those apart from a
  * transient network fault.
  */
+import { requiresRelink } from './errors.ts';
+
 export class BankhubError extends Error {
   constructor(
     readonly status: number,
@@ -45,9 +47,15 @@ export class BankhubError extends Error {
     this.name = 'BankhubError';
   }
 
-  /** The customer has to go through Cas Link again before this grant works. */
+  /**
+   * The customer has to go through Cas Link again before this grant works.
+   *
+   * The list is no longer guessed here — errors.ts holds the codes documented
+   * at https://cas.so/errors, so adding one does not mean hunting through
+   * call sites.
+   */
   get needsRelink(): boolean {
-    return this.errorCode === 'GRANT_LOGIN_REQUIRED' || this.errorCode === 'USER_PERMISSION_REVOKED';
+    return requiresRelink(this.errorCode);
   }
 }
 
@@ -213,6 +221,8 @@ export interface QrPayOptions {
 
 export interface QrPayDetails {
   accountNumber?: string;
+  accountName?: string;
+  description?: string;
   /**
    * The one-off account the payer actually transfers to. Cas routes anything
    * arriving here back to `accountNumber` and tags it with our reference —
