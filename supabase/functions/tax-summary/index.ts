@@ -9,14 +9,22 @@ import {
 import { revenueFromInvoices, type GdtInvoiceRow } from "../_shared/tax/gdt-invoice-map.ts";
 
 /**
- * "How much have I sold this year, and how far am I from 1 tỷ?"
+ * "How much have I sold this year, and which obligations have I reached?"
  *
- * For roughly 90% of Vietnam's 2.5 million registered households this is the
- * only tax question that matters. From 01/01/2026 lump-sum tax is gone, but a
- * household under 1 tỷ/năm in revenue is exempt from VAT and PIT and declares
- * once, on 31/01/2027. Crossing the threshold changes their obligations
- * entirely — so the useful product is not a filing tool, it is knowing where
- * you stand before you cross.
+ * Two thresholds, from two different laws, met in this order as a business
+ * grows:
+ *
+ *   500 triệu  Below it, no VAT and no personal income tax. Luật Thuế TNCN
+ *              (sửa đổi), passed 10/12/2025, raising the 200 triệu set by
+ *              Luật Thuế GTGT 2024. Applies from 01/01/2026.
+ *   1 tỷ       At or above it, sales must be invoiced from a cash register
+ *              connected to the tax authority. Nghị định 70/2025/NĐ-CP, in
+ *              force from 01/06/2025. About *how* sales are recorded, not how
+ *              much tax is owed.
+ *
+ * They were once collapsed into one constant of 1 tỷ called "the exemption
+ * threshold". That told a household at 800 triệu they owed nothing, when they
+ * had owed tax since 500 triệu.
  *
  * Two numbers come back, and they are deliberately kept apart rather than
  * blended into one confident figure:
@@ -111,9 +119,8 @@ Deno.serve(async (req) => {
       ? revenueFromInvoices(gdtRows as unknown as GdtInvoiceRow[])
       : null;
 
-    // The threshold is measured on the strongest evidence available. An
-    // e-invoice total is the tax authority's own record; bank income is a
-    // reading of what arrived.
+    // Measured on the strongest evidence available. An e-invoice total is the
+    // tax authority's own record; bank income is a reading of what arrived.
     const basis = gdtRevenue !== null ? "gdt" : "bank";
     const status = thresholdStatus(gdtRevenue ?? bankRevenue);
 

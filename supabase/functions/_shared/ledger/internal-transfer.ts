@@ -212,11 +212,44 @@ export function revenueExcludingInternal(
   return total;
 }
 
-/** The 2026 exemption threshold for household businesses: 1 tỷ đồng a year. */
-export const EXEMPTION_THRESHOLD_VND = 1_000_000_000;
+/*
+ * Two thresholds, two different laws, two different consequences.
+ *
+ * This was a single constant of 1 tỷ labelled "the exemption threshold", which
+ * was wrong twice over: 1 tỷ is not the exemption threshold, and the exemption
+ * threshold is not 1 tỷ. Someone at 800 triệu would have read the screen and
+ * believed they still owed nothing, when in fact they had owed VAT and PIT
+ * since 500 triệu.
+ *
+ * Both numbers are real. They just answer different questions.
+ */
 
-export interface ThresholdStatus {
-  revenue: number;
+/**
+ * Below this, a household business owes neither VAT nor personal income tax.
+ *
+ * Luật Thuế thu nhập cá nhân (sửa đổi), passed by the National Assembly on
+ * 10/12/2025, raising it from the 200 triệu set by Luật Thuế GTGT 2024.
+ * Applies from 01/01/2026.
+ */
+export const TAX_EXEMPTION_THRESHOLD_VND = 500_000_000;
+
+/**
+ * At or above this, e-invoices must be issued from a cash register connected
+ * to the tax authority.
+ *
+ * Nghị định 70/2025/NĐ-CP, amending Nghị định 123/2020/NĐ-CP, in force from
+ * 01/06/2025. Nothing to do with how much tax is owed — it is an obligation
+ * about *how* sales are recorded, and it lands at a point where a business has
+ * already been paying tax for a while.
+ */
+export const CASH_REGISTER_INVOICE_THRESHOLD_VND = 1_000_000_000;
+
+/** Kept so existing callers keep compiling; prefer the named pair above. */
+export const EXEMPTION_THRESHOLD_VND = TAX_EXEMPTION_THRESHOLD_VND;
+
+export interface Milestone {
+  /** Machine name, so the UI does not switch on translated text. */
+  key: 'tax_exemption' | 'cash_register_invoice';
   threshold: number;
   remaining: number;
   /** 0…1+, where 1 means the threshold has been reached. */
@@ -224,13 +257,40 @@ export interface ThresholdStatus {
   crossed: boolean;
 }
 
+export interface ThresholdStatus {
+  revenue: number;
+  /** The exemption threshold, for callers that only care about tax owed. */
+  threshold: number;
+  remaining: number;
+  ratio: number;
+  crossed: boolean;
+  /** Both obligations, in the order a growing business meets them. */
+  milestones: Milestone[];
+}
+
+function milestone(key: Milestone['key'], threshold: number, revenue: number): Milestone {
+  return {
+    key,
+    threshold,
+    remaining: threshold - revenue,
+    ratio: revenue / threshold,
+    crossed: revenue >= threshold,
+  };
+}
+
 export function thresholdStatus(revenue: number): ThresholdStatus {
-  const remaining = EXEMPTION_THRESHOLD_VND - revenue;
+  const tax = milestone('tax_exemption', TAX_EXEMPTION_THRESHOLD_VND, revenue);
+  const invoice = milestone(
+    'cash_register_invoice',
+    CASH_REGISTER_INVOICE_THRESHOLD_VND,
+    revenue,
+  );
   return {
     revenue,
-    threshold: EXEMPTION_THRESHOLD_VND,
-    remaining,
-    ratio: revenue / EXEMPTION_THRESHOLD_VND,
-    crossed: revenue >= EXEMPTION_THRESHOLD_VND,
+    threshold: tax.threshold,
+    remaining: tax.remaining,
+    ratio: tax.ratio,
+    crossed: tax.crossed,
+    milestones: [tax, invoice],
   };
 }

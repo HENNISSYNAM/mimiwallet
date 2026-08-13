@@ -3,7 +3,8 @@ import {
   findInternalTransfers,
   revenueExcludingInternal,
   thresholdStatus,
-  EXEMPTION_THRESHOLD_VND,
+  TAX_EXEMPTION_THRESHOLD_VND,
+  CASH_REGISTER_INVOICE_THRESHOLD_VND,
   type LedgerTx,
 } from './internal-transfer';
 
@@ -154,18 +155,54 @@ describe('revenueExcludingInternal', () => {
 });
 
 describe('thresholdStatus', () => {
-  it('reports the distance to the 1 tỷ exemption threshold', () => {
-    const s = thresholdStatus(850_000_000);
-    expect(s.threshold).toBe(EXEMPTION_THRESHOLD_VND);
-    expect(s.remaining).toBe(150_000_000);
+  it('measures tax liability against 500 triệu, not 1 tỷ', () => {
+    // The exemption threshold is 500 triệu (Luật Thuế TNCN sửa đổi, thông qua
+    // 10/12/2025, nâng từ 200 triệu). It was once coded as 1 tỷ, which would
+    // have told a household at 800 triệu they owed nothing.
+    const s = thresholdStatus(400_000_000);
+    expect(s.threshold).toBe(TAX_EXEMPTION_THRESHOLD_VND);
+    expect(TAX_EXEMPTION_THRESHOLD_VND).toBe(500_000_000);
+    expect(s.remaining).toBe(100_000_000);
     expect(s.crossed).toBe(false);
-    expect(s.ratio).toBeCloseTo(0.85);
+    expect(s.ratio).toBeCloseTo(0.8);
   });
 
-  it('treats exactly one tỷ as crossed', () => {
-    // The exemption applies to revenue "từ 1 tỷ trở xuống", so the boundary
-    // itself still qualifies — but for a warning UI, reaching it is the moment
-    // the owner needs to know, not the moment they pass it.
-    expect(thresholdStatus(1_000_000_000).crossed).toBe(true);
+  it('says a household at 800 triệu has crossed into owing tax', () => {
+    // The exact case the old constant got wrong.
+    const s = thresholdStatus(800_000_000);
+    expect(s.crossed).toBe(true);
+    expect(s.milestones.find((m) => m.key === 'tax_exemption')?.crossed).toBe(true);
+  });
+
+  it('keeps the cash-register invoice duty separate at 1 tỷ', () => {
+    // Nghị định 70/2025 — an obligation about how sales are recorded, not
+    // about how much tax is owed. At 800 triệu one applies and the other does
+    // not, which is precisely why they cannot share a constant.
+    const s = thresholdStatus(800_000_000);
+    const invoice = s.milestones.find((m) => m.key === 'cash_register_invoice');
+    expect(invoice?.threshold).toBe(CASH_REGISTER_INVOICE_THRESHOLD_VND);
+    expect(CASH_REGISTER_INVOICE_THRESHOLD_VND).toBe(1_000_000_000);
+    expect(invoice?.crossed).toBe(false);
+    expect(invoice?.remaining).toBe(200_000_000);
+  });
+
+  it('reports both crossed once past 1 tỷ', () => {
+    const s = thresholdStatus(1_200_000_000);
+    expect(s.milestones.every((m) => m.crossed)).toBe(true);
+  });
+
+  it('treats landing exactly on a threshold as reaching it', () => {
+    // Warning UI: the moment to tell someone is when they arrive, not after.
+    expect(thresholdStatus(500_000_000).crossed).toBe(true);
+    expect(
+      thresholdStatus(1_000_000_000).milestones.find((m) => m.key === 'cash_register_invoice')
+        ?.crossed,
+    ).toBe(true);
+  });
+
+  it('orders milestones the way a growing business meets them', () => {
+    const s = thresholdStatus(0);
+    expect(s.milestones.map((m) => m.key)).toEqual(['tax_exemption', 'cash_register_invoice']);
   });
 });
+
