@@ -62,6 +62,7 @@ export function QrPayDialog({
   const [qr, setQr] = useState<QrPayment | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [needsRelink, setNeedsRelink] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // React 18 mounts effects twice in development; without this the dialog would
   // raise two QRs for one invoice and only one of them could ever be paid.
@@ -75,6 +76,7 @@ export function QrPayDialog({
     setLoading(true);
     setError(null);
     setNeedsRelink(false);
+    setRequestId(null);
     try {
       /*
        * Raw fetch, not `supabase.functions.invoke`.
@@ -98,7 +100,12 @@ export function QrPayDialog({
 
       if (result?.code === 'QRPAY_SCOPE_MISSING') {
         setNeedsRelink(true);
-        setError(result.error);
+        // Cas's own wording, plus the code, so a support ticket has something
+        // to quote and so a cause I did not anticipate is still visible.
+        setError(
+          [result.error, result.errorCode && `(${result.errorCode})`].filter(Boolean).join(' '),
+        );
+        setRequestId(result.requestId ?? null);
         return;
       }
       if (!res.ok || result?.error) {
@@ -176,9 +183,12 @@ export function QrPayDialog({
             <p className="text-sm text-destructive">{error}</p>
             {needsRelink ? (
               <p className="text-sm text-muted-foreground">
-                Liên kết ngân hàng hiện tại được tạo trước khi có tính năng QR nên chưa đủ
-                quyền. Vào <span className="font-medium">Ngân hàng</span> và liên kết lại là
-                dùng được.
+                Nguyên nhân thường gặp: liên kết ngân hàng được tạo trước khi có tính năng
+                QR nên chưa đủ quyền. Vào <span className="font-medium">Ngân hàng</span> và
+                liên kết lại thường là xong.
+                {requestId && (
+                  <span className="mt-1 block font-mono text-xs">requestId {requestId}</span>
+                )}
               </p>
             ) : (
               <Button variant="outline" size="sm" onClick={() => void create()}>

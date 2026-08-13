@@ -402,21 +402,37 @@ Deno.serve(async (req) => {
         try {
           qr = await createQrPay(cfg, accessToken, { amount, description, referenceNumber });
         } catch (e) {
-          if (e instanceof BankhubError && e.errorCode === "GRANT_NOT_FOUND") {
-            // Almost always a grant issued before `qrpay` was requested rather
-            // than a missing link, and the raw message would send the customer
-            // hunting for the wrong problem.
+          if (!(e instanceof BankhubError)) throw e;
+
+          if (e.errorCode === "RATE_LIMIT") {
             return json(
-              {
-                error:
-                  "Liên kết hiện tại chưa có quyền tạo QR. Vui lòng liên kết lại tài khoản ngân hàng.",
-                code: "QRPAY_SCOPE_MISSING",
-                requestId: e.requestId,
-              },
-              409,
+              { error: "Cas giới hạn khoảng một lần gọi mỗi phút. Thử lại sau một phút.", errorCode: e.errorCode, requestId: e.requestId },
+              429,
             );
           }
-          throw e;
+
+          /*
+           * Anything else from Cas here is, in practice, a grant that predates
+           * the `qrpay` scope — every link made before this feature existed
+           * asked for `transaction` alone.
+           *
+           * Which code says so was guessed wrong once already: the handler
+           * matched GRANT_NOT_FOUND, and the live answer turned out to be
+           * "Phân quyền này không có quyền truy cập thông tin hiện tại" under a
+           * different code. So the hint no longer depends on recognising the
+           * code — Cas's own message is passed through verbatim alongside it,
+           * and the suggestion is offered as a likely cause rather than stated
+           * as fact.
+           */
+          return json(
+            {
+              error: e.message,
+              code: "QRPAY_SCOPE_MISSING",
+              errorCode: e.errorCode,
+              requestId: e.requestId,
+            },
+            409,
+          );
         }
 
         const { data: saved, error: saveError } = await supabase
