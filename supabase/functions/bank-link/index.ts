@@ -234,16 +234,38 @@ Deno.serve(async (req) => {
         const probeTo = isoDate(new Date());
         const probeFromDate = new Date();
         probeFromDate.setDate(probeFromDate.getDate() - 7);
-        const probe = await fetchTransactions(cfg, accessToken, {
-          fromDate: isoDate(probeFromDate),
-          toDate: probeTo,
-        });
-        const accounts = (probe.accounts ?? []).filter((a) => a.accountNumber);
+        /*
+         * The probe is best-effort, and its failure must not cost the grant.
+         *
+         * It used to call removeGrant and return 502 whenever no accounts came
+         * back. That is right for a credential we can never use — but a QR Pay
+         * link is exactly the case where it is wrong: that flow asks only for
+         * an account number and holder name, so the bank may well report no
+         * statement accounts while the grant is perfectly good for raising QR
+         * codes. Destroying it would throw away a link the customer had just
+         * finished making, and the message they would see blames Cas.
+         */
+        let accounts: Array<{ accountNumber?: string; accountName?: string }> = [];
+        try {
+          const probe = await fetchTransactions(cfg, accessToken, {
+            fromDate: isoDate(probeFromDate),
+            toDate: probeTo,
+          });
+          accounts = (probe.accounts ?? []).filter((a) => a.accountNumber);
+        } catch (e) {
+          const code = e instanceof BankhubError ? e.errorCode : "unknown";
+          console.warn(`grant ${grantId}: account probe failed (${code}); storing anyway`);
+        }
+
         if (accounts.length === 0) {
-          // Nothing to sync from, and storing a credential we cannot use is
-          // pure liability, so hand it back to Cas immediately.
-          await removeGrant(cfg, accessToken).catch(() => {});
-          return json({ error: "Cas returned no accounts for this grant" }, 502);
+          /*
+           * Keyed on the grant rather than an account number, because
+           * (company_id, provider, account_number) is unique and we have no
+           * number to put there. `sync` skips rows without a real account
+           * number; `create-qr` does not need one.
+           */
+          accounts = [{ accountNumber: `grant:${grantId}`, accountName: undefined }];
+          console.log(`grant ${grantId}: no statement accounts, stored as QR-only connection`);
         }
 
         const encrypted = await encryptField(accessToken, publicKey);
@@ -314,6 +336,9 @@ Deno.serve(async (req) => {
 
         for (const conn of connections) {
           if (!conn.access_token_enc || !conn.account_number) continue;
+          // QR-only connections carry a grant-derived placeholder, not a real
+          // account number, so there is no statement to pull for them.
+          if (conn.account_number.startsWith("grant:")) continue;
 
           let accessToken: string;
           try {
