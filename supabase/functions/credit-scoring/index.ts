@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveCompany } from "../_shared/company.ts";
 import {
   computeCreditModel,
   creditLimitMultiplier,
@@ -92,11 +93,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: company } = await supabase
-      .from("companies")
-      .select("id, monthly_revenue")
-      .eq("user_id", user.id)
-      .single();
+    const company = await resolveCompany<{ id: string; monthly_revenue: number | null }>(
+      supabase,
+      user.id,
+      "id, monthly_revenue",
+    );
 
     if (!company) {
       return new Response(JSON.stringify({ error: "No company found" }), {

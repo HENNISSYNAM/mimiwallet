@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveCompany } from "../_shared/company.ts";
 import { decryptJson, encryptJson, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 const corsHeaders = {
@@ -46,11 +47,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: company } = await supabase
-      .from("companies")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
+    const company = await resolveCompany(supabase, user.id);
 
     if (!company) {
       return new Response(JSON.stringify({ error: "No company found" }), {

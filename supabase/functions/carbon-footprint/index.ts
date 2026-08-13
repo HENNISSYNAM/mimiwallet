@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveCompany } from "../_shared/company.ts";
 import {
   computeFootprint,
   reductionTips,
@@ -54,12 +55,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: companies } = await admin
-      .from("companies")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
-    const companyId = companies?.[0]?.id;
+    const companyId = (await resolveCompany(admin, user.id))?.id;
     if (!companyId) {
       return new Response(JSON.stringify({ error: "Chưa có hồ sơ doanh nghiệp" }), {
         status: 404,

@@ -8,6 +8,7 @@ import {
   BankhubError,
 } from "../_shared/bank/bankhub.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
+import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 /**
@@ -68,18 +69,14 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: "Invalid token" }, 401);
 
     // Not `.single()`. Nothing stops a user owning several `companies` rows and
-    // the demo account has four, three of them abandoned test entries — under
-    // `.single()` PostgREST returns an error for >1 row and the caller sees
-    // "No company found", which is both wrong and impossible to diagnose from
-    // the message. Oldest row wins, so the choice is stable between calls
-    // rather than depending on whatever order the planner happens to return.
-    const { data: company } = await supabase
-      .from("companies")
-      .select("id, name")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // the demo account has four, three of them abandoned test entries. The
+    // rule for picking one lives in _shared/company.ts so every function
+    // resolves the same company for the same user.
+    const company = await resolveCompany<{ id: string; name: string }>(
+      supabase,
+      user.id,
+      "id, name",
+    );
     if (!company) return json({ error: "No company found" }, 404);
 
     const action = new URL(req.url).searchParams.get("action");

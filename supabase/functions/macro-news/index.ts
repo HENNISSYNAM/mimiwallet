@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveCompany } from "../_shared/company.ts";
 import {
   classify,
   personalImpact,
@@ -142,12 +143,7 @@ async function loadCompanyContext(
   const user = userData?.user;
   if (!user) return null;
 
-  const { data: companies } = await admin
-    .from("companies")
-    .select("id")
-    .eq("user_id", user.id)
-    .limit(1);
-  const companyId = companies?.[0]?.id;
+  const companyId = (await resolveCompany(admin, user.id))?.id;
   if (!companyId) return null;
 
   const [{ data: loans }, { data: snapshots }, { data: txs }] = await Promise.all([
