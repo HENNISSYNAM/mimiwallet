@@ -109,7 +109,7 @@ Casso cho biết sandbox có mô phỏng được ba trạng thái này không.
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 10 | `USER_PERMISSION_REVOKED` | *Một nửa* | **Phía xử lý: đạt.** Bắn một sự kiện `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi: nó hỏi Cas, Cas nói grant còn sống, kết quả `verified / …:alive+2` — và tiện thể nạp 2 giao dịch mới. **Phía nhận: chưa.** Webhook do ta tự bắn, chưa phải Casso gửi. Xem đề nghị bên dưới. |
+| 10 | `USER_PERMISSION_REVOKED` | *Một nửa* | **Phía xử lý: đạt.** Bắn một sự kiện `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi: nó hỏi Cas, Cas nói grant còn sống, trả `verified / …:alive`. Đường push cũng chạy được đầu cuối — gọi Cas, ánh xạ, ghi DB. **Phía nhận: chưa.** Webhook do ta tự bắn, chưa phải Casso gửi. Xem đề nghị bên dưới. |
 | 11 | `DEFAULT_UPDATE` | *Một nửa* | như trên. Nhánh "grant còn sống → khôi phục `status=connected`" có trong mã nhưng chưa chạy được vì liên kết chưa từng bị treo. |
 
 ### 3. QRPay
@@ -168,6 +168,19 @@ lại ngay.
 12/08/2026 (+07:00)**. Độ trễ Casso ghi nhận là 4–7ms; con số 15–196ms trong bảng
 trên đo từ phía client nên bao gồm cả đường truyền. Cả hai đều dưới mốc 1000ms của
 case 17, và con số của Casso mới là con số nên đưa vào biên bản.
+
+**Con số "giao dịch mới" từng nói dối, đã sửa.** Trong lúc kiểm webhook, mỗi lần
+gọi lặp cùng một cửa sổ đều báo ghi thêm 2 dòng (cửa sổ 1 ngày) hoặc 8 dòng (7
+ngày). Không thể đúng: chỉ mục UNIQUE `(company_id, reference_id)` khiến bản trùng
+là bất khả. Database xác nhận sạch — **375 dòng, 375 reference riêng biệt**.
+
+Cả `count: "exact"` lẫn `.select("id")` đều đếm **dòng gửi đi**, không phải dòng
+được ghi; `ignoreDuplicates` lặng lẽ bỏ phần còn lại. Nay đếm bằng hiệu hai lần
+`count` trước và sau khi ghi — con số duy nhất ở đây đúng nghĩa của nó.
+
+Đáng ghi lại vì đây là lỗi *báo cáo*, không phải lỗi *dữ liệu*: sổ sách vẫn đúng
+suốt thời gian đó, chỉ có dòng "đã đồng bộ N giao dịch mới" là sai. Nhưng với sản
+phẩm mà toàn bộ giá trị nằm ở chỗ con số nói thật, một con số nói dối vẫn phải sửa.
 
 **`SKXKpCPiOGMeD55b` không phải lỗi sản phẩm.** Bản ghi này hiện `/grant/token` →
 400 `INVALID_PARAM "value.split is not a function"` với `scopes` là mảng. Đó là

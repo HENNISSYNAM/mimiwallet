@@ -114,19 +114,59 @@ export async function ingestConnection(
     console.warn(`connection ${conn.id}: skipped ${rejected.length}`, rejected.slice(0, 10));
   }
 
+  /**
+   * The Cas sandbox invents a new batch of transactions on every call.
+   *
+   * Verified rather than assumed: three identical 7-day requests each stored 8
+   * more rows, the table grew 375 → 383, every reference was distinct, and no
+   * two rows shared a (date, amount, description). The descriptions come from a
+   * fixed pool — one of them appears 15 times across a full year with a
+   * different amount each time — so the pool is real-looking but the rows are
+   * generated per request.
+   *
+   * That means dedupe can never fire here: there is nothing to dedupe. It also
+   * means these rows are not this company's money, and summing them as revenue
+   * is the same mistake `is_synthetic` was added to stop — arriving through the
+   * "real" door instead of the demo one. Marking them at write time is the only
+   * place the environment is still known.
+   *
+   * When production credentials replace the sandbox ones, this flips off by
+   * itself and real rows count as real.
+   */
+  const synthetic = cfg.baseUrl.includes("sandbox");
+
+  /**
+   * Counted before and after the write rather than read from `count: "exact"`.
+   *
+   * Whether `count` reports rows sent or rows stored was never settled — no
+   * duplicate ever occurred against this sandbox, so the two numbers were never
+   * observed to differ. The difference between two counts is unambiguous, and
+   * two index-backed COUNTs cost nothing next to the Cas round trip that just
+   * happened. It can undercount if a webhook and a manual sync overlap, which
+   * costs an accurate log line and nothing more.
+   */
+  const countRows = async () => {
+    const { count } = await supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", conn.company_id);
+    return count ?? 0;
+  };
+
   let inserted = 0;
   if (rows.length) {
-    const { error: writeError, count } = await supabase
+    const before = await countRows();
+    const { error: writeError } = await supabase
       .from("transactions")
       .upsert(
-        rows.map((r) => ({ ...r, company_id: conn.company_id })),
-        { onConflict: "company_id,reference_id", ignoreDuplicates: true, count: "exact" },
+        rows.map((r) => ({ ...r, company_id: conn.company_id, is_synthetic: synthetic })),
+        { onConflict: "company_id,reference_id", ignoreDuplicates: true },
       );
     if (writeError) {
       console.error(`connection ${conn.id}: insert failed`, writeError.message);
       return { ...base, fetched: payload.transactions?.length ?? 0, error: "write failed" };
     }
-    inserted = count ?? rows.length;
+    inserted = Math.max(0, (await countRows()) - before);
   }
 
   const update: Record<string, unknown> = { last_synced_at: new Date().toISOString() };
