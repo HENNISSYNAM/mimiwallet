@@ -114,12 +114,19 @@ Deno.serve(async (req) => {
      * timestamp and the version of the wording that was shown, not a checkbox
      * that left no trace.
      */
-    async function hasBankConsent(): Promise<boolean> {
+    /**
+     * Consent is per data source, not one blanket yes.
+     *
+     * Reading bank statements and reading tax-authority invoices are separate
+     * decisions about separate data, so agreeing to one must not silently admit
+     * the other.
+     */
+    async function hasConsent(kind: "bank_data" | "tax_data"): Promise<boolean> {
       const { data } = await supabase
         .from("consents")
         .select("id")
         .eq("user_id", user!.id)
-        .eq("kind", "bank_data")
+        .eq("kind", kind)
         .is("revoked_at", null)
         .limit(1);
       return !!data?.length;
@@ -229,12 +236,15 @@ Deno.serve(async (req) => {
 
       // ── 2. Turn the Link result into stored connections ───────────────────
       case "exchange": {
+        // Read before the consent gate below, so they must be declared first.
+        const forQrPay = body.feature === "qrpay";
+        const forGdt = body.feature === "gdt";
         // Checked again here, not only at create-token. These are separate HTTP
         // calls and nothing stops a client skipping the first one.
         if (demoBlocked) {
           return json({ error: "Tài khoản demo không thể liên kết ngân hàng thật.", code: "DEMO_ACCOUNT" }, 403);
         }
-        if (!(await hasBankConsent())) {
+        if (!(await hasConsent(forGdt ? "tax_data" : "bank_data"))) {
           return json(
             { error: "Chưa ghi nhận sự đồng ý chia sẻ dữ liệu ngân hàng.", code: "CONSENT_REQUIRED" },
             403,
@@ -256,8 +266,6 @@ Deno.serve(async (req) => {
         // never sends it, which is a stronger guarantee than receiving it and
         // choosing not to store it. A short window keeps the call cheap; the
         // real backfill happens in `sync`.
-        const forQrPay = body.feature === "qrpay";
-        const forGdt = body.feature === "gdt";
         const probeTo = isoDate(new Date());
         const probeFromDate = new Date();
         probeFromDate.setDate(probeFromDate.getDate() - 7);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode,
+  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode, FileText,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
@@ -111,7 +111,15 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const [consentOpen, setConsentOpen] = useState(false);
   // Which product the consent sheet was opened for; decides whether Cas Link
   // filters its bank list to the ones that sell QR Pay.
-  const [consentForQrPay, setConsentForQrPay] = useState(false);
+  /**
+   * Which product the pending link is for.
+   *
+   * Was a boolean while there were two. Cas issues one grant per product —
+   * `transaction` for statements, `qrpay` for receiving, `gdt` for the tax
+   * authority — and each opens a different Cas Link screen, so the choice has
+   * to travel all the way from the button to `exchange`.
+   */
+  const [linkFeature, setLinkFeature] = useState<'bank' | 'qrpay' | 'gdt'>('bank');
   // 'sandbox' unlocks the controls that deliberately break a connection.
   const [environment, setEnvironment] = useState<string | null>(null);
   // QR Pay only: the services Cas will actually accept, so the customer picks
@@ -223,7 +231,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
   /** Exchange → store → first sync. Shared by the SDK callback and our listener. */
   // Set when a link attempt starts, read when its token comes back.
-  const pendingFeature = useRef<'qrpay' | undefined>(undefined);
+  const pendingFeature = useRef<'qrpay' | 'gdt' | undefined>(undefined);
 
   const completeLink = useCallback(
     async (publicToken: string) => {
@@ -299,7 +307,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   }, [call, loadConnections]);
 
 
-  const startLink = useCallback(async (forQrPay = false) => {
+  const startLink = useCallback(async (feature: 'bank' | 'qrpay' | 'gdt' = 'bank') => {
     setConsentOpen(false);
     setLinking(true);
     try {
@@ -317,7 +325,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       }
       const { error: consentError } = await supabase
         .from('consents')
-        .insert({ user_id: user.id, kind: 'bank_data', version: CONSENT_VERSION });
+        .insert({
+          user_id: user.id,
+          // Names the data source actually being opened. A tax connection recorded
+          // as bank consent would make the audit record say the wrong thing.
+          kind: feature === 'gdt' ? 'tax_data' : 'bank_data',
+          version: CONSENT_VERSION,
+        });
       if (consentError) {
         setLinking(false);
         toast.error('Không ghi nhận được sự đồng ý, chưa thể liên kết');
@@ -325,12 +339,12 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       }
 
       await loadLinkScript();
-      pendingFeature.current = forQrPay ? 'qrpay' : undefined;
+      pendingFeature.current = feature === 'bank' ? undefined : feature;
       const grant = await call(
         'create-token',
-        forQrPay
-          ? { feature: 'qrpay', ...(chosenService ? { fi_service_id: chosenService } : {}) }
-          : {},
+        feature === 'bank'
+          ? {}
+          : { feature, ...(chosenService ? { fi_service_id: chosenService } : {}) },
       );
       if (!grant?.grantToken) {
         setLinking(false);
@@ -341,7 +355,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       const { open } = window.BankHub.useBankHubLink({
         grantToken: grant.grantToken,
         // Only when the customer asked to link for receiving QR payments.
-        ...(forQrPay ? { feature: 'qrpay' as const } : {}),
+        ...(feature === 'qrpay' ? { feature: 'qrpay' as const } : {}),
         // Comes from the server so it always matches the value the grant was
         // created with and the value registered in the Cas console.
         redirectUri: grant.redirectUri,
@@ -390,7 +404,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         if (!grant.grantToken) { setLinking(false); return; }
         if (!window.BankHub) throw new Error('Cas Link chưa sẵn sàng');
 
-        pendingFeature.current = grant.scopes === 'qrpay' ? 'qrpay' : undefined;
+        pendingFeature.current =
+          grant.scopes === 'qrpay' || grant.scopes === 'gdt' ? grant.scopes : undefined;
         const { open } = window.BankHub.useBankHubLink({
           grantToken: grant.grantToken,
           redirectUri: grant.redirectUri,
@@ -479,7 +494,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               </button>
             )}
             <button
-              onClick={() => { setConsentForQrPay(false); setConsentOpen(true); }}
+              onClick={() => { setLinkFeature('bank'); setConsentOpen(true); }}
               disabled={linking}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
@@ -492,7 +507,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 them because it happens not to sell QR Pay. */}
             <button
               onClick={() => {
-                setConsentForQrPay(true);
+                setLinkFeature('qrpay');
                 setChosenService(null);
                 setConsentOpen(true);
                 void call('fi-services', { feature: 'qrpay' }).then(
@@ -504,6 +519,17 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             >
               <QrCode size={14} />
               Liên kết để nhận tiền QR
+            </button>
+            {/* Read-only. MIMI pulls the invoices the tax authority already
+                holds so revenue stops being inferred from bank descriptions —
+                it does not file anything. */}
+            <button
+              onClick={() => { setLinkFeature('gdt'); setConsentOpen(true); }}
+              disabled={linking}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-border text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+            >
+              <FileText size={14} />
+              Kết nối Tổng Cục Thuế
             </button>
           </div>
         </div>
@@ -693,7 +719,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 </li>
               </ul>
 
-              {consentForQrPay && qrServices.length > 0 && (
+              {linkFeature === 'qrpay' && qrServices.length > 0 && (
                 <div className="mt-5">
                   <p className="text-xs font-medium text-foreground mb-2">
                     Chọn ngân hàng nhận tiền ({qrServices.length} ngân hàng hỗ trợ QR)
@@ -729,7 +755,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   Huỷ
                 </button>
                 <button
-                  onClick={() => void startLink(consentForQrPay)}
+                  onClick={() => void startLink(linkFeature)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                 >
                   Đồng ý và tiếp tục
