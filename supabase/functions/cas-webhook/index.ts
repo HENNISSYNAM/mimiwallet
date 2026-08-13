@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { bankhubConfigFromEnv } from "../_shared/bank/bankhub.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
+import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 /**
@@ -287,6 +288,14 @@ Deno.serve(async (req) => {
       outcomes.push(`${conn.id}:restored+${result.inserted}`);
     } else {
       outcomes.push(`${conn.id}:alive+${result.inserted}`);
+    }
+  }
+
+  // One reconcile per company touched, after everything is stored.
+  for (const companyId of new Set(conns.map((c) => c.company_id))) {
+    const r = await reconcileCompanyQr(supabase, companyId);
+    if (r.settled || r.mismatched) {
+      outcomes.push(`qr:${r.settled}settled/${r.mismatched}mismatch`);
     }
   }
 

@@ -2,12 +2,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   bankhubConfigFromEnv,
   createGrantToken,
+  createQrPay,
   exchangePublicToken,
   fetchTransactions,
   removeGrant,
   BankhubError,
 } from "../_shared/bank/bankhub.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
+import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
@@ -175,10 +177,13 @@ Deno.serve(async (req) => {
 
         const grant = await createGrantToken(cfg, {
           redirectUri,
-          // `transaction` only. Adding `identity` would also hand us the
-          // account holder's national ID number, date of birth and address,
-          // which this product does not use and should therefore not hold.
-          scopes: ["transaction"],
+          // `transaction` to read the statement, `qrpay` to raise a QR that
+          // settles into the same account. Deliberately not `identity`: that
+          // would also hand us the account holder's national ID number, date of
+          // birth and address, which this product does not use and should
+          // therefore not hold. Deliberately not `transfer` either — MIMI
+          // records money in, it does not move money out.
+          scopes: ["transaction", "qrpay"],
           language: "vi",
           // Cas caps this at 40 characters and shows it in their console, which
           // is what makes a support ticket traceable to one customer.
@@ -335,7 +340,110 @@ Deno.serve(async (req) => {
           );
         }
 
-        return json({ synced: results });
+        // Payments that settled a QR may have just landed. Same call runs on
+        // the webhook path, so an invoice closes identically either way.
+        const reconciled = await reconcileCompanyQr(supabase, company.id);
+
+        return json({ synced: results, reconciled });
+      }
+
+      // ── 5. Raise a QR that settles into the linked account ────────────────
+      case "create-qr": {
+        const amount = Math.round(Number(body.amount));
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return json({ error: "amount phải là số nguyên dương (VND)" }, 400);
+        }
+        const description = typeof body.description === "string" ? body.description.trim() : "";
+        if (!description) return json({ error: "description required" }, 400);
+        const invoiceId = typeof body.invoice_id === "string" ? body.invoice_id : null;
+
+        // An invoice from another company must not be payable through this one.
+        if (invoiceId) {
+          const { data: inv } = await supabase
+            .from("invoices")
+            .select("id")
+            .eq("id", invoiceId)
+            .eq("company_id", company.id)
+            .maybeSingle();
+          if (!inv) return json({ error: "invoice not found" }, 404);
+        }
+
+        const { data: conn } = await supabase
+          .from("bank_connections")
+          .select("id, access_token_enc, account_number")
+          .eq("company_id", company.id)
+          .eq("provider", "bankhub")
+          .eq("status", "connected")
+          .is("revoked_at", null)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (!conn?.access_token_enc) {
+          return json({ error: "Chưa có tài khoản ngân hàng nào đang kết nối." }, 404);
+        }
+
+        const accessToken = await decryptField(
+          conn.access_token_enc as unknown as EncryptedBlob,
+          privateKey,
+        );
+
+        /*
+         * Generated here, never taken from the request. This value comes back
+         * on the TRANSACTIONS webhook and is what marks an invoice paid, so a
+         * caller who could choose it could settle someone else's invoice by
+         * raising a QR that reuses their reference.
+         *
+         * Hex only: Cas does not document a charset, and the safest reading of
+         * an undocumented field is the narrowest one.
+         */
+        const referenceNumber = crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+
+        let qr;
+        try {
+          qr = await createQrPay(cfg, accessToken, { amount, description, referenceNumber });
+        } catch (e) {
+          if (e instanceof BankhubError && e.errorCode === "GRANT_NOT_FOUND") {
+            // Almost always a grant issued before `qrpay` was requested rather
+            // than a missing link, and the raw message would send the customer
+            // hunting for the wrong problem.
+            return json(
+              {
+                error:
+                  "Liên kết hiện tại chưa có quyền tạo QR. Vui lòng liên kết lại tài khoản ngân hàng.",
+                code: "QRPAY_SCOPE_MISSING",
+                requestId: e.requestId,
+              },
+              409,
+            );
+          }
+          throw e;
+        }
+
+        const { data: saved, error: saveError } = await supabase
+          .from("qr_payments")
+          .insert({
+            company_id: company.id,
+            invoice_id: invoiceId,
+            reference_number: referenceNumber,
+            amount,
+            description,
+            account_number: qr.accountNumber ?? conn.account_number,
+            virtual_account_number: qr.virtualAccountNumber ?? null,
+            bin: qr.bin ?? null,
+            qr_code: qr.qrCode ?? null,
+          })
+          .select("id, reference_number, amount, description, virtual_account_number, bin, qr_code, status")
+          .single();
+
+        if (saveError) {
+          console.error("failed to store qr payment:", saveError.message);
+          // The QR exists at Cas but we cannot reconcile a payment we have no
+          // record of, so it is better to fail loudly than to show a QR that
+          // will take money nobody can match.
+          return json({ error: "could not store QR" }, 500);
+        }
+
+        return json({ qr: saved });
       }
 
       // ── 4. Stop ───────────────────────────────────────────────────────────

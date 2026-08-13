@@ -197,6 +197,60 @@ export function fetchIdentity(cfg: BankhubConfig, accessToken: string): Promise<
   return request<IdentityResponse>(cfg, 'GET', '/identity', { accessToken });
 }
 
+export interface QrPayOptions {
+  /** VND, integer. Cas rejects a decimal. */
+  amount: number;
+  /** Shown to the payer in their banking app. */
+  description: string;
+  /**
+   * The merchant's own order id, echoed back on the TRANSACTIONS webhook as
+   * `paymentMeta.referenceNumber`. It is the only thread tying a payment that
+   * lands in the bank account back to the invoice it settles, so it must be
+   * unique per company and never reused.
+   */
+  referenceNumber: string;
+}
+
+export interface QrPayResponse {
+  requestId?: string;
+  accountNumber?: string;
+  /**
+   * The one-off account the payer actually transfers to. Cas routes anything
+   * arriving here back to `accountNumber` and tags it with our reference —
+   * which is why reconciliation does not have to guess from the description.
+   */
+  virtualAccountNumber?: string;
+  amount?: number;
+  /** Bank identification number, needed to render the VietQR payload. */
+  bin?: string;
+  /** The VietQR string to draw as a QR code. */
+  qrCode?: string;
+  referenceNumber?: string;
+}
+
+/**
+ * Ask Cas for a QR that settles into the linked account.
+ *
+ * Requires the grant to carry the `qrpay` scope. A grant issued with
+ * `transaction` alone answers GRANT_NOT_FOUND here, which reads like a missing
+ * link rather than a missing scope — so a customer who linked before QR
+ * existed has to link again.
+ */
+export function createQrPay(
+  cfg: BankhubConfig,
+  accessToken: string,
+  opts: QrPayOptions
+): Promise<QrPayResponse> {
+  return request<QrPayResponse>(cfg, 'POST', '/qr-pay', {
+    accessToken,
+    body: {
+      amount: Math.round(opts.amount),
+      description: opts.description,
+      referenceNumber: opts.referenceNumber,
+    },
+  });
+}
+
 export interface FetchTransactionsOptions {
   /** YYYY-MM-DD */
   fromDate?: string;
