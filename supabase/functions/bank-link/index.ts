@@ -4,6 +4,8 @@ import {
   createGrantToken,
   createUpdateGrantToken,
   createQrPay,
+  simulateLoginError,
+  type SimulatedLoginError,
   exchangePublicToken,
   fetchTransactions,
   fetchQrPayIdentity,
@@ -576,6 +578,48 @@ Deno.serve(async (req) => {
           }
           throw e;
         }
+      }
+
+      // ── Which Cas environment this deployment talks to ────────────────────
+      case "env": {
+        // The browser cannot know this on its own: the keys and base URL live
+        // in edge-function secrets. Without it the sandbox-only controls would
+        // have to be gated on a build flag, which would either hide them on the
+        // deployed build people actually test with, or show them in production.
+        return json({ environment: cfg.baseUrl.includes("sandbox") ? "sandbox" : "production" });
+      }
+
+      // ── 7. Sandbox only: break a grant on purpose ─────────────────────────
+      case "sandbox-reset-login": {
+        // The environment gate, not a feature flag. This action exists to break
+        // a bank connection, so production must never be able to reach it —
+        // and the check reads the same config the API calls use, so it cannot
+        // drift out of step with which server we are actually talking to.
+        if (!cfg.baseUrl.includes("sandbox")) {
+          return json({ error: "Chỉ dùng được trên sandbox.", code: "SANDBOX_ONLY" }, 403);
+        }
+
+        const connectionId = typeof body.connection_id === "string" ? body.connection_id : "";
+        const errorCode = body.error_code as SimulatedLoginError;
+        if (!connectionId) return json({ error: "connection_id required" }, 400);
+        if (!["GRANT_LOGIN_REQUIRED", "OTP_REQUIRED", "PREVENTED"].includes(errorCode)) {
+          return json({ error: "error_code không hợp lệ" }, 400);
+        }
+
+        const { data: conn } = await supabase
+          .from("bank_connections")
+          .select("id, access_token_enc")
+          .eq("id", connectionId)
+          .eq("company_id", company.id)
+          .maybeSingle();
+        if (!conn?.access_token_enc) return json({ error: "connection not found" }, 404);
+
+        const accessToken = await decryptField(
+          conn.access_token_enc as unknown as EncryptedBlob,
+          privateKey,
+        );
+        const res = await simulateLoginError(cfg, accessToken, errorCode);
+        return json({ simulated: errorCode, requestId: res.requestId });
       }
 
       // ── 4. Stop ───────────────────────────────────────────────────────────

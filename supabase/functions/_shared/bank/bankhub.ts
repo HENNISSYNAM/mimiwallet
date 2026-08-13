@@ -220,6 +220,32 @@ export function removeGrant(cfg: BankhubConfig, accessToken: string): Promise<{ 
   return request(cfg, 'POST', '/grant/remove', { accessToken });
 }
 
+/** The three states Cas's sandbox can put a grant into on demand. */
+export type SimulatedLoginError = 'GRANT_LOGIN_REQUIRED' | 'OTP_REQUIRED' | 'PREVENTED';
+
+/**
+ * Break a sandbox grant on purpose, so the recovery path can be tested.
+ *
+ * These three map exactly onto acceptance cases 5, 6 and 7 — a changed
+ * password, a device check, and login-from-website being blocked. Those cases
+ * were written off as "cannot be staged in the sandbox"; they can, and this is
+ * how.
+ *
+ * Sandbox only. The caller checks the environment before reaching this, because
+ * a function that can deliberately break a customer's real bank connection has
+ * no business existing in production.
+ */
+export function simulateLoginError(
+  cfg: BankhubConfig,
+  accessToken: string,
+  errorCode: SimulatedLoginError
+): Promise<{ requestId?: string }> {
+  return request(cfg, 'POST', '/sandbox/grant/reset-login', {
+    accessToken,
+    body: { errorCode },
+  });
+}
+
 // ── Data ────────────────────────────────────────────────────────────────────
 
 export interface IdentityResponse {

@@ -112,6 +112,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   // Which product the consent sheet was opened for; decides whether Cas Link
   // filters its bank list to the ones that sell QR Pay.
   const [consentForQrPay, setConsentForQrPay] = useState(false);
+  // 'sandbox' unlocks the controls that deliberately break a connection.
+  const [environment, setEnvironment] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   // Every origin that posted to this window during a link attempt. If the flow
   // stalls again, this is the evidence that says why — the previous three
@@ -158,6 +160,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       setLoading(false);
       return;
     }
+    void call('env').then((r) => r?.environment && setEnvironment(r.environment));
     const { supabase } = await import('@/integrations/supabase/client');
     const { data } = await supabase
       .from('bank_connections')
@@ -398,6 +401,28 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     [call, completeLink, loadConnections],
   );
 
+  /**
+   * Put a sandbox grant into one of the three broken states Cas can simulate,
+   * then sync so the app reacts exactly as it would to the real thing.
+   *
+   * This is how acceptance cases 5, 6 and 7 get evidence. They were recorded as
+   * unstageable in the sandbox, which was wrong — Cas publishes an endpoint for
+   * precisely this, and it had simply not been found.
+   */
+  const simulateBreak = useCallback(
+    async (connectionId: string, errorCode: string) => {
+      const res = await call('sandbox-reset-login', {
+        connection_id: connectionId,
+        error_code: errorCode,
+      });
+      if (!res) return;
+      toast.success(`Đã giả lập ${errorCode}. Đang đồng bộ để xem app phản ứng…`);
+      await runSync(connectionId);
+      await loadConnections();
+    },
+    [call, runSync, loadConnections],
+  );
+
   const disconnect = useCallback(
     async (connectionId: string) => {
       const result = await call('disconnect', { connection_id: connectionId });
@@ -513,6 +538,23 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {environment === 'sandbox' && c.status === 'connected' && (
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) void simulateBreak(c.id, e.target.value);
+                        e.target.value = '';
+                      }}
+                      defaultValue=""
+                      className="text-[10px] rounded-lg border border-border bg-background px-1.5 py-1 text-muted-foreground"
+                      aria-label="Giả lập lỗi (chỉ sandbox)"
+                      title="Giả lập lỗi để kiểm thử — chỉ có trên sandbox"
+                    >
+                      <option value="">Giả lập lỗi…</option>
+                      <option value="GRANT_LOGIN_REQUIRED">Đổi mật khẩu</option>
+                      <option value="OTP_REQUIRED">Xác thực thiết bị</option>
+                      <option value="PREVENTED">Chặn đăng nhập web</option>
+                    </select>
+                  )}
                   {c.status === 'needs_relink' && (
                     <button
                       onClick={() => void updateLink(c.id)}

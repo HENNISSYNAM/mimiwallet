@@ -75,19 +75,37 @@ cả body không parse được. Chưa có tài liệu nào mô tả envelope c�
 schema không tài liệu chính là thứ đã tốn bốn vòng sửa sai ở luồng Cas Link. Lần gửi
 thật đầu tiên sẽ dạy ta hình dạng của nó.
 
-### 3. Ba case xử lý mất kết nối — cơ chế đã có, chưa dựng được tình huống
+### 3. Ba case xử lý mất kết nối — nay chạy được đầu cuối
 
-*Đính chính bản trước: tôi ghi ba case này là "chưa hiện thực". Sai.*
+*Hai lần đính chính, ghi lại cả hai vì chúng nói lên cách phần này được làm.*
 
-Trạng thái `needs_relink` đã tồn tại. Khi Cas trả `GRANT_LOGIN_REQUIRED` hoặc
-`USER_PERMISSION_REVOKED`, `sync` đánh dấu liên kết (`bank-link/index.ts:358`) và
-giao diện hiện banner "Có N tài khoản cần liên kết lại để tiếp tục đồng bộ"
-(`CasLink.tsx:415,470`) — đúng thứ mà kết quả dự kiến của case 5, 6, 7 mô tả.
+**Lần một:** tôi ghi ba case là "chưa hiện thực". Sai — trạng thái `needs_relink`
+và banner mời xác thực lại đã có từ trước.
 
-Thiếu hai thứ: đường **chủ động** qua webhook (nay đã có), và cách dựng tình huống
-trong sandbox. Không tự đổi được mật khẩu ngân hàng giả lập hay bật chặn đăng nhập
-từ website trên đó. Vì vậy ghi *Untested* chứ không phải *chưa hiện thực* — cần
-Casso cho biết sandbox có mô phỏng được ba trạng thái này không.
+**Lần hai:** tôi ghi là "không dựng được tình huống trong sandbox" và đề nghị hỏi
+Casso. Cũng sai. Casso có sẵn `POST /sandbox/grant/reset-login`, và ba mã lỗi nó
+nhận ánh xạ đúng vào ba case:
+
+| `errorCode` | Case | Tình huống |
+|---|---|---|
+| `GRANT_LOGIN_REQUIRED` | 5 | Khách đổi mật khẩu ngân hàng |
+| `OTP_REQUIRED` | 6 | Ngân hàng đòi xác thực thiết bị |
+| `PREVENTED` | 7 | Khách bật chặn đăng nhập từ website |
+
+Nó nằm trong mục **Sandbox API** của nav tài liệu, một mục đang thu gọn. Tôi đã
+đọc bốn trang khác quanh đó mà không mở nó ra.
+
+Nay có đủ cả ba mảnh để chạy thật:
+
+1. **Dựng lỗi** — `bank-link?action=sandbox-reset-login`, có chốt chỉ chạy khi
+   `cfg.baseUrl` là sandbox. Giao diện hiện ô "Giả lập lỗi…" trên mỗi liên kết,
+   và ô đó chỉ xuất hiện khi backend tự khai environment là sandbox.
+2. **App phản ứng** — `sync` nhận lỗi, đánh dấu `needs_relink`, giao diện hiện
+   banner và nút "Cập nhật".
+3. **Khôi phục** — Cas **Update Mode** (`bank-link?action=update-token`): cùng
+   endpoint `/grant/token` nhưng gửi kèm `accessToken` của grant cần sửa, nên Cas
+   Link mở thẳng vào tài khoản đó. Liên kết, id và con trỏ `last_reference` giữ
+   nguyên — khác hẳn liên kết lại từ đầu, vốn kéo lại cả năm sao kê.
 
 ## Chi tiết từng case
 
@@ -99,9 +117,9 @@ Casso cho biết sandbox có mô phỏng được ba trạng thái này không.
 | 2 | Trùng thông tin liên kết | *Partial* | Upsert theo `(company_id, provider, account_number)` nên **không tạo dòng mới** — phần cốt lõi đạt. Nhưng hệ thống không báo "Liên kết thất bại – Tài khoản đã tồn tại"; nó làm mới token. Cố ý: case 5 yêu cầu liên kết lại để khôi phục kết nối hỏng, mà từ chối liên kết lặp thì không khôi phục được. Hai case này mâu thuẫn nhau ở bản gốc. |
 | 3 | Xoá liên kết không cần OTP | *Chưa chạy* | Đã có mã: `disconnect` → `DELETE /grant` → `status=disconnected`, xoá token. Nút ở `CasLink.tsx:443`. Chưa bấm vì nó sẽ huỷ grant thật duy nhất đang có. |
 | 4 | Xoá liên kết cần OTP | Chưa hiện thực | `removeGrant` không xử lý nhánh trả về grantToken để nhập OTP; không có chỗ nhận `GRANT_DELETED`. |
-| 5 | Thông tin đăng nhập thay đổi | *Chưa chạy* | Cơ chế đã có (`needs_relink` + banner mời liên kết lại). Chưa dựng được tình huống trong sandbox. Xem mục 3. |
-| 6 | Xác thực OTP/thiết bị định kỳ | *Chưa chạy* | như trên |
-| 7 | Chặn đăng nhập từ website | *Chưa chạy* | như trên |
+| 5 | Thông tin đăng nhập thay đổi | *Sẵn sàng chạy* | Dựng bằng `POST /sandbox/grant/reset-login` với `GRANT_LOGIN_REQUIRED`; khôi phục bằng Update Mode. Xem mục 3. |
+| 6 | Xác thực OTP/thiết bị định kỳ | *Sẵn sàng chạy* | như trên, `errorCode: OTP_REQUIRED`. |
+| 7 | Chặn đăng nhập từ website | *Sẵn sàng chạy* | như trên, `errorCode: PREVENTED`. |
 | 8 | Liên kết thành công tại đối tác | **Passed** | Dòng `bank_connections` có `grant_id`, `access_token_enc` (ML-KEM-768 + AES-256-GCM), `status=connected`. |
 | 9 | Liên kết thành công tại Casso | **Passed** | Grant hiện trong `console.bankhub.dev → Developer → Logs` kèm `grant/exchange`. |
 
