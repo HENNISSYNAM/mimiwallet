@@ -183,9 +183,10 @@ export function QrPayDialog({
             <p className="text-sm text-destructive">{error}</p>
             {needsRelink ? (
               <p className="text-sm text-muted-foreground">
-                Nguyên nhân thường gặp: liên kết ngân hàng được tạo trước khi có tính năng
-                QR nên chưa đủ quyền. Vào <span className="font-medium">Ngân hàng</span> và
-                liên kết lại thường là xong.
+                Dòng đỏ ở trên là câu trả lời của Cas. Hai nguyên nhân hay gặp: ngân hàng
+                đã liên kết không hỗ trợ QR-Pay — hãy liên kết thêm một ngân hàng khác — hoặc
+                liên kết được tạo trước khi có tính năng QR, khi đó vào{' '}
+                <span className="font-medium">Ngân hàng</span> liên kết lại là xong.
                 {requestId && (
                   <span className="mt-1 block font-mono text-xs">requestId {requestId}</span>
                 )}
