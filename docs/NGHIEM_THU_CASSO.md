@@ -109,8 +109,8 @@ Casso cho biết sandbox có mô phỏng được ba trạng thái này không.
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 10 | `USER_PERMISSION_REVOKED` | *Chưa chạy* | Endpoint `cas-webhook` đã dựng và deploy 12/08; đã kiểm 7 nhánh (khoá sai → 401, khoá đúng → 200, body không phải JSON → 200 bỏ qua, GET → 405). Chờ đăng ký URL bên Casso rồi bắn thử. |
-| 11 | `DEFAULT_UPDATE` | *Chưa chạy* | như trên. Nhánh "grant còn sống → khôi phục `status=connected`" đã có sẵn trong mã. |
+| 10 | `USER_PERMISSION_REVOKED` | *Một nửa* | **Phía xử lý: đạt.** Bắn một sự kiện `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi: nó hỏi Cas, Cas nói grant còn sống, kết quả `verified / …:alive+2` — và tiện thể nạp 2 giao dịch mới. **Phía nhận: chưa.** Webhook do ta tự bắn, chưa phải Casso gửi. Xem đề nghị bên dưới. |
+| 11 | `DEFAULT_UPDATE` | *Một nửa* | như trên. Nhánh "grant còn sống → khôi phục `status=connected`" có trong mã nhưng chưa chạy được vì liên kết chưa từng bị treo. |
 
 ### 3. QRPay
 
@@ -138,6 +138,29 @@ Casso cho biết sandbox có mô phỏng được ba trạng thái này không.
 | 21 | Chuyển tiền thành công | Bị chặn | 403 `IP_NOT_ALLOWED`. |
 | 22–29 | TC01–TC08 (8 mã lỗi) | Bị chặn | Mọi lời gọi `/transfer` bị chặn ở tầng IP trước khi tới bước kiểm tham số, nên không mã lỗi nào trong TC01–TC08 quan sát được. |
 | 30 | Token không hợp lệ (transfer) | Bị chặn | 403 `IP_NOT_ALLOWED` (`Nt4JTuBQ0-J9PWVb`) thay vì `GRANT_NOT_FOUND`. |
+
+## Một chuỗi thao tác đóng được bốn case cùng lúc
+
+Đến 13/08, `webhook_events` có 9 dòng và **cả 9 đều do ta tự bắn**. Casso chưa gửi
+lần nào — đúng như dự kiến, vì trong sandbox chưa có sự kiện nào xảy ra. Nghĩa là
+phía *xử lý* webhook đã chứng minh được, phía *nhận* thì chưa.
+
+Chỉ có một cách chứng minh phía nhận: làm cho một sự kiện thật xảy ra. Thu hồi
+quyền từ ứng dụng Cas ID sẽ khiến Casso gửi webhook thật. Chuỗi này đóng được bốn
+case liền:
+
+1. Mở Cas ID → thu hồi quyền truy cập đã cấp cho MIMI → Casso gửi
+   `USER_PERMISSION_REVOKED` (case 10) và ta thấy **envelope thật** — thứ hiện
+   đang phải đọc phòng thủ vì không có tài liệu.
+2. Endpoint hỏi lại Cas, nhận `GRANT_NOT_FOUND`, đánh dấu `disconnected` và xoá
+   token. Giao diện chuyển sang trạng thái mời liên kết lại (case 4, một phần).
+3. Liên kết lại từ đầu → case 1 lần nữa, và lần này là **case 2** (trùng thông tin
+   liên kết) vì tài khoản đó đã tồn tại.
+4. Sau khi có grant mới, chạy `disconnect` từ giao diện MIMI → case 3.
+
+Cái giá: mất grant hiện tại trong khoảng thời gian liên kết lại, và 2 giao dịch đã
+nạp vẫn còn nguyên trong DB (không mất dữ liệu). Nên làm khi có mặt để bấm liên kết
+lại ngay.
 
 ## Ghi chú về bằng chứng
 
