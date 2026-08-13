@@ -5,6 +5,7 @@ import {
   createQrPay,
   exchangePublicToken,
   fetchTransactions,
+  fetchQrPayIdentity,
   removeGrant,
   BankhubError,
 } from "../_shared/bank/bankhub.ts";
@@ -131,6 +132,7 @@ Deno.serve(async (req) => {
     switch (action) {
       // ── 1. Open Cas Link ──────────────────────────────────────────────────
       case "create-token": {
+        const forQrPay = body.feature === "qrpay";
         // Refused here rather than at `exchange`, so the customer is stopped
         // before Cas Link opens and asks them for their banking password.
         if (demoBlocked) {
@@ -178,17 +180,25 @@ Deno.serve(async (req) => {
 
         const grant = await createGrantToken(cfg, {
           redirectUri,
-          // `transaction` to read the statement, `qrpay` to raise a QR that
-          // settles into the same account. Deliberately not `identity`: that
-          // would also hand us the account holder's national ID number, date of
-          // birth and address, which this product does not use and should
-          // therefore not hold. Deliberately not `transfer` either — MIMI
-          // records money in, it does not move money out.
-          scopes: ["transaction", "qrpay"],
+          /*
+           * One grant per product, which is how Cas documents it.
+           *
+           * Asking for both at once looked economical and was wrong: the QR Pay
+           * link screen collects an account number and holder name, and the
+           * statement link screen collects a banking login. A grant demanding
+           * `transaction` cannot be satisfied by a screen that never asks for a
+           * login, so the QR link failed with a bare "Có lỗi xảy ra".
+           *
+           * Neither branch asks for `identity` — that would hand us the account
+           * holder's national ID number, date of birth and address, which this
+           * product does not use. Neither asks for `transfer`: MIMI records
+           * money in, it does not move money out.
+           */
+          scopes: forQrPay ? ["qrpay"] : ["transaction"],
           language: "vi",
           // Cas caps this at 40 characters and shows it in their console, which
           // is what makes a support ticket traceable to one customer.
-          name: `mimi-${company.id}`.slice(0, 40),
+          name: `mimi-${forQrPay ? "qr-" : ""}${company.id}`.slice(0, 40),
         });
         // The redirectUri travels back with the token deliberately. Cas Link
         // requires the browser to pass the same value the grant was created
@@ -199,6 +209,7 @@ Deno.serve(async (req) => {
           grantToken: grant.grantToken,
           expiresAt: grant.expiredAt ?? grant.expiration ?? null,
           redirectUri,
+          scopes: forQrPay ? "qrpay" : "transaction",
         });
       }
 
@@ -231,6 +242,7 @@ Deno.serve(async (req) => {
         // never sends it, which is a stronger guarantee than receiving it and
         // choosing not to store it. A short window keeps the call cheap; the
         // real backfill happens in `sync`.
+        const forQrPay = body.feature === "qrpay";
         const probeTo = isoDate(new Date());
         const probeFromDate = new Date();
         probeFromDate.setDate(probeFromDate.getDate() - 7);
@@ -246,12 +258,26 @@ Deno.serve(async (req) => {
          * finished making, and the message they would see blames Cas.
          */
         let accounts: Array<{ accountNumber?: string; accountName?: string }> = [];
+        let qrBankName: string | null = null;
         try {
-          const probe = await fetchTransactions(cfg, accessToken, {
-            fromDate: isoDate(probeFromDate),
-            toDate: probeTo,
-          });
-          accounts = (probe.accounts ?? []).filter((a) => a.accountNumber);
+          if (forQrPay) {
+            // Step 4 of Cas's QR Pay flow. /transactions has nothing to say
+            // about a grant that never involved a banking login.
+            const id = await fetchQrPayIdentity(cfg, accessToken);
+            if (id.accountNumber) {
+              accounts = [{ accountNumber: id.accountNumber, accountName: id.accountName }];
+            }
+            // Cas names the institution here, so a QR connection can show
+            // "BIDV" instead of the generic label the statement flow has to
+            // use — that flow is never told which bank was picked.
+            qrBankName = id.fiService?.fiName ?? id.fiService?.name ?? null;
+          } else {
+            const probe = await fetchTransactions(cfg, accessToken, {
+              fromDate: isoDate(probeFromDate),
+              toDate: probeTo,
+            });
+            accounts = (probe.accounts ?? []).filter((a) => a.accountNumber);
+          }
         } catch (e) {
           const code = e instanceof BankhubError ? e.errorCode : "unknown";
           console.warn(`grant ${grantId}: account probe failed (${code}); storing anyway`);
@@ -274,7 +300,8 @@ Deno.serve(async (req) => {
         // print a bank name we have not been told, the row is labelled
         // generically and the UI leads with the account holder and number,
         // which are the parts Cas actually returns.
-        const bankName = typeof body.bank_name === "string" ? body.bank_name : "Tài khoản ngân hàng";
+        const bankName =
+          qrBankName ?? (typeof body.bank_name === "string" ? body.bank_name : "Tài khoản ngân hàng");
         const bankCode = typeof body.bank_code === "string" ? body.bank_code : "CAS";
 
         const rows = accounts.map((a) => ({
@@ -292,6 +319,7 @@ Deno.serve(async (req) => {
           status: "connected",
           consent_granted: true,
           revoked_at: null,
+          scopes: forQrPay ? "qrpay" : "transaction",
         }));
 
         const { data: saved, error: saveError } = await supabase
@@ -394,18 +422,33 @@ Deno.serve(async (req) => {
           if (!inv) return json({ error: "invoice not found" }, 404);
         }
 
+        /*
+         * Only a connection linked for QR Pay can raise one. Taking the oldest
+         * connection regardless — as this did — meant someone who linked a
+         * QR-capable bank second was still told their bank does not support QR
+         * Pay, with the wrong bank named.
+         */
         const { data: conn } = await supabase
           .from("bank_connections")
           .select("id, access_token_enc, account_number")
           .eq("company_id", company.id)
           .eq("provider", "bankhub")
           .eq("status", "connected")
+          .eq("scopes", "qrpay")
           .is("revoked_at", null)
-          .order("created_at", { ascending: true })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
         if (!conn?.access_token_enc) {
-          return json({ error: "Chưa có tài khoản ngân hàng nào đang kết nối." }, 404);
+          return json(
+            {
+              error: "Chưa có tài khoản ngân hàng nào được liên kết để nhận tiền QR.",
+              action: "relink",
+              remedy:
+                'Vào Fintech Hub và bấm "Liên kết để nhận tiền QR" — QR Pay cần một liên kết riêng, không dùng chung với liên kết đọc sao kê.',
+            },
+            404,
+          );
         }
 
         const accessToken = await decryptField(

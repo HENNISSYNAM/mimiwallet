@@ -252,6 +252,67 @@ export interface QrPayResponse {
 }
 
 /**
+ * Only the fields this product uses.
+ *
+ * The real response also carries `identificationNumber` and `mobileNumber` —
+ * a national ID number and a phone number. Those are exactly what refusing the
+ * `identity` scope was meant to keep out, and they arrive here anyway through
+ * a different door. They are deliberately absent from this type and from
+ * `pickQrPayIdentity` below, so nothing downstream can store or log them by
+ * reaching for a field it happened to see in the docs.
+ */
+export interface QrPayIdentity {
+  requestId?: string;
+  accountNumber?: string;
+  accountName?: string;
+  virtualAccountNumber?: string;
+  fiService?: {
+    code?: string;
+    name?: string;
+    fiName?: string;
+    fiBin?: string;
+  };
+}
+
+/** Narrow a raw response down to the fields above, dropping everything else. */
+export function pickQrPayIdentity(raw: Record<string, unknown>): QrPayIdentity {
+  const fi = (raw.fiService ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  return {
+    requestId: str(raw.requestId),
+    accountNumber: str(raw.accountNumber),
+    accountName: str(raw.accountName),
+    virtualAccountNumber: str(raw.virtualAccountNumber),
+    fiService: {
+      code: str(fi.code),
+      name: str(fi.name),
+      fiName: str(fi.fiName),
+      fiBin: str(fi.fiBin),
+    },
+  };
+}
+
+/**
+ * Check that the account behind a QR Pay grant is usable.
+ *
+ * The documented step 4 of the QR Pay flow, and the right probe for this kind
+ * of grant: a QR Pay link collects an account number and holder name, never a
+ * banking login, so /transactions has nothing to say about it. Cas's own
+ * guidance is to call /grant/remove when this comes back invalid.
+ */
+export async function fetchQrPayIdentity(
+  cfg: BankhubConfig,
+  accessToken: string
+): Promise<QrPayIdentity> {
+  const raw = await request<Record<string, unknown>>(cfg, 'GET', '/qr-pay/identity', {
+    accessToken,
+  });
+  // Narrowed at the boundary, so the national ID number never travels further
+  // into this system than the line that received it.
+  return pickQrPayIdentity(raw);
+}
+
+/**
  * Ask Cas for a QR that settles into the linked account.
  *
  * Requires the grant to carry the `qrpay` scope. A grant issued with

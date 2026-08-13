@@ -215,13 +215,19 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   );
 
   /** Exchange → store → first sync. Shared by the SDK callback and our listener. */
+  // Set when a link attempt starts, read when its token comes back.
+  const pendingFeature = useRef<'qrpay' | undefined>(undefined);
+
   const completeLink = useCallback(
     async (publicToken: string) => {
       if (handledTokens.current.has(publicToken)) return;
       handledTokens.current.add(publicToken);
       setLastError(null);
       try {
-        const exchanged = await call('exchange', { publicToken });
+        const exchanged = await call('exchange', {
+          publicToken,
+          ...(pendingFeature.current ? { feature: pendingFeature.current } : {}),
+        });
         if (!exchanged) {
           setLastError('Không lưu được liên kết. Thử lại hoặc gửi ảnh màn hình này.');
           return;
@@ -312,7 +318,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       }
 
       await loadLinkScript();
-      const grant = await call('create-token');
+      pendingFeature.current = forQrPay ? 'qrpay' : undefined;
+      const grant = await call('create-token', forQrPay ? { feature: 'qrpay' } : {});
       if (!grant?.grantToken) {
         setLinking(false);
         return;
