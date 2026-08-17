@@ -563,6 +563,46 @@ export type Database = {
           },
         ]
       }
+      legal_documents: {
+        Row: {
+          co_quan_ban_hanh: string
+          con_so_moc: number | null
+          created_at: string
+          don_vi_moc: string | null
+          doi_tuong_ap_dung: string[]
+          id: string
+          loai: string
+          ngay_ban_hanh: string | null
+          ngay_hieu_luc: string | null
+          so_hieu: string
+          ten: string
+          thay_the_boi: string | null
+          tom_tat_chinh_thuc: string | null
+          tom_tat_de_hieu: string
+          url_nguon: string
+        }
+        Insert: {
+          co_quan_ban_hanh: string
+          doi_tuong_ap_dung?: string[]
+          loai: string
+          so_hieu: string
+          ten: string
+          tom_tat_de_hieu: string
+          url_nguon: string
+        }
+        Update: {
+          thay_the_boi?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_documents_thay_the_boi_fkey"
+            columns: ["thay_the_boi"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_applications: {
         Row: {
           amount: number

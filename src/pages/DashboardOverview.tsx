@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, FileText, ShieldCheck, AlertTriangle, Lightbulb, Bell, ArrowRight, Loader2, Link2 } from 'lucide-react';
 import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
-import IndustryNews from '@/components/IndustryNews';
+import NewsAndLawPanel from '@/components/NewsAndLawPanel';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
 import { formatVNDShort } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
@@ -511,7 +511,7 @@ export default function DashboardOverview() {
           </div>
         </motion.div>
 
-        <motion.div variants={fadeUp}><IndustryNews /></motion.div>
+        <motion.div variants={fadeUp}><NewsAndLawPanel /></motion.div>
         <M2MDashboardWidget />
       </motion.div>
     </motion.div>

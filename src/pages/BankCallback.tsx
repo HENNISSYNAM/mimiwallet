@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { consumeLinkState } from '@/components/fintech/CasLink';
 
 /**
  * Where Cas Link lands after a successful bank link.
@@ -17,6 +18,17 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
  *
  * Handling both costs one small page and removes a whole class of "it said
  * success but nothing happened".
+ *
+ * This is also the actual CSRF surface in the whole bank-link flow, and the
+ * one place `state` is checked without exception. This page reacts to nothing
+ * but a URL — no popup, no interaction with Cas required. An attacker signs
+ * into MIMI as themselves, links their own bank, and is handed a publicToken
+ * bound to their own grant; that URL, sent to a signed-in victim, would make
+ * the victim's own browser exchange it under the victim's JWT, attaching the
+ * attacker's bank grant to the victim's company. `state` is minted in
+ * sessionStorage before Cas Link ever opens (see CasLink.tsx) and is checked
+ * here before anything is exchanged — an attacker crafting the URL themselves
+ * has no way to know the victim's stored value.
  */
 export default function BankCallback() {
   const [params] = useSearchParams();
@@ -38,6 +50,20 @@ export default function BankCallback() {
     if (!session) return; // wait for the store to settle
     if (started.current) return;
     started.current = true;
+
+    // Checked, and consumed, before anything downstream ever sees the token.
+    // No match means either this link was never started from this browser —
+    // exactly the CSRF shape described above — or the tab was closed and
+    // reopened, losing sessionStorage. Both get the same safe refusal; this
+    // page cannot tell the two apart, and does not need to.
+    const returnedState = params.get('state');
+    if (!consumeLinkState(returnedState)) {
+      setState('error');
+      setDetail(
+        'Phiên liên kết không khớp trình duyệt này. Nếu bạn không tự bắt đầu liên kết ngân hàng, hãy bỏ qua trang này.',
+      );
+      return;
+    }
 
     (async () => {
       try {

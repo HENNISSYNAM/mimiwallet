@@ -7,6 +7,7 @@ import {
   type Topic,
   type Impact,
 } from "./analysis.ts";
+import { parseFeed, type RawItem } from "./rss.ts";
 
 /**
  * Macro news for SMEs: pulls public RSS, classifies it, and reads it against
@@ -41,59 +42,6 @@ const FEEDS = [
   { url: "https://vnexpress.net/rss/kinh-doanh.rss", source: "VnExpress" },
   { url: "https://cafef.vn/tai-chinh-ngan-hang.rss", source: "CafeF" },
 ];
-
-/** Strip tags and unescape the handful of entities RSS actually uses. */
-function cleanText(s: string): string {
-  return s
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function tagValue(item: string, tag: string): string {
-  const m = item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
-  return m ? cleanText(m[1]) : "";
-}
-
-interface RawItem {
-  title: string;
-  summary: string;
-  url: string;
-  source: string;
-  published_at: string | null;
-}
-
-/**
- * Minimal RSS parse. A full XML parser is a heavy dependency for a format this
- * regular, and every field we read is a flat text node.
- */
-function parseFeed(xml: string, source: string): RawItem[] {
-  const items: RawItem[] = [];
-  const blocks = xml.match(/<item[\s\S]*?<\/item>/gi) ?? [];
-  for (const block of blocks) {
-    const title = tagValue(block, "title");
-    const url = tagValue(block, "link");
-    if (!title || !url) continue;
-    const pub = tagValue(block, "pubDate");
-    const parsed = pub ? new Date(pub) : null;
-    items.push({
-      title,
-      summary: tagValue(block, "description").slice(0, 400),
-      url,
-      source,
-      published_at:
-        parsed && !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : null,
-    });
-  }
-  return items;
-}
 
 /**
  * Per-feed cap, applied before merging.

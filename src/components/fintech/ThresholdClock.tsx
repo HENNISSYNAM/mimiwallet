@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Landmark, FileText, AlertTriangle, Info, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Landmark, FileText, AlertTriangle, Info, Check, ChevronDown, Scale } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
+import { Coin, Chest } from '@/components/illustrations/GamifyObjects';
+import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
 
 /**
  * The two revenue milestones a Vietnamese household business meets, and where
@@ -17,7 +19,9 @@ import { track } from '@/lib/track';
  * Rules this component keeps:
  *
  * Every figure names the law it comes from. A number about tax with no source
- * is an opinion.
+ * is an opinion. The citation stays one tap away rather than gone, though —
+ * see `LegalUpdates.tsx` for why "answer first, citation on tap" beats a wall
+ * of grey legal text under every number.
  *
  * It shows nothing it cannot source. With no bank connection and no e-invoices
  * it says so and offers the way to connect, rather than drawing 0% of a bar —
@@ -25,6 +29,11 @@ import { track } from '@/lib/track';
  *
  * It is not a tax determination, and says that on screen rather than in a
  * footnote nobody opens.
+ *
+ * Crossing a milestone is never drawn as a win. `tax_exemption` crossed means a
+ * new obligation to pay, not a reward — so the coin/chest motifs below sit only
+ * on the revenue figure itself (money the business genuinely made) and never on
+ * a "crossed" state. Gamifying a tax bill would be dishonest, not friendly.
  */
 
 type MilestoneKey = 'tax_exemption' | 'cash_register_invoice';
@@ -81,7 +90,17 @@ function short(n: number): string {
   return dong(n);
 }
 
+/** Scrolls to the Luật & Thuế tab so a crossed milestone leads somewhere, not
+ *  just a warning with nowhere to go next. */
+function goToLawPanel() {
+  // Switch the tab first, then scroll — otherwise the panel can finish
+  // scrolling into view a frame before the content underneath it changes.
+  window.dispatchEvent(new Event(SHOW_LAW_TAB_EVENT));
+  document.getElementById('news-and-law-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function MilestoneBar({ m }: { m: Milestone }) {
+  const [showLaw, setShowLaw] = useState(false);
   const meta = MILESTONE[m.key];
   const pct = Math.min(100, Math.max(0, m.ratio * 100));
   const near = pct >= 80 && !m.crossed;
@@ -108,19 +127,54 @@ function MilestoneBar({ m }: { m: Milestone }) {
         />
       </div>
 
-      <p
-        className={`mt-1 text-xs flex items-start gap-1.5 ${
-          m.crossed ? 'text-amber-600 dark:text-amber-500' : 'text-muted-foreground'
-        }`}
-      >
-        {m.crossed ? (
-          <AlertTriangle size={11} className="mt-0.5 shrink-0" />
-        ) : (
-          <Check size={11} className="mt-0.5 shrink-0" />
+      <div className="mt-1 flex items-start justify-between gap-2">
+        <p
+          className={`text-xs flex items-start gap-1.5 ${
+            m.crossed ? 'text-amber-600 dark:text-amber-500' : 'text-muted-foreground'
+          }`}
+        >
+          {m.crossed ? (
+            <AlertTriangle size={11} className="mt-0.5 shrink-0" />
+          ) : (
+            <Check size={11} className="mt-0.5 shrink-0" />
+          )}
+          {m.crossed ? meta.above : meta.below}
+        </p>
+
+        {/* Citation is one tap away, not printed under every bar — the same
+            "answer first" rule LegalUpdates.tsx uses. */}
+        <button
+          onClick={() => setShowLaw((v) => !v)}
+          className="text-[10px] text-muted-foreground/70 hover:text-primary transition-colors flex items-center gap-0.5 shrink-0"
+        >
+          Căn cứ <ChevronDown size={9} className={`transition-transform ${showLaw ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {showLaw && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <p className="pt-1 text-[10px] text-muted-foreground/70 pl-[18px]">{meta.law}</p>
+          </motion.div>
         )}
-        {m.crossed ? meta.above : meta.below}
-      </p>
-      <p className="mt-0.5 text-[10px] text-muted-foreground/70 pl-[18px]">{meta.law}</p>
+      </AnimatePresence>
+
+      {/* The crossed tax-exemption bar is the one moment that genuinely needs
+          somewhere to go next, not just a warning icon. */}
+      {m.crossed && m.key === 'tax_exemption' && (
+        <button
+          onClick={goToLawPanel}
+          className="mt-1.5 text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
+        >
+          <Scale size={10} /> Xem chi tiết ở mục Luật &amp; Thuế
+        </button>
+      )}
     </div>
   );
 }
@@ -186,9 +240,15 @@ export function ThresholdClock() {
 
   if (nothingToMeasure) {
     return (
-      <div className="card-base p-5">
-        <h3 className="text-sm font-semibold text-foreground">Doanh thu và nghĩa vụ thuế</h3>
-        <p className="text-sm text-muted-foreground mt-2">
+      <div className="card-base p-5 relative overflow-hidden">
+        {/* A closed chest — revenue that exists but MIMI cannot see yet. The
+            metaphor is literal, not decoration for its own sake: connect a
+            source and the chest has something to show. */}
+        <div className="absolute -right-2 -top-2 opacity-[0.14] rotate-6 pointer-events-none" aria-hidden="true">
+          <Chest size={72} />
+        </div>
+        <h3 className="text-sm font-semibold text-foreground relative">Doanh thu và nghĩa vụ thuế</h3>
+        <p className="text-sm text-muted-foreground mt-2 relative max-w-[85%]">
           Chưa có dữ liệu để tính. Kết nối ngân hàng hoặc Tổng Cục Thuế ở{' '}
           <span className="font-medium text-foreground">Fintech Hub</span>, doanh thu sẽ tự cộng
           từ đó.
@@ -198,7 +258,7 @@ export function ThresholdClock() {
   }
 
   return (
-    <div className="card-base p-5">
+    <div className="card-base p-5 relative overflow-hidden">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">
@@ -216,9 +276,14 @@ export function ThresholdClock() {
             )}
           </p>
         </div>
-        <p className="text-2xl font-bold text-foreground tabular-nums shrink-0">
-          {short(data.revenue)}
-        </p>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* A coin for the money itself, not for crossing a threshold — the
+              distinction the file's header comment insists on. */}
+          <Coin size={22} />
+          <p className="text-2xl font-bold text-foreground tabular-nums">
+            {short(data.revenue)}
+          </p>
+        </div>
       </div>
 
       <div className="mt-5 space-y-4">

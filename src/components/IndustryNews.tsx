@@ -50,7 +50,16 @@ function timeAgo(iso: string | null): string {
   return `${Math.round(hours / 24)} ngày trước`;
 }
 
-export default function IndustryNews() {
+interface Props {
+  /**
+   * True when a parent (NewsAndLawPanel) already provides the card, title and
+   * reload affordance. The fetch and list logic stays identical either way —
+   * only the outer chrome is skipped, so this remains usable standalone.
+   */
+  embedded?: boolean;
+}
+
+export default function IndustryNews({ embedded = false }: Props = {}) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,23 +81,27 @@ export default function IndustryNews() {
     fetchNews();
   }, [fetchNews]);
 
-  return (
-    <div className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="font-display font-bold text-foreground text-lg">Tin vĩ mô</h3>
-        <button
-          onClick={fetchNews}
-          disabled={loading}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
-          aria-label="Tải lại tin tức"
-        >
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-        </button>
-      </div>
+  const body = (
+    <>
+      {!embedded && (
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="font-display font-bold text-foreground text-lg">Tin vĩ mô</h3>
+          <button
+            onClick={fetchNews}
+            disabled={loading}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
+            aria-label="Tải lại tin tức"
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      )}
       {/* Says what the analysis actually is, so nobody reads "AI" into a lookup. */}
-      <p className="text-xs text-muted-foreground mb-4">
-        Tự động cập nhật từ nguồn công khai, đối chiếu với số liệu của bạn.
-      </p>
+      {!embedded && (
+        <p className="text-xs text-muted-foreground mb-4">
+          Tự động cập nhật từ nguồn công khai, đối chiếu với số liệu của bạn.
+        </p>
+      )}
 
       {error && <p className="text-sm text-mimi-red">{error}</p>}
 
@@ -147,6 +160,26 @@ export default function IndustryNews() {
           </motion.a>
         ))}
       </div>
-    </div>
+    </>
   );
+
+  if (embedded) {
+    return (
+      <>
+        {embedded && loading && news.length === 0 ? null : null}
+        {body}
+        {embedded && (
+          <button
+            onClick={fetchNews}
+            disabled={loading}
+            className="mt-3 text-xs text-primary hover:underline font-medium inline-flex items-center gap-1"
+          >
+            <RefreshCw size={11} className={loading ? 'animate-spin' : ''} /> Tải lại
+          </button>
+        )}
+      </>
+    );
+  }
+
+  return <div className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-5">{body}</div>;
 }

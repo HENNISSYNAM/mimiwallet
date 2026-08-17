@@ -28,6 +28,41 @@ const LINK_SCRIPT = 'https://cdn.bankhub.dev/link/v1/link-initialize.js';
  */
 const CONSENT_VERSION = '2026-08-11';
 
+/**
+ * CSRF on the bank-link flow, and why `state` closes it.
+ *
+ * The exploitable path is not the popup — it is `BankCallback.tsx`, a plain
+ * URL: `/bank/callback?publicToken=<token>`. An attacker signs into MIMI as
+ * themselves, links their own bank, and is handed a publicToken bound to
+ * their own grant. That URL, sent to a signed-in victim, makes the victim's
+ * own browser call `exchange` under the victim's JWT — attaching the
+ * attacker's bank grant to the victim's company. No popup, no interaction
+ * with Cas required at all.
+ *
+ * `state` is generated here, stored in sessionStorage — not localStorage,
+ * so it cannot outlive the tab or leak across sessions — and must come back
+ * unchanged before `exchange` is ever called. An attacker crafting the URL
+ * themselves cannot know the victim's stored value.
+ */
+export const CAS_STATE_KEY = 'mimi:cas-link-state';
+
+function newLinkState(): string {
+  const value = crypto.randomUUID();
+  sessionStorage.setItem(CAS_STATE_KEY, value);
+  return value;
+}
+
+/**
+ * True once, then clears the slot — a captured value cannot be replayed.
+ * Exported so `BankCallback.tsx` checks against exactly this logic rather
+ * than a second copy that could quietly drift out of sync with it.
+ */
+export function consumeLinkState(received: string | null | undefined): boolean {
+  const expected = sessionStorage.getItem(CAS_STATE_KEY);
+  sessionStorage.removeItem(CAS_STATE_KEY);
+  return !!expected && !!received && expected === received;
+}
+
 interface CasLinkConfig {
   redirectUri: string;
   iframe: boolean;
@@ -235,10 +270,29 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const pendingFeature = useRef<'qrpay' | 'gdt' | undefined>(undefined);
 
   const completeLink = useCallback(
-    async (publicToken: string) => {
+    /**
+     * `receivedState` is checked when the caller actually has one to check.
+     *
+     * `onSuccess` always carries it (Cas's own docs), so a mismatch there
+     * fails closed — hard stop, no exchange. The postMessage fallback listener
+     * below may or may not carry `state` in its payload (undocumented), so an
+     * absent value there is not treated as an attack; that path is already
+     * unreachable from outside the app; a forged one would need a message that
+     * appears to originate from `*.bankhub.dev`, which requires compromising
+     * Cas itself, not just crafting a URL.
+     */
+    async (publicToken: string, receivedState?: string) => {
       if (handledTokens.current.has(publicToken)) return;
       handledTokens.current.add(publicToken);
       setLastError(null);
+
+      if (receivedState !== undefined && !consumeLinkState(receivedState)) {
+        setLastError('Phiên liên kết không khớp — có thể đã hết hạn hoặc bị giả mạo. Hãy thử lại.');
+        track('bank_link_failed', { feature: pendingFeature.current ?? 'bank', reason: 'state_mismatch' });
+        setLinking(false);
+        return;
+      }
+
       try {
         // Recorded either side of the exchange, because the gap between them is
         // exactly where people fall out of a bank-linking flow.
@@ -287,7 +341,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       if (host !== 'bankhub.dev' && !host.endsWith('.bankhub.dev')) return;
 
       // The SDK requires a JSON *string*; be liberal and take an object too.
-      let payload: { type?: string; data?: { publicToken?: string; loading?: boolean } } | null = null;
+      let payload: { type?: string; data?: { publicToken?: string; loading?: boolean; state?: string } } | null = null;
       try {
         payload = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data as typeof payload);
       } catch {
@@ -300,7 +354,11 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       if (payload.type === 'credential' && token) {
         // Close it ourselves: the SDK only does so on the path it did not take.
         document.getElementById('bankhub-iframe')?.remove();
-        void completeLink(token);
+        // `payload.data?.state` is read defensively — whether Cas's postMessage
+        // carries it back is undocumented. completeLink only enforces a match
+        // when a value is actually present; see its own comment for why this
+        // path does not need to fail closed when it is absent.
+        void completeLink(token, payload.data?.state);
       } else if (payload.type === 'status') {
         document.getElementById('bankhub-iframe')?.remove();
         setLinking(false);
@@ -367,10 +425,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         redirectUri: grant.redirectUri,
         iframe: true,
         fiServiceType: 'all',
+        // Minted fresh for this attempt; BankCallback.tsx and completeLink
+        // both check it comes back unchanged before exchanging anything.
+        state: newLinkState(),
         // Kept for the path where the SDK's own origin check does pass. Both
         // this and the message listener call completeLink; it de-duplicates by
         // token so the loser of the race does nothing.
-        onSuccess: (publicToken: string) => { void completeLink(publicToken); },
+        onSuccess: (publicToken: string, state: string) => { void completeLink(publicToken, state); },
         onExit: () => setLinking(false),
       });
       open();
@@ -417,7 +478,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           redirectUri: grant.redirectUri,
           iframe: true,
           ...(grant.scopes === 'qrpay' ? { feature: 'qrpay' as const } : {}),
-          onSuccess: (publicToken: string) => { void completeLink(publicToken); },
+          state: newLinkState(),
+          onSuccess: (publicToken: string, state: string) => { void completeLink(publicToken, state); },
           onExit: () => setLinking(false),
         });
         open();
