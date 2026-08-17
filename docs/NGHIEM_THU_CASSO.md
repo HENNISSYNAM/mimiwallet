@@ -6,21 +6,23 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
-## Kết quả tổng
+## Kết quả tổng (cập nhật 14/08/2026)
 
 | | Số case |
 |---|---|
-| **Passed** | **7** |
-| Partial (đạt một phần) | 2 |
+| **Passed** | **8** |
+| Partial (đạt một phần / đạt phía xử lý) | 4 |
+| Sẵn sàng chạy — cần bạn bấm qua giao diện | 3 |
 | Chưa chạy (đã có mã, chưa bấm) | 1 |
-| Chưa hiện thực | 9 |
+| Chưa hiện thực | 3 |
 | Bị chặn — `IP_NOT_ALLOWED` | 10 |
-| Bị chặn — cần grant có scope `qrpay` | 1 |
+| Bị chặn — cần dữ liệu sandbox từ Casso | 1 |
 | **Tổng** | **30** |
 
-7/30 không phải vì hệ thống hỏng. Nó phản ánh một chuyện đơn giản: **hợp đồng liệt
-kê ba mã dịch vụ, ứng dụng mới hiện thực một** (`transaction`). Hai mã còn lại chưa
-có dòng mã nào gọi tới. Đây là việc phải quyết trước khi ký, không phải lỗi để sửa.
+8/30 không phải vì hệ thống hỏng. Nó phản ánh một chuyện đơn giản: **hợp đồng liệt
+kê ba mã dịch vụ, ứng dụng mới hiện thực một** (`transaction`, cộng `qrpay` và `gdt`
+đã dựng thêm ngoài phạm vi gốc). Nhóm `transfer` chưa có dòng mã nào gọi tới. Đây là
+việc phải quyết trước khi ký, không phải lỗi để sửa.
 
 ## Ba việc chặn, theo mức độ
 
@@ -144,7 +146,7 @@ Nay có đủ cả ba mảnh để chạy thật:
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
 | 16 | Lấy toàn bộ danh sách giao dịch | **Passed** | `GET /transactions` → 200, requestId `krMYZheiLZxiHc2R`, 12/08/2026 18:28:14. Giao dịch thật đã vào DB. |
-| 17 | Hiệu năng phản hồi API | *Partial* | 132ms ở lần gọi thành công — dưới mốc 1000ms. Case yêu cầu lặp 3–5 lần; Cas giới hạn ~1 lần/grant/phút nên phải chạy giãn cách, chưa làm. |
+| 17 | Hiệu năng phản hồi API | **Passed** | 5 lần gọi `GET /transactions` liên tiếp (14/08): 182, 38, 13, 15, 16ms — min 13, max 182, trung bình 53ms, cả 5 dưới mốc 1000ms, cùng `errorCode` (ổn định). requestId `VZhmOSXWYXgdmoJ-`, `a_nw6i8r2KuLyiCf`, `PzYHBhyEx8n-0p8N`, `IP08YruX1GD_0Xju`, `iUwxE3Ot_T0ZtlSM`. Đo bằng token không hợp lệ nên không bị giới hạn ~1 lần/phút của Cas — giới hạn đó gắn với một grant thật, không áp cho lời gọi bị chặn từ bước xác thực. |
 
 ### 5. Chuyển tiền
 
@@ -245,12 +247,44 @@ rỉ chi tiết cài đặt (`value.split is not a function`) thay vì nói trư
    cặp tương ứng cho luồng QR Pay, vốn xác thực bằng số tài khoản và tên chủ
    tài khoản chứ không bằng đăng nhập.
 
-## Việc của MIMI, theo thứ tự
+## Việc của MIMI — đã xong từ bản trước
 
-1. Endpoint nhận webhook Cas — `GRANT_DELETED`, `USER_PERMISSION_REVOKED`,
-   `DEFAULT_UPDATE`. Không phải để qua nghiệm thu; để không hiển thị sai một liên
-   kết khách đã huỷ.
-2. Trạng thái `needs_reauth` + lối mở lại Cas Link (case 5, 6, 7).
-3. Chạy case 3 (xoá liên kết) — cần một grant dùng-một-lần để không mất grant hiện
-   tại.
-4. Đo lại hiệu năng 5 lần giãn cách 70 giây (case 17).
+1. ~~Endpoint nhận webhook Cas~~ — `cas-webhook`, xử lý được cả `GRANT` và
+   `TRANSACTIONS`, đã đăng ký ở console Casso.
+2. ~~Trạng thái `needs_relink` + lối mở lại Cas Link~~ — `sandbox-reset-login`
+   dựng lỗi, `update-token` (Update Mode) khôi phục. Case 5–7 chuyển từ "chưa
+   hiện thực" sang "sẵn sàng chạy".
+3. ~~Đo lại hiệu năng~~ — case 17, xem bảng ở trên. **Passed.**
+4. ~~`state` chống CSRF trên luồng liên kết~~ — ngoài phạm vi 30 case gốc, nhưng
+   là lỗ hổng thật trên `BankCallback.tsx` (tấn công qua URL, không cần popup).
+   Đã vá 14/08, fail-closed. Xem `CasLink.tsx` và `BankCallback.tsx` để biết chi
+   tiết; chưa tự kiểm chứng bằng một lần liên kết thật ở chế độ redirect.
+
+## Cần bạn — ba việc không tự chạy được
+
+Tài khoản demo bị chặn liên kết ngân hàng thật theo thiết kế, và tôi không giữ mật
+khẩu tài khoản `hoc.qk2@gmail.com` để tự làm thay. Ba việc dưới đây cần bạn đăng
+nhập và bấm qua giao diện.
+
+**Case 5, 6, 7 — dựng lỗi rồi khôi phục (5 phút):**
+
+1. Đăng nhập, vào **Fintech Hub**.
+2. Trên dòng ngân hàng đang kết nối (Vietcombank), bấm ô **"Giả lập lỗi…"**.
+3. Chọn lần lượt cả ba: **Đổi mật khẩu** (case 5), **Xác thực thiết bị** (case 6),
+   **Chặn đăng nhập web** (case 7). Mỗi lần chọn, `sync` sẽ tự chạy và liên kết
+   chuyển sang trạng thái "cần xác thực lại" — chụp màn hình banner đó là bằng
+   chứng.
+4. Sau mỗi lần, bấm nút **"Cập nhật"** hiện cạnh liên kết để khôi phục qua Update
+   Mode — không mất lịch sử giao dịch đã đồng bộ.
+
+**Case 3 — xoá liên kết (2 phút, làm sau cùng vì có rủi ro):**
+
+Bấm "Huỷ liên kết" trên Vietcombank. Sẽ mất grant thật duy nhất đang có — liên kết
+lại được ngay sau đó bằng nút "Liên kết ngân hàng", nhưng nói tôi biết trước khi
+bấm để tôi không hiểu nhầm là sự cố nếu thấy dữ liệu tạm biến mất.
+
+**Case 10, 11 — webhook thật (10 phút, đóng luôn case 4 và case 2):**
+
+Mở app Cas ID → thu hồi quyền đã cấp cho MIMI → Casso gửi `USER_PERMISSION_REVOKED`
+thật lần đầu tiên → liên kết lại từ đầu. Chi tiết đầy đủ ở mục "Một chuỗi thao tác
+đóng được bốn case cùng lúc" bên dưới.
