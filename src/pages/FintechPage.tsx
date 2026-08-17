@@ -6,15 +6,16 @@ import PaymentMethods from '@/components/fintech/PaymentMethods';
 import ComplianceDashboard from '@/components/fintech/ComplianceDashboard';
 import { Shield, Link2, CreditCard, Fingerprint } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { GlassTabs, AmbientMotifField } from '@/components/ui/glass-tabs';
 
 export default function FintechPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('banking');
   const tabs = [
-    { id: 'banking', label: t('pg.fintech.tabs.banking'), icon: <Link2 size={16} /> },
-    { id: 'kyc', label: t('pg.fintech.tabs.kyc'), icon: <Fingerprint size={16} /> },
-    { id: 'payment', label: t('pg.fintech.tabs.payment'), icon: <CreditCard size={16} /> },
-    { id: 'compliance', label: t('pg.fintech.tabs.compliance'), icon: <Shield size={16} /> },
+    { key: 'banking', label: t('pg.fintech.tabs.banking'), icon: Link2 },
+    { key: 'kyc', label: t('pg.fintech.tabs.kyc'), icon: Fingerprint },
+    { key: 'payment', label: t('pg.fintech.tabs.payment'), icon: CreditCard },
+    { key: 'compliance', label: t('pg.fintech.tabs.compliance'), icon: Shield },
   ];
 
   return (
@@ -24,21 +25,16 @@ export default function FintechPage() {
         <p className="text-sm text-muted-foreground mt-1">{t('pg.fintech.subtitle')}</p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 bg-accent/30 rounded-xl p-1 overflow-x-auto">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
+      {/* Tab Navigation — first tab bar in the app to carry actual Liquid Glass
+          plus MIMI's own ambient motif field, matching NewsAndLawPanel. This is
+          the page people switch between most (banking / eKYC / payment /
+          compliance), so it earns the fuller treatment; InvoicesPage's denser
+          filter row keeps the same moving pill but stays opaque instead. */}
+      <div className="relative overflow-hidden rounded-2xl">
+        <AmbientMotifField />
+        <div className="relative overflow-x-auto p-1">
+          <GlassTabs ambient tabs={tabs} active={activeTab} onChange={setActiveTab} />
+        </div>
       </div>
 
       {/* Tab Content */}

@@ -8,6 +8,7 @@ import { Plus, Download, Search, X, ArrowRight, FileText, Loader2, QrCode } from
 import { InsightSpark } from '@/components/illustrations/BrandIcons';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { GlassTabs } from '@/components/ui/glass-tabs';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -276,25 +277,26 @@ export default function InvoicesPage() {
             </button>
           )}
         </div>
-        <div className="flex gap-1 bg-accent/30 rounded-xl p-1">
-          {[
+        {/*
+          Same moving-pill interaction as FintechPage's tab bar, deliberately
+          without `ambient` — see glass-tabs.tsx. This row sits inline in a
+          dense table page with nothing behind it to blur; wearing glass here
+          would be the exact "translucent box on a flat colour" index.css
+          warns against. The morph animation is worth having either way — it
+          is what turned a static colour swap into something that feels like
+          one control moving, not five buttons taking turns.
+        */}
+        <GlassTabs
+          active={filter}
+          onChange={setFilter}
+          tabs={[
             { key: 'all', label: t('fin.invoices.filters.all') },
             { key: 'pending', label: t('fin.invoices.filters.pending') },
             { key: 'overdue', label: t('fin.invoices.filters.overdue') },
             { key: 'paid', label: t('fin.invoices.filters.paid') },
             { key: 'advanced', label: t('fin.invoices.filters.advanced') },
-          ].map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`text-xs px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
-                filter === f.key ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+          ]}
+        />
       </motion.div>
 
       {/* Table */}
