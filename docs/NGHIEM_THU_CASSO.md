@@ -6,18 +6,23 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
-## Kết quả tổng (cập nhật 14/08/2026)
+## Kết quả tổng (cập nhật 17/08/2026)
 
 | | Số case |
 |---|---|
 | **Passed** | **8** |
-| Partial (đạt một phần / đạt phía xử lý) | 4 |
-| Sẵn sàng chạy — cần bạn bấm qua giao diện | 3 |
+| Partial (đạt một phần / đạt phía xử lý) | 6 |
+| Sẵn sàng chạy — cần bạn bấm qua giao diện | 1 |
 | Chưa chạy (đã có mã, chưa bấm) | 1 |
 | Chưa hiện thực | 3 |
 | Bị chặn — `IP_NOT_ALLOWED` | 10 |
 | Bị chặn — cần dữ liệu sandbox từ Casso | 1 |
 | **Tổng** | **30** |
+
+Case 5 và 6 chạy thật lần đầu 17/08 và mỗi cái lộ ra một vấn đề thật — không phải
+lỗi của Casso, lỗi ở phía MIMI. Case 5 đã vá ngay trong ngày. Case 6 chưa đủ bằng
+chứng để kết luận nguyên nhân, ghi rõ thay vì đoán. Chi tiết ở bảng bên dưới và ở
+mục "Vấn đề tìm thấy khi chạy thật case 5–7".
 
 8/30 không phải vì hệ thống hỏng. Nó phản ánh một chuyện đơn giản: **hợp đồng liệt
 kê ba mã dịch vụ, ứng dụng mới hiện thực một** (`transaction`, cộng `qrpay` và `gdt`
@@ -109,6 +114,30 @@ Nay có đủ cả ba mảnh để chạy thật:
    Link mở thẳng vào tài khoản đó. Liên kết, id và con trỏ `last_reference` giữ
    nguyên — khác hẳn liên kết lại từ đầu, vốn kéo lại cả năm sao kê.
 
+### 4. Chạy thật case 5–7 lần đầu, 17/08 — hai vấn đề tìm thấy
+
+Cả ba đều dựng lỗi thành công qua `sandbox-reset-login` — banner "cần xác thực lại"
+và toast lỗi đúng ý nghĩa từng mã. Phần đáng ghi là bước khôi phục qua Update Mode.
+
+**Case 5 — `publicToken required` vô nghĩa trên màn hình, đã vá cùng ngày.**
+Cas Link gọi `onSuccess('', state)` — chuỗi rỗng chứ không phải thiếu tham số —
+khi grant đứng sau cần xác thực lại và luồng đóng mà chưa xong. App gửi thẳng
+chuỗi rỗng đó lên `exchange`, bị từ chối đúng luật, nhưng người dùng chỉ thấy một
+câu lỗi kỹ thuật không hành động được. Listener postMessage của MIMI vốn đã chắn
+`token` rỗng trước khi gọi tiếp; `onSuccess` thì không có chắn tương tự — lỗ hổng
+phòng thủ thật, không phải lỗi của Cas. Đã vá: chặn publicToken rỗng, đổi thành
+thông báo có thể làm theo ("chưa hoàn tất xác thực, hãy thử lại và làm hết các
+bước Cas yêu cầu").
+
+**Case 6 — treo vô hạn ở "Đang liên kết…", nguyên nhân chưa xác định.** Không có
+`onSuccess`, không có `onExit`. Có thể vì sandbox không có OTP thật để nhập ở
+bước này, có thể vì SDK tự treo — không đủ bằng chứng để chọn một trong hai, nên
+không đoán. Đã thêm timeout 4 phút để màn hình không còn spinner vô hạn dù chưa
+biết nguyên nhân gốc; đây là chốt an toàn, không phải bản sửa lỗi.
+
+Cả hai đều là bằng chứng cho thấy phép thử "chạy thật" đáng giá hơn đọc tài liệu —
+không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Casso cần sửa.
+
 ## Chi tiết từng case
 
 ### 1. Chức năng liên kết
@@ -119,9 +148,9 @@ Nay có đủ cả ba mảnh để chạy thật:
 | 2 | Trùng thông tin liên kết | *Partial* | Upsert theo `(company_id, provider, account_number)` nên **không tạo dòng mới** — phần cốt lõi đạt. Nhưng hệ thống không báo "Liên kết thất bại – Tài khoản đã tồn tại"; nó làm mới token. Cố ý: case 5 yêu cầu liên kết lại để khôi phục kết nối hỏng, mà từ chối liên kết lặp thì không khôi phục được. Hai case này mâu thuẫn nhau ở bản gốc. |
 | 3 | Xoá liên kết không cần OTP | *Chưa chạy* | Đã có mã: `disconnect` → `DELETE /grant` → `status=disconnected`, xoá token. Nút ở `CasLink.tsx:443`. Chưa bấm vì nó sẽ huỷ grant thật duy nhất đang có. |
 | 4 | Xoá liên kết cần OTP | Chưa hiện thực | `removeGrant` không xử lý nhánh trả về grantToken để nhập OTP; không có chỗ nhận `GRANT_DELETED`. |
-| 5 | Thông tin đăng nhập thay đổi | *Sẵn sàng chạy* | Dựng bằng `POST /sandbox/grant/reset-login` với `GRANT_LOGIN_REQUIRED`; khôi phục bằng Update Mode. Xem mục 3. |
-| 6 | Xác thực OTP/thiết bị định kỳ | *Sẵn sàng chạy* | như trên, `errorCode: OTP_REQUIRED`. |
-| 7 | Chặn đăng nhập từ website | *Sẵn sàng chạy* | như trên, `errorCode: PREVENTED`. |
+| 5 | Thông tin đăng nhập thay đổi | *Partial* | Chạy thật 17/08. Dựng lỗi thành công: banner "Ngân hàng yêu cầu đăng nhập lại" hiện đúng. Bấm "Cập nhật" (Update Mode) thì Cas Link gọi `onSuccess('', state)` — chuỗi rỗng, không phải publicToken thật — và app thật thà gửi lên, bị server từ chối đúng luật (`"publicToken required"`), nhưng thông báo đó vô nghĩa với người đang nhìn màn hình. **Đã vá 17/08**: chặn publicToken rỗng trước khi gọi `exchange`, hiện thông báo có thể hành động. Khôi phục qua Update Mode **chưa chạy xong lần nào** — cần thử lại sau bản vá. |
+| 6 | Xác thực OTP/thiết bị định kỳ | *Partial* | Chạy thật 17/08. Dựng lỗi thành công. Bấm "Cập nhật": Cas Link mở nhưng treo vô hạn ở "Đang liên kết…" — không `onSuccess`, không `onExit`. Chưa đủ bằng chứng để kết luận nguyên nhân (sandbox không có OTP thật để nhập, hay SDK treo) — **không đoán, chờ thử lại có log rõ hơn**. Đã thêm timeout 4 phút để không còn spinner vô hạn, dù chưa biết nguyên nhân gốc. |
+| 7 | Chặn đăng nhập từ website | *Sẵn sàng chạy* | Dựng lỗi thành công 17/08, toast "Đồng bộ lỗi: Tài khoản đang bị chặn đăng nhập từ website, mở ứng dụng di động..." đúng ý nghĩa `PREVENTED`. Chưa bấm "Cập nhật" để khôi phục — làm sau case 5. |
 | 8 | Liên kết thành công tại đối tác | **Passed** | Dòng `bank_connections` có `grant_id`, `access_token_enc` (ML-KEM-768 + AES-256-GCM), `status=connected`. |
 | 9 | Liên kết thành công tại Casso | **Passed** | Grant hiện trong `console.bankhub.dev → Developer → Logs` kèm `grant/exchange`. |
 

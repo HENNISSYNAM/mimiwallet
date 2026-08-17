@@ -143,6 +143,28 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const [connections, setConnections] = useState<CasConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState(false);
+  /*
+   * Never let "Đang liên kết…" spin forever.
+   *
+   * Seen live on acceptance case 6 (a simulated OTP_REQUIRED): Cas Link opened
+   * and the button stuck on "Đang liên kết…" with no onSuccess, no onExit —
+   * nothing this app could react to. Whether that is the sandbox having no
+   * real OTP to complete, or the SDK itself hanging, is not something this
+   * page can tell from here, and it should not need to: a control that can
+   * wait forever is a bug regardless of which side caused it. Four minutes is
+   * generous for entering a password or an OTP, and short enough that nobody
+   * sits looking at a dead spinner wondering if the page is broken.
+   */
+  useEffect(() => {
+    if (!linking) return;
+    const timer = setTimeout(() => {
+      setLinking(false);
+      setLastError(
+        'Việc liên kết mất nhiều thời gian hơn dự kiến và có thể đã không hoàn tất. Hãy thử lại — nếu vẫn treo, đó là điều đáng báo lại kèm bước bạn vừa làm trong Cas Link.',
+      );
+    }, 4 * 60_000);
+    return () => clearTimeout(timer);
+  }, [linking]);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
   // Which product the consent sheet was opened for; decides whether Cas Link
@@ -282,6 +304,28 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
      * Cas itself, not just crafting a URL.
      */
     async (publicToken: string, receivedState?: string) => {
+      /*
+       * Seen live: Cas Link can call `onSuccess('', state)` — an empty string,
+       * not absent — when the grant behind it needs re-authentication and the
+       * flow closes without completing (observed while testing acceptance
+       * case 5, a simulated GRANT_LOGIN_REQUIRED, via Update Mode). The
+       * postMessage listener already guards on `token` truthiness before ever
+       * calling this function; `onSuccess` had no equivalent guard, so an
+       * empty string sailed through to `exchange`, which correctly rejected
+       * it with "publicToken required" — but that message meant nothing to
+       * someone looking at the screen, and it happened AFTER the failed
+       * attempt was already recorded as handled, in the exact place a person
+       * would expect to see why re-authentication did not finish.
+       */
+      if (!publicToken) {
+        setLastError(
+          'Chưa hoàn tất xác thực với ngân hàng. Nếu vừa đổi mật khẩu hoặc xác thực thiết bị, hãy thử lại và làm theo hết các bước Cas yêu cầu.',
+        );
+        track('bank_link_failed', { feature: pendingFeature.current ?? 'bank', reason: 'empty_token' });
+        setLinking(false);
+        return;
+      }
+
       if (handledTokens.current.has(publicToken)) return;
       handledTokens.current.add(publicToken);
       setLastError(null);
