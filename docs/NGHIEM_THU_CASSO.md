@@ -10,10 +10,10 @@ client id `7f98926a…`.
 
 | | Số case |
 |---|---|
-| **Passed** | **10** |
+| **Passed** | **11** |
 | Partial (đạt một phần / đạt phía xử lý) | 4 |
 | Sẵn sàng chạy — cần bạn bấm qua giao diện | 1 |
-| Chưa chạy (đã có mã, chưa bấm) | 1 |
+| Chưa chạy (đã có mã, chưa bấm) | 0 |
 | Chưa hiện thực | 3 |
 | Bị chặn — `IP_NOT_ALLOWED` | 10 |
 | Bị chặn — cần dữ liệu sandbox từ Casso | 1 |
@@ -244,7 +244,7 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 |---|---|---|---|
 | 1 | Liên kết tài khoản mới | **Passed** | `grant/token` 200 → Cas Link → `grant/exchange` 200 → dòng `bank_connections` `status=connected`. Grant hiện trong console Casso. |
 | 2 | Trùng thông tin liên kết | *Partial* | Upsert theo `(company_id, provider, account_number)` nên **không tạo dòng mới** — phần cốt lõi đạt. Nhưng hệ thống không báo "Liên kết thất bại – Tài khoản đã tồn tại"; nó làm mới token. Cố ý: case 5 yêu cầu liên kết lại để khôi phục kết nối hỏng, mà từ chối liên kết lặp thì không khôi phục được. Hai case này mâu thuẫn nhau ở bản gốc. |
-| 3 | Xoá liên kết không cần OTP | *Chưa chạy* | Đã có mã: `disconnect` → `DELETE /grant` → `status=disconnected`, xoá token. Nút ở `CasLink.tsx:443`. Chưa bấm vì nó sẽ huỷ grant thật duy nhất đang có. |
+| 3 | Xoá liên kết không cần OTP | **Passed** — chạy thật 18/08 | Bấm biểu tượng ngắt liên kết → toast "Đã ngắt liên kết", `status=disconnected`, token xoá. Ngân hàng **không** đòi OTP ở bước này nên nhánh case 4 không chạm tới. Lộ ra một lỗi giao diện, đã sửa cùng ngày: dòng bị ngắt **vẫn nằm lại trong danh sách**, màu hổ phách kèm tam giác cảnh báo và mốc đồng bộ cũ, không một chữ nào nói đã ngắt. Hổ phách nghĩa là "cần bạn để ý", nên màn hình đang cảnh báo về đúng việc người dùng vừa cố ý làm. Nay lọc `status != disconnected` khỏi danh sách; dòng trong DB giữ nguyên vì nó mang dấu vết kiểm toán và `revoked_at`. |
 | 4 | Xoá liên kết cần OTP | *Đã viết mã 18/08 — chưa kiểm chứng* | `removeGrant` giờ trả `RemoveGrantResult` với cờ `otpRequired`, đặt khi Cas đáp bằng `grantToken` thay vì hoàn tất. Backend **không** đánh dấu `disconnected` trên nhánh đó — đó là điểm mấu chốt: báo "đã ngắt kết nối" trong khi ngân hàng vẫn coi dữ liệu được uỷ quyền là kiểu sai duy nhất endpoint này tuyệt đối không được mắc. Frontend mở Cas Link trên `grantToken` rồi gọi `disconnect` lần hai sau khi khách xác thực xong; bỏ dở giữa chừng thì hàng vẫn ghi `connected`, đúng sự thật. **Chưa chạy được `deno check` lẫn `tsc` vì toolchain máy treo (xem ghi chú cuối mục kế hoạch) — mã chưa được kiểm chứng dòng nào.** |
 | 5 | Thông tin đăng nhập thay đổi | **Passed** — chạy thật 18/08 | Chạy 17/08 lộ lỗi: Cas Link gọi `onSuccess('', state)` — chuỗi rỗng, không phải publicToken — và app gửi thẳng lên, bị server từ chối đúng luật (`"publicToken required"`), nhưng câu đó vô nghĩa với người đang nhìn màn hình. Vá cùng ngày: chặn publicToken rỗng, đổi thành thông báo hành động được. **18/08 chạy lại và khôi phục trọn vẹn**: dòng chuyển từ hổ phách "Ngân hàng yêu cầu đăng nhập lại" sang xanh, và — bằng chứng quan trọng hơn cái tick — bấm **Đồng bộ** chạy được, mốc nhảy sang **20:32 18-08**. Grant thật sự dùng được, không chỉ là cờ `connected` trong DB. |
 | 6 | Xác thực OTP/thiết bị định kỳ | **Passed** — chạy thật 18/08 | 17/08 ghi là "treo vô hạn ở Đang liên kết…, chưa rõ nguyên nhân". **Sai, và sai vì thiếu một mẩu thông tin chứ không phải vì mã hỏng: OTP trên sandbox Cas là `123456`.** Cas Link không treo — nó đang chờ nhập OTP, và spinner "Đang liên kết…" của MIMI hiển thị đúng như thiết kế, vì `onSuccess` chỉ bắn sau khi khách làm xong. 18/08 nhập `123456` thì Cas hiện hộp thoại **"Thành công — Tài khoản của bạn đã cập nhật thành công"**, `onSuccess` bắn, liên kết khôi phục. Một lần chạy trung gian còn cho thấy nhánh còn lại cũng đúng: khi Cas trả `FI_SERVICE_ACCOUNT_CONNECTING`, MIMI khôi phục `connected` và báo "Liên kết vẫn hoạt động, không cần cập nhật" thay vì bắt liên kết lại. **Bài học:** tôi đọc mã, đọc tài liệu, rồi kết luận "không đủ bằng chứng" — trong khi thứ thiếu không nằm trong mã, nó là một giá trị test. Timeout 4 phút giữ nguyên, vẫn đúng cho trường hợp khách bỏ dở thật. |

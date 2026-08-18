@@ -252,6 +252,21 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       // own row, so anything selected here is reachable from the browser.
       .select('id, bank_name, account_number, account_name, status, last_synced_at, direction_convention')
       .eq('provider', 'bankhub')
+      /*
+       * Disconnected links leave the list entirely.
+       *
+       * They used to stay, and acceptance case 3 showed what that looks like:
+       * you press disconnect, get "Đã ngắt liên kết", and the account is still
+       * sitting there in amber with a warning triangle and its old sync time —
+       * no word about having been disconnected. Amber means "something needs
+       * your attention", so the one row on screen was flagging a problem that
+       * was actually the thing the person had just deliberately done.
+       *
+       * The DB row survives on purpose (it carries the audit trail and the
+       * revoked_at timestamp); it just has no business in a list headed
+       * "linked accounts" once it is no longer one.
+       */
+      .neq('status', 'disconnected')
       .order('created_at', { ascending: true });
     setConnections((data as CasConnection[] | null) ?? []);
     setLoading(false);
