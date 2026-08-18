@@ -55,3 +55,19 @@ describe('describeBankError', () => {
     }
   });
 });
+
+describe('codes the Cas sandbox can simulate', () => {
+  // The three states `POST /sandbox/grant/reset-login` can produce, i.e. the
+  // three acceptance cases 5, 6 and 7. PREVENTED was missing until 18/08, which
+  // is why case 7 left no lasting mark on the row.
+  it('PREVENTED tells the customer to fix it in their bank app, not to relink', () => {
+    const { action, remedy } = describeBankError('PREVENTED');
+    expect(action).toBe('reauth_in_bank_app');
+    expect(requiresRelink('PREVENTED')).toBe(false);
+    expect(remedy).toMatch(/ứng dụng ngân hàng/);
+  });
+
+  it('GRANT_LOGIN_REQUIRED is a relink, since Update Mode can resolve it', () => {
+    expect(requiresRelink('GRANT_LOGIN_REQUIRED')).toBe(true);
+  });
+});

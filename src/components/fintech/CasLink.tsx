@@ -290,8 +290,30 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         const next = { ...prev };
         for (const r of synced) {
           if (!r.connection_id) continue;
-          if (!r.error) delete next[r.connection_id];
-          else if (r.action === 'reauth_in_bank_app' && r.remedy) next[r.connection_id] = r.remedy;
+          if (!r.error) {
+            delete next[r.connection_id];
+            continue;
+          }
+          /*
+           * Any failure that is not a relink gets a lasting note — not only the
+           * codes this app happens to recognise.
+           *
+           * This used to require `action === 'reauth_in_bank_app'`, which meant
+           * the note depended on `errors.ts` already knowing the code. Acceptance
+           * case 7 showed why that is the wrong test: the sync failed, the toast
+           * said the bank was blocking website logins, the toast faded, and the
+           * row sat there green and clean because that particular code was not
+           * in the table. The safety net had a hole shaped exactly like the case
+           * it was built for.
+           *
+           * Cas can add codes at any time, so a table will always be incomplete.
+           * The rule that survives that is: if a sync failed and the row is not
+           * already flagged for relink, say so on the row. A known code gets its
+           * translated remedy; an unknown one gets whatever Cas said, which is
+           * still better than a green row implying nothing happened.
+           */
+          if (r.needsRelink) continue; // has its own amber banner already
+          next[r.connection_id] = r.remedy ?? r.error;
         }
         return next;
       });

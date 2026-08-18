@@ -78,6 +78,25 @@ const TABLE: Record<string, BankErrorInfo> = {
     remedy:
       'Ngân hàng đang tạm dừng dịch vụ cho tài khoản này. Hãy mở ứng dụng ngân hàng để kết nối lại, rồi thử lại.',
   },
+  /**
+   * The customer switched on their bank's "block login from website" setting.
+   *
+   * Missing from this table until 18/08, and its absence is exactly what the
+   * per-connection amber note was written to fix — yet the note never appeared
+   * for it. `describeBankError` fell through to `unknown`, the UI only persists
+   * a note for `reauth_in_bank_app`, so acceptance case 7 showed a toast that
+   * vanished and left a plain green row behind. The fix and the case it was
+   * built for missed each other by one missing key.
+   *
+   * `reauth_in_bank_app`, not `relink`: MIMI's grant is untouched and Update
+   * Mode cannot help. The switch is in the bank's own app and only the customer
+   * can turn it off.
+   */
+  PREVENTED: {
+    action: 'reauth_in_bank_app',
+    remedy:
+      'Tài khoản đang bật chặn đăng nhập từ website. Hãy mở ứng dụng ngân hàng trên điện thoại, tắt tuỳ chọn đó, rồi bấm Đồng bộ lại.',
+  },
   FI_SERVICE_ACCOUNT_CONNECTING: {
     action: 'wait',
     remedy: 'Tài khoản đang được kết nối. Chờ một lát rồi thử lại — không cần làm gì thêm.',
