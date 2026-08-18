@@ -158,15 +158,27 @@ Casso yêu cầu whitelist IP cho `/transfer`. Supabase Edge Functions **không 
 egress cố định** — mã chạy trên hạ tầng dùng chung, IP đổi giữa các lần gọi. Không
 có cách cấu hình nào trong Supabase khắc phục được.
 
-Ba đường đi, theo thứ tự tôi khuyến nghị:
+**Đã quyết 18/08: bỏ `transfer` khỏi phạm vi.** Không còn là một trong ba phương án
+cân nhắc nữa.
 
-1. **Bỏ `transfer` khỏi phạm vi nghiệm thu.** MIMI đọc sao kê để làm sổ sách và số
-   liệu thuế; nó không chuyển tiền hộ ai, và cũng không nên. 10 case biến mất cùng
-   với cả một lớp rủi ro.
-2. Đưa riêng `/transfer` qua một VM nhỏ có IP tĩnh làm proxy. Thêm một chặng hạ
-   tầng phải vận hành và giám sát, chỉ để phục vụ một tính năng chưa có.
-3. Hỏi Casso xem sandbox có nới whitelist được không. Kể cả được thì production
-   vẫn vướng.
+Lý do không phải vì `IP_NOT_ALLOWED` khó gỡ, mà vì **sản phẩm không đi hướng đó**:
+MIMI bỏ toàn bộ định vị cho vay và chuyển tiền, chuyển sang dựng sổ chi phí và số
+liệu thuế (xem `TINH_NANG_LOI_CHI_PHI.md`). Đọc sao kê để làm sổ thì không cần
+quyền chuyển tiền, và không nên có.
+
+Hai phương án còn lại đều đã loại:
+
+- *Dựng VM có IP tĩnh làm proxy cho `/transfer`* — thêm một chặng hạ tầng phải vận
+  hành và giám sát, chỉ để chứng minh một API sẽ không ai gọi.
+- *Xin Casso nới whitelist cho sandbox* — kể cả được thì production vẫn vướng, và
+  vẫn là chứng minh cho tính năng không tồn tại.
+
+Kiểm lại mã ngày 18/08 để chắc: **không có dòng nào gọi `/transfer`**. Nhóm này
+chưa từng được hiện thực, nên bỏ đi không để lại mã chết nào.
+
+Điều còn cần: **Casso đồng ý rút 10 case này khỏi bộ nghiệm thu của hợp đồng.**
+Đây là việc thương lượng, không phải việc MIMI tự quyết một mình — hợp đồng liệt kê
+ba mã dịch vụ và đây là một trong ba. Nhưng phía MIMI thì quyết rồi.
 
 ### 2. Endpoint nhận webhook của Cas — đã dựng 12/08, chờ đăng ký
 

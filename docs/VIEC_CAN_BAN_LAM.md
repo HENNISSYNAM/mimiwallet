@@ -145,11 +145,16 @@ Câu 1 là nút thắt lớn nhất còn lại của cả đợt nghiệm thu.
 > nhận được thì gọi ngược lại Cas hỏi, rồi hành động theo câu trả lời của Cas.
 > An toàn, nhưng tốn một lời gọi API mỗi lần.
 >
-> **4. Xin bỏ nhóm `transfer` (10 case) khỏi phạm vi nghiệm thu.**
-> `/transfer` trả `IP_NOT_ALLOWED`; Supabase Edge Functions không có IP egress
-> cố định nên không whitelist được. Quan trọng hơn: **sản phẩm đã bỏ hướng cho
-> vay và chuyển tiền**, nên đây là API chúng tôi sẽ không dùng.
+> **4. Đề nghị rút nhóm `transfer` (10 case) khỏi bộ nghiệm thu.**
+> Đây là quyết định đã chốt phía chúng tôi, không phải câu hỏi mở: **MIMI không
+> làm chức năng chuyển tiền.** Sản phẩm đọc sao kê để dựng sổ chi phí và số liệu
+> thuế; việc đó không cần quyền chuyển tiền và cũng không nên có. Trong mã hiện
+> không có một dòng nào gọi `/transfer`.
+> Riêng `IP_NOT_ALLOWED` chỉ là lý do phụ: Supabase Edge Functions không có IP
+> egress cố định nên không whitelist được, nhưng kể cả gỡ được thì chúng tôi vẫn
+> không dùng API này.
 >
+> Mong Casso xác nhận rút 10 case khỏi phạm vi, đưa mẫu số về **20 case**.
 > **5. Invoice Hub có hỗ trợ hoá đơn từ máy tính tiền theo NĐ 70/2025 không?**
 > *(Câu này cho lộ trình sản phẩm, không thuộc nghiệm thu)*
 
