@@ -78,6 +78,22 @@ export default function DashboardLayout() {
   const [query, setQuery] = useState('');
   const [mobileSearch, setMobileSearch] = useState(false);
   const [initials, setInitials] = useState('—');
+  /**
+   * Google profile photo, when the account signed in that way.
+   *
+   * Supabase copies the OAuth provider's claims into `user_metadata`, and
+   * Google's photo lands under `avatar_url` (older sessions may only carry the
+   * raw OIDC `picture` claim), so both are checked. Email/password accounts
+   * have neither and keep the initials.
+   *
+   * `avatarFailed` exists because that URL points at googleusercontent.com and
+   * can 403 once the photo is made private or the account is deleted. Without
+   * the fallback the header would show a broken-image glyph where a person's
+   * face used to be, which looks like the app is broken rather than like a
+   * missing photo.
+   */
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,6 +106,16 @@ export default function DashboardLayout() {
       if (cancelled) return;
       // Company name first, then the email local part — never an invented one.
       setInitials(initialsOf(data?.name ?? user.email?.split('@')[0] ?? null));
+
+      // Google puts the photo here. Both keys are read because Supabase passes
+      // the provider claims through largely untouched, and which one is present
+      // depends on when the session was created.
+      const meta = user.user_metadata ?? {};
+      const photo =
+        (typeof meta.avatar_url === 'string' && meta.avatar_url) ||
+        (typeof meta.picture === 'string' && meta.picture) ||
+        null;
+      setAvatarUrl(photo);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -156,8 +182,24 @@ export default function DashboardLayout() {
             >
               <Bell size={19} />
             </button>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm shrink-0">
-              <span className="text-xs font-bold text-white">{initials}</span>
+            {/* The gradient stays as the backing layer, so it shows through
+                while the photo is still loading and remains the whole avatar
+                when there is no photo — no empty circle, no layout shift. */}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+              {avatarUrl && !avatarFailed ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  aria-hidden="true"
+                  // Google serves these cross-origin; without this the request
+                  // carries no credentials and stays a plain public fetch.
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarFailed(true)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-bold text-white">{initials}</span>
+              )}
             </div>
           </div>
         </header>

@@ -1,7 +1,7 @@
 # Việc cần bạn tự làm — hướng dẫn tuần tự
 
-Cập nhật 18/08/2026. Làm theo đúng thứ tự; mỗi bước nói rõ **vì sao** và
-**dấu hiệu thành công** để bạn biết khi nào được đi tiếp.
+Cập nhật 18/08/2026. **Bước 1, 2, 3 tôi đã chạy xong** — giữ lại để bạn biết chuyện
+gì đã xảy ra. **Việc còn lại của bạn là Bước 4 và 5.**
 
 Tất cả lệnh chạy trong thư mục:
 
@@ -53,73 +53,33 @@ mới về 15% / 17% / 20%.
 
 
 
-## BƯỚC 2 — Đẩy mã lên production
+## BƯỚC 2 — Đẩy mã lên production — ✅ **ĐÃ XONG 18/08, Claude chạy**
 
-**Vì sao bạn làm:** đang ở nhánh `main`, remote nối thẳng Vercel — push là deploy
-production. Tôi không tự đẩy thứ ra ngoài mà chưa có bạn đồng ý.
+Bạn đồng ý nên tôi làm luôn. Commit `f6d123a`, đã push lên `main`.
 
-**Đã kiểm chứng sẵn:** `tsc` (app + node) exit 0, `deno check` exit 0,
+32 file: 24 sửa + 8 mới (4 logo, 3 tài liệu, 1 migration). Trước khi commit tôi
+soát xem có `.env` hay khoá nào lọt vào không — không có.
+
+Trước đó đã kiểm chứng đủ: `tsc` (app + node) exit 0, `deno check` exit 0,
 **176/176 test pass**, build exit 0.
 
-### 2a. Xem lại thay đổi
-
-```bash
-git status
-```
-
-24 file sửa + 7 file mới. Đáng liếc qua nhất là 4 file logo mới trong
-`src/assets/logos/` và 2 tài liệu mới trong `docs/`.
-
-### 2b. Commit
-
-```bash
-git add -A
-```
-
-Rồi mở `commit-msg.txt` bằng Notepad, dán nội dung ở cuối tài liệu này vào, lưu
-lại, và chạy:
-
-```bash
-git commit -F commit-msg.txt
-```
-
-(Dùng file thay vì gõ `-m` nhiều dòng vì thông điệp dài và có dấu ngoặc kép.)
-
-### 2c. Push
-
-```bash
-git push origin main
-```
-
-**Dấu hiệu thành công:** Vercel bắt đầu build. Xong thì mở
-`mimiwallet.vercel.app` — tiêu đề phải là **"Đóng thuế trên lợi nhuận, không phải
-trên doanh thu"**.
-
-Xoá file tạm sau khi xong:
-
-```bash
-rm commit-msg.txt
-```
+**Kiểm lại:** mở `mimiwallet.vercel.app`, tiêu đề phải là **"Đóng thuế trên lợi
+nhuận, không phải trên doanh thu"**. Vercel build mất vài phút sau khi push; nếu
+còn thấy tiêu đề cũ thì đợi thêm rồi tải lại bỏ qua cache (Ctrl+Shift+R).
 
 ---
 
-## BƯỚC 3 — Deploy 2 edge function
+## BƯỚC 3 — Deploy 2 edge function — ✅ **ĐÃ XONG 18/08, Claude chạy**
 
-**Vì sao:** cả hai đều dùng `_shared/bank/bankhub.ts` và `_shared/bank/ingest.ts`
-vừa sửa. Vercel chỉ deploy frontend, **không** deploy edge function — phải đẩy tay.
+`bank-link` và `cas-webhook` đều trả `"message":"Deployed Functions."`.
 
-```bash
-npx supabase functions deploy bank-link
-```
-
-```bash
-npx supabase functions deploy cas-webhook
-```
-
-**Dấu hiệu thành công:** mỗi lệnh in JSON có `"message":"Deployed Functions."`.
-Cảnh báo `Docker is not running` là bình thường, bỏ qua.
+Cần đẩy tay vì **Vercel chỉ deploy frontend** — edge function nằm trên Supabase,
+không nằm trong pipeline của Vercel. Cả hai đều dùng `_shared/bank/bankhub.ts` và
+`_shared/bank/ingest.ts` vừa sửa, nên không đẩy thì backend vẫn chạy bản cũ và
+nhánh OTP của case 4 sẽ không tồn tại.
 
 ---
+
 
 ## BƯỚC 4 — Chạy nghiệm thu, một buổi ~30 phút
 
