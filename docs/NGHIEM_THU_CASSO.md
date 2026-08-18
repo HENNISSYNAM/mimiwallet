@@ -103,6 +103,7 @@ là "treo vô hạn" thực ra là màn hình đang chờ đúng như thiết k�
 | Hỏi gì | Mở khoá case |
 |---|---|
 | Một cặp **số tài khoản + tên chủ tài khoản BIDV hợp lệ trong sandbox** | **12**, rồi **13**, rồi **15** |
+| **App Cas ID không quét được mã QR sandbox** — cần bản app trỏ vào sandbox, hoặc cách khác để khách tự thu hồi quyền | **10**, **11** — hiện không có đường nào khác để Casso phát sinh webhook thật |
 | Form tạo webhook **không có ô secret để ký payload** — có cách xác thực nguồn gửi không | Củng cố 10, 11 |
 | Có bỏ `transfer` khỏi phạm vi hợp đồng được không | Kết luận 10 case |
 | Invoice Hub có hỗ trợ **hoá đơn từ máy tính tiền** theo NĐ 70/2025 không | Ngoài nghiệm thu — cho lộ trình sản phẩm |
@@ -256,8 +257,8 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 10 | `USER_PERMISSION_REVOKED` | *Một nửa* | **Phía xử lý: đạt.** Bắn một sự kiện `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi: nó hỏi Cas, Cas nói grant còn sống, trả `verified / …:alive`. Đường push cũng chạy được đầu cuối — gọi Cas, ánh xạ, ghi DB. **Phía nhận: chưa.** Webhook do ta tự bắn, chưa phải Casso gửi. Xem đề nghị bên dưới. |
-| 11 | `DEFAULT_UPDATE` | *Một nửa* | như trên. Nhánh "grant còn sống → khôi phục `status=connected`" có trong mã nhưng chưa chạy được vì liên kết chưa từng bị treo. |
+| 10 | `USER_PERMISSION_REVOKED` | *Một nửa — **chặn bởi app Cas ID**, 18/08* | **Phía xử lý: đạt.** Bắn một sự kiện `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi: nó hỏi Cas, Cas nói grant còn sống, trả `verified / …:alive`. Đường push chạy được đầu cuối — gọi Cas, ánh xạ, ghi DB. **Phía nhận: chưa, và 18/08 xác định được vì sao chưa.** Cách duy nhất để Casso gửi webhook thật là khách thu hồi quyền từ **app Cas ID**, mà app đó **không quét được mã QR do Cas Link sinh ra trong sandbox** — nhiều khả năng app trỏ vào production nên không nhận mã sandbox. Không có app thì không thu hồi được từ phía khách, không thu hồi được thì Casso không có sự kiện nào để gửi. **Đây là câu hỏi cho Casso, không phải việc sửa mã.** |
+| 11 | `DEFAULT_UPDATE` | *Một nửa — chặn cùng lý do case 10* | như trên. Nhánh "grant còn sống → khôi phục `status=connected`" có trong mã nhưng chưa chạy thật được, vì nguồn phát sinh sự kiện cũng là app Cas ID. |
 
 ### 3. QRPay
 

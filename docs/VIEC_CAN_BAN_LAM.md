@@ -132,18 +132,25 @@ Câu 1 là nút thắt lớn nhất còn lại của cả đợt nghiệm thu.
 > Chỉ thiếu một cặp dữ liệu hợp lệ mà tài liệu không công bố.
 > *(Mở khoá case 12 → 13 → 15)*
 >
-> **2. Form tạo webhook không có ô secret để ký payload — có cách nào xác thực
+>
+> **2. App Cas ID không quét được mã QR do Cas Link sinh ra trên sandbox.**
+> Chúng tôi cần khách tự thu hồi quyền từ app để Casso phát sinh webhook thật —
+> đó là cách duy nhất chứng minh phía *nhận* webhook, vì phía *xử lý* chúng tôi
+> đã tự bắn sự kiện và chạy được đầu cuối rồi. Có bản Cas ID trỏ vào sandbox
+> không, hay có đường nào khác để thu hồi quyền trong môi trường thử?
+> *(Mở khoá case 10 và 11 — hiện không có đường nào khác)*
+> **3. Form tạo webhook không có ô secret để ký payload — có cách nào xác thực
 > nguồn gửi không?**
 > Hiện chúng tôi coi payload là tín hiệu đi kiểm tra chứ không phải mệnh lệnh:
 > nhận được thì gọi ngược lại Cas hỏi, rồi hành động theo câu trả lời của Cas.
 > An toàn, nhưng tốn một lời gọi API mỗi lần.
 >
-> **3. Xin bỏ nhóm `transfer` (10 case) khỏi phạm vi nghiệm thu.**
+> **4. Xin bỏ nhóm `transfer` (10 case) khỏi phạm vi nghiệm thu.**
 > `/transfer` trả `IP_NOT_ALLOWED`; Supabase Edge Functions không có IP egress
 > cố định nên không whitelist được. Quan trọng hơn: **sản phẩm đã bỏ hướng cho
 > vay và chuyển tiền**, nên đây là API chúng tôi sẽ không dùng.
 >
-> **4. Invoice Hub có hỗ trợ hoá đơn từ máy tính tiền theo NĐ 70/2025 không?**
+> **5. Invoice Hub có hỗ trợ hoá đơn từ máy tính tiền theo NĐ 70/2025 không?**
 > *(Câu này cho lộ trình sản phẩm, không thuộc nghiệm thu)*
 
 ---
