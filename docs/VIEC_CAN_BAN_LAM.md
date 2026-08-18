@@ -154,8 +154,8 @@ Câu 1 là nút thắt lớn nhất còn lại của cả đợt nghiệm thu.
 > egress cố định nên không whitelist được, nhưng kể cả gỡ được thì chúng tôi vẫn
 > không dùng API này.
 >
->
 > Mong Casso xác nhận rút 10 case khỏi phạm vi, đưa mẫu số về **20 case**.
+>
 > **5. Invoice Hub có hỗ trợ hoá đơn từ máy tính tiền theo NĐ 70/2025 không?**
 > *(Câu này cho lộ trình sản phẩm, không thuộc nghiệm thu)*
 
