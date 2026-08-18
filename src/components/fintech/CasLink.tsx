@@ -540,6 +540,14 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         if (grant.upToDate) {
           // FI_SERVICE_ACCOUNT_CONNECTING — the bank says nothing is wrong, so
           // the connection was parked on a stale error.
+          //
+          // Clearing lastError is the point of this line, not tidiness. Without
+          // it the screen showed a green tick, a success toast and a red
+          // "Liên kết chưa hoàn tất" panel from an earlier attempt, all at once
+          // — seen live on 18/08. A stale failure sitting under a fresh success
+          // is the same contradiction the amber bank-note fix was written for:
+          // the person cannot tell which of the two is describing right now.
+          setLastError(null);
           toast.success(grant.message ?? 'Liên kết vẫn hoạt động');
           setLinking(false);
           await loadConnections();
