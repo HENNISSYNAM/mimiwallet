@@ -6,29 +6,45 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
-## Kết quả tổng (cập nhật 17/08/2026)
+## Kết quả tổng (cập nhật 18/08/2026)
 
-| | Số case |
-|---|---|
-| **Passed** | **11** |
-| Partial (đạt một phần / đạt phía xử lý) | 4 |
-| Sẵn sàng chạy — cần bạn bấm qua giao diện | 1 |
-| Chưa chạy (đã có mã, chưa bấm) | 0 |
-| Chưa hiện thực | 3 |
-| Bị chặn — `IP_NOT_ALLOWED` | 10 |
-| Bị chặn — cần dữ liệu sandbox từ Casso | 1 |
-| **Tổng** | **30** |
+| | Trên 30 case | Trên 20 case — bỏ nhóm `transfer` |
+|---|---|---|
+| **Passed** | **13** | **13 (65%)** |
+| Phía xử lý đạt, chờ app Cas ID (case 10, 11) | 2 | 2 |
+| Đã viết mã, chưa chạy thật (case 4) | 1 | 1 |
+| Chờ dữ liệu sandbox từ Casso (case 12, 13) | 2 | 2 |
+| Chưa hiện thực (case 15) | 1 | 1 |
+| Ngoài phạm vi theo thiết kế (case 18) | 1 | 1 |
+| Bị chặn `IP_NOT_ALLOWED` — nhóm `transfer` | 10 | — |
+| **Tổng** | **30** | **20** |
 
-Case 5 và 6 chạy thật lần đầu 17/08 và mỗi cái lộ ra một vấn đề thật — không phải
-lỗi của Casso, lỗi ở phía MIMI. Case 5 đã vá ngay trong ngày. Case 6 chưa đủ bằng
-chứng để kết luận nguyên nhân, ghi rõ thay vì đoán. Chi tiết ở bảng bên dưới và ở
-mục "Vấn đề tìm thấy khi chạy thật case 5–7".
+**Buổi 18/08 đóng thêm 5 case**: 2, 3, 5, 6, 7. Cả năm đều từng bị ghi là chưa
+xong hoặc chưa rõ nguyên nhân, và cả năm chỉ đóng được nhờ **chạy thật** — không
+case nào tìm ra được bằng đọc mã.
 
-8/30 không phải vì hệ thống hỏng. Nó phản ánh một chuyện đơn giản: **hợp đồng liệt
-kê ba mã dịch vụ, ứng dụng mới hiện thực một** (`transaction`, cộng `qrpay` và `gdt`
-đã dựng thêm ngoài phạm vi gốc). Nhóm `transfer` chưa có dòng mã nào gọi tới. Đây là
-việc phải quyết trước khi ký, không phải lỗi để sửa.
+Ba lỗi giao diện lộ ra trong buổi đó, cùng một họ — **màn hình nói một đằng, sự
+thật một nẻo**:
 
+1. **Case 6** — khung đỏ "Liên kết chưa hoàn tất" đọng lại bên dưới một toast báo
+   thành công. Nhánh `upToDate` không xoá `lastError`.
+2. **Case 7** — ghi chú hổ phách không bám, vì điều kiện ghi chú phụ thuộc vào
+   bảng mã lỗi đã biết `PREVENTED`, mà nó không có trong bảng. Lưới an toàn thủng
+   đúng chỗ nó được viết ra để đỡ. Sửa bằng cách đổi quy tắc thay vì thêm một
+   dòng vào bảng — Cas thêm mã lúc nào cũng được, bảng sẽ luôn thiếu.
+3. **Case 3** — dòng đã ngắt vẫn nằm lại danh sách, cảnh báo hổ phách về đúng
+   việc người dùng vừa cố ý làm.
+
+Và một kết luận sai của chính tài liệu này đã được đính chính: case 6 từng ghi là
+"treo vô hạn, nguyên nhân chưa xác định". Không phải treo — Cas Link đang chờ nhập
+OTP, mà **OTP sandbox là `123456`**. Thứ còn thiếu không nằm trong mã; nó là một
+giá trị test.
+
+13/30 không phải vì hệ thống hỏng. Nó phản ánh một chuyện đơn giản: **hợp đồng
+liệt kê ba mã dịch vụ, ứng dụng hiện thực một** (`transaction`, cộng `qrpay` và
+`gdt` dựng thêm ngoài phạm vi gốc). Nhóm `transfer` chưa có dòng mã nào gọi tới,
+và sau khi sản phẩm bỏ hướng cho vay thì cũng sẽ không có. Đây là việc phải quyết
+với Casso, không phải lỗi để sửa.
 ## Kế hoạch hoàn thành nghiệm thu (lập 17/08/2026)
 
 ### Việc đầu tiên là một quyết định, không phải một dòng mã
@@ -244,12 +260,12 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
 | 1 | Liên kết tài khoản mới | **Passed** | `grant/token` 200 → Cas Link → `grant/exchange` 200 → dòng `bank_connections` `status=connected`. Grant hiện trong console Casso. |
-| 2 | Trùng thông tin liên kết | *Partial* | Upsert theo `(company_id, provider, account_number)` nên **không tạo dòng mới** — phần cốt lõi đạt. Nhưng hệ thống không báo "Liên kết thất bại – Tài khoản đã tồn tại"; nó làm mới token. Cố ý: case 5 yêu cầu liên kết lại để khôi phục kết nối hỏng, mà từ chối liên kết lặp thì không khôi phục được. Hai case này mâu thuẫn nhau ở bản gốc. |
+| 2 | Trùng thông tin liên kết | **Passed** — chứng minh bằng DB 18/08 | Chạy trọn vòng ngắt rồi liên kết lại. Truy vấn `bank_connections` sau đó: **đúng một dòng**, `created_at = 2026-08-12 11:10:56` — **nguyên vẹn dòng của lần liên kết đầu tiên ngày 12/08**, `revoked_at` về `null`, `status = connected`. Upsert theo `(company_id, provider, account_number)` tái dùng đúng dòng cũ, không đẻ dòng mới, và danh tính dòng sống sót qua cả một chu kỳ ngắt–nối. Nhìn màn hình không kết luận được điều này (bộ lọc `status != disconnected` che dòng cũ đi), nên bằng chứng lấy thẳng từ database. Vẫn giữ ghi chú thiết kế: hệ thống **không** báo "Liên kết thất bại – Tài khoản đã tồn tại" mà làm mới token, vì case 5 cần đúng hành vi đó để khôi phục kết nối hỏng. Hai case mâu thuẫn nhau ở bản gốc; chọn theo case 5. |
 | 3 | Xoá liên kết không cần OTP | **Passed** — chạy thật 18/08 | Bấm biểu tượng ngắt liên kết → toast "Đã ngắt liên kết", `status=disconnected`, token xoá. Ngân hàng **không** đòi OTP ở bước này nên nhánh case 4 không chạm tới. Lộ ra một lỗi giao diện, đã sửa cùng ngày: dòng bị ngắt **vẫn nằm lại trong danh sách**, màu hổ phách kèm tam giác cảnh báo và mốc đồng bộ cũ, không một chữ nào nói đã ngắt. Hổ phách nghĩa là "cần bạn để ý", nên màn hình đang cảnh báo về đúng việc người dùng vừa cố ý làm. Nay lọc `status != disconnected` khỏi danh sách; dòng trong DB giữ nguyên vì nó mang dấu vết kiểm toán và `revoked_at`. |
 | 4 | Xoá liên kết cần OTP | *Đã viết mã 18/08 — chưa kiểm chứng* | `removeGrant` giờ trả `RemoveGrantResult` với cờ `otpRequired`, đặt khi Cas đáp bằng `grantToken` thay vì hoàn tất. Backend **không** đánh dấu `disconnected` trên nhánh đó — đó là điểm mấu chốt: báo "đã ngắt kết nối" trong khi ngân hàng vẫn coi dữ liệu được uỷ quyền là kiểu sai duy nhất endpoint này tuyệt đối không được mắc. Frontend mở Cas Link trên `grantToken` rồi gọi `disconnect` lần hai sau khi khách xác thực xong; bỏ dở giữa chừng thì hàng vẫn ghi `connected`, đúng sự thật. **Chưa chạy được `deno check` lẫn `tsc` vì toolchain máy treo (xem ghi chú cuối mục kế hoạch) — mã chưa được kiểm chứng dòng nào.** |
 | 5 | Thông tin đăng nhập thay đổi | **Passed** — chạy thật 18/08 | Chạy 17/08 lộ lỗi: Cas Link gọi `onSuccess('', state)` — chuỗi rỗng, không phải publicToken — và app gửi thẳng lên, bị server từ chối đúng luật (`"publicToken required"`), nhưng câu đó vô nghĩa với người đang nhìn màn hình. Vá cùng ngày: chặn publicToken rỗng, đổi thành thông báo hành động được. **18/08 chạy lại và khôi phục trọn vẹn**: dòng chuyển từ hổ phách "Ngân hàng yêu cầu đăng nhập lại" sang xanh, và — bằng chứng quan trọng hơn cái tick — bấm **Đồng bộ** chạy được, mốc nhảy sang **20:32 18-08**. Grant thật sự dùng được, không chỉ là cờ `connected` trong DB. |
 | 6 | Xác thực OTP/thiết bị định kỳ | **Passed** — chạy thật 18/08 | 17/08 ghi là "treo vô hạn ở Đang liên kết…, chưa rõ nguyên nhân". **Sai, và sai vì thiếu một mẩu thông tin chứ không phải vì mã hỏng: OTP trên sandbox Cas là `123456`.** Cas Link không treo — nó đang chờ nhập OTP, và spinner "Đang liên kết…" của MIMI hiển thị đúng như thiết kế, vì `onSuccess` chỉ bắn sau khi khách làm xong. 18/08 nhập `123456` thì Cas hiện hộp thoại **"Thành công — Tài khoản của bạn đã cập nhật thành công"**, `onSuccess` bắn, liên kết khôi phục. Một lần chạy trung gian còn cho thấy nhánh còn lại cũng đúng: khi Cas trả `FI_SERVICE_ACCOUNT_CONNECTING`, MIMI khôi phục `connected` và báo "Liên kết vẫn hoạt động, không cần cập nhật" thay vì bắt liên kết lại. **Bài học:** tôi đọc mã, đọc tài liệu, rồi kết luận "không đủ bằng chứng" — trong khi thứ thiếu không nằm trong mã, nó là một giá trị test. Timeout 4 phút giữ nguyên, vẫn đúng cho trường hợp khách bỏ dở thật. |
-| 7 | Chặn đăng nhập từ website | *Partial* | Dựng lỗi thành công 17/08, toast "Đồng bộ lỗi: Tài khoản đang bị chặn đăng nhập từ website, mở ứng dụng di động..." đúng ý nghĩa `PREVENTED`. Người dùng thật gặp đúng case này báo lại bằng "dm =))" — hàng vẫn hiện dấu tick xanh "đã kết nối" cùng lúc với toast, nhìn mâu thuẫn. Kiểm tra lại mã: đúng về bản chất — `FI_SERVICE_ACCOUNT_PAUSED`/`PREVENTED` có `action: 'reauth_in_bank_app'`, không phải `'relink'`, nên **"Cập nhật" (Update Mode) không sửa được lỗi này** — grant phía MIMI vẫn còn nguyên, chỉ là ngân hàng tự chặn truy cập từ web, khách phải mở app ngân hàng gỡ chặn, việc nằm hoàn toàn ngoài tầm MIMI. Cái thiếu là toast biến mất thì không còn dấu hiệu gì trên hàng. Đã vá 17/08: `ingest.ts` trả thêm `action`/`remedy` theo bảng lỗi có sẵn, `CasLink.tsx` lưu `remedy` vào state bền `bankNotes` theo từng connection và hiện thành dòng phụ màu hổ phách dưới tên tài khoản, thay cho dòng "Đồng bộ lúc..." — không còn biến mất theo toast, và không gắn nút "Cập nhật" vì bấm cũng không giải quyết được. |
+| 7 | Chặn đăng nhập từ website | **Passed** — chạy thật 18/08 | Case này đóng sau **hai** vòng sửa. 17/08: toast đúng nghĩa `PREVENTED`, nhưng hàng vẫn tick xanh — người dùng phản ứng bằng "dm =))". Bản chất đúng: `action` là `reauth_in_bank_app` chứ không phải `relink`, grant MIMI còn nguyên, ngân hàng tự chặn, "Cập nhật" không sửa được. Cái thiếu là toast tan thì hàng không còn dấu hiệu gì. Vá lần một: `ingest.ts` trả thêm `action`/`remedy`, `CasLink.tsx` giữ ghi chú hổ phách theo từng connection. **18/08 chạy lại thì ghi chú vẫn không hiện** — vá lần một có lỗ hổng hình dạng đúng bằng chính case này: điều kiện ghi chú là `action === 'reauth_in_bank_app'`, tức phụ thuộc `errors.ts` đã biết mã, mà `PREVENTED` không có trong bảng nên rơi vào `unknown`. Vá lần hai đổi quy tắc: **sync lỗi mà chưa gắn cờ relink thì luôn để lại ghi chú** — mã đã biết hiện câu tiếng Việt, mã lạ hiện nguyên văn Cas. Chạy lại: hàng hiện đúng *"Tài khoản đang bật chặn đăng nhập từ website. Hãy mở ứng dụng ngân hàng trên điện thoại, tắt tuỳ chọn đó, rồi bấm Đồng bộ lại."* và **ở lại sau khi toast tan**. |
 | 8 | Liên kết thành công tại đối tác | **Passed** | Dòng `bank_connections` có `grant_id`, `access_token_enc` (ML-KEM-768 + AES-256-GCM), `status=connected`. |
 | 9 | Liên kết thành công tại Casso | **Passed** | Grant hiện trong `console.bankhub.dev → Developer → Logs` kèm `grant/exchange`. |
 
