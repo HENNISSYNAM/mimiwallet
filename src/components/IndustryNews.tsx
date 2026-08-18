@@ -57,9 +57,16 @@ interface Props {
    * only the outer chrome is skipped, so this remains usable standalone.
    */
   embedded?: boolean;
+  /**
+   * Set when the panel occupies a full-width row rather than a side column, so
+   * the list can flow in two columns instead of one tall stack. Passed down
+   * rather than measured, because the container's width comes from a grid span
+   * the parent chooses — see DashboardOverview's news row.
+   */
+  wide?: boolean;
 }
 
-export default function IndustryNews({ embedded = false }: Props = {}) {
+export default function IndustryNews({ embedded = false, wide = false }: Props = {}) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +127,10 @@ export default function IndustryNews({ embedded = false }: Props = {}) {
         <p className="text-sm text-muted-foreground">Chưa có tin mới.</p>
       )}
 
-      <div className="space-y-3">
+      {/* Two columns once the panel is wide. A single stack of five cards
+          across a full-width row leaves each two-line headline swimming in
+          horizontal space — the list reads as five nearly-empty bands. */}
+      <div className={wide ? 'grid sm:grid-cols-2 gap-3 items-start' : 'space-y-3'}>
         {news.slice(0, 5).map((item, i) => (
           <motion.a
             key={item.url}

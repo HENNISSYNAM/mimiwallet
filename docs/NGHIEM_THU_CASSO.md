@@ -29,6 +29,104 @@ kê ba mã dịch vụ, ứng dụng mới hiện thực một** (`transaction`,
 đã dựng thêm ngoài phạm vi gốc). Nhóm `transfer` chưa có dòng mã nào gọi tới. Đây là
 việc phải quyết trước khi ký, không phải lỗi để sửa.
 
+## Kế hoạch hoàn thành nghiệm thu (lập 17/08/2026)
+
+### Việc đầu tiên là một quyết định, không phải một dòng mã
+
+Ngày 17/08 sản phẩm bỏ toàn bộ định vị cho vay: không cấp vốn, không ứng hoá đơn,
+không chuyển tiền hộ. Trọng tâm chuyển sang dựng sổ chi phí và số liệu thuế
+(xem `TINH_NANG_LOI_CHI_PHI.md`).
+
+Điều đó biến khuyến nghị số 1 ở mục dưới từ *đề xuất* thành *hệ quả hiển nhiên*:
+
+> **10 case nhóm `transfer` đang chặn vì `IP_NOT_ALLOWED` phục vụ một tính năng
+> MIMI vừa quyết định không làm.**
+
+Giữ chúng trong phạm vi nghiệm thu nghĩa là phải dựng một VM có IP tĩnh làm proxy,
+vận hành và giám sát nó, chỉ để chứng minh một API sẽ không ai gọi. Bỏ ra thì mẫu
+số còn **20 case**, và tỷ lệ hiện tại đọc đúng thực chất hơn hẳn:
+
+| | Trên 30 case | Trên 20 case (bỏ `transfer`) |
+|---|---|---|
+| Passed | 8 (27%) | 8 (40%) |
+| Còn phải đóng | 22 | 12 |
+
+Đây là việc cần bạn xác nhận với Casso, không phải việc sửa mã.
+
+### Bốn đợt, theo ai gỡ được nút thắt
+
+#### Đợt 1 — tôi làm, không phụ thuộc ai
+
+| Việc | Đóng case | Trạng thái 18/08 |
+|---|---|---|
+| Ghi lại case 18 cho đúng | 18 | ✅ **Xong.** Chuyển từ "chưa hiện thực" sang "ngoài phạm vi theo thiết kế" |
+| Hiện thực nhánh xoá liên kết cần OTP | 4 | ✅ Đã viết và kiểm kiểu sạch — `tsc` (app + node) và `deno check` (`bank-link`, `cas-webhook`) đều exit 0. Vẫn cần **chạy thật** mới đóng được case: kiểm kiểu chứng minh mã hợp lệ, không chứng minh Cas hành xử đúng như giả định |
+| Đẩy migration `20260817140000` lên Supabase | — | ✅ **Xong 18/08.** Đã xác minh bằng truy vấn DB thật: hai dòng đúng ngày `2026-07-01`, `con_so_moc` 3 tỷ ghi được. Lần chạy đầu hỏng vì `integer out of range` — đã thêm `ALTER COLUMN con_so_moc TYPE bigint` |
+
+> **Bài học về môi trường, đáng ghi vì đã mắc hai lần.**
+>
+> Trong lúc làm phần này máy chậm bất thường: lệnh typecheck vốn chạy 10 giây mất
+> hơn 5 phút, kể cả sau khi dọn tiến trình node và xoá `.tsbuildinfo`. Tôi kết
+> luận toolchain hỏng và ghi vào tài liệu rằng mã "chưa kiểm chứng dòng nào".
+>
+> **Sai.** Nó chậm chứ không hỏng. Chạy nền và để yên thì xong hết, exit 0:
+> `tsc` cả `tsconfig.app.json` lẫn `tsconfig.node.json`, `deno check` cả
+> `bank-link` lẫn `cas-webhook`. Cái sai thật là **kill nó giữa chừng bốn lần
+> rồi kết luận từ chính việc mình kill**.
+>
+> Lần trước cũng vậy: một bản build mất 15 phút 19 giây rồi vẫn xong. Quy tắc rút
+> ra: lệnh chậm thì cho chạy nền và làm việc khác, đừng dừng nó rồi suy ra kết
+> luận về công cụ.
+
+#### Đợt 2 — cần bạn ngồi bấm, một lần ~30 phút
+
+Làm liền mạch trong một buổi vì bước 1 huỷ grant đang có; đừng bắt đầu nếu không
+bấm nối lại được ngay.
+
+| Thứ tự | Thao tác | Đóng case |
+|---|---|---|
+| 1 | Mở **Cas ID** → thu hồi quyền đã cấp cho MIMI | **10** — và lần đầu thấy envelope webhook thật |
+| 2 | Xem MIMI tự chuyển liên kết sang `disconnected` | **11**, một phần **4** |
+| 3 | Liên kết lại từ đầu trong Fintech Hub | **1** lần nữa, và **2** (trùng thông tin) |
+| 4 | Bấm **Ngắt kết nối** trong MIMI | **3** |
+| 5 | Giả lập `GRANT_LOGIN_REQUIRED` → bấm **Cập nhật** | **5** — kiểm bản vá publicToken rỗng |
+| 6 | Giả lập `OTP_REQUIRED` → bấm **Cập nhật** → **nhập OTP `123456`** | **6** — xem có `onSuccess` không |
+| 7 | Giả lập `PREVENTED` → xem ghi chú hổ phách còn lại sau khi toast tan | **7** |
+
+Bước 6 từng là bước duy nhất tôi không tự kết luận được. **18/08 đã có mảnh còn
+thiếu: OTP sandbox là `123456`.** Nếu nhập vào rồi `onSuccess` bắn ra thì case 6
+chưa bao giờ là lỗi — nó là một ô nhập tôi không biết cách điền, và cái tôi ghi
+là "treo vô hạn" thực ra là màn hình đang chờ đúng như thiết kế.
+
+#### Đợt 3 — phải hỏi Casso
+
+| Hỏi gì | Mở khoá case |
+|---|---|
+| Một cặp **số tài khoản + tên chủ tài khoản BIDV hợp lệ trong sandbox** | **12**, rồi **13**, rồi **15** |
+| Form tạo webhook **không có ô secret để ký payload** — có cách xác thực nguồn gửi không | Củng cố 10, 11 |
+| Có bỏ `transfer` khỏi phạm vi hợp đồng được không | Kết luận 10 case |
+| Invoice Hub có hỗ trợ **hoá đơn từ máy tính tiền** theo NĐ 70/2025 không | Ngoài nghiệm thu — cho lộ trình sản phẩm |
+
+Case 12 là nút thắt lớn nhất còn lại: mã đã hiện thực đầy đủ, BIDV đã nhận yêu cầu
+và trả *"Thông tin nhập không chính xác"* — tức đã tới khâu kiểm tra của ngân hàng.
+Thiếu đúng một cặp dữ liệu hợp lệ mà tài liệu không công bố.
+
+#### Đợt 4 — sau khi đợt 2 và 3 xong
+
+Chạy lại toàn bộ, cập nhật bảng, ghi requestId cho từng case mới đóng.
+
+### Đích đến thực tế
+
+| Kịch bản | Passed | Ghi chú |
+|---|---|---|
+| Hôm nay | 8/20 | Sau khi bỏ `transfer` |
+| Xong đợt 1 + 2 | **15/20** | Chỉ cần bạn bấm và tôi viết nhánh OTP |
+| Casso trả lời được QRPay | **18/20** | Còn 15 phụ thuộc 12 |
+| Còn lại | 2 | Case 6 có thể đóng luôn nếu `123456` là thứ còn thiếu; case 13 phụ thuộc 12 |
+
+**15/20 nằm hoàn toàn trong tầm hai bên**, không chờ ai. Phần còn lại phụ thuộc một
+câu trả lời từ Casso.
+
 ## Ba việc chặn, theo mức độ
 
 ### 1. `IP_NOT_ALLOWED` chặn toàn bộ nhóm chuyển tiền — 10 case
@@ -147,10 +245,10 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 | 1 | Liên kết tài khoản mới | **Passed** | `grant/token` 200 → Cas Link → `grant/exchange` 200 → dòng `bank_connections` `status=connected`. Grant hiện trong console Casso. |
 | 2 | Trùng thông tin liên kết | *Partial* | Upsert theo `(company_id, provider, account_number)` nên **không tạo dòng mới** — phần cốt lõi đạt. Nhưng hệ thống không báo "Liên kết thất bại – Tài khoản đã tồn tại"; nó làm mới token. Cố ý: case 5 yêu cầu liên kết lại để khôi phục kết nối hỏng, mà từ chối liên kết lặp thì không khôi phục được. Hai case này mâu thuẫn nhau ở bản gốc. |
 | 3 | Xoá liên kết không cần OTP | *Chưa chạy* | Đã có mã: `disconnect` → `DELETE /grant` → `status=disconnected`, xoá token. Nút ở `CasLink.tsx:443`. Chưa bấm vì nó sẽ huỷ grant thật duy nhất đang có. |
-| 4 | Xoá liên kết cần OTP | Chưa hiện thực | `removeGrant` không xử lý nhánh trả về grantToken để nhập OTP; không có chỗ nhận `GRANT_DELETED`. |
+| 4 | Xoá liên kết cần OTP | *Đã viết mã 18/08 — chưa kiểm chứng* | `removeGrant` giờ trả `RemoveGrantResult` với cờ `otpRequired`, đặt khi Cas đáp bằng `grantToken` thay vì hoàn tất. Backend **không** đánh dấu `disconnected` trên nhánh đó — đó là điểm mấu chốt: báo "đã ngắt kết nối" trong khi ngân hàng vẫn coi dữ liệu được uỷ quyền là kiểu sai duy nhất endpoint này tuyệt đối không được mắc. Frontend mở Cas Link trên `grantToken` rồi gọi `disconnect` lần hai sau khi khách xác thực xong; bỏ dở giữa chừng thì hàng vẫn ghi `connected`, đúng sự thật. **Chưa chạy được `deno check` lẫn `tsc` vì toolchain máy treo (xem ghi chú cuối mục kế hoạch) — mã chưa được kiểm chứng dòng nào.** |
 | 5 | Thông tin đăng nhập thay đổi | *Partial* | Chạy thật 17/08. Dựng lỗi thành công: banner "Ngân hàng yêu cầu đăng nhập lại" hiện đúng. Bấm "Cập nhật" (Update Mode) thì Cas Link gọi `onSuccess('', state)` — chuỗi rỗng, không phải publicToken thật — và app thật thà gửi lên, bị server từ chối đúng luật (`"publicToken required"`), nhưng thông báo đó vô nghĩa với người đang nhìn màn hình. **Đã vá 17/08**: chặn publicToken rỗng trước khi gọi `exchange`, hiện thông báo có thể hành động. Khôi phục qua Update Mode **chưa chạy xong lần nào** — cần thử lại sau bản vá. |
-| 6 | Xác thực OTP/thiết bị định kỳ | *Partial* | Chạy thật 17/08. Dựng lỗi thành công. Bấm "Cập nhật": Cas Link mở nhưng treo vô hạn ở "Đang liên kết…" — không `onSuccess`, không `onExit`. Chưa đủ bằng chứng để kết luận nguyên nhân (sandbox không có OTP thật để nhập, hay SDK treo) — **không đoán, chờ thử lại có log rõ hơn**. Đã thêm timeout 4 phút để không còn spinner vô hạn, dù chưa biết nguyên nhân gốc. |
-| 7 | Chặn đăng nhập từ website | *Sẵn sàng chạy* | Dựng lỗi thành công 17/08, toast "Đồng bộ lỗi: Tài khoản đang bị chặn đăng nhập từ website, mở ứng dụng di động..." đúng ý nghĩa `PREVENTED`. Chưa bấm "Cập nhật" để khôi phục — làm sau case 5. |
+| 6 | Xác thực OTP/thiết bị định kỳ | *Partial — nhiều khả năng không phải lỗi* | Chạy thật 17/08. Dựng lỗi thành công. Bấm "Cập nhật": Cas Link mở, MIMI đứng ở "Đang liên kết…", không `onSuccess`, không `onExit`. Ghi là "treo, chưa rõ nguyên nhân". **18/08 có thêm dữ kiện: OTP trên sandbox Cas là `123456`.** Nếu iframe lúc đó đang hiện ô nhập OTP thì **nó không treo — nó đang chờ nhập**, và spinner của MIMI hiển thị như vậy là đúng, vì `onSuccess`/`onExit` chỉ bắn sau khi khách làm xong. Nghĩa là thứ tôi ghi là lỗi có thể chỉ là một bước tôi không biết cách hoàn tất. **Chưa xác nhận** — cần chạy lại, nhập `123456`, xem có `onSuccess` không. Timeout 4 phút vẫn giữ: nó vô hại và vẫn đúng cho trường hợp khách bỏ dở thật. |
+| 7 | Chặn đăng nhập từ website | *Partial* | Dựng lỗi thành công 17/08, toast "Đồng bộ lỗi: Tài khoản đang bị chặn đăng nhập từ website, mở ứng dụng di động..." đúng ý nghĩa `PREVENTED`. Người dùng thật gặp đúng case này báo lại bằng "dm =))" — hàng vẫn hiện dấu tick xanh "đã kết nối" cùng lúc với toast, nhìn mâu thuẫn. Kiểm tra lại mã: đúng về bản chất — `FI_SERVICE_ACCOUNT_PAUSED`/`PREVENTED` có `action: 'reauth_in_bank_app'`, không phải `'relink'`, nên **"Cập nhật" (Update Mode) không sửa được lỗi này** — grant phía MIMI vẫn còn nguyên, chỉ là ngân hàng tự chặn truy cập từ web, khách phải mở app ngân hàng gỡ chặn, việc nằm hoàn toàn ngoài tầm MIMI. Cái thiếu là toast biến mất thì không còn dấu hiệu gì trên hàng. Đã vá 17/08: `ingest.ts` trả thêm `action`/`remedy` theo bảng lỗi có sẵn, `CasLink.tsx` lưu `remedy` vào state bền `bankNotes` theo từng connection và hiện thành dòng phụ màu hổ phách dưới tên tài khoản, thay cho dòng "Đồng bộ lúc..." — không còn biến mất theo toast, và không gắn nút "Cập nhật" vì bấm cũng không giải quyết được. |
 | 8 | Liên kết thành công tại đối tác | **Passed** | Dòng `bank_connections` có `grant_id`, `access_token_enc` (ML-KEM-768 + AES-256-GCM), `status=connected`. |
 | 9 | Liên kết thành công tại Casso | **Passed** | Grant hiện trong `console.bankhub.dev → Developer → Logs` kèm `grant/exchange`. |
 
@@ -181,7 +279,7 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 18 | Thông tin tài khoản (KYC) | Chưa hiện thực — **cố ý** | Đã bỏ scope `identity` để Cas không gửi CCCD, ngày sinh, địa chỉ, số điện thoại. Không nhận thì mạnh hơn nhận rồi không lưu. Ghi trong `bank-link/index.ts`. |
+| 18 | Thông tin tài khoản (KYC) | **Ngoài phạm vi — theo thiết kế** | Không phải thiếu sót nên không tính vào nhóm "chưa hiện thực". Đã **chủ động bỏ** scope `identity` để Cas không gửi CCCD, ngày sinh, địa chỉ, số điện thoại. Không nhận dữ liệu thì mạnh hơn nhận rồi hứa không lưu — thứ không tồn tại trong hệ thống thì không rò rỉ được. Ghi trong `bank-link/index.ts`. Muốn đóng case này theo đúng chữ trong hợp đồng thì phải bật lại scope `identity`, tức đi ngược quyết định trên; cần Casso và bạn thống nhất là **bỏ khỏi phạm vi**, không phải làm cho có. |
 | 19 | Recall API <1 phút | **Passed** | `RATE_LIMIT`, requestId `p3xWQO8zGpdyMh5T` (quan sát trên `/transactions`). |
 | 20 | Token không hợp lệ (identity) | **Passed** | `GET /identity` → 400 `GRANT_NOT_FOUND`, requestId `ex7NzqLUT2jM9UVv`, 15ms. |
 | 21 | Chuyển tiền thành công | Bị chặn | 403 `IP_NOT_ALLOWED`. |

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchTransactions, BankhubError, type BankhubConfig } from "./bankhub.ts";
+import { describeBankError, type BankErrorAction } from "./errors.ts";
 import {
   mapBankhubTransactions,
   latestReference,
@@ -46,6 +47,16 @@ export interface IngestResult {
   error?: string;
   errorCode?: string;
   needsRelink?: boolean;
+  /**
+   * What kind of failure this is, from `errors.ts`'s documented code table —
+   * carried all the way to the UI so a connection that is fine on MIMI's side
+   * but blocked on the bank's side (`reauth_in_bank_app`, e.g. the customer
+   * turned on "block website login") gets a remedy that says so, rather than
+   * `needsRelink: false` reading as "nothing wrong" the moment the one-shot
+   * toast for it has scrolled away.
+   */
+  action?: BankErrorAction;
+  remedy?: string;
 }
 
 export interface IngestWindow {
@@ -97,7 +108,8 @@ export async function ingestConnection(
     }
     if (e instanceof BankhubError) {
       console.error(`connection ${conn.id}: Cas said ${e.errorCode}`, e.message);
-      return { ...base, error: e.message, errorCode: e.errorCode };
+      const { action, remedy } = describeBankError(e.errorCode);
+      return { ...base, error: e.message, errorCode: e.errorCode, action, remedy };
     }
     console.error(`connection ${conn.id}: transaction fetch failed`, e);
     return { ...base, error: (e as Error).message };

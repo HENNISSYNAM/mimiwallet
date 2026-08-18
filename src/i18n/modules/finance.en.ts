@@ -8,6 +8,7 @@ const m = {
         total: 'Total invoices',
         pending: 'Unpaid',
         overdue: 'Overdue',
+        paid: 'Collected',
         advanced: 'Advanced',
       },
       searchPlaceholder: 'Search by client, invoice number...',
@@ -52,10 +53,12 @@ const m = {
         total: 'Total',
         issuedDate: 'Issued date',
         dueDate: 'Due date',
-        advanceTitle: 'Invoice advance',
-        advanceAmount: 'Advance amount (80%)',
-        advanceFee: 'Fee (1.5% / 30 days)',
+        advanceTitle: 'Invoice advance — not yet available',
+        advanceAmount: 'Estimated advance (80%)',
+        advanceFee: 'Indicative fee (1.5% / 30 days)',
         advanceNow: 'Advance now →',
+        advanceUnavailable:
+          'MIMI does not provide funding yet. The figures above are an estimate to give you a sense of scale, not an approved amount — pressing this would not put money in your account.',
       },
       toast: {
         fillRequired: 'Please fill in client, amount and due date',
@@ -120,7 +123,9 @@ const m = {
       toast: {
         companyNotFound: 'Could not find your company',
         applyFailed: 'Loan application failed: {{error}}',
-        applySuccess: 'Loan request sent, awaiting approval',
+        // See the Vietnamese note: nothing is awaiting approval because there is
+        // no lender. This records interest.
+        applySuccess: 'Your funding need has been recorded. MIMI has no lending partner yet — we will let you know when it does.',
       },
     },
     reports: {

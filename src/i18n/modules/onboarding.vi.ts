@@ -3,8 +3,11 @@ const m = {
     stepsMeta: [
       { title: 'Tạo tài khoản', desc: 'Bảo mật & riêng tư' },
       { title: 'Doanh nghiệp', desc: 'Thông tin kinh doanh' },
-      { title: 'Kết nối dữ liệu', desc: 'Tăng hạn mức vốn' },
-      { title: 'Nhu cầu vốn', desc: 'Giải pháp phù hợp' },
+      // "Tăng hạn mức vốn" was the reason given for connecting a bank, on a
+      // product that grants no limit to anyone. The real reason is the one
+      // below it: statements are what the cost record is built from.
+      { title: 'Kết nối dữ liệu', desc: 'Nguồn để dựng sổ chi phí' },
+      { title: 'Nhu cầu của bạn', desc: 'Giải pháp phù hợp' },
       { title: 'Xác minh eKYC', desc: 'Hoàn tất hồ sơ' },
     ],
     hidePassword: 'Ẩn mật khẩu',
@@ -107,11 +110,12 @@ const m = {
     successSub: 'AI đang phân tích dữ liệu của bạn',
     analysisSteps: [
       'Phân tích dữ liệu ngân hàng...',
-      'Tính toán điểm tín dụng AI...',
-      'Xác định hạn mức phù hợp...',
+      'Tách giao dịch nội bộ khỏi doanh thu...',
+      'Đối chiếu ngưỡng thuế...',
       'Gửi kết quả qua SMS/Email...',
     ],
-    estimatedLimitLabel: 'Dự kiến hạn mức',
+    // Was 'Dự kiến hạn mức' — an estimated credit limit nobody can draw on.
+    estimatedLimitLabel: 'Doanh thu ghi nhận được',
     contactIn24h: 'Chúng tôi sẽ liên hệ trong 24 giờ',
     goToDashboard: 'Vào Dashboard ngay →',
   },

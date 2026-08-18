@@ -1,15 +1,29 @@
 const m = {
   landing: {
+    /*
+     * This is the headline the page actually renders (`landing.hero.*`); the
+     * root `hero.*` block only supplies the badge and secondary CTA.
+     *
+     * It read "Vốn về tài khoản trước khi khách trả tiền" until 17/08/2026 —
+     * a promise of money arriving, from a product with no credit licence and no
+     * disbursement partner. Nothing behind it could ever have paid out.
+     *
+     * The replacement is a promise about money too, but one MIMI controls: from
+     * 01/01/2026 thuế khoán is gone, every household business self-declares on
+     * real revenue, and the 500 triệu–3 tỷ band chooses between 15% on profit
+     * and a percentage of revenue. Only someone who can document costs gets to
+     * choose. MIMI holds the outflows that document them.
+     */
     hero: {
-      titleLine1: 'Vốn về tài khoản',
-      titleLine2: 'trước khi khách trả tiền',
+      titleLine1: 'Đóng thuế trên lợi nhuận,',
+      titleLine2: 'không phải trên doanh thu',
       subtitle:
-        'Mimi Wallet chấm điểm tín dụng doanh nghiệp bạn từ dữ liệu giao dịch thật, rồi ứng trước tới 80% giá trị hóa đơn chưa tới hạn.',
+        'Từ 2026 hết thuế khoán, bạn tự kê khai theo doanh thu thật. Luật cho bạn chọn cách tính — nhưng chỉ khi chứng minh được chi phí. Mimi Wallet đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó.',
       pills: [
-        'Chấm điểm AI ~3 giây',
+        'Phân loại chi phí mỗi ngày',
+        'Đối chiếu hoá đơn cơ quan thuế',
+        'So sánh hai cách tính thuế',
         'Mã hóa kháng lượng tử',
-        'Ứng vốn hóa đơn',
-        'Học Fintech cá nhân hóa',
       ],
     },
     metrics: {

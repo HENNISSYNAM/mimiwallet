@@ -74,19 +74,33 @@ const magnitude = (t: Tx) => Math.abs(Number(t.amount) || 0);
 
 function iso(d: Date) { return d.toISOString().slice(0, 10); }
 
-function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', muted, children }: {
-  icon: any; label: string; value: string; sub?: string; subColor?: string; muted?: boolean; children?: React.ReactNode;
+/**
+ * `primary` is the one card on the screen allowed to be the loudest.
+ *
+ * All four KPIs used to share `text-xl sm:text-2xl`, which meant none of them
+ * won: four equally-sized numbers make the eye pick by position rather than by
+ * importance. The screen's job is to answer one question first — is money
+ * coming in or going out — so net cash flow gets its own full-width row and a
+ * bigger face, and the other three sit below it a rank down. See docs/THIET_KE.md,
+ * "Luật 1 — Mỗi màn hình có đúng một số chính".
+ */
+function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', muted, primary, children }: {
+  icon: any; label: string; value: string; sub?: string; subColor?: string; muted?: boolean; primary?: boolean; children?: React.ReactNode;
 }) {
   return (
-    <motion.div variants={fadeUp} className="group bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-5 hover:border-primary/20 hover:shadow-[0_8px_32px_hsla(var(--blue-500)/0.06)] transition-all duration-300">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-muted-foreground font-medium">{label}</span>
-        <div className="w-9 h-9 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors">
-          <Icon size={16} className="text-primary" />
+    <motion.div variants={fadeUp} className={`group bg-card/60 backdrop-blur-sm border rounded-2xl transition-all duration-300 hover:shadow-[0_8px_32px_hsla(var(--blue-500)/0.06)] ${
+      primary ? 'border-primary/20 p-6 hover:border-primary/30' : 'border-border/60 p-5 hover:border-primary/20'
+    }`}>
+      <div className={`flex items-center justify-between ${primary ? 'mb-3' : 'mb-4'}`}>
+        <span className={`text-muted-foreground font-medium ${primary ? 'text-sm' : 'text-xs sm:text-sm'}`}>{label}</span>
+        <div className={`rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors ${primary ? 'w-10 h-10' : 'w-8 h-8'}`}>
+          <Icon size={primary ? 18 : 15} className="text-primary" />
         </div>
       </div>
-      <p className={`money text-xl sm:text-2xl font-bold tracking-tight truncate ${muted ? 'text-muted-foreground' : 'text-foreground'}`}>{value}</p>
-      {sub && <p className={`text-xs mt-1.5 ${subColor} font-medium`}>{sub}</p>}
+      <p className={`money font-bold tracking-tight truncate ${
+        primary ? 'text-3xl sm:text-[40px] leading-tight' : 'text-lg sm:text-xl'
+      } ${muted ? 'text-muted-foreground' : 'text-foreground'}`}>{value}</p>
+      {sub && <p className={`mt-1.5 font-medium ${primary ? 'text-sm' : 'text-xs'} ${subColor}`}>{sub}</p>}
       {children}
     </motion.div>
   );
@@ -137,6 +151,16 @@ export default function DashboardOverview() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [hasBank, setHasBank] = useState(false);
+  /**
+   * Whether the M2M widget will draw anything.
+   *
+   * `M2MDashboardWidget` returns `null` when the company owns no devices, which
+   * is the normal case — M2M is a niche feature. A layout that hands it a fixed
+   * 2-of-5 column therefore leaves 40% of that row blank for most accounts, and
+   * a hole in a grid reads as a rendering failure rather than as an absence.
+   * The row can only adapt if this screen knows in advance, so it asks.
+   */
+  const [hasDevices, setHasDevices] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,7 +177,7 @@ export default function DashboardOverview() {
       if (!company) { if (!cancelled) setLoading(false); return; }
 
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
-      const [txRes, invRes, snapRes, bankRes] = await Promise.all([
+      const [txRes, invRes, snapRes, bankRes, deviceRes] = await Promise.all([
         supabase.from('transactions')
           .select('id, amount, type, category, merchant_name, transaction_date, is_synthetic')
           .eq('company_id', company.id).gte('transaction_date', iso(yearAgo))
@@ -167,6 +191,11 @@ export default function DashboardOverview() {
           .order('computed_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('bank_connections')
           .select('id').eq('company_id', company.id).eq('status', 'connected').limit(1),
+        // Presence only — the widget fetches its own figures. One indexed row
+        // is enough to decide the layout, and asking for more would duplicate
+        // work the widget is about to do anyway.
+        supabase.from('device_wallets')
+          .select('id').eq('company_id', company.id).limit(1),
       ]);
 
       if (cancelled) return;
@@ -175,6 +204,7 @@ export default function DashboardOverview() {
       setInvoices((invRes.data as Invoice[]) ?? []);
       setSnapshot((snapRes.data as Snapshot) ?? null);
       setHasBank(!!bankRes.data?.length);
+      setHasDevices(!!deviceRes.data?.length);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -234,15 +264,23 @@ export default function DashboardOverview() {
       out.push({
         icon: AlertTriangle, color: 'text-mimi-red', bg: 'bg-mimi-red/5 border-mimi-red/10', badge: 'Cảnh báo',
         msg: `Trong ${RANGES[rangeIdx].days} ngày qua bạn chi ${formatVNDShort(m.expense)} nhưng chỉ thu ${formatVNDShort(m.income)}.`,
-        cta: 'Xem dòng tiền', action: () => navigate('/dashboard/cashflow'),
+        // Was '/dashboard/cashflow', which renders this very component — the
+        // button sent you to the screen you were already reading it on.
+        // Reports is where the transactions behind these two totals actually
+        // are, so that is where "xem chi tiết" should land.
+        cta: 'Xem chi tiết giao dịch', action: () => navigate('/dashboard/reports'),
       });
     }
     if (m.lastMonth > 0 && m.thisMonth > m.lastMonth) {
       const pct = Math.round(((m.thisMonth - m.lastMonth) / m.lastMonth) * 100);
       out.push({
         icon: Lightbulb, color: 'text-primary', bg: 'bg-primary/5 border-primary/10', badge: 'Cơ hội',
-        msg: `Doanh thu tháng này đang cao hơn tháng trước ${pct}%.`,
-        cta: 'Xem hạn mức', action: () => navigate('/dashboard/loans'),
+        // Rising revenue used to end at "Xem hạn mức" and a loans page MIMI
+        // cannot lend from. Revenue going up is a tax event before it is a
+        // credit event: it moves you toward the thresholds, which is something
+        // this product can actually do something about.
+        msg: `Doanh thu tháng này đang cao hơn tháng trước ${pct}% — kiểm tra xem bạn đang ở đâu so với ngưỡng thuế.`,
+        cta: 'Xem ngưỡng thuế', action: () => navigate('/dashboard/reports'),
       });
     }
     if (m.overdue.length) {
@@ -310,34 +348,36 @@ export default function DashboardOverview() {
           of them. Renders nothing once answered or skipped. */}
       <motion.div variants={fadeUp}><WelcomeCards /></motion.div>
 
-      <motion.div variants={stagger} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Net cash flow, not "balance". No table here stores a bank balance,
-            so a balance tile could only ever have been invented. */}
-        <KPICard
-          icon={Wallet}
-          label={`Dòng tiền ròng ${RANGES[rangeIdx].days} ngày`}
-          value={noData ? '—' : formatVNDShort(m.net)}
-          muted={noData}
-          sub={noData ? undefined : `Thu ${formatVNDShort(m.income)} · Chi ${formatVNDShort(m.expense)}`}
-          subColor={m.net >= 0 ? 'text-mimi-green' : 'text-mimi-red'}
-        >
-          {!noData && m.spark.length > 1 && (
-            <div className="h-10 mt-3 -mx-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={m.spark}>
-                  <defs>
-                    <linearGradient id="kpiGreen" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--green-500))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--green-500))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="v" stroke="hsl(var(--green-500))" fill="url(#kpiGreen)" strokeWidth={1.5} dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </KPICard>
+      {/* The one number this screen exists to answer, on its own row.
+          Net cash flow, not "balance": no table here stores a bank balance, so
+          a balance tile could only ever have been invented. */}
+      <KPICard
+        primary
+        icon={Wallet}
+        label={`Dòng tiền ròng ${RANGES[rangeIdx].days} ngày`}
+        value={noData ? '—' : formatVNDShort(m.net)}
+        muted={noData}
+        sub={noData ? undefined : `Thu ${formatVNDShort(m.income)} · Chi ${formatVNDShort(m.expense)}`}
+        subColor={m.net >= 0 ? 'text-mimi-green' : 'text-mimi-red'}
+      >
+        {!noData && m.spark.length > 1 && (
+          <div className="h-16 mt-4 -mx-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={m.spark}>
+                <defs>
+                  <linearGradient id="kpiGreen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--green-500))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--green-500))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="v" stroke="hsl(var(--green-500))" fill="url(#kpiGreen)" strokeWidth={1.75} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </KPICard>
 
+      <motion.div variants={stagger} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Compared against last month, which is measurable. The old tile
             compared against a ₫10 tỷ "target" that exists nowhere. */}
         <KPICard
@@ -498,7 +538,9 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { icon: InvoiceDoc, label: t('dashboard.createInvoice'), path: '/dashboard/invoices' },
-              { icon: CapitalVault, label: t('dashboard.applyLoan'), path: '/dashboard/loans' },
+              // Second slot used to be "Đăng ký vay vốn" → /dashboard/loans.
+              // Reports is where the transactions that need classifying live.
+              { icon: CapitalVault, label: t('dashboard.applyLoan'), path: '/dashboard/reports' },
               { icon: CashflowChart, label: t('dashboard.viewReports'), path: '/dashboard/reports' },
               { icon: LearnCap, label: 'Học Fintech', path: '/dashboard/learn' },
             ].map((a) => (
@@ -511,8 +553,33 @@ export default function DashboardOverview() {
           </div>
         </motion.div>
 
-        <motion.div variants={fadeUp}><NewsAndLawPanel /></motion.div>
-        <M2MDashboardWidget />
+      </motion.div>
+
+      {/*
+        NewsAndLawPanel and M2MDashboardWidget used to sit as bare children of
+        the 5-column grid above, after two items that already claimed all 5
+        columns (recent-tx col-span-3 + quick-actions col-span-2). Neither
+        panel declares its own span, so the grid auto-placed them as implicit
+        1-column items — the tabbed news/law panel was rendering at a fifth of
+        the row's width, headlines clipped to two words, with the rest of the
+        row blank. That is the bug in the screenshot.
+
+        Two spans alone do not fix it, because M2MDashboardWidget returns null
+        for any company without devices: a fixed 3/2 split would still leave
+        two empty columns for most accounts. So the row is built from what is
+        actually going to render — side by side when there are devices, one
+        full-width panel when there are none, with its lists flowing in two
+        columns at that width instead of one stretched stack.
+      */}
+      <motion.div variants={stagger} className={hasDevices ? 'grid lg:grid-cols-5 gap-4' : ''}>
+        <motion.div variants={fadeUp} className={hasDevices ? 'lg:col-span-3' : ''}>
+          <NewsAndLawPanel wide={!hasDevices} />
+        </motion.div>
+        {/* M2MDashboardWidget renders its own motion.div with variants={fadeUp}
+            already (see m2m/M2MDashboardWidget.tsx); wrapping it in another
+            animated element would run the same fade-up twice, so this is a
+            plain div — layout only, no duplicate animation. */}
+        {hasDevices && <div className="lg:col-span-2"><M2MDashboardWidget /></div>}
       </motion.div>
     </motion.div>
   );

@@ -215,9 +215,48 @@ export function rotateAccessToken(
   return request(cfg, 'POST', '/grant/invalidate', { accessToken });
 }
 
-/** Ends the authorisation entirely — the customer's side of "disconnect". */
-export function removeGrant(cfg: BankhubConfig, accessToken: string): Promise<{ requestId?: string }> {
-  return request(cfg, 'POST', '/grant/remove', { accessToken });
+/**
+ * Result of asking Cas to end an authorisation.
+ *
+ * Some banks let the grant go on the first call; others require the customer to
+ * confirm with an OTP first. In the second case Cas answers with a `grantToken`
+ * instead of a completion — the same kind of token that opens Cas Link — and the
+ * removal only happens once the customer has been through that screen.
+ *
+ * Both outcomes are 200 responses, so the caller has to look at which fields
+ * came back rather than at the status code. `otpRequired` makes that explicit so
+ * no call site has to remember the rule.
+ */
+export interface RemoveGrantResult {
+  requestId?: string;
+  /** Present when the bank wants the customer to confirm before the grant dies. */
+  grantToken?: string;
+  /** True when a grantToken came back, i.e. nothing has been removed yet. */
+  otpRequired: boolean;
+}
+
+/**
+ * Ends the authorisation entirely — the customer's side of "disconnect".
+ *
+ * Acceptance cases 3 and 4 are the two halves of this one call: case 3 is the
+ * bank that just lets go, case 4 is the bank that asks for an OTP first. Case 4
+ * was previously recorded as not implemented because this function threw the
+ * `grantToken` away, leaving the caller to assume every 200 meant "removed" —
+ * which would have marked a still-live grant as disconnected and stopped MIMI
+ * from ever syncing it again while the customer's data stayed authorised at the
+ * bank. Silently keeping an authorisation open is the worse half of that bug.
+ */
+export async function removeGrant(
+  cfg: BankhubConfig,
+  accessToken: string,
+): Promise<RemoveGrantResult> {
+  const res = await request<{ requestId?: string; grantToken?: string }>(
+    cfg,
+    'POST',
+    '/grant/remove',
+    { accessToken },
+  );
+  return { ...res, otpRequired: !!res.grantToken };
 }
 
 /** The three states Cas's sandbox can put a grant into on demand. */

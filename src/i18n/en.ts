@@ -14,18 +14,21 @@ const en = {
   loading: 'Loading...',
 
   // Hero
+  // See the note on the Vietnamese hero block: working capital was removed
+  // because MIMI cannot lend, and replaced with the 2026 tax change it can
+  // actually act on.
   hero: {
-    badge: 'Working capital for small and micro businesses',
-    titleLine1: 'Green wallet for a',
-    titleLine2: 'sustainable future',
-    subtitle: 'MIMI WALLET combines green finance, carbon credits and smart working capital.',
-    subtitleBold: 'Achieving Net Zero together with Vietnamese businesses.',
+    badge: 'From 2026: lump-sum tax abolished — households self-declare',
+    titleLine1: 'Pay tax on profit,',
+    titleLine2: 'not on revenue',
+    subtitle: 'The law lets you choose how your tax is calculated — but only if you can document your costs. MIMI reads your bank statements and builds that cost record for you.',
+    subtitleBold: 'A few taps a day, and your books are ready when filing season arrives.',
     ctaPrimary: 'Start Free — 5 minutes →',
     ctaSecondary: 'Watch 2-min demo',
-    trustGreen: 'Green Finance',
-    trustCarbon: 'Carbon Credits',
-    trustAI: 'AI Credit Scoring',
-    trustNetZero: 'Net Zero 2050',
+    trustGreen: 'Lump-sum tax ends 2026',
+    trustCarbon: 'Documented costs',
+    trustAI: 'Reads tax-authority invoices',
+    trustNetZero: 'Green finance',
   },
 
   // Logo cloud
@@ -80,22 +83,25 @@ const en = {
   },
 
   // Solutions
+  // See the note on the Vietnamese block: this carried an invoice-advance SLA,
+  // a ₫10bn credit limit, a 94% accuracy figure and an ISO 27001 certification,
+  // none of which MIMI has. Every line now names something in this repository.
   solutions: {
     sectionLabel: 'Solutions',
-    title: 'All the capital tools',
-    titleHighlight: 'you need',
-    cashFlow: 'Cash Flow Intelligence',
-    cashFlowDesc: 'AI forecasts cash flow 90 days ahead with 94% accuracy',
-    invoice: 'Invoice Financing',
-    invoiceDesc: 'Advance cash from invoices in 4 hours. Up to 80% value.',
-    loan: 'Working Capital Loan',
-    loanDesc: 'Credit limit up to ₫10 billion, competitive interest rates',
-    security: 'Absolute Security',
-    securityDesc: 'End-to-end encryption, ISO 27001 certified',
-    dashboard: 'Real-time Dashboard',
-    dashboardDesc: 'Monitor your entire financial health from one screen',
+    title: 'Clean books',
+    titleHighlight: 'before filing season',
+    cashFlow: 'Automatic statement import',
+    cashFlowDesc: 'Connect your bank account; transactions land in your books with internal transfers already separated from revenue',
+    invoice: 'Expense classification',
+    invoiceDesc: 'A few taps a day to confirm which outflows are business costs. Answer once for a counterparty and it applies from then on.',
+    loan: 'Compare both tax methods',
+    loanDesc: 'A percentage of revenue, or 15% of profit — both figures shown side by side so you can choose',
+    security: 'Quantum-resistant encryption',
+    securityDesc: 'Bank tokens encrypted with ML-KEM-768 (NIST FIPS 203); each company’s data isolated by Row-Level Security',
+    dashboard: 'Tax-authority invoice matching',
+    dashboardDesc: 'Reads the e-invoices already held by the tax authority and reconciles them against money actually received',
     greenFinance: 'Green Finance',
-    greenFinanceDesc: 'Preferential capital for ESG projects and sustainable development',
+    greenFinanceDesc: 'An emissions record built from your own transactions, for use in green credit applications',
     interestRate: 'Interest rate',
     creditLimit: 'Credit limit',
     carbonCredits: 'Carbon Credits',
@@ -106,14 +112,16 @@ const en = {
   },
 
   // AI Section
+  // See the long note in Landing.tsx: the scorer is a fixed-weight linear
+  // scorecard, not a trained model, and no forecast accuracy was ever measured.
   ai: {
-    sectionLabel: 'AI Technology',
-    title: 'AI doesn\'t just analyze —',
-    titleHighlight: 'AI predicts',
-    subtitle: 'Machine learning models trained on millions of Vietnamese financial transactions, achieving up to 94% cash flow forecast accuracy.',
-    creditScoring: '200+ data points',
-    cashFlowForecast: '90 days, 94% accuracy',
-    riskAnalysis: 'Real-time, automated',
+    sectionLabel: 'How scoring works',
+    title: 'Not a black box —',
+    titleHighlight: 'you can see every step',
+    subtitle: 'Credit scores come from a five-factor scorecard with published weights. Every score decomposes into the five numbers that produced it.',
+    creditScoring: 'Revenue trend 25% · Invoice punctuality 25%',
+    cashFlowForecast: 'See each factor’s raw value and normalised score',
+    riskAnalysis: '12 months of data from the account you connected',
   },
 
   // Pricing
@@ -168,7 +176,8 @@ const en = {
   footer: {
     tagline: 'Green wallet for a sustainable future.',
     products: 'Products',
-    productLinks: ['Invoice Financing', 'Loans', 'Green Finance', 'Carbon Credits', 'API'],
+    // 'Invoice Financing' and 'Loans' listed products MIMI does not sell.
+    productLinks: ['Expense records', 'Tax filing', 'Green Finance', 'Carbon Credits', 'API'],
     company: 'Company',
     companyLinks: ['About us', 'Blog', 'Careers', 'Contact'],
     legal: 'Legal',
@@ -207,6 +216,9 @@ const en = {
     support: 'Support',
     logout: 'Sign Out',
     greenPlan: 'Green Plan ⭐',
+    groupDaily: 'Daily',
+    groupConnect: 'Connections & Data',
+    groupMore: 'More',
   },
 
   // Dashboard Overview
@@ -230,7 +242,8 @@ const en = {
     createInvoice: 'Create new invoice',
     advanceInvoice: 'Advance invoice',
     viewReports: 'View reports',
-    applyLoan: 'Apply for loan',
+    // Was 'Apply for loan' — a quick action for something MIMI cannot do.
+    applyLoan: 'Classify expenses',
     warning: 'Warning',
     opportunity: 'Opportunity',
     reminder: 'Reminder',
@@ -325,7 +338,8 @@ const en = {
   aiChat: {
     title: 'MIMI Assistant',
     placeholder: 'Ask about finance...',
-    greeting: 'Hello! I\'m the MIMI WALLET AI assistant. I can help analyze cash flow, advise on loans and forecast cash flow.',
+    // Was 'advise on loans'. The assistant should offer what the product does.
+    greeting: 'Hello! I\'m the MIMI WALLET AI assistant. I can help classify expenses, track tax thresholds and analyze cash flow.',
   },
 };
 

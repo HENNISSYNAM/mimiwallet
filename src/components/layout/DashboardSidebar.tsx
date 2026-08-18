@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, TrendingUp, FileText, CreditCard,
+  LayoutDashboard, FileText,
   BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf, Sparkles, GraduationCap, Globe,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -33,19 +33,60 @@ export default function DashboardSidebar() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
-  const navItems = [
-    { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
-    { icon: TrendingUp, label: t('sidebar.cashflow'), path: '/dashboard/cashflow' },
-    { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
-    { icon: CreditCard, label: t('sidebar.loans'), path: '/dashboard/loans' },
-    { icon: ShieldCheck, label: t('sidebar.creditScore'), path: '/dashboard/credit' },
-    { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
-    { icon: Cpu, label: t('sidebar.m2mDevices'), path: '/dashboard/m2m' },
-    { icon: Sparkles, label: t('sidebar.technology'), path: '/dashboard/tech' },
-    { icon: GraduationCap, label: t('sidebar.learn'), path: '/dashboard/learn' },
-    { icon: Leaf, label: t('sidebar.carbon'), path: '/dashboard/carbon' },
-    { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
-    { icon: Settings, label: t('sidebar.settings'), path: '/dashboard/settings' },
+  /**
+   * Twelve destinations, grouped by what the person came to do.
+   *
+   * They used to be one flat list, which meant "Cài đặt" and "Hóa đơn" carried
+   * the same visual weight — a list that long reads as an undifferentiated
+   * wall and pushes the daily work (hoá đơn, dòng tiền) into the same scan as
+   * things opened once a quarter. Grouping is the cheapest fix: four short
+   * lists are read as four, a twelve-item list is read as twelve.
+   *
+   * "Dòng tiền" is deliberately absent. `/dashboard/cashflow` renders the very
+   * same `DashboardOverview` component as `/dashboard` (see App.tsx), so the
+   * sidebar was offering two doors into one room — press either and the screen
+   * does not change. The route stays alive because links point at it; only the
+   * duplicate door is gone.
+   *
+   * "Công nghệ" is absent for a different reason: it is a marketing page —
+   * hero, three pillars, a pipeline diagram, no data belonging to this company.
+   * That is a page to show someone before they sign up, not a tab beside their
+   * invoices. It stays reachable at /dashboard/tech and from the public site.
+   *
+   * "Vay vốn" is absent as of 17/08/2026 because MIMI has no credit licence and
+   * no disbursement partner — a permanent nav slot for it advertised a service
+   * that does not exist. "Điểm tín dụng" stays: it describes the customer's own
+   * profile from their own data and promises nothing about who will lend
+   * against it. The route survives for when there is a partner.
+   */
+  const navGroups = [
+    {
+      label: null, // Tổng quan stands alone above the groups — it is the home.
+      items: [{ icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' }],
+    },
+    {
+      label: t('sidebar.groupDaily'),
+      items: [
+        { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
+        { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
+        { icon: ShieldCheck, label: t('sidebar.creditScore'), path: '/dashboard/credit' },
+      ],
+    },
+    {
+      label: t('sidebar.groupConnect'),
+      items: [
+        { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
+        { icon: Cpu, label: t('sidebar.m2mDevices'), path: '/dashboard/m2m' },
+        { icon: Leaf, label: t('sidebar.carbon'), path: '/dashboard/carbon' },
+      ],
+    },
+    {
+      label: t('sidebar.groupMore'),
+      items: [
+        { icon: GraduationCap, label: t('sidebar.learn'), path: '/dashboard/learn' },
+        { icon: Settings, label: t('sidebar.settings'), path: '/dashboard/settings' },
+      ],
+    },
   ];
 
   return (
@@ -64,23 +105,41 @@ export default function DashboardSidebar() {
         )}
       </div>
 
-      <nav className="flex-1 py-4 space-y-1 px-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/dashboard'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                isActive
-                  ? 'bg-primary/10 text-primary border-l-[3px] border-primary font-medium'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              }`
-            }
-          >
-            <item.icon size={18} className="shrink-0" />
-            {!collapsed && <span>{item.label}</span>}
-          </NavLink>
+      <nav className="flex-1 py-4 px-2 overflow-y-auto">
+        {navGroups.map((group, gi) => (
+          <div key={group.label ?? 'root'} className={gi === 0 ? '' : 'mt-5'}>
+            {/* When collapsed there is no room for a word, so the grouping is
+                carried by a hairline instead — the rhythm survives, the label
+                does not need to. */}
+            {group.label &&
+              (collapsed ? (
+                <div className="mx-3 mb-2 border-t border-border/60" />
+              ) : (
+                <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  {group.label}
+                </p>
+              ))}
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.path === '/dashboard'}
+                  title={collapsed ? item.label : undefined}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                      isActive
+                        ? 'bg-primary/10 text-primary border-l-[3px] border-primary font-medium'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    }`
+                  }
+                >
+                  <item.icon size={18} className="shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 

@@ -8,6 +8,7 @@ const m = {
         total: 'Tổng hóa đơn',
         pending: 'Chưa thanh toán',
         overdue: 'Quá hạn',
+        paid: 'Đã thu',
         advanced: 'Đã ứng vốn',
       },
       searchPlaceholder: 'Tìm theo khách hàng, số HĐ...',
@@ -52,10 +53,12 @@ const m = {
         total: 'Tổng cộng',
         issuedDate: 'Ngày phát hành',
         dueDate: 'Ngày đến hạn',
-        advanceTitle: 'Ứng vốn hóa đơn',
-        advanceAmount: 'Số tiền ứng (80%)',
-        advanceFee: 'Phí (1.5% / 30 ngày)',
+        advanceTitle: 'Ứng vốn hóa đơn — chưa khả dụng',
+        advanceAmount: 'Ước tính có thể ứng (80%)',
+        advanceFee: 'Phí tham khảo (1.5% / 30 ngày)',
         advanceNow: 'Ứng vốn ngay →',
+        advanceUnavailable:
+          'MIMI chưa cấp vốn. Hai con số trên là ước tính để bạn hình dung, không phải khoản đã được duyệt — bấm cũng chưa có tiền về tài khoản.',
       },
       toast: {
         fillRequired: 'Vui lòng nhập đầy đủ khách hàng, số tiền và ngày đến hạn',
@@ -120,7 +123,11 @@ const m = {
       toast: {
         companyNotFound: 'Không tìm thấy doanh nghiệp của bạn',
         applyFailed: 'Đăng ký vay thất bại: {{error}}',
-        applySuccess: 'Đã gửi yêu cầu vay, đang chờ duyệt',
+        // Was 'Đã gửi yêu cầu vay, đang chờ duyệt' — nothing is awaiting
+        // approval, because there is no lender to approve it. This records
+        // interest, which is honest and is also the demand signal MIMI needs in
+        // order to go and find a lending partner at all.
+        applySuccess: 'Đã ghi nhận nhu cầu vay của bạn. MIMI chưa có đối tác cho vay — chúng tôi sẽ báo bạn khi có.',
       },
     },
     reports: {

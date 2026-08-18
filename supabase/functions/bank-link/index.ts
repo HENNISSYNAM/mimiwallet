@@ -782,7 +782,36 @@ Deno.serve(async (req) => {
               conn.access_token_enc as unknown as EncryptedBlob,
               privateKey,
             );
-            await removeGrant(cfg, accessToken);
+            const removal = await removeGrant(cfg, accessToken);
+
+            /*
+             * Some banks will not end an authorisation without the customer
+             * confirming by OTP. Cas signals that by answering with a
+             * grantToken instead of a completion — acceptance case 4.
+             *
+             * Nothing has been removed at this point, so the local row must NOT
+             * be marked disconnected. Doing that would leave MIMI showing
+             * "đã ngắt kết nối" while the bank still considers the data
+             * authorised — telling the customer their access is closed when it
+             * is open is the one failure mode this endpoint must never have.
+             *
+             * The grantToken goes back to the browser, which opens Cas Link on
+             * it exactly as it does for a normal link. The customer finishes the
+             * OTP there and calls disconnect again.
+             */
+            if (removal.otpRequired) {
+              return json({
+                otp_required: true,
+                grant_token: removal.grantToken,
+                // Same configured value every other Cas Link flow uses; the
+                // browser needs it to open the OTP screen and must never be
+                // allowed to supply its own.
+                redirectUri,
+                connection_id: connectionId,
+                message:
+                  "Ngân hàng yêu cầu xác thực OTP trước khi ngắt kết nối. Hãy hoàn tất bước xác thực, liên kết sẽ được gỡ ngay sau đó.",
+              });
+            }
           } catch (e) {
             // Log, but still disconnect on our side. A customer asking to
             // disconnect must not be blocked by Cas being unreachable.

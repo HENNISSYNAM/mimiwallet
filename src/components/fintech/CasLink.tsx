@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode, FileText,
+  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode,
 } from 'lucide-react';
+import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
@@ -143,6 +144,19 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const [connections, setConnections] = useState<CasConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState(false);
+  /**
+   * Per-connection note for a failure that is not MIMI's to fix.
+   *
+   * `needs_relink` gets a persisted DB column and a banner because Update Mode
+   * can actually resolve it. `reauth_in_bank_app` (the bank itself blocking
+   * access — e.g. "chặn đăng nhập từ website" toggled on) has no MIMI-side fix
+   * at all; the one thing to say is "go do this in your bank's app", and
+   * without saying it somewhere that outlives the toast, a connection that hit
+   * this looks identical to one that is perfectly healthy — green tick, recent
+   * sync time, nothing to prompt a second look. Cleared the moment that
+   * connection syncs clean again.
+   */
+  const [bankNotes, setBankNotes] = useState<Record<string, string>>({});
   /*
    * Never let "Đang liên kết…" spin forever.
    *
@@ -255,13 +269,32 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       if (!result) return;
 
       const synced = (result.synced ?? []) as Array<{
+        connection_id?: string;
         inserted?: number;
         fetched?: number;
         error?: string;
         needsRelink?: boolean;
+        action?: string;
+        remedy?: string;
       }>;
       const inserted = synced.reduce((s, r) => s + (r.inserted ?? 0), 0);
       const failed = synced.filter((r) => r.error);
+
+      // A connection that is fine on MIMI's side but blocked on the bank's
+      // side — `reauth_in_bank_app` — gets no DB column of its own, because
+      // there is nothing for Update Mode to fix. Without persisting the note
+      // somewhere, that connection reads as fully healthy the moment this
+      // toast scrolls away: green tick, recent sync time, nothing prompting a
+      // second look. Cleared the moment the same connection syncs clean.
+      setBankNotes((prev) => {
+        const next = { ...prev };
+        for (const r of synced) {
+          if (!r.connection_id) continue;
+          if (!r.error) delete next[r.connection_id];
+          else if (r.action === 'reauth_in_bank_app' && r.remedy) next[r.connection_id] = r.remedy;
+        }
+        return next;
+      });
 
       if (failed.some((r) => r.needsRelink)) {
         toast.error('Ngân hàng yêu cầu đăng nhập lại. Vui lòng liên kết lại tài khoản.');
@@ -559,13 +592,58 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     [call, runSync, loadConnections],
   );
 
+  /**
+   * Ending a link, including the banks that demand an OTP first.
+   *
+   * Acceptance case 4. Cas answers `/grant/remove` in one of two ways, both
+   * 200: the grant is gone, or the customer must confirm in a Cas Link screen
+   * before it will be. The second is why this cannot simply toast and reload —
+   * on that path nothing has been removed yet, and saying "đã ngắt liên kết"
+   * would tell someone their bank access is closed while it is still open.
+   *
+   * So the OTP branch opens Cas Link on the returned grantToken and only calls
+   * disconnect again once the customer has been through it. `onSuccess` here
+   * deliberately ignores the publicToken: this flow is not creating a link, and
+   * exchanging that token would create one.
+   */
   const disconnect = useCallback(
     async (connectionId: string) => {
       const result = await call('disconnect', { connection_id: connectionId });
-      if (result) {
-        toast.success('Đã ngắt liên kết');
-        await loadConnections();
+      if (!result) return;
+
+      if (result.otp_required && result.grant_token) {
+        try {
+          await loadLinkScript();
+          if (!window.BankHub) throw new Error('Cas Link chưa sẵn sàng');
+          toast.info(result.message ?? 'Ngân hàng yêu cầu xác thực OTP để ngắt kết nối.');
+          const { open } = window.BankHub.useBankHubLink({
+            grantToken: result.grant_token,
+            redirectUri: result.redirectUri,
+            iframe: true,
+            state: newLinkState(),
+            onSuccess: () => {
+              // Confirmed at the bank. Ask again — this time Cas should let go.
+              void call('disconnect', { connection_id: connectionId }).then(async (second) => {
+                if (second?.disconnected) toast.success('Đã ngắt liên kết');
+                await loadConnections();
+              });
+            },
+            onExit: () => {
+              // Abandoned mid-OTP: the grant is still live and the row still
+              // says connected, which is the truth.
+              toast.message('Chưa ngắt kết nối — bạn chưa hoàn tất xác thực OTP.');
+              void loadConnections();
+            },
+          });
+          open();
+        } catch (e) {
+          toast.error((e as Error)?.message ?? 'Không mở được bước xác thực OTP');
+        }
+        return;
       }
+
+      toast.success('Đã ngắt liên kết');
+      await loadConnections();
     },
     [call, loadConnections]
   );
@@ -640,7 +718,15 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               disabled={linking}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-border text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
             >
-              <FileText size={14} />
+              {/* 18px rather than the 14px the lucide icons beside it use: the
+                  emblem carries a star, laurel and gear, and below that size it
+                  collapses into an unreadable red dot. */}
+              <img
+                src={taxAuthorityLogo}
+                alt=""
+                aria-hidden="true"
+                className="h-[18px] w-[18px] shrink-0 object-contain"
+              />
               Kết nối Tổng Cục Thuế
             </button>
           </div>
@@ -661,14 +747,14 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               <div
                 key={c.id}
                 className={`flex items-center justify-between gap-3 p-3 rounded-xl border ${
-                  c.status === 'connected'
+                  c.status === 'connected' && !bankNotes[c.id]
                     ? 'border-mimi-green/20 bg-mimi-green/5'
                     : 'border-amber-500/20 bg-amber-500/5'
                 }`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    {c.status === 'connected' ? (
+                    {c.status === 'connected' && !bankNotes[c.id] ? (
                       <Check size={14} className="text-mimi-green shrink-0" />
                     ) : (
                       <AlertTriangle size={14} className="text-amber-500 shrink-0" />
@@ -678,17 +764,29 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       <span className="font-mono">{maskAccount(c.account_number)}</span>
                     </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  <p
+                    className={`text-xs mt-0.5 truncate ${
+                      c.status === 'needs_relink' || bankNotes[c.id]
+                        ? 'text-amber-700 dark:text-amber-500'
+                        : 'text-muted-foreground'
+                    }`}
+                    // Full remedy on hover — the row itself stays truncated to one
+                    // line so a long bank-side message does not push the row's
+                    // controls around.
+                    title={bankNotes[c.id]}
+                  >
                     {c.status === 'needs_relink'
                       ? 'Ngân hàng yêu cầu đăng nhập lại'
-                      : c.last_synced_at
-                        ? `Đồng bộ lúc ${new Date(c.last_synced_at).toLocaleString('vi-VN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            day: '2-digit',
-                            month: '2-digit',
-                          })}`
-                        : 'Chưa đồng bộ lần nào'}
+                      : bankNotes[c.id]
+                        ? bankNotes[c.id]
+                        : c.last_synced_at
+                          ? `Đồng bộ lúc ${new Date(c.last_synced_at).toLocaleString('vi-VN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              day: '2-digit',
+                              month: '2-digit',
+                            })}`
+                          : 'Chưa đồng bộ lần nào'}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">

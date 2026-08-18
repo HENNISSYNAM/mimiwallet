@@ -30,7 +30,12 @@ type Tab = 'news' | 'law';
  */
 export const SHOW_LAW_TAB_EVENT = 'mimi:show-law-tab';
 
-export default function NewsAndLawPanel() {
+/**
+ * `wide` says this panel has a full-width row to itself rather than a side
+ * column, which changes how the lists inside it should flow. The caller knows
+ * that and the panel does not, so it is a prop rather than a measurement.
+ */
+export default function NewsAndLawPanel({ wide = false }: { wide?: boolean } = {}) {
   const [tab, setTab] = useState<Tab>('news');
 
   useEffect(() => {
@@ -67,7 +72,7 @@ export default function NewsAndLawPanel() {
           : 'Đối chiếu từng văn bản với nguồn chính thức trước khi đưa vào đây.'}
       </p>
 
-      {tab === 'news' ? <IndustryNews embedded /> : <LegalUpdates />}
+      {tab === 'news' ? <IndustryNews embedded wide={wide} /> : <LegalUpdates wide={wide} />}
     </div>
   );
 }

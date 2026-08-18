@@ -14,18 +14,32 @@ const vi = {
   loading: 'Đang tải...',
 
   // Hero
+  /*
+   * Led with "Vốn lưu động cho doanh nghiệp nhỏ và siêu nhỏ" until 17/08/2026.
+   * MIMI has no credit licence and no disbursement partner, so working capital
+   * was the largest promise on the site and the one it could not keep.
+   *
+   * What replaced it is not a softer promise — it is a harder one, because it
+   * can be checked. Thuế khoán was abolished on 01/01/2026: every household
+   * business now self-declares on real revenue, and the 500 triệu–3 tỷ band may
+   * choose between 15% on profit and a percentage of revenue. That choice is
+   * only available to someone who can document costs. MIMI holds their outflows.
+   * Green and carbon stay in the supporting line rather than the headline —
+   * those features exist, they are just not what the market is panicking about
+   * this year.
+   */
   hero: {
-    badge: 'Vốn lưu động cho doanh nghiệp nhỏ và siêu nhỏ',
-    titleLine1: 'Ví xanh cho',
-    titleLine2: 'tương lai bền vững',
-    subtitle: 'MIMI WALLET kết hợp tài chính xanh, tín chỉ carbon và vốn lưu động thông minh.',
-    subtitleBold: 'Hướng tới Net Zero cùng doanh nghiệp Việt.',
+    badge: 'Từ 2026: bỏ thuế khoán — hộ kinh doanh tự kê khai',
+    titleLine1: 'Đóng thuế trên lợi nhuận,',
+    titleLine2: 'không phải trên doanh thu',
+    subtitle: 'Luật cho bạn chọn cách tính thuế — nhưng chỉ khi chứng minh được chi phí. MIMI đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó cho bạn.',
+    subtitleBold: 'Mỗi ngày vài chạm, tới kỳ kê khai là đã xong sổ.',
     ctaPrimary: 'Bắt đầu miễn phí — 5 phút →',
     ctaSecondary: 'Xem demo 2 phút',
-    trustGreen: 'Tài chính xanh',
-    trustCarbon: 'Tín chỉ Carbon',
-    trustAI: 'AI Credit Scoring',
-    trustNetZero: 'Net Zero 2050',
+    trustGreen: 'Hết thuế khoán 2026',
+    trustCarbon: 'Chi phí có chứng từ',
+    trustAI: 'Đọc hoá đơn từ cơ quan thuế',
+    trustNetZero: 'Tài chính xanh',
   },
 
   // Logo cloud
@@ -79,23 +93,39 @@ const vi = {
     disburse: 'Giải ngân',
   },
 
-  // Solutions
+  /*
+   * Rewritten 17/08/2026. The previous block carried four claims this product
+   * could not stand behind, of three different kinds:
+   *
+   *   "Ứng tiền từ hóa đơn trong 4 giờ, lên đến 80%"  — a service SLA for a
+   *                                                     service that does not exist
+   *   "Hạn mức đến ₫10 tỷ, lãi suất cạnh tranh"       — a credit limit and a rate,
+   *                                                     from a company with no licence
+   *   "độ chính xác 94%"                              — a measured-sounding figure
+   *                                                     nothing ever measured
+   *   "chuẩn ISO 27001"                               — a certification MIMI does
+   *                                                     not hold
+   *
+   * The last two are worse than the lending ones: an invented accuracy and a
+   * claimed certification are the kind of thing a judge or an auditor checks.
+   * Every line below names something that exists in this repository today.
+   */
   solutions: {
     sectionLabel: 'Giải pháp',
-    title: 'Mọi công cụ vốn',
-    titleHighlight: 'bạn cần',
-    cashFlow: 'Cash Flow Intelligence',
-    cashFlowDesc: 'AI dự báo dòng tiền 90 ngày tới với độ chính xác 94%',
-    invoice: 'Invoice Financing',
-    invoiceDesc: 'Ứng tiền từ hóa đơn trong 4 giờ. Lên đến 80% giá trị.',
-    loan: 'Vay Vốn Lưu Động',
-    loanDesc: 'Hạn mức đến ₫10 tỷ, lãi suất cạnh tranh',
-    security: 'Bảo mật tuyệt đối',
-    securityDesc: 'Mã hóa đầu cuối, chuẩn ISO 27001',
-    dashboard: 'Real-time Dashboard',
-    dashboardDesc: 'Theo dõi toàn bộ sức khỏe tài chính từ một màn hình',
+    title: 'Sổ sách sạch',
+    titleHighlight: 'trước kỳ kê khai',
+    cashFlow: 'Đọc sao kê tự động',
+    cashFlowDesc: 'Nối tài khoản ngân hàng, giao dịch về thẳng sổ, tách sẵn chuyển khoản nội bộ khỏi doanh thu',
+    invoice: 'Phân loại chi phí',
+    invoiceDesc: 'Mỗi ngày vài chạm để xác nhận khoản nào là chi phí kinh doanh. Trả lời một lần cho một đối tác, lần sau tự áp.',
+    loan: 'So sánh hai cách tính thuế',
+    loanDesc: 'Nộp theo tỷ lệ doanh thu hay 15% trên lợi nhuận — hiện cả hai con số để bạn chọn',
+    security: 'Mã hoá kháng lượng tử',
+    securityDesc: 'Token ngân hàng mã hoá bằng ML-KEM-768 (NIST FIPS 203), dữ liệu tách theo từng công ty bằng Row-Level Security',
+    dashboard: 'Đối chiếu hoá đơn cơ quan thuế',
+    dashboardDesc: 'Đọc hoá đơn điện tử đã có trên hệ thống thuế để đối chiếu với tiền thật về tài khoản',
     greenFinance: 'Tài chính xanh',
-    greenFinanceDesc: 'Vốn ưu đãi cho dự án ESG và phát triển bền vững',
+    greenFinanceDesc: 'Hồ sơ phát thải dựng từ chính giao dịch của bạn, dùng khi làm hồ sơ tín dụng xanh',
     interestRate: 'Lãi suất',
     creditLimit: 'Hạn mức',
     carbonCredits: 'Tín chỉ Carbon',
@@ -107,13 +137,16 @@ const vi = {
 
   // AI Section
   ai: {
-    sectionLabel: 'Công nghệ AI',
-    title: 'AI không chỉ phân tích —',
-    titleHighlight: 'AI dự đoán',
-    subtitle: 'Mô hình machine learning được huấn luyện trên hàng triệu giao dịch tài chính Việt Nam, cho độ chính xác dự báo dòng tiền lên đến 94%.',
-    creditScoring: '200+ điểm dữ liệu',
-    cashFlowForecast: '90 ngày, 94% chính xác',
-    riskAnalysis: 'Real-time, tự động',
+    // Mirrors the rewritten section in Landing.tsx — see the long note there.
+    // The scorer is a fixed-weight linear scorecard, not a trained model, and
+    // no forecast accuracy has ever been measured.
+    sectionLabel: 'Cách chấm điểm',
+    title: 'Không phải hộp đen —',
+    titleHighlight: 'bạn xem được từng bước',
+    subtitle: 'Điểm tín dụng tính bằng thẻ điểm năm yếu tố, trọng số công bố công khai. Mỗi điểm số tách được ra thành năm con số đã tạo ra nó.',
+    creditScoring: 'Xu hướng doanh thu 25% · Đúng hạn hoá đơn 25%',
+    cashFlowForecast: 'Xem giá trị thô và điểm chuẩn hoá của từng yếu tố',
+    riskAnalysis: 'Dữ liệu 12 tháng từ tài khoản bạn đã nối',
   },
 
   // Pricing
@@ -168,7 +201,8 @@ const vi = {
   footer: {
     tagline: 'Ví xanh cho tương lai bền vững.',
     products: 'Sản phẩm',
-    productLinks: ['Invoice Financing', 'Vay vốn', 'Tài chính xanh', 'Tín chỉ Carbon', 'API'],
+    // 'Invoice Financing' and 'Vay vốn' listed products MIMI does not sell.
+    productLinks: ['Sổ chi phí', 'Kê khai thuế', 'Tài chính xanh', 'Tín chỉ Carbon', 'API'],
     company: 'Công ty',
     companyLinks: ['Về chúng tôi', 'Blog', 'Tuyển dụng', 'Liên hệ'],
     legal: 'Pháp lý',
@@ -207,6 +241,11 @@ const vi = {
     support: 'Hỗ trợ',
     logout: 'Đăng xuất',
     greenPlan: 'Gói Green ⭐',
+    // Nhóm điều hướng. Tên nhóm đặt theo việc người dùng đang muốn làm, không
+    // theo tên module bên trong — "Tiền vào ra" chứ không phải "Giao dịch".
+    groupDaily: 'Hằng ngày',
+    groupConnect: 'Kết nối & Dữ liệu',
+    groupMore: 'Khác',
   },
 
   // Dashboard Overview
@@ -230,7 +269,8 @@ const vi = {
     createInvoice: 'Tạo hóa đơn mới',
     advanceInvoice: 'Ứng vốn hóa đơn',
     viewReports: 'Xem báo cáo',
-    applyLoan: 'Đăng ký vay vốn',
+    // Was 'Đăng ký vay vốn' — a quick action for something MIMI cannot do.
+    applyLoan: 'Phân loại chi phí',
     warning: 'Cảnh báo',
     opportunity: 'Cơ hội',
     reminder: 'Nhắc nhở',
@@ -325,7 +365,8 @@ const vi = {
   aiChat: {
     title: 'Trợ lý MIMI',
     placeholder: 'Hỏi về tài chính...',
-    greeting: 'Xin chào! Tôi là trợ lý AI MIMI WALLET. Tôi có thể giúp phân tích dòng tiền, tư vấn vay vốn và dự báo cash flow.',
+    // Was "tư vấn vay vốn". The assistant should offer what the product does.
+    greeting: 'Xin chào! Tôi là trợ lý AI MIMI WALLET. Tôi có thể giúp phân loại chi phí, đối chiếu ngưỡng thuế và phân tích dòng tiền.',
   },
 };
 

@@ -982,19 +982,39 @@ export default function Landing() {
               viewport={{ once: true }}
               transition={{ duration: 0.7 }}
             >
-              <span className="text-xs text-primary font-mono uppercase tracking-widest">Công nghệ AI</span>
+              {/*
+                Was: "Mô hình machine learning được huấn luyện trên hàng triệu
+                giao dịch tài chính Việt Nam, cho độ chính xác dự báo dòng tiền
+                lên đến 94%", over tiles claiming "200+ điểm dữ liệu" and
+                "90 ngày, 94% chính xác".
+
+                None of it was true. `credit-scoring/scoring.ts` is a
+                fixed-weight linear scorecard — five factors, weights written as
+                constants (0.25 / 0.2 / 0.25 / 0.2 / 0.1). There is no model
+                file, no training set, and nothing has ever measured a forecast
+                accuracy. "Millions of Vietnamese transactions" described a demo
+                account holding a few hundred sandbox rows.
+
+                What replaced it is the actual design, and it is the better
+                story for this product: every weight is published, every score
+                decomposes into the five numbers that produced it, and the maths
+                is covered by unit tests. For a product whose whole claim is that
+                its figures can be checked, an auditable scorecard beats an
+                unverifiable 94%.
+              */}
+              <span className="text-xs text-primary font-mono uppercase tracking-widest">Cách chấm điểm</span>
               <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground mt-3 mb-6">
-                AI không chỉ phân tích —{' '}
-                <span className="text-gradient">AI dự đoán</span>
+                Không phải hộp đen —{' '}
+                <span className="text-gradient">bạn xem được từng bước</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Mô hình machine learning được huấn luyện trên hàng triệu giao dịch tài chính Việt Nam, cho độ chính xác dự báo dòng tiền lên đến 94%.
+                Điểm tín dụng tính bằng thẻ điểm năm yếu tố, trọng số công bố công khai. Mỗi điểm số tách được ra thành năm con số đã tạo ra nó — không có yếu tố nào bạn không nhìn thấy.
               </p>
               <div className="space-y-4">
                 {[
-                  { label: 'Credit Scoring', value: '200+ điểm dữ liệu', icon: <Brain size={16} /> },
-                  { label: 'Cash Flow Forecast', value: '90 ngày, 94% chính xác', icon: <TrendingUp size={16} /> },
-                  { label: 'Risk Analysis', value: 'Real-time, tự động', icon: <Shield size={16} /> },
+                  { label: 'Năm yếu tố, trọng số công khai', value: 'Xu hướng doanh thu 25% · Đúng hạn hoá đơn 25%', icon: <Brain size={16} /> },
+                  { label: 'Phân rã từng lần chấm', value: 'Xem giá trị thô và điểm chuẩn hoá của từng yếu tố', icon: <TrendingUp size={16} /> },
+                  { label: 'Tính trên giao dịch thật', value: 'Dữ liệu 12 tháng từ tài khoản bạn đã nối', icon: <Shield size={16} /> },
                 ].map((item, i) => (
                   <motion.div
                     key={item.label}
@@ -1072,9 +1092,9 @@ export default function Landing() {
             </span>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <PricingCard name="Free" price="Miễn phí" features={['Chấm điểm tín dụng cơ bản', '1 tài khoản ngân hàng', 'Báo cáo dòng tiền tháng', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
-            <PricingCard name="Growth" price="249,000₫" features={['Chấm điểm kèm phân rã từng yếu tố', 'Hồ sơ ứng vốn hóa đơn', 'Không giới hạn tài khoản ngân hàng', 'Cảnh báo vĩ mô cá nhân hóa', 'Hồ sơ phát thải cho tín dụng xanh', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
-            <PricingCard name="Tổ chức tín dụng" price="Liên hệ" features={['API chấm điểm theo lượt gọi', 'Chấm điểm theo lô', 'Tùy chỉnh trọng số mô hình', 'Nhật ký kiểm toán từng lần chấm', 'Tích hợp hệ thống thẩm định']} cta="Liên hệ" annual={annual} />
+            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng 500 triệu', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
+            <PricingCard name="Growth" price="249,000₫" features={['Tự động phân loại chi phí mỗi ngày', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
+            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" annual={annual} />
           </div>
 
           {/*
@@ -1084,9 +1104,15 @@ export default function Landing() {
             200–290k), so 249k lands inside a budget line that already exists.
             The previous 990k was three to five times the segment and would have
             been rejected before the product was even tried.
+
+            The third tier used to be "Tổ chức tín dụng" — a scoring API sold to
+            lenders. Nobody is buying it, and it only made sense while the
+            product's story was about credit. Accountants and tax agents already
+            keep books for dozens of these households by hand, which is the same
+            work this product does, so they are the buyer who exists today.
           */}
           <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed">
-            Phí ứng vốn do tổ chức tín dụng chi trả — doanh nghiệp không trả phí để được chấm điểm.
+            MIMI dựng sổ chi phí và bảng kê để bạn kê khai. MIMI không nộp thuế thay bạn và không cấp vốn.
           </p>
         </div>
       </section>

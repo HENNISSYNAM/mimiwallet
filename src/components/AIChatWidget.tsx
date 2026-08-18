@@ -17,10 +17,12 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat`;
 const TTS_URL = `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
+// Opening questions steer what people think this product is for, so they track
+// the tax and cost work rather than the invoice advance MIMI cannot provide.
 const SUGGESTIONS = [
-  'Vì sao điểm tín dụng của tôi như vậy?',
-  'Tôi nên ứng vốn hóa đơn nào?',
-  'Làm sao để cải thiện điểm nhanh nhất?',
+  'Khoản chi nào tháng này chưa có chứng từ?',
+  'Tôi nên nộp thuế theo doanh thu hay theo lợi nhuận?',
+  'Doanh thu năm nay của tôi đang ở mức nào so với ngưỡng?',
   'Dòng tiền tháng này thế nào?',
 ];
 

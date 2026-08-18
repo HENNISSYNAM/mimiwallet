@@ -9,6 +9,10 @@ import bankVpb from '@/assets/logos/bank-vpb.png';
 import bankMbb from '@/assets/logos/bank-mbb.png';
 import bankAcb from '@/assets/logos/bank-acb.png';
 import bankMomo from '@/assets/logos/bank-momo.png';
+import bankOcb from '@/assets/logos/bank-ocb.png';
+import bankTimo from '@/assets/logos/bank-timo.png';
+import bankVietin from '@/assets/logos/bank-vietinbank.png';
+import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 
 /**
  * Third-party recognition, stated at the precision a judge can verify.
@@ -60,13 +64,28 @@ const CREDENTIALS: Credential[] = [
  * there. Upgrade the wording per institution only, and only against a specific
  * agreement.
  */
+/**
+ * Every file here is cropped to the mark itself, with no margin baked into the
+ * canvas — that is what lets one `max-h` rule size the whole row evenly.
+ *
+ * The four newest arrived as supplied exports with white padding around them
+ * (Timo's wordmark filled only 39% of its 500x500 canvas), which `object-contain`
+ * fits along with the margin: the row would have shown Timo about a third the
+ * height of Vietcombank for no reason but its export settings. They were
+ * trimmed to their ink bounds and re-saved with the white knocked out to
+ * transparency. Keep that true of any logo added later, or it will render small
+ * and look like a design decision.
+ */
 const INTEGRATION_TARGETS = [
   { name: 'Vietcombank', logo: bankVcb },
+  { name: 'VietinBank', logo: bankVietin },
   { name: 'BIDV', logo: bankBidv },
   { name: 'Techcombank', logo: bankTcb },
   { name: 'VPBank', logo: bankVpb },
   { name: 'MB Bank', logo: bankMbb },
   { name: 'ACB', logo: bankAcb },
+  { name: 'OCB', logo: bankOcb },
+  { name: 'Timo', logo: bankTimo },
   { name: 'MoMo', logo: bankMomo },
 ];
 
@@ -136,30 +155,72 @@ export default function TrustSection() {
           Định hướng tích hợp Open Banking
         </p>
         {/* Muted until hover: a full-colour logo wall reads as a sponsor row,
-            which is exactly the claim this section must not make. */}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-5">
+            which is exactly the claim this section must not make.
+
+            Each mark sits on its own white tile. The supplied files are a mix
+            of transparent PNG/WebP and flat JPG — Timo and the tax emblem came
+            as JPGs with baked-in white — so bare <img> would have put white
+            rectangles beside floating marks, and would break outright against a
+            dark background. A tile makes the source format invisible. */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           {INTEGRATION_TARGETS.map((b, i) => (
-            <motion.img
+            <motion.span
               key={b.name}
-              src={b.logo}
-              alt={b.name}
               title={b.name}
-              loading="lazy"
               initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ delay: 0.04 * i, duration: 0.4 }}
-              /* Opacity only, no grayscale: desaturating turns the solid-tile
-                 marks (VPBank, MoMo) into heavy black blocks next to the
-                 outline wordmarks. Fading keeps the row visually even. */
-              className="h-7 w-auto max-w-[120px] object-contain opacity-55
-                         transition-opacity duration-300 hover:opacity-100 sm:h-8"
-            />
+              className="grid h-14 w-[112px] place-items-center rounded-2xl bg-white
+                         ring-1 ring-border/60 px-3 opacity-70 transition-opacity
+                         duration-300 hover:opacity-100"
+            >
+              <img
+                src={b.logo}
+                alt={b.name}
+                loading="lazy"
+                className="max-h-7 w-auto max-w-full object-contain"
+              />
+            </motion.span>
           ))}
         </div>
         <p className="mx-auto mt-5 max-w-lg text-[11px] leading-relaxed text-muted-foreground/70">
           Các tổ chức tài chính trong lộ trình tích hợp Open Banking của nền tảng.
           Logo thuộc sở hữu của các tổ chức tương ứng.
+        </p>
+      </div>
+
+      {/*
+        The tax authority is kept out of the row above on purpose: it is not a
+        bank and not an Open Banking target, and dropping a state emblem into a
+        row of commercial logos would read as the state endorsing MIMI rather
+        than as a data source the customer chooses to connect.
+
+        What it actually is: MIMI reads the e-invoices the authority already
+        holds, read-only, through Cas, and only after the customer authorises
+        it. The caption says that and nothing more.
+      */}
+      <div className="mx-auto mt-8 max-w-4xl text-center">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+          Nguồn dữ liệu thuế
+        </p>
+        <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border hairline bg-card px-4 py-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white ring-1 ring-border/60">
+            <img
+              src={taxAuthorityLogo}
+              alt="Tổng cục Thuế"
+              loading="lazy"
+              className="h-9 w-9 object-contain"
+            />
+          </span>
+          <p className="max-w-xs text-left text-[12px] leading-relaxed text-muted-foreground">
+            Hoá đơn điện tử đọc trực tiếp từ hệ thống Thuế nhà nước — chỉ đọc, chỉ sau khi
+            bạn cho phép.
+          </p>
+        </div>
+        <p className="mx-auto mt-3 max-w-lg text-[11px] leading-relaxed text-muted-foreground/70">
+          MIMI không nộp hồ sơ thuế thay bạn. Logo thuộc sở hữu của cơ quan tương ứng và
+          không hàm ý chứng nhận hay bảo trợ.
         </p>
       </div>
     </div>

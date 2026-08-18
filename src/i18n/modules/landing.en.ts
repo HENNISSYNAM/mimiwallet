@@ -1,15 +1,17 @@
 const m = {
   landing: {
+    // See the note on the Vietnamese hero: the invoice-advance promise was
+    // removed because MIMI cannot lend, and replaced with the 2026 tax change.
     hero: {
-      titleLine1: 'Capital in your account',
-      titleLine2: 'before your customer pays',
+      titleLine1: 'Pay tax on profit,',
+      titleLine2: 'not on revenue',
       subtitle:
-        'Mimi Wallet scores your business creditworthiness from real transaction data, then advances up to 80% of the value of your unpaid invoices.',
+        'From 2026 Vietnam’s lump-sum tax is gone and you declare on real revenue. The law lets you choose how tax is calculated — but only if you can document your costs. Mimi Wallet reads your bank statements and builds that record.',
       pills: [
-        'AI scoring in ~3 seconds',
+        'Daily expense classification',
+        'Reconciled against tax-authority invoices',
+        'Compare both tax methods',
         'Quantum-resistant encryption',
-        'Invoice financing',
-        'Personalized Fintech learning',
       ],
     },
     metrics: {

@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { QrPayDialog } from '@/components/fintech/QrPayDialog';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -171,9 +172,15 @@ export default function InvoicesPage() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [invoiceList, setInvoiceList] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [advancing, setAdvancing] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  /**
+   * Seeded from `?q=`, which is how the header search box reaches this page.
+   * Read once into state rather than driven by the URL on every keystroke: the
+   * box below stays the owner of the term after you land here, so typing does
+   * not push a history entry per character.
+   */
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
   const [qrInvoice, setQrInvoice] = useState<Invoice | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -193,6 +200,15 @@ export default function InvoicesPage() {
 
   useEffect(() => { loadInvoices(); }, [session]);
 
+  // Searching again from the header while already on this page changes the
+  // query string without remounting, so the initial state above would never
+  // see the new term. An empty `q` is ignored rather than clearing what the
+  // person typed into the box on the page.
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) setSearch(q);
+  }, [searchParams]);
+
   const filtered = invoiceList.filter((inv) => {
     if (filter !== 'all' && inv.status !== filter) return false;
     if (search && !inv.client_name.toLowerCase().includes(search.toLowerCase()) && !inv.invoice_number.toLowerCase().includes(search.toLowerCase())) return false;
@@ -203,26 +219,30 @@ export default function InvoicesPage() {
     { label: t('fin.invoices.stats.total'), value: invoiceList.reduce((s, i) => s + i.total, 0), color: 'text-foreground' },
     { label: t('fin.invoices.stats.pending'), value: invoiceList.filter((i) => i.status === 'pending').reduce((s, i) => s + i.total, 0), color: 'text-mimi-amber' },
     { label: t('fin.invoices.stats.overdue'), value: invoiceList.filter((i) => i.status === 'overdue').reduce((s, i) => s + i.total, 0), color: 'text-mimi-red' },
-    { label: t('fin.invoices.stats.advanced'), value: invoiceList.filter((i) => i.status === 'advanced').reduce((s, i) => s + (i.advanced_amount ?? 0), 0), color: 'text-primary' },
+    // Fourth tile is paid, not "advanced". Nothing on this platform has ever
+    // been advanced — the rows that carry that status got it from a button that
+    // wrote it without any money moving. Totalling them produced a figure of
+    // funds received that nobody received. Paid invoices are a real measurement
+    // of the same thing the tile was reaching for: cash actually in.
+    { label: t('fin.invoices.stats.paid'), value: invoiceList.filter((i) => i.status === 'paid').reduce((s, i) => s + i.total, 0), color: 'text-mimi-green' },
   ];
 
-  const handleAdvance = async () => {
-    if (!selectedInvoice) return;
-    setAdvancing(true);
-    const advancedAmount = Math.round(selectedInvoice.total * 0.8);
-    const { error } = await supabase
-      .from('invoices')
-      .update({ status: 'advanced', advanced_amount: advancedAmount, advanced_at: new Date().toISOString() })
-      .eq('id', selectedInvoice.id);
-    setAdvancing(false);
-    if (error) {
-      toast.error(t('fin.invoices.toast.advanceFailed', { error: error.message }));
-      return;
-    }
-    toast.success(t('fin.invoices.toast.advanceSuccess', { amount: formatVND(advancedAmount), number: selectedInvoice.invoice_number }));
-    setSelectedInvoice(null);
-    loadInvoices();
-  };
+  /*
+   * There is no `handleAdvance` any more, and that is the point.
+   *
+   * It used to write `status: 'advanced'` plus an `advanced_amount` of 80% of
+   * the invoice and toast "Đã ứng vốn {amount}" — while nothing was disbursed,
+   * because MIMI does not lend and has no credit licence. Three things went
+   * wrong at once: the customer was told money was coming, a real invoice's
+   * status was overwritten with a state it had never reached, and the dashboard
+   * then summed those amounts into an "Đã ứng vốn" tile — inventing a figure the
+   * same way the deleted mockData used to.
+   *
+   * The panel stays, because the estimate is genuinely useful for judging
+   * whether factoring is worth pursuing at all. It just no longer pretends to
+   * execute. When there is a lending partner, this is where the real
+   * application goes.
+   */
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
@@ -446,9 +466,14 @@ export default function InvoicesPage() {
                 </div>
 
                 {(selectedInvoice.status === 'pending' || selectedInvoice.status === 'overdue') && (
-                  <div className="bg-gradient-to-br from-primary/5 to-mimi-green/5 border border-primary/15 rounded-2xl p-5">
-                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><InsightSpark size={16} className="text-primary" /> {t('fin.invoices.detail.advanceTitle')}</p>
-                    <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                  /* Muted, not the gradient call-to-action it used to wear. An
+                     estimate that cannot be acted on should not look like the
+                     brightest thing on the panel. */
+                  <div className="bg-muted/40 border border-border/60 rounded-2xl p-5">
+                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <InsightSpark size={16} className="text-muted-foreground" /> {t('fin.invoices.detail.advanceTitle')}
+                    </p>
+                    <div className="space-y-2 text-sm text-muted-foreground mb-3">
                       <div className="flex justify-between">
                         <span>{t('fin.invoices.detail.advanceAmount')}</span>
                         <span className="font-mono text-foreground font-semibold">{formatVND(selectedInvoice.total * 0.8)}</span>
@@ -458,15 +483,9 @@ export default function InvoicesPage() {
                         <span className="font-mono text-foreground">{formatVND(selectedInvoice.total * 0.015)}</span>
                       </div>
                     </div>
-                    <motion.button
-                      whileHover={{ y: -1 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleAdvance}
-                      disabled={advancing}
-                      className="w-full bg-primary text-primary-foreground py-3 rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-[0_4px_16px_hsla(var(--blue-500)/0.25)] disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {advancing && <Loader2 size={14} className="animate-spin" />} {t('fin.invoices.detail.advanceNow')}
-                    </motion.button>
+                    <p className="text-xs leading-relaxed text-muted-foreground border-t border-border/60 pt-3">
+                      {t('fin.invoices.detail.advanceUnavailable')}
+                    </p>
                   </div>
                 )}
               </div>

@@ -176,7 +176,7 @@ function DocCard({ doc, index }: { doc: LegalDoc; index: number }) {
   );
 }
 
-export default function LegalUpdates() {
+export default function LegalUpdates({ wide = false }: { wide?: boolean } = {}) {
   const [docs, setDocs] = useState<LegalDoc[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -226,9 +226,14 @@ export default function LegalUpdates() {
 
   return (
     <div className="space-y-2.5">
-      {sorted.map((doc, i) => (
-        <DocCard key={doc.id} doc={doc} index={i} />
-      ))}
+      {/* Same reasoning as IndustryNews: two columns when the panel is wide.
+          `items-start` matters here — a card whose "Căn cứ" section is expanded
+          would otherwise stretch its row-mate to match. */}
+      <div className={wide ? 'grid sm:grid-cols-2 gap-2.5 items-start' : 'space-y-2.5'}>
+        {sorted.map((doc, i) => (
+          <DocCard key={doc.id} doc={doc} index={i} />
+        ))}
+      </div>
       <p className="text-[11px] text-muted-foreground pt-1">
         Mỗi văn bản đã được đối chiếu với nguồn chính thức. Không thay thế tư vấn từ kế toán hoặc
         cơ quan thuế.

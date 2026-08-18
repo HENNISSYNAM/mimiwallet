@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatVND, formatDateShort } from '@/lib/formatters';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -111,6 +111,31 @@ export default function LoansPage() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      {/*
+        Said before anything else on the page, because everything below it is a
+        calculator and a form that look exactly like a real lending product.
+        MIMI holds no credit licence and has no disbursement partner, so a
+        submitted "application" goes into a table and stops there. Letting
+        someone plan around an approval that is never coming is the failure this
+        banner exists to prevent.
+
+        The page and the form stay: what people ask for, and how much, is the
+        demand evidence MIMI needs in order to go and find a lending partner.
+        It is a waitlist, and it now says so.
+      */}
+      <motion.div variants={fadeUp} className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5 flex items-start gap-3">
+        <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-foreground">MIMI chưa cho vay được</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+            Chúng tôi chưa có giấy phép tín dụng và chưa có đối tác giải ngân, nên chưa khoản
+            vay nào được duyệt hay chuyển tiền. Con số bên dưới là ước tính từ dữ liệu của bạn,
+            không phải hạn mức đã được cấp. Gửi yêu cầu ở đây được ghi nhận là nhu cầu — đó là
+            căn cứ để chúng tôi đi tìm đối tác, và bạn sẽ được báo khi có.
+          </p>
+        </div>
+      </motion.div>
+
       {/* Credit Score Hero */}
       <motion.div variants={stagger} className="grid lg:grid-cols-2 gap-6">
         <motion.div variants={fadeUp} className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
