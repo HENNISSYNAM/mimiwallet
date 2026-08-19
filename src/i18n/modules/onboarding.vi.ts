@@ -7,7 +7,6 @@ const m = {
       // product that grants no limit to anyone. The real reason is the one
       // below it: statements are what the cost record is built from.
       { title: 'Kết nối dữ liệu', desc: 'Nguồn để dựng sổ chi phí' },
-      { title: 'Nhu cầu của bạn', desc: 'Giải pháp phù hợp' },
       { title: 'Xác minh eKYC', desc: 'Hoàn tất hồ sơ' },
     ],
     hidePassword: 'Ẩn mật khẩu',
@@ -15,6 +14,8 @@ const m = {
     taxLookupSuccess: 'Đã tra cứu thông tin MST',
     taxLookupNotFound: 'Không tìm thấy, vui lòng nhập thủ công',
     taxLookupError: 'Lỗi tra cứu MST',
+    taxLookupInactive: 'Mã số thuế này đang ở trạng thái: {{status}}. Đã điền thông tin, nhưng bạn nên kiểm tra lại.',
+    taxLookupMultiple: 'Tìm thấy {{count}} cơ sở đang hoạt động cùng mã này. Đã điền theo cơ sở chính — sửa lại nếu không đúng.',
     strengthLabels: ['', 'Yếu', 'Trung bình', 'Mạnh', 'Rất mạnh'],
     banks: ['Vietcombank', 'BIDV', 'Techcombank', 'MB Bank', 'VPBank', 'Agribank', 'ACB', 'Sacombank', 'TPBank'],
     purposeOptions: [
@@ -30,8 +31,8 @@ const m = {
     networkLabels: ['Ngân hàng', 'Hóa đơn', 'Dòng tiền', 'Tín dụng'],
     estimatedCreditScore: 'Điểm tín dụng ước tính',
     rank: 'Hạng {{rank}}',
-    isoSecurity: 'Bảo mật ISO 27001',
-    isoSecurityDesc: 'Dữ liệu được mã hóa AES-256 đầu cuối',
+    isoSecurity: 'Mã hoá kháng lượng tử',
+    isoSecurityDesc: 'Token ngân hàng mã hoá ML-KEM-768 + AES-256-GCM',
     freeSetup: 'Miễn phí — Setup 5 phút',
     createAccountTitle: 'Tạo tài khoản',
     createAccountSub: 'Bắt đầu hành trình vốn thông minh cùng MIMI WALLET',
@@ -49,8 +50,12 @@ const m = {
     businessInfoTitle: 'Thông tin doanh nghiệp',
     businessInfoSub: 'Giúp AI phân tích chính xác hơn',
     companyNameLabel: 'Tên doanh nghiệp *',
-    taxIdLabel: 'Mã số thuế *',
-    taxIdPlaceholder: '10 chữ số',
+    // Từ 01/07/2025 số định danh cá nhân (12 số trên CCCD) thay thế mã số
+    // thuế cho cá nhân, hộ gia đình và hộ kinh doanh. Nhãn phải nói ra điều
+    // đó, vì phần lớn hộ kinh doanh chưa biết và sẽ ngồi tìm một mã 10 số
+    // không tồn tại.
+    taxIdLabel: 'Mã số thuế / Số định danh *',
+    taxIdPlaceholder: 'Doanh nghiệp 10 số · Hộ kinh doanh 12 số trên CCCD',
     lookup: 'Tra cứu',
     industryLabel: 'Ngành nghề *',
     provinceLabel: 'Tỉnh/Thành phố *',
@@ -116,6 +121,9 @@ const m = {
     ],
     // Was 'Dự kiến hạn mức' — an estimated credit limit nobody can draw on.
     estimatedLimitLabel: 'Doanh thu ghi nhận được',
+    nextStepLabel: 'Việc tiếp theo',
+    nextStepDesc: 'Nối tài khoản ngân hàng để MIMI đọc sao kê và bắt đầu dựng sổ chi phí. Chưa nối thì chưa có số liệu nào để tính.',
+    connectBankNow: 'Nối tài khoản ngân hàng →',
     contactIn24h: 'Chúng tôi sẽ liên hệ trong 24 giờ',
     goToDashboard: 'Vào Dashboard ngay →',
   },

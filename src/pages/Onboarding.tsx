@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import AnimatedStepFlow from '@/components/onboarding/AnimatedStepFlow';
 import NetworkGraph from '@/components/onboarding/NetworkGraph';
-import CreditScoreGauge from '@/components/onboarding/CreditScoreGauge';
 
 const stepIcons = [Lock, Globe, Brain, Banknote, Shield];
 
@@ -142,7 +141,6 @@ export default function Onboarding() {
   const [dataTab, setDataTab] = useState(0);
 
   // Step 4
-  const [purposes, setPurposes] = useState<string[]>([]);
   const [desiredAmount, setDesiredAmount] = useState(1_000_000_000);
   const [desiredTerm, setDesiredTerm] = useState('90');
 
@@ -157,18 +155,53 @@ export default function Onboarding() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
 
+  /**
+   * Tra cứu mã số thuế, điền sẵn tên và tỉnh/thành.
+   *
+   * Ba chỗ sửa 18/08:
+   *
+   * 1. Chốt độ dài cũ là `!== 10`, tức chặn đúng nhóm khách chính. Từ 01/07/2025
+   *    số định danh cá nhân (12 số trên CCCD) thay thế mã số thuế cho cá nhân,
+   *    hộ gia đình và hộ kinh doanh — nên một hộ kinh doanh nhập đúng mã của
+   *    mình thì nút tra cứu im lặng không làm gì.
+   *
+   * 2. Bỏ Firecrawl scrape masothue.com + regex trên markdown, chuyển sang API
+   *    có cấu trúc của XInvoice (dữ liệu Tổng cục Thuế). Regex trên trang người
+   *    khác hỏng bất cứ lúc nào họ đổi bố cục, và hỏng im lặng.
+   *
+   * 3. Kiểm `status`. Một mã đã đóng vẫn trả về tên và địa chỉ bình thường —
+   *    điền vào biểu mẫu mà không nói gì là để khách đăng ký bằng một pháp nhân
+   *    không còn tồn tại. Vẫn điền, nhưng nói rõ.
+   *
+   * Ngành nghề không có trong phản hồi nên vẫn để khách tự chọn.
+   */
   const lookupTaxId = async () => {
-    if (taxId.length !== 10 || lookingUpTax) return;
+    const ma = taxId.trim();
+    const goc = ma.split('-')[0];
+    if (!/^\d{10}$|^\d{12}$/.test(goc) || lookingUpTax) return;
     setLookingUpTax(true);
     try {
-      const { data, error } = await supabase.functions.invoke('firecrawl-scrape', { body: { taxId } });
-      if (data?.success && data?.data?.markdown) {
-        const markdown = data.data.markdown;
-        const nameMatch = markdown.match(/Tên công ty[:\s]+([^\n]+)/i) || markdown.match(/Tên doanh nghiệp[:\s]+([^\n]+)/i);
-        if (nameMatch) setCompanyName(nameMatch[1].trim());
-        toast.success(t('ob.taxLookupSuccess'));
-      } else {
+      const { data } = await supabase.functions.invoke('tax-lookup', { body: { taxCode: ma } });
+
+      if (!data?.found) {
         toast.info(t('ob.taxLookupNotFound'));
+      } else {
+        const r = data.record ?? {};
+        if (r.name) setCompanyName(r.name);
+        if (r.address) {
+          // `provinces` là danh sách của ô chọn. Chỉ nhận khi tên tỉnh thật sự
+          // xuất hiện trong địa chỉ — không khớp thì để khách tự chọn, không đoán.
+          const khop = provinces.find((tinh) => r.address.toLowerCase().includes(tinh.toLowerCase()));
+          if (khop) setProvince(khop);
+        }
+
+        if (!data.conHoatDong) {
+          toast.warning(t('ob.taxLookupInactive', { status: r.status ?? '' }));
+        } else if (data.soConHoatDong > 1) {
+          toast.info(t('ob.taxLookupMultiple', { count: data.soConHoatDong }));
+        } else {
+          toast.success(t('ob.taxLookupSuccess'));
+        }
       }
     } catch { toast.error(t('ob.taxLookupError')); }
     setLookingUpTax(false);
@@ -194,7 +227,6 @@ export default function Onboarding() {
     }, 1500);
   };
 
-  const togglePurpose = (p: string) => setPurposes(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
   const simulateUpload = (docType: string) => { if (!uploadedDocs.includes(docType)) setUploadedDocs(prev => [...prev, docType]); };
 
   const [registering, setRegistering] = useState(false);
@@ -215,7 +247,7 @@ export default function Onboarding() {
     setCompleted(true);
   };
 
-  const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 4)); };
+  const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 3)); };
   const prev = () => { setDirection(-1); setStep(s => Math.max(s - 1, 0)); };
   const estimatedLimit = 200_000_000 + connectedBanks.length * 300_000_000;
   const overallProgress = ((step + 1) / 5) * 100;
@@ -282,20 +314,25 @@ export default function Onboarding() {
             ))}
           </div>
 
-          {/* Credit score gauge */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.5 }}>
-            <CreditScoreGauge score={701} maxScore={850} />
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 4.2, duration: 0.5 }}>
-            <p className="text-sm text-muted-foreground mb-1">{t('ob.estimatedLimitLabel')}</p>
-            <p className="font-mono text-4xl font-bold text-mimi-green mb-1">₫1,500,000,000</p>
-            <p className="text-sm text-muted-foreground mb-8">{t('ob.contactIn24h')}</p>
+          {/*
+            Màn hình cuối từng hiện điểm tín dụng 701 và hạn mức ₫1.500.000.000,
+            cả hai viết cứng — nghĩa là mọi người vừa đăng ký đều được báo cùng
+            một con số, không đo từ dữ liệu của ai, trên một sản phẩm không cấp
+            vốn. Cùng loại với "AM" trên avatar và mockData đã xoá.
+            Thay bằng việc thật sự tiếp theo: nối tài khoản ngân hàng, vì chưa
+            có nó thì chưa tính được gì cho khách.
+          */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 0.5 }}>
+            <p className="text-sm text-muted-foreground mb-2">{t('ob.nextStepLabel')}</p>
+            <p className="text-base text-foreground mb-8 max-w-md mx-auto leading-relaxed">{t('ob.nextStepDesc')}</p>
             <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/dashboard/fintech')}
               className="bg-primary text-primary-foreground px-10 py-4 rounded-xl font-display font-bold text-base hover:brightness-110 transition-all shadow-[0_4px_24px_hsla(var(--blue-500)/0.3)]">
-              {t('ob.goToDashboard')}
+              {t('ob.connectBankNow')}
             </motion.button>
+            <button onClick={() => navigate('/dashboard')} className="block mx-auto mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t('ob.goToDashboard')}
+            </button>
           </motion.div>
         </motion.div>
       </div>
@@ -389,14 +426,6 @@ export default function Onboarding() {
                 className="bg-card/30 backdrop-blur-sm border border-border/30 rounded-2xl p-4 mb-4">
                 <p className="text-[10px] text-primary font-semibold tracking-wider uppercase mb-2">{t('ob.dataModelAI')}</p>
                 <NetworkGraph labels={t('ob.networkLabels', { returnObjects: true }) as string[]} />
-              </motion.div>
-            )}
-            {step === 3 && (
-              <motion.div key="gauge" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="bg-card/30 backdrop-blur-sm border border-border/30 rounded-2xl p-4 mb-4">
-                <p className="text-[10px] text-primary font-semibold tracking-wider uppercase mb-2">{t('ob.estimatedCreditScore')}</p>
-                <CreditScoreGauge score={Math.min(500 + purposes.length * 47, 850)} maxScore={1000} />
-                <p className="text-center text-xs text-muted-foreground mt-1">{t('ob.rank', { rank: purposes.length >= 3 ? 'A' : purposes.length >= 1 ? 'B' : 'C' })}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -511,7 +540,10 @@ export default function Onboarding() {
                       <FloatingInput label={t('ob.companyNameLabel')} value={companyName} onChange={setCompanyName} />
                       <div className="relative">
                         <FloatingInput label={t('ob.taxIdLabel')} value={taxId} onChange={(v) => setTaxId(v.replace(/\D/g, '').slice(0, 10))} placeholder={t('ob.taxIdPlaceholder')} />
-                        {taxId.length === 10 && (
+                        {/* Nút hiện ở cả 10 số (doanh nghiệp) lẫn 12 số (hộ kinh doanh dùng
+                            số định danh cá nhân). Chốt cũ chỉ 10 nên nhóm khách
+                            chính không bao giờ thấy nút này. */}
+                        {(taxId.trim().length === 10 || taxId.trim().length === 12) && (
                           <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} onClick={lookupTaxId} disabled={lookingUpTax}
                             className="absolute right-3 top-3 text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-semibold hover:bg-primary/20 transition-all flex items-center gap-1.5 disabled:opacity-50">
                             {lookingUpTax ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />} {t('ob.lookup')}
@@ -691,67 +723,9 @@ export default function Onboarding() {
                 )}
 
                 {/* ═══ STEP 4: Capital needs ═══ */}
+
+                {/* ═══ STEP 4: eKYC ═══ */}
                 {step === 3 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.capitalNeedsTitle')}</h2>
-                      <p className="text-muted-foreground text-sm">{t('ob.capitalNeedsSub')}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {purposeOptions.map((p) => {
-                        const selected = purposes.includes(p.label);
-                        return (
-                          <motion.button key={p.label} whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                            onClick={() => togglePurpose(p.label)}
-                            className={`relative rounded-xl p-4 text-left transition-all duration-300 ${
-                              selected
-                                ? 'bg-primary/8 border-2 border-primary/30 shadow-[0_0_0_2px_hsla(var(--blue-500)/0.06)]'
-                                : 'bg-card/30 border border-border/40 hover:border-primary/20'
-                            }`}>
-                            {selected && (
-                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
-                                className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                <Check size={10} className="text-primary-foreground" strokeWidth={3} />
-                              </motion.div>
-                            )}
-                            <p.icon size={20} className="mx-auto text-primary" />
-                            <p className="text-xs text-foreground font-semibold mt-2">{p.label}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{p.desc}</p>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-baseline justify-between ml-1">
-                        <label className="text-xs text-muted-foreground font-medium">{t('ob.desiredLimitLabel')}</label>
-                        <motion.span key={desiredAmount} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
-                          className="font-mono text-xl font-bold text-foreground">{formatVND(desiredAmount)}</motion.span>
-                      </div>
-                      <input type="range" min={100_000_000} max={10_000_000_000} step={100_000_000} value={desiredAmount}
-                        onChange={(e) => setDesiredAmount(Number(e.target.value))}
-                        className="w-full accent-primary h-1.5 rounded-full appearance-none bg-accent/50 cursor-pointer [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-[0_2px_8px_hsla(var(--blue-500)/0.3)] [&::-webkit-slider-thumb]:appearance-none"
-                      />
-                      <div className="flex justify-between text-[10px] text-muted-foreground px-1"><span>{t('ob.amountMin')}</span><span>{t('ob.amountMax')}</span></div>
-                      <motion.div key={desiredAmount} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="bg-mimi-green/5 border border-mimi-green/15 rounded-lg p-2.5 flex items-center gap-2">
-                        <Sparkles size={12} className="text-mimi-green shrink-0" />
-                        <p className="text-[11px] text-mimi-green font-medium">
-                          {t('ob.aiEstimate')} <span className="font-mono font-bold">{formatVND(Math.min(desiredAmount * 1.5, 10_000_000_000))}</span>
-                        </p>
-                      </motion.div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-2 block ml-1 font-medium">{t('ob.preferredTermLabel')}</label>
-                      <PillSelector options={t('ob.termOptions', { returnObjects: true }) as { value: string; label: string }[]} value={desiredTerm} onChange={setDesiredTerm} />
-                    </div>
-                  </div>
-                )}
-
-                {/* ═══ STEP 5: eKYC ═══ */}
-                {step === 4 && (
                   <div className="space-y-6">
                     <div>
                       <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.identityVerifyTitle')}</h2>
