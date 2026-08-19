@@ -202,12 +202,17 @@ const vi = {
     tagline: 'Ví xanh cho tương lai bền vững.',
     products: 'Sản phẩm',
     // 'Invoice Financing' and 'Vay vốn' listed products MIMI does not sell.
-    productLinks: ['Sổ chi phí', 'Kê khai thuế', 'Tài chính xanh', 'Tín chỉ Carbon', 'API'],
+    // Danh sách nhãn này không còn được Footer dùng: chân trang giờ chỉ liệt kê
+    // đường dẫn có thật trong bảng route, thay vì nhãn gắn href="#".
+    productLinks: [],
     company: 'Công ty',
-    companyLinks: ['Về chúng tôi', 'Blog', 'Tuyển dụng', 'Liên hệ'],
+    companyLinks: [],
     legal: 'Pháp lý',
-    legalLinks: ['Điều khoản sử dụng', 'Bảo mật', 'Cookie'],
-    copyright: '© 2025 MIMI WALLET Technology JSC | Được cấp phép bởi NHNN Việt Nam | MST: 0123456789',
+    legalLinks: [],
+    // Dòng cũ ghi "Được cấp phép bởi NHNN Việt Nam" — không có giấy phép nào
+    // như vậy — kèm tên pháp nhân sai và mã số thuế placeholder 0123456789.
+    // Bản quyền và danh tính pháp nhân giờ dựng từ src/config/company.ts.
+    copyright: '',
   },
 
   // Login

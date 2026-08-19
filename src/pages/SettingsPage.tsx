@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
 
 type NotificationPrefs = { invoice_due: boolean; disbursement: boolean; cashflow: boolean };
 const DEFAULT_PREFS: NotificationPrefs = { invoice_due: true, disbursement: true, cashflow: false };
@@ -357,6 +358,11 @@ export default function SettingsPage() {
           <LogOut size={14} /> {t('sidebar.logout')}
         </button>
       </motion.div>
+
+      {/* Cuối trang, sau khi mọi thứ khác đã đọc xong — nhưng vẫn nằm trong
+          Cài đặt chứ không đẩy ra một trang web riêng, vì App Store Guideline
+          5.1.1(v) yêu cầu xoá được ngay trong ứng dụng. */}
+      <motion.div variants={fadeUp}><DeleteAccountSection /></motion.div>
 
       <ChangePasswordModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
     </motion.div>

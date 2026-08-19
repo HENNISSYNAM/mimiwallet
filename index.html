@@ -6,12 +6,21 @@
     <link rel="icon" type="image/png" href="/mimi-favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#F97316" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover bắt buộc, nếu không env(safe-area-inset-*) luôn trả 0
+         trên iOS và các tiện ích .safe-top/.safe-bottom trong index.css sẽ tồn
+         tại mà không có tác dụng gì. Không đặt maximum-scale/user-scalable=no:
+         chặn phóng to là lỗi tiếp cận, và App Store lẫn WCAG đều tính đó là lỗi. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MIMI Wallet" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="google-site-verification" content="6AcHtCP61UUqEwxh8RCiYgosieNOgApHb2UzLALfiLQ" />
     <title>MIMI WALLET — Ví xanh cho tương lai bền vững</title>
-    <meta name="description" content="MIMI WALLET - Nền tảng tài chính xanh hàng đầu Việt Nam. Tín chỉ carbon, tài chính bền vững và vốn lưu động thông minh cho doanh nghiệp." />
+    <meta name="description" content="MIMI Wallet đọc sao kê ngân hàng của doanh nghiệp, dựng sẵn bộ chứng từ chi phí và đối soát công nợ — để bạn đóng thuế trên lợi nhuận thay vì trên doanh thu." />
     <meta property="og:title" content="MIMI WALLET — Ví xanh cho tương lai bền vững" />
-    <meta property="og:description" content="Nền tảng tài chính xanh #1 Việt Nam. Tín chỉ carbon & vốn bền vững." />
+    <meta property="og:description" content="Đọc sao kê ngân hàng, dựng bộ chứng từ chi phí, đối soát công nợ. Dành cho doanh nghiệp và hộ kinh doanh Việt Nam." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

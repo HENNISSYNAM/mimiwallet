@@ -15,6 +15,8 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -61,6 +63,10 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/about" element={<About />} />
+              {/* Công khai, không nằm sau đăng nhập — App Store yêu cầu
+                  Privacy Policy URL truy cập được mà không cần tài khoản. */}
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/login" element={<Login />} />
               {/* Where Cas Link redirects with the publicToken. Not under
                   ProtectedRoute's dashboard subtree because Cas navigates the

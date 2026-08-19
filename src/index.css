@@ -301,9 +301,33 @@
   .hairline {
     border-color: hsla(var(--text-primary) / 0.08);
   }
-  /* Respect iOS safe areas */
+  /* Respect iOS safe areas.
+     Chỉ có tác dụng khi index.html khai viewport-fit=cover — nếu không,
+     env(safe-area-inset-*) luôn trả 0 và các lớp này thành vô nghĩa. */
   .safe-top { padding-top: env(safe-area-inset-top); }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Vùng chạm tối thiểu 44x44pt.
+     Đây là con số trong Apple Human Interface Guidelines, và cũng là ngưỡng
+     WCAG 2.2 Target Size (Minimum) ở mức 24px — lấy mức cao hơn. Áp lên phần
+     tử nhỏ (nút icon, nút đóng) để vùng bấm đủ rộng mà không phải phóng to
+     phần nhìn thấy. */
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Cuộn mượt theo quán tính trong vùng cuộn riêng, và không để thao tác
+     cuộn ở mép lan ra trang nền — hai thứ khiến web nhúng trong app cảm
+     giác "không phải app". */
+  .scroll-native {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
   .grain-overlay {
     position: relative;
   }

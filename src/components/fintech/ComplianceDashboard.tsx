@@ -1,142 +1,174 @@
 import { motion } from 'framer-motion';
-import { Shield, FileText, Check, AlertTriangle, Clock, Lock, Eye, BarChart3 } from 'lucide-react';
+import { Shield, Check, Lock, Clock, X } from 'lucide-react';
+import { COMPANY } from '@/config/company';
+
+/**
+ * Trạng thái an toàn thông tin và tuân thủ — bản nói thật.
+ *
+ * BẢN TRƯỚC CỦA FILE NÀY LÀ MỘT BẢNG CHỨNG NHẬN BỊA. Nó hiển thị:
+ *
+ *   PCI DSS — "Level 1 Compliance" — Đạt — 01/01/2026
+ *   AML Screening — "Luật PCRT 2022" — Đạt — 09/03/2026
+ *   KYC/eKYC — "TT 16/2020 NHNN" — Đạt — 09/03/2026
+ *   ISO 27001 — "đang xử lý" — Q2 2026
+ *   Audit logs — 12.847 (số cứng)
+ *   Data retention — 5 năm "theo quy định NHNN"
+ *   Lưu trữ — "trên server Việt Nam"
+ *
+ * rồi cộng lại thành một "Compliance Score". Không có chứng nhận nào trong số
+ * đó được cấp cho {COMPANY.shortName}. PCI DSS đặc biệt vô lý vì MIMI không hề
+ * chạm tới dữ liệu thẻ. ISO 27001 là thứ đã bị gỡ khỏi repo này hai lần trước.
+ *
+ * Một bảng tuân thủ bịa nguy hiểm hơn hầu hết chỗ khác, vì đây đúng là màn hình
+ * người ta mở ra để quyết định có giao dữ liệu ngân hàng cho mình hay không.
+ *
+ * Quy tắc thay thế: mỗi dòng dưới đây hoặc trỏ tới một cơ chế có trong mã
+ * nguồn, hoặc ghi rõ là CHƯA CÓ. Không có ô nào ở giữa, và không có điểm số —
+ * điểm số chỉ tạo cảm giác đo lường mà không đo gì.
+ */
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export default function ComplianceDashboard() {
-  const complianceItems = [
-    { id: 'kyc', label: 'KYC/eKYC', status: 'passed', regulation: 'TT 16/2020 NHNN', date: '09/03/2026' },
-    { id: 'aml', label: 'AML Screening', status: 'passed', regulation: 'Luật PCRT 2022', date: '09/03/2026' },
-    { id: 'pci', label: 'PCI DSS', status: 'passed', regulation: 'Level 1 Compliance', date: '01/01/2026' },
-    { id: 'privacy', label: 'Data Privacy', status: 'passed', regulation: 'NĐ 13/2023', date: '15/01/2026' },
-    { id: 'iso', label: 'ISO 27001', status: 'in-progress', regulation: 'ISMS Certification', date: 'Q2 2026' },
-    { id: 'report', label: 'Báo cáo NHNN', status: 'pending', regulation: 'TT 09/2024', date: '31/03/2026' },
-  ];
+type TinhTrang = 'co' | 'chua';
 
-  const statusConfig = {
-    passed: { color: 'text-mimi-green', bg: 'bg-mimi-green/10', icon: <Check size={14} />, label: 'Đạt' },
-    'in-progress': { color: 'text-mimi-amber', bg: 'bg-mimi-amber/10', icon: <Clock size={14} />, label: 'Đang xử lý' },
-    pending: { color: 'text-muted-foreground', bg: 'bg-accent', icon: <Clock size={14} />, label: 'Chờ' },
-  };
+interface Muc {
+  label: string;
+  tinhTrang: TinhTrang;
+  moTa: string;
+}
 
-  const passedCount = complianceItems.filter(c => c.status === 'passed').length;
-  const score = Math.round((passedCount / complianceItems.length) * 100);
+/** Những cơ chế đã có thật, đối chiếu được với mã nguồn. */
+const DA_CO: Muc[] = [
+  {
+    label: 'Mã hoá mã truy cập ngân hàng khi lưu',
+    tinhTrang: 'co',
+    moTa:
+      'AES-256-GCM, khoá bọc bằng ML-KEM-768 (NIST FIPS 203) — kháng tấn công "thu thập hôm nay, giải mã sau". ' +
+      'Xem supabase/functions/_shared/pqcCrypto.ts.',
+  },
+  {
+    label: 'Cách ly dữ liệu giữa các doanh nghiệp',
+    tinhTrang: 'co',
+    moTa:
+      'Row Level Security bật trên toàn bộ bảng, khoá theo tài khoản sở hữu. Không có đường truy vấn nào ' +
+      'từ tài khoản này chạm tới dữ liệu của doanh nghiệp khác.',
+  },
+  {
+    label: 'Người dùng tự thu hồi quyền',
+    tinhTrang: 'co',
+    moTa:
+      'Ngắt liên kết ngân hàng bất cứ lúc nào, và tự xoá toàn bộ tài khoản trong Cài đặt — ' +
+      'khi xoá, hệ thống thu hồi uỷ quyền ở phía nhà cung cấp trước.',
+  },
+  {
+    label: 'Không chạm dữ liệu thẻ, không giữ tiền',
+    tinhTrang: 'co',
+    moTa:
+      'MIMI chỉ đọc sao kê theo uỷ quyền. Không lưu số thẻ, không giữ số dư của ai, không chuyển tiền thay người dùng. ' +
+      'Mã QR nhận tiền do ngân hàng của bạn phát hành.',
+  },
+  {
+    label: 'Không bao giờ thấy mật khẩu ngân hàng',
+    tinhTrang: 'co',
+    moTa: 'Người dùng cấp quyền trên giao diện của ngân hàng hoặc nhà cung cấp, không nhập vào MIMI.',
+  },
+];
 
+/**
+ * Những thứ CHƯA CÓ.
+ *
+ * Liệt kê ra thay vì im lặng. Một khoảng trống được nói thẳng thì người đọc tự
+ * đánh giá được rủi ro; một khoảng trống bị giấu sẽ được phát hiện đúng vào lúc
+ * tệ nhất.
+ */
+const CHUA_CO: Muc[] = [
+  {
+    label: 'ISO 27001',
+    tinhTrang: 'chua',
+    moTa: 'Chưa có tổ chức nào cấp. Khi có, mục này sẽ ghi rõ tổ chức chứng nhận và số hiệu.',
+  },
+  {
+    label: 'PCI DSS',
+    tinhTrang: 'chua',
+    moTa: 'Không áp dụng — MIMI không xử lý, truyền hay lưu dữ liệu thẻ thanh toán.',
+  },
+  {
+    label: 'Giấy phép trung gian thanh toán / tổ chức tín dụng',
+    tinhTrang: 'chua',
+    moTa:
+      `${COMPANY.shortName} không có và không hoạt động trong phạm vi cần các giấy phép này: ` +
+      'không cho vay, không giữ tiền, không chuyển tiền.',
+  },
+  {
+    label: 'Kiểm toán an ninh độc lập',
+    tinhTrang: 'chua',
+    moTa: 'Chưa thực hiện. Kết quả sẽ được công bố tại đây khi có.',
+  },
+];
+
+function Dong({ muc }: { muc: Muc }) {
+  const co = muc.tinhTrang === 'co';
   return (
-    <motion.div variants={{ show: { transition: { staggerChildren: 0.06 } } }} initial="hidden" animate="show" className="space-y-6">
-      {/* Score Overview */}
-      <motion.div variants={fadeUp} className="grid md:grid-cols-4 gap-4">
-        <div className="bg-card/60 border border-border/60 rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Compliance Score</p>
-          <p className="font-mono text-3xl font-extrabold text-mimi-green">{score}%</p>
-          <p className="text-xs text-muted-foreground mt-1">{passedCount}/{complianceItems.length} tiêu chuẩn</p>
-        </div>
-        <div className="bg-card/60 border border-border/60 rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Mã hóa dữ liệu</p>
-          <p className="text-lg font-bold text-foreground flex items-center gap-2"><Lock size={16} className="text-mimi-green" /> AES-256</p>
-          <p className="text-xs text-muted-foreground mt-1">End-to-end encryption</p>
-        </div>
-        <div className="bg-card/60 border border-border/60 rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Audit logs</p>
-          <p className="font-mono text-lg font-bold text-foreground">12,847</p>
-          <p className="text-xs text-muted-foreground mt-1">30 ngày gần nhất</p>
-        </div>
-        <div className="bg-card/60 border border-border/60 rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Data retention</p>
-          <p className="text-lg font-bold text-foreground flex items-center gap-2"><Eye size={16} className="text-primary" /> 5 năm</p>
-          <p className="text-xs text-muted-foreground mt-1">Theo quy định NHNN</p>
+    <div className="flex items-start gap-3 py-3.5 border-b border-border last:border-0">
+      <span
+        className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+          co ? 'bg-mimi-green/10 text-mimi-green' : 'bg-muted text-muted-foreground'
+        }`}
+      >
+        {co ? <Check size={12} /> : <X size={12} />}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{muc.label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{muc.moTa}</p>
+      </div>
+    </div>
+  );
+}
+
+export default function ComplianceDashboard() {
+  return (
+    <motion.div
+      variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+      initial="hidden"
+      animate="show"
+      className="space-y-6"
+    >
+      <motion.div variants={fadeUp} className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-start gap-3">
+          <Shield className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Bảo mật và tuân thủ</p>
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              Trang này liệt kê cơ chế đang chạy trong hệ thống và cả những thứ chưa có.
+              Không có điểm tuân thủ tổng hợp, vì một con số như vậy gộp những thứ không
+              cùng đơn vị và tạo cảm giác đã đo lường trong khi chưa đo gì.
+            </p>
+          </div>
         </div>
       </motion.div>
 
-      {/* Compliance Checklist */}
-      <motion.div variants={fadeUp} className="bg-card/60 border border-border/60 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-display font-bold text-foreground text-lg flex items-center gap-2">
-            <Shield size={18} className="text-primary" /> Tuân thủ pháp lý
-          </h3>
-          <span className="text-xs bg-mimi-green/10 text-mimi-green px-3 py-1 rounded-full font-medium">
-            {passedCount}/{complianceItems.length} đạt chuẩn
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          {complianceItems.map(item => {
-            const config = statusConfig[item.status as keyof typeof statusConfig];
-            return (
-              <div key={item.id} className="flex items-center justify-between p-4 bg-accent/30 rounded-xl hover:bg-accent/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center ${config.color}`}>
-                    {config.icon}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.regulation}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground font-mono">{item.date}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${config.bg} ${config.color}`}>
-                    {config.label}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+      <motion.div variants={fadeUp} className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Lock size={14} className="text-mimi-green" /> Đang có
+        </h3>
+        <div className="mt-2">
+          {DA_CO.map((m) => (
+            <Dong key={m.label} muc={m} />
+          ))}
         </div>
       </motion.div>
 
-      {/* Data Processing */}
-      <motion.div variants={fadeUp} className="grid md:grid-cols-2 gap-6">
-        <div className="bg-card/60 border border-border/60 rounded-2xl p-6">
-          <h3 className="font-display font-bold text-foreground text-lg mb-4 flex items-center gap-2">
-            <FileText size={18} className="text-primary" /> Chính sách dữ liệu
-          </h3>
-          <div className="space-y-3">
-            {[
-              { label: 'Thu thập dữ liệu', desc: 'Chỉ thu thập dữ liệu cần thiết cho đánh giá tín dụng' },
-              { label: 'Lưu trữ', desc: 'Dữ liệu lưu trên server Việt Nam, mã hóa AES-256' },
-              { label: 'Chia sẻ', desc: 'Không chia sẻ dữ liệu với bên thứ 3 khi chưa có đồng ý' },
-              { label: 'Xóa dữ liệu', desc: 'Người dùng có quyền yêu cầu xóa dữ liệu bất cứ lúc nào' },
-            ].map(policy => (
-              <div key={policy.label} className="flex items-start gap-3 p-3 bg-accent/30 rounded-lg">
-                <Check size={14} className="text-mimi-green mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{policy.label}</p>
-                  <p className="text-xs text-muted-foreground">{policy.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-card/60 border border-border/60 rounded-2xl p-6">
-          <h3 className="font-display font-bold text-foreground text-lg mb-4 flex items-center gap-2">
-            <BarChart3 size={18} className="text-primary" /> Audit Trail
-          </h3>
-          <div className="space-y-2">
-            {[
-              { action: 'eKYC xác minh thành công', user: 'System', time: '14:30' },
-              { action: 'Truy cập dữ liệu ngân hàng', user: 'AI Engine', time: '14:28' },
-              { action: 'Credit score cập nhật', user: 'System', time: '14:25' },
-              { action: 'Đăng nhập thành công', user: 'user@company.vn', time: '14:20' },
-              { action: 'API key refreshed', user: 'System', time: '14:00' },
-              { action: 'Backup dữ liệu', user: 'System', time: '12:00' },
-            ].map((log, i) => (
-              <div key={i} className="flex items-center justify-between py-2 px-3 text-xs rounded-lg hover:bg-accent/30 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-mimi-green" />
-                  <span className="text-foreground">{log.action}</span>
-                </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <span>{log.user}</span>
-                  <span className="font-mono">{log.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+      <motion.div variants={fadeUp} className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Clock size={14} className="text-muted-foreground" /> Chưa có
+        </h3>
+        <div className="mt-2">
+          {CHUA_CO.map((m) => (
+            <Dong key={m.label} muc={m} />
+          ))}
         </div>
       </motion.div>
     </motion.div>

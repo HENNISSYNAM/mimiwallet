@@ -177,12 +177,15 @@ const en = {
     tagline: 'Green wallet for a sustainable future.',
     products: 'Products',
     // 'Invoice Financing' and 'Loans' listed products MIMI does not sell.
-    productLinks: ['Expense records', 'Tax filing', 'Green Finance', 'Carbon Credits', 'API'],
+    productLinks: [],
     company: 'Company',
-    companyLinks: ['About us', 'Blog', 'Careers', 'Contact'],
+    companyLinks: [],
     legal: 'Legal',
-    legalLinks: ['Terms of Service', 'Privacy', 'Cookies'],
-    copyright: '© 2025 MIMI WALLET Technology JSC | Licensed by State Bank of Vietnam | Tax ID: 0123456789',
+    legalLinks: [],
+    // Removed: "Licensed by State Bank of Vietnam" — no such licence exists —
+    // along with a wrong legal name and the placeholder tax ID 0123456789.
+    // Legal identity now comes from src/config/company.ts.
+    copyright: '',
   },
 
   // Login
