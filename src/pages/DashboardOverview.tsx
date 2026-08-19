@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, FileText, ShieldCheck, AlertTriangle, Lightbulb, Bell, ArrowRight, Loader2, Link2 } from 'lucide-react';
 import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
 import NewsAndLawPanel from '@/components/NewsAndLawPanel';
+import { DailyBriefCard } from '@/components/DailyBriefCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
 import { formatVNDShort } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
@@ -347,6 +348,12 @@ export default function DashboardOverview() {
       {/* Asked here, after the numbers are on screen — not as a gate in front
           of them. Renders nothing once answered or skipped. */}
       <motion.div variants={fadeUp}><WelcomeCards /></motion.div>
+
+      {/* Một thẻ mỗi ngày: tin kinh tế thật kèm đường về bài gốc, hoặc một mẹo
+          do MIMI viết. Đặt trên các con số vì nó là thứ đọc một lần rồi thôi,
+          trong khi dòng tiền phía dưới là thứ người ta quay lại xem mỗi ngày.
+          Tự ẩn hẳn khi không có gì đáng nói. */}
+      <motion.div variants={fadeUp}><DailyBriefCard /></motion.div>
 
       {/* The one number this screen exists to answer, on its own row.
           Net cash flow, not "balance": no table here stores a bank balance, so

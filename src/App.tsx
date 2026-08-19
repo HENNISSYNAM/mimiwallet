@@ -14,6 +14,7 @@ const BankCallback = lazy(() => import("./pages/BankCallback"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
+const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -77,6 +78,7 @@ const App = () => (
               >
                 <Route index element={<DashboardOverview />} />
                 <Route path="invoices" element={<InvoicesPage />} />
+                <Route path="clients" element={<ClientsPage />} />
                 <Route path="loans" element={<LoansPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="settings" element={<SettingsPage />} />

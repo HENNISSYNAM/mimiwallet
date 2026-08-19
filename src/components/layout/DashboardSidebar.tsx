@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, FileText,
+  LayoutDashboard, FileText, Users,
   BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf, Sparkles, GraduationCap, Globe,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -68,6 +68,7 @@ export default function DashboardSidebar() {
       label: t('sidebar.groupDaily'),
       items: [
         { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
+        { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
         { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
         { icon: ShieldCheck, label: t('sidebar.creditScore'), path: '/dashboard/credit' },
       ],
