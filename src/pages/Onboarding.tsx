@@ -136,8 +136,6 @@ export default function Onboarding() {
   const [empCount, setEmpCount] = useState('');
 
   // Step 3
-  const [connectedBanks, setConnectedBanks] = useState<string[]>([]);
-  const [connectingBank, setConnectingBank] = useState<string | null>(null);
   const [dataTab, setDataTab] = useState(0);
 
   // Step 4
@@ -218,14 +216,6 @@ export default function Onboarding() {
   const purposeOptionsRaw = t('ob.purposeOptions', { returnObjects: true }) as { label: string; desc: string }[];
   const purposeOptions = purposeOptionsRaw.map((p, i) => ({ ...p, icon: purposeIcons[i] }));
 
-  const connectBank = (bank: string) => {
-    if (connectedBanks.includes(bank)) return;
-    setConnectingBank(bank);
-    setTimeout(() => {
-      setConnectedBanks(prev => [...prev, bank]);
-      setConnectingBank(null);
-    }, 1500);
-  };
 
   const simulateUpload = (docType: string) => { if (!uploadedDocs.includes(docType)) setUploadedDocs(prev => [...prev, docType]); };
 
@@ -240,16 +230,18 @@ export default function Onboarding() {
       await supabase.from('companies').insert({
         user_id: user.id, name: companyName, tax_id: taxId, industry, province,
         years_operating: yearsOp, monthly_revenue: revenue, employee_count: empCount,
-        connected_banks: connectedBanks,
+        // connected_banks bỏ đi cùng bước "Kết nối dữ liệu": các ô ngân hàng ở
+        // đó chỉ setTimeout 1,5 giây rồi tự đánh dấu đã nối, không gọi API nào.
+        // Liên kết thật nằm ở Fintech Hub qua Cas Link, và ghi vào
+        // bank_connections chứ không phải cột này.
       });
     }
     setRegistering(false);
     setCompleted(true);
   };
 
-  const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 3)); };
+  const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 2)); };
   const prev = () => { setDirection(-1); setStep(s => Math.max(s - 1, 0)); };
-  const estimatedLimit = 200_000_000 + connectedBanks.length * 300_000_000;
   const overallProgress = ((step + 1) / 5) * 100;
 
   // Canvas drawing
@@ -421,13 +413,6 @@ export default function Onboarding() {
 
           {/* Dynamic sidebar visual based on step */}
           <AnimatePresence mode="wait">
-            {step === 2 && (
-              <motion.div key="network" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="bg-card/30 backdrop-blur-sm border border-border/30 rounded-2xl p-4 mb-4">
-                <p className="text-[10px] text-primary font-semibold tracking-wider uppercase mb-2">{t('ob.dataModelAI')}</p>
-                <NetworkGraph labels={t('ob.networkLabels', { returnObjects: true }) as string[]} />
-              </motion.div>
-            )}
           </AnimatePresence>
 
           {/* Trust badge */}
@@ -598,134 +583,9 @@ export default function Onboarding() {
                 )}
 
                 {/* ═══ STEP 3: Data connections ═══ */}
+                
+                {/* ═══ STEP 3: eKYC ═══ */}
                 {step === 2 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.connectDataTitle')}</h2>
-                      <p className="text-muted-foreground text-sm">{t('ob.connectDataSub')}</p>
-                    </div>
-
-                    {/* Connection status */}
-                    <motion.div layout className="relative overflow-hidden bg-gradient-to-r from-primary/5 via-blue-400/5 to-mimi-green/5 border border-primary/15 rounded-2xl p-5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <motion.div
-                              className="w-2 h-2 rounded-full bg-mimi-green"
-                              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                            />
-                            <p className="text-xs text-muted-foreground font-medium">{t('ob.connectionsCount', { count: connectedBanks.length })}</p>
-                          </div>
-                          <p className="font-mono text-xl font-bold text-foreground">{formatVND(estimatedLimit)}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{t('ob.estimatedLimitAI')}</p>
-                        </div>
-                        <div className="flex -space-x-2">
-                          {connectedBanks.slice(0, 4).map((b) => (
-                            <motion.div key={b} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}
-                              className="w-8 h-8 rounded-full bg-mimi-green/15 border-2 border-background flex items-center justify-center text-[10px] font-bold text-mimi-green">
-                              {b[0]}
-                            </motion.div>
-                          ))}
-                        </div>
-                      </div>
-                      {/* Animated progress bar */}
-                      <div className="mt-3 h-1 bg-border/30 rounded-full overflow-hidden">
-                        <motion.div className="h-full bg-gradient-to-r from-primary to-mimi-green rounded-full"
-                          animate={{ width: `${Math.min(connectedBanks.length / 3 * 100, 100)}%` }}
-                          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                        />
-                      </div>
-                    </motion.div>
-
-                    {/* Tabs */}
-                    <div className="bg-card/30 backdrop-blur-sm rounded-xl p-1 flex gap-1 border border-border/30">
-                      {[t('ob.tabBanks'), t('ob.tabAccounting'), t('ob.tabCommerce')].map((tab, i) => (
-                        <button key={tab} onClick={() => setDataTab(i)}
-                          className={`flex-1 text-xs py-2.5 rounded-lg font-medium transition-all duration-300 ${
-                            dataTab === i ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                          }`}>{tab}</button>
-                      ))}
-                    </div>
-
-                    {dataTab === 0 && (
-                      <div className="grid grid-cols-3 gap-2.5">
-                        {banks.map((b) => {
-                          const connected = connectedBanks.includes(b);
-                          const connecting = connectingBank === b;
-                          return (
-                            <motion.button key={b} whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                              onClick={() => connectBank(b)} disabled={connected || connecting}
-                              className={`relative rounded-xl p-3.5 text-center transition-all duration-300 ${
-                                connected ? 'bg-mimi-green/5 border-2 border-mimi-green/30' :
-                                connecting ? 'bg-primary/5 border-2 border-primary/30' :
-                                'bg-card/30 border border-border/40 hover:border-primary/30 hover:shadow-[0_6px_20px_hsla(var(--blue-500)/0.08)]'
-                              }`}>
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-1.5 text-sm font-bold transition-all ${
-                                connected ? 'bg-mimi-green/12 text-mimi-green' : 'bg-accent/50 text-foreground'
-                              }`}>
-                                {connecting ? <Loader2 size={16} className="animate-spin text-primary" /> : b[0] + b[1]}
-                              </div>
-                              <p className="text-[11px] text-foreground font-medium truncate">{b}</p>
-                              <p className={`text-[9px] mt-0.5 font-medium ${
-                                connected ? 'text-mimi-green' : connecting ? 'text-primary' : 'text-muted-foreground'
-                              }`}>
-                                {connected ? t('ob.connected') : connecting ? t('ob.connecting') : t('ob.connect')}
-                              </p>
-                            </motion.button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {dataTab === 1 && (
-                      <div className="space-y-2.5">
-                        {['MISA SME', 'Fast Accounting', '1C Vietnam'].map((s) => (
-                          <div key={s} className="bg-card/30 border border-border/40 rounded-xl p-4 flex items-center justify-between hover:border-primary/20 transition-all">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-lg bg-accent/50 flex items-center justify-center text-sm font-bold text-foreground">{s[0]}</div>
-                              <span className="text-sm text-foreground font-medium">{s}</span>
-                            </div>
-                            <button
-                              onClick={() => toast(t('ob.connectingIntegrationToast', { name: s }))}
-                              className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all"
-                            >
-                              {t('ob.connect')}
-                            </button>
-                          </div>
-                        ))}
-                        <div className="border-2 border-dashed border-border/40 rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer group">
-                          <Upload size={24} className="text-muted-foreground mx-auto mb-2 group-hover:text-primary transition-colors" />
-                          <p className="text-xs text-muted-foreground">{t('ob.dragDropFile')}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {dataTab === 2 && (
-                      <div className="space-y-2.5">
-                        {['Shopee', 'Lazada', 'TikTok Shop', 'Tiki'].map((s) => (
-                          <div key={s} className="bg-card/30 border border-border/40 rounded-xl p-4 flex items-center justify-between hover:border-primary/20 transition-all">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-lg bg-accent/50 flex items-center justify-center text-sm font-bold text-foreground">{s[0]}</div>
-                              <span className="text-sm text-foreground font-medium">{s}</span>
-                            </div>
-                            <button
-                              onClick={() => toast(t('ob.connectingIntegrationToast', { name: s }))}
-                              className="text-xs bg-primary text-primary-foreground px-3.5 py-2 rounded-lg font-semibold hover:brightness-110 transition-all"
-                            >
-                              {t('ob.connect')}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ═══ STEP 4: Capital needs ═══ */}
-
-                {/* ═══ STEP 4: eKYC ═══ */}
-                {step === 3 && (
                   <div className="space-y-6">
                     <div>
                       <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.identityVerifyTitle')}</h2>
@@ -821,12 +681,7 @@ export default function Onboarding() {
                   {t('ob.back')}
                 </motion.button>
               ) : <div />}
-              {step === 2 && (
-                <button onClick={next} className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium">
-                  {t('ob.skip')}
-                </button>
-              )}
-              {step < 4 ? (
+              {step < 3 ? (
                 <motion.button whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={next}
                   className="bg-primary text-primary-foreground px-8 py-3 rounded-xl text-sm font-display font-bold hover:brightness-110 transition-all shadow-[0_4px_20px_hsla(var(--blue-500)/0.25)] flex items-center gap-2">
                   {t('ob.continueWithArrow')} <ArrowRight size={14} />

@@ -3,10 +3,6 @@ const m = {
     stepsMeta: [
       { title: 'Tạo tài khoản', desc: 'Bảo mật & riêng tư' },
       { title: 'Doanh nghiệp', desc: 'Thông tin kinh doanh' },
-      // "Tăng hạn mức vốn" was the reason given for connecting a bank, on a
-      // product that grants no limit to anyone. The real reason is the one
-      // below it: statements are what the cost record is built from.
-      { title: 'Kết nối dữ liệu', desc: 'Nguồn để dựng sổ chi phí' },
       { title: 'Xác minh eKYC', desc: 'Hoàn tất hồ sơ' },
     ],
     hidePassword: 'Ẩn mật khẩu',
