@@ -6,7 +6,7 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
-## Kết quả tổng (cập nhật 18/08/2026)
+## Kết quả tổng (cập nhật 19/08/2026)
 
 | | Trên 30 case | Trên 20 case — bỏ nhóm `transfer` |
 |---|---|---|
@@ -14,13 +14,13 @@ client id `7f98926a…`.
 | Đường ống đã chứng minh, chờ app Cas ID (case 10) | 1 | 1 |
 | Đã viết mã, chưa chạy thật (case 4) | 1 | 1 |
 | Chờ dữ liệu sandbox từ Casso (case 12, 13) | 2 | 2 |
-| Chưa hiện thực (case 15) | 1 | 1 |
+| Đã hiện thực, chặn bởi case 12 (case 15) | 1 | 1 |
 | Ngoài phạm vi theo thiết kế (case 18) | 1 | 1 |
 | Bị chặn `IP_NOT_ALLOWED` — nhóm `transfer` | 10 | — |
 | **Tổng** | **30** | **20** |
 
-**Buổi 18/08 đóng thêm 6 case**: 2, 3, 5, 6, 7 và 11. Cả năm đều từng bị ghi là chưa
-xong hoặc chưa rõ nguyên nhân, và cả năm chỉ đóng được nhờ **chạy thật** — không
+**Buổi 18/08 đóng thêm 6 case**: 2, 3, 5, 6, 7 và 11. Cả sáu đều từng bị ghi là chưa
+xong hoặc chưa rõ nguyên nhân, và cả sáu chỉ đóng được nhờ **chạy thật** — không
 case nào tìm ra được bằng đọc mã.
 
 Ba lỗi giao diện lộ ra trong buổi đó, cùng một họ — **màn hình nói một đằng, sự
@@ -295,7 +295,7 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 | 12 | Tạo mã QR Pay hợp lệ | *Chờ dữ liệu sandbox — đã thử **hai** ngân hàng* | Luồng hiện thực đầy đủ 13/08: grant riêng `scopes: "qrpay"`, Cas Link mở với `feature: "qrpay"`, dò tài khoản bằng `GET /qr-pay/identity`, tạo QR bằng `POST /qr-pay`, đối soát qua webhook `TRANSACTIONS`. **Đã thử BIDV** — nhận yêu cầu và trả *"Thông tin nhập không chính xác"*, tức đã tới khâu kiểm tra của ngân hàng; màn hình hỏi **số tài khoản + tên chủ tài khoản**. **Đã thử Vietcombank 18/08** — màn hình hỏi bộ trường **khác hẳn**: `Mã định danh doanh nghiệp (Business ID)`, `Mã điểm thu (TID)`, `Số tài khoản`. Đây là luồng **VietQRPay** của Vietcombank hợp tác Napas; Business ID và TID là credential **ngân hàng cấp khi doanh nghiệp đăng ký làm merchant**, không phải giá trị Cas sinh ra. **Tra tài liệu Cas 18/08: không trang nào mô tả ba trường này** — trang QR Pay chỉ nói tầng API (`amount`, `description`, `referenceNumber`), phần Cas Link hỏi merchant hoàn toàn không có tài liệu. Kết luận: mỗi ngân hàng đòi một bộ credential merchant khác nhau và **không bộ nào công bố**. Đây là thứ chỉ Casso hoặc ngân hàng cấp được cho môi trường thử. |
 | 13 | Thiếu/sai trường bắt buộc | Bị chặn | Probe trả `GRANT_NOT_FOUND` (`rLDsrCRHsC8cqHcp`) chứ không phải `INVALID_PARAM`: Cas kiểm token **trước** tham số. Muốn chứng minh `INVALID_PARAM` phải có grant kèm scope `qrpay`. |
 | 14 | Token không hợp lệ | **Passed** | `POST /qr-pay` → 400 `GRANT_NOT_FOUND`, requestId `4B0BqYAD5UCMwobq`, 196ms. |
-| 15 | Webhook xác nhận thanh toán | Chưa hiện thực | Không có QRPay và không có endpoint nhận webhook Cas. |
+| 15 | Webhook xác nhận thanh toán | *Đã hiện thực — chặn bởi case 12* | **Đính chính 19/08:** bản trước ghi "không có endpoint nhận webhook Cas". Sai. `cas-webhook/index.ts` phân nhánh riêng cho `type === "TRANSACTIONS"` (dòng 223, cửa sổ truy hồi 7 ngày phòng khi lỡ một lần gửi) và gọi `reconcileCompanyQr` sau khi lưu xong. Truy vấn `webhook_events` ngày 19/08: **5 envelope loại `TRANSACTIONS`**, trong đó **4 lần `verified`** với ghi chú `1fdc82dd-…:alive+8` — endpoint không tin payload mà hỏi ngược lại Cas, Cas xác nhận grant còn sống, hệ thống **nạp về 8 giao dịch**. Lần thứ 5 `ignored` kèm "no grant id in payload", đúng. **Vẫn không tính Passed**, vì 5 lần đó do ta tự bắn ngày 12–13/08 chứ không phải Casso gửi, và quan trọng hơn: chưa có mã QR nào được phát nên không có khoản thanh toán nào để xác nhận. Cái chặn là credential merchant ở case 12, không phải phần mã chưa viết. |
 
 ### 4. Truy vấn giao dịch
 
