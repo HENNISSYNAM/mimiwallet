@@ -96,25 +96,40 @@ sandbox.
 
 > **Đề nghị:** Casso cho biết có bản Cas ID kết nối môi trường sandbox không, hoặc
 > có cách nào khác để thu hồi quyền trong môi trường thử.
+
 ### 3.2 Case 12, 13, 15 — QR Pay
 
 Luồng QR Pay đã hiện thực đầy đủ: grant riêng với scope `qrpay`, Cas Link mở với
 `feature: "qrpay"`, dò tài khoản bằng `GET /qr-pay/identity`, tạo mã bằng
 `POST /qr-pay`, đối soát qua webhook `TRANSACTIONS`.
 
-BIDV VietQR Official **đã nhận yêu cầu** và trả về *"Thông tin nhập không chính
-xác"* — nghĩa là yêu cầu đã đi tới khâu kiểm tra dữ liệu của ngân hàng. Chúng tôi
-chỉ thiếu một cặp số tài khoản và tên chủ tài khoản hợp lệ trên sandbox BIDV; tài
-liệu không công bố thông tin này.
+Chúng tôi đã thử **hai ngân hàng**, và mỗi ngân hàng yêu cầu một bộ thông tin
+merchant khác nhau:
+
+| Ngân hàng | Cas Link yêu cầu | Kết quả |
+|---|---|---|
+| BIDV VietQR Official | Số tài khoản + tên chủ tài khoản | Ngân hàng **đã nhận yêu cầu** và trả *"Thông tin nhập không chính xác"* — tức đã đi tới khâu kiểm tra dữ liệu |
+| Vietcombank | **Mã định danh doanh nghiệp (Business ID)**, **Mã điểm thu (TID)**, Số tài khoản | Không có giá trị hợp lệ để nhập |
+
+Trường hợp Vietcombank là luồng **VietQRPay** (Vietcombank hợp tác Napas). Business
+ID và TID là thông tin ngân hàng cấp khi doanh nghiệp đăng ký làm merchant, không
+phải giá trị do Cas sinh ra.
+
+Chúng tôi đã tra tài liệu Cas ngày 18/08 và **không tìm thấy trang nào mô tả các
+trường này**. Trang QR Pay chỉ mô tả tầng API (`amount`, `description`,
+`referenceNumber`); phần thông tin merchant mà Cas Link thu thập không có trong tài
+liệu.
 
 Case 13 phụ thuộc case 12: probe hiện trả `GRANT_NOT_FOUND` (requestId
 `rLDsrCRHsC8cqHcp`) chứ không phải `INVALID_PARAM`, vì Cas kiểm tra token trước
-tham số. Muốn quan sát `INVALID_PARAM` phải có grant mang scope `qrpay`.
+tham số. Muốn quan sát `INVALID_PARAM` phải có grant mang scope `qrpay` hợp lệ.
 
 Case 15 (webhook xác nhận thanh toán) phụ thuộc case 12.
 
-> **Đề nghị:** Casso cung cấp một cặp số tài khoản + tên chủ tài khoản BIDV hợp lệ
-> trên sandbox để hoàn tất ba case này.
+> **Đề nghị:** Casso cung cấp bộ thông tin merchant hợp lệ trên sandbox cho **một**
+> ngân hàng bất kỳ mà Casso khuyến nghị — BIDV (số tài khoản + tên chủ) hoặc
+> Vietcombank (Business ID + TID + số tài khoản). Chỉ cần một bộ chạy được là hoàn
+> tất cả ba case 12, 13, 15.
 
 ---
 

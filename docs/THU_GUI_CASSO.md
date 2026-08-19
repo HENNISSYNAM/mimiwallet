@@ -28,11 +28,18 @@ phép nêu ngắn gọn ở đây **ba việc cần Casso hỗ trợ** và **hai
 
 **Cần Casso hỗ trợ**
 
-1. **Một cặp số tài khoản và tên chủ tài khoản BIDV hợp lệ trên sandbox.**
-   Luồng QR Pay đã hiện thực đầy đủ. BIDV VietQR Official đã nhận yêu cầu và trả
-   về "Thông tin nhập không chính xác", tức đã đi tới khâu kiểm tra dữ liệu của
-   ngân hàng. Chúng tôi chỉ thiếu một cặp dữ liệu hợp lệ mà tài liệu chưa công bố.
-   Có dữ liệu này sẽ mở được case 12, 13 và 15.
+1. **Bộ thông tin merchant hợp lệ trên sandbox để tạo QR Pay.**
+   Luồng QR Pay đã hiện thực đầy đủ, và chúng tôi đã thử hai ngân hàng — mỗi ngân
+   hàng hỏi một bộ thông tin khác nhau. BIDV VietQR Official hỏi số tài khoản và
+   tên chủ tài khoản, đã nhận yêu cầu và trả về "Thông tin nhập không chính xác",
+   tức đã đi tới khâu kiểm tra dữ liệu của ngân hàng. Vietcombank thì hỏi Mã định
+   danh doanh nghiệp (Business ID), Mã điểm thu (TID) và Số tài khoản — đây là
+   luồng VietQRPay, và hai mã đầu là thông tin ngân hàng cấp khi doanh nghiệp đăng
+   ký làm merchant.
+   Chúng tôi đã tra tài liệu và không tìm thấy trang nào mô tả các trường này;
+   trang QR Pay chỉ nói tầng API (amount, description, referenceNumber). Xin
+   anh/chị cho một bộ giá trị hợp lệ trên sandbox của bất kỳ ngân hàng nào
+   anh/chị khuyến nghị — chỉ cần một bộ chạy được là mở được case 12, 13 và 15.
 
 2. **Phương án thu hồi quyền trong môi trường sandbox.**
    Đường ống nhận webhook đã chạy thông: Casso đã gửi thật 25 lần `DEFAULT_UPDATE`
@@ -87,10 +94,12 @@ MIMI Wallet
 >
 > Có **2 việc em cần anh/chị hỗ trợ** để chạy tiếp:
 >
-> 1. Cho em xin **một cặp số tài khoản + tên chủ tài khoản BIDV hợp lệ trên
->    sandbox**. Luồng QR Pay bên em làm xong rồi, BIDV đã nhận yêu cầu và báo
->    "Thông tin nhập không chính xác" — tức là đã tới khâu kiểm tra dữ liệu của
->    ngân hàng, chỉ thiếu đúng cặp dữ liệu này. Mở được 3 case.
+> 1. Cho em xin **một bộ thông tin merchant hợp lệ trên sandbox để tạo QR Pay**.
+>    Luồng bên em làm xong rồi, đã thử 2 ngân hàng. BIDV hỏi số tài khoản + tên chủ,
+>    đã nhận yêu cầu và báo "Thông tin nhập không chính xác" — tức đã tới khâu kiểm
+>    tra của ngân hàng. Vietcombank thì hỏi Business ID + Mã điểm thu (TID) + số tài
+>    khoản, mà em tra tài liệu không thấy chỗ nào nói mấy trường này. Ngân hàng nào
+>    anh/chị thấy tiện thì cho em một bộ ạ, chỉ cần một bộ là mở được 3 case.
 >
 > 2. **App Cas ID không quét được mã QR sandbox.** Webhook thì đã chạy thông rồi —
 >    Casso gửi thật 25 lần `DEFAULT_UPDATE` và 10 lần `ERROR` từ 17/08, bên em nhận
