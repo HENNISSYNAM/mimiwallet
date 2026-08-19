@@ -144,14 +144,26 @@ Deno.serve(async (req) => {
       }
 
       case "face-scan": {
-        // Simulate face matching - returns mock score
-        const faceMatchScore = 95 + Math.random() * 4.5; // 95-99.5%
+        /*
+         * KHÔNG chấm điểm. Trước đây chỗ này là:
+         *
+         *     const faceMatchScore = 95 + Math.random() * 4.5;
+         *
+         * tức một số ngẫu nhiên 95–99,5% được ghi vào cơ sở dữ liệu rồi hiện
+         * lên màn hình dưới dạng "Khuôn mặt khớp 97,3%". Không có khuôn mặt nào
+         * được đối chiếu. Nếu từng có ai tin con số đó để chấp nhận một tài
+         * khoản là thật, họ đã tin vào Math.random().
+         *
+         * Chưa tích hợp nhà cung cấp eKYC nào, nên câu trả lời trung thực duy
+         * nhất là: đã nhận ảnh, CHƯA xác minh. Để null — null nghĩa là chưa đo,
+         * khác hẳn một con số nghĩa là đã đo.
+         */
         
         const { data: updated } = await supabase
           .from("kyc_verifications")
           .update({
-            face_match_score: Math.round(faceMatchScore * 10) / 10,
-            status: "face_verified",
+            face_match_score: null,
+            status: "face_pending_review",
           })
           .eq("company_id", company.id)
           .order("created_at", { ascending: false })
@@ -159,7 +171,12 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        result = { ...updated, face_match_score: Math.round(faceMatchScore * 10) / 10 };
+        result = {
+          ...updated,
+          face_match_score: null,
+          verified: false,
+          message: "Đã nhận ảnh. Chưa xác minh khuôn mặt — MIMI chưa tích hợp dịch vụ eKYC.",
+        };
         break;
       }
 
@@ -167,8 +184,11 @@ Deno.serve(async (req) => {
         const { data: updated } = await supabase
           .from("kyc_verifications")
           .update({
-            liveness_passed: true,
-            status: "liveness_passed",
+            // Cùng lý do khối trên: cờ này trước đây luôn được ghi true mà không có
+            // phép kiểm nào chạy. Một cờ "đã qua kiểm tra sự sống" luôn đúng là
+            // cờ không mang thông tin gì.
+            liveness_passed: null,
+            status: "liveness_pending_review",
           })
           .eq("company_id", company.id)
           .order("created_at", { ascending: false })

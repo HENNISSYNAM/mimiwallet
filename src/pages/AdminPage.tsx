@@ -27,13 +27,17 @@ const industryData = [
   { name: 'Khác', value: 12, fill: 'hsl(215,19%,45%)' },
 ];
 
-const mockLeads = [
-  { time: '14:32', name: 'Nguyễn Văn An', company: 'An Phát Foods', industry: 'F&B', revenue: '₫2.5 tỷ', email: 'an@anphat.vn' },
-  { time: '13:15', name: 'Trần Thị Bình', company: 'Bình Minh Logistics', industry: 'Logistics', revenue: '₫5.1 tỷ', email: 'binh@bmlog.vn' },
-  { time: '11:42', name: 'Lê Hoàng Cường', company: 'Cường Thịnh JSC', industry: 'Sản xuất', revenue: '₫12 tỷ', email: 'cuong@cthinh.vn' },
-  { time: '10:08', name: 'Phạm Minh Đức', company: 'Đức Phát Trading', industry: 'XNK', revenue: '₫8.3 tỷ', email: 'duc@dptrading.vn' },
-  { time: '09:30', name: 'Vũ Thị Hoa', company: 'Hoa Sen Retail', industry: 'Bán lẻ', revenue: '₫3.2 tỷ', email: 'hoa@hoasen.vn' },
-];
+/*
+ * Danh sách lead để rỗng, có chủ đích.
+ *
+ * Trước đây chỗ này là năm lead bịa — tên người, tên công ty, email, doanh thu
+ * — và trang có nút xuất CSV. Nghĩa là dữ liệu không có thật xuất được ra file
+ * và đi tiếp vào một bảng tính ai đó tin. Cùng loại với avatar "AM" và mockData
+ * đã xoá, nhưng nguy hiểm hơn vì nó rời được khỏi ứng dụng.
+ *
+ * Chưa có bảng lead nào trong schema. Khi có, thay mảng này bằng truy vấn thật.
+ */
+const mockLeads: { time: string; name: string; company: string; industry: string; revenue: string; email: string }[] = [];
 
 function exportLeadsCsv() {
   const header = ['time', 'name', 'company', 'industry', 'revenue', 'email'];
