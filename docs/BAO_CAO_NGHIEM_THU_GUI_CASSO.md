@@ -13,8 +13,8 @@
 
 | Trạng thái | Số case |
 |---|---|
-| **Đạt** | **13** |
-| Đạt phía xử lý — chờ công cụ từ Casso | 2 |
+| **Đạt** | **14** |
+| Đường ống đã chứng minh — chờ công cụ từ Casso | 1 |
 | Chờ dữ liệu sandbox từ Casso | 3 |
 | Đã hiện thực — chưa gặp điều kiện phát sinh | 1 |
 | Đề nghị điều chỉnh phạm vi | 1 |
@@ -22,7 +22,7 @@
 | **Tổng** | **30** |
 
 Nếu Casso chấp thuận đề nghị rút nhóm `transfer` ở **mục 4**, mẫu số còn 20 case
-và kết quả là **13/20 — đạt 65%**.
+và kết quả là **14/20 — đạt 70%**.
 
 Toàn bộ vòng đời liên kết tài khoản đã nghiệm thu xong: tạo liên kết, xử lý trùng
 thông tin, ngắt liên kết, và cả ba tình huống mất kết nối (đổi mật khẩu, xác thực
@@ -30,7 +30,7 @@ thiết bị, chặn đăng nhập từ website).
 
 ---
 
-## 2. Chi tiết case đã đạt — 13 case
+## 2. Chi tiết case đã đạt — 14 case
 
 ### 2.1 Chức năng liên kết
 
@@ -52,7 +52,13 @@ thiết bị, chặn đăng nhập từ website).
 | 16 | Lấy toàn bộ danh sách giao dịch | `GET /transactions` → 200, requestId `krMYZheiLZxiHc2R`, 12/08/2026 18:28:14. |
 | 17 | Hiệu năng phản hồi API | 5 lần gọi liên tiếp (14/08): **182, 38, 13, 15, 16 ms** — thấp nhất 13 ms, cao nhất 182 ms, trung bình 53 ms. Cả 5 lần dưới mốc 1000 ms. requestId `VZhmOSXWYXgdmoJ-`, `a_nw6i8r2KuLyiCf`, `PzYHBhyEx8n-0p8N`, `IP08YruX1GD_0Xju`, `iUwxE3Ot_T0ZtlSM`. |
 
-### 2.3 Kiểm soát truy cập
+### 2.3 Webhook từ Casso
+
+| # | Tình huống | Bằng chứng |
+|---|---|---|
+| 11 | Xử lý mã `DEFAULT_UPDATE` | Casso đã gửi **25 lần** mã `DEFAULT_UPDATE` (loại `GRANT`), lần đầu 17/08/2026 13:30:35, lần cuối 18/08/2026 13:47:16 (UTC). Envelope nhận được: `{webhookCode, webhookType, grantId, environment:"dev", error}`. Kết quả xử lý: **6 lần `verified`**, trong đó có bản ghi `1fdc82dd-…:alive+2` — endpoint gọi ngược lại Cas, Cas xác nhận grant còn hiệu lực, hệ thống đồng bộ lại và **nạp về 2 giao dịch**. Đúng kết quả dự kiến: hệ thống đối tác tiếp tục gọi API lấy giao dịch bình thường. 19 lần còn lại `ignored` kèm ghi chú "no connection for grant …" — các grant đã ngắt trước đó, bỏ qua là đúng. Mã `ERROR` cũng xử lý đúng: 9 lần `verified` với các nhánh `needs-relink`, `PREVENTED`, `rate-limited`. |
+
+### 2.4 Kiểm soát truy cập
 
 | # | Tình huống | Bằng chứng |
 |---|---|---|
@@ -62,24 +68,34 @@ thiết bị, chặn đăng nhập từ website).
 
 ---
 
-## 3. Case cần Casso hỗ trợ — 5 case
+## 3. Case cần Casso hỗ trợ — 4 case
 
-### 3.1 Case 10, 11 — Webhook Cas ID
+### 3.1 Case 10 — Webhook `USER_PERMISSION_REVOKED`
 
-**Phía xử lý: đã đạt.** Endpoint `cas-webhook` đã dựng và chạy được đầu cuối. Ngày
-13/08 chúng tôi tự phát một sự kiện `USER_PERMISSION_REVOKED` cho grant thật
-`5455fe9b-9640-11f1-b705-fa163e5398eb`. Endpoint **không** thu hồi theo nội dung
-payload — nó gọi ngược lại Cas để xác minh, Cas trả lời grant còn hiệu lực, hệ
-thống giữ nguyên trạng thái và ghi log `verified / alive`.
+**Đường ống nhận webhook đã chứng minh xong** (chi tiết ở mục 2.4 — case 11 đạt).
+Casso gửi thật, endpoint nhận, xác minh và xử lý đúng.
 
-**Phía nhận: chưa chứng minh được.** Cách duy nhất để Casso phát sinh webhook thật
-là khách hàng thu hồi quyền từ ứng dụng **Cas ID**. Ngày 18/08 chúng tôi thử và
-**ứng dụng Cas ID không quét được mã QR do Cas Link sinh ra trên môi trường
-sandbox**. Không thu hồi được từ phía khách thì không có sự kiện nào để Casso gửi.
+**Phía xử lý riêng cho mã này cũng đạt.** Ngày 13/08 chúng tôi tự phát một sự kiện
+`USER_PERMISSION_REVOKED` cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb`.
+Endpoint **không** thu hồi theo nội dung payload — nó gọi ngược lại Cas để xác minh,
+Cas trả lời grant còn hiệu lực, hệ thống giữ nguyên trạng thái và ghi log
+`verified / alive`.
+
+**Còn thiếu đúng một thứ: cái kích hoạt.** Thống kê `webhook_events` tính đến
+18/08/2026:
+
+| Mã Casso đã gửi | Số lần |
+|---|---|
+| `DEFAULT_UPDATE` | 25 |
+| `ERROR` | 10 |
+| `USER_PERMISSION_REVOKED` | **0** |
+
+Mã này chỉ phát sinh khi khách hàng thu hồi quyền từ ứng dụng **Cas ID**. Ngày 18/08
+chúng tôi thử và ứng dụng Cas ID **không quét được mã QR** do Cas Link sinh ra trên
+sandbox.
 
 > **Đề nghị:** Casso cho biết có bản Cas ID kết nối môi trường sandbox không, hoặc
 > có cách nào khác để thu hồi quyền trong môi trường thử.
-
 ### 3.2 Case 12, 13, 15 — QR Pay
 
 Luồng QR Pay đã hiện thực đầy đủ: grant riêng với scope `qrpay`, Cas Link mở với

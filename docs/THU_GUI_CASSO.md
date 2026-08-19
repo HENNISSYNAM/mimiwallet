@@ -17,7 +17,7 @@ MIMI Wallet xin gửi báo cáo nghiệm thu tích hợp BankHub theo hợp đ�
 0319436143/BAAS/1. Chúng tôi đã chạy bộ 30 case trên môi trường sandbox trong kỳ
 12/08 – 18/08/2026.
 
-**Kết quả: 13 case đạt.** Toàn bộ vòng đời liên kết tài khoản đã hoàn tất — tạo
+**Kết quả: 14 case đạt.** Toàn bộ vòng đời liên kết tài khoản đã hoàn tất — tạo
 liên kết, xử lý trùng thông tin, ngắt liên kết, và cả ba tình huống mất kết nối
 (đổi mật khẩu, xác thực thiết bị, chặn đăng nhập từ website). Nhóm truy vấn giao
 dịch và kiểm soát truy cập token cũng đã đạt, với hiệu năng trung bình 53 ms cho
@@ -35,11 +35,13 @@ phép nêu ngắn gọn ở đây **ba việc cần Casso hỗ trợ** và **hai
    Có dữ liệu này sẽ mở được case 12, 13 và 15.
 
 2. **Phương án thu hồi quyền trong môi trường sandbox.**
-   Chúng tôi cần khách hàng thu hồi quyền từ ứng dụng Cas ID để Casso phát sinh
-   webhook thật — đó là cách duy nhất chứng minh phía nhận webhook. Tuy nhiên ứng
-   dụng Cas ID hiện không quét được mã QR do Cas Link sinh ra trên sandbox. Xin hỏi
+   Đường ống nhận webhook đã chạy thông: Casso đã gửi thật 25 lần `DEFAULT_UPDATE`
+   và 10 lần `ERROR` từ 17/08, endpoint của chúng tôi xác minh ngược với Cas rồi
+   đồng bộ lại dữ liệu — case 11 đạt nhờ vậy. Riêng `USER_PERMISSION_REVOKED` thì
+   chưa lần nào, vì mã đó chỉ phát sinh khi khách thu hồi quyền từ ứng dụng Cas ID,
+   mà ứng dụng hiện không quét được mã QR do Cas Link sinh ra trên sandbox. Xin hỏi
    có bản Cas ID kết nối sandbox, hoặc cách nào khác để thu hồi quyền trong môi
-   trường thử không? Việc này liên quan case 10 và 11.
+   trường thử không? Việc này chỉ còn liên quan case 10.
 
 3. **Xác thực nguồn gửi webhook.**
    Form tạo webhook trong console hiện có bốn trường và không có trường secret để
@@ -80,7 +82,7 @@ MIMI Wallet
 ## Bản nhắn nhanh
 
 > Chào anh/chị, bên em vừa xong đợt nghiệm thu tích hợp BankHub (HĐ
-> 0319436143/BAAS/1), chạy sandbox từ 12/08 đến 18/08. **Kết quả 13 case đạt**,
+> 0319436143/BAAS/1), chạy sandbox từ 12/08 đến 18/08. **Kết quả 14 case đạt**,
 > trọn vòng đời liên kết tài khoản đã hoàn tất, báo cáo chi tiết em gửi kèm.
 >
 > Có **2 việc em cần anh/chị hỗ trợ** để chạy tiếp:
@@ -90,9 +92,11 @@ MIMI Wallet
 >    "Thông tin nhập không chính xác" — tức là đã tới khâu kiểm tra dữ liệu của
 >    ngân hàng, chỉ thiếu đúng cặp dữ liệu này. Mở được 3 case.
 >
-> 2. **App Cas ID không quét được mã QR sandbox.** Bên em cần thu hồi quyền từ app
->    để Casso gửi webhook thật, mà không quét được nên chưa chứng minh được phía
->    nhận webhook. Anh/chị cho em hỏi có bản Cas ID cho sandbox không ạ?
+> 2. **App Cas ID không quét được mã QR sandbox.** Webhook thì đã chạy thông rồi —
+>    Casso gửi thật 25 lần `DEFAULT_UPDATE` và 10 lần `ERROR` từ 17/08, bên em nhận
+>    và xử lý đúng nên case 11 đạt. Chỉ còn `USER_PERMISSION_REVOKED` là chưa, vì
+>    mã đó phải khách thu hồi quyền từ app Cas ID mới phát sinh. Anh/chị cho em hỏi
+>    có bản Cas ID cho sandbox không ạ? Còn đúng case 10 này thôi.
 >
 > Ngoài ra em có **2 đề nghị về phạm vi** đã ghi trong báo cáo: xin rút nhóm
 > `transfer` (10 case, bên em không làm chức năng chuyển tiền), và ghi nhận case

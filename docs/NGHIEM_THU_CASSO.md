@@ -10,8 +10,8 @@ client id `7f98926a…`.
 
 | | Trên 30 case | Trên 20 case — bỏ nhóm `transfer` |
 |---|---|---|
-| **Passed** | **13** | **13 (65%)** |
-| Phía xử lý đạt, chờ app Cas ID (case 10, 11) | 2 | 2 |
+| **Passed** | **14** | **14 (70%)** |
+| Đường ống đã chứng minh, chờ app Cas ID (case 10) | 1 | 1 |
 | Đã viết mã, chưa chạy thật (case 4) | 1 | 1 |
 | Chờ dữ liệu sandbox từ Casso (case 12, 13) | 2 | 2 |
 | Chưa hiện thực (case 15) | 1 | 1 |
@@ -19,7 +19,7 @@ client id `7f98926a…`.
 | Bị chặn `IP_NOT_ALLOWED` — nhóm `transfer` | 10 | — |
 | **Tổng** | **30** | **20** |
 
-**Buổi 18/08 đóng thêm 5 case**: 2, 3, 5, 6, 7. Cả năm đều từng bị ghi là chưa
+**Buổi 18/08 đóng thêm 6 case**: 2, 3, 5, 6, 7 và 11. Cả năm đều từng bị ghi là chưa
 xong hoặc chưa rõ nguyên nhân, và cả năm chỉ đóng được nhờ **chạy thật** — không
 case nào tìm ra được bằng đọc mã.
 
@@ -285,8 +285,8 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 10 | `USER_PERMISSION_REVOKED` | *Một nửa — **chặn bởi app Cas ID**, 18/08* | **Phía xử lý: đạt.** Bắn một sự kiện `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi: nó hỏi Cas, Cas nói grant còn sống, trả `verified / …:alive`. Đường push chạy được đầu cuối — gọi Cas, ánh xạ, ghi DB. **Phía nhận: chưa, và 18/08 xác định được vì sao chưa.** Cách duy nhất để Casso gửi webhook thật là khách thu hồi quyền từ **app Cas ID**, mà app đó **không quét được mã QR do Cas Link sinh ra trong sandbox** — nhiều khả năng app trỏ vào production nên không nhận mã sandbox. Không có app thì không thu hồi được từ phía khách, không thu hồi được thì Casso không có sự kiện nào để gửi. **Đây là câu hỏi cho Casso, không phải việc sửa mã.** |
-| 11 | `DEFAULT_UPDATE` | *Một nửa — chặn cùng lý do case 10* | như trên. Nhánh "grant còn sống → khôi phục `status=connected`" có trong mã nhưng chưa chạy thật được, vì nguồn phát sinh sự kiện cũng là app Cas ID. |
+| 10 | `USER_PERMISSION_REVOKED` | *Một nửa — đường ống đã chứng minh, thiếu đúng cái kích hoạt* | **Phía nhận: ĐÃ CHỨNG MINH** (xem case 11) — Casso gửi thật, endpoint nhận và xử lý đúng. **Phía xử lý riêng cho mã này: đạt.** Bắn một `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi theo payload: nó hỏi Cas, Cas nói grant còn sống, trả `verified/alive`. **Còn thiếu:** chưa lần nào Casso gửi mã này thật — đếm trên `webhook_events` tới 18/08: `DEFAULT_UPDATE` 25 lần, `ERROR` 10 lần, `USER_PERMISSION_REVOKED` **0 lần**. Mã này chỉ phát sinh khi khách thu hồi quyền từ app Cas ID, mà app không quét được mã QR sandbox. Đây là thứ duy nhất còn thiếu, không phải cả đường ống. |
+| 11 | `DEFAULT_UPDATE` | **Passed** — Casso gửi thật, xác minh 18/08 | Casso đã gửi **25 lần** mã `DEFAULT_UPDATE` (loại `GRANT`), lần đầu 17/08 13:30:35, lần cuối 18/08 13:47:16. Envelope thật: `{webhookCode, webhookType, grantId, environment:"dev", error}` — khác hẳn hình dạng ta tự bịa khi thử ngày 13/08, nên không thể nhầm là của mình. Kết quả xử lý: **6 lần `verified`**, trong đó có `1fdc82dd-…:alive+2` — endpoint hỏi ngược lại Cas, Cas xác nhận grant còn sống, hệ thống đồng bộ lại và **nạp về 2 giao dịch**. Đúng kết quả dự kiến của case: "hệ thống đối tác có thể tiếp tục gọi API lấy giao dịch bình thường". 19 lần còn lại `ignored` kèm "no connection for grant …" — đó là các grant cũ đã ngắt, bỏ qua là đúng. Mã `ERROR` cũng chạy đúng: 9 lần `verified` với các nhánh `needs-relink`, `PREVENTED`, `rate-limited`. |
 
 ### 3. QRPay
 
