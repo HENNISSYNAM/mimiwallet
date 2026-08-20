@@ -38,9 +38,29 @@ const corsHeaders = {
 const TTL_MINUTES = 180;
 const MAX_ITEMS = 12;
 
+/**
+ * Nguồn tin. MỌI URL DƯỚI ĐÂY ĐÃ ĐƯỢC GỌI THỬ VÀ ĐẾM SỐ BÀI ngày 19/08/2026 —
+ * không có URL nào suy ra từ quy luật đặt tên.
+ *
+ * Đã loại sau khi kiểm:
+ *   tuoitre.vn/rss/kinh-doanh.rss      200 nhưng chỉ 1 bài — không đáng gọi
+ *   baochinhphu.vn/rss/kinh-te.rss     404
+ *   investing.com/rss/news.rss         chặn (curl trả 000)
+ *
+ * CHƯA THÊM, và lý do đáng ghi lại:
+ *   federalreserve.gov/feeds/press_all.xml   200, 20 bài — nhưng TIẾNG ANH.
+ *   `analysis.ts` phân loại bằng từ khoá tiếng Việt đã bỏ dấu ("lai suat",
+ *   "tin dung"). Bài tiếng Anh sẽ rơi hết vào `general`, và bộ lọc bản tin
+ *   hằng ngày loại `general` — tức là thêm nguồn mà không bao giờ hiện ra.
+ *   Muốn dùng thì phải bổ sung bộ từ khoá tiếng Anh vào TOPIC_KEYWORDS trước.
+ */
 const FEEDS = [
   { url: "https://vnexpress.net/rss/kinh-doanh.rss", source: "VnExpress" },
   { url: "https://cafef.vn/tai-chinh-ngan-hang.rss", source: "CafeF" },
+  // Vĩ mô & đầu tư — nguồn sát nhất với câu hỏi "cái này ăn vào chi phí của tôi thế nào".
+  { url: "https://cafef.vn/vi-mo-dau-tu.rss", source: "CafeF Vĩ mô" },
+  { url: "https://vneconomy.vn/tin-moi.rss", source: "VnEconomy" },
+  { url: "https://thanhnien.vn/rss/kinh-te.rss", source: "Thanh Niên" },
 ];
 
 /**
