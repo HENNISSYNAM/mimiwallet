@@ -9,6 +9,7 @@ import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
+import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 
 type NotificationPrefs = { invoice_due: boolean; disbursement: boolean; cashflow: boolean };
 const DEFAULT_PREFS: NotificationPrefs = { invoice_due: true, disbursement: true, cashflow: false };
@@ -43,20 +44,17 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function SubscriptionSection() {
-  const { subscribed, productId, subscriptionEnd, loading, checkSubscription, createCheckout, openPortal } = useSubscriptionStore();
+  const { subscribed, productId, subscriptionEnd, loading, checkSubscription, openPortal } = useSubscriptionStore();
   const { t } = useTranslation();
+  /*
+   * Gói khách đang chọn để trả. Không có nghĩa là đã trả — màn hình chuyển
+   * khoản hiện ra bên dưới và chỉ đóng lại khi đối soát xác nhận tiền vào.
+   */
+  const [goiDangTra, setGoiDangTra] = useState<string | null>(null);
 
   useEffect(() => { checkSubscription(); }, [checkSubscription]);
 
   const currentTier = Object.values(TIERS).find(t => t.product_id === productId);
-
-  const handleCheckout = async (priceId: string) => {
-    try {
-      await createCheckout(priceId);
-    } catch {
-      toast.error('Không thể tạo phiên thanh toán');
-    }
-  };
 
   const handlePortal = async () => {
     try {
@@ -140,7 +138,7 @@ function SubscriptionSection() {
                 <motion.button
                   whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleCheckout(tier.price_id)}
+                  onClick={() => setGoiDangTra(goiDangTra === key ? null : key)}
                   className={`mt-4 w-full text-xs py-2.5 rounded-xl font-medium transition-all ${
                     key === 'growth'
                       ? 'bg-primary text-primary-foreground hover:brightness-110'
@@ -154,6 +152,16 @@ function SubscriptionSection() {
           );
         })}
       </div>
+
+      {/* Màn hình chuyển khoản, hiện ngay dưới lưới gói thay vì mở tab Stripe
+          mới. Stripe không nhận merchant Việt Nam nên đường cũ không bao giờ
+          thu được tiền của khách hàng Việt. */}
+      {goiDangTra && (
+        <SubscriptionPayment
+          plan={goiDangTra}
+          onPaid={() => { setGoiDangTra(null); void checkSubscription(); }}
+        />
+      )}
 
       <button onClick={checkSubscription} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
         {t('settings.refreshStatus')}

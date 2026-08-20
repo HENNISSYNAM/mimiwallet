@@ -1146,6 +1146,111 @@ export type Database = {
           },
         ]
       }
+      subscription_invoices: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          id: string
+          matched_transaction_id: string | null
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          plan: string
+          received_amount: number | null
+          reference_code: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          id?: string
+          matched_transaction_id?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan: string
+          received_amount?: number | null
+          reference_code: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          matched_transaction_id?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan?: string
+          received_amount?: number | null
+          reference_code?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_invoices_matched_transaction_id_fkey"
+            columns: ["matched_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_period_end: string
+          last_invoice_id: string | null
+          plan: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_period_end: string
+          last_invoice_id?: string | null
+          plan: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_period_end?: string
+          last_invoice_id?: string | null
+          plan?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_last_invoice_id_fkey"
+            columns: ["last_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transaction_labels: {
         Row: {
           category: string | null

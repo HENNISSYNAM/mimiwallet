@@ -47,8 +47,9 @@ const json = (body: unknown, status = 200) =>
  * coi 1.000đ là "trả đủ" vì nó chỉ so với con số trong hoá đơn.
  */
 const GOI: Record<string, { amount: number; ten: string }> = {
-  pro: { amount: 149_000, ten: "Pro" },
-  business: { amount: 249_000, ten: "Business" },
+  // Khoá phải khớp `TIERS` trong src/store/useSubscriptionStore.ts.
+  starter: { amount: 149_000, ten: "Starter" },
+  growth: { amount: 249_000, ten: "Growth" },
 };
 
 /**
@@ -62,8 +63,10 @@ function taiKhoanNhan() {
   const soTaiKhoan = Deno.env.get("MIMI_BANK_ACCOUNT");
   const nganHang = Deno.env.get("MIMI_BANK_NAME");
   const chuTaiKhoan = Deno.env.get("MIMI_BANK_HOLDER");
-  if (!soTaiKhoan || !nganHang || !chuTaiKhoan) return null;
-  return { soTaiKhoan, nganHang, chuTaiKhoan };
+  /* Mã BIN 6 số để giao diện tự dựng chuỗi VietQR ngay tại máy khách. */
+  const bin = Deno.env.get("MIMI_BANK_BIN");
+  if (!soTaiKhoan || !nganHang || !chuTaiKhoan || !bin) return null;
+  return { soTaiKhoan, nganHang, chuTaiKhoan, bin };
 }
 
 /** Sinh mã chưa từng dùng. Va chạm cực hiếm nhưng hậu quả là kích hoạt nhầm. */
@@ -225,7 +228,7 @@ Deno.serve(async (req) => {
         {
           error:
             "Chưa cấu hình tài khoản nhận tiền của MIMI. Cần đặt MIMI_BANK_ACCOUNT, " +
-            "MIMI_BANK_NAME, MIMI_BANK_HOLDER trước khi phát hành hoá đơn.",
+            "MIMI_BANK_NAME, MIMI_BANK_HOLDER, MIMI_BANK_BIN trước khi phát hành hoá đơn.",
         },
         503,
       );
