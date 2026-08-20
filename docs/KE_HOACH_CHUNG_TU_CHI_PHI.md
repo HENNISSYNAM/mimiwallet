@@ -218,11 +218,62 @@ Những thứ tôi không chạy được từ đây:
 
 Ghi lại thay vì giấu:
 
-- **Quyền `gdt` lấy được cả hoá đơn mua vào không?** Mã nguồn xử lý cả hai chiều,
-  nhưng chưa ai chạy trên dữ liệu thật để xác nhận API trả về cả hai. Nếu chỉ trả
-  hoá đơn bán ra thì **toàn bộ giai đoạn 1 phải tính lại**. Đây là điều cần kiểm
-  đầu tiên, trước khi viết một dòng nào.
+- **Quyền `gdt` lấy được cả hoá đơn mua vào không?** — *tài liệu đã trả lời, còn
+  chờ chạy thật.* Trang https://cas.so/general/api/gdt-invoices ghi nguyên văn:
+  "danh sách hóa đơn điện tử đã phát hành **hoặc nhận được** trong khoảng thời
+  gian chỉ định", dữ liệu từ cổng Tổng cục Thuế. Giai đoạn 1 đứng vững về mặt
+  tài liệu. Vẫn chưa hạ mức cảnh báo: `bankhub.ts:142` đã ghi một lần tài liệu
+  Cas sai so với sandbox (`expiration`), nên chỉ một lần chạy thật mới đóng được.
 - **Độ trễ dữ liệu hoá đơn từ cơ quan thuế** — chưa đo. Nếu trễ nhiều ngày thì đối
   soát theo thời gian thực không có nghĩa, phải chuyển sang chốt theo kỳ.
 - **Hoá đơn bị huỷ / điều chỉnh** — `invoice_status` có trong dữ liệu nhưng chưa
   có nhánh xử lý. Một hoá đơn đã huỷ mà vẫn tính vào chi phí là lỗi nặng.
+
+---
+
+## Tài liệu Cas — tra ngày 19/08/2026
+
+Tài liệu ở **`https://cas.so/general/api/...`**. Không phải `docs.bankhub.dev`
+(tên miền đó không phân giải). BankHub đã đổi tên thành Cas, sản phẩm của Casso.
+
+### Hai sản phẩm hoá đơn, đừng nhầm
+
+| | E-Invoice | GDT Hub |
+|---|---|---|
+| Việc | **Phát hành** hoá đơn mới | **Đọc** hoá đơn từ cổng Tổng cục Thuế |
+| Scope | `invoice` | `gdt` |
+| Endpoint chính | `POST /invoices` | `GET /gdt/invoices` |
+| MIMI dùng | chưa | đang dùng |
+
+E-Invoice là **năng lực MIMI chưa có** — xuất hoá đơn cho khách hàng. Bốn trang:
+`e-invoice` (tạo), `e-invoice-info` (`GET /invoices/:id`), `e-invoice-download`,
+`e-invoice-identity`. Ghi lại để không quên, nhưng ngoài phạm vi kế hoạch này.
+
+### GDT Hub có ba endpoint, MIMI mới dùng một
+
+```
+GDT Hub
+├── Etax             ← chưa dùng, chưa đọc được tài liệu
+├── Invoices         ← đang dùng (GET /gdt/invoices)
+└── Invoice Detail   ← chưa dùng, chưa đọc được tài liệu
+```
+
+**`Invoice Detail` nhiều khả năng là thứ giai đoạn 1 cần nhất mà kế hoạch ban đầu
+bỏ sót.** `/gdt/invoices` trả danh sách kèm tổng tiền và thuế, nhưng chứng từ chi
+phí hợp lệ cần **chi tiết hàng hoá dịch vụ** — mua gì, bao nhiêu. Không có dòng
+chi tiết thì chỉ chứng minh được "đã chi 47 triệu cho công ty X", chưa chứng minh
+được đó là chi phí phục vụ sản xuất kinh doanh. Phải đọc trang này trước khi làm
+mục 1.2.
+
+**`Etax`** chưa rõ trả về gì. Nếu là trạng thái người nộp thuế thì nó **thay thế
+được XInvoice** trong `tax-lookup` — bỏ được một phụ thuộc bên ngoài và hai secret
+đang phải đi xin (`XINVOICE_CLIENT_ID`, `XINVOICE_API_KEY`). Đáng kiểm sớm.
+
+### Hạn chế của lần tra này
+
+Tài liệu Cas render bảng tham số và trường phản hồi phía trình duyệt, nên công cụ
+đọc trang **không lấy được đặc tả trường** của bất kỳ endpoint nào — kể cả trang
+`gdt-invoices` đã đọc. Muốn có đặc tả đầy đủ phải mở trực tiếp bằng trình duyệt,
+hoặc xem trong console tại `console.bankhub.dev`.
+
+Hai trang `Etax` và `Invoice Detail` chưa đọc được lần này.
