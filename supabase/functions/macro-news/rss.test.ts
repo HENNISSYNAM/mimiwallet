@@ -78,3 +78,26 @@ describe('parseFeed', () => {
     expect(parseFeed(oneItem, 'VnExpress')[0].published_at).toBeNull();
   });
 });
+
+describe('cleanText — entity chữ có dấu', () => {
+  it('giải mã entity có tên, trường hợp thật từ macro_news', () => {
+    // Nguyên văn quan sát được trên bảng ngày 20/08/2026.
+    expect(cleanText('Gi&aacute; USD h&ocirc;m nay 20.8.2026'))
+      .toBe('Giá USD hôm nay 20.8.2026');
+  });
+
+  it('giải mã entity theo số — nhánh bao chữ Việt có dấu thanh', () => {
+    expect(cleanText('&#7855;n')).toBe('ắn');
+    expect(cleanText('&#x1EAF;n')).toBe('ắn');
+  });
+
+  it('giữ nguyên entity không nhận ra thay vì nuốt mất chữ', () => {
+    expect(cleanText('a &khongcothat; b')).toBe('a &khongcothat; b');
+  });
+
+  it('&amp; vẫn giải mã sau cùng, không tạo thêm một tầng giả', () => {
+    // Đổi thứ tự sẽ biến "&amp;#225;" thành "á" — một tầng giải mã không có thật.
+    expect(cleanText('T&amp;T Group')).toBe('T&T Group');
+    expect(cleanText('&amp;#225;')).toBe('&#225;');
+  });
+});

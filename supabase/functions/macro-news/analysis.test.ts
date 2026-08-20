@@ -109,3 +109,49 @@ describe("personalImpact", () => {
     ).toContain("nhập hàng");
   });
 });
+
+describe('classify chỉ đọc tiêu đề — hồi quy từ dữ liệu thật 20/08/2026', () => {
+  /*
+   * Sáu tiêu đề dưới đây là tin THẬT lấy từ bảng `macro_news`, và cả sáu đều bị
+   * bản cũ gán nhãn sai vì nó quét cả tóm tắt. Giữ nguyên văn làm test hồi quy:
+   * ai định cho tóm tắt tham gia phân loại trở lại sẽ thấy chúng đỏ.
+   */
+  const chiLaTinThuong = [
+    'CEO hãng robot hình người hàng đầu Trung Quốc thành tỷ phú',
+    'OCB duy trì đóng góp ngân sách nghìn tỷ, gia tăng giá trị cho nền kinh tế',
+    'Dồn nguồn lực cho mục tiêu 1,14 triệu căn nhà ở xã hội',
+    'Cam kết bền vững của ngành thời trang có thực sự… bền vững?',
+    'Nhà ở cho thuê là phân khúc chiến lược, phục vụ đông đảo người dân',
+  ];
+
+  it.each(chiLaTinThuong)('không gán nhãn chủ đề cho tin thường: %s', (tieuDe) => {
+    expect(classify(tieuDe).topic).toBe('general');
+  });
+
+  it('tóm tắt KHÔNG được kéo bài vào một chủ đề nó không nói về', () => {
+    // Đây chính xác là cách bản cũ hỏng: "USD" nằm trong tóm tắt.
+    const r = classify(
+      'Bitcoin trở lại mốc 70.000 USD',
+      'Giá Bitcoin tăng mạnh khi lãi suất tại Mỹ hạ nhiệt, USD suy yếu',
+    );
+    expect(r.topic).not.toBe('interest_rate');
+  });
+
+  it('tiêu đề nói rõ tỷ giá thì vẫn nhận đúng', () => {
+    expect(classify('Những “vùng đệm” hỗ trợ tỷ giá ổn định từ nay đến cuối năm').topic)
+      .toBe('fx');
+  });
+});
+
+describe('dấu câu là ranh giới, không phải rác cần xoá', () => {
+  it('hai từ rời hai bên dấu phẩy KHÔNG ghép thành cụm từ khoá', () => {
+    // "nghìn tỷ, gia tăng" từng đọc thành "tỷ giá" sau khi xoá dấu phẩy.
+    expect(classify('OCB duy trì đóng góp ngân sách nghìn tỷ, gia tăng giá trị').topic)
+      .toBe('general');
+  });
+
+  it('cụm từ trong CÙNG một mệnh đề vẫn khớp bình thường', () => {
+    expect(classify('Tỷ giá USD tăng mạnh phiên cuối tuần').topic).toBe('fx');
+    expect(classify('NHNN giảm lãi suất điều hành').topic).toBe('interest_rate');
+  });
+});

@@ -30,7 +30,30 @@ export const strip = (s: string) =>
  * as a rate cut and "NHNN tăng lãi suất điều hành" read as both directions at
  * once.
  */
-const pad = (s: string) => ` ${strip(s).replace(/[^a-z0-9]+/g, ' ').trim()} `;
+/**
+ * Chuẩn hoá để so cụm từ theo biên từ.
+ *
+ * DẤU CÂU LÀ RANH GIỚI, KHÔNG PHẢI RÁC CẦN XOÁ. Bản trước thay mọi ký tự không
+ * phải chữ-số bằng khoảng trắng, và điều đó cho phép hai từ rời hai bên dấu
+ * phẩy **dính lại thành một cụm từ khoá**. Trường hợp thật bắt được ngày
+ * 20/08/2026:
+ *
+ *   "OCB duy trì đóng góp ngân sách nghìn tỷ, gia tăng giá trị cho nền kinh tế"
+ *      → bỏ dấu, xoá dấu phẩy →  "... nghin ty gia tang ..."
+ *      → chứa cụm "ty gia"  →  bị gán nhãn TỶ GIÁ
+ *
+ * Một bài PR ngân hàng thành tin tỷ giá vì chữ "tỷ" đứng cạnh chữ "gia".
+ *
+ * Nên dấu câu ngắt mệnh đề được đổi thành `#` — ký tự không bao giờ nằm trong
+ * từ khoá — thay vì bị xoá. Cụm từ vẫn khớp bình thường trong cùng một mệnh đề,
+ * nhưng không ghép được qua ranh giới nữa.
+ */
+const pad = (s: string) =>
+  ` ${strip(s)
+    .replace(/[,.;:!?()[\]{}"'«»‘’“”\-–—/|]+/g, ' # ')
+    .replace(/[^a-z0-9#]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()} `;
 
 const hasPhrase = (padded: string, phrases: string[]) =>
   phrases.some((p) => padded.includes(` ${p} `));
@@ -91,10 +114,42 @@ export function detectImpact(text: string, topic: Topic): Impact {
   }
 }
 
-export function classify(title: string, summary = ''): { topic: Topic; impact: Impact } {
-  const text = `${title} ${summary}`;
-  const topic = detectTopic(text);
-  return { topic, impact: detectImpact(text, topic) };
+/**
+ * Phân loại một bài báo. CHỈ ĐỌC TIÊU ĐỀ, có chủ ý.
+ *
+ * Bản trước quét `title + summary`, và đo trên 200 tin thật ngày 20/08/2026 cho
+ * thấy nó hỏng theo một kiểu cụ thể: **một lần nhắc tới từ khoá ở bất kỳ đâu
+ * trong tóm tắt là đủ để gán nhãn.** Bài không có khái niệm "bài này nói VỀ cái
+ * gì". Kết quả thật:
+ *
+ *   fx            ← "CEO hãng robot hình người Trung Quốc thành tỷ phú"
+ *   fx            ← "OCB duy trì đóng góp ngân sách nghìn tỷ"
+ *   credit        ← "Dồn nguồn lực cho mục tiêu 1,14 triệu căn nhà ở xã hội"
+ *   policy        ← "Cam kết bền vững của ngành thời trang có thực sự bền vững?"
+ *   interest_rate ← "Bitcoin trở lại mốc 70.000 USD"
+ *
+ * Bài về Bitcoin có "USD" trong tóm tắt thành tin tỷ giá. Bài PR ngân hàng có
+ * chữ "tỷ" thành tin tỷ giá.
+ *
+ * Tiêu đề thì khác: nó là chỗ toà soạn tuyên bố bài viết nói về cái gì, và với
+ * báo tiếng Việt nó thường mang cả chiều ("tăng", "giảm"). Đổi sang chỉ đọc tiêu
+ * đề làm số tin qua cổng lọc giảm từ 24 xuống 9 trên cùng 200 tin — ít hơn,
+ * nhưng 33 nhãn đổi và mọi trường hợp kiểm tay đều đổi theo hướng đúng, gồm cả
+ * "Những vùng đệm hỗ trợ tỷ giá ổn định" từ `interest_rate` sang `fx`.
+ *
+ * Ít mà đúng thì hơn nhiều mà sai: thẻ tin hằng ngày chỉ hiện MỘT mục, nên một
+ * nhãn sai đẩy thẳng một bài không liên quan lên chỗ trang trọng nhất màn hình.
+ *
+ * `summary` giữ lại trong chữ ký để nơi gọi không phải đổi, và để lần sau ai đó
+ * định dùng nó thì đọc được ghi chú này trước.
+ */
+export function classify(
+  title: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  summary = '',
+): { topic: Topic; impact: Impact } {
+  const topic = detectTopic(title);
+  return { topic, impact: detectImpact(title, topic) };
 }
 
 export interface CompanyContext {
