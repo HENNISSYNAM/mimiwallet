@@ -144,3 +144,63 @@ nữa là làm lại việc đã làm bằng thứ chưa kiểm. Nếu dùng, ch
 xã hội** mà RSS báo chí không có — và khi đó chọn 3–5 nguồn cụ thể rồi kiểm sống
 chết từng cái, không nhập cả danh sách 1000 link (README của bộ đó tự nói phần
 lớn đã lỗi thời).
+
+---
+
+## Dựng môi trường MiroFish — 20/08/2026
+
+MiroFish **không nằm trong repo này**. Nó ở `C:\Users\NAM DINH\Downloads\Miro-Fish-main`,
+là dự án bên thứ ba, và `.env` của nó chứa khoá thật nên không đưa vào git.
+Phần ghi lại ở đây là những thứ mất thời gian mới biết.
+
+### Python: cần CŨ hơn, không phải mới hơn
+
+```
+camel-oasis  Requires-Python >=3.10.0, <3.12
+```
+
+Chỉ **3.10 hoặc 3.11**. Bản 3.12 đã không dùng được, 3.13 càng không — và pip
+huỷ cả lô khi gặp, nên không gói nào được cài chứ không phải thiếu mỗi gói đó.
+`Dockerfile` của họ ghi `FROM python:3.11`, xác nhận đúng bản.
+
+Máy này có sẵn 3.13.2. Đã cài thêm 3.11.9 song song bằng
+`winget install --id Python.Python.3.11`, và **3.13 vẫn là mặc định** — các
+script khác trong repo này không bị ảnh hưởng. Gọi 3.11 bằng đường dẫn đầy đủ
+hoặc `py -3.11`.
+
+### LLM: Groq, và một cái bẫy im lặng
+
+Dùng Groq (tương thích chuẩn OpenAI). Mô hình chọn từ danh sách thật của tài
+khoản, không đoán tên:
+
+| Vai trò | Mô hình | Lý do |
+|---|---|---|
+| Agent | `openai/gpt-oss-20b` | Hàng trăm lượt gọi mỗi lần chạy — chi phí dồn ở đây. ~850ms, ngữ cảnh 131k |
+| Báo cáo | `openai/gpt-oss-120b` | Chỉ vài lượt, chất lượng câu chữ đáng tiền |
+
+Đã **loại** `groq/compound-*`: là hệ agentic có sẵn công cụ tìm kiếm web và chạy
+mã, tức thêm hành vi và chi phí ngoài tầm kiểm soát của mô phỏng.
+
+**Bẫy:** `gpt-oss` là mô hình suy luận. Gọi với `max_tokens` thấp (thử ở 120)
+thì phần suy luận nuốt hết ngân sách và `content` trả về **rỗng** — mô phỏng
+chạy xong với toàn agent im lặng, trông y như thành công. MiroFish để 4096 hoặc
+không đặt nên an toàn; nếu ai siết con số đó xuống, đây là chỗ hỏng đầu tiên.
+Đặt `reasoning_effort: "low"` cũng khắc phục được, và khi đó phần suy luận nằm ở
+trường `reasoning` riêng chứ không lẫn vào `content`.
+
+### Quy mô một lần chạy
+
+Đọc từ `simulation_config_generator.py`:
+
+- `total_simulation_hours` = 72 (3 ngày)
+- giờ hoạt động 8h–22h → 15 giờ/ngày
+- `agents_per_hour` 5–20 (cấu hình được tới 50)
+
+≈ **225–900 lượt agent mỗi lần chạy**, mỗi lượt ít nhất một lời gọi LLM. Chi phí
+gần như hoàn toàn nằm ở đây — đó là lý do chọn mô hình rẻ cho vai trò agent.
+
+### Đường chạy bằng Docker
+
+`docker-compose.yml` dùng image dựng sẵn `ghcr.io/666ghj/mirofish:latest` và đọc
+thẳng `env_file: .env`, nên không phải build. Cần daemon Docker chạy. Cổng 3000
+(giao diện) và 5001 (backend).
