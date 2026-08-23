@@ -17,6 +17,8 @@ const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -68,6 +70,11 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/login" element={<Login />} />
+              {/* Khôi phục mật khẩu. Trước đây KHÔNG có đường nào: chỉ có "Đổi
+                  mật khẩu" trong Cài đặt, mà muốn vào Cài đặt thì phải đăng
+                  nhập được đã — tức ai quên mật khẩu là mất tài khoản. */}
+              <Route path="/quen-mat-khau" element={<ForgotPassword />} />
+              <Route path="/dat-lai-mat-khau" element={<ResetPassword />} />
               {/* Where Cas Link redirects with the publicToken. Not under
                   ProtectedRoute's dashboard subtree because Cas navigates the
                   browser here directly, and it must resolve on its own. */}

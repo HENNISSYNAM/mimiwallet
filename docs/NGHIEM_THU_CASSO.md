@@ -6,7 +6,32 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
-## Kết quả tổng (cập nhật 19/08/2026)
+## Casso phản hồi 21/08/2026 — mở khoá case 12, 13
+
+Chị Lê Tuyết (Casso) nhắn ba việc:
+
+1. **Đề nghị MIMI tạo một tài khoản demo** trên hệ thống để phía Casso tự test.
+2. **QR Pay: sandbox CHỈ hỗ trợ MB Bank.** Nguyên văn: *"với api qr pay, bên mình
+   test với tài khoản MB thật giúp em lun nha — hiện tại trên sandbox thì chỉ hỗ
+   trợ test MB ạ"*
+3. Casso đã xem qua file test của MIMI.
+
+**Điểm (2) giải thích trọn vẹn vì sao case 12 bế tắc suốt tuần qua.** Chúng tôi đã
+thử **BIDV** (trả "Thông tin nhập không chính xác") rồi **Vietcombank** (đòi
+Business ID + TID, là credential ngân hàng cấp cho merchant). Cả hai đều là ngân
+hàng **sandbox không hỗ trợ QR Pay** — nên không bộ credential nào làm chúng chạy
+được, và thời gian bỏ ra đi tìm tài liệu về ba trường đó là công cốc.
+
+Không phải lỗi của bên nào: **tài liệu QR Pay không nêu giới hạn ngân hàng ở đâu
+cả.** Kiến nghị Casso ghi một dòng vào trang QR Pay — nó tiết kiệm cho khách tích
+hợp tiếp theo đúng một tuần.
+
+**Việc tiếp theo:** liên kết một tài khoản **MB thật** với scope `qrpay`, rồi chạy
+lại case 12 → 13 → 15 theo đúng thứ tự đó, vì 13 và 15 đều bị 12 chặn.
+
+---
+
+## Kết quả tổng (cập nhật 21/08/2026)
 
 | | Trên 30 case | Trên 20 case — bỏ nhóm `transfer` |
 |---|---|---|

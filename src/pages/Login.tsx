@@ -207,6 +207,15 @@ export default function Login() {
         </button>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
+          <button
+            onClick={() => navigate('/quen-mat-khau')}
+            className="text-primary hover:underline font-medium"
+          >
+            Quên mật khẩu?
+          </button>
+        </p>
+
+        <p className="text-center text-xs text-muted-foreground mt-2">
           {t('login.noAccount')}{' '}
           <button onClick={() => navigate('/register')} className="text-primary hover:underline font-medium">{t('login.register')}</button>
         </p>
