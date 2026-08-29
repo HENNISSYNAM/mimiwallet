@@ -1,11 +1,13 @@
 const m = {
   ob: {
+    // Two steps. This list was five and had drifted badly out of date: it still
+    // advertised "Connect data — increase credit limit" and "Funding needs",
+    // both from the lending pitch the product dropped, and an eKYC step that
+    // was pure decoration (it never called kyc-verify or persisted anything,
+    // signature included). Real verification lives in the Fintech Hub.
     stepsMeta: [
       { title: 'Create account', desc: 'Secure & private' },
       { title: 'Business', desc: 'Business information' },
-      { title: 'Connect data', desc: 'Increase credit limit' },
-      { title: 'Funding needs', desc: 'Tailored solutions' },
-      { title: 'eKYC verification', desc: 'Complete profile' },
     ],
     hidePassword: 'Hide password',
     showPassword: 'Show password',

@@ -201,22 +201,33 @@ Deno.serve(async (req) => {
       }
 
       case "verify-otp": {
-        // Mock OTP verification - always succeeds for demo
-        const { data: updated } = await supabase
-          .from("kyc_verifications")
-          .update({
-            otp_verified: true,
-            status: "verified",
-            verified_at: new Date().toISOString(),
-          })
-          .eq("company_id", company.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .select()
-          .single();
-
-        result = updated;
-        break;
+        /*
+         * ĐÃ GỠ. Bước này từng là chỗ nói dối nặng nhất của cả hàm.
+         *
+         * Mã cũ ghi `otp_verified: true` và `status: "verified"` — và
+         * `"verified"` là trạng thái cuối duy nhất mà hàm này biết ghi. Nhưng
+         * nó **không bao giờ đọc `body.otp`**: người dùng gõ sáu chữ số bất kỳ,
+         * không mã nào được gửi đi đâu, không mã nào được so. Chú thích cũ ghi
+         * thẳng "Mock OTP verification - always succeeds for demo", nghĩa là
+         * mọi hồ sơ đi qua đây đều thành "đã xác minh danh tính" mà không có
+         * một phép kiểm nào tồn tại.
+         *
+         * Hai bước `face-scan` và `liveness` đã được sửa cho trung thực trước
+         * đó (ghi `null` thay vì số ngẫu nhiên), nên để bước này nguyên là giữ
+         * lại đúng cái cửa sau mà hai bước kia vừa đóng.
+         *
+         * Chưa có nhà cung cấp SMS nào được tích hợp. Khi có, khôi phục bước này
+         * kèm phép so mã thật; tới lúc đó hàm trả 501 để nơi gọi biết là chưa
+         * làm được, thay vì tưởng đã xong.
+         */
+        return new Response(
+          JSON.stringify({
+            error: "Xác minh OTP chưa khả dụng — chưa tích hợp nhà cung cấp SMS.",
+            remedy:
+              "Hồ sơ của bạn đã được lưu và đang chờ người duyệt. Không cần làm gì thêm.",
+          }),
+          { status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
 
       case "status": {

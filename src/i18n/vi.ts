@@ -334,7 +334,7 @@ const vi = {
       { title: 'Nhu cầu vốn', desc: 'Giải pháp phù hợp' },
       { title: 'Xác minh eKYC', desc: 'Hoàn tất hồ sơ' },
     ],
-    smartCapital: 'Vốn thông minh cho SME',
+    smartCapital: 'Sổ sách tự động cho SME',
     next: 'Tiếp tục',
     prev: 'Quay lại',
     complete: 'Hoàn tất đăng ký',

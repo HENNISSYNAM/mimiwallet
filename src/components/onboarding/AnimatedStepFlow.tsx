@@ -1,6 +1,18 @@
 import { motion } from 'framer-motion';
-import { Smartphone, Brain, Banknote, ArrowRight } from 'lucide-react';
+import { Smartphone, Brain, FileCheck, ArrowRight } from 'lucide-react';
 
+/**
+ * Ba bước MIMI thật sự làm, hiện trên trang đăng ký.
+ *
+ * Bước ba từng là **"Nhận / Vốn 24h"** kèm biểu tượng xấp tiền. Đó là một lời
+ * hứa cho vay, đặt ngay trước ô nhập của người chưa từng dùng sản phẩm — và nó
+ * mâu thuẫn trực tiếp với Điều khoản sử dụng đang công bố, nơi ghi rõ
+ * CLI NUTRIX **không phải tổ chức tín dụng, không cho vay, không cấp hạn mức**.
+ *
+ * Không thể vừa hứa vốn trong 24 giờ ở trang đăng ký vừa nói không cho vay ở
+ * trang điều khoản. Bước ba nay là thứ sản phẩm thật sự giao: bộ chứng từ chi
+ * phí dựng sẵn để kê khai thuế.
+ */
 const steps = [
   {
     icon: Smartphone,
@@ -10,13 +22,13 @@ const steps = [
   },
   {
     icon: Brain,
-    label: 'AI\nPhân tích',
+    label: 'Phân loại\nDòng tiền',
     gradient: 'from-blue-400 to-mimi-green',
     bgGlow: 'bg-blue-400/20',
   },
   {
-    icon: Banknote,
-    label: 'Nhận\nVốn 24h',
+    icon: FileCheck,
+    label: 'Bộ chứng từ\nkê khai thuế',
     gradient: 'from-mimi-green to-green-400',
     bgGlow: 'bg-mimi-green/20',
   },

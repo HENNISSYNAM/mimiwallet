@@ -1,9 +1,11 @@
 const m = {
   ob: {
+    // Hai bước, không phải ba. Bước eKYC đã gỡ khỏi luồng đăng ký vì
+    // nó hoàn toàn trang trí — không gọi kyc-verify, không lưu gì, kể cả chữ ký.
+    // Xác minh thật nằm ở Fintech Hub.
     stepsMeta: [
       { title: 'Tạo tài khoản', desc: 'Bảo mật & riêng tư' },
       { title: 'Doanh nghiệp', desc: 'Thông tin kinh doanh' },
-      { title: 'Xác minh eKYC', desc: 'Hoàn tất hồ sơ' },
     ],
     hidePassword: 'Ẩn mật khẩu',
     showPassword: 'Hiện mật khẩu',
@@ -31,7 +33,7 @@ const m = {
     isoSecurityDesc: 'Token ngân hàng mã hoá ML-KEM-768 + AES-256-GCM',
     freeSetup: 'Miễn phí — Setup 5 phút',
     createAccountTitle: 'Tạo tài khoản',
-    createAccountSub: 'Bắt đầu hành trình vốn thông minh cùng MIMI WALLET',
+    createAccountSub: 'Sổ chi phí và đối soát tự động từ sao kê ngân hàng của bạn',
     fullNameLabel: 'Họ và tên *',
     emailLabel: 'Email doanh nghiệp *',
     emailPlaceholder: 'ten@congty.vn',

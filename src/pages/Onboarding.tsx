@@ -135,23 +135,7 @@ export default function Onboarding() {
   const [revenue, setRevenue] = useState(2_500_000_000);
   const [empCount, setEmpCount] = useState('');
 
-  // Step 3
-  const [dataTab, setDataTab] = useState(0);
-
-  // Step 4
-  const [desiredAmount, setDesiredAmount] = useState(1_000_000_000);
-  const [desiredTerm, setDesiredTerm] = useState('90');
-
-  // Step 5
-  const [eKYCConfirm, setEKYCConfirm] = useState(false);
-  const [uploadedDocs, setUploadedDocs] = useState<string[]>([]);
-
   const [lookingUpTax, setLookingUpTax] = useState(false);
-
-  // Signature canvas
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSigned, setHasSigned] = useState(false);
 
   /**
    * Tra cứu mã số thuế, điền sẵn tên và tỉnh/thành.
@@ -216,9 +200,6 @@ export default function Onboarding() {
   const purposeOptionsRaw = t('ob.purposeOptions', { returnObjects: true }) as { label: string; desc: string }[];
   const purposeOptions = purposeOptionsRaw.map((p, i) => ({ ...p, icon: purposeIcons[i] }));
 
-
-  const simulateUpload = (docType: string) => { if (!uploadedDocs.includes(docType)) setUploadedDocs(prev => [...prev, docType]); };
-
   const [registering, setRegistering] = useState(false);
 
   const handleComplete = async () => {
@@ -240,33 +221,19 @@ export default function Onboarding() {
     setCompleted(true);
   };
 
-  const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 2)); };
+  /*
+   * BUOC CUOI LA 1, khong phai 2.
+   *
+   * Truoc day next() chan o 2 trong khi nut "Hoan tat dang ky" chi hien khi
+   * `step < 3` sai — tuc phai step >= 3. Step khong bao gio vuot 2, nen nut do
+   * KHONG BAO GIO hien ra va handleComplete (chi co mot noi goi) khong bao gio
+   * chay: luong dang ky la mot ngo cut.
+   *
+   * Sau khi go buoc eKYC trang tri, con hai buoc (0 va 1), nen chan o 1.
+   */
+  const next = () => { setDirection(1); setStep(s => Math.min(s + 1, 1)); };
   const prev = () => { setDirection(-1); setStep(s => Math.max(s - 1, 0)); };
-  const overallProgress = ((step + 1) / 5) * 100;
-
-  // Canvas drawing
-  const startDraw = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d'); if (!ctx) return;
-    setIsDrawing(true);
-    const rect = canvas.getBoundingClientRect();
-    ctx.beginPath(); ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-  }, []);
-  const draw = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d'); if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.strokeStyle = 'hsl(214, 100%, 97%)'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
-    setHasSigned(true);
-  }, [isDrawing]);
-  const stopDraw = useCallback(() => setIsDrawing(false), []);
-  const clearCanvas = () => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d'); if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height); setHasSigned(false);
-  };
+  const overallProgress = ((step + 1) / 2) * 100;
 
   // ─── SUCCESS SCREEN ───
   if (completed) {
@@ -582,94 +549,6 @@ export default function Onboarding() {
                   </div>
                 )}
 
-                {/* ═══ STEP 3: Data connections ═══ */}
-                
-                {/* ═══ STEP 3: eKYC ═══ */}
-                {step === 2 && (
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">{t('ob.identityVerifyTitle')}</h2>
-                      <p className="text-muted-foreground text-sm">{t('ob.identityVerifySub')}</p>
-                    </div>
-
-                    {/* ID Cards */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {['front', 'back'].map((side) => {
-                        const label = side === 'front' ? t('ob.idFront') : t('ob.idBack');
-                        const uploaded = uploadedDocs.includes(side);
-                        return (
-                          <motion.div key={side} whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                            onClick={() => simulateUpload(side)}
-                            className={`relative rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
-                              uploaded ? 'bg-mimi-green/5 border-2 border-mimi-green/30' :
-                              'border-2 border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/3'
-                            }`}>
-                            {uploaded ? (
-                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
-                                <div className="w-10 h-10 rounded-xl bg-mimi-green/12 flex items-center justify-center mx-auto mb-2">
-                                  <Check size={18} className="text-mimi-green" strokeWidth={3} />
-                                </div>
-                                <p className="text-xs text-mimi-green font-semibold">{t('ob.uploaded')}</p>
-                              </motion.div>
-                            ) : (
-                              <>
-                                <Camera size={22} className="text-muted-foreground mx-auto mb-2" />
-                                <p className="text-xs text-foreground font-medium">{label}</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">{t('ob.captureOrUpload')}</p>
-                              </>
-                            )}
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Selfie */}
-                    <motion.div whileHover={{ y: -2 }} onClick={() => simulateUpload('selfie')}
-                      className={`rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
-                        uploadedDocs.includes('selfie') ? 'bg-mimi-green/5 border-2 border-mimi-green/30' :
-                        'border-2 border-dashed border-border/40 hover:border-primary/40'
-                      }`}>
-                      {uploadedDocs.includes('selfie') ? (
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
-                          <div className="w-14 h-14 rounded-full bg-mimi-green/12 flex items-center justify-center mx-auto mb-2">
-                            <Check size={22} className="text-mimi-green" strokeWidth={3} />
-                          </div>
-                          <p className="text-xs text-mimi-green font-semibold">{t('ob.selfieUploaded')}</p>
-                        </motion.div>
-                      ) : (
-                        <>
-                          <div className="w-16 h-16 rounded-full border-2 border-border/40 mx-auto mb-2 flex items-center justify-center">
-                            <Camera size={22} className="text-muted-foreground" />
-                          </div>
-                          <p className="text-xs text-foreground font-medium">{t('ob.captureSelfie')}</p>
-                        </>
-                      )}
-                    </motion.div>
-
-                    {/* Signature */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2 ml-1">
-                        <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><Pen size={12} /> {t('ob.digitalSignature')}</p>
-                        {hasSigned && <button onClick={clearCanvas} className="text-[10px] text-primary hover:underline font-semibold">{t('ob.clearAndResign')}</button>}
-                      </div>
-                      <canvas ref={canvasRef} width={400} height={120} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
-                        className="w-full h-28 bg-card/30 border border-border/40 rounded-xl cursor-crosshair hover:border-primary/30 transition-colors" />
-                      {!hasSigned && <p className="text-[10px] text-muted-foreground text-center mt-1.5">{t('ob.drawSignatureHere')}</p>}
-                    </div>
-
-                    {/* Confirmation */}
-                    <label className="flex items-start gap-3 group cursor-pointer bg-card/30 p-4 rounded-xl border border-border/30 hover:border-primary/20 transition-all">
-                      <div className={`mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shrink-0 ${
-                        eKYCConfirm ? 'bg-primary border-primary' : 'border-border/60 group-hover:border-primary/40'
-                      }`} onClick={() => setEKYCConfirm(!eKYCConfirm)}>
-                        {eKYCConfirm && <Check size={12} className="text-primary-foreground" strokeWidth={3} />}
-                      </div>
-                      <span className="text-xs text-muted-foreground leading-relaxed" onClick={() => setEKYCConfirm(!eKYCConfirm)}>
-                        {t('ob.ekycConfirmPrefix')} <span className="text-primary">{t('ob.privacyPolicyLink')}</span>
-                      </span>
-                    </label>
-                  </div>
-                )}
               </motion.div>
             </AnimatePresence>
 
@@ -681,7 +560,7 @@ export default function Onboarding() {
                   {t('ob.back')}
                 </motion.button>
               ) : <div />}
-              {step < 3 ? (
+              {step < 1 ? (
                 <motion.button whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={next}
                   className="bg-primary text-primary-foreground px-8 py-3 rounded-xl text-sm font-display font-bold hover:brightness-110 transition-all shadow-[0_4px_20px_hsla(var(--blue-500)/0.25)] flex items-center gap-2">
                   {t('ob.continueWithArrow')} <ArrowRight size={14} />
