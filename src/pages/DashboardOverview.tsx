@@ -4,6 +4,7 @@ import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
 import NewsAndLawPanel from '@/components/NewsAndLawPanel';
 import { DailyBriefCard } from '@/components/DailyBriefCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
+import BatDauTuDau from '@/components/onboarding/BatDauTuDau';
 import { formatVNDShort } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -344,6 +345,10 @@ export default function DashboardOverview() {
           </div>
         </motion.div>
       )}
+
+      {/* Viec can lam, dat TREN cau hoi ve nguoi dung: ai vua vao lan dau can
+          biet phai lam gi truoc khi duoc hoi ho la ai. Tu an khi xong het. */}
+      <motion.div variants={fadeUp}><BatDauTuDau /></motion.div>
 
       {/* Asked here, after the numbers are on screen — not as a gate in front
           of them. Renders nothing once answered or skipped. */}

@@ -32,7 +32,10 @@ export type EventName =
   | 'qr_paid'
   | 'gdt_synced'
   | 'invoice_created'
-  | 'report_exported';
+  | 'report_exported'
+  // Nguoi dung dong the "Bat dau tu dau". Dong la mot cau tra loi that: no cho
+  // biet huong dan khong huu ich, hoac ho da biet phai lam gi.
+  | 'batdau_dismissed';
 
 export function track(name: EventName, props: Record<string, string | number | boolean> = {}) {
   void (async () => {
