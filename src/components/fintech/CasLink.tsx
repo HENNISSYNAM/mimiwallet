@@ -6,6 +6,7 @@ import {
 import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { cauKetQuaDongBo } from '@/lib/ketQuaDongBo';
 import { cachSua, cacLoiNhac, laLienKetQr, phuDe } from '@/lib/lienKetNganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
@@ -322,12 +323,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         connection_id?: string;
         inserted?: number;
         fetched?: number;
+        skipped?: number;
         error?: string;
         needsRelink?: boolean;
         action?: string;
         remedy?: string;
       }>;
-      const inserted = synced.reduce((s, r) => s + (r.inserted ?? 0), 0);
+      const ketQua = cauKetQuaDongBo(synced);
       const failed = synced.filter((r) => r.error);
 
       // A connection that is fine on MIMI's side but blocked on the bank's
@@ -382,8 +384,11 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             : `Đồng bộ lỗi: ${msg}`
         );
       } else {
-        toast.success(
-          inserted > 0 ? `Đã nhận ${inserted} giao dịch mới` : 'Đã đồng bộ, không có giao dịch mới'
+        /* "Không có giao dịch mới" gộp ba tình huống rất khác nhau vào một câu:
+           Cas không trả gì, trả rồi bị lọc hết, hay trả toàn dòng đã có. Ba ca
+           đó dẫn tới ba việc phải làm khác nhau — xem `lib/ketQuaDongBo.ts`. */
+        (ketQua.dangChuY ? toast.warning : toast.success)(
+          ketQua.cau
         );
       }
       await loadConnections();
