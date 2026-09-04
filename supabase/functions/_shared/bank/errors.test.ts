@@ -25,8 +25,28 @@ describe('describeBankError', () => {
   });
 
   it('does not blame the customer for an infrastructure limit', () => {
+    // IP_NOT_ALLOWED stays here: it is decided at the network layer, before any
+    // parameter is read, and there is nothing the customer can do about it.
     expect(describeBankError('IP_NOT_ALLOWED').action).toBe('contact_support');
-    expect(describeBankError('INVALID_PARAM').action).toBe('contact_support');
+  });
+
+  it('INVALID_PARAM points at the input, because the customer now types some of it', () => {
+    /*
+     * Đổi ngày 04/09/2026, và đổi vì SỰ THẬT VỀ HỆ THỐNG ĐÃ ĐỔI chứ không phải
+     * vì test bất tiện.
+     *
+     * Khi test này được viết, mọi tham số của lời gọi Cas đều do máy chủ dựng,
+     * nên `INVALID_PARAM` chắc chắn là lỗi của mã — xếp cùng `IP_NOT_ALLOWED`
+     * là đúng. Nay người dùng tự gõ số tiền và nội dung mã QR, và lần chạy thật
+     * đầu tiên trả về:
+     *
+     *     description must has maximum 9 characters (INVALID_PARAM)
+     *     requestId Bgv44JpvIbxfvfmr
+     *
+     * Nói "không phải do bạn" trong tình huống đó là chặn đúng người sửa được.
+     */
+    expect(describeBankError('INVALID_PARAM').action).toBe('fix_input');
+    expect(describeBankError('INVALID_PARAM').remedy).toContain('9 ký tự');
   });
 
   it('marks every documented grant failure as needing a relink', () => {

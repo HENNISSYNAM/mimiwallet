@@ -25,6 +25,8 @@ export type BankErrorAction =
   | 'wait'
   /** Nothing the customer can do. */
   | 'contact_support'
+  /** The customer typed something the bank rejected; they can fix it here. */
+  | 'fix_input'
   /** No remedy known — show Cas's message and nothing else. */
   | 'unknown';
 
@@ -116,9 +118,16 @@ const TABLE: Record<string, BankErrorInfo> = {
     action: 'contact_support',
     remedy: 'Cấu hình tài khoản nhà phát triển chưa đúng. Đây là lỗi hệ thống, không phải do bạn.',
   },
+  /*
+   * Trước 04/09 mã này được ghi là "lỗi hệ thống, không phải do bạn", và lúc đó
+   * đúng: mọi tham số của lời gọi đều do máy chủ dựng. Nay người dùng tự gõ số
+   * tiền và nội dung mã QR, nên `INVALID_PARAM` thường xuyên là chuyện họ sửa
+   * được — ví dụ nội dung quá 9 ký tự. Nói "không phải do bạn" trong tình huống
+   * đó là chặn đúng người có thể sửa.
+   */
   INVALID_PARAM: {
-    action: 'contact_support',
-    remedy: 'Yêu cầu gửi lên chưa hợp lệ. Đây là lỗi hệ thống, không phải do bạn.',
+    action: 'fix_input',
+    remedy: 'Kiểm tra lại số tiền và nội dung. Nội dung mã QR tối đa 9 ký tự.',
   },
 };
 

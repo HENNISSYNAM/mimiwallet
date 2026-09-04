@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check, CreditCard, QrCode } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { QrPayDialog } from '@/components/fintech/QrPayDialog';
+import { MO_TA_TOI_DA, kiemMoTa } from '@/lib/moTaQr';
 import logoVnpay from '@/assets/logos/pay-vnpay.webp';
 import logoZalopay from '@/assets/logos/pay-zalopay.png';
 import logoMomo from '@/assets/logos/bank-momo.png';
@@ -64,7 +65,10 @@ export default function PaymentMethods() {
   const [moQr, setMoQr] = useState(false);
 
   const soTien = Number(soTienChu.replace(/\D/g, '')) || 0;
-  const taoDuoc = soTien > 0 && noiDung.trim().length > 0;
+  // Chặn tại chỗ thay vì để ngân hàng từ chối: giới hạn 9 ký tự là ràng buộc
+  // thật của Cas/MB, phát hiện 04/09 qua requestId Bgv44JpvIbxfvfmr.
+  const moTa = kiemMoTa(noiDung);
+  const taoDuoc = soTien > 0 && moTa.hopLe;
 
   useEffect(() => {
     void (async () => {
@@ -226,13 +230,27 @@ export default function PaymentMethods() {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Nội dung</span>
+                <span className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted-foreground">
+                  <span>Nội dung</span>
+                  {/* Đếm ngược hiện sẵn, không đợi người ta gõ thừa rồi mới báo.
+                      Chín ký tự ngắn tới mức không ai đoán được nếu không nói. */}
+                  <span className={`font-mono ${noiDung.trim().length > MO_TA_TOI_DA ? 'text-destructive' : ''}`}>
+                    {noiDung.trim().length}/{MO_TA_TOI_DA}
+                  </span>
+                </span>
                 <input
                   value={noiDung}
                   onChange={(e) => setNoiDung(e.target.value)}
-                  placeholder="Thanh toan don hang"
+                  placeholder="HD 0042"
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
                 />
+                {noiDung.length > 0 && moTa.vuong && (
+                  <p className="mt-1.5 text-xs text-destructive">{moTa.vuong}</p>
+                )}
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Ngân hàng giới hạn {MO_TA_TOI_DA} ký tự. Đối soát không dựa vào ô này —
+                  MIMI khớp bằng mã tham chiếu riêng.
+                </p>
               </label>
             </div>
 

@@ -473,6 +473,23 @@ Deno.serve(async (req) => {
         }
         const description = typeof body.description === "string" ? body.description.trim() : "";
         if (!description) return json({ error: "description required" }, 400);
+        /*
+         * Giới hạn 9 ký tự của Cas/MB, phát hiện 04/09 qua requestId
+         * `Bgv44JpvIbxfvfmr`: "description must has maximum 9 characters".
+         * Không có trong tài liệu Cas.
+         *
+         * Chặn ở đây thay vì để Cas từ chối, vì Cas trả câu tiếng Anh còn chỗ
+         * này biết nói tiếng Việt — và vì một lần gọi bị từ chối vẫn tính vào
+         * giới hạn tần suất của grant.
+         */
+        if (description.length > 9) {
+          return json({
+            error: `Nội dung mã QR tối đa 9 ký tự — đang thừa ${description.length - 9}.`,
+            errorCode: "INVALID_PARAM",
+            action: "fix_input",
+            remedy: "Rút ngắn nội dung. Đối soát không dựa vào ô này; MIMI khớp bằng mã tham chiếu riêng.",
+          }, 400);
+        }
         const invoiceId = typeof body.invoice_id === "string" ? body.invoice_id : null;
 
         // An invoice from another company must not be payable through this one.

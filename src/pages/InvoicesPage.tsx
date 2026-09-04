@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { moTaQr } from '@/lib/moTaQr';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -502,7 +503,10 @@ export default function InvoicesPage() {
         invoiceId={qrInvoice?.id}
         invoiceNumber={qrInvoice?.invoice_number}
         amount={qrInvoice?.total ?? 0}
-        description={`Thanh toan ${qrInvoice?.invoice_number ?? ''}`.trim()}
+        /* Cắt cho vừa giới hạn 9 ký tự của ngân hàng. Chuỗi cũ
+           `Thanh toan <số hoá đơn>` dài gấp đôi, nên nút tạo QR trên trang này
+           CHƯA TỪNG chạy được — không ai biết vì case 12 chặn từ trước đó. */
+        description={moTaQr(qrInvoice?.invoice_number ?? '')}
         onPaid={() => { void loadInvoices(); }}
       />
     </motion.div>
