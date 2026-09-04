@@ -8,6 +8,29 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import Seo from "@/components/Seo";
+
+/** Gắn thẻ head riêng cho từng route mà không phải sửa từng trang. */
+function Page({
+  title,
+  description,
+  path,
+  noIndex,
+  children,
+}: {
+  title: string;
+  description: string;
+  path: string;
+  noIndex?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <Seo title={title} description={description} path={path} noIndex={noIndex} />
+      {children}
+    </>
+  );
+}
 
 const Landing = lazy(() => import("./pages/Landing"));
 const About = lazy(() => import("./pages/About"));
