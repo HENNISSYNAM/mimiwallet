@@ -67,3 +67,15 @@ describe('ca khác tài khoản — điểm mù trước 04/09', () => {
     expect(cauKetQuaDongBo([{ fetched: 9, inserted: 3, khacTaiKhoan: 6 }]).dangChuY).toBe(false);
   });
 });
+
+describe('hình dạng phản hồi khi rỗng', () => {
+  it('có hình dạng thì hiện ra, để phân biệt "rỗng thật" với "đọc sai tầng"', () => {
+    const ra = cauKetQuaDongBo([{ fetched: 0, hinhDangPhanHoi: 'requestId, data' }]);
+    expect(ra.cau).toContain('requestId, data');
+    expect(ra.dangChuY).toBe(true);
+  });
+
+  it('không có hình dạng thì giữ câu cũ', () => {
+    expect(cauKetQuaDongBo([{ fetched: 0 }]).cau).toContain('khoảng thời gian đã hỏi');
+  });
+});

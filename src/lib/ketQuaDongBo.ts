@@ -30,6 +30,8 @@ export interface SoLieuDongBo {
   skipped?: number;
   /** Số bị loại vì thuộc TÀI KHOẢN KHÁC — khác hẳn `skipped`. */
   khacTaiKhoan?: number;
+  /** Chỉ khi rỗng: tên các trường ở tầng ngoài cùng của phản hồi Cas. */
+  hinhDangPhanHoi?: string;
 }
 
 export interface CauKetQua {
@@ -55,8 +57,16 @@ export function cauKetQuaDongBo(ds: SoLieuDongBo[]): CauKetQua {
   }
 
   if (fetched === 0) {
+    /*
+     * Kèm hình dạng phản hồi khi có. Nếu Cas trả về một vỏ bao mà mã đang đọc
+     * sai tầng thì `fetched` luôn bằng 0 dù dữ liệu vẫn tới — và câu chung
+     * "không có giao dịch nào" sẽ che đúng chuyện đó. Xem `ingest.ts`.
+     */
+    const hinhDang = ds.map((r) => r.hinhDangPhanHoi).filter(Boolean).join(' | ');
     return {
-      cau: 'Ngân hàng không trả về giao dịch nào trong khoảng thời gian đã hỏi.',
+      cau: hinhDang
+        ? `Ngân hàng không trả về giao dịch nào. Phản hồi gồm: ${hinhDang}`
+        : 'Ngân hàng không trả về giao dịch nào trong khoảng thời gian đã hỏi.',
       dangChuY: true,
     };
   }

@@ -47,6 +47,8 @@ export interface IngestResult {
   skipped: number;
   /** Giao dịch Cas trả về nhưng thuộc tài khoản khác. Xem `bankhub-map.ts`. */
   khacTaiKhoan?: number;
+  /** Chỉ khi rỗng: tên các trường ở tầng ngoài cùng của phản hồi Cas. */
+  hinhDangPhanHoi?: string;
   directionConvention?: DirectionConvention;
   conventionEvidence?: ConventionReport;
   error?: string;
@@ -230,6 +232,28 @@ export async function ingestConnection(
     inserted,
     skipped: rejected.length,
     khacTaiKhoan: scopedOut,
+    /*
+     * Chỉ khi không lấy được gì: liệt kê TÊN các trường ở tầng ngoài cùng của
+     * phản hồi, kèm số phần tử nếu là mảng.
+     *
+     * Lý do có mặt: ngày 04/09 ba giả thuyết lần lượt bị loại bằng đo đạc —
+     * sandbox không phục vụ tài khoản thật (sai, liên kết chạy), lệch định
+     * dạng số tài khoản (sai, `khacTaiKhoan` = 0), và không còn gì để đoán
+     * ngoài chính hình dạng phản hồi. `createQrPay` ngay bên cạnh phải bóc vỏ
+     * `res.qrPay ?? res`, nên Cas có bọc phản hồi ở ít nhất một endpoint —
+     * `fetchTransactions` thì không bóc gì cả. Nếu `/transactions` cũng bọc,
+     * `payload.transactions` luôn `undefined` và `fetched` luôn bằng 0.
+     *
+     * CHỈ TÊN TRƯỜNG VÀ SỐ ĐẾM, không giá trị: đủ để biết hình dạng, không
+     * mang theo dữ liệu tài khoản của khách ra ngoài.
+     */
+    ...(!(payload.transactions?.length)
+      ? {
+          hinhDangPhanHoi: Object.entries(payload ?? {})
+            .map(([k, v]) => (Array.isArray(v) ? `${k}[${v.length}]` : k))
+            .join(', '),
+        }
+      : {}),
     // Surfaced so a wrong reading is visible in the response rather than only
     // in the numbers on a dashboard.
     directionConvention: applied,
