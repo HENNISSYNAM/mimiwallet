@@ -26,8 +26,10 @@ export interface SoLieuDongBo {
   fetched?: number;
   /** Số giao dịch ghi mới vào sổ. */
   inserted?: number;
-  /** Số bị loại — không thuộc tài khoản này, hoặc không đọc được. */
+  /** Số bị loại vì mapper không đọc được. */
   skipped?: number;
+  /** Số bị loại vì thuộc TÀI KHOẢN KHÁC — khác hẳn `skipped`. */
+  khacTaiKhoan?: number;
 }
 
 export interface CauKetQua {
@@ -46,6 +48,7 @@ export function cauKetQuaDongBo(ds: SoLieuDongBo[]): CauKetQua {
   const fetched = ds.reduce((s, r) => s + (r.fetched ?? 0), 0);
   const inserted = ds.reduce((s, r) => s + (r.inserted ?? 0), 0);
   const skipped = ds.reduce((s, r) => s + (r.skipped ?? 0), 0);
+  const khacTk = ds.reduce((s, r) => s + (r.khacTaiKhoan ?? 0), 0);
 
   if (inserted > 0) {
     return { cau: `Đã nhận ${inserted} giao dịch mới`, dangChuY: false };
@@ -58,9 +61,26 @@ export function cauKetQuaDongBo(ds: SoLieuDongBo[]): CauKetQua {
     };
   }
 
+  /*
+   * Ca quan trọng nhất, và là ca trước 04/09 KHÔNG NHÌN THẤY ĐƯỢC.
+   *
+   * Bộ lọc tài khoản trong `bankhub-map.ts` so khớp chuỗi tuyệt đối. Chỉ cần
+   * Cas trả số tài khoản khác một ký tự so với dạng đang lưu là cả sao kê bị
+   * loại sạch — mà con số đó không được trả ra, nên giao diện báo "không có
+   * giao dịch mới", nghe hệt như tài khoản chưa phát sinh gì.
+   */
+  if (khacTk > 0) {
+    return {
+      cau:
+        `Ngân hàng trả về ${fetched} giao dịch nhưng ${khacTk} thuộc tài khoản khác ` +
+        'với số đang lưu cho liên kết này — nhiều khả năng hai bên ghi số tài khoản khác định dạng.',
+      dangChuY: true,
+    };
+  }
+
   if (skipped > 0) {
-    // Con số quan trọng nhất của cả file. Nó phân biệt "chưa có tiền về" với
-    // "có dữ liệu nhưng không phải của tài khoản này".
+    // Dòng mapper KHÔNG ĐỌC ĐƯỢC — khác với dòng thuộc tài khoản khác ở nhánh
+    // trên. Hai nguyên nhân khác nhau, hai việc phải làm khác nhau.
     return {
       cau:
         `Ngân hàng trả về ${fetched} giao dịch nhưng bỏ qua ${skipped} — ` +

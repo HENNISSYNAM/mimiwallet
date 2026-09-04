@@ -47,3 +47,23 @@ describe('cauKetQuaDongBo — ba tình huống, ba câu khác nhau', () => {
     expect(cauKetQuaDongBo([{ fetched: 9, inserted: 2, skipped: 7 }]).dangChuY).toBe(false);
   });
 });
+
+describe('ca khác tài khoản — điểm mù trước 04/09', () => {
+  it('nói rõ là khác tài khoản, không gộp vào "không có giao dịch mới"', () => {
+    // Bộ lọc trong bankhub-map so khớp chuỗi tuyệt đối. Lệch một ký tự là mất
+    // sạch sao kê, và trước hôm nay con số đó không được trả ra.
+    const ra = cauKetQuaDongBo([{ fetched: 12, inserted: 0, skipped: 0, khacTaiKhoan: 12 }]);
+    expect(ra.cau).toContain('12 thuộc tài khoản khác');
+    expect(ra.cau).toContain('định dạng');
+    expect(ra.dangChuY).toBe(true);
+  });
+
+  it('khác tài khoản được ưu tiên nói trước lỗi đọc', () => {
+    const ra = cauKetQuaDongBo([{ fetched: 9, inserted: 0, skipped: 2, khacTaiKhoan: 7 }]);
+    expect(ra.cau).toContain('tài khoản khác');
+  });
+
+  it('có dòng ghi được thì vẫn báo thành công', () => {
+    expect(cauKetQuaDongBo([{ fetched: 9, inserted: 3, khacTaiKhoan: 6 }]).dangChuY).toBe(false);
+  });
+});

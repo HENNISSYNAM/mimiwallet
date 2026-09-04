@@ -45,6 +45,8 @@ export interface IngestResult {
   fetched: number;
   inserted: number;
   skipped: number;
+  /** Giao dịch Cas trả về nhưng thuộc tài khoản khác. Xem `bankhub-map.ts`. */
+  khacTaiKhoan?: number;
   directionConvention?: DirectionConvention;
   conventionEvidence?: ConventionReport;
   error?: string;
@@ -145,7 +147,7 @@ export async function ingestConnection(
   }
 
   const pinned = (conn.direction_convention ?? undefined) as DirectionConvention | undefined;
-  const { rows, rejected, report, applied } = mapBankhubTransactions(payload, {
+  const { rows, rejected, report, applied, scopedOut } = mapBankhubTransactions(payload, {
     sourceBank: conn.bank_name ?? undefined,
     accountNumber: conn.account_number,
     convention: pinned,
@@ -227,6 +229,7 @@ export async function ingestConnection(
     fetched: payload.transactions?.length ?? 0,
     inserted,
     skipped: rejected.length,
+    khacTaiKhoan: scopedOut,
     // Surfaced so a wrong reading is visible in the response rather than only
     // in the numbers on a dashboard.
     directionConvention: applied,
