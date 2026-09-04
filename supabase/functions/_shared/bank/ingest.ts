@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { coSaoKeDeDoc } from "./dong-bo.ts";
 import { fetchTransactions, BankhubError, type BankhubConfig } from "./bankhub.ts";
 import { describeBankError, type BankErrorAction } from "./errors.ts";
 import {
@@ -34,6 +35,8 @@ export interface IngestConnection {
   bank_name: string | null;
   last_reference: string | null;
   direction_convention: string | null;
+  /** `transaction` | `qrpay` | `gdt`. Quyết định có sao kê để đọc hay không. */
+  scopes?: string | null;
 }
 
 export interface IngestResult {
@@ -71,6 +74,32 @@ export async function ingestConnection(
   conn: IngestConnection,
   window: IngestWindow,
 ): Promise<IngestResult> {
+  /*
+   * CHỐT CHẶN, VÀ NÓ PHẢI Ở ĐÂY CHỨ KHÔNG Ở NƠI GỌI.
+   *
+   * Grant `qrpay` không có scope `transaction`. Gọi `/transactions` lên nó thì
+   * Cas từ chối, lỗi rơi vào nhánh `needsRelink` bên dưới, và liên kết QR vừa
+   * tạo xong bị đánh dấu hỏng. Casso đẩy `DEFAULT_UPDATE` rất dày nên chuyện
+   * này lặp lại vài giây một lần — người dùng liên kết lại bao nhiêu lần cũng
+   * thua. Đó đúng là sự việc ngày 04/09.
+   *
+   * Hai đường tới hàm này: `bank-link` (đồng bộ theo yêu cầu) và `cas-webhook`
+   * (đẩy từ Casso). Đường thứ hai chưa từng có bộ chắn nào. Đặt ở đây thì cả
+   * hai, và mọi đường viết sau, đều đi qua.
+   *
+   * Trả về kết quả rỗng chứ KHÔNG phải lỗi: không có gì để đọc không phải là
+   * hỏng, và ghi nó thành lỗi là quay lại đúng cái bẫy vừa thoát.
+   */
+  if (!coSaoKeDeDoc(conn)) {
+    return {
+      connection_id: conn.id,
+      account_number: conn.account_number,
+      fetched: 0,
+      inserted: 0,
+      skipped: 0,
+    };
+  }
+
   const base = {
     connection_id: conn.id,
     account_number: conn.account_number,

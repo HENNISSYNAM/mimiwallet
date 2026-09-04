@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
         let query = supabase
           .from("bank_connections")
           .select(
-            "id, account_number, bank_name, access_token_enc, last_reference, direction_convention",
+            "id, account_number, bank_name, access_token_enc, last_reference, direction_convention, scopes",
           )
           .eq("company_id", company.id)
           .eq("provider", "bankhub")
@@ -423,9 +423,14 @@ Deno.serve(async (req) => {
 
         for (const conn of connections) {
           if (!conn.access_token_enc || !conn.account_number) continue;
-          // QR-only connections carry a grant-derived placeholder, not a real
-          // account number, so there is no statement to pull for them.
-          if (conn.account_number.startsWith("grant:")) continue;
+          /*
+           * Bộ chắn liên kết QR nay nằm trong `ingestConnection`, không nằm ở
+           * đây nữa. Bản cũ hỏi `account_number.startsWith("grant:")` — tức đo
+           * triệu chứng của một lần dò danh tính hỏng, không đo sự thật rằng
+           * đây là liên kết QR. Ngày `fetchQrPayIdentity` chạy được và số tài
+           * khoản thật được ghi vào, bộ chắn lặng lẽ ngừng bảo vệ, và grant QR
+           * bị đập hỏng ngay sau khi tạo. Xem `_shared/bank/dong-bo.ts`.
+           */
 
           let accessToken: string;
           try {

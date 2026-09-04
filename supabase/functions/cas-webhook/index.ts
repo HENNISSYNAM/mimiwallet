@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
   const { data: conns, error: lookupError } = await supabase
     .from("bank_connections")
     .select(
-      "id, company_id, status, access_token_enc, account_number, bank_name, last_reference, direction_convention",
+      "id, company_id, status, access_token_enc, account_number, bank_name, last_reference, direction_convention, scopes",
     )
     .eq("provider", "bankhub")
     .eq("grant_id", grantId);
