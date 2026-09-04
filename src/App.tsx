@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
+import ManHinhCho from '@/components/brand/ManHinhCho';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -34,12 +35,9 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+/** Màn hình chờ — khung cảnh đổi theo giờ, xem `brand/ManHinhCho.tsx`. */
 function LoadingFallback() {
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
-      <img src="/mimi-favicon.png" alt="MIMI WALLET" className="w-10 h-10 animate-pulse" />
-    </div>
-  );
+  return <ManHinhCho />;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

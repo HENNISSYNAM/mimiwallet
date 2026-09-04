@@ -13,6 +13,8 @@ import frWatch from '@/assets/mimi/watch.webp';
 import frSurprised from '@/assets/mimi/surprised.webp';
 import frLookSide from '@/assets/mimi/look-side.webp';
 import frWave from '@/assets/mimi/wave.webp';
+import frSit from '@/assets/mimi/sit.webp';
+import frStretch from '@/assets/mimi/stretch.webp';
 import type { Pose } from '@/lib/mimiTamTrang';
 
 /**
@@ -101,6 +103,9 @@ const FACE = {
   surprised: frSurprised,
   'look-side': frLookSide,
   wave: frWave,
+  // Ba pose của khung cảnh theo giờ — xem `lib/khongKhi.ts`.
+  sit: frSit,
+  stretch: frStretch,
 };
 type Face = keyof typeof FACE;
 
