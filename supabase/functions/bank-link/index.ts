@@ -347,7 +347,16 @@ Deno.serve(async (req) => {
 
         const { data: saved, error: saveError } = await supabase
           .from("bank_connections")
-          .upsert(rows, { onConflict: "company_id,provider,account_number" })
+          /*
+           * `scopes` nằm trong khoá xung đột, và đó là điểm mấu chốt.
+           *
+           * Một tài khoản cần hai liên kết: `qrpay` để phát mã, `transaction`
+           * để thấy tiền về. Nếu khoá chỉ có `(company_id, provider,
+           * account_number)` thì liên kết lần hai sẽ khớp dòng cũ và ghi đè
+           * `scopes` — xoá mất grant QR mà không báo gì. Xem migration
+           * 20260904220000.
+           */
+          .upsert(rows, { onConflict: "company_id,provider,account_number,scopes" })
           .select("id, account_number, account_name, bank_name");
 
         if (saveError) {
