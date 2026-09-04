@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -55,6 +56,20 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 }
 
 const App = () => (
+  /* `attribute="class"` để next-themes gắn `class="dark"` lên <html> — đúng cái
+     tên mà `darkMode: ["class"]` trong tailwind.config.ts đang chờ. Trước đây
+     CSS khai `.theme-dark`, nên không bên nào gặp bên nào.
+
+     `defaultTheme="light"` VÀ `enableSystem={false}`. Đây là chủ ý, không phải
+     bỏ sót. Sáng là giao diện chính của MIMI: toàn bộ bảng màu đã được soát
+     tương phản cho nền sáng (xem các ghi chú tỉ lệ trong `index.css`), và màn
+     hình chính của ứng dụng là bảng số dày đặc — sao kê, hoá đơn, đối soát —
+     vốn dễ đọc hơn trên nền sáng.
+
+     Nếu để "system", người dùng đang đặt máy ở chế độ tối sẽ rơi thẳng vào bản
+     tối ngay lần mở đầu tiên, mà bản tối chỉ mới vừa sống lại hôm nay và chưa
+     được soát hết từng trang. Tối là *tuỳ chọn*, không phải mặc định. */
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -110,6 +125,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

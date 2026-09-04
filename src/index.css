@@ -89,24 +89,50 @@
     --shadow-green: 0 8px 24px hsla(var(--green-glow)/0.14);
   }
 
-  /* landing-light kept as an alias so existing Landing markup stays valid */
-  .landing-light { /* inherits :root light tokens */ }
+  /* Trang chủ luôn sáng — quy tắc thi hành nằm ở cuối file, ngoài @layer,
+     vì `.dark .mimi-hero-warm` cũng nằm ngoài layer và sẽ thắng nếu không. */
+  .landing-light { }
 
-  /* Opt-in dark theme (legacy look), not used by default */
-  .theme-dark {
-    --bg-base: 222 47% 5%;
-    --bg-surface: 222 35% 8%;
-    --bg-card: 222 28% 11%;
-    --bg-card-hover: 222 24% 14%;
-    --border-subtle: 222 15% 18%;
-    --text-primary: 0 0% 98%;
-    --text-secondary: 215 16% 58%;
-    --text-muted: 215 12% 40%;
+  /* Chế độ tối.
+   *
+   * TÊN CLASS LÀ `.dark`, KHÔNG PHẢI `.theme-dark`. Trước đây nó tên
+   * `.theme-dark` trong khi `tailwind.config.ts` khai `darkMode: ["class"]` —
+   * tức Tailwind đi tìm `.dark`. Hai cái tên không gặp nhau, nên cả khối token
+   * này lẫn mọi tiện ích `dark:` trong mã đều là mã chết: chỉnh kỹ, không ai
+   * từng nhìn thấy.
+   *
+   * NỀN TRUNG TÍNH, KHÔNG PHẢI ĐEN XANH. Bản cũ để hue 222 với sat 47% — một
+   * màu đen ngả xanh khá đậm. Nền có màu thì nó *cạnh tranh* với nội dung; nền
+   * gần trung tính thì nó lùi ra sau và nhường chỗ. Đây là điểm mấu chốt của
+   * kiểu phòng tranh: mọi thứ chìm vào bóng tối, chỉ vài mảng sáng nổi lên.
+   *
+   * CHỮ THÂN BÀI KHÔNG BAO GIỜ TRẮNG HẲN. #9f9fa0 trên nền #0f1011 cho tỉ lệ
+   * tương phản 7.2:1 — vượt AA, sát AAA — nên đây là lựa chọn dịu mắt mà vẫn
+   * đọc được, không phải đánh đổi.
+   *
+   * ĐỘ NỔI BẰNG BƯỚC MÀU, KHÔNG BẰNG ĐỔ BÓNG. Bóng đổ trên nền tối gần như vô
+   * hình; thứ thật sự tách được lớp là nền sáng dần lên. Nên `--shadow-card`
+   * ở đây là một đường viền 1px chứ không phải một vệt mờ.
+   */
+  .dark {
+    --bg-base: 210 6% 6%;         /* obsidian — mặt nền của cả trang */
+    --bg-surface: 210 10% 4%;     /* vực — mảng tối hơn nền, dùng để phân dải */
+    --bg-card: 0 0% 18%;          /* than chì — thẻ nổi lên khỏi nền */
+    --bg-card-hover: 210 2% 25%;  /* thép — trạng thái rê chuột */
+    --border-subtle: 210 4% 16%;
+    --text-primary: 240 20% 96%;  /* mây — trắng dịu, không phải trắng tinh */
+    --text-secondary: 240 1% 63%; /* tro — chữ thân bài, 7.2:1 trên nền */
+    --text-muted: 210 1% 42%;
     --accent: var(--bg-card-hover);
     --sidebar-background: var(--bg-surface);
     --sidebar-accent: var(--bg-card);
-    --shadow-card: 0 1px 3px hsla(0,0%,0%,0.4), 0 0 0 1px hsl(var(--border-subtle));
+    /* Không có vệt mờ: một đường viền mảnh là thứ duy nhất đọc được ở đây. */
+    --shadow-card: 0 0 0 1px hsl(var(--border-subtle));
+    --shadow-soft: 0 0 0 1px hsl(var(--border-subtle));
   }
+
+  /* Tên cũ giữ lại làm bí danh — nếu còn chỗ nào ngoài mã nguồn đang gọi nó. */
+  .theme-dark { }
 }
 
 @layer base {
@@ -251,6 +277,36 @@
     background: hsla(0 0% 100% / 0.42);
     backdrop-filter: blur(16px) saturate(200%);
     -webkit-backdrop-filter: blur(16px) saturate(200%);
+  }
+
+  /*
+   * Kính mờ trên nền tối.
+   *
+   * Cả hệ `lg-*` ở trên đóng cứng `hsla(0 0% 100% / …)` — trắng bất kể chủ đề.
+   * Dựng cho nền sáng thì đúng, nhưng ở chế độ tối nó để lại một thanh điều
+   * hướng trắng với chữ xám nhạt bên trên: gần như không đọc được.
+   *
+   * Bản đối này giữ NGUYÊN quang học — vẫn mờ, vẫn tăng bão hoà để bắt màu từ
+   * thứ trôi bên dưới — và chỉ lật phần nền. Đây là cách vật liệu kính vốn hoạt
+   * động: cùng một lớp kính, đổi thứ đặt sau nó.
+   *
+   * Viền sáng ở cạnh trên hạ từ 0.75 xuống 0.10. Trên nền sáng, vệt trắng 75%
+   * là một mép bắt sáng nhẹ; trên nền tối nó thành một sợi dây phát sáng.
+   */
+  .dark .lg-regular {
+    background: hsla(210 6% 6% / 0.72);
+  }
+
+  .dark .lg-clear {
+    background: hsla(210 6% 6% / 0.42);
+  }
+
+  .dark .lg-surface {
+    box-shadow:
+      inset 0 1px 0 hsla(0 0% 100% / 0.10),
+      inset 0 -1px 0 hsla(0 0% 0% / 0.30),
+      0 0 0 0.5px hsla(0 0% 100% / 0.09),
+      var(--shadow-soft);
   }
 
   /* Concentric nesting: an inner radius shares its centre with the outer one. */
@@ -521,4 +577,91 @@
   font-size: 1.0625rem;
   line-height: 1;
   color: hsl(var(--foreground));
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * TRANG CHỦ LUÔN SÁNG
+ *
+ * Đặt ở đây, ngoài `@layer base`, là bắt buộc chứ không phải tuỳ hứng: CSS
+ * không phân lớp luôn thắng CSS trong `@layer`, và `.dark .mimi-hero-warm`
+ * ngay bên trên cũng là CSS không phân lớp. Viết khối này bên trong layer thì
+ * nó thua, và trang chủ vẫn tối.
+ *
+ * VÌ SAO TRANG CHỦ KHÔNG CÓ BẢN TỐI. Nó là một trang giới thiệu dựng quanh một
+ * con mèo lông cam đứng giữa một cánh đồng kem — chính ghi chú trong
+ * `Landing.tsx` đã nói lý do: nền trung tính làm con mèo trông như dán lên, nền
+ * kem làm nó trông như đang ở nhà. Một bố cục dựng quanh đúng một màu thì không
+ * có bản đảo màu nào đúng cả; có chăng chỉ là bản kém hơn.
+ *
+ * Chế độ tối phục vụ chỗ khác: phần ứng dụng bên trong, nơi người ta ngồi hàng
+ * giờ với bảng sao kê và đối soát. Hai nơi, hai mục đích.
+ * ═════════════════════════════════════════════════════════════════════════ */
+.dark .landing-light {
+  --bg-base: 220 8% 96%;
+  --bg-surface: 0 0% 100%;
+  --bg-card: 0 0% 100%;
+  --bg-card-hover: 220 8% 97%;
+  --border-subtle: 220 8% 90%;
+  --text-primary: 220 8% 10%;
+  --text-secondary: 220 6% 42%;
+  --text-muted: 220 6% 55%;
+  --accent: 220 8% 94%;
+  --sidebar-background: 0 0% 100%;
+  --sidebar-accent: 220 8% 96%;
+  --shadow-card: 0 1px 2px hsla(220,8%,10%,0.04), 0 8px 24px hsla(220,8%,10%,0.06);
+  --shadow-soft: 0 1px 2px hsla(220,8%,10%,0.04), 0 8px 24px hsla(220,8%,10%,0.06);
+
+  /* PHẢI KHAI LẠI CẢ TOKEN DẪN XUẤT, và đây là chỗ dễ sai nhất trong cả file.
+   *
+   * `:root` khai `--foreground: var(--text-primary)`. Mà `.dark` gắn lên <html>
+   * — tức cũng chính là `:root`. Nên `--foreground` được thay thế NGAY TẠI ĐÓ
+   * bằng giá trị tối, rồi giá trị đã tính đó mới chảy xuống. Khai lại
+   * `--text-primary` ở phần tử con không làm `--foreground` tính lại: nó đã
+   * chốt từ trước.
+   *
+   * Triệu chứng khi thiếu khối này: nền kem quay lại đúng, nhưng chữ vẫn trắng
+   * trên kem — cả trang gần như trống trơn.
+   */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-primary);
+  --secondary: var(--bg-surface);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-surface);
+  --muted-foreground: var(--text-secondary);
+  --accent-foreground: var(--text-primary);
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --sidebar-foreground: var(--text-secondary);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-subtle);
+
+  color: hsl(var(--text-primary));
+  /* Phải tự sơn nền: khai lại token thôi chưa đủ, vì <body> vẫn giữ nền tối và
+     nó chiếu xuyên qua mọi khoảng trong suốt. */
+  background: hsl(var(--bg-base));
+}
+
+/* Cánh đồng kem quay lại, đè bản tối đã dựng sẵn ngay bên trên. */
+.dark .landing-light .mimi-hero-warm {
+  background:
+    radial-gradient(120% 90% at 78% 18%, hsl(28 92% 96%) 0%, transparent 58%),
+    radial-gradient(100% 80% at 12% 8%, hsl(24 90% 97%) 0%, transparent 52%),
+    hsl(36 44% 98%);
+}
+
+/* Kính mờ trong vùng trang chủ trở lại nền trắng, nếu không thanh điều hướng
+   vẫn là một tấm kính tối trôi trên nền kem. */
+.dark .landing-light .lg-regular { background: hsla(0 0% 100% / 0.72); }
+.dark .landing-light .lg-clear   { background: hsla(0 0% 100% / 0.42); }
+.dark .landing-light .lg-surface {
+  box-shadow:
+    inset 0 1px 0 hsla(0 0% 100% / 0.75),
+    inset 0 -1px 0 hsla(var(--text-primary) / 0.04),
+    0 0 0 0.5px hsla(var(--text-primary) / 0.07),
+    var(--shadow-soft);
 }

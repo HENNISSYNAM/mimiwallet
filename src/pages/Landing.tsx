@@ -552,12 +552,19 @@ export default function Landing() {
             headlines are the single loudest "generated page" signal; at this
             size the typeface and the spacing around it carry the weight.
           */}
+          {/*
+            Serif ở độ đậm thường, không phải sans extrabold.
+            Sức nặng ở cỡ này đến từ khoảng lặng chứ không từ nét đậm: chữ mảnh
+            đọc ra vẻ tự tin, chữ extrabold ở cùng cỡ đọc ra vẻ đang hét. Đây là
+            giọng thứ ba của hệ chữ — xem `components/brand/Display.tsx`.
+
+            Cỡ vẫn tính theo cột chứ không theo khung nhìn, giữ nguyên lý do cũ:
+            tiêu đề chia hàng với hình con mèo, và clamp theo vw từng bỏ "tiền"
+            lại một mình trên một dòng.
+          */}
           <motion.h1
             {...fadeUp(0.1)}
-            className="font-display font-extrabold text-foreground leading-[1.05] tracking-[-0.03em] max-w-4xl mx-auto lg:mx-0"
-            // Sized against the column, not the viewport: the headline now
-            // shares the row with the mark, and a viewport-relative clamp left
-            // "tiền" stranded on a line of its own.
+            className="font-serif font-normal text-foreground leading-[1.06] tracking-[-0.02em] max-w-4xl mx-auto lg:mx-0 text-balance"
             style={{ fontSize: 'clamp(2.4rem, 3.6vw, 3.9rem)' }}
           >
             {/* Copy stays in i18n — that arrived from the other branch and is
@@ -699,7 +706,7 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-16">
             <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('process.sectionLabel')}</span>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">
               {t('process.title')} <span className="text-gradient">{t('process.titleHighlight')}</span>
             </h2>
             <p className="text-muted-foreground mt-4 max-w-xl mx-auto">{t('process.subtitle')}</p>
@@ -725,7 +732,7 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-16">
             <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('solutions.sectionLabel')}</span>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">
               {t('solutions.title')} <span className="text-gradient">{t('solutions.titleHighlight')}</span>
             </h2>
           </motion.div>
@@ -1003,7 +1010,7 @@ export default function Landing() {
                 unverifiable 94%.
               */}
               <span className="text-xs text-primary font-mono uppercase tracking-widest">Cách chấm điểm</span>
-              <h2 className="font-display font-extrabold text-3xl md:text-4xl text-foreground mt-3 mb-6">
+              <h2 className="font-serif font-normal text-[clamp(1.75rem,3.2vw,2.375rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3 mb-6">
                 Không phải hộp đen —{' '}
                 <span className="text-gradient">bạn xem được từng bước</span>
               </h2>
@@ -1073,7 +1080,7 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-4">
             <span className="text-xs text-primary font-mono uppercase tracking-widest">Bảng giá</span>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">Chọn gói phù hợp</h2>
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Chọn gói phù hợp</h2>
           </motion.div>
           <div className="flex items-center justify-center gap-4 mb-14">
             <span className={`text-sm font-medium ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>Hàng tháng</span>
@@ -1125,7 +1132,7 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-14">
             <span className="text-xs text-primary font-mono uppercase tracking-widest">Bằng chứng vận hành</span>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mt-3">Đã chạy thật, không phải mô phỏng</h2>
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Đã chạy thật, không phải mô phỏng</h2>
             <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
               Kết quả mô hình chấm điểm trả về cho doanh nghiệp mẫu, tính trực tiếp trên hạ tầng production từ 12 tháng dữ liệu giao dịch.
             </p>
@@ -1176,7 +1183,7 @@ export default function Landing() {
         </div>
         <div className="relative z-10 container mx-auto px-4 text-center max-w-2xl">
           <motion.div {...fadeUp(0)}>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl text-foreground mb-4">Sẵn sàng tăng tốc dòng tiền?</h2>
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mb-4">Sẵn sàng tăng tốc dòng tiền?</h2>
             <p className="text-muted-foreground text-lg mb-10">Đăng ký miễn phí — không cần thẻ tín dụng, setup trong 5 phút</p>
           </motion.div>
           {ctaSubmitted ? (

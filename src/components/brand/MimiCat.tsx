@@ -7,6 +7,13 @@ import frContent from '@/assets/mimi/content.webp';
 import frHappy from '@/assets/mimi/happy.webp';
 import frWink from '@/assets/mimi/wink.webp';
 import frLove from '@/assets/mimi/love.webp';
+import frLaugh from '@/assets/mimi/laugh.webp';
+import frSleep from '@/assets/mimi/sleep.webp';
+import frWatch from '@/assets/mimi/watch.webp';
+import frSurprised from '@/assets/mimi/surprised.webp';
+import frLookSide from '@/assets/mimi/look-side.webp';
+import frWave from '@/assets/mimi/wave.webp';
+import type { Pose } from '@/lib/mimiTamTrang';
 
 /**
  * The brand mark, and MIMI as a character.
@@ -37,6 +44,15 @@ type Props = {
    * mid-word and undo the whole gesture.
    */
   eyesClosed?: boolean;
+  /**
+   * `live` only. The face MIMI wears at rest, chosen from real app state by
+   * `tamTrang()`. She still blinks and still reacts to hover and click — this
+   * replaces the face she returns *to*, not the reactions on top of it.
+   *
+   * Left undefined she rests on `idle`, which is what every existing call site
+   * gets without changing a line.
+   */
+  pose?: Pose;
 };
 
 export default function MimiCat({
@@ -45,6 +61,7 @@ export default function MimiCat({
   tilt = 14,
   glow = 'jade',
   eyesClosed = false,
+  pose,
 }: Props) {
   if (variant === 'mark') {
     return (
@@ -63,6 +80,7 @@ export default function MimiCat({
       live={variant === 'live'}
       glow={glow}
       eyesClosed={eyesClosed}
+      pose={pose}
     />
   );
 }
@@ -76,8 +94,18 @@ const FACE = {
   happy: frHappy,
   wink: frWink,
   love: frLove,
+  // Bộ mặt theo tình hình thật, do `tamTrang()` chọn — xem `lib/mimiTamTrang.ts`.
+  laugh: frLaugh,
+  sleep: frSleep,
+  watch: frWatch,
+  surprised: frSurprised,
+  'look-side': frLookSide,
+  wave: frWave,
 };
 type Face = keyof typeof FACE;
+
+/** Mặt nghỉ không nháy: mèo đang ngủ mà chớp mắt thì hết ngủ. */
+const KHONG_NHAY: ReadonlySet<string> = new Set(['sleep']);
 
 function HeroCat({
   className,
@@ -85,16 +113,21 @@ function HeroCat({
   live,
   glow,
   eyesClosed,
+  pose,
 }: {
   className: string;
   tilt: number;
   live: boolean;
   glow: 'jade' | 'none';
   eyesClosed: boolean;
+  pose?: Pose;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [reduced, setReduced] = useState(false);
-  const [face, setFace] = useState<Face>('idle');
+  // Mặt nghỉ — mặt cô ấy quay VỀ sau mỗi cái nháy mắt, mỗi lần rê chuột ra.
+  // Không có `pose` thì vẫn là 'idle', nên mọi chỗ gọi cũ giữ nguyên hành vi.
+  const nghi: Face = pose && pose in FACE ? (pose as Face) : 'idle';
+  const [face, setFace] = useState<Face>(nghi);
   // Held expressions (a click, a hover) must not be wiped by a blink that was
   // already scheduled, so the blink loop checks this before touching the face.
   const held = useRef(false);
@@ -139,6 +172,9 @@ function HeroCat({
   // strobe rather than a living thing, because the eye picks up the rhythm.
   useEffect(() => {
     if (!live || reduced || eyesClosed) return;
+    // Mèo đang ngủ mà chớp mắt thì hết ngủ — cùng lý do `eyesClosed` cho vòng
+    // lặp này đứng yên khi người dùng đang gõ mật khẩu.
+    if (KHONG_NHAY.has(nghi)) return;
     let stop = false;
     let t: number;
     const loop = () => {
@@ -147,7 +183,7 @@ function HeroCat({
         if (!held.current) {
           setFace('blink');
           window.setTimeout(() => {
-            if (!stop && !held.current) setFace('idle');
+            if (!stop && !held.current) setFace(nghi);
           }, 130);
         }
         loop();
@@ -158,14 +194,20 @@ function HeroCat({
       stop = true;
       window.clearTimeout(t);
     };
-  }, [live, reduced, eyesClosed]);
+  }, [live, reduced, eyesClosed, nghi]);
+
+  // Tình hình đổi thì mặt đổi theo ngay, không đợi cái nháy mắt kế tiếp — trừ
+  // khi đang giữ một biểu cảm do người dùng vừa chạm vào.
+  useEffect(() => {
+    if (!held.current) setFace(nghi);
+  }, [nghi]);
 
   const hold = (f: Face, ms: number) => {
     held.current = true;
     setFace(f);
     window.setTimeout(() => {
       held.current = false;
-      setFace('idle');
+      setFace(nghi);
     }, ms);
   };
 
@@ -179,7 +221,7 @@ function HeroCat({
       className={`relative ${className}`}
       style={{ perspective: 900 }}
       onPointerEnter={live && !reduced ? () => !held.current && setFace('content') : undefined}
-      onPointerLeave={live && !reduced ? () => !held.current && setFace('idle') : undefined}
+      onPointerLeave={live && !reduced ? () => !held.current && setFace(nghi) : undefined}
       onClick={live && !reduced ? () => hold('love', 1400) : undefined}
     >
       {/* Jade halo. The fur is orange, so an orange glow flattens the head into

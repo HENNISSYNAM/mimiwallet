@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ChuyenSangToi from '@/components/ChuyenSangToi';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useScrolled } from '@/hooks/useScrolled';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -80,6 +81,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            <ChuyenSangToi />
             <button
               onClick={toggleLang}
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-accent"

@@ -15,6 +15,10 @@ export default {
         display: ["Inter", "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "sans-serif"],
         body: ["Inter", "-apple-system", "BlinkMacSystemFont", "SF Pro Text", "sans-serif"],
         mono: ["JetBrains Mono", "SF Mono", "Menlo", "monospace"],
+        // Giọng thứ ba: chỉ dùng cho câu tuyên bố cỡ lớn (>=30px).
+        // Playfair chứ không phải DM Serif Display — DM Serif KHÔNG có dấu
+        // tiếng Việt, mọi chữ "ế" "ộ" "ạ" sẽ rơi về font khác giữa câu.
+        serif: ["Playfair Display", "Georgia", "Times New Roman", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",

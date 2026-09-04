@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import MimiCat from '@/components/brand/MimiCat';
+import { tamTrang } from '@/lib/mimiTamTrang';
 import { Wallet, TrendingUp, FileText, ShieldCheck, AlertTriangle, Lightbulb, Bell, ArrowRight, Loader2, Link2 } from 'lucide-react';
 import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
 import NewsAndLawPanel from '@/components/NewsAndLawPanel';
@@ -319,13 +321,50 @@ export default function DashboardOverview() {
 
   const noData = txs.length === 0;
 
+  // Gương mặt Mimi mang ở lời chào, suy ra từ dữ liệu thật đang có trên trang
+  // này — không phải từ đồng hồ, không phải ngẫu nhiên. Quy tắc và thứ tự ưu
+  // tiên nằm trong `lib/mimiTamTrang.ts` cùng bộ test của nó; chỗ này chỉ dịch
+  // state của trang sang các sự việc mà hàm đó nhận.
+  const soQuaHan = invoices.filter(
+    (i) => i.status !== 'paid' && i.due_date && new Date(i.due_date) < new Date(),
+  ).length;
+  const mimi = tamTrang({
+    chuaCoDuLieu: noData && !hasBank,
+    soViecCanXuLy: soQuaHan,
+    // Tiền về tính trong 3 ngày gần nhất, và chỉ khoản THU.
+    vuaCoTienVe: txs.some(
+      (t) =>
+        t.amount > 0 &&
+        Date.now() - new Date(t.transaction_date).getTime() < 3 * 864e5,
+    ),
+  });
+
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={fadeUp}>
-        <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">
-          Xin chào{companyName ? `, ${companyName}` : ''}
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">{dateStr}</p>
+      <motion.div variants={fadeUp} className="flex items-start gap-3">
+        {/* 56px, `live` — cô ấy nháy mắt và phản ứng khi bị chạm vào. Không có
+            quầng sáng: quầng ngọc bích dựng cho hero trên nền kem, ở đây nó chỉ
+            là một vệt màu thừa cạnh dòng chữ. */}
+        <MimiCat
+          variant="live"
+          pose={mimi.pose}
+          glow="none"
+          tilt={8}
+          className="w-14 shrink-0 -mt-1"
+        />
+        <div className="min-w-0">
+          <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">
+            Xin chào{companyName ? `, ${companyName}` : ''}
+          </h2>
+          {/* Câu của Mimi thay cho ngày tháng KHI có việc đáng nói. Không có gì
+              đáng nói thì `cau` là null và ngày tháng ở lại — im lặng là trạng
+              thái tốt, không phải chỗ trống cần lấp bằng một câu vui vẻ. */}
+          {mimi.cau ? (
+            <p className="text-sm text-foreground/80 mt-1">{mimi.cau}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground mt-1">{dateStr}</p>
+          )}
+        </div>
       </motion.div>
 
       {/* Nothing to show yet is said plainly, with the one action that changes it. */}
