@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, FileText, Users,
-  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, Leaf, Sparkles, GraduationCap, Globe,
+  BarChart3, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Fingerprint, Cpu, HandCoins, Leaf, Sparkles, GraduationCap, Globe,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
@@ -53,6 +53,17 @@ export default function DashboardSidebar() {
    * That is a page to show someone before they sign up, not a tab beside their
    * invoices. It stays reachable at /dashboard/tech and from the public site.
    *
+   * "Thiết bị M2M" nhường ô cho "Vay ngang hàng" ngày 04/09/2026. Ba bảng M2M
+   * (device_wallets, device_rules, m2m_transactions), edge function
+   * m2m-operations và route /dashboard/m2m đều còn nguyên — chỉ là không chiếm
+   * một ô cố định nữa. Bộ máy điều kiện trong device_rules dùng lại được cho
+   * quy tắc trả nợ tự động, nên xoá là mất không.
+   *
+   * Sàn vay ngang hàng chưa được NHNN cấp Giấy chứng nhận tham gia cơ chế thử
+   * nghiệm theo Nghị định 94/2025/NĐ-CP, và trang tự nói ra điều đó bằng một
+   * dải cảnh báo không tắt được. Đây là chỗ khác với "Vay vốn" ngày 17/08: lần
+   * đó ô điều hướng quảng cáo một dịch vụ không tồn tại và không nói gì thêm.
+   *
    * "Vay vốn" is absent as of 17/08/2026 because MIMI has no credit licence and
    * no disbursement partner — a permanent nav slot for it advertised a service
    * that does not exist. "Điểm tín dụng" stays: it describes the customer's own
@@ -77,7 +88,7 @@ export default function DashboardSidebar() {
       label: t('sidebar.groupConnect'),
       items: [
         { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
-        { icon: Cpu, label: t('sidebar.m2mDevices'), path: '/dashboard/m2m' },
+        { icon: HandCoins, label: 'Vay ngang hàng', path: '/dashboard/p2p' },
         { icon: Leaf, label: t('sidebar.carbon'), path: '/dashboard/carbon' },
       ],
     },

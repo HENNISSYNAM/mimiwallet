@@ -22,6 +22,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
+const P2PLendingPage = lazy(() => import("./pages/P2PLendingPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CreditScoringPage = lazy(() => import("./pages/CreditScoringPage"));
@@ -106,6 +107,7 @@ const App = () => (
                 <Route path="invoices" element={<InvoicesPage />} />
                 <Route path="clients" element={<ClientsPage />} />
                 <Route path="loans" element={<LoansPage />} />
+                <Route path="p2p" element={<P2PLendingPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="cashflow" element={<DashboardOverview />} />

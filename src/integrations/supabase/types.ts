@@ -996,6 +996,145 @@ export type Database = {
         }
         Relationships: []
       }
+      p2p_commitments: {
+        Row: {
+          created_at: string
+          id: string
+          lender_company_id: string | null
+          lender_user_id: string | null
+          listing_id: string
+          so_tien: number
+          trang_thai: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lender_company_id?: string | null
+          lender_user_id?: string | null
+          listing_id: string
+          so_tien: number
+          trang_thai?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lender_company_id?: string | null
+          lender_user_id?: string | null
+          listing_id?: string
+          so_tien?: number
+          trang_thai?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p2p_commitments_lender_company_id_fkey"
+            columns: ["lender_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p2p_commitments_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "p2p_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p2p_listings: {
+        Row: {
+          company_id: string
+          created_at: string
+          da_gop: number
+          id: string
+          ky_han_ngay: number
+          lai_suat_nam: number
+          muc_dich: string | null
+          so_tien: number
+          trang_thai: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          da_gop?: number
+          id?: string
+          ky_han_ngay: number
+          lai_suat_nam: number
+          muc_dich?: string | null
+          so_tien: number
+          trang_thai?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          da_gop?: number
+          id?: string
+          ky_han_ngay?: number
+          lai_suat_nam?: number
+          muc_dich?: string | null
+          so_tien?: number
+          trang_thai?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p2p_listings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          claim: string
+          confidence: number
+          created_at: string
+          id: string
+          outcome: string
+          resolve_on: string
+          resolved_at: string | null
+          resolved_note: string | null
+          seed_news_id: string | null
+          source: string
+        }
+        Insert: {
+          claim: string
+          confidence: number
+          created_at?: string
+          id?: string
+          outcome?: string
+          resolve_on: string
+          resolved_at?: string | null
+          resolved_note?: string | null
+          seed_news_id?: string | null
+          source?: string
+        }
+        Update: {
+          claim?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          outcome?: string
+          resolve_on?: string
+          resolved_at?: string | null
+          resolved_note?: string | null
+          seed_news_id?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_seed_news_id_fkey"
+            columns: ["seed_news_id"]
+            isOneToOne: false
+            referencedRelation: "macro_news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_events: {
         Row: {
           created_at: string
@@ -1460,6 +1599,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      chay_doi_soat_thue_bao: { Args: never; Returns: undefined }
       current_role: { Args: never; Returns: string }
       user_company_ids: { Args: { uid: string }; Returns: string[] }
     }
@@ -1480,12 +1620,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1509,11 +1649,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1534,11 +1674,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1559,11 +1699,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1576,11 +1716,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
