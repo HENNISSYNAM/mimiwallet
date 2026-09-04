@@ -152,7 +152,18 @@ Deno.serve(async (req) => {
             consent_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
             last_synced_at: new Date().toISOString(),
             accounts: mockData.accounts,
-          }, { onConflict: "company_id,bank_code" })
+            /*
+             * `scopes: "demo"` là bắt buộc, không phải trang trí.
+             *
+             * Khoá duy nhất nay là (company_id, bank_code, scopes) — vì một
+             * công ty được nhiều liên kết cho cùng một ngân hàng, miễn khác
+             * mục đích (đọc sao kê, nhận tiền QR, thuế). Để trống trường này
+             * thì Postgres coi mỗi NULL là một giá trị khác nhau, và ràng buộc
+             * ngừng có tác dụng đúng với dòng demo. Xem migration
+             * 20260904230000.
+             */
+            scopes: "demo",
+          }, { onConflict: "company_id,bank_code,scopes" })
           .select()
           .single();
 

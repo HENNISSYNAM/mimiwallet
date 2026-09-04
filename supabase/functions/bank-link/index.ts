@@ -364,7 +364,22 @@ Deno.serve(async (req) => {
           // The grant exists at Cas but we cannot use it, so do not leave it
           // hanging against the customer's bank account.
           await removeGrant(cfg, accessToken).catch(() => {});
-          return json({ error: "could not store connection" }, 500);
+          /*
+           * Trả nguyên văn thông báo của Postgres, đừng nuốt nó.
+           *
+           * Ngày 04/09 câu chung "could not store connection" làm mất trọn một
+           * vòng thử: nguyên nhân thật là một unique index cũ trên
+           * (company_id, bank_code) chặn liên kết thứ hai cho cùng ngân hàng,
+           * nhưng màn hình chỉ nói "Không lưu được liên kết". Cùng bài học với
+           * case 5 — ở đó "publicToken required" cũng bị giấu đi.
+           *
+           * Thông báo Postgres không chứa dữ liệu của khách; nó nói về lược đồ.
+           */
+          return json({
+            error: "could not store connection",
+            detail: saveError.message,
+            code: saveError.code,
+          }, 500);
         }
 
         /*
