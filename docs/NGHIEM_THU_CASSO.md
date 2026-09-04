@@ -6,6 +6,64 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
+## Chốt đợt 04/09/2026 — 16/20 (80%)
+
+Buổi này đóng thêm **hai case** (12 và 13) và **xác định nguyên nhân** cho case
+15. Cả ba đều là những case bế tắc lâu nhất của cả đợt nghiệm thu.
+
+| | Số case | Ghi chú |
+|---|---|---|
+| **Passed** | **16 / 20** | 80% trên nhóm trong phạm vi |
+| Chặn bởi dữ liệu sandbox — đã chứng minh | 1 | case 15 |
+| Chờ app Cas ID gửi webhook thật | 1 | case 10 |
+| Đã viết mã, chưa gặp điều kiện phát sinh | 1 | case 4 |
+| Ngoài phạm vi theo thiết kế | 1 | case 18 |
+| Chặn `IP_NOT_ALLOWED` — nhóm `transfer` | 10 | ngoài 20 case trên |
+
+### Điều đáng nhớ nhất của buổi này
+
+**Không một phát hiện nào tìm ra được bằng đọc mã.** Cả năm đều chỉ lộ khi có
+một grant thật đi được tới khâu tiếp theo, và mỗi cái che khuất cái sau:
+
+1. Casso xác nhận sandbox **chỉ hỗ trợ MB** — giải thích trọn vẹn một tuần thử
+   BIDV và Vietcombank vô ích.
+2. **MIMI tự đập hỏng grant `qrpay` của chính mình.** Vòng đồng bộ gọi
+   `/transactions` lên grant không có scope đó, lỗi map thành `needs_relink`,
+   và Casso đẩy `DEFAULT_UPDATE` 25 lần/ngày nên mỗi webhook là một lần đập
+   lại. Bộ chắn cũ đo **triệu chứng của một lần dò danh tính hỏng** chứ không
+   đo **sự thật rằng đây là liên kết QR**, nên đúng ngày dò danh tính chạy được
+   là ngày nó lặng lẽ ngừng bảo vệ.
+3. **`description` tối đa 9 ký tự** — không có trong tài liệu Cas. Ràng buộc
+   này cũng khiến nút tạo QR trên trang Hoá đơn **chưa từng chạy được**, vì nó
+   gửi `Thanh toan <số hoá đơn>` dài gấp đôi.
+4. **Hai unique index cũ chặn liên kết thứ hai cho cùng một ngân hàng.** Một
+   tài khoản cần hai grant — `qrpay` để phát mã, `transaction` để thấy tiền về
+   — nhưng khoá cũ là `(company_id, bank_code)`. Nguy hiểm hơn: `onConflict`
+   cũ sẽ **ghi đè grant QR thành `transaction`** mà không báo gì, nên người
+   dùng làm theo hướng dẫn hiển nhiên sẽ tự phá thứ mình vừa dựng.
+5. **Sandbox không phục vụ sao kê thật** — kết luận của case 15, xem dưới.
+
+### Bốn giả thuyết bị loại bằng đo đạc, không bằng lập luận
+
+Sau khi mã QR chạy và tiền thật đã về, `qr_payments` vẫn `pending`. Thay vì
+đoán, mỗi vòng thêm một phép đo và loại một khả năng:
+
+| Giả thuyết | Phép đo | Kết quả |
+|---|---|---|
+| Sandbox không nhận tài khoản thật | Liên kết `transaction` trên MB | **Sai** — thành công, có mốc đồng bộ |
+| Lệch định dạng số tài khoản làm lọc sạch | Đếm `scopedOut` | **Sai** — `khacTaiKhoan = 0` |
+| Trùng dữ liệu đã có trong sổ | `fetched` | **Sai** — `fetched = 0` |
+| Đọc sai tầng phản hồi | Liệt kê tên trường tầng ngoài | **Sai** — `transactions` đúng tầng |
+
+Còn lại: Cas trả về `accounts[1], transactions[0]`, tài khoản Cas thấy là
+`2002` — **khớp đúng liên kết** — trên cửa sổ **12 tháng**. Một tài khoản đang
+dùng thật không thể trống suốt một năm.
+
+**Kết luận: sandbox không phục vụ sao kê thật cho tài khoản này.** Đây là câu
+hỏi cho Casso, không phải việc sửa mã.
+
+---
+
 ## Casso phản hồi 21/08/2026 — mở khoá case 12, 13
 
 Chị Lê Tuyết (Casso) nhắn ba việc:
