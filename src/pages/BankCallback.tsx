@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
-import { consumeLinkState } from '@/components/fintech/CasLink';
+import { consumeLinkState, consumeLinkFeature } from '@/components/fintech/CasLink';
 
 /**
  * Where Cas Link lands after a successful bank link.
@@ -78,7 +78,17 @@ export default function BankCallback() {
             body: JSON.stringify(body),
           }).then(async (r) => ({ ok: r.ok, body: await r.json().catch(() => ({})) }));
 
-        const ex = await post('exchange', { publicToken });
+        /*
+         * `feature` phai di cung publicToken, neu khong lien ket QR hoan tat qua
+         * duong chuyen huong nay se bi luu voi `scopes='transaction'` mac dinh
+         * va `create-qr` vinh vien khong thay no — mot loi im lang: man hinh bao
+         * thanh cong, roi QR bao "chua co tai khoan nao".
+         *
+         * Duong iframe giu `feature` trong bien component; trang nay la URL moi
+         * nen phai lay lai tu sessionStorage.
+         */
+        const feature = consumeLinkFeature();
+        const ex = await post('exchange', feature ? { publicToken, feature } : { publicToken });
         if (!ex.ok || ex.body?.error) {
           setState('error');
           setDetail(ex.body?.error ?? `Lỗi ${'' + ex.ok}`);

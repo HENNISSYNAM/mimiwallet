@@ -358,6 +358,42 @@ Deno.serve(async (req) => {
           return json({ error: "could not store connection" }, 500);
         }
 
+        /*
+         * Liên kết mới cùng loại thay thế liên kết cũ đã hỏng.
+         *
+         * VÌ SAO CẦN: arbiter của upsert là (company_id, provider,
+         * account_number). Khi `fetchQrPayIdentity` thất bại, khối trên rơi về
+         * khoá tổng hợp `grant:<grantId>` — mà `grantId` mới ở mỗi lần liên kết,
+         * nên upsert KHÔNG khớp dòng cũ mà chèn dòng mới. Dòng `needs_relink` cũ
+         * nằm lại vĩnh viễn: danh sách hiện hai dòng cho cùng một tài khoản, và
+         * dải cảnh báo hổ phách sáng mãi dù người dùng vừa liên kết lại xong.
+         *
+         * Chỉ đổi trạng thái, KHÔNG xoá dòng: nó mang `revoked_at`, `grant_id`
+         * cũ và dấu vết kiểm toán của một liên kết từng tồn tại thật. Giao diện
+         * đã lọc `status != disconnected` nên nó tự biến khỏi danh sách.
+         *
+         * Giới hạn đúng `scopes` vừa ghi: một doanh nghiệp nhận QR từ hai ngân
+         * hàng là hợp lệ, và liên kết đọc sao kê không liên quan gì tới việc
+         * liên kết QR vừa được làm mới.
+         */
+        const scopeVuaGhi = forGdt ? "gdt" : forQrPay ? "qrpay" : "transaction";
+        const idVuaGhi = (saved ?? []).map((r: { id: string }) => r.id);
+        if (idVuaGhi.length) {
+          const { error: supersedeError } = await supabase
+            .from("bank_connections")
+            .update({ status: "disconnected", revoked_at: new Date().toISOString() })
+            .eq("company_id", company.id)
+            .eq("provider", "bankhub")
+            .eq("scopes", scopeVuaGhi)
+            .eq("status", "needs_relink")
+            .not("id", "in", `(${idVuaGhi.join(",")})`);
+          // Không chặn phản hồi: liên kết mới đã lưu thành công rồi. Dọn dẹp
+          // thất bại chỉ để lại một dòng thừa, không làm hỏng việc vừa làm.
+          if (supersedeError) {
+            console.error("supersede old connections:", supersedeError.message);
+          }
+        }
+
         return json({ connections: saved, accountCount: saved?.length ?? 0 });
       }
 

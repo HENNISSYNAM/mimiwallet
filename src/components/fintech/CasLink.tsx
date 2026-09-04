@@ -6,6 +6,7 @@ import {
 import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { cachSua, cacLoiNhac, phuDe } from '@/lib/lienKetNganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 
@@ -51,6 +52,33 @@ function newLinkState(): string {
   const value = crypto.randomUUID();
   sessionStorage.setItem(CAS_STATE_KEY, value);
   return value;
+}
+
+/**
+ * Loai lien ket dang mo, nho lai de duong CHUYEN HUONG TOAN TRANG khong danh mat.
+ *
+ * Duong iframe/postMessage giu duoc `feature` trong bien cua component, nhung
+ * `BankCallback.tsx` la mot URL moi — moi bien trong bo nho da mat. Truoc day no
+ * goi `exchange` chi voi publicToken, nen mot lien ket QR hoan tat qua chuyen
+ * huong bi luu voi `scopes='transaction'` mac dinh, va `create-qr` vinh vien
+ * khong thay no. Loi im lang: man hinh bao lien ket thanh cong, roi QR bao
+ * "chua co tai khoan nao".
+ *
+ * Dung sessionStorage giong `CAS_STATE_KEY`: khong song qua tab, khong ro ri
+ * sang phien khac.
+ */
+export const CAS_FEATURE_KEY = 'mimi:cas-link-feature';
+
+export function rememberLinkFeature(feature: 'bank' | 'qrpay' | 'gdt'): void {
+  if (feature === 'bank') sessionStorage.removeItem(CAS_FEATURE_KEY);
+  else sessionStorage.setItem(CAS_FEATURE_KEY, feature);
+}
+
+/** Doc mot lan roi xoa, cung ly do voi `consumeLinkState`. */
+export function consumeLinkFeature(): 'qrpay' | 'gdt' | undefined {
+  const v = sessionStorage.getItem(CAS_FEATURE_KEY);
+  sessionStorage.removeItem(CAS_FEATURE_KEY);
+  return v === 'qrpay' || v === 'gdt' ? v : undefined;
 }
 
 /**
@@ -108,6 +136,13 @@ export interface CasConnection {
   account_number: string;
   account_name: string | null;
   status: string;
+  /**
+   * `transaction` | `qrpay` | `gdt`. Quyet dinh cach sua khi lien ket hong, nen
+   * khong the thieu: truoc day cot nay khong duoc lay ve, va hau qua la moi dong
+   * `needs_relink` deu nhan cung mot loi khuyen "bam Cap nhat" — ke ca dong QR
+   * Pay von khong cap nhat duoc. Xem src/lib/lienKetNganHang.ts.
+   */
+  scopes: string | null;
   last_synced_at: string | null;
   direction_convention: string | null;
 }
@@ -250,7 +285,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       .from('bank_connections')
       // access_token_enc is deliberately absent. RLS lets the owner read their
       // own row, so anything selected here is reachable from the browser.
-      .select('id, bank_name, account_number, account_name, status, last_synced_at, direction_convention')
+      .select('id, bank_name, account_number, account_name, status, scopes, last_synced_at, direction_convention')
       .eq('provider', 'bankhub')
       /*
        * Disconnected links leave the list entirely.
@@ -518,6 +553,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       await loadLinkScript();
       track('bank_link_started', { feature });
       pendingFeature.current = feature === 'bank' ? undefined : feature;
+      rememberLinkFeature(feature);
       const grant = await call(
         'create-token',
         feature === 'bank'
@@ -716,7 +752,6 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   );
 
   const active = connections.filter((c) => c.status === 'connected');
-  const needsRelink = connections.filter((c) => c.status === 'needs_relink');
 
   return (
     <div className="space-y-4">
@@ -842,18 +877,19 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                     // controls around.
                     title={bankNotes[c.id]}
                   >
-                    {c.status === 'needs_relink'
-                      ? 'Ngân hàng yêu cầu đăng nhập lại'
-                      : bankNotes[c.id]
-                        ? bankNotes[c.id]
-                        : c.last_synced_at
+                    {/* `phuDe` cho ghi chu cu the thang cau chung. Truoc day
+                        `needs_relink` xep truoc, nen ghi chu lay tu phan hoi that
+                        cua ngan hang bi nuot mat — ke ca khi no la cau duy nhat
+                        noi dung chuyen gi dang xay ra. */}
+                    {phuDe(c, bankNotes[c.id])
+                      ?? (c.last_synced_at
                           ? `Đồng bộ lúc ${new Date(c.last_synced_at).toLocaleString('vi-VN', {
                               hour: '2-digit',
                               minute: '2-digit',
                               day: '2-digit',
                               month: '2-digit',
                             })}`
-                          : 'Chưa đồng bộ lần nào'}
+                        : 'Chưa đồng bộ lần nào')}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -874,7 +910,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       <option value="PREVENTED">Chặn đăng nhập web</option>
                     </select>
                   )}
-                  {c.status === 'needs_relink' && (
+                  {cachSua(c) === 'cap_nhat' && (
                     <button
                       onClick={() => void updateLink(c.id)}
                       disabled={linking}
@@ -882,6 +918,18 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                     >
                       {linking ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                       Cập nhật
+                    </button>
+                  )}
+                  {/* Lien ket QR khong cap nhat tai cho duoc — moi tao lai tu dau
+                      thay vi moi bam mot nut chac chan hong. */}
+                  {cachSua(c) === 'lien_ket_lai' && (
+                    <button
+                      onClick={() => { setLinkFeature('qrpay'); setChosenService(null); setConsentOpen(true); }}
+                      disabled={linking}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {linking ? <Loader2 size={12} className="animate-spin" /> : <QrCode size={12} />}
+                      Liên kết lại
                     </button>
                   )}
                   {c.status === 'connected' && (
@@ -926,13 +974,17 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           </div>
         )}
 
-        {needsRelink.length > 0 && (
-          <p className="text-xs text-amber-600 dark:text-amber-500 mt-3">
-            Có {needsRelink.length} tài khoản cần xác thực lại để tiếp tục đồng bộ. Bấm
-            "Cập nhật" ở tài khoản đó — bạn không phải liên kết lại từ đầu, lịch sử giao
-            dịch đã tải về vẫn giữ nguyên.
+        {/*
+            Hai nhom lien ket hong can hai cau khac nhau. Truoc day chung bi gop
+            lam mot cau duy nhat chi nhin `status`, nen dong QR Pay — von KHONG
+            cap nhat tai cho duoc — cung bi bao "bam Cap nhat". Do la loi khuyen
+            dan nguoi dung toi dung cai nut khong bao gio chay.
+        */}
+        {cacLoiNhac(connections).map((n) => (
+          <p key={n.nhom} className="text-xs text-amber-600 dark:text-amber-500 mt-3">
+            {n.cau}
           </p>
-        )}
+        ))}
       </div>
 
       {/* Consent. Reading somebody's bank history is processing personal data,
