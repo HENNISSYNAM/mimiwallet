@@ -32,6 +32,8 @@ export interface SoLieuDongBo {
   khacTaiKhoan?: number;
   /** Chỉ khi rỗng: tên các trường ở tầng ngoài cùng của phản hồi Cas. */
   hinhDangPhanHoi?: string;
+  /** Chỉ khi rỗng: 4 số cuối các tài khoản Cas trả về, ✓ nếu khớp liên kết. */
+  taiKhoanCasThay?: string;
 }
 
 export interface CauKetQua {
@@ -63,9 +65,11 @@ export function cauKetQuaDongBo(ds: SoLieuDongBo[]): CauKetQua {
      * "không có giao dịch nào" sẽ che đúng chuyện đó. Xem `ingest.ts`.
      */
     const hinhDang = ds.map((r) => r.hinhDangPhanHoi).filter(Boolean).join(' | ');
+    const tk = ds.map((r) => r.taiKhoanCasThay).filter(Boolean).join(' | ');
     return {
       cau: hinhDang
-        ? `Ngân hàng không trả về giao dịch nào. Phản hồi gồm: ${hinhDang}`
+        ? `Ngân hàng không trả về giao dịch nào. Phản hồi gồm: ${hinhDang}` +
+          (tk ? `. Tài khoản Cas thấy: ${tk}` : '')
         : 'Ngân hàng không trả về giao dịch nào trong khoảng thời gian đã hỏi.',
       dangChuY: true,
     };

@@ -79,3 +79,18 @@ describe('hình dạng phản hồi khi rỗng', () => {
     expect(cauKetQuaDongBo([{ fetched: 0 }]).cau).toContain('khoảng thời gian đã hỏi');
   });
 });
+
+describe('tài khoản Cas thấy', () => {
+  it('hiện kèm khi phản hồi rỗng, để biết grant có theo dõi đúng tài khoản', () => {
+    const ra = cauKetQuaDongBo([{
+      fetched: 0, hinhDangPhanHoi: 'requestId, accounts[1], transactions[0]',
+      taiKhoanCasThay: '2002✓',
+    }]);
+    expect(ra.cau).toContain('Tài khoản Cas thấy: 2002✓');
+  });
+
+  it('không có thì không bịa thêm mệnh đề', () => {
+    const ra = cauKetQuaDongBo([{ fetched: 0, hinhDangPhanHoi: 'requestId' }]);
+    expect(ra.cau).not.toContain('Tài khoản Cas thấy');
+  });
+});

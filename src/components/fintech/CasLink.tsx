@@ -326,6 +326,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         skipped?: number;
         khacTaiKhoan?: number;
         hinhDangPhanHoi?: string;
+        taiKhoanCasThay?: string;
         error?: string;
         needsRelink?: boolean;
         action?: string;

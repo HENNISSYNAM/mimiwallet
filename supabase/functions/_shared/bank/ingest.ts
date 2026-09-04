@@ -49,6 +49,8 @@ export interface IngestResult {
   khacTaiKhoan?: number;
   /** Chỉ khi rỗng: tên các trường ở tầng ngoài cùng của phản hồi Cas. */
   hinhDangPhanHoi?: string;
+  /** Chỉ khi rỗng: 4 số cuối các tài khoản Cas trả về, ✓ nếu khớp liên kết. */
+  taiKhoanCasThay?: string;
   directionConvention?: DirectionConvention;
   conventionEvidence?: ConventionReport;
   error?: string;
@@ -251,6 +253,25 @@ export async function ingestConnection(
       ? {
           hinhDangPhanHoi: Object.entries(payload ?? {})
             .map(([k, v]) => (Array.isArray(v) ? `${k}[${v.length}]` : k))
+            .join(', '),
+          /*
+           * Bốn số cuối của từng tài khoản Cas trả về, kèm dấu so với số đang
+           * lưu cho liên kết này.
+           *
+           * Câu hỏi nó trả lời: grant có đang theo dõi ĐÚNG tài khoản đã nhận
+           * tiền không. Nếu Cas biết một tài khoản khác thì sao kê rỗng là hợp
+           * lý, và cách sửa hoàn toàn khác với "Cas chưa thấy giao dịch".
+           *
+           * Chỉ bốn số cuối, đúng như giao diện vẫn hiện — không đưa số tài
+           * khoản đầy đủ ra ngoài chỉ để chẩn đoán.
+           */
+          taiKhoanCasThay: ((payload as { accounts?: Array<{ accountNumber?: string }> })
+            ?.accounts ?? [])
+            .map((a) => {
+              const so = a?.accountNumber ?? '';
+              const duoi = so.slice(-4) || '(trống)';
+              return duoi === (conn.account_number ?? '').slice(-4) ? `${duoi}✓` : `${duoi}✗`;
+            })
             .join(', '),
         }
       : {}),
