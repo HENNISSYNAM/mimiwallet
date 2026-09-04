@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, CreditCard, QrCode } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { QrPayDialog } from '@/components/fintech/QrPayDialog';
 import logoVnpay from '@/assets/logos/pay-vnpay.webp';
 import logoZalopay from '@/assets/logos/pay-zalopay.png';
 import logoMomo from '@/assets/logos/bank-momo.png';
@@ -48,6 +49,22 @@ export default function PaymentMethods() {
   const [tt, setTt] = useState<TrangThai>({
     qrSan: false, qrTen: null, goi: null, hetHan: null, dangTai: true,
   });
+
+  /*
+   * Tạo mã QR cho một số tiền bất kỳ.
+   *
+   * Backend đã cho phép từ đầu — `invoice_id` trong `bank-link?action=create-qr`
+   * là tuỳ chọn. Nhưng `QrPayDialog` trước nay chỉ được gọi từ trang Hoá đơn,
+   * nên muốn nhận tiền thì phải phát hành một hoá đơn trước. Đó là một rào chắn
+   * không ai đặt ra có chủ ý; nó chỉ là chỗ duy nhất từng có người nối dây.
+   */
+  const [moForm, setMoForm] = useState(false);
+  const [soTienChu, setSoTienChu] = useState('');
+  const [noiDung, setNoiDung] = useState('');
+  const [moQr, setMoQr] = useState(false);
+
+  const soTien = Number(soTienChu.replace(/\D/g, '')) || 0;
+  const taoDuoc = soTien > 0 && noiDung.trim().length > 0;
 
   useEffect(() => {
     void (async () => {
@@ -109,6 +126,16 @@ export default function PaymentMethods() {
               ? tt.qrTen
               : 'Chưa liên kết tài khoản nhận tiền QR — làm ở tab Open Banking'
           }
+          hanhDong={
+            tt.qrSan && !tt.dangTai ? (
+              <button
+                onClick={() => setMoForm(true)}
+                className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Tạo mã QR
+              </button>
+            ) : null
+          }
         />
 
         <ThePhuongThuc
@@ -166,12 +193,82 @@ export default function PaymentMethods() {
         này bằng dữ liệu thật là chưa làm được — và một danh sách rỗng còn thật
         hơn ba dòng bịa. Khi có bảng, thêm lại ở đây.
       */}
+
+      {/* Nhập số tiền rồi mới mở hộp thoại. Hai trường này là hai trường backend
+          bắt buộc (`amount`, `description`); không đoán hộ giá trị nào. */}
+      {moForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setMoForm(false)}
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-display text-lg font-bold text-foreground">Tạo mã QR nhận tiền</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Khách quét mã và chuyển thẳng vào tài khoản của bạn. MIMI không giữ tiền.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Số tiền</span>
+                <input
+                  inputMode="numeric"
+                  autoFocus
+                  value={soTienChu}
+                  onChange={(e) => setSoTienChu(e.target.value)}
+                  placeholder="500000"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+                />
+                {soTien > 0 && (
+                  <p className="mt-1.5 font-mono text-xs text-muted-foreground">
+                    ₫{soTien.toLocaleString('vi-VN')}
+                  </p>
+                )}
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Nội dung</span>
+                <input
+                  value={noiDung}
+                  onChange={(e) => setNoiDung(e.target.value)}
+                  placeholder="Thanh toan don hang"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setMoForm(false)}
+                className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground"
+              >
+                Huỷ
+              </button>
+              <button
+                disabled={!taoDuoc}
+                onClick={() => { setMoForm(false); setMoQr(true); }}
+                className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                Tạo mã
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* `invoiceId` bỏ trống: đây là mã cho một khoản thu rời, không gắn hoá
+          đơn nào. Backend đã nhận `invoice_id: null` từ đầu. */}
+      <QrPayDialog
+        open={moQr}
+        onOpenChange={setMoQr}
+        amount={soTien}
+        description={noiDung.trim()}
+      />
     </div>
   );
 }
 
 function ThePhuongThuc({
-  bieuTuong, ten, mo, sanSang, dangTai, chuThich,
+  bieuTuong, ten, mo, sanSang, dangTai, chuThich, hanhDong,
 }: {
   bieuTuong: React.ReactNode;
   ten: string;
@@ -179,6 +276,7 @@ function ThePhuongThuc({
   sanSang: boolean;
   dangTai: boolean;
   chuThich: string | null;
+  hanhDong?: React.ReactNode;
 }) {
   return (
     <motion.div
@@ -210,12 +308,15 @@ function ThePhuongThuc({
             )}
           </div>
         </div>
-        {!dangTai &&
-          (sanSang ? (
-            <Check size={18} className="shrink-0 text-mimi-green" />
-          ) : (
-            <ArrowRight size={16} className="shrink-0 text-muted-foreground" />
-          ))}
+        <div className="flex shrink-0 items-center gap-3">
+          {hanhDong}
+          {!dangTai &&
+            (sanSang ? (
+              <Check size={18} className="text-mimi-green" />
+            ) : (
+              <ArrowRight size={16} className="text-muted-foreground" />
+            ))}
+        </div>
       </div>
     </motion.div>
   );
