@@ -608,8 +608,30 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       } catch (e) {
         setLinking(false);
         const msg = (e as Error)?.message ?? 'Lỗi không xác định';
+
+        /*
+         * Update Mode thất bại thì LUÔN có đúng một đường đi tiếp: liên kết lại
+         * từ đầu. Nói ra ngay, đừng để người dùng đứng trước một nút vừa bấm
+         * xong mà không biết làm gì nữa.
+         *
+         * Quan sát thật 04/09: MBBank VietQR Official trả về "Dịch vụ tài chính
+         * này không hỗ trợ Update Mode". Mã lỗi đi kèm KHÔNG nằm trong bảng
+         * `errors.ts` — bảng có `GRANT_NOT_PERMIT_UPDATE` nhưng Cas dùng mã
+         * khác — nên giao diện hiện nguyên văn của Cas rồi dừng. Đúng hành vi
+         * đã thiết kế cho mã lạ, nhưng vẫn là ngõ cụt.
+         *
+         * Không thêm một dòng vào bảng mã lỗi để chữa, vì lần sau Cas thêm mã
+         * mới thì lại thiếu — đúng bài học của case 7. Thay vào đó đổi quy tắc:
+         * mọi thất bại của Update Mode đều dẫn tới cùng một hành động kế tiếp,
+         * nên gắn ghi chú đó vào đúng liên kết, bất kể mã lỗi là gì.
+         */
+        const goiY =
+          'Không cập nhật được liên kết này. Hãy ngắt rồi liên kết lại từ đầu — ' +
+          'một số ngân hàng không cho phép cập nhật tại chỗ.';
+
+        setBankNotes((prev) => ({ ...prev, [connectionId]: `${msg} ${goiY}` }));
         setLastError(msg);
-        toast.error(msg);
+        toast.error(msg, { description: goiY, duration: 10000 });
       }
     },
     [call, completeLink, loadConnections],
