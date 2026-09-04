@@ -109,8 +109,27 @@ export function cacLoiNhac(dsach: LienKet[]): LoiNhac[] {
  */
 export function phuDe(lk: LienKet, ghiChu?: string): string | null {
   if (ghiChu) return ghiChu;
-  if (lk.status !== 'needs_relink') return null;
-  return laLienKetQr(lk)
-    ? 'Liên kết nhận tiền QR đã hỏng — cần tạo lại'
-    : 'Ngân hàng yêu cầu đăng nhập lại';
+
+  if (lk.status === 'needs_relink') {
+    return laLienKetQr(lk)
+      ? 'Liên kết nhận tiền QR đã hỏng — cần tạo lại'
+      : 'Ngân hàng yêu cầu đăng nhập lại';
+  }
+
+  /*
+   * Liên kết QR đang tốt phải tự nói nó là gì.
+   *
+   * Trả `null` ở đây thì giao diện rơi xuống câu dự phòng *"Chưa đồng bộ lần
+   * nào"* — và câu đó gợi ý một việc đang chờ, trong khi grant `qrpay` **không
+   * bao giờ** có sao kê để đồng bộ. Nó sẽ đứng ở "chưa đồng bộ" vĩnh viễn, và
+   * người dùng chờ một chuyện không đời nào xảy ra.
+   *
+   * Đây đúng là họ lỗi đã gỡ hai lần trong hai ngày: màn hình mô tả trạng thái
+   * bằng một phép đo không áp dụng cho dòng đó. Xem `_shared/bank/dong-bo.ts`.
+   */
+  if (lk.status === 'connected' && laLienKetQr(lk)) {
+    return 'Sẵn sàng nhận tiền QR · không có sao kê để đồng bộ';
+  }
+
+  return null;
 }

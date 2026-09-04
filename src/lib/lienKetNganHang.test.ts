@@ -108,6 +108,20 @@ describe('phuDe — ghi chú cụ thể phải thắng câu chung', () => {
     expect(phuDe(lk())).toBeNull();
   });
 
+  it('liên kết QR đang tốt phải tự nói nó là gì, không để rơi vào "chưa đồng bộ"', () => {
+    // Hồi quy cho chuyện thấy trên màn hình 04/09: dòng QR đã xanh nhưng phụ đề
+    // là "Chưa đồng bộ lần nào" — gợi ý một việc đang chờ, trong khi grant
+    // `qrpay` không bao giờ có sao kê để đồng bộ. Nó sẽ đứng ở đó vĩnh viễn.
+    const ra = phuDe(lk({ status: 'connected', scopes: 'qrpay' }));
+    expect(ra).toContain('Sẵn sàng nhận tiền QR');
+    expect(ra).not.toContain('Chưa đồng bộ');
+  });
+
+  it('ghi chú thật vẫn thắng câu chung của liên kết QR đang tốt', () => {
+    expect(phuDe(lk({ status: 'connected', scopes: 'qrpay' }), 'Ngân hàng đang bảo trì'))
+      .toBe('Ngân hàng đang bảo trì');
+  });
+
   it('liên kết đang tốt nhưng có ghi chú thì vẫn hiện ghi chú', () => {
     // Đây là ca "đồng bộ lỗi nhưng chưa tới mức phải liên kết lại" — ghi chú
     // hổ phách phải bám lại, đúng như bản vá case 7.

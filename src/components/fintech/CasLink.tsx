@@ -6,7 +6,7 @@ import {
 import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-import { cachSua, cacLoiNhac, phuDe } from '@/lib/lienKetNganHang';
+import { cachSua, cacLoiNhac, laLienKetQr, phuDe } from '@/lib/lienKetNganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 
@@ -932,7 +932,10 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       Liên kết lại
                     </button>
                   )}
-                  {c.status === 'connected' && (
+                  {/* Khong hien nut Dong bo cho lien ket QR: grant `qrpay` khong
+                      co scope `transaction`, nen bam vao khong bao gio ra giao
+                      dich nao. Mot nut khong lam gi ca la mot nut noi doi. */}
+                  {c.status === 'connected' && !laLienKetQr(c) && (
                     <button
                       onClick={() => runSync(c.id)}
                       disabled={syncing !== null}
