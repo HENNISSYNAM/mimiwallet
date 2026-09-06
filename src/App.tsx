@@ -46,6 +46,7 @@ const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
 const P2PLendingPage = lazy(() => import("./pages/P2PLendingPage"));
+const ThuongHieu = lazy(() => import("./pages/ThuongHieu"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CreditScoringPage = lazy(() => import("./pages/CreditScoringPage"));
@@ -104,6 +105,9 @@ const App = () => (
               <Route path="/about" element={<Page path="/about" title="Về chúng tôi — MIMI WALLET" description="Câu chuyện và đội ngũ đứng sau MIMI Wallet: đưa hộ kinh doanh Việt Nam ra khỏi vùng vô hình với ngân hàng."><About /></Page>} />
               {/* Công khai, không nằm sau đăng nhập — App Store yêu cầu
                   Privacy Policy URL truy cập được mà không cần tài khoản. */}
+              {/* Bộ nhận diện — công khai, không nằm sau đăng nhập: người thiết kế
+                  và người viết nội dung phải mở được mà không cần tài khoản. */}
+              <Route path="/thuong-hieu" element={<Page path="/thuong-hieu" title="Bộ nhận diện — MIMI WALLET" description="Màu, chữ, và quy tắc viết tiếng Việt của MIMI Wallet. Trang đọc thẳng token đang chạy nên không lệch khỏi sản phẩm."><ThuongHieu /></Page>} />
               <Route path="/privacy" element={<Page path="/privacy" title="Chính sách bảo mật — MIMI WALLET" description="Cách MIMI Wallet thu thập, lưu trữ và bảo vệ dữ liệu tài chính của doanh nghiệp bạn, cùng quyền của bạn với dữ liệu đó."><Privacy /></Page>} />
               <Route path="/terms" element={<Page path="/terms" title="Điều khoản sử dụng — MIMI WALLET" description="Điều khoản và điều kiện khi sử dụng dịch vụ MIMI Wallet: quyền, nghĩa vụ và giới hạn trách nhiệm của các bên."><Terms /></Page>} />
               <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, khoản vay và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
