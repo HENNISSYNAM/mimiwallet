@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { CalendarClock } from 'lucide-react';
+import { kyKeKhaiKeTiep, mucKhan } from '@/lib/hanKeKhai';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -91,6 +93,14 @@ export default function BatDauTuDau() {
 
   const xong = soBuocXong(buocs);
 
+  /*
+   * Hạn kê khai là thứ duy nhất trong sản phẩm có đồng hồ đang chạy: mọi việc
+   * khác làm hôm nay hay tuần sau cũng thế, riêng cái này trễ là bị phạt.
+   * Tính một lần cho mỗi lần vẽ — không cần bộ đếm, vì đơn vị là ngày.
+   */
+  const ky = kyKeKhaiKeTiep();
+  const khan = mucKhan(ky.conLai);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -107,7 +117,26 @@ export default function BatDauTuDau() {
 
       <div className="pr-10">
         <h3 className="font-semibold text-foreground">Bắt đầu từ đâu</h3>
+        {/*
+          NÓI VÌ SAO TRƯỚC KHI NÓI LÀM GÌ.
+          Bản trước mở đầu bằng "2/3 bước" — đúng nhưng vô nghĩa với người vừa
+          mở app lần đầu: họ chưa biết MIMI để làm gì, nên một thanh tiến độ chỉ
+          là một việc vặt không rõ mục đích. Một câu về việc cần làm và một hạn
+          có thật cho biết vì sao nên bấm tiếp.
+        */}
         <p className="text-sm text-muted-foreground mt-0.5">
+          Nối tài khoản ngân hàng, MIMI đọc sao kê và dựng sẵn bộ chi phí cho kỳ kê khai.
+        </p>
+        <p className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${
+          khan === 'gap'
+            ? 'bg-destructive/10 text-destructive'
+            : khan === 'sap_toi'
+              ? 'bg-mimi-amber/12 text-mimi-amber'
+              : 'bg-muted text-muted-foreground'
+        }`}>
+          <CalendarClock size={13} /> {ky.cau}
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
           {xong}/{buocs.length} bước — các bước tự đánh dấu khi bạn làm xong, không cần bấm.
         </p>
       </div>
