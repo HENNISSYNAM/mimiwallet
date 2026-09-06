@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { taoChuoiVietQr } from '@/lib/vietqr';
 import { formatVND } from '@/lib/formatters';
 import { toast } from 'sonner';
-import { Loader2, Copy, Check, Building2, Landmark, Hash } from 'lucide-react';
+import { Loader2, Copy, Check, Building2, Landmark, Hash, CreditCard, ExternalLink } from 'lucide-react';
+import { duongDanMuaGoi } from '@/lib/lienKetStripe';
 
 /**
  * Màn hình trả phí bằng chuyển khoản.
@@ -198,6 +199,63 @@ export function SubscriptionPayment({ plan, onPaid }: { plan: string; onPaid?: (
         thuê bao kích hoạt tự động trong vài phút. Màn hình này tự cập nhật, bạn không
         cần làm gì thêm.
       </p>
+
+      {/* Truyền `reference_code` chứ không phải id công ty: nó đã là khoá đối
+          soát của đường chuyển khoản, nên một mã dùng chung cho cả hai đường
+          thu tiền — không phải dựng thêm cách khớp thứ hai. */}
+      <TheThe maThamChieu={hoaDon.reference_code} />
     </motion.div>
+  );
+}
+
+/**
+ * Lối trả bằng thẻ quốc tế, đặt DƯỚI đường chuyển khoản chứ không thay nó.
+ *
+ * Stripe không nhận merchant Việt Nam — đó là lý do đường Stripe cũ bị gỡ và
+ * thay bằng VietQR (xem ghi chú đầu file). Lối này giữ cho hai việc: trình diễn
+ * và khách nước ngoài trả bằng thẻ.
+ *
+ * Khi link đang ở chế độ thử, khối này NÓI RA. Một nút thu tiền ở chế độ thử mà
+ * trông y hệt nút thật là loại lỗi im lặng tệ nhất.
+ */
+function TheThe({ maThamChieu }: { maThamChieu: string | null }) {
+  const lk = duongDanMuaGoi(maThamChieu);
+  if (!lk.bat || !lk.duongDan) return null;
+
+  return (
+    <div className="rounded-xl border border-border/60 p-4">
+      <div className="flex items-start gap-3">
+        <CreditCard size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">Hoặc trả bằng thẻ quốc tế</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Visa, Mastercard qua Stripe. Dành cho khách ở nước ngoài.
+          </p>
+
+          {lk.cheDoThu && (
+            <p className="mt-2 rounded-lg bg-mimi-amber/10 px-2.5 py-1.5 text-xs text-mimi-amber">
+              <strong>Đang ở chế độ thử.</strong> Cổng này nhận thẻ test và không thu tiền
+              thật — dùng để trình diễn. Muốn thu tiền thật thì thay bằng link chế độ live
+              trong <code className="font-mono">lib/lienKetStripe.ts</code>.
+            </p>
+          )}
+
+          {!maThamChieu && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Trả bằng đường này thì thuê bao chưa tự kích hoạt — cần đối chiếu tay.
+            </p>
+          )}
+
+          <a
+            href={lk.duongDan}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+          >
+            Mở trang thanh toán <ExternalLink size={12} />
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
