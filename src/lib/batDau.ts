@@ -69,14 +69,29 @@ export function dungCacBuoc(t: TinhTrang): Buoc[] {
       xong: t.soGiaoDich > 0,
       moKhoa: daLienKet,
     },
-    {
-      ma: 'them_khach_hang',
-      tieuDe: 'Thêm khách hàng vào danh bạ',
-      moTa: 'Có danh bạ thì MIMI khớp được tiền khách trả với hoá đơn, và tra được trạng thái thuế của họ.',
-      duongDan: '/dashboard/clients',
-      xong: t.soKhachHang > 0,
-      moKhoa: daLienKet,
-    },
+    /*
+     * BỎ BƯỚC "Thêm khách hàng vào danh bạ" ngày 04/09/2026.
+     *
+     * Hai lý do, lý do thứ hai quan trọng hơn:
+     *
+     * 1. NÓ LÀ NGÕ CỤT. `ClientsPage` chỉ có `.update()` — tra cứu thuế và đổi
+     *    trạng thái. Không một dòng `.insert()` nào trong toàn bộ mã ghi vào
+     *    bảng `clients`; hai danh sách khách hiện có vào được là nhờ nạp thẳng
+     *    bằng script. Người dùng mới bấm mũi tên sẽ tới một trang trống không
+     *    có nút nào, và bước này không bao giờ tick được.
+     *
+     *    Cùng họ với vụ mã QR: đường đi có tồn tại, nhưng không tới được đích.
+     *    Khác ở chỗ vụ QR là tính năng chạy được mà thiếu lối vào — còn ở đây
+     *    tính năng chưa hề tồn tại, và chính checklist dẫn người ta tới.
+     *
+     * 2. NÓ KHÔNG PHẢI VẤN ĐỀ CỦA KHÁCH. Việc khách cần là chứng minh CHI PHÍ
+     *    để chọn được cách tính thuế. Danh bạ khách hàng nằm ở phía doanh thu.
+     *    Dựng form thêm khách sẽ gỡ được ngõ cụt, nhưng là gỡ bằng cách xây
+     *    thêm một thứ không giải quyết vấn đề chính.
+     *
+     * Bảng và trang giữ nguyên — hoá đơn và tra cứu mã số thuế vẫn dùng. Chỉ
+     * bỏ khỏi checklist, vì checklist là thứ định nghĩa "làm gì trước".
+     */
   ];
 }
 

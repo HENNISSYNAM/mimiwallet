@@ -28,22 +28,33 @@ describe('bước chỉ xanh khi dữ liệu thật nói vậy', () => {
 
   it('liên kết đã ngắt không tính — soLienKet chỉ đếm liên kết đang hoạt động', () => {
     // Nơi gọi phải lọc `status != disconnected` trước khi truyền vào đây.
-    expect(dungCacBuoc(tt({ soLienKet: 0 })).map((b) => b.xong)).toEqual([false, false, false]);
+    expect(dungCacBuoc(tt({ soLienKet: 0 })).map((b) => b.xong)).toEqual([false, false]);
   });
 
-  it('xong hết khi cả ba điều kiện đều thật', () => {
-    const bs = dungCacBuoc(tt({ soLienKet: 1, soGiaoDich: 42, soKhachHang: 3 }));
+  it('xong hết khi cả hai điều kiện đều thật', () => {
+    // Từng là ba bước. Bước "Thêm khách hàng" bỏ ngày 04/09 vì nó là ngõ cụt —
+    // không nơi nào trong mã ghi vào bảng `clients` — và vì danh bạ khách hàng
+    // nằm ở phía doanh thu, trong khi việc khách cần là chứng minh chi phí.
+    const bs = dungCacBuoc(tt({ soLienKet: 1, soGiaoDich: 42 }));
     expect(xongHet(bs)).toBe(true);
-    expect(soBuocXong(bs)).toBe(3);
+    expect(soBuocXong(bs)).toBe(2);
+  });
+
+  it('không còn bước nào trỏ vào trang không thêm được dữ liệu', () => {
+    // Hồi quy cho chính ngõ cụt đó: checklist chỉ được chứa bước mà người dùng
+    // thật sự làm xong được bằng giao diện.
+    expect(dungCacBuoc(tt()).map((b) => b.ma)).not.toContain('them_khach_hang');
   });
 });
 
 describe('khoá bước chưa làm được', () => {
-  it('chưa liên kết ngân hàng thì hai bước sau bị khoá', () => {
+  it('chưa liên kết ngân hàng thì bước sau bị khoá', () => {
     const bs = dungCacBuoc(tt());
     expect(bs[0].moKhoa).toBe(true);
-    expect(bs[1].moKhoa).toBe(false);
-    expect(bs[2].moKhoa).toBe(false);
+    // Mọi bước sau bước liên kết đều khoá — viết theo số bước thật thay vì
+    // liệt kê chỉ số, để bỏ hay thêm bước không làm test này sai lặng lẽ.
+    expect(bs.slice(1).every((b) => !b.moKhoa)).toBe(true);
+    expect(bs.length).toBeGreaterThan(1);
   });
 
   it('liên kết xong thì mở khoá phần còn lại', () => {
@@ -65,9 +76,9 @@ describe('buocTiepTheo — chỉ trỏ vào thứ bấm được', () => {
     expect(buocTiepTheo(dungCacBuoc(tt()))!.ma).toBe('lien_ket_ngan_hang');
   });
 
-  it('bỏ qua bước đã xong, sang bước kế tiếp đã mở khoá', () => {
+  it('bỏ qua bước đã xong; hết bước thì trả null', () => {
     const bs = dungCacBuoc(tt({ soLienKet: 1, soGiaoDich: 5 }));
-    expect(buocTiepTheo(bs)!.ma).toBe('them_khach_hang');
+    expect(buocTiepTheo(bs)).toBeNull();
   });
 
   it('không bao giờ trỏ vào bước đang khoá', () => {
@@ -76,7 +87,7 @@ describe('buocTiepTheo — chỉ trỏ vào thứ bấm được', () => {
   });
 
   it('xong hết thì trả null để giao diện ẩn hẳn thẻ', () => {
-    const bs = dungCacBuoc(tt({ soLienKet: 2, soGiaoDich: 100, soKhachHang: 68 }));
+    const bs = dungCacBuoc(tt({ soLienKet: 2, soGiaoDich: 100 }));
     expect(buocTiepTheo(bs)).toBeNull();
   });
 });
