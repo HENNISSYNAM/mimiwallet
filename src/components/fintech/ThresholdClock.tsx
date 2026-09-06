@@ -6,6 +6,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 import { Coin, Chest } from '@/components/illustrations/GamifyObjects';
 import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
+import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 
 /**
  * The two revenue milestones a Vietnamese household business meets, and where
@@ -314,6 +315,19 @@ export function ThresholdClock() {
       <p className="mt-4 text-[11px] text-muted-foreground border-t border-border/50 pt-2">
         {data.disclaimer}
       </p>
+
+      {/*
+        Đặt ngay dưới các mốc doanh thu, vì đó là câu hỏi kế tiếp của người vừa
+        đọc xong "tôi đang ở đâu": *vậy tôi nên tính theo cách nào?*
+
+        Dùng `data.revenue` sẵn có thay vì gọi lại `tax-summary` — một lần gọi,
+        hai câu trả lời.
+      */}
+      {data.revenue > 0 && (
+        <div className="mt-4">
+          <ChonCachTinhThue doanhThu={data.revenue} />
+        </div>
+      )}
     </div>
   );
 }

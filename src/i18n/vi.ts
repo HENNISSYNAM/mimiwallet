@@ -269,7 +269,7 @@ const vi = {
     totalBalance: 'Tổng số dư',
     monthlyRevenue: 'Doanh thu tháng này',
     pendingInvoices: 'Hóa đơn chờ thanh toán',
-    creditScoreLabel: 'MIMI Credit Score',
+    creditScoreLabel: 'Điểm tín dụng MIMI',
     progress: 'Tiến độ',
     invoicesActive: 'hóa đơn đang hoạt động',
     invoicesDue: 'hóa đơn sắp đến hạn',
