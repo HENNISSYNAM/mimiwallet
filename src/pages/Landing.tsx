@@ -1132,9 +1132,9 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-14">
             <span className="text-xs text-primary font-mono uppercase tracking-widest">Bằng chứng vận hành</span>
-            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Đã chạy thật, không phải mô phỏng</h2>
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Số này lấy từ hệ thống đang chạy</h2>
             <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-              Kết quả mô hình chấm điểm trả về cho doanh nghiệp mẫu, tính trực tiếp trên hạ tầng production từ 12 tháng dữ liệu giao dịch.
+              Mô hình chấm điểm tính cho một doanh nghiệp mẫu, từ 12 tháng giao dịch, trên đúng máy chủ đang phục vụ khách.
             </p>
           </motion.div>
 
@@ -1142,7 +1142,11 @@ export default function Landing() {
             {[
               { icon: ScoringBolt, value: '701', unit: '/ 850', label: 'Điểm tín dụng', note: 'Hạng B — Tốt' },
               { icon: CashflowChart, value: '34,1', unit: '%', label: 'Xác suất vỡ nợ (PD)', note: 'Hồi quy logistic' },
-              { icon: CapitalVault, value: '1,36', unit: ' tỷ ₫', label: 'Hạn mức khả dụng', note: 'Do mô hình đề xuất' },
+              /* Bỏ "Hạn mức khả dụng 1,36 tỷ": đọc lên nghe như một khoản vay đã được
+                 duyệt, trong khi MIMI không có giấy phép tín dụng và không có đối tác
+                 giải ngân — chính lý do mục "Vay vốn" bị gỡ khỏi thanh điều hướng
+                 ngày 17/08/2026. Chữ trên trang chủ khi đó không được sửa theo. */
+              { icon: CapitalVault, value: '12', unit: ' tháng', label: 'Dữ liệu dùng để chấm', note: 'Sao kê thật của doanh nghiệp' },
             ].map((m, i) => (
               <motion.div
                 key={m.label}
@@ -1167,7 +1171,7 @@ export default function Landing() {
           </div>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Số liệu từ tài khoản demo trên hạ tầng production — mở ứng dụng để tự tính lại.
+            Lấy từ tài khoản demo. Mở ứng dụng là tự tính lại được.
           </p>
         </div>
       </section>
@@ -1183,8 +1187,8 @@ export default function Landing() {
         </div>
         <div className="relative z-10 container mx-auto px-4 text-center max-w-2xl">
           <motion.div {...fadeUp(0)}>
-            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mb-4">Sẵn sàng tăng tốc dòng tiền?</h2>
-            <p className="text-muted-foreground text-lg mb-10">Đăng ký miễn phí — không cần thẻ tín dụng, setup trong 5 phút</p>
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mb-4">Mở tài khoản</h2>
+            <p className="text-muted-foreground text-lg mb-10">Miễn phí, không cần thẻ. Nối ngân hàng xong là dùng được.</p>
           </motion.div>
           {ctaSubmitted ? (
             <motion.div {...fadeUp(0)} className="bg-card border border-mimi-green/30 rounded-2xl p-8">

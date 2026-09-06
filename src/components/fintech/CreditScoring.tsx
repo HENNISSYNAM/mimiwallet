@@ -294,7 +294,7 @@ export default function CreditScoring() {
               <span className={`font-bold ${color}`}>{grade}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Hạn mức khả dụng</span>
+              <span className="text-muted-foreground">Hạn mức mô hình ước tính</span>
               <span className="font-mono font-bold text-foreground">{formatVNDShort(snapshot.credit_limit)}</span>
             </div>
             <div className="flex justify-between text-sm">

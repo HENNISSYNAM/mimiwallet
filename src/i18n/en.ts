@@ -69,17 +69,17 @@ const en = {
         detail: 'Machine learning processes in ~3 seconds',
       },
       {
-        title: 'Get funded in 24h',
+        title: 'File the return',
         desc: 'Capital transferred to your account within 24 hours',
-        detail: 'From ₫100M to ₫10 billion, no collateral',
+        detail: 'Compare both methods, pick the cheaper one',
       },
     ],
     riskLevel: 'Low',
-    disbursedAmount: 'Disbursed amount',
+    disbursedAmount: 'Costs recorded',
     disbursedSuccess: '✓ Successfully transferred',
     reviewDocs: 'Document review',
     signContract: 'E-contract signing',
-    disburse: 'Disbursement',
+    disburse: 'Export return',
   },
 
   // Solutions

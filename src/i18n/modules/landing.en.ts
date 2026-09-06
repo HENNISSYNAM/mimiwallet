@@ -36,18 +36,18 @@ const m = {
       goToStep: 'Go to step {{num}}: {{title}}',
       step1Tags: ['Vietcombank', 'BIDV', 'MISA', 'Shopee'],
       step2Tags: ['Credit Score', 'Cash Flow', 'Risk'],
-      step3Tags: ['₫100M — ₫10B', '24h'],
+      // Dropped: MIMI does not lend and does not disburse. See vi.ts.
+      step3Tags: ['Documented costs', 'Two tax methods'],
       bankDemo: ['Vietcombank', 'BIDV', 'Techcombank', 'VPBank'],
       aiMetrics: [
         { label: 'Credit Score', value: '701' },
         { label: 'Risk Level', value: 'Low' },
         { label: 'Cash Flow', value: '+15.5%' },
-        { label: 'Approval', value: '98%' },
       ],
       timeline: [
         { step: 'Document review', time: '2 hours' },
         { step: 'E-contract signing', time: '30 minutes' },
-        { step: 'Disbursement', time: '4 hours' },
+        { step: 'Export return', time: 'end of period' },
       ],
     },
     solutions: {

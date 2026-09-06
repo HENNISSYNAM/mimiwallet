@@ -69,28 +69,37 @@ const vi = {
     subtitle: 'Quy trình tự động hoàn toàn, không giấy tờ, không phỏng vấn',
     step: 'Bước',
     steps: [
+      /*
+       * Ba bước này từng kết thúc bằng "Nhận vốn 24h — từ ₫100M đến ₫10 tỷ".
+       * Ngày 17/08/2026 mục "Vay vốn" đã bị gỡ khỏi thanh điều hướng vì MIMI
+       * không có giấy phép tín dụng và không có đối tác giải ngân — nhưng chữ
+       * trên trang chủ thì ở lại, nên trang vẫn hứa tiền suốt từ đó.
+       *
+       * Bước ba nay nói đúng thứ MIMI làm được: dựng bộ chứng từ chi phí để
+       * người dùng tự chọn cách tính thuế. Không hứa ai sẽ cho vay.
+       */
       {
-        title: 'Kết nối dữ liệu',
-        desc: 'Liên kết ngân hàng & kế toán trong 5 phút',
-        detail: 'API bảo mật kết nối trực tiếp với 40+ ngân hàng VN',
+        title: 'Nối tài khoản',
+        desc: 'Liên kết ngân hàng, MIMI đọc sao kê',
+        detail: 'Chỉ đọc, không chuyển được tiền',
       },
       {
-        title: 'AI phân tích',
-        desc: '200+ điểm dữ liệu, chấm điểm tín dụng real-time',
-        detail: 'Machine learning xử lý trong ~3 giây',
+        title: 'Tách chi phí',
+        desc: 'Mỗi khoản chi được gắn đúng loại',
+        detail: 'Bạn xác nhận một lần, lần sau MIMI tự áp',
       },
       {
-        title: 'Nhận vốn 24h',
-        desc: 'Vốn chuyển vào tài khoản trong 24 giờ',
-        detail: 'Từ ₫100M đến ₫10 tỷ, không thế chấp',
+        title: 'Kê khai',
+        desc: 'Bộ chứng từ sẵn cho kỳ thuế',
+        detail: 'So sánh hai cách tính, chọn cách có lợi',
       },
     ],
     riskLevel: 'Thấp',
-    disbursedAmount: 'Số tiền giải ngân',
-    disbursedSuccess: '✓ Đã chuyển thành công',
-    reviewDocs: 'Duyệt hồ sơ',
-    signContract: 'Ký hợp đồng điện tử',
-    disburse: 'Giải ngân',
+    disbursedAmount: 'Chi phí đã ghi nhận',
+    disbursedSuccess: '✓ Đã đối chiếu xong',
+    reviewDocs: 'Đọc sao kê',
+    signContract: 'Phân loại chi phí',
+    disburse: 'Kết xuất tờ khai',
   },
 
   /*

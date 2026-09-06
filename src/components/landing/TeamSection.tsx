@@ -96,7 +96,7 @@ export default function TeamSection() {
             style={{ fontSize: 'clamp(2rem, 3.4vw, 3rem)' }}
           >
             Bốn người, bốn trường,
-            <br className="hidden sm:block" /> một sản phẩm đang chạy thật
+            <br className="hidden sm:block" /> một sản phẩm đang có người dùng
           </h2>
           <p className="mt-5 text-muted-foreground text-lg leading-relaxed">
             Hai thành viên kỹ thuật đủ để xây và vận hành sản phẩm, hai thành viên kinh doanh và
