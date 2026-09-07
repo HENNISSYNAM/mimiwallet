@@ -751,10 +751,30 @@ Deno.serve(async (req) => {
        * "đã dọn xong" là đúng loại nói quá đã đi gỡ cả tuần.
        */
       case "thu-hoi-grant-cu": {
+        /*
+         * MỌI CÔNG TY CỦA NGƯỜI DÙNG NÀY, không chỉ công ty đang mở.
+         *
+         * Bản đầu lọc `company_id = công ty đang đăng nhập` và trả về "thu hồi
+         * được 0" — trong khi liên kết `qrpay` đã ngắt cần thu hồi lại nằm ở
+         * một công ty khác của cùng người dùng, đúng như nhật ký webhook đã
+         * chỉ ra. Hàm dọn hẹp hơn phạm vi của thứ cần dọn thì nó chỉ báo cáo
+         * sạch sẽ chứ không dọn gì.
+         *
+         * Grant gắn với tài khoản ngân hàng của CON NGƯỜI này, không gắn với
+         * pháp nhân nào trong số các công ty họ tạo ra để thử. Quyền thu hồi
+         * theo người là đúng phạm vi; RLS vẫn chặn công ty của người khác vì
+         * danh sách công ty lấy theo `user_id`.
+         */
+        const { data: cacCty } = await supabase
+          .from("companies")
+          .select("id")
+          .eq("user_id", user.id);
+        const idCty = (cacCty ?? []).map((c: { id: string }) => c.id);
+
         const { data: cu } = await supabase
           .from("bank_connections")
           .select("id, bank_name, scopes, status, access_token_enc")
-          .eq("company_id", company.id)
+          .in("company_id", idCty.length ? idCty : [company.id])
           .eq("provider", "bankhub")
           .in("status", ["disconnected", "needs_relink"]);
 
