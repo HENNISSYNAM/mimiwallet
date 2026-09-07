@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { bankhubConfigFromEnv } from "../_shared/bank/bankhub.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
+import { coSaoKeDeDoc } from "../_shared/bank/dong-bo.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 /**
@@ -332,7 +333,20 @@ Deno.serve(async (req) => {
         .eq("id", conn.id);
       outcomes.push(`${conn.id}:restored+${result.inserted}`);
     } else {
-      outcomes.push(`${conn.id}:alive+${result.inserted}`);
+      /*
+       * PHÂN BIỆT "KHÔNG CÓ GÌ" VỚI "KHÔNG HỎI".
+       *
+       * `alive+0` trước nay gộp hai chuyện khác hẳn nhau:
+       *   - Đã hỏi Cas, Cas trả về không giao dịch nào.
+       *   - Không hỏi Cas, vì đây là liên kết `qrpay` không có sao kê để đọc
+       *     (`coSaoKeDeDoc` trong `_shared/bank/dong-bo.ts`).
+       *
+       * Hai ca đó dẫn tới hai kết luận trái ngược — một cái là "Casso không có
+       * dữ liệu", cái kia là "mình cố ý bỏ qua". Ngày 07/09 chính sự mơ hồ này
+       * suýt làm đọc sai một dòng nhật ký thành bằng chứng chống lại đối tác.
+       */
+      const nhan = coSaoKeDeDoc(conn) ? `alive+${result.inserted}` : "alive:khong-co-sao-ke";
+      outcomes.push(`${conn.id}:${nhan}`);
     }
   }
 
