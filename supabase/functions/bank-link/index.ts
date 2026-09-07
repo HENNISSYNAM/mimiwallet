@@ -704,7 +704,19 @@ Deno.serve(async (req) => {
           .not("grant_id", "is", null);
         const grantIds = (cons ?? []).map((c: { grant_id: string }) => c.grant_id);
 
-        const tuLuc = new Date(Date.now() - 24 * 3600_000).toISOString();
+        /*
+         * 30 ngày, không phải 24 giờ.
+         *
+         * Bản đầu để 24 giờ và nó tự phá hỏng mục đích của chính mình: khoản
+         * thanh toán QR đang điều tra xảy ra tối 04/09, mở nhật ký ngày 06/09
+         * thì envelope tương ứng đã rơi ra ngoài cửa sổ — bảng hiện trống, và
+         * cái trống đó bị đọc thành "Casso không gửi gì".
+         *
+         * Một công cụ chẩn đoán mà cửa sổ hẹp hơn khoảng thời gian cần chẩn
+         * đoán thì tệ hơn không có: nó tạo ra một câu trả lời sai trông như câu
+         * trả lời đúng.
+         */
+        const tuLuc = new Date(Date.now() - 30 * 86_400_000).toISOString();
         let q = supabase
           .from("webhook_events")
           .select("id, received_at, event_type, event_code, grant_id, outcome, note")

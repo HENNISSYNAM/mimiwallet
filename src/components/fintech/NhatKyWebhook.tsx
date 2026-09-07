@@ -123,11 +123,30 @@ export function NhatKyWebhook() {
              * Danh sách rỗng là một câu trả lời, không phải một chỗ trống. Nói
              * thẳng nó nghĩa là gì để người đọc biết phải đi hỏi ai tiếp.
              */
-            <p className="text-sm text-muted-foreground">
-              Chưa có envelope nào. Nếu bạn vừa nhận tiền qua mã QR mà ở đây trống, nghĩa là
-              Casso chưa đẩy sự kiện sang — đây là lúc hỏi phía Casso, không phải lỗi cấu hình
-              bên mình.
-            </p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Chưa có envelope nào trong 30 ngày qua.</p>
+              {/*
+                KHÔNG KẾT LUẬN HỘ. Bản đầu của câu này viết thẳng "nghĩa là Casso
+                chưa đẩy sự kiện sang" — một suy luận vượt quá dữ liệu, và nguy
+                hiểm vì nó được dùng để đi nói với đối tác. Bảng trống chỉ nói
+                được đúng một điều: không có gì được ghi lại. Vì sao thì còn ít
+                nhất ba khả năng, và người đọc phải thấy cả ba.
+              */}
+              <p>Có ba khả năng, chưa loại trừ được cái nào chỉ bằng màn hình này:</p>
+              <ul className="ml-4 list-disc space-y-1">
+                <li>Casso chưa đẩy sự kiện sang.</li>
+                <li>
+                  Có đẩy nhưng không tới được endpoint — sai khoá, sai đường dẫn, hoặc bị chặn
+                  trước khi vào tới đây.
+                </li>
+                <li>Sự kiện xảy ra trước 30 ngày.</li>
+              </ul>
+              <p>
+                Muốn phân biệt thì đối chiếu với <strong className="text-foreground">Logs</strong> trong
+                console Casso: nếu bên đó có bản ghi gửi đi mà bên này trống, vấn đề nằm ở đường
+                truyền chứ không ở việc họ có gửi hay không.
+              </p>
+            </div>
           )}
 
           {!loi && dsach && dsach.length > 0 && (
