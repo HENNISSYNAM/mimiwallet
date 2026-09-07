@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronDown, RefreshCw, Radio } from 'lucide-react';
+import { ChevronDown, RefreshCw, Radio, Eraser } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 
@@ -71,6 +71,8 @@ export function NhatKyWebhook() {
   const [tenLienKet, setTenLienKet] = useState<Record<string, string>>({});
   const [dangTai, setDangTai] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  const [dangDon, setDangDon] = useState(false);
+  const [ketQuaDon, setKetQuaDon] = useState<string | null>(null);
 
   const tai = useCallback(async () => {
     if (!session?.access_token) return;
@@ -100,6 +102,44 @@ export function NhatKyWebhook() {
   useEffect(() => {
     if (mo && dsach === null) void tai();
   }, [mo, dsach, tai]);
+
+  /*
+   * Thu hồi grant cũ ở phía Cas.
+   *
+   * Nút này tồn tại vì một lỗi cụ thể: đoạn tự-ngắt ngày 04/09 đánh dấu liên
+   * kết đã ngắt mà không gọi `/grant/remove`, nên grant vẫn sống bên Casso và
+   * họ gửi webhook mãi. Quan trọng hơn tiếng ồn: quyền truy cập tài khoản ngân
+   * hàng của khách vẫn còn hiệu lực mà không ai quản.
+   */
+  const donGrant = useCallback(async () => {
+    if (!session?.access_token) return;
+    setDangDon(true);
+    setKetQuaDon(null);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/bank-link?action=thu-hoi-grant-cu`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: '{}',
+      });
+      const kq = await res.json();
+      if (!res.ok || kq?.error) throw new Error(kq?.error ?? `Lỗi ${res.status}`);
+      // Ba con số tách bạch, không gộp thành "đã dọn xong".
+      setKetQuaDon(
+        `Thu hồi được ${kq.thuHoiDuoc}. Hỏng ${kq.hong}. ` +
+        `${kq.khongConToken} liên kết đã mất token nên không thu hồi được từ đây — ` +
+        'cần Casso gỡ hộ, hoặc khách thu hồi trong app Cas ID.',
+      );
+      void tai();
+    } catch (e) {
+      setKetQuaDon(e instanceof Error ? e.message : 'Không thu hồi được');
+    } finally {
+      setDangDon(false);
+    }
+  }, [session, tai]);
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/40">
@@ -135,6 +175,23 @@ export function NhatKyWebhook() {
             >
               <RefreshCw size={12} className={dangTai ? 'animate-spin' : ''} /> Tải lại
             </button>
+          </div>
+
+          <div className="mb-3 rounded-xl border border-border/60 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Liên kết đã ngắt mà chưa thu hồi ở Casso vẫn nhận webhook, và quyền đọc tài
+                khoản ngân hàng vẫn còn hiệu lực.
+              </p>
+              <button
+                onClick={() => void donGrant()}
+                disabled={dangDon}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs disabled:opacity-50"
+              >
+                <Eraser size={12} className={dangDon ? 'animate-pulse' : ''} /> Thu hồi grant cũ
+              </button>
+            </div>
+            {ketQuaDon && <p className="mt-2 text-xs text-foreground/80">{ketQuaDon}</p>}
           </div>
 
           {loi && <p className="text-sm text-destructive">{loi}</p>}

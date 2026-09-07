@@ -736,6 +736,60 @@ Deno.serve(async (req) => {
        * thô: nó có thể chứa dữ liệu tài khoản, mà câu hỏi ở đây chỉ là có/không
        * và vì sao.
        */
+      /*
+       * Thu hồi những grant cũ còn thu hồi được.
+       *
+       * VÌ SAO CÓ. Đoạn tự-ngắt ngày 04/09 đánh dấu `disconnected` mà không gọi
+       * `/grant/remove`, nên grant vẫn sống ở phía Cas. Nhưng nó cũng KHÔNG xoá
+       * `access_token_enc` — nghĩa là phần lớn những dòng đó vẫn còn chìa khoá,
+       * và thu hồi được. Chỉ những dòng đã bị `cas-webhook` dọn sau khi Cas trả
+       * `GRANT_NOT_FOUND` mới thật sự mất token, mà những cái đó thì grant cũng
+       * đã chết bên Cas rồi nên không còn gì để thu hồi.
+       *
+       * Trả về ba con số tách bạch, không gộp: thu hồi được bao nhiêu, hỏng bao
+       * nhiêu, và bao nhiêu dòng vốn đã không còn token. Gộp lại thành một câu
+       * "đã dọn xong" là đúng loại nói quá đã đi gỡ cả tuần.
+       */
+      case "thu-hoi-grant-cu": {
+        const { data: cu } = await supabase
+          .from("bank_connections")
+          .select("id, bank_name, scopes, status, access_token_enc")
+          .eq("company_id", company.id)
+          .eq("provider", "bankhub")
+          .in("status", ["disconnected", "needs_relink"]);
+
+        let thuHoiDuoc = 0;
+        let hong = 0;
+        let khongConToken = 0;
+        const chiTiet: string[] = [];
+
+        for (const c of cu ?? []) {
+          if (!c.access_token_enc) {
+            khongConToken += 1;
+            continue;
+          }
+          try {
+            const tk = await decryptField(
+              c.access_token_enc as unknown as EncryptedBlob,
+              privateKey,
+            );
+            await removeGrant(cfg, tk);
+            // Xoá token SAU khi Cas đã nhận: bỏ trước mà gọi hỏng thì mất luôn
+            // đường thu hồi, đúng cách ba grant mồ côi hiện tại ra đời.
+            await supabase
+              .from("bank_connections")
+              .update({ access_token_enc: null, grant_id: null, status: "disconnected" })
+              .eq("id", c.id);
+            thuHoiDuoc += 1;
+          } catch (e) {
+            hong += 1;
+            chiTiet.push(`${c.bank_name ?? "?"} · ${c.scopes}: ${(e as Error).message}`);
+          }
+        }
+
+        return json({ thuHoiDuoc, hong, khongConToken, chiTiet });
+      }
+
       case "webhook-log": {
         const { data: cons } = await supabase
           .from("bank_connections")
