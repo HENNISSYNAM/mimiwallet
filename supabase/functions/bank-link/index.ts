@@ -680,6 +680,46 @@ Deno.serve(async (req) => {
       }
 
       // ── Which banks this app can link, for a given product ────────────────
+      /*
+       * Nhật ký webhook — trả lời đúng một câu: Casso có gửi gì tới không.
+       *
+       * VÌ SAO CẦN. `webhook_events` bật RLS mà không có policy nào, nên chỉ
+       * service-role đọc được. Bảng duy nhất biết "hook có tới hay không" thì
+       * không ai nhìn thấy — kể cả chủ tài khoản, kể cả khi đang tranh luận với
+       * đối tác xem bên nào thiếu sót. Ngày 06/09 chuyện đó dẫn tới việc báo
+       * với Casso là không nhận được hook, trong khi handler của chính mình có
+       * một dòng ném bỏ mọi envelope thiếu `grantId`.
+       *
+       * PHẠM VI. Chỉ trả về envelope thuộc grant của công ty đang đăng nhập,
+       * cộng những envelope KHÔNG có grantId trong 24 giờ qua — đó chính là
+       * nhóm từng bị ném bỏ, và là nhóm cần nhìn thấy nhất. Không trả `payload`
+       * thô: nó có thể chứa dữ liệu tài khoản, mà câu hỏi ở đây chỉ là có/không
+       * và vì sao.
+       */
+      case "webhook-log": {
+        const { data: cons } = await supabase
+          .from("bank_connections")
+          .select("grant_id")
+          .eq("company_id", company.id)
+          .not("grant_id", "is", null);
+        const grantIds = (cons ?? []).map((c: { grant_id: string }) => c.grant_id);
+
+        const tuLuc = new Date(Date.now() - 24 * 3600_000).toISOString();
+        let q = supabase
+          .from("webhook_events")
+          .select("id, created_at, event_type, event_code, grant_id, outcome, note")
+          .order("created_at", { ascending: false })
+          .limit(40);
+
+        q = grantIds.length
+          ? q.or(`grant_id.in.(${grantIds.join(",")}),and(grant_id.is.null,created_at.gte.${tuLuc})`)
+          : q.is("grant_id", null).gte("created_at", tuLuc);
+
+        const { data, error } = await q;
+        if (error) return json({ error: error.message }, 500);
+        return json({ events: data ?? [], grantIds });
+      }
+
       case "fi-services": {
         const services = await fetchFiServices(cfg);
         const wantQr = body.feature === "qrpay";
