@@ -743,7 +743,34 @@ Deno.serve(async (req) => {
 
         const { data, error } = await q;
         if (error) return json({ error: error.message }, 500);
-        return json({ events: data ?? [], grantIds });
+
+        /*
+         * Kèm bảng tra id liên kết → tên đọc được.
+         *
+         * Ghi chú của cas-webhook có dạng `<connection id>:alive+0`. UUID đó là
+         * câu trả lời quan trọng nhất trong cả nhật ký — nó cho biết webhook
+         * chạm vào liên kết ĐỌC SAO KÊ hay liên kết NHẬN TIỀN QR, mà hai cái
+         * dẫn tới hai kết luận trái ngược. Nhưng hiện ra dưới dạng 36 ký tự hex
+         * thì không ai đọc được, kể cả người viết ra nó.
+         *
+         * Trả cả liên kết đã ngắt: envelope cũ trỏ vào chúng, và ẩn đi thì
+         * dòng đó lại thành một UUID trần lần nữa.
+         */
+        const { data: tatCa } = await supabase
+          .from("bank_connections")
+          .select("id, bank_name, scopes, status")
+          .eq("company_id", company.id);
+
+        const ten: Record<string, string> = {};
+        for (const c of tatCa ?? []) {
+          const viec =
+            c.scopes === "qrpay" ? "nhận tiền QR"
+            : c.scopes === "gdt" ? "thuế"
+            : "đọc sao kê";
+          ten[c.id] = `${c.bank_name ?? "?"} · ${viec}${c.status === "disconnected" ? " (đã ngắt)" : ""}`;
+        }
+
+        return json({ events: data ?? [], grantIds, tenLienKet: ten });
       }
 
       case "fi-services": {

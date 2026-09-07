@@ -47,10 +47,28 @@ function mauKetQua(outcome: string | null): string {
   return 'bg-destructive/12 text-destructive';
 }
 
+/**
+ * Đổi UUID trong ghi chú thành tên đọc được.
+ *
+ * `cas-webhook` ghi `<connection id>:alive+0`. Cái UUID đó là câu trả lời quan
+ * trọng nhất trong cả nhật ký — nó cho biết webhook chạm vào liên kết đọc sao
+ * kê hay liên kết nhận tiền QR, mà hai cái dẫn tới hai kết luận trái ngược.
+ * Để nguyên 36 ký tự hex thì câu trả lời có mặt nhưng không ai đọc được.
+ *
+ * Không tra được thì giữ nguyên chuỗi gốc: một UUID lạ vẫn hơn một chỗ trống,
+ * vì nó còn tra tay được.
+ */
+function docGhiChu(note: string | null, ten: Record<string, string>): string {
+  if (!note) return '—';
+  return note.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+    (id) => ten[id] ?? id);
+}
+
 export function NhatKyWebhook() {
   const { session } = useAuthStore();
   const [mo, setMo] = useState(false);
   const [dsach, setDsach] = useState<SuKien[] | null>(null);
+  const [tenLienKet, setTenLienKet] = useState<Record<string, string>>({});
   const [dangTai, setDangTai] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
 
@@ -71,6 +89,7 @@ export function NhatKyWebhook() {
       const kq = await res.json();
       if (!res.ok || kq?.error) throw new Error(kq?.error ?? `Lỗi ${res.status}`);
       setDsach((kq.events ?? []) as SuKien[]);
+      setTenLienKet((kq.tenLienKet ?? {}) as Record<string, string>);
     } catch (e) {
       setLoi(e instanceof Error ? e.message : 'Không đọc được nhật ký');
     } finally {
@@ -176,7 +195,7 @@ export function NhatKyWebhook() {
                           {e.outcome ?? '—'}
                         </span>
                       </td>
-                      <td className="px-1 py-2 text-muted-foreground">{e.note ?? '—'}</td>
+                      <td className="px-1 py-2 text-muted-foreground">{docGhiChu(e.note, tenLienKet)}</td>
                     </tr>
                   ))}
                 </tbody>
