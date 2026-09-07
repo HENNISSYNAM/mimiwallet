@@ -272,6 +272,24 @@ Deno.serve(async (req) => {
   const outcomes: string[] = [];
 
   for (const conn of conns) {
+    /*
+     * LIÊN KẾT ĐÃ NGẮT THÌ KHÔNG XỬ LÝ, VÀ NÓI RÕ LÀ ĐÃ NGẮT.
+     *
+     * Trước 07/09 vòng này không nhìn `status`, nên một grant đã ngắt vẫn được
+     * hỏi lại Cas và ghi `verified` vào nhật ký. Ngày 07/09 hai dòng
+     * `TRANSACTIONS ... verified` khiến cả nhóm tin rằng webhook đang chạy
+     * đúng vào liên kết đang sống — trong khi nó chạy vào một liên kết `qrpay`
+     * đã ngắt của một công ty khác.
+     *
+     * `verified` cho một liên kết đã ngắt là một câu nói sai: nó khẳng định
+     * mọi thứ ổn ở đúng chỗ không còn gì để ổn. Người đọc nhật ký dựa vào đó
+     * để quyết định đi hỏi ai.
+     */
+    if (conn.status === "disconnected") {
+      outcomes.push(`${conn.id}:da-ngat`);
+      continue;
+    }
+
     if (!conn.access_token_enc || !conn.account_number) {
       outcomes.push(`${conn.id}:no-token`);
       continue;
