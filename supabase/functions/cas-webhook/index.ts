@@ -101,6 +101,22 @@ function extract(payload: unknown) {
       ["grantId"], ["grant_id"], ["grant", "id"],
       ["data", "grantId"], ["data", "grant_id"], ["data", "grant", "id"],
     ]),
+    /*
+     * Mã tham chiếu của một khoản thu QR.
+     *
+     * Vì sao cần: sự kiện thanh toán QR lấy chủ thể là cái mã QR, không phải
+     * cái grant — nên payload có thể KHÔNG mang `grantId`. Trước 06/09 mọi
+     * envelope thiếu `grantId` đều bị ném bỏ với ghi chú "no grant id in
+     * payload", kể cả khi nó đang báo đúng khoản tiền mình đang chờ.
+     *
+     * Dò nhiều đường vì Cas không công bố hình dạng payload cho loại này. Đọc
+     * phòng thủ vẫn hơn đoán một đường rồi im lặng bỏ sót.
+     */
+    reference: pick(payload, [
+      ["referenceNumber"], ["reference_number"], ["reference"],
+      ["data", "referenceNumber"], ["data", "reference_number"], ["data", "reference"],
+      ["invoice", "referenceNumber"], ["qrPay", "referenceNumber"],
+    ]),
   };
 }
 
@@ -145,7 +161,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
 
-  const { type, code, grantId } = extract(payload);
+  const { type, code, grantId, reference } = extract(payload);
 
   // Recorded before any decision, so even a body we handle badly is auditable.
   const { data: event } = await supabase
@@ -173,8 +189,37 @@ Deno.serve(async (req) => {
   };
 
   if (!grantId) {
-    // Nothing to verify against. Still 200: retrying will not add a grant id.
-    return await finish("ignored", "no grant id in payload");
+    /*
+     * KHÔNG CÒN NÉM BỎ NGAY. Sửa 06/09/2026.
+     *
+     * Sự kiện thanh toán QR lấy chủ thể là cái mã QR chứ không phải cái grant,
+     * nên payload có thể không mang `grantId`. Bản cũ ném bỏ tất cả — nghĩa là
+     * Casso có thể đã gửi đúng thông báo "tiền đã về" và MIMI vứt nó đi, rồi
+     * mình đi báo với Casso là không nhận được hook.
+     *
+     * Trước khi bỏ, thử khớp bằng mã tham chiếu: nó do chính máy chủ này sinh
+     * ra lúc tạo QR (`bank-link`, nhánh create-qr) và được lưu ở
+     * `qr_payments.reference_number`, nên khớp được là chắc chắn đúng khoản.
+     */
+    if (reference) {
+      const { data: qr } = await supabase
+        .from("qr_payments")
+        .select("id, company_id, status")
+        .eq("reference_number", reference)
+        .maybeSingle();
+
+      if (qr?.company_id) {
+        const r = await reconcileCompanyQr(supabase, qr.company_id);
+        return await finish(
+          "verified",
+          `qr ref ${reference}: ${r.settled} settled / ${r.mismatched} mismatch`,
+        );
+      }
+      return await finish("ignored", `no qr payment for reference ${reference}`);
+    }
+
+    // Hết đường khớp. Vẫn trả 200: gửi lại cũng không làm payload có thêm id.
+    return await finish("ignored", "no grant id and no reference in payload");
   }
 
   const { data: conns, error: lookupError } = await supabase
