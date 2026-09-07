@@ -783,9 +783,18 @@ Deno.serve(async (req) => {
         let khongConToken = 0;
         const chiTiet: string[] = [];
 
+        // Tên của những liên kết KHÔNG thu hồi được — đây là thứ đem đi nói với
+        // Casso. Một con số "1 liên kết" thì không gọi tên được cái nào.
+        const conLai: string[] = [];
+
         for (const c of cu ?? []) {
           if (!c.access_token_enc) {
             khongConToken += 1;
+            const viec =
+              c.scopes === "qrpay" ? "nhận tiền QR"
+              : c.scopes === "gdt" ? "thuế"
+              : "đọc sao kê";
+            conLai.push(`${c.bank_name ?? "?"} · ${viec}`);
             continue;
           }
           try {
@@ -807,7 +816,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        return json({ thuHoiDuoc, hong, khongConToken, chiTiet });
+        return json({ thuHoiDuoc, hong, khongConToken, chiTiet, conLai });
       }
 
       case "webhook-log": {

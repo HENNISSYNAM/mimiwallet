@@ -128,10 +128,14 @@ export function NhatKyWebhook() {
       const kq = await res.json();
       if (!res.ok || kq?.error) throw new Error(kq?.error ?? `Lỗi ${res.status}`);
       // Ba con số tách bạch, không gộp thành "đã dọn xong".
+      const ten = (kq.conLai ?? []) as string[];
       setKetQuaDon(
-        `Thu hồi được ${kq.thuHoiDuoc}. Hỏng ${kq.hong}. ` +
-        `${kq.khongConToken} liên kết đã mất token nên không thu hồi được từ đây — ` +
-        'cần Casso gỡ hộ, hoặc khách thu hồi trong app Cas ID.',
+        `Thu hồi được ${kq.thuHoiDuoc}. Hỏng ${kq.hong}.` +
+        (kq.khongConToken
+          ? ` Còn ${kq.khongConToken} liên kết đã mất token, không thu hồi được từ đây` +
+            (ten.length ? ` — ${ten.join('; ')}` : '') +
+            '. Cần Casso gỡ hộ, hoặc khách thu hồi trong app Cas ID.'
+          : ' Không còn liên kết nào cần thu hồi.'),
       );
       void tai();
     } catch (e) {
