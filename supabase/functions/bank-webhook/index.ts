@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { mapSepayWebhook } from "../_shared/bank/sepay-map.ts";
 
 /**
@@ -145,6 +146,29 @@ Deno.serve(async (req) => {
     .from("bank_connections")
     .update({ last_synced_at: new Date().toISOString() })
     .eq("id", conn.id);
+
+  /*
+   * ĐỐI SOÁT MÃ QR NGAY SAU KHI GHI GIAO DỊCH.
+   *
+   * Mắt xích thiếu, tìm ra 07/09/2026. Đường SePay vốn đã đầy đủ: nhận webhook,
+   * ánh xạ, ghi vào `transactions`. Nhưng nó dừng ở đó — không ai gọi
+   * `reconcileCompanyQr`, nên một khoản tiền vào khớp đúng mã tham chiếu của
+   * một mã QR đang chờ vẫn để mã đó ở `pending` vĩnh viễn.
+   *
+   * VÌ SAO ĐÁNG GIÁ HƠN MỘT BẢN VÁ NHỎ. Đường Cas hiện đang tắc: `/transactions`
+   * trả về rỗng cho tài khoản hợp lệ, và không có webhook nào khi tiền thật về.
+   * Cả hai đều nằm ngoài tầm sửa của mình. Nhưng SePay là một đường HOÀN TOÀN
+   * ĐỘC LẬP cho cùng một việc — nó canh tài khoản và đẩy thông báo kèm nội dung
+   * chuyển khoản, đúng cách đối soát của Việt Nam. Mã QR thì `lib/vietqr.ts`
+   * dựng ngay tại máy khách, cũng không cần Cas.
+   *
+   * Nối một dòng này là vòng "khách quét mã → tiền về → hoá đơn tự tất toán"
+   * đóng lại được mà không phụ thuộc bên nào trả lời.
+   */
+  const kq = await reconcileCompanyQr(supabase, conn.company_id);
+  if (kq.settled || kq.mismatched) {
+    console.log(`sepay qr reconcile: ${kq.settled} settled, ${kq.mismatched} mismatch`);
+  }
 
   console.log(
     `stored ${row.type} ${row.amount} for company ${conn.company_id} (${row.reference_id})`,
