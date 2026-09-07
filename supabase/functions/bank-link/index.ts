@@ -403,6 +403,46 @@ Deno.serve(async (req) => {
         const scopeVuaGhi = forGdt ? "gdt" : forQrPay ? "qrpay" : "transaction";
         const idVuaGhi = (saved ?? []).map((r: { id: string }) => r.id);
         if (idVuaGhi.length) {
+          /*
+           * THU HỒI GRANT Ở PHÍA CAS TRƯỚC KHI ĐÁNH DẤU ĐÃ NGẮT.
+           *
+           * Bản đầu (04/09) chỉ đổi `status` trong CSDL. Hậu quả lộ ra ngày
+           * 07/09 khi đọc nhật ký webhook: Casso vẫn gửi đều cho những grant
+           * đó — `no connection for grant 5455fe9b…`, `bf05c762…`, `7b9a58b1…`
+           * — vì bên họ grant vẫn sống. Còn bên mình đã bỏ token nên KHÔNG THU
+           * HỒI ĐƯỢC NỮA: `/grant/remove` cần accessToken, không nhận grant id.
+           *
+           * Tiếng ồn trong nhật ký chỉ là triệu chứng. Vấn đề thật là quyền
+           * truy cập tài khoản ngân hàng của khách vẫn còn hiệu lực ở Cas mà
+           * không ai quản được — một grant mồ côi không thể gỡ từ phía mình.
+           *
+           * Nên đọc token ra, gọi `/grant/remove`, rồi mới đánh dấu.
+           */
+          const { data: cuHong } = await supabase
+            .from("bank_connections")
+            .select("id, access_token_enc")
+            .eq("company_id", company.id)
+            .eq("provider", "bankhub")
+            .eq("scopes", scopeVuaGhi)
+            .eq("status", "needs_relink")
+            .not("id", "in", `(${idVuaGhi.join(",")})`);
+
+          for (const c of cuHong ?? []) {
+            if (!c.access_token_enc) continue;
+            try {
+              const tk = await decryptField(
+                c.access_token_enc as unknown as EncryptedBlob,
+                privateKey,
+              );
+              await removeGrant(cfg, tk);
+            } catch (e) {
+              // Thu hồi hỏng thì ghi lại và đi tiếp: liên kết mới đã lưu xong,
+              // và để dòng cũ ở `needs_relink` còn hơn đánh dấu đã ngắt trong
+              // khi grant vẫn sống — dòng đó là chỗ duy nhất còn giữ token.
+              console.error(`remove old grant ${c.id}:`, (e as Error).message);
+            }
+          }
+
           const { error: supersedeError } = await supabase
             .from("bank_connections")
             .update({ status: "disconnected", revoked_at: new Date().toISOString() })
