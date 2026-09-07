@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { NhatKyWebhook } from '@/components/fintech/NhatKyWebhook';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link2, Shield, Check, Loader2, RefreshCw, Lock, ArrowRight, AlertTriangle } from 'lucide-react';
 import bankVcb from '@/assets/logos/bank-vcb.png';
@@ -365,6 +366,9 @@ export default function OpenBanking() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Công cụ chẩn đoán, mặc định đóng — xem ghi chú trong NhatKyWebhook. */}
+      <NhatKyWebhook />
     </div>
   );
 }

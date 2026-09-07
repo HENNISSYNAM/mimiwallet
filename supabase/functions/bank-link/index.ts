@@ -541,7 +541,7 @@ Deno.serve(async (req) => {
           .eq("status", "connected")
           .eq("scopes", "qrpay")
           .is("revoked_at", null)
-          .order("created_at", { ascending: false })
+          .order("received_at", { ascending: false })
           .limit(1)
           .maybeSingle();
         if (!conn?.access_token_enc) {
@@ -707,13 +707,13 @@ Deno.serve(async (req) => {
         const tuLuc = new Date(Date.now() - 24 * 3600_000).toISOString();
         let q = supabase
           .from("webhook_events")
-          .select("id, created_at, event_type, event_code, grant_id, outcome, note")
-          .order("created_at", { ascending: false })
+          .select("id, received_at, event_type, event_code, grant_id, outcome, note")
+          .order("received_at", { ascending: false })
           .limit(40);
 
         q = grantIds.length
-          ? q.or(`grant_id.in.(${grantIds.join(",")}),and(grant_id.is.null,created_at.gte.${tuLuc})`)
-          : q.is("grant_id", null).gte("created_at", tuLuc);
+          ? q.or(`grant_id.in.(${grantIds.join(",")}),and(grant_id.is.null,received_at.gte.${tuLuc})`)
+          : q.is("grant_id", null).gte("received_at", tuLuc);
 
         const { data, error } = await q;
         if (error) return json({ error: error.message }, 500);
@@ -822,7 +822,7 @@ Deno.serve(async (req) => {
           .eq("scopes", "gdt")
           .eq("status", "connected")
           .is("revoked_at", null)
-          .order("created_at", { ascending: false })
+          .order("received_at", { ascending: false })
           .limit(1)
           .maybeSingle();
         if (!conn?.access_token_enc) {
