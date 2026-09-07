@@ -723,9 +723,23 @@ Deno.serve(async (req) => {
           .order("received_at", { ascending: false })
           .limit(40);
 
-        q = grantIds.length
-          ? q.or(`grant_id.in.(${grantIds.join(",")}),and(grant_id.is.null,received_at.gte.${tuLuc})`)
-          : q.is("grant_id", null).gte("received_at", tuLuc);
+        /*
+         * LẤY MỌI ENVELOPE TRONG 30 NGÀY, không lọc theo grant.
+         *
+         * Bản trước lọc `grant_id IN (grant hiện tại)` cộng nhóm không có grant.
+         * Nó bỏ sót đúng nhóm quan trọng thứ hai: envelope mang một grant id đã
+         * bị xoá khỏi `bank_connections` — mà `cas-webhook` xoá `grant_id` mỗi
+         * lần Cas trả `GRANT_NOT_FOUND`, và mỗi lần liên kết lại thì grant cũ
+         * cũng không còn ai giữ.
+         *
+         * Nghĩa là: một envelope tới thật, mang grant id hợp lệ lúc đó, vẫn có
+         * thể vô hình ở đây. Với một công cụ dựng ra để trả lời "có tới hay
+         * không", bỏ sót là hỏng mục đích.
+         *
+         * Trả về ít trường và không có `payload`, nên mở rộng phạm vi không lộ
+         * dữ liệu tài khoản. Đây là console Casso của chính công ty này.
+         */
+        q = q.gte("received_at", tuLuc);
 
         const { data, error } = await q;
         if (error) return json({ error: error.message }, 500);

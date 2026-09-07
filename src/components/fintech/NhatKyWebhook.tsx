@@ -105,7 +105,7 @@ export function NhatKyWebhook() {
         <div className="border-t border-border/50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Envelope thuộc liên kết của bạn, cộng envelope không có mã grant trong 24 giờ qua.
+              Mọi envelope Casso gửi tới trong 30 ngày qua, kể cả những cái bị bỏ qua.
             </p>
             <button
               onClick={() => void tai()}
