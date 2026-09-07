@@ -750,6 +750,54 @@ Deno.serve(async (req) => {
        * nhiêu, và bao nhiêu dòng vốn đã không còn token. Gộp lại thành một câu
        * "đã dọn xong" là đúng loại nói quá đã đi gỡ cả tuần.
        */
+      /*
+       * Đăng ký tài khoản nhận thông báo SePay.
+       *
+       * VÌ SAO CẦN. `bank-webhook` tra `bank_connections` theo
+       * `provider='sepay'` + `account_number` để biết khoản tiền vừa vào thuộc
+       * công ty nào. Nhưng KHÔNG NƠI NÀO trong toàn bộ mã tạo ra dòng đó — không
+       * giao diện, không hàm nào. Nên mọi webhook SePay đều bị bỏ với "unknown
+       * account", và đường thu tiền độc lập với Cas không bao giờ chạy được.
+       *
+       * Cùng loại ngõ cụt với bảng `clients`: một bên đọc, không bên nào ghi.
+       *
+       * KHÔNG CẦN TOKEN. SePay đẩy sang mình, mình không gọi ngược lại — nên
+       * dòng này chỉ mang số tài khoản và tên ngân hàng. Không có gì để mã hoá,
+       * và cũng không có quyền truy cập nào được cấp cho MIMI ở đây.
+       */
+      case "dang-ky-sepay": {
+        const soTaiKhoan = String(body.accountNumber ?? "").replace(/\s/g, "");
+        if (!/^\d{6,20}$/.test(soTaiKhoan)) {
+          return json({ error: "Số tài khoản chỉ gồm chữ số, 6–20 ký tự." }, 400);
+        }
+        const tenNganHang = String(body.bankName ?? "").trim();
+        if (!tenNganHang) return json({ error: "Thiếu tên ngân hàng." }, 400);
+        const maNganHang = String(body.bankCode ?? "").trim() || tenNganHang;
+
+        const { data: luu, error: loiLuu } = await supabase
+          .from("bank_connections")
+          .upsert(
+            {
+              company_id: company.id,
+              provider: "sepay",
+              account_number: soTaiKhoan,
+              account_name: String(body.accountName ?? "").trim() || null,
+              bank_name: tenNganHang,
+              bank_code: maNganHang,
+              status: "connected",
+              scopes: "transaction",
+              consent_granted: true,
+              revoked_at: null,
+            },
+            { onConflict: "company_id,provider,account_number,scopes" },
+          )
+          .select("id, account_number, bank_name")
+          .maybeSingle();
+
+        if (loiLuu) return json({ error: loiLuu.message, detail: loiLuu.details }, 500);
+        return json({ connection: luu });
+      }
+
       case "thu-hoi-grant-cu": {
         /*
          * MỌI CÔNG TY CỦA NGƯỜI DÙNG NÀY, không chỉ công ty đang mở.

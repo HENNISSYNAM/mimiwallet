@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NhatKyWebhook } from '@/components/fintech/NhatKyWebhook';
+import { DangKySePay } from '@/components/fintech/DangKySePay';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link2, Shield, Check, Loader2, RefreshCw, Lock, ArrowRight, AlertTriangle } from 'lucide-react';
 import bankVcb from '@/assets/logos/bank-vcb.png';
@@ -366,6 +367,9 @@ export default function OpenBanking() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Đường thu tiền độc lập với Cas — xem ghi chú trong DangKySePay. */}
+      <DangKySePay />
 
       {/* Công cụ chẩn đoán, mặc định đóng — xem ghi chú trong NhatKyWebhook. */}
       <NhatKyWebhook />
