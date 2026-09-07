@@ -756,18 +756,47 @@ Deno.serve(async (req) => {
          * Trả cả liên kết đã ngắt: envelope cũ trỏ vào chúng, và ẩn đi thì
          * dòng đó lại thành một UUID trần lần nữa.
          */
-        const { data: tatCa } = await supabase
-          .from("bank_connections")
-          .select("id, bank_name, scopes, status")
-          .eq("company_id", company.id);
+        /*
+         * Tra theo ĐÚNG các id xuất hiện trong ghi chú, không lọc theo công ty.
+         *
+         * Bản trước lọc `company_id = công ty đang đăng nhập`, và hai dòng quan
+         * trọng nhất — webhook ngày 07/09 — vẫn hiện UUID trần vì liên kết đó
+         * thuộc một công ty khác của cùng người dùng. Câu trả lời có mặt, vẫn
+         * không đọc được, đúng lỗi vừa định sửa.
+         *
+         * Với liên kết ngoài công ty đang xem, CHỈ trả mục đích (đọc sao kê /
+         * nhận tiền QR / thuế) — không trả tên ngân hàng. Mục đích là thứ duy
+         * nhất cần để phân biệt "Cas không có dữ liệu" với "mình cố ý không
+         * hỏi"; tên ngân hàng không thêm gì cho việc chẩn đoán.
+         */
+        const idTrongGhiChu = [
+          ...new Set(
+            (data ?? [])
+              .flatMap((e: { note: string | null }) =>
+                (e.note ?? "").match(
+                  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+                ) ?? [],
+              ),
+          ),
+        ];
 
         const ten: Record<string, string> = {};
-        for (const c of tatCa ?? []) {
-          const viec =
-            c.scopes === "qrpay" ? "nhận tiền QR"
-            : c.scopes === "gdt" ? "thuế"
-            : "đọc sao kê";
-          ten[c.id] = `${c.bank_name ?? "?"} · ${viec}${c.status === "disconnected" ? " (đã ngắt)" : ""}`;
+        if (idTrongGhiChu.length) {
+          const { data: tatCa } = await supabase
+            .from("bank_connections")
+            .select("id, company_id, bank_name, scopes, status")
+            .in("id", idTrongGhiChu);
+
+          for (const c of tatCa ?? []) {
+            const viec =
+              c.scopes === "qrpay" ? "nhận tiền QR"
+              : c.scopes === "gdt" ? "thuế"
+              : "đọc sao kê";
+            const daNgat = c.status === "disconnected" ? " (đã ngắt)" : "";
+            ten[c.id] = c.company_id === company.id
+              ? `${c.bank_name ?? "?"} · ${viec}${daNgat}`
+              : `${viec}${daNgat} · công ty khác`;
+          }
         }
 
         return json({ events: data ?? [], grantIds, tenLienKet: ten });

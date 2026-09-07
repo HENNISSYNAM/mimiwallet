@@ -124,7 +124,9 @@ export function NhatKyWebhook() {
         <div className="border-t border-border/50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Mọi envelope Casso gửi tới trong 30 ngày qua, kể cả những cái bị bỏ qua.
+              Mọi envelope Casso <strong className="text-foreground">gửi tới</strong> trong 30 ngày
+              qua, kể cả những cái bị bỏ qua. Bấm Đồng bộ không tạo dòng ở đây — đó là chiều
+              mình gọi ra, không phải chiều Casso đẩy vào.
             </p>
             <button
               onClick={() => void tai()}
