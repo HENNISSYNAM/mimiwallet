@@ -81,12 +81,30 @@ export default function PaymentMethods() {
       const cid = cty?.[0]?.id;
       if (!cid) return setTt((p) => ({ ...p, dangTai: false }));
 
-      // Liên kết QR đang sống. Đây là nguồn sự thật duy nhất cho "nhận được
-      // tiền QR hay chưa" — không phải một cờ trong mã.
+      /*
+       * ĐIỀU KIỆN PHẢI GIỐNG HỆT `create-qr` Ở MÁY CHỦ.
+       *
+       * Sự việc 07/09/2026: thẻ này khoe "Đang chạy · MBBank Official", bấm
+       * Tạo mã QR thì trả về "Chưa có tài khoản ngân hàng nào được liên kết để
+       * nhận tiền QR". Hai chỗ hỏi cùng một câu bằng hai bộ điều kiện khác nhau
+       * — bản này thiếu `provider` và `revoked_at` — nên màn hình khoe nhiều
+       * hơn thứ cái nút làm được.
+       *
+       * Đây là kiểu lỗi khó chịu nhất với người dùng: mọi thứ trông đã sẵn
+       * sàng, chỉ tới lúc bấm mới biết là không. Và nó không phải lỗi tính
+       * năng — tính năng chạy đúng, chỉ có màn hình nói sai về nó.
+       *
+       * Nếu ngày nào `create-qr` đổi điều kiện, phải đổi cả ở đây. Chép luật ra
+       * hai nơi vốn đã là nợ; ít nhất đừng để hai bản chép khác nhau.
+       */
       const { data: qr } = await supabase
         .from('bank_connections')
         .select('account_name, bank_name')
-        .eq('company_id', cid).eq('scopes', 'qrpay').eq('status', 'connected')
+        .eq('company_id', cid)
+        .eq('provider', 'bankhub')
+        .eq('scopes', 'qrpay')
+        .eq('status', 'connected')
+        .is('revoked_at', null)
         .limit(1);
 
       const { data: sub } = await supabase
