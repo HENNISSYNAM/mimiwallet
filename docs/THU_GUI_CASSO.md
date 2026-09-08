@@ -68,9 +68,22 @@ hai đều HTTP 200: grant đã gỡ, hoặc khách phải xác nhận qua màn 
 Chúng tôi đã hiện thực cả hai nhánh và có unit test khoá lại việc phân biệt
 chúng bằng trường trong body chứ không bằng mã trạng thái.
 
-Chúng tôi đã thử ép nhánh thứ hai bằng `/sandbox/grant/reset-login` với
-`OTP_REQUIRED` nhưng chưa quan sát được. Xin anh/chị cho biết **cách buộc
-`/grant/remove` rơi vào nhánh cần OTP trên sandbox**.
+Chúng tôi đã thử ép nhánh thứ hai trên sandbox ngày 08/09, theo trình tự:
+
+1. Gọi `/sandbox/grant/reset-login` trên một grant `transaction` đang hoạt động.
+2. Xác nhận giả lập đã có hiệu lực: lần đồng bộ kế tiếp trả về lỗi đăng nhập và
+   liên kết chuyển sang trạng thái cần xác thực lại.
+3. Gọi `/grant/remove` trên đúng grant đó.
+
+`/grant/remove` **hoàn tất bình thường** — không trả về `grantToken`, không có
+màn hình xác nhận nào. Nói cách khác, một grant đang ở trạng thái hỏng đăng nhập
+vẫn bị gỡ thẳng.
+
+Xin anh/chị cho biết **điều kiện nào khiến `/grant/remove` trả về `grantToken`**,
+và cách tạo ra điều kiện đó trên sandbox. Nếu nhánh này chỉ phát sinh ở một số
+ngân hàng nhất định trên production, xin xác nhận giúp — khi đó chúng tôi đề
+nghị ghi case 4 là *đã hiện thực, không tái hiện được trên sandbox* thay vì để
+treo.
 
 **4. Case 18 — thông tin định danh (KYC).** Chúng tôi chủ động **không** đăng ký
 scope `identity`, nên Cas không gửi số CCCD, ngày sinh, địa chỉ và số điện thoại
@@ -145,7 +158,9 @@ Bốn case còn lại không case nào chờ MIMI viết thêm mã. Cần anh/ch
    `/transactions` trả rỗng cho grant hợp lệ.
 2. **Case 10** — kích hoạt `USER_PERMISSION_REVOKED` từ phía máy chủ. App Cas ID
    không quét được mã QR sandbox.
-3. **Case 4** — cách buộc `/grant/remove` rơi vào nhánh cần OTP trên sandbox.
+3. **Case 4** — điều kiện nào khiến `/grant/remove` trả về `grantToken`. Đã thử
+   giả lập lỗi đăng nhập rồi gỡ grant (08/09): grant hỏng đăng nhập vẫn bị gỡ
+   thẳng, không qua bước xác nhận.
 4. **Case 18** — xin ghi nhận ngoài phạm vi. Chúng tôi chủ động không đăng ký
    scope `identity` để không nhận dữ liệu định danh của khách.
 

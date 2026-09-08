@@ -73,7 +73,7 @@ Chúng tôi đề nghị Casso nghiệm thu trên cơ sở đó, thay vì chờ 
 | 18 | Hai bên ghi nhận **ngoài phạm vi**. Đóng case này theo đúng chữ hợp đồng thì phải bật lại scope `identity`, tức bắt Cas gửi CCCD, ngày sinh, địa chỉ và số điện thoại của khách sang MIMI — đi ngược quyết định giảm thiểu dữ liệu, và tạo ra đúng loại rủi ro mà cả hai bên đều không muốn gánh. |
 | 15 | Dữ liệu mẫu có phát sinh giao dịch trong sandbox, **hoặc** credential production. Phần MIMI đã chứng minh trên tiền thật (xem mục 08/09). |
 | 10 | Casso kích hoạt `USER_PERMISSION_REVOKED` từ phía máy chủ cho một grant thử. Đường ống nhận và xử lý đã chứng minh ở case 11; thiếu đúng cái kích hoạt, vì app Cas ID không quét được mã QR sandbox. |
-| 4 | Cho biết cách buộc `/grant/remove` rơi vào nhánh cần OTP trong sandbox. Logic đã hiện thực và có unit test khoá cả hai hình dạng phản hồi. |
+| 4 | Cho biết **điều kiện nào khiến `/grant/remove` trả về `grantToken`**. Thử ngày 08/09: giả lập lỗi đăng nhập trên một grant `transaction` (đã xác nhận có hiệu lực — liên kết chuyển sang cần xác thực lại), rồi gọi `/grant/remove`; grant bị gỡ thẳng, không qua bước xác nhận. Logic hai nhánh đã hiện thực và có unit test khoá lại. |
 
 ### Điều đáng nhớ nhất của buổi này
 
