@@ -6,6 +6,47 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
+## Chốt đợt 08/09/2026 — vòng thu tiền đã đóng, nhưng KHÔNG qua Cas
+
+Ngày 08/09 luồng **khách quét mã → tiền về → hoá đơn tự tất toán** đã chạy trọn
+vẹn lần đầu tiên, trên hoá đơn thật `INV-39834075`, số tiền ₫2.200:
+
+    mã MIMI59A8D9 → chuyển khoản MB 2431122002 → SePay đẩy webhook →
+    ghi giao dịch → đọc mã tham chiếu từ nội dung → khớp → hoá đơn "Đã TT"
+
+**Điều này KHÔNG đóng case 15.** Case 15 hỏi webhook **của Cas** xác nhận thanh
+toán; đường vừa chạy là VietQR + SePay, không có Cas ở khâu nào. Mã QR do
+`src/lib/vietqr.ts` dựng tại máy khách (EMVCo TLV + CRC-16/CCITT-FALSE), và
+thông báo tiền về do SePay đẩy. Ghi nó vào cột Passed của bộ case Casso là ghi
+sai người làm được việc.
+
+Giá trị nghiệm thu của nó nằm ở chỗ khác: nó chứng minh **phần MIMI của case 15
+đã đúng**. `reconcileCompanyQr`, `matchQrPayments` và bước chuyển trạng thái hoá
+đơn đều chạy trên dữ liệu thật. Cái còn thiếu duy nhất là một envelope
+`TRANSACTIONS` do Casso gửi khi có tiền thật.
+
+### Sự cố `received_at` — và một đính chính
+
+Ngày 07/09, khi sửa một lỗi tên cột **có thật** trên `webhook_events`
+(`created_at` → `received_at`), tôi áp cùng phép thay thế sang các truy vấn trên
+`bank_connections` — bảng **không có** cột đó. PostgREST hỏng cả truy vấn,
+`data` thành `null`, và vì chỗ gọi chỉ lấy `data` mà bỏ `error` nên truy vấn
+hỏng trông y hệt truy vấn không tìm thấy gì. Bốn tính năng chết trong khi màn
+hình vẫn nói năng bình thường (mã QR, đường VietQR, tra hoá đơn GDT,
+`macro-news`).
+
+**Đính chính:** hôm 08/09 tôi đã nói lỗi này "rất có thể là nguyên nhân thật của
+hai tuần bế tắc mã QR". Sai. `git log -S` cho thấy `received_at` chỉ vào file
+ngày **07/09**; trước đó truy vấn dùng `created_at` và đúng. Case 12 đóng ngày
+04/09 là đóng thật, và các nguyên nhân đã ghi cho nó (sandbox chỉ hỗ trợ MB,
+vòng đồng bộ tự đập grant `qrpay`, giới hạn 9 ký tự) vẫn nguyên giá trị. Sự cố
+`received_at` là một lỗi **một ngày tuổi** do tôi gây ra, không phải lời giải
+cho hai tuần trước đó.
+
+Đã thêm `supabase/functions/_shared/cot-co-that.test.ts`: đối chiếu mọi tên cột
+trong truy vấn edge function với lược đồ trong `types.ts` (do `supabase gen
+types` sinh từ chính cơ sở dữ liệu). Cả bốn lỗi trên đều bị nó bắt.
+
 ## Chốt đợt 04/09/2026 — 16/20 (80%)
 
 Buổi này đóng thêm **hai case** (12 và 13) và **xác định nguyên nhân** cho case
