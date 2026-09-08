@@ -52,14 +52,28 @@ types` sinh từ chính cơ sở dữ liệu). Cả bốn lỗi trên đều b�
 Buổi này đóng thêm **hai case** (12 và 13) và **xác định nguyên nhân** cho case
 15. Cả ba đều là những case bế tắc lâu nhất của cả đợt nghiệm thu.
 
-| | Số case | Ghi chú |
+| | Số case | Ai còn phải làm gì |
 |---|---|---|
-| **Passed** | **16 / 20** | 80% trên nhóm trong phạm vi |
-| Phần MIMI đã chứng minh, chờ envelope từ Casso | 1 | case 15 — xem 08/09 |
-| Chờ app Cas ID gửi webhook thật | 1 | case 10 |
-| Đã viết mã, chưa gặp điều kiện phát sinh | 1 | case 4 |
-| Ngoài phạm vi theo thiết kế | 1 | case 18 |
+| **Passed — chạy thật, có requestId** | **16 / 20** | xong |
+| Chờ dữ liệu hoặc thao tác từ phía Casso | 2 | case 10, 15 |
+| Chờ một điều kiện sandbox chưa dựng được | 1 | case 4 |
+| Đề nghị hai bên xác nhận là ngoài phạm vi | 1 | case 18 |
 | Chặn `IP_NOT_ALLOWED` — nhóm `transfer` | 10 | ngoài 20 case trên |
+
+**Con số đáng chú ý không phải 80%, mà là số 0:** không case nào trong nhóm 20
+đang chờ MIMI viết thêm mã. Bốn case còn lại chờ dữ liệu sandbox, một thao tác
+từ app Cas ID, hoặc một xác nhận về phạm vi — không case nào chờ một tính năng
+chưa hiện thực.
+
+Chúng tôi đề nghị Casso nghiệm thu trên cơ sở đó, thay vì chờ đủ 20 dòng
+"Passed". Cụ thể:
+
+| Case | Đề nghị |
+|---|---|
+| 18 | Hai bên ghi nhận **ngoài phạm vi**. Đóng case này theo đúng chữ hợp đồng thì phải bật lại scope `identity`, tức bắt Cas gửi CCCD, ngày sinh, địa chỉ và số điện thoại của khách sang MIMI — đi ngược quyết định giảm thiểu dữ liệu, và tạo ra đúng loại rủi ro mà cả hai bên đều không muốn gánh. |
+| 15 | Dữ liệu mẫu có phát sinh giao dịch trong sandbox, **hoặc** credential production. Phần MIMI đã chứng minh trên tiền thật (xem mục 08/09). |
+| 10 | Casso kích hoạt `USER_PERMISSION_REVOKED` từ phía máy chủ cho một grant thử. Đường ống nhận và xử lý đã chứng minh ở case 11; thiếu đúng cái kích hoạt, vì app Cas ID không quét được mã QR sandbox. |
+| 4 | Cho biết cách buộc `/grant/remove` rơi vào nhánh cần OTP trong sandbox. Logic đã hiện thực và có unit test khoá cả hai hình dạng phản hồi. |
 
 ### Điều đáng nhớ nhất của buổi này
 
