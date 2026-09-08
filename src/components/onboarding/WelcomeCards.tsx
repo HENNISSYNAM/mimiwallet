@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
 import mimiWatch from '@/assets/mimi/watch.webp';
 
 /**
@@ -36,7 +37,8 @@ type Step = {
  * enabled on the contract. Storing an unverified code is fine; presenting it as
  * verified would not be.
  */
-const TAX_ID_OK = (v: string) => /^\d{10}(-\d{3})?$/.test(v.replace(/\s/g, ''));
+// Quy tac dung chung voi trang Cai dat — xem `src/lib/maSoThue.ts`.
+const TAX_ID_OK = MST_HOP_LE;
 
 const STEPS: Step[] = [
   {
@@ -126,7 +128,7 @@ export default function WelcomeCards() {
         // industry or a name set during an earlier sign-up.
         ...(name.trim() ? { name: name.trim() } : {}),
         ...(final.account_type ? { account_type: final.account_type } : {}),
-        ...(TAX_ID_OK(taxId) ? { tax_id: taxId.replace(/\s/g, '') } : {}),
+        ...(TAX_ID_OK(taxId) ? { tax_id: chuanHoaMst(taxId) } : {}),
         ...(final.industry ? { industry: final.industry } : {}),
         ...(final.size ? { employee_count: final.size } : {}),
         ...(final.goal ? { primary_goal: final.goal } : {}),

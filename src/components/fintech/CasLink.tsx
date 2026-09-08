@@ -275,7 +275,20 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       });
       const result = await res.json();
       if (!res.ok || result.error) {
-        toast.error(result.error ?? `Lỗi ${res.status}`);
+        /*
+         * `remedy` VÀ `detail` PHẢI TỚI MÀN HÌNH.
+         *
+         * Máy chủ soạn sẵn câu chỉ dẫn cho từng lỗi — "vào Cài đặt và điền mã
+         * số thuế", "bấm Cập nhật ở dòng đang báo vàng" — rồi hàm này vứt đi,
+         * chỉ hiện mỗi `error`. Người dùng đọc được cái sai mà không đọc được
+         * việc cần làm, dù việc cần làm đã nằm sẵn trong phản hồi.
+         *
+         * Gặp ngày 08/09 khi đồng bộ Tổng Cục Thuế: màn hình nói "Chưa có mã số
+         * thuế của doanh nghiệp." và dừng ở đó.
+         */
+        toast.error(result.error ?? `Lỗi ${res.status}`, {
+          description: [result.detail, result.remedy].filter(Boolean).join(' ') || undefined,
+        });
         return null;
       }
       return result;

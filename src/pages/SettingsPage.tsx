@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { companyProfile } from '@/lib/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
@@ -10,6 +9,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
 import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 
 type NotificationPrefs = { invoice_due: boolean; disbursement: boolean; cashflow: boolean };
 const DEFAULT_PREFS: NotificationPrefs = { invoice_due: true, disbursement: true, cashflow: false };
@@ -328,11 +328,11 @@ export default function SettingsPage() {
         <InfoRow label={t('settings.phone')} value={user?.user_metadata?.phone || ''} />
       </SettingsSection>
 
+      {/* Truoc 08/09/2026 khoi nay doc `companyProfile` tu mockData, nen moi
+          nguoi dung deu thay ten, ma so thue, nganh va tinh cua mot cong ty
+          khong co that — trinh bay nhu ho so cua chinh ho. */}
       <SettingsSection icon={Building} title={t('settings.business')}>
-        <InfoRow label={t('settings.companyName')} value={companyProfile.name} />
-        <InfoRow label={t('settings.taxId')} value={companyProfile.taxId} />
-        <InfoRow label={t('settings.industry')} value={companyProfile.industry} />
-        <InfoRow label={t('settings.province')} value={companyProfile.province} />
+        <ThongTinDoanhNghiep />
       </SettingsSection>
 
       <SettingsSection icon={CreditCard} title={t('settings.subscription')}>
