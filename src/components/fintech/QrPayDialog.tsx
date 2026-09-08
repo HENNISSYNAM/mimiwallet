@@ -132,11 +132,8 @@ export function QrPayDialog({
         // `detail` nói ra HÌNH DẠNG của cái sai — tìm thấy mấy dòng, ở công ty
         // nào, trạng thái gì. Không hiện nó ra thì người dùng chỉ đọc được câu
         // chung và phải đoán, đúng chỗ đã mất hai ngày ở phía Cas.
-        setRemedy(
-          [result?.detail, result?.remedy].filter(Boolean).join('
-
-') || null,
-        );
+        const NGAT_DONG = '\n\n';
+        setRemedy([result?.detail, result?.remedy].filter(Boolean).join(NGAT_DONG) || null);
         setRequestId(result?.requestId ?? null);
         return;
       }

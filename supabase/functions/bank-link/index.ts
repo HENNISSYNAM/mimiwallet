@@ -19,6 +19,7 @@ import { describeBankError } from "../_shared/bank/errors.ts";
 import { mapGdtInvoices, revenueFromInvoices } from "../_shared/tax/gdt-invoice-map.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
+import { timNganHang } from "../_shared/bank/ngan-hang.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
@@ -655,9 +656,21 @@ Deno.serve(async (req) => {
               ? `tài khoản SePay đang nằm ở một công ty khác của bạn (${ctyKhac.length} dòng). Hoá đơn này thuộc công ty "${company.name}" — khai lại tài khoản khi đang ở công ty đó.`
               : "chưa có dòng SePay nào cho tài khoản này";
 
+          /*
+           * CHẨN ĐOÁN PHẢI ĐI TRÊN TRƯỜNG CHẮC CHẮN ĐƯỢC HIỂN THỊ.
+           *
+           * Bản trước để nó ở `detail`, một trường mới, và thêm chỗ hiện nó
+           * trong `QrPayDialog`. Máy chủ deploy ngay, còn giao diện thì đi
+           * theo nhịp build của bên khác — nên người dùng nhận đúng câu chung
+           * y như cũ, và cái tôi vừa thêm để hết đoán thì họ không đọc được.
+           *
+           * Đây là lần thứ hai trong ngày một bản vá chẩn đoán tự giấu chính
+           * nó. Lần trước là bốn lỗi thu hẹp phạm vi trong nhật ký webhook.
+           * Nên: nhét vào `error`, trường mà mọi phiên bản giao diện đều hiện.
+           */
           return json(
             {
-              error: "Chưa khai tài khoản ngân hàng để nhận tiền.",
+              error: `Chưa khai tài khoản ngân hàng để nhận tiền — ${chiTiet}`,
               detail: chiTiet,
               action: "relink",
               remedy:
@@ -679,18 +692,26 @@ Deno.serve(async (req) => {
            * đang quét mã, còn chủ shop thì không thấy gì bất thường.
            *
            * `bank_code` được ghi bằng BIN từ ô chọn ngân hàng trong form SePay.
-           * Dòng cũ (khi ô đó còn là ô gõ tự do) mang chuỗi kiểu "MB Bank" nên
-           * không dùng được — nói thẳng ra và chỉ đúng việc phải làm, thay vì
-           * đoán một BIN từ một chuỗi tự do.
+           * Dòng cũ (khi ô đó còn là ô gõ tự do) mang chuỗi kiểu "MB Bank".
+           *
+           * KHÔNG BẮT KHAI LẠI KHI TỰ TRA ĐƯỢC. Bản đầu trả 409 và bảo người
+           * dùng vào chọn lại ngân hàng — một việc thừa, vì "MB Bank" tra ra
+           * đúng một ngân hàng trong bảng và không có gì mơ hồ. Bắt người ta
+           * làm lại một thao tác mà máy tự làm được là đẩy lỗi dữ liệu cũ của
+           * mình sang cho họ.
+           *
+           * `timNganHang` trả `null` khi chuỗi mơ hồ hoặc không biết, và chỉ
+           * lúc đó mới phải hỏi. Đoán bừa một BIN là đoán bừa nơi tiền sẽ tới.
            */
-          const bin = String(tkNhan.bank_code ?? "").trim();
-          if (!/^\d{6}$/.test(bin)) {
+          const bin =
+            timNganHang(tkNhan.bank_code)?.bin ?? timNganHang(tkNhan.bank_name)?.bin ?? null;
+          if (!bin) {
             return json(
               {
-                error: `Chưa biết mã ngân hàng của tài khoản ${tkNhan.account_number}.`,
+                error: `Chưa biết mã ngân hàng của tài khoản ${tkNhan.account_number} (đang lưu "${tkNhan.bank_name ?? tkNhan.bank_code}").`,
                 action: "fix_input",
                 remedy:
-                  'Vào Fintech Hub, khối SePay, chọn lại ngân hàng từ danh sách rồi bấm đăng ký. Mã ngân hàng đi kèm lựa chọn đó — không gõ tay được, vì gõ sai là mã QR trỏ sang ngân hàng khác.',
+                  'Vào Fintech Hub, khối SePay, chọn lại ngân hàng từ danh sách rồi bấm đăng ký.',
               },
               409,
             );
@@ -955,7 +976,7 @@ Deno.serve(async (req) => {
         if (!tenNganHang) return json({ error: "Thiếu tên ngân hàng." }, 400);
 
         /*
-         * MÃ NGÂN HÀNG PHẢI LÀ BIN 6 SỐ, KHÔNG NHẬN CHUỖI TỰ DO NỮA.
+         * `bank_code` LƯU MÃ BIN 6 SỐ, KHÔNG LƯU CHUỖI TỰ DO.
          *
          * Bản đầu để `bankCode || bankName`, tức chấp nhận cả "MB Bank". Lúc đó
          * `bank_code` chỉ là nhãn phân biệt các dòng nên chuỗi nào cũng được.
@@ -963,18 +984,34 @@ Deno.serve(async (req) => {
          * Từ khi `create-qr` dựng mã VietQR từ chính dòng này thì nó không còn
          * là nhãn nữa — nó là **nơi tiền sẽ tới**. Một BIN sai không báo lỗi ở
          * đâu cả: mã QR vẫn quét được, chỉ là trỏ tới người trùng số tài khoản
-         * ở ngân hàng khác. Nên chặn ngay tại cửa vào.
+         * ở ngân hàng khác.
          *
-         * Giao diện gửi BIN từ ô chọn ngân hàng (`src/lib/nganHang.ts`); người
-         * dùng không gõ tay giá trị này.
+         * NHƯNG TỪ CHỐI THẲNG CHUỖI TỰ DO LÀ MỘT LỖI TÔI VỪA GÂY RA.
+         *
+         * Bản 08/09 đòi `bankCode` phải là 6 số, coi như giao diện luôn gửi
+         * đúng vì tôi vừa sửa giao diện. Giao diện đó đi theo nhịp build của
+         * bên khác, nên người dùng vẫn đang chạy bản có ô gõ tự do — và mọi lần
+         * khai tài khoản của họ bị trả 400. Từ phía họ: "đã khai rồi mà nó cứ
+         * bảo khai lại".
+         *
+         * Máy chủ không được giả định máy khách đã cập nhật. Nên: nhận BIN nếu
+         * có, còn không thì tự tra tên qua `timNganHang` — cùng một bảng giao
+         * diện đang dùng, nên hai bên không thể hiểu ra hai ngân hàng khác nhau.
+         * Chỉ từ chối khi tra không ra, và khi đó nói rõ là tra không ra CÁI GÌ.
          */
-        const maNganHang = String(body.bankCode ?? "").trim();
-        if (!/^\d{6}$/.test(maNganHang)) {
+        const binGuiLen = String(body.bankCode ?? "").trim();
+        const nganHang = /^\d{6}$/.test(binGuiLen)
+          ? timNganHang(binGuiLen)
+          : timNganHang(binGuiLen || tenNganHang);
+
+        if (!nganHang) {
           return json({
-            error: "Thiếu mã ngân hàng.",
-            remedy: "Chọn ngân hàng từ danh sách thay vì gõ tên — mã đi kèm lựa chọn đó.",
+            error: `Không nhận ra ngân hàng "${binGuiLen || tenNganHang}".`,
+            remedy:
+              "Chọn ngân hàng từ danh sách. Nếu ngân hàng của bạn chưa có trong danh sách, báo lại để bổ sung — đoán mã ngân hàng là mã QR trỏ sai nơi.",
           }, 400);
         }
+        const maNganHang = nganHang.bin;
 
         const { data: luu, error: loiLuu } = await supabase
           .from("bank_connections")
@@ -984,7 +1021,9 @@ Deno.serve(async (req) => {
               provider: "sepay",
               account_number: soTaiKhoan,
               account_name: String(body.accountName ?? "").trim() || null,
-              bank_name: tenNganHang,
+              // Tên chuẩn từ bảng, không phải chuỗi người dùng gõ — để hai dòng
+              // cùng một ngân hàng không hiện thành hai tên khác nhau.
+              bank_name: nganHang.ten,
               bank_code: maNganHang,
               status: "connected",
               scopes: "transaction",
