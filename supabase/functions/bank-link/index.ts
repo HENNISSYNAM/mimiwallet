@@ -478,7 +478,48 @@ Deno.serve(async (req) => {
 
         const { data: connections, error: connError } = await query;
         if (connError) return json({ error: connError.message }, 500);
-        if (!connections?.length) return json({ error: "no connected Cas account" }, 404);
+        if (!connections?.length) {
+          /*
+           * NÓI RA VÌ SAO KHÔNG CÓ GÌ ĐỂ ĐỒNG BỘ.
+           *
+           * Câu cũ là `"no connected Cas account"` — tiếng Anh, chuỗi nội bộ,
+           * và đúng một câu cho hai tình huống khác hẳn nhau. Người dùng gặp nó
+           * ngày 08/09 ngay sau khi giả lập lỗi: liên kết vừa chuyển sang
+           * `needs_relink`, nên truy vấn lọc `status = connected` không thấy gì
+           * — trong khi liên kết vẫn ở đó, chỉ là đang chờ đăng nhập lại.
+           *
+           * Màn hình lúc ấy hiện đủ ba dòng liên kết và một dải nhắc "bấm Cập
+           * nhật", còn toast thì nói không có tài khoản nào. Hai câu trái nhau
+           * trên cùng một màn hình.
+           */
+          const { data: moiDong } = await supabase
+            .from("bank_connections")
+            .select("status, scopes")
+            .eq("company_id", company.id)
+            .eq("provider", "bankhub")
+            .is("revoked_at", null);
+
+          const canDangNhapLai = (moiDong ?? []).filter((d) => d.status === "needs_relink");
+          if (canDangNhapLai.length) {
+            return json(
+              {
+                error: `Liên kết đang chờ đăng nhập lại, chưa đồng bộ được.`,
+                action: "relink",
+                remedy: 'Bấm "Cập nhật" ở dòng đang báo vàng để xác thực lại với ngân hàng.',
+              },
+              409,
+            );
+          }
+
+          return json(
+            {
+              error: "Chưa có tài khoản ngân hàng nào được liên kết để đọc sao kê.",
+              action: "relink",
+              remedy: 'Bấm "Liên kết ngân hàng" ở trên. Liên kết nhận tiền QR và kết nối Tổng Cục Thuế không đọc sao kê.',
+            },
+            404,
+          );
+        }
 
         const toDate = isoDate(new Date());
         const from = new Date();
@@ -549,7 +590,7 @@ Deno.serve(async (req) => {
             .eq("id", invoiceId)
             .eq("company_id", company.id)
             .maybeSingle();
-          if (!inv) return json({ error: "invoice not found" }, 404);
+          if (!inv) return json({ error: "Không tìm thấy hoá đơn này. Tải lại trang rồi thử lại." }, 404);
         }
 
         /*
@@ -918,7 +959,7 @@ Deno.serve(async (req) => {
           .eq("company_id", company.id)
           .maybeSingle();
         if (!conn?.access_token_enc) {
-          return json({ error: "connection not found" }, 404);
+          return json({ error: "Không tìm thấy liên kết này. Có thể nó vừa bị ngắt ở tab khác — tải lại trang." }, 404);
         }
 
         const accessToken = await decryptField(
@@ -1310,7 +1351,7 @@ Deno.serve(async (req) => {
           .eq("id", connectionId)
           .eq("company_id", company.id)
           .maybeSingle();
-        if (!conn?.access_token_enc) return json({ error: "connection not found" }, 404);
+        if (!conn?.access_token_enc) return json({ error: "Không tìm thấy liên kết này. Có thể nó vừa bị ngắt ở tab khác — tải lại trang." }, 404);
 
         const accessToken = await decryptField(
           conn.access_token_enc as unknown as EncryptedBlob,
@@ -1425,7 +1466,7 @@ Deno.serve(async (req) => {
           .eq("id", connectionId)
           .eq("company_id", company.id)
           .maybeSingle();
-        if (!conn) return json({ error: "connection not found" }, 404);
+        if (!conn) return json({ error: "Không tìm thấy liên kết này. Có thể nó vừa bị ngắt ở tab khác — tải lại trang." }, 404);
 
         if (conn.access_token_enc) {
           try {
