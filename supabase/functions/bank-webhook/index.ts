@@ -91,9 +91,48 @@ Deno.serve(async (req) => {
     return ack({ ignored: "invalid json" });
   }
 
+  /*
+   * GHI NHẬT KÝ TRƯỚC MỌI QUYẾT ĐỊNH.
+   *
+   * Trước 07/09/2026 hàm này không ghi gì vào `webhook_events` — bảng đó chỉ có
+   * `cas-webhook` dùng. Hậu quả: màn hình "Nhật ký webhook" hiện trống cho mọi
+   * sự kiện SePay, kể cả khi chúng chạy hoàn hảo. Người đọc thấy trống rồi kết
+   * luận "SePay không gửi", đúng cái bẫy đã mất hai ngày để gỡ ở phía Cas.
+   *
+   * Một đường dẫn tiền vào mà không để lại dấu vết thì không chẩn đoán được, và
+   * cái không chẩn đoán được thì sớm muộn cũng bị đổ lỗi nhầm cho ai đó.
+   */
+  const nhatKy = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
   const { row, reason, accountNumber } = mapSepayWebhook(payload as never);
+
+  const { data: suKien } = await nhatKy
+    .from("webhook_events")
+    .insert({
+      provider: "sepay",
+      event_type: "TRANSACTION",
+      event_code: row ? (row.amount >= 0 ? "IN" : "OUT") : null,
+      grant_id: null,
+      payload: payload as Record<string, unknown>,
+      outcome: "received",
+    })
+    .select("id")
+    .maybeSingle();
+
+  const ghiKetQua = async (outcome: string, note?: string) => {
+    if (suKien?.id) {
+      await nhatKy
+        .from("webhook_events")
+        .update({ outcome, note: note ?? null })
+        .eq("id", suKien.id);
+    }
+  };
+
   if (!row) {
     console.warn(`ignored webhook for account ${accountNumber ?? "?"}: ${reason}`);
+    await ghiKetQua("ignored", reason ?? "payload không đọc được");
     return ack({ ignored: reason });
   }
 
@@ -107,7 +146,7 @@ Deno.serve(async (req) => {
 
   const { data: conn, error: connError } = await supabase
     .from("bank_connections")
-    .select("id, company_id")
+    .select("id, company_id, bank_name")
     .eq("provider", "sepay")
     .eq("account_number", accountNumber)
     .eq("status", "connected")
@@ -124,6 +163,10 @@ Deno.serve(async (req) => {
   }
   if (!conn) {
     console.warn(`no connected sepay account matches ${accountNumber}`);
+    await ghiKetQua(
+      "ignored",
+      `chưa khai tài khoản ${accountNumber} trong MIMI — vào Fintech Hub, khối SePay`,
+    );
     return ack({ ignored: "unknown account" });
   }
 
@@ -169,6 +212,13 @@ Deno.serve(async (req) => {
   if (kq.settled || kq.mismatched) {
     console.log(`sepay qr reconcile: ${kq.settled} settled, ${kq.mismatched} mismatch`);
   }
+  await ghiKetQua(
+    "verified",
+    `ghi 1 giao dịch cho ${conn.bank_name ?? accountNumber}` +
+      (kq.settled || kq.mismatched
+        ? ` · khớp QR: ${kq.settled} xong, ${kq.mismatched} lệch`
+        : " · không có mã QR nào đang chờ khớp"),
+  );
 
   console.log(
     `stored ${row.type} ${row.amount} for company ${conn.company_id} (${row.reference_id})`,
