@@ -76,8 +76,31 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("authorization") ?? "";
   const presented = auth.replace(/^Apikey\s+/i, "").trim();
   if (!safeEqual(presented, expected)) {
-    console.warn("rejected webhook: bad or missing Apikey");
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
+    /*
+     * NÓI RA HÌNH DẠNG, KHÔNG NÓI RA GIÁ TRỊ.
+     *
+     * Ngày 08/09/2026 SePay bị từ chối 401 ba lần liền và thông báo chỉ có một
+     * chữ "unauthorized" — không cách nào biết là sai khoá, thiếu header, hay
+     * thừa tiền tố. Người cấu hình phải đoán, và đoán sai thì thử lại mù.
+     *
+     * Nguyên nhân thật ở lần đó: hướng dẫn ban đầu bảo điền `Apikey <chuỗi>`
+     * vào ô API Key, trong khi SePay TỰ thêm tiền tố — nên header thành
+     * `Apikey Apikey <chuỗi>`, gỡ một lần vẫn còn dư một.
+     *
+     * Trả về độ dài và các dấu hiệu hình dạng là đủ để chỉ đúng lỗi, mà không
+     * để lộ ký tự nào của khoá. Độ dài không phải bí mật; nội dung mới là.
+     */
+    const thuaTienTo = /^Apikey\s+Apikey\s+/i.test(auth);
+    const chiTiet = !auth
+      ? "không có header Authorization"
+      : thuaTienTo
+        ? 'header có "Apikey" hai lần — ô API Key bên SePay chỉ điền chuỗi trần, SePay tự thêm tiền tố'
+        : presented.length !== expected.length
+          ? `độ dài khoá lệch (nhận ${presented.length}, cần ${expected.length}) — nhiều khả năng hai bên lưu hai chuỗi khác nhau`
+          : "khoá đúng độ dài nhưng khác nội dung — dán lại từ cùng một nguồn";
+
+    console.warn(`rejected webhook: ${chiTiet}`);
+    return new Response(JSON.stringify({ error: "unauthorized", detail: chiTiet }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
