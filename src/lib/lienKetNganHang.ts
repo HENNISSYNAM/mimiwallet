@@ -51,6 +51,29 @@ export function laLienKetThue(lk: Pick<LienKet, 'scopes'>): boolean {
 }
 
 /**
+ * Giả lập lỗi đăng nhập được không.
+ *
+ * CHỈ LIÊN KẾT ĐỌC SAO KÊ. `/sandbox/grant/reset-login` là thao tác Open
+ * Banking — nó bắt một phiên đăng nhập ngân hàng hỏng theo cách mình chọn.
+ * Grant `qrpay` gắn với dịch vụ merchant của ngân hàng, grant `gdt` gắn với cơ
+ * quan thuế; cả hai đều không phải dịch vụ Open Banking, nên Cas trả về
+ * *"Dịch vụ này không hỗ trợ Open Banking"*.
+ *
+ * PHÁT HIỆN 08/09/2026 khi thử ép điều kiện của case 4 (xoá liên kết cần OTP).
+ * Ô chọn hiện trên **mọi** dòng đang kết nối, nên hai trong ba dòng mời người
+ * dùng bấm một thứ chắc chắn hỏng — đúng họ lỗi đã gỡ ba lần trong file này:
+ * nút Đồng bộ trên dòng `qrpay`, phụ đề "chưa đồng bộ lần nào" trên dòng
+ * `gdt`, và lời khuyên "bấm Cập nhật" cho liên kết QR.
+ *
+ * Quy tắc chung của cả bốn lần: **một điều khiển chỉ được hiện ở nơi nó chạy
+ * được.** Hiện rồi báo lỗi là bắt người dùng học bằng cách thất bại.
+ */
+export function giaLapLoiDuoc(lk: Pick<LienKet, 'scopes' | 'status'>): boolean {
+  if (lk.status !== 'connected') return false;
+  return !laLienKetQr(lk) && !laLienKetThue(lk);
+}
+
+/**
  * Tên hiển thị của một dòng liên kết.
  *
  * VÌ SAO KHÔNG DÙNG THẲNG `account_name || bank_name`. Grant `gdt` nối tới

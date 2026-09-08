@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cachSua, laLienKetQr, cacLoiNhac, phuDe, type LienKet, laLienKetThue, tenDong } from './lienKetNganHang';
+import { cachSua, laLienKetQr, cacLoiNhac, phuDe, type LienKet, laLienKetThue, tenDong, giaLapLoiDuoc } from './lienKetNganHang';
 
 const lk = (over: Partial<LienKet> = {}): LienKet => ({
   id: 'c1',
@@ -171,5 +171,29 @@ describe('liên kết Tổng Cục Thuế', () => {
   it('liên kết thuế hỏng thì vẫn dùng Update Mode như liên kết đọc sao kê', () => {
     // Chỉ `qrpay` mới bắt buộc liên kết lại từ đầu — xem ghi chú đầu file.
     expect(cachSua({ ...thue, status: 'needs_relink' })).toBe('cap_nhat');
+  });
+});
+
+/**
+ * Ô "Giả lập lỗi" chỉ hiện ở nơi nó chạy được.
+ *
+ * `/sandbox/grant/reset-login` là thao tác Open Banking. Thử nó trên grant
+ * `qrpay` hoặc `gdt` thì Cas trả *"Dịch vụ này không hỗ trợ Open Banking"* —
+ * quan sát thật ngày 08/09/2026, khi đang thử ép điều kiện của case 4.
+ */
+describe('giaLapLoiDuoc', () => {
+  it('cho phép trên liên kết đọc sao kê đang kết nối', () => {
+    expect(giaLapLoiDuoc({ status: 'connected', scopes: 'transaction' })).toBe(true);
+  });
+
+  it('không cho trên liên kết QR và liên kết thuế', () => {
+    expect(giaLapLoiDuoc({ status: 'connected', scopes: 'qrpay' })).toBe(false);
+    expect(giaLapLoiDuoc({ status: 'connected', scopes: 'gdt' })).toBe(false);
+  });
+
+  it('không cho khi liên kết chưa ở trạng thái kết nối', () => {
+    // Không có phiên đăng nhập đang sống thì không có gì để làm hỏng.
+    expect(giaLapLoiDuoc({ status: 'needs_relink', scopes: 'transaction' })).toBe(false);
+    expect(giaLapLoiDuoc({ status: 'disconnected', scopes: 'transaction' })).toBe(false);
   });
 });

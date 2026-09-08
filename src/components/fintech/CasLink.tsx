@@ -7,7 +7,15 @@ import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { cauKetQuaDongBo } from '@/lib/ketQuaDongBo';
-import { cachSua, cacLoiNhac, laLienKetQr, laLienKetThue, phuDe, tenDong } from '@/lib/lienKetNganHang';
+import {
+  cachSua,
+  cacLoiNhac,
+  giaLapLoiDuoc,
+  laLienKetQr,
+  laLienKetThue,
+  phuDe,
+  tenDong,
+} from '@/lib/lienKetNganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 
@@ -950,7 +958,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {environment === 'sandbox' && c.status === 'connected' && (
+                  {environment === 'sandbox' && giaLapLoiDuoc(c) && (
                     <select
                       onChange={(e) => {
                         if (e.target.value) void simulateBreak(c.id, e.target.value);
