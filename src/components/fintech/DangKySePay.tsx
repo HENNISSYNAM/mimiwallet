@@ -22,6 +22,16 @@ import { toast } from 'sonner';
  * lại. Dòng này chỉ mang số tài khoản và tên ngân hàng — không token, không mã
  * hoá, không quyền đọc gì của khách. Nói rõ vì người dùng vừa trải qua một
  * luồng Cas đòi OTP và cấp quyền, dễ tưởng đây cũng vậy.
+ *
+ * PLACEHOLDER KHÔNG ĐƯỢC TRÔNG GIỐNG DỮ LIỆU THẬT.
+ *
+ * Bản đầu để placeholder là "2431122002", "MB Bank", "DINH VAN NAM" — đúng số
+ * tài khoản và tên của người đang dùng. Nhìn vào tưởng đã điền xong, chỉ có nút
+ * mờ là dấu hiệu duy nhất cho thấy form vẫn trống, mà không ai đọc nút để biết
+ * ô đã điền hay chưa.
+ *
+ * Người dùng hỏi thẳng "này đã hoạt động chưa" — đúng câu mà một form trống
+ * trông như đã điền sẽ gây ra.
  */
 export function DangKySePay({ onXong }: { onXong?: () => void }) {
   const { session } = useAuthStore();
@@ -86,7 +96,7 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
                 inputMode="numeric"
                 value={soTaiKhoan}
                 onChange={(e) => setSoTaiKhoan(e.target.value)}
-                placeholder="2431122002"
+                placeholder="Nhập số tài khoản"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 font-mono text-sm"
               />
             </label>
@@ -97,7 +107,7 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
               <input
                 value={tenNganHang}
                 onChange={(e) => setTenNganHang(e.target.value)}
-                placeholder="MB Bank"
+                placeholder="Tên ngân hàng"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
               />
             </label>
@@ -110,7 +120,7 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
             <input
               value={tenChu}
               onChange={(e) => setTenChu(e.target.value)}
-              placeholder="DINH VAN NAM"
+              placeholder="Tên trên tài khoản"
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
             />
           </label>

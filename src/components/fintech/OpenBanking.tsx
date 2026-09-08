@@ -186,6 +186,16 @@ export default function OpenBanking() {
       {/* The real integration. Everything below it is the demo path. */}
       <CasLink />
 
+      {/*
+        SePay đứng NGAY DƯỚI CasLink, không nằm tách dưới cùng.
+
+        Với người dùng thì cả hai đều là "nối tài khoản ngân hàng của tôi" —
+        khác nhau ở việc Cas đọc sao kê còn SePay báo tiền về. Đặt cách nhau
+        nửa trang làm người ta không thấy chúng liên quan, và không biết mình
+        đã nối đủ chưa.
+      */}
+      <DangKySePay />
+
       {/* What is actually true about how the connection is secured. The
           previous version of this badge claimed conformance to Thông tư
           09/2024 and an "Open Banking API v3.1", neither of which Mimi has
@@ -367,9 +377,6 @@ export default function OpenBanking() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Đường thu tiền độc lập với Cas — xem ghi chú trong DangKySePay. */}
-      <DangKySePay />
 
       {/* Công cụ chẩn đoán, mặc định đóng — xem ghi chú trong NhatKyWebhook. */}
       <NhatKyWebhook />
