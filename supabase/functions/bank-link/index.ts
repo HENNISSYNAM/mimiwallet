@@ -552,23 +552,6 @@ Deno.serve(async (req) => {
         }
 
         /*
-         * Only a connection linked for QR Pay can raise one. Taking the oldest
-         * connection regardless — as this did — meant someone who linked a
-         * QR-capable bank second was still told their bank does not support QR
-         * Pay, with the wrong bank named.
-         */
-        const { data: conn } = await supabase
-          .from("bank_connections")
-          .select("id, access_token_enc, account_number")
-          .eq("company_id", company.id)
-          .eq("provider", "bankhub")
-          .eq("status", "connected")
-          .eq("scopes", "qrpay")
-          .is("revoked_at", null)
-          .order("received_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        /*
          * Sinh ở máy chủ, không bao giờ lấy từ yêu cầu gửi lên. Giá trị này là
          * thứ đánh dấu hoá đơn nào đã thu, nên ai chọn được nó thì tất toán
          * được hoá đơn của người khác bằng cách tạo một mã QR trùng mã.
@@ -583,48 +566,49 @@ Deno.serve(async (req) => {
         const referenceNumber = sinhMaThamChieu();
 
         /*
-         * ─── KHÔNG CÓ GRANT CAS THÌ VẪN PHÁT ĐƯỢC MÃ ───────────────────────
+         * ─── PHÁT MÃ VÀO TÀI KHOẢN MÌNH NHÌN THẤY ĐƯỢC TIỀN VỀ ─────────────
          *
-         * Đây là chỗ sai suốt hai tuần, và nó là một giả định chứ không phải
-         * một giới hạn kỹ thuật: hàm này coi mã QR là thứ **chỉ Cas cấp được**,
-         * nên không có grant `qrpay` là trả 404 và màn hình báo đỏ.
+         * Câu hỏi quyết định KHÔNG phải "nhà cung cấp nào xịn hơn", mà là:
+         * **tiền vào tài khoản này thì MIMI có biết không?**
          *
-         * Sự thật thì VietQR là một chuẩn mở. `src/lib/vietqr.ts` đã dựng được
-         * chuỗi đó ngay tại máy khách từ lâu — EMVCo TLV + CRC-16/CCITT-FALSE,
-         * có test đối chiếu vector chuẩn — và `SubscriptionPayment` đã dùng nó
-         * để thu tiền thuê bao. Chỉ cần **mã BIN + số tài khoản**, không cần
-         * quyền gì của ai.
+         * SePay canh tài khoản ngân hàng thật và đẩy sang từng giao dịch kèm
+         * nội dung chuyển khoản. Chứng minh chạy thông ngày 08/09/2026. Mã
+         * VietQR trỏ đúng vào tài khoản đó, và mang mã tham chiếu trong nội
+         * dung — nên cả hai nửa của vòng đều có thật.
          *
-         * Cái Cas thêm vào là tài khoản định danh (VA) dùng một lần, khớp được
-         * mà không phụ thuộc nội dung chuyển khoản. Đó là thứ tốt hơn — nên khi
-         * có grant sống thì vẫn ưu tiên. Nhưng "tốt hơn" không phải "bắt buộc":
-         * đường VietQR khớp bằng mã tham chiếu trong nội dung, và SePay đẩy
-         * nguyên nội dung đó sang. Vòng đóng được mà không cần Cas trả lời.
+         * Cas QR Pay cấp một tài khoản định danh dùng một lần, khớp được mà
+         * không phụ thuộc khách gõ gì. Trên giấy thì mạnh hơn. Nhưng nửa còn
+         * lại của nó — báo về khi tiền đến — HIỆN KHÔNG CHẠY: `/transactions`
+         * trả rỗng cho grant hợp lệ, và không có webhook nào khi tiền thật về.
+         *
+         * Nên một mã Cas lúc này là mã **thu tiền thật vào một tài khoản không
+         * ai báo cáo lại**. Nó tệ hơn không có mã: khách tin là đã trả, hoá đơn
+         * vẫn treo, và chủ shop đi đòi một khoản đã nhận.
+         *
+         * Vì vậy ĐẢO THỨ TỰ so với bản trước: VietQR + SePay là đường mặc định,
+         * Cas chỉ dùng khi chưa khai tài khoản SePay nào.
+         *
+         * KHI NÀO ĐẢO LẠI: khi có một webhook `TRANSACTIONS` thật của Cas ứng
+         * với một lần trả tiền thật, ghi vào `webhook_events`. Đảo lại vì tin
+         * là Cas đã sửa, mà không có dòng đó, là quay về đúng chỗ này.
+         *
+         * ĐƯỜNG NÂNG CẤP KHÔNG CẦN CAS: SePay cũng có tài khoản định danh, và
+         * `mapSepayWebhook` đã đọc `subAccount` vào `virtual_account_number`.
+         * Bật được VA bên SePay là có cả hai ưu điểm trên cùng một đường đã
+         * chứng minh chạy.
          */
-        if (!conn?.access_token_enc) {
-          const { data: tkNhan } = await supabase
-            .from("bank_connections")
-            .select("account_number, account_name, bank_code, bank_name")
-            .eq("company_id", company.id)
-            .eq("provider", "sepay")
-            .eq("status", "connected")
-            .is("revoked_at", null)
-            .order("received_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+        const { data: tkNhan } = await supabase
+          .from("bank_connections")
+          .select("account_number, account_name, bank_code, bank_name")
+          .eq("company_id", company.id)
+          .eq("provider", "sepay")
+          .eq("status", "connected")
+          .is("revoked_at", null)
+          .order("received_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-          if (!tkNhan) {
-            return json(
-              {
-                error: "Chưa khai tài khoản ngân hàng để nhận tiền.",
-                action: "relink",
-                remedy:
-                  'Vào Fintech Hub, khối "Nhận thông báo tiền về qua SePay", khai số tài khoản và chọn ngân hàng. Không cần liên kết Cas.',
-              },
-              404,
-            );
-          }
-
+        if (tkNhan) {
           /*
            * BIN LẤY TỪ DỮ LIỆU ĐÃ LƯU, KHÔNG LẤY TỪ YÊU CẦU GỬI LÊN.
            *
@@ -689,6 +673,38 @@ Deno.serve(async (req) => {
             nganHang: tkNhan.bank_name,
             chuTaiKhoan: tkNhan.account_name,
           });
+        }
+
+        /*
+         * ─── DỰ PHÒNG: CAS QR PAY ──────────────────────────────────────────
+         *
+         * Chỉ tới đây khi chưa khai tài khoản SePay nào. Lọc `scopes='qrpay'`
+         * là bắt buộc: lấy liên kết cũ nhất bất kể loại — như bản đầu — thì
+         * người liên kết ngân hàng có QR ở lần thứ hai vẫn bị báo là ngân hàng
+         * của họ không hỗ trợ QR Pay, mà lại nêu tên ngân hàng khác.
+         */
+        const { data: conn } = await supabase
+          .from("bank_connections")
+          .select("id, access_token_enc, account_number")
+          .eq("company_id", company.id)
+          .eq("provider", "bankhub")
+          .eq("status", "connected")
+          .eq("scopes", "qrpay")
+          .is("revoked_at", null)
+          .order("received_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!conn?.access_token_enc) {
+          return json(
+            {
+              error: "Chưa khai tài khoản ngân hàng để nhận tiền.",
+              action: "relink",
+              remedy:
+                'Vào Fintech Hub, khối "Nhận thông báo tiền về qua SePay", khai số tài khoản và chọn ngân hàng. Không cần liên kết Cas.',
+            },
+            404,
+          );
         }
 
         /*
