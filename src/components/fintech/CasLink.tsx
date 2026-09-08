@@ -7,7 +7,7 @@ import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { cauKetQuaDongBo } from '@/lib/ketQuaDongBo';
-import { cachSua, cacLoiNhac, laLienKetQr, phuDe } from '@/lib/lienKetNganHang';
+import { cachSua, cacLoiNhac, laLienKetQr, laLienKetThue, phuDe, tenDong } from '@/lib/lienKetNganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 
@@ -311,6 +311,47 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   useEffect(() => {
     loadConnections();
   }, [loadConnections]);
+
+  /**
+   * Kéo hoá đơn điện tử từ Tổng Cục Thuế.
+   *
+   * ĐƯỜNG RIÊNG, KHÔNG DÙNG CHUNG `runSync`. `action=sync` đọc sao kê ngân
+   * hàng và bỏ qua grant `gdt` (`_shared/bank/dong-bo.ts`), nên gọi nó ở đây
+   * chỉ tạo ra một nút quay vòng rồi không đổi gì.
+   *
+   * Máy chủ từ chối khi công ty chưa có mã số thuế — thiếu nó thì không phân
+   * biệt được hoá đơn bán ra và mua vào. Hiện nguyên `remedy` thay vì nuốt:
+   * đây là việc người dùng làm được ngay, ở Cài đặt.
+   */
+  const dongBoThue = useCallback(
+    async (connectionId: string) => {
+      setSyncing(connectionId);
+      const kq = await call('gdt-sync', {});
+      setSyncing(null);
+      if (!kq) return;
+
+      await loadConnections();
+      track('gdt_synced', { stored: kq.stored ?? 0 });
+
+      const daLuu = Number(kq.stored ?? 0);
+      const banRa = Number(kq.issued ?? 0);
+      const muaVao = Number(kq.received ?? 0);
+
+      if (!daLuu) {
+        toast('Không có hoá đơn nào trong kỳ', {
+          description: `Đã hỏi từ ${kq.window?.fromDate} tới ${kq.window?.toDate}.`,
+        });
+        return;
+      }
+
+      toast.success(`Đã tải ${daLuu} hoá đơn`, {
+        description: `${banRa} bán ra, ${muaVao} mua vào. Doanh thu theo hoá đơn: ${Number(
+          kq.revenueFromInvoices ?? 0,
+        ).toLocaleString('vi-VN')}đ.`,
+      });
+    },
+    [call, loadConnections],
+  );
 
   const runSync = useCallback(
     async (connectionId?: string) => {
@@ -870,8 +911,16 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       <AlertTriangle size={14} className="text-amber-500 shrink-0" />
                     )}
                     <p className="text-sm font-medium text-foreground truncate">
-                      {c.account_name || c.bank_name} ·{' '}
-                      <span className="font-mono">{maskAccount(c.account_number)}</span>
+                      {tenDong(c)}
+                      {/* Grant `gdt` khong gan voi so tai khoan nao — hien mot
+                          chuoi bam duoi ten co quan thue chi lam nguoi doc tuong
+                          day la mot tai khoan ngan hang. */}
+                      {!laLienKetThue(c) && (
+                        <>
+                          {' · '}
+                          <span className="font-mono">{maskAccount(c.account_number)}</span>
+                        </>
+                      )}
                     </p>
                   </div>
                   <p
@@ -942,8 +991,27 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   )}
                   {/* Khong hien nut Dong bo cho lien ket QR: grant `qrpay` khong
                       co scope `transaction`, nen bam vao khong bao gio ra giao
-                      dich nao. Mot nut khong lam gi ca la mot nut noi doi. */}
-                  {c.status === 'connected' && !laLienKetQr(c) && (
+                      dich nao. Mot nut khong lam gi ca la mot nut noi doi.
+
+                      Lien ket `gdt` cung khong dung `action=sync` — `sync` bo qua
+                      grant do. No co duong rieng: `gdt-sync`. Truoc 08/09/2026
+                      khong noi nao trong giao dien goi duong ay, nen noi duoc
+                      Tong Cuc Thue roi bang hoa don trong vinh vien. */}
+                  {c.status === 'connected' && laLienKetThue(c) && (
+                    <button
+                      onClick={() => void dongBoThue(c.id)}
+                      disabled={syncing !== null}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                      aria-label="Tải hoá đơn điện tử từ Tổng Cục Thuế"
+                    >
+                      {syncing === c.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <RefreshCw size={14} />
+                      )}
+                    </button>
+                  )}
+                  {c.status === 'connected' && !laLienKetQr(c) && !laLienKetThue(c) && (
                     <button
                       onClick={() => runSync(c.id)}
                       disabled={syncing !== null}

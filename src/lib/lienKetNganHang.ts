@@ -45,6 +45,30 @@ export function laLienKetQr(lk: Pick<LienKet, 'scopes'>): boolean {
   return lk.scopes === 'qrpay';
 }
 
+/** Liên kết Tổng Cục Thuế: kéo hoá đơn điện tử, không kéo sao kê. */
+export function laLienKetThue(lk: Pick<LienKet, 'scopes'>): boolean {
+  return lk.scopes === 'gdt';
+}
+
+/**
+ * Tên hiển thị của một dòng liên kết.
+ *
+ * VÌ SAO KHÔNG DÙNG THẲNG `account_name || bank_name`. Grant `gdt` nối tới
+ * **Tổng Cục Thuế**, không tới ngân hàng nào — Cas không trả về tên tổ chức,
+ * nên `exchange` ghi nhãn dự phòng "Tài khoản ngân hàng". Kết quả là màn hình
+ * hiện một kết nối cơ quan thuế nằm trong danh sách "Tài khoản ngân hàng thật",
+ * mang tên một ngân hàng không tồn tại.
+ *
+ * Người dùng không có cách nào biết dòng đó là gì, và cũng không có cách nào
+ * biết dòng nào trong ba dòng giống nhau mới là cái họ vừa bấm.
+ */
+export function tenDong(
+  lk: Pick<LienKet, 'scopes'> & { account_name?: string | null; bank_name?: string | null },
+): string {
+  if (laLienKetThue(lk)) return 'Tổng Cục Thuế';
+  return lk.account_name || lk.bank_name || 'Tài khoản ngân hàng';
+}
+
 /**
  * Cách sửa đúng cho một liên kết.
  *
@@ -129,6 +153,22 @@ export function phuDe(lk: LienKet, ghiChu?: string): string | null {
    */
   if (lk.status === 'connected' && laLienKetQr(lk)) {
     return 'Sẵn sàng nhận tiền QR · không có sao kê để đồng bộ';
+  }
+
+  /*
+   * Lần thứ ba của cùng một họ lỗi, và lần này nó ẩn lâu nhất.
+   *
+   * Dòng `gdt` rơi xuống câu dự phòng *"Chưa đồng bộ lần nào"* — một câu gợi ý
+   * việc đang chờ. Nhưng nút Đồng bộ chung gọi `action=sync`, mà `sync` bỏ qua
+   * grant `gdt` (`coSaoKeDeDoc` trả false). Và **không nơi nào trong giao diện
+   * gọi `gdt-sync`**, dù máy chủ đã có sẵn nhánh đó và `tax-summary` đã đọc
+   * bảng `gdt_invoices`.
+   *
+   * Nghĩa là: nối được Tổng Cục Thuế, rồi bảng hoá đơn trống vĩnh viễn, và
+   * `ThresholdClock` báo `gdtRevenue = null` mãi mãi. Kết nối chỉ để trưng.
+   */
+  if (lk.status === 'connected' && laLienKetThue(lk)) {
+    return 'Đã kết nối · bấm đồng bộ để tải hoá đơn điện tử';
   }
 
   return null;

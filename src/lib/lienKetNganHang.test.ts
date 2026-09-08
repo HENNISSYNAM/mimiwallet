@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cachSua, laLienKetQr, cacLoiNhac, phuDe, type LienKet } from './lienKetNganHang';
+import { cachSua, laLienKetQr, cacLoiNhac, phuDe, type LienKet, laLienKetThue, tenDong } from './lienKetNganHang';
 
 const lk = (over: Partial<LienKet> = {}): LienKet => ({
   id: 'c1',
@@ -127,5 +127,49 @@ describe('phuDe — ghi chú cụ thể phải thắng câu chung', () => {
     // hổ phách phải bám lại, đúng như bản vá case 7.
     expect(phuDe(lk({ status: 'connected' }), 'Tài khoản đang bật chặn đăng nhập từ website'))
       .toBe('Tài khoản đang bật chặn đăng nhập từ website');
+  });
+});
+
+/**
+ * Liên kết Tổng Cục Thuế — lần thứ ba của cùng một họ lỗi.
+ *
+ * Grant `gdt` nối tới cơ quan thuế, không tới ngân hàng nào. Trước 08/09/2026
+ * màn hình gọi nó là "Tài khoản ngân hàng", kèm một chuỗi bốn ký tự trông như
+ * số tài khoản, và phụ đề "Chưa đồng bộ lần nào" — một câu hứa việc đang chờ.
+ *
+ * Nhưng không nơi nào trong giao diện gọi `gdt-sync`, và nút Đồng bộ chung thì
+ * bỏ qua grant `gdt`. Nối xong là bảng hoá đơn trống vĩnh viễn.
+ */
+describe('liên kết Tổng Cục Thuế', () => {
+  const thue = { id: 'g', status: 'connected', scopes: 'gdt' };
+
+  it('không bị nhầm là liên kết QR', () => {
+    expect(laLienKetThue(thue)).toBe(true);
+    expect(laLienKetQr(thue)).toBe(false);
+  });
+
+  it('gọi đúng tên cơ quan, không mượn nhãn ngân hàng', () => {
+    // `exchange` ghi nhãn dự phòng này khi Cas không trả về tên tổ chức.
+    expect(tenDong({ ...thue, bank_name: 'Tài khoản ngân hàng' })).toBe('Tổng Cục Thuế');
+    // Kể cả khi có account_name, dòng thuế vẫn phải đọc ra là thuế.
+    expect(tenDong({ ...thue, account_name: 'DINH VAN NAM' })).toBe('Tổng Cục Thuế');
+  });
+
+  it('dòng ngân hàng vẫn giữ tên cũ', () => {
+    const nh = { id: 'b', status: 'connected', scopes: 'transaction' };
+    expect(tenDong({ ...nh, account_name: 'DINH VAN NAM', bank_name: 'MB Bank' })).toBe(
+      'DINH VAN NAM',
+    );
+    expect(tenDong({ ...nh, account_name: null, bank_name: 'MB Bank' })).toBe('MB Bank');
+  });
+
+  it('phụ đề nói việc bấm được, không nói "chưa đồng bộ lần nào"', () => {
+    // Câu dự phòng cũ gợi ý một việc đang chờ mà nút chung không làm được.
+    expect(phuDe(thue)).toBe('Đã kết nối · bấm đồng bộ để tải hoá đơn điện tử');
+  });
+
+  it('liên kết thuế hỏng thì vẫn dùng Update Mode như liên kết đọc sao kê', () => {
+    // Chỉ `qrpay` mới bắt buộc liên kết lại từ đầu — xem ghi chú đầu file.
+    expect(cachSua({ ...thue, status: 'needs_relink' })).toBe('cap_nhat');
   });
 });
