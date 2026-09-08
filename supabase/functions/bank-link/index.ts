@@ -1416,7 +1416,52 @@ Deno.serve(async (req) => {
         from.setMonth(from.getMonth() - BACKFILL_MONTHS);
         const fromDate = typeof body.from_date === "string" ? body.from_date : isoDate(from);
 
-        const payload = await fetchGdtInvoices(cfg, accessToken, { fromDate, toDate });
+        /*
+         * GRANT HỎNG THÌ PHẢI ĐÁNH DẤU, KHÔNG CHỈ BÁO MỘT CÂU RỒI THÔI.
+         *
+         * Nhánh đọc sao kê (`ingest.ts`) đã làm đúng từ lâu: Cas trả
+         * `GRANT_LOGIN_REQUIRED` thì đổi dòng sang `needs_relink` để giao diện
+         * mời người dùng xác thực lại. Nhánh này thì không — nó để lỗi ném lên
+         * và trả về một câu.
+         *
+         * Hậu quả quan sát ngày 08/09: Cas nói grant cần đăng nhập lại, mà dòng
+         * Tổng Cục Thuế vẫn hiện dấu tích xanh "Đã kết nối". Bấm đồng bộ lần
+         * nữa thì lại đúng câu đó, mãi mãi, vì không gì trong cơ sở dữ liệu
+         * thay đổi. Cùng họ với ba lỗi đã gỡ hôm nay: màn hình mô tả một trạng
+         * thái không còn đúng.
+         *
+         * KHUYÊN "CẬP NHẬT", KHÔNG KHUYÊN "LIÊN KẾT LẠI". Bài học từ sự cố
+         * 04/09 với liên kết QR: chỉ grant `qrpay` mới bắt buộc làm lại từ đầu.
+         * Liên kết `gdt` dùng Update Mode được, và mời sai là dẫn người dùng đi
+         * bấm một nút không cần bấm.
+         */
+        let payload;
+        try {
+          payload = await fetchGdtInvoices(cfg, accessToken, { fromDate, toDate });
+        } catch (e) {
+          if (!(e instanceof BankhubError)) throw e;
+
+          if (e.needsRelink) {
+            await supabase
+              .from("bank_connections")
+              .update({ status: "needs_relink", revoked_at: new Date().toISOString() })
+              .eq("id", conn.id);
+          }
+
+          const { action } = describeBankError(e.errorCode);
+          return json(
+            {
+              error: e.message,
+              errorCode: e.errorCode,
+              action,
+              remedy: e.needsRelink
+                ? 'Bấm "Cập nhật" ở dòng Tổng Cục Thuế để đăng nhập lại. Không phải kết nối lại từ đầu.'
+                : describeBankError(e.errorCode).remedy,
+              requestId: e.requestId,
+            },
+            e.needsRelink ? 409 : 502,
+          );
+        }
         const { rows, rejected } = mapGdtInvoices(
           (payload.gdtInvoices ?? []) as never[],
           { companyTaxCode },
