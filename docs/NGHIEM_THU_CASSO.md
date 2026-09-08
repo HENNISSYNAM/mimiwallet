@@ -55,7 +55,7 @@ Buổi này đóng thêm **hai case** (12 và 13) và **xác định nguyên nh�
 | | Số case | Ghi chú |
 |---|---|---|
 | **Passed** | **16 / 20** | 80% trên nhóm trong phạm vi |
-| Chặn bởi dữ liệu sandbox — đã chứng minh | 1 | case 15 |
+| Phần MIMI đã chứng minh, chờ envelope từ Casso | 1 | case 15 — xem 08/09 |
 | Chờ app Cas ID gửi webhook thật | 1 | case 10 |
 | Đã viết mã, chưa gặp điều kiện phát sinh | 1 | case 4 |
 | Ngoài phạm vi theo thiết kế | 1 | case 18 |
@@ -413,6 +413,26 @@ Kiểm lại mã ngày 18/08 để chắc: **không có dòng nào gọi `/trans
 chưa từng được hiện thực, nên bỏ đi không để lại mã chết nào.
 
 Điều còn cần: **Casso đồng ý rút 10 case này khỏi bộ nghiệm thu của hợp đồng.**
+
+**Bổ sung 08/09 — nếu Casso không đồng ý rút.** Console của Casso có mục
+*Developer → API → Cấu hình IP* cho tự thêm IP vào whitelist. Điều đó mở một
+đường thứ ba mà 18/08 chưa thấy, và nó **khác hẳn hai phương án đã loại**:
+
+|  | Dựng tính năng chuyển tiền | Chạy 10 case một lần |
+|---|---|---|
+| Hạ tầng | VM proxy IP tĩnh, chạy và giám sát mãi | một máy có IP cố định, dùng một buổi |
+| Mã trong sản phẩm | có, và là mã di chuyển tiền của khách | không dòng nào |
+| Rủi ro pháp lý | chạm trung gian thanh toán | không |
+| Kết quả | tính năng không ai dùng | 10 requestId, đóng case |
+
+Chín trong mười case là **case lỗi** (TC01–TC08, và case 30 token không hợp lệ)
+— chúng chỉ cần một lời gọi có tham số cố ý sai, đúng cách đã dùng để lấy
+`INVALID_PARAM` cho case 13. Không cần hiện thực gì trong sản phẩm.
+
+Quyết định 18/08 **không đổi**: MIMI không đưa chuyển tiền vào sản phẩm. Đọc sao
+kê để dựng sổ chi phí thì không cần quyền chuyển tiền, và không nên có. Mục này
+chỉ là đường đóng hồ sơ nếu bên kia cần đủ case, không phải đường thêm tính
+năng.
 Đây là việc thương lượng, không phải việc MIMI tự quyết một mình — hợp đồng liệt kê
 ba mã dịch vụ và đây là một trong ba. Nhưng phía MIMI thì quyết rồi.
 
@@ -728,4 +748,26 @@ mình.
 3. **Một dòng trong tài liệu QR Pay** ghi rõ sandbox chỉ hỗ trợ MB. Chi tiết đó
    tốn của chúng tôi một tuần và hai ngân hàng; nó tiết kiệm cho khách tích hợp
    tiếp theo đúng chừng đó.
+
+### Bổ sung 08/09 — về case 15
+
+Phần MIMI của case 15 đã chạy trên tiền thật, chứng minh bằng một đường **hoàn
+toàn độc lập với Cas**: mã VietQR dựng tại máy khách, thông báo tiền về do SePay
+đẩy. Hoá đơn `INV-39834075` tự chuyển sang đã thu sau khi nhận ₫2.200, không có
+thao tác tay nào. Nghĩa là `reconcileCompanyQr`, `matchQrPayments` và bước
+chuyển trạng thái hoá đơn — toàn bộ phần việc case 15 kiểm — đều đúng.
+
+Thứ duy nhất còn thiếu là **một envelope `TRANSACTIONS` do Casso gửi khi có tiền
+thật vào tài khoản đã liên kết**. Ngày 04/09 đã trả ₫5.000 thật vào tài khoản MB
+có grant `qrpay` sống và không có envelope nào tới.
+
+Đề nghị một trong hai, tuỳ cái nào nhanh hơn cho Casso:
+
+- dữ liệu mẫu trong sandbox có phát sinh giao dịch để `/transactions` và webhook
+  `TRANSACTIONS` có thứ để trả, hoặc
+- credential production để chạy lại case 15 trên môi trường thật.
+
+Chúng tôi hiểu sandbox không phục vụ sao kê thật là giới hạn môi trường chứ
+không phải lỗi tích hợp, và không coi đó là vấn đề của Casso cần khắc phục gấp
+— chỉ cần một trong hai đường trên để đóng case.
 
