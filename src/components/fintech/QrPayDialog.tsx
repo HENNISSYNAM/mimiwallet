@@ -129,7 +129,14 @@ export function QrPayDialog({
             .filter(Boolean)
             .join(' '),
         );
-        setRemedy(result?.remedy ?? null);
+        // `detail` nói ra HÌNH DẠNG của cái sai — tìm thấy mấy dòng, ở công ty
+        // nào, trạng thái gì. Không hiện nó ra thì người dùng chỉ đọc được câu
+        // chung và phải đoán, đúng chỗ đã mất hai ngày ở phía Cas.
+        setRemedy(
+          [result?.detail, result?.remedy].filter(Boolean).join('
+
+') || null,
+        );
         setRequestId(result?.requestId ?? null);
         return;
       }
@@ -236,7 +243,9 @@ export function QrPayDialog({
         {!loading && error && (
           <div className="space-y-3 py-4">
             <p className="text-sm text-destructive">{error}</p>
-            {remedy && <p className="text-sm text-muted-foreground">{remedy}</p>}
+            {remedy && (
+              <p className="whitespace-pre-line text-sm text-muted-foreground">{remedy}</p>
+            )}
             {requestId && (
               <p className="font-mono text-xs text-muted-foreground">requestId {requestId}</p>
             )}

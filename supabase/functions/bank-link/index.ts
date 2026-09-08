@@ -608,7 +608,68 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle();
 
-        if (tkNhan) {
+        if (!tkNhan) {
+          /*
+           * MỘT CÂU CHO NHIỀU NGUYÊN NHÂN LÀ BẮT NGƯỜI DÙNG ĐOÁN.
+           *
+           * Truy vấn trên có năm điều kiện. Trượt điều kiện nào cũng ra cùng
+           * một `null`, và bản đầu trả về đúng một câu "chưa khai tài khoản" —
+           * nên người vừa khai xong vẫn đọc câu bảo họ đi khai, không có đường
+           * nào biết mình sai ở đâu.
+           *
+           * Cùng bài học với 401 của `bank-webhook` ngày 08/09: nói ra hình
+           * dạng của cái sai, đừng chỉ nói là sai.
+           *
+           * NHÌN SANG CÁC CÔNG TY KHÁC CỦA CÙNG NGƯỜI DÙNG, vì đó là cái bẫy đã
+           * sập một lần rồi. Ngày 07/09 những grant Cas cần thu hồi nằm ở một
+           * công ty khác của chính người đang đăng nhập, và hàm dọn báo "thu
+           * hồi được 0" trong khi vẫn còn nguyên. Người dùng tạo vài công ty để
+           * thử là chuyện thường; khai tài khoản ở công ty này rồi mở hoá đơn ở
+           * công ty kia thì màn hình không hé lộ gì.
+           *
+           * Chỉ trả về SỐ LƯỢNG và trạng thái, không trả tên ngân hàng hay số
+           * tài khoản của công ty khác — kể cả khi cùng một người sở hữu, dữ
+           * liệu của pháp nhân này không rò sang thông báo lỗi của pháp nhân
+           * kia.
+           */
+          const { data: moiDong } = await supabase
+            .from("bank_connections")
+            .select("company_id, status, revoked_at, bank_code")
+            .eq("provider", "sepay")
+            .in(
+              "company_id",
+              ((
+                await supabase.from("companies").select("id").eq("user_id", user.id)
+              ).data ?? []).map((c: { id: string }) => c.id),
+            );
+
+          const cungCty = (moiDong ?? []).filter((d) => d.company_id === company.id);
+          const ctyKhac = (moiDong ?? []).filter((d) => d.company_id !== company.id);
+
+          const chiTiet = cungCty.length
+            ? `có ${cungCty.length} tài khoản SePay trong công ty này nhưng không dùng được: ` +
+              cungCty
+                .map((d) => (d.revoked_at ? "đã thu hồi" : `trạng thái ${d.status}`))
+                .join(", ")
+            : ctyKhac.length
+              ? `tài khoản SePay đang nằm ở một công ty khác của bạn (${ctyKhac.length} dòng). Hoá đơn này thuộc công ty "${company.name}" — khai lại tài khoản khi đang ở công ty đó.`
+              : "chưa có dòng SePay nào cho tài khoản này";
+
+          return json(
+            {
+              error: "Chưa khai tài khoản ngân hàng để nhận tiền.",
+              detail: chiTiet,
+              action: "relink",
+              remedy:
+                'Vào Fintech Hub, khối "Nhận thông báo tiền về qua SePay", khai số tài khoản và chọn ngân hàng. Không cần liên kết Cas.',
+            },
+            404,
+          );
+        }
+
+        // Khối riêng chỉ để giữ nguyên thụt lề của phần bên dưới sau khi đảo
+        // `if (tkNhan)` thành một lần trả về sớm. Không có ý nghĩa nào khác.
+        {
           /*
            * BIN LẤY TỪ DỮ LIỆU ĐÃ LƯU, KHÔNG LẤY TỪ YÊU CẦU GỬI LÊN.
            *
