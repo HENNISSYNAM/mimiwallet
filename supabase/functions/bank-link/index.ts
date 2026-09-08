@@ -598,16 +598,40 @@ Deno.serve(async (req) => {
          * Bật được VA bên SePay là có cả hai ưu điểm trên cùng một đường đã
          * chứng minh chạy.
          */
-        const { data: tkNhan } = await supabase
+        /*
+         * `created_at`, KHÔNG PHẢI `received_at`.
+         *
+         * `bank_connections` không có cột `received_at` — cột đó thuộc
+         * `webhook_events`. PostgREST trả lỗi cho cả truy vấn, `data` thành
+         * null, và vì chỗ này chỉ lấy `data` mà bỏ `error` nên một truy vấn
+         * HỎNG trông y hệt một truy vấn KHÔNG TÌM THẤY GÌ.
+         *
+         * Ba chỗ trong file này cùng mắc lỗi đó, và hậu quả là ba tính năng
+         * chết mà màn hình vẫn nói năng bình thường: mã QR "chưa liên kết ngân
+         * hàng" dù đã liên kết, và "chưa kết nối Tổng Cục Thuế" dù đã kết nối.
+         *
+         * Chính file này đã ghi bài học đó ở nhánh `exchange`: "Trả nguyên văn
+         * thông báo của Postgres, đừng nuốt nó." Tôi viết câu ấy rồi vi phạm
+         * nó ba lần trong cùng một file.
+         */
+        const { data: tkNhan, error: loiTkNhan } = await supabase
           .from("bank_connections")
           .select("account_number, account_name, bank_code, bank_name")
           .eq("company_id", company.id)
           .eq("provider", "sepay")
           .eq("status", "connected")
           .is("revoked_at", null)
-          .order("received_at", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        if (loiTkNhan) {
+          console.error("tim tai khoan sepay that bai:", loiTkNhan.message);
+          return json(
+            { error: "Không đọc được danh sách tài khoản.", detail: loiTkNhan.message },
+            500,
+          );
+        }
 
         if (!tkNhan) {
           /*
@@ -765,7 +789,7 @@ Deno.serve(async (req) => {
          * người liên kết ngân hàng có QR ở lần thứ hai vẫn bị báo là ngân hàng
          * của họ không hỗ trợ QR Pay, mà lại nêu tên ngân hàng khác.
          */
-        const { data: conn } = await supabase
+        const { data: conn, error: loiConn } = await supabase
           .from("bank_connections")
           .select("id, access_token_enc, account_number")
           .eq("company_id", company.id)
@@ -773,9 +797,18 @@ Deno.serve(async (req) => {
           .eq("status", "connected")
           .eq("scopes", "qrpay")
           .is("revoked_at", null)
-          .order("received_at", { ascending: false })
+          // Xem ghi chú về `received_at` ở truy vấn SePay phía trên.
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        if (loiConn) {
+          console.error("tim lien ket qrpay that bai:", loiConn.message);
+          return json(
+            { error: "Không đọc được danh sách liên kết.", detail: loiConn.message },
+            500,
+          );
+        }
 
         if (!conn?.access_token_enc) {
           return json(
@@ -1316,7 +1349,9 @@ Deno.serve(async (req) => {
           .eq("scopes", "gdt")
           .eq("status", "connected")
           .is("revoked_at", null)
-          .order("received_at", { ascending: false })
+          // Xem ghi chú về `received_at` ở nhánh create-qr. Lỗi này làm màn
+          // hình báo "chưa kết nối Tổng Cục Thuế" cho cả liên kết đang sống.
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
         if (!conn?.access_token_enc) {

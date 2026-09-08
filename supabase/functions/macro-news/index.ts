@@ -131,7 +131,10 @@ async function loadCompanyContext(
       .from("credit_score_snapshots")
       .select("id")
       .eq("company_id", companyId)
-      .order("created_at", { ascending: false })
+      // `computed_at`, không phải `created_at` — bảng này không có cột đó.
+      // Sai tên cột thì PostgREST hỏng cả truy vấn, và vì `Promise.all` ở đây
+      // chỉ đọc `data` nên nó lặng lẽ thành "chưa có bản chấm điểm nào".
+      .order("computed_at", { ascending: false })
       .limit(1),
     admin
       .from("transactions")
