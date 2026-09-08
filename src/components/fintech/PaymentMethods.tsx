@@ -105,6 +105,21 @@ export default function PaymentMethods() {
         .eq('scopes', 'qrpay')
         .eq('status', 'connected')
         .is('revoked_at', null)
+        /*
+         * VÀ PHẢI CÒN CHÌA KHOÁ DÙNG ĐƯỢC.
+         *
+         * Đây là phép thử cuối cùng mà `create-qr` làm SAU câu truy vấn:
+         *   if (!conn?.access_token_enc) return "Chưa có tài khoản...";
+         *
+         * Lần trước tôi đồng bộ năm điều kiện lọc rồi tưởng xong, nhưng bỏ sót
+         * đúng phép thử này — nên thẻ vẫn khoe "Đang chạy" cho một dòng đã mất
+         * token, và bấm Tạo mã QR vẫn báo chưa liên kết. Sửa hai lần mới hết,
+         * vì lần đầu chỉ nhìn phần `.eq()` mà không đọc dòng ngay dưới nó.
+         *
+         * Dòng còn trong bảng, còn `connected`, nhưng không có token thì không
+         * gọi Cas được — với người dùng, nó không phải một liên kết đang chạy.
+         */
+        .not('access_token_enc', 'is', null)
         .limit(1);
 
       const { data: sub } = await supabase
