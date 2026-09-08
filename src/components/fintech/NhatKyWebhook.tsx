@@ -155,7 +155,7 @@ export function NhatKyWebhook() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground">Nhật ký webhook từ ngân hàng</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Xem Casso đã gửi gì tới và MIMI xử lý ra sao
+Xem ngân hàng đã báo gì tới và MIMI xử lý ra sao
           </p>
         </div>
         <ChevronDown
@@ -168,9 +168,9 @@ export function NhatKyWebhook() {
         <div className="border-t border-border/50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Mọi envelope Casso <strong className="text-foreground">gửi tới</strong> trong 30 ngày
-              qua, kể cả những cái bị bỏ qua. Bấm Đồng bộ không tạo dòng ở đây — đó là chiều
-              mình gọi ra, không phải chiều Casso đẩy vào.
+              Mọi thông báo <strong className="text-foreground">gửi tới</strong> trong 30 ngày qua —
+              từ Casso và từ SePay — kể cả những cái bị bỏ qua. Bấm Đồng bộ không tạo dòng ở
+              đây: đó là chiều mình gọi ra, không phải chiều bên kia đẩy vào.
             </p>
             <button
               onClick={() => void tai()}
