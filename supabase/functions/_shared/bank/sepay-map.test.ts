@@ -109,3 +109,58 @@ describe('mapSepayWebhook', () => {
     expect(mapSepayWebhook(undefined).row).toBeNull();
   });
 });
+
+/**
+ * Sợi dây nối mã QR với khoản tiền trả cho nó.
+ *
+ * Trước 08/09/2026 `mapSepayWebhook` không đặt `payment_reference`, nên
+ * `matchQrPayments` — vốn so bằng chính xác — luôn so `null` với mã đang chờ.
+ * Khách gõ đúng mã vẫn không khớp, và hoá đơn ở `pending` vĩnh viễn.
+ */
+describe('mapSepayWebhook — mã tham chiếu và tài khoản định danh', () => {
+  const valid = {
+    id: 77,
+    gateway: 'MBBank',
+    transactionDate: '2026-09-08 10:42:00',
+    accountNumber: '2431122002',
+    subAccount: null,
+    transferType: 'in',
+    transferAmount: 2000,
+  };
+
+  it('đọc mã từ nội dung chuyển khoản', () => {
+    const { row } = mapSepayWebhook({ ...valid, content: 'DINH VAN NAM chuyen MIMIK7P2QX' });
+    expect(row?.payment_reference).toBe('MIMIK7P2QX');
+  });
+
+  it('ưu tiên ô code khi SePay đã tự tách', () => {
+    const { row } = mapSepayWebhook({
+      ...valid,
+      code: 'MIMIK7P2QX',
+      content: 'khong co ma trong cau nay',
+    });
+    expect(row?.payment_reference).toBe('MIMIK7P2QX');
+  });
+
+  it('vẫn đọc được từ content khi code rỗng', () => {
+    // Cấu hình tiền tố mã thanh toán bên SePay có thể chưa bật.
+    const { row } = mapSepayWebhook({ ...valid, code: null, content: 'MIMIK7P2QX' });
+    expect(row?.payment_reference).toBe('MIMIK7P2QX');
+  });
+
+  it('để null khi nội dung không mang mã — phần lớn giao dịch là vậy', () => {
+    const { row } = mapSepayWebhook({ ...valid, content: 'chuyen tien an trua' });
+    expect(row?.payment_reference).toBeNull();
+    // Và giao dịch vẫn được ghi bình thường.
+    expect(row?.amount).toBe(2000);
+  });
+
+  it('lấy tài khoản định danh từ subAccount', () => {
+    const { row } = mapSepayWebhook({ ...valid, subAccount: '  96247VA001  ' });
+    expect(row?.virtual_account_number).toBe('96247VA001');
+  });
+
+  it('để null khi không có subAccount', () => {
+    expect(mapSepayWebhook(valid).row?.virtual_account_number).toBeNull();
+  });
+});

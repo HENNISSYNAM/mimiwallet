@@ -10,6 +10,8 @@
  * rejection, never a wrong row silently written to a credit file.
  */
 
+import { docMaThamChieu } from './ma-tham-chieu.ts';
+
 export interface SepayWebhookPayload {
   id?: number | string;
   gateway?: string;
@@ -33,6 +35,28 @@ export interface TransactionRow {
   transaction_date: string;
   source_bank: string | null;
   reference_id: string;
+  /**
+   * Mã tham chiếu của mã QR mà khoản tiền này trả, đọc ra từ nội dung chuyển
+   * khoản. `null` khi nội dung không mang mã nào — phần lớn giao dịch là vậy.
+   *
+   * ĐÂY LÀ MẮT XÍCH TỪNG ĐỨT. Trước 08/09/2026 hàm này không đặt trường đó, nên
+   * `matchQrPayments` — vốn khớp bằng phép so bằng chính xác giữa
+   * `payment_reference` và `reference_number` — luôn so `null` với mã QR đang
+   * chờ. Khách gõ đúng mã vào nội dung chuyển khoản vẫn không bao giờ khớp,
+   * và hoá đơn nằm ở `pending` vĩnh viễn.
+   *
+   * Triệu chứng của nó giống hệt "SePay chưa gửi webhook", nên nó ẩn được sau
+   * một nguyên nhân khác đã biết. Chỉ lộ ra khi đọc thẳng đường đi của dữ liệu.
+   */
+  payment_reference: string | null;
+  /**
+   * Tài khoản định danh (VA) khoản tiền này rơi vào, nếu có.
+   *
+   * `matchQrPayments` coi đây là căn cứ khớp thứ hai: mỗi mã QR có một VA
+   * riêng thì tiền vào VA nào là trả cho mã đó, không cần nội dung chuyển
+   * khoản. SePay gọi trường này là `subAccount`.
+   */
+  virtual_account_number: string | null;
 }
 
 export interface MapResult {
@@ -112,6 +136,27 @@ export function mapSepayWebhook(payload: SepayWebhookPayload | null | undefined)
 
   const label = (payload.content ?? payload.description ?? '').trim();
 
+  /*
+   * Thứ tự tra: `code` trước, rồi `content`, rồi `description`.
+   *
+   * `code` là ô SePay tự tách ra khi có cấu hình tiền tố mã thanh toán — nếu
+   * nó có giá trị thì đó là kết quả đã được SePay phân tích, đáng tin hơn việc
+   * mình tự bới lại câu gốc. Nhưng KHÔNG dựa vào riêng nó: cấu hình đó có thể
+   * chưa bật, và khi ấy mã vẫn nằm nguyên trong `content`.
+   *
+   * `docMaThamChieu` trả `null` cả khi nội dung mang hai mã khác nhau — xem
+   * `ma-tham-chieu.ts`. Khoản tiền vẫn được ghi, chỉ là không tự khớp.
+   */
+  const payment_reference =
+    docMaThamChieu(payload.code) ??
+    docMaThamChieu(payload.content) ??
+    docMaThamChieu(payload.description);
+
+  const subAccount =
+    typeof payload.subAccount === 'string' && payload.subAccount.trim()
+      ? payload.subAccount.trim()
+      : null;
+
   return {
     row: {
       amount: Math.round(amount),
@@ -123,6 +168,8 @@ export function mapSepayWebhook(payload: SepayWebhookPayload | null | undefined)
       transaction_date,
       source_bank: payload.gateway?.trim() || null,
       reference_id,
+      payment_reference,
+      virtual_account_number: subAccount,
     },
     reason: null,
     accountNumber,

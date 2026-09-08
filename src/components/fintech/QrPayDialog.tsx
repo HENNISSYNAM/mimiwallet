@@ -13,14 +13,29 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { track } from '@/lib/track';
+import { taoChuoiVietQr } from '@/lib/vietqr';
 
 /**
- * Raise a QR that settles straight into the linked bank account.
+ * Mã QR nhận tiền thẳng vào tài khoản ngân hàng của chủ shop.
  *
- * The QR is created by the edge function, never here: it is only valid because
- * Cas issued it, and its `reference_number` is what later marks the invoice
- * paid. A code the browser made up would take real money that nothing could
- * reconcile.
+ * HAI ĐƯỜNG, VÀ MÁY CHỦ CHỌN ĐƯỜNG — KHÔNG PHẢI MÀN HÌNH NÀY.
+ *
+ *  Cas QR Pay  Cas cấp mã kèm một **tài khoản định danh dùng một lần**. Tiền
+ *              vào tài khoản đó là trả cho mã đó, không phụ thuộc khách gõ gì
+ *              vào nội dung chuyển khoản. Chắc hơn, nên được ưu tiên.
+ *  VietQR      Máy chủ chỉ trả về mã BIN, số tài khoản và mã tham chiếu; chuỗi
+ *              QR dựng ngay tại đây bằng `taoChuoiVietQr`. Khớp bằng mã tham
+ *              chiếu nằm trong nội dung chuyển khoản, do SePay đẩy sang.
+ *
+ * VÌ SAO CÓ ĐƯỜNG THỨ HAI. Đến 08/09/2026 màn hình này báo đỏ "Chưa có tài
+ * khoản ngân hàng nào được liên kết để nhận tiền QR" cho mọi người chưa có
+ * grant Cas — trong khi VietQR là chuẩn mở và `lib/vietqr.ts` đã dựng được
+ * chuỗi đó từ lâu, không cần quyền gì của ai. Nút thu tiền chết hai tuần vì
+ * một giả định, không vì một giới hạn kỹ thuật.
+ *
+ * `reference_number` VẪN DO MÁY CHỦ SINH trên cả hai đường. Nó là thứ đánh dấu
+ * hoá đơn nào đã thu, nên trình duyệt không được chọn nó. Cái trình duyệt làm
+ * ở đây chỉ là **vẽ lại** những gì máy chủ đã ghi vào cơ sở dữ liệu.
  */
 
 interface QrPayment {
@@ -28,6 +43,7 @@ interface QrPayment {
   reference_number: string;
   amount: number;
   description: string;
+  account_number: string | null;
   virtual_account_number: string | null;
   bin: string | null;
   qr_code: string | null;
@@ -64,6 +80,11 @@ export function QrPayDialog({
   const [error, setError] = useState<string | null>(null);
   const [remedy, setRemedy] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
+  // Chỉ để hiển thị. Người trả tiền cần đối chiếu tên ngân hàng và tên chủ tài
+  // khoản với thứ app ngân hàng hiện lên sau khi quét — đó là cách duy nhất họ
+  // tự kiểm được rằng mã trỏ đúng chỗ.
+  const [nganHang, setNganHang] = useState<string | null>(null);
+  const [chuTaiKhoan, setChuTaiKhoan] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // React 18 mounts effects twice in development; without this the dialog would
   // raise two QRs for one invoice and only one of them could ever be paid.
@@ -112,8 +133,10 @@ export function QrPayDialog({
         setRequestId(result?.requestId ?? null);
         return;
       }
-      track('qr_created', { fromInvoice: !!invoiceId });
+      track('qr_created', { fromInvoice: !!invoiceId, nguon: result.nguon ?? 'cas' });
       setQr(result.qr as QrPayment);
+      setNganHang(typeof result.nganHang === 'string' ? result.nganHang : null);
+      setChuTaiKhoan(typeof result.chuTaiKhoan === 'string' ? result.chuTaiKhoan : null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Không tạo được mã QR');
     } finally {
@@ -128,6 +151,8 @@ export function QrPayDialog({
       setError(null);
       setRemedy(null);
       setRequestId(null);
+      setNganHang(null);
+      setChuTaiKhoan(null);
       return;
     }
     if (requested.current) return;
@@ -135,14 +160,41 @@ export function QrPayDialog({
     void create();
   }, [open, create]);
 
-  // Cas may hand back either a VietQR payload string or a ready-made image, and
-  // which one is not documented. Drawing the payload ourselves covers the first
-  // case; an image URL is passed straight through below.
+  /*
+   * Ba nguồn cho một canvas.
+   *
+   *  1. Cas trả về ảnh sẵn (`data:image`) — thẻ <img> ở dưới lo, không vẽ ở đây.
+   *  2. Cas trả về chuỗi payload — vẽ chuỗi đó.
+   *  3. Không có `qr_code`: máy chủ đi đường VietQR và chỉ đưa BIN + số tài
+   *     khoản. Dựng chuỗi tại chỗ bằng `taoChuoiVietQr`.
+   *
+   * Nội dung chuyển khoản đặt đúng bằng `reference_number`, không phải
+   * `description`. Đó là chuỗi `reconcileCompanyQr` so bằng phép bằng chính
+   * xác; gắn nhầm mô tả vào đây là tiền về mà hoá đơn không đóng.
+   */
   useEffect(() => {
-    const payload = qr?.qr_code;
-    if (!payload || payload.startsWith('data:image') || !canvasRef.current) return;
+    if (!qr || !canvasRef.current) return;
+
+    let payload = qr.qr_code;
+    if (payload?.startsWith('data:image')) return;
+
+    if (!payload) {
+      if (!qr.bin || !qr.account_number) return;
+      try {
+        payload = taoChuoiVietQr({
+          bankBin: qr.bin,
+          accountNumber: qr.account_number,
+          amount: qr.amount,
+          addInfo: qr.reference_number,
+        });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Không dựng được mã VietQR.');
+        return;
+      }
+    }
+
     QRCode.toCanvas(canvasRef.current, payload, { width: 240, margin: 1 }, (e) => {
-      if (e) setError('Không vẽ được mã QR từ dữ liệu Cas trả về.');
+      if (e) setError('Không vẽ được mã QR.');
     });
   }, [qr]);
 
@@ -204,7 +256,7 @@ export function QrPayDialog({
               )}
             </div>
 
-            {qr.virtual_account_number && (
+            {qr.virtual_account_number ? (
               <div className="rounded-lg border border-border p-3 text-sm">
                 <p className="text-muted-foreground">Hoặc chuyển khoản tới</p>
                 <p className="font-mono font-medium">{qr.virtual_account_number}</p>
@@ -213,6 +265,34 @@ export function QrPayDialog({
                   cần ghi nội dung chuyển khoản.
                 </p>
               </div>
+            ) : (
+              qr.account_number && (
+                /*
+                 * Đường VietQR: không có tài khoản định danh, nên **nội dung
+                 * chuyển khoản là thứ duy nhất** nối khoản tiền với hoá đơn
+                 * này. Mã QR đã nhét sẵn nội dung đó, nên khách quét mã thì
+                 * không phải gõ gì. Khối này dành cho người chuyển tay.
+                 */
+                <div className="space-y-2 rounded-lg border border-border p-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Hoặc chuyển khoản tới</p>
+                    <p className="font-mono font-medium">{qr.account_number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[nganHang, chuTaiKhoan].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Nội dung chuyển khoản</p>
+                    <p className="font-mono text-base font-semibold tracking-wide">
+                      {qr.reference_number}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Gõ đúng chuỗi này thì hoá đơn tự chuyển sang đã thu. Gõ thiếu hoặc
+                      thừa chữ thì tiền vẫn về tài khoản, chỉ là phải đối chiếu tay.
+                    </p>
+                  </div>
+                </div>
+              )
             )}
 
             <p

@@ -18,6 +18,7 @@ import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { describeBankError } from "../_shared/bank/errors.ts";
 import { mapGdtInvoices, revenueFromInvoices } from "../_shared/tax/gdt-invoice-map.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
+import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
@@ -537,23 +538,6 @@ Deno.serve(async (req) => {
         }
         const description = typeof body.description === "string" ? body.description.trim() : "";
         if (!description) return json({ error: "description required" }, 400);
-        /*
-         * Giới hạn 9 ký tự của Cas/MB, phát hiện 04/09 qua requestId
-         * `Bgv44JpvIbxfvfmr`: "description must has maximum 9 characters".
-         * Không có trong tài liệu Cas.
-         *
-         * Chặn ở đây thay vì để Cas từ chối, vì Cas trả câu tiếng Anh còn chỗ
-         * này biết nói tiếng Việt — và vì một lần gọi bị từ chối vẫn tính vào
-         * giới hạn tần suất của grant.
-         */
-        if (description.length > 9) {
-          return json({
-            error: `Nội dung mã QR tối đa 9 ký tự — đang thừa ${description.length - 9}.`,
-            errorCode: "INVALID_PARAM",
-            action: "fix_input",
-            remedy: "Rút ngắn nội dung. Đối soát không dựa vào ô này; MIMI khớp bằng mã tham chiếu riêng.",
-          }, 400);
-        }
         const invoiceId = typeof body.invoice_id === "string" ? body.invoice_id : null;
 
         // An invoice from another company must not be payable through this one.
@@ -584,33 +568,151 @@ Deno.serve(async (req) => {
           .order("received_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+        /*
+         * Sinh ở máy chủ, không bao giờ lấy từ yêu cầu gửi lên. Giá trị này là
+         * thứ đánh dấu hoá đơn nào đã thu, nên ai chọn được nó thì tất toán
+         * được hoá đơn của người khác bằng cách tạo một mã QR trùng mã.
+         *
+         * Dạng `MIMI` + 6 ký tự — xem `_shared/bank/ma-tham-chieu.ts`. Trước
+         * đây là 20 ký tự hex không tiền tố, dùng được với Cas vì Cas tự trả
+         * mã đó về trên webhook. Nhưng trên đường VietQR + SePay thì mã phải
+         * **đọc lại được từ nội dung chuyển khoản** giữa tên người gửi và mã
+         * giao dịch ngân hàng chèn thêm — mà một chuỗi hex không tiền tố thì
+         * không có cách nào nhận ra trong một câu.
+         */
+        const referenceNumber = sinhMaThamChieu();
+
+        /*
+         * ─── KHÔNG CÓ GRANT CAS THÌ VẪN PHÁT ĐƯỢC MÃ ───────────────────────
+         *
+         * Đây là chỗ sai suốt hai tuần, và nó là một giả định chứ không phải
+         * một giới hạn kỹ thuật: hàm này coi mã QR là thứ **chỉ Cas cấp được**,
+         * nên không có grant `qrpay` là trả 404 và màn hình báo đỏ.
+         *
+         * Sự thật thì VietQR là một chuẩn mở. `src/lib/vietqr.ts` đã dựng được
+         * chuỗi đó ngay tại máy khách từ lâu — EMVCo TLV + CRC-16/CCITT-FALSE,
+         * có test đối chiếu vector chuẩn — và `SubscriptionPayment` đã dùng nó
+         * để thu tiền thuê bao. Chỉ cần **mã BIN + số tài khoản**, không cần
+         * quyền gì của ai.
+         *
+         * Cái Cas thêm vào là tài khoản định danh (VA) dùng một lần, khớp được
+         * mà không phụ thuộc nội dung chuyển khoản. Đó là thứ tốt hơn — nên khi
+         * có grant sống thì vẫn ưu tiên. Nhưng "tốt hơn" không phải "bắt buộc":
+         * đường VietQR khớp bằng mã tham chiếu trong nội dung, và SePay đẩy
+         * nguyên nội dung đó sang. Vòng đóng được mà không cần Cas trả lời.
+         */
         if (!conn?.access_token_enc) {
-          return json(
-            {
-              error: "Chưa có tài khoản ngân hàng nào được liên kết để nhận tiền QR.",
-              action: "relink",
-              remedy:
-                'Vào Fintech Hub và bấm "Liên kết để nhận tiền QR" — QR Pay cần một liên kết riêng, không dùng chung với liên kết đọc sao kê.',
-            },
-            404,
-          );
+          const { data: tkNhan } = await supabase
+            .from("bank_connections")
+            .select("account_number, account_name, bank_code, bank_name")
+            .eq("company_id", company.id)
+            .eq("provider", "sepay")
+            .eq("status", "connected")
+            .is("revoked_at", null)
+            .order("received_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!tkNhan) {
+            return json(
+              {
+                error: "Chưa khai tài khoản ngân hàng để nhận tiền.",
+                action: "relink",
+                remedy:
+                  'Vào Fintech Hub, khối "Nhận thông báo tiền về qua SePay", khai số tài khoản và chọn ngân hàng. Không cần liên kết Cas.',
+              },
+              404,
+            );
+          }
+
+          /*
+           * BIN LẤY TỪ DỮ LIỆU ĐÃ LƯU, KHÔNG LẤY TỪ YÊU CẦU GỬI LÊN.
+           *
+           * Nếu để máy khách truyền BIN vào đây thì một yêu cầu sửa tay có thể
+           * giữ nguyên số tài khoản mà đổi ngân hàng — và mã QR sinh ra trỏ tới
+           * người trùng số tài khoản ở ngân hàng khác. Người mất tiền là khách
+           * đang quét mã, còn chủ shop thì không thấy gì bất thường.
+           *
+           * `bank_code` được ghi bằng BIN từ ô chọn ngân hàng trong form SePay.
+           * Dòng cũ (khi ô đó còn là ô gõ tự do) mang chuỗi kiểu "MB Bank" nên
+           * không dùng được — nói thẳng ra và chỉ đúng việc phải làm, thay vì
+           * đoán một BIN từ một chuỗi tự do.
+           */
+          const bin = String(tkNhan.bank_code ?? "").trim();
+          if (!/^\d{6}$/.test(bin)) {
+            return json(
+              {
+                error: `Chưa biết mã ngân hàng của tài khoản ${tkNhan.account_number}.`,
+                action: "fix_input",
+                remedy:
+                  'Vào Fintech Hub, khối SePay, chọn lại ngân hàng từ danh sách rồi bấm đăng ký. Mã ngân hàng đi kèm lựa chọn đó — không gõ tay được, vì gõ sai là mã QR trỏ sang ngân hàng khác.',
+              },
+              409,
+            );
+          }
+
+          const { data: luuVietQr, error: loiLuuVietQr } = await supabase
+            .from("qr_payments")
+            .insert({
+              company_id: company.id,
+              invoice_id: invoiceId,
+              reference_number: referenceNumber,
+              amount,
+              description,
+              account_number: tkNhan.account_number,
+              // Không có VA trên đường này: khớp bằng mã tham chiếu trong nội
+              // dung chuyển khoản. Để null chứ không bịa ra một số.
+              virtual_account_number: null,
+              bin,
+              /*
+               * Để null là CỐ Ý. Chuỗi VietQR do máy khách dựng bằng
+               * `taoChuoiVietQr` — hàm đã có test — thay vì viết lại phép tính
+               * CRC lần thứ hai ở Deno. Hai bản dựng chuỗi khác nhau một ký tự
+               * là một khoản tiền không khớp, và không có cách nào biết trước
+               * bản nào sai.
+               */
+              qr_code: null,
+            })
+            .select(
+              "id, reference_number, amount, description, account_number, virtual_account_number, bin, qr_code, status",
+            )
+            .single();
+
+          if (loiLuuVietQr) {
+            console.error("failed to store vietqr payment:", loiLuuVietQr.message);
+            return json({ error: "could not store QR", detail: loiLuuVietQr.message }, 500);
+          }
+
+          return json({
+            qr: luuVietQr,
+            nguon: "vietqr",
+            nganHang: tkNhan.bank_name,
+            chuTaiKhoan: tkNhan.account_name,
+          });
+        }
+
+        /*
+         * Giới hạn 9 ký tự của Cas/MB, phát hiện 04/09 qua requestId
+         * `Bgv44JpvIbxfvfmr`: "description must has maximum 9 characters".
+         * Không có trong tài liệu Cas.
+         *
+         * CHỈ ÁP CHO ĐƯỜNG CAS. Đường VietQR ở trên không đi qua Cas nên không
+         * chịu giới hạn này — để nó ở ngoài như trước là đem ràng buộc của một
+         * nhà cung cấp áp lên đường không dùng nhà cung cấp đó.
+         */
+        if (description.length > 9) {
+          return json({
+            error: `Nội dung mã QR tối đa 9 ký tự — đang thừa ${description.length - 9}.`,
+            errorCode: "INVALID_PARAM",
+            action: "fix_input",
+            remedy: "Rút ngắn nội dung. Đối soát không dựa vào ô này; MIMI khớp bằng mã tham chiếu riêng.",
+          }, 400);
         }
 
         const accessToken = await decryptField(
           conn.access_token_enc as unknown as EncryptedBlob,
           privateKey,
         );
-
-        /*
-         * Generated here, never taken from the request. This value comes back
-         * on the TRANSACTIONS webhook and is what marks an invoice paid, so a
-         * caller who could choose it could settle someone else's invoice by
-         * raising a QR that reuses their reference.
-         *
-         * Hex only: Cas does not document a charset, and the safest reading of
-         * an undocumented field is the narrowest one.
-         */
-        const referenceNumber = crypto.randomUUID().replace(/-/g, "").slice(0, 20);
 
         let qr;
         try {
@@ -653,7 +755,9 @@ Deno.serve(async (req) => {
             bin: qr.bin ?? null,
             qr_code: qr.qrCode ?? null,
           })
-          .select("id, reference_number, amount, description, virtual_account_number, bin, qr_code, status")
+          .select(
+            "id, reference_number, amount, description, account_number, virtual_account_number, bin, qr_code, status",
+          )
           .single();
 
         if (saveError) {
@@ -772,7 +876,28 @@ Deno.serve(async (req) => {
         }
         const tenNganHang = String(body.bankName ?? "").trim();
         if (!tenNganHang) return json({ error: "Thiếu tên ngân hàng." }, 400);
-        const maNganHang = String(body.bankCode ?? "").trim() || tenNganHang;
+
+        /*
+         * MÃ NGÂN HÀNG PHẢI LÀ BIN 6 SỐ, KHÔNG NHẬN CHUỖI TỰ DO NỮA.
+         *
+         * Bản đầu để `bankCode || bankName`, tức chấp nhận cả "MB Bank". Lúc đó
+         * `bank_code` chỉ là nhãn phân biệt các dòng nên chuỗi nào cũng được.
+         *
+         * Từ khi `create-qr` dựng mã VietQR từ chính dòng này thì nó không còn
+         * là nhãn nữa — nó là **nơi tiền sẽ tới**. Một BIN sai không báo lỗi ở
+         * đâu cả: mã QR vẫn quét được, chỉ là trỏ tới người trùng số tài khoản
+         * ở ngân hàng khác. Nên chặn ngay tại cửa vào.
+         *
+         * Giao diện gửi BIN từ ô chọn ngân hàng (`src/lib/nganHang.ts`); người
+         * dùng không gõ tay giá trị này.
+         */
+        const maNganHang = String(body.bankCode ?? "").trim();
+        if (!/^\d{6}$/.test(maNganHang)) {
+          return json({
+            error: "Thiếu mã ngân hàng.",
+            remedy: "Chọn ngân hàng từ danh sách thay vì gõ tên — mã đi kèm lựa chọn đó.",
+          }, 400);
+        }
 
         const { data: luu, error: loiLuu } = await supabase
           .from("bank_connections")

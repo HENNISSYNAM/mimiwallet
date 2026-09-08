@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Bell, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { DANH_SACH_NGAN_HANG } from '@/lib/nganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { toast } from 'sonner';
 
@@ -32,15 +33,23 @@ import { toast } from 'sonner';
  *
  * Người dùng hỏi thẳng "này đã hoạt động chưa" — đúng câu mà một form trống
  * trông như đã điền sẽ gây ra.
+ *
+ * Ô NGÂN HÀNG LÀ Ô CHỌN, KHÔNG PHẢI Ô GÕ. Từ 08/09/2026 dòng này còn dùng để
+ * dựng mã VietQR, nên `bank_code` mang mã BIN 6 số chứ không còn là nhãn. BIN
+ * sai thì mã QR vẫn quét được nhưng trỏ tới người trùng số tài khoản ở ngân
+ * hàng khác — không có màn hình nào báo lỗi, người phát hiện là khách đang cầm
+ * điện thoại định trả tiền. Nên giá trị đó phải đến từ danh sách, không đến từ
+ * bàn phím.
  */
 export function DangKySePay({ onXong }: { onXong?: () => void }) {
   const { session } = useAuthStore();
   const [soTaiKhoan, setSoTaiKhoan] = useState('');
-  const [tenNganHang, setTenNganHang] = useState('');
+  const [bin, setBin] = useState('');
   const [tenChu, setTenChu] = useState('');
   const [dangGui, setDangGui] = useState(false);
 
-  const hopLe = /^\d{6,20}$/.test(soTaiKhoan.replace(/\s/g, '')) && tenNganHang.trim().length > 0;
+  const nganHang = DANH_SACH_NGAN_HANG.find((n) => n.bin === bin) ?? null;
+  const hopLe = /^\d{6,20}$/.test(soTaiKhoan.replace(/\s/g, '')) && !!nganHang;
 
   const gui = useCallback(async () => {
     if (!session?.access_token || !hopLe) return;
@@ -55,7 +64,8 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
         },
         body: JSON.stringify({
           accountNumber: soTaiKhoan,
-          bankName: tenNganHang,
+          bankName: nganHang?.ten,
+          bankCode: nganHang?.bin,
           accountName: tenChu,
         }),
       });
@@ -70,7 +80,7 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
     } finally {
       setDangGui(false);
     }
-  }, [session, hopLe, soTaiKhoan, tenNganHang, tenChu, onXong]);
+  }, [session, hopLe, soTaiKhoan, nganHang, tenChu, onXong]);
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/40 p-5">
@@ -85,6 +95,7 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
           {/* Nói rõ vì người dùng vừa qua luồng Cas đòi OTP và cấp quyền. */}
           <p className="mt-1.5 text-xs text-muted-foreground">
             Không cấp quyền gì cho MIMI ở bước này — chỉ khai số tài khoản để nhận diện.
+            Đây cũng là tài khoản mã QR trên hoá đơn sẽ trỏ tới.
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -104,12 +115,18 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
               <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Ngân hàng
               </span>
-              <input
-                value={tenNganHang}
-                onChange={(e) => setTenNganHang(e.target.value)}
-                placeholder="Tên ngân hàng"
+              <select
+                value={bin}
+                onChange={(e) => setBin(e.target.value)}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-              />
+              >
+                <option value="">Chọn ngân hàng</option>
+                {DANH_SACH_NGAN_HANG.map((n) => (
+                  <option key={n.bin} value={n.bin}>
+                    {n.ten}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 
