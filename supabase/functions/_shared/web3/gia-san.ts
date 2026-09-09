@@ -36,6 +36,25 @@ export interface GiaDoiChieu {
   /** Trung vị của các báo giá đọc được. `null` khi không sàn nào trả lời. */
   gia: number | null;
   doi24h: number | null;
+  /**
+   * Chênh lệch giữa con số thay đổi 24h cao nhất và thấp nhất, tính bằng ĐIỂM
+   * PHẦN TRĂM. `null` khi có ít hơn hai sàn báo con số này.
+   *
+   * TÁCH RIÊNG KHỎI `lechPhanTram` VÌ GIÁ VÀ THAY ĐỔI KHÔNG CÙNG BẢN CHẤT.
+   *
+   * Đo thật ngày 09/09/2026, BTC: Binance báo giá 78.893,99 và thay đổi
+   * 0,029%; Coinbase báo 78.880,53 và 0,293%. Giá khớp nhau tới 0,017% —
+   * nhưng phần trăm thay đổi lệch gấp mười lần.
+   *
+   * Không phải sàn nào sai. "Giá hiện tại" là một đại lượng có cùng định nghĩa
+   * ở mọi sàn, còn "thay đổi 24 giờ" phụ thuộc cửa sổ 24 giờ đó bắt đầu lúc
+   * nào — và hai sàn không bắt đầu cùng lúc. Trung vị của hai con số như vậy
+   * ra một số không thuộc về sàn nào cả.
+   *
+   * Nên vẫn trả `doi24h` để có cái mà hiển thị, nhưng nói kèm độ lệch. Giấu nó
+   * đi là trình bày một con số blend như thể nó là một phép đo.
+   */
+  doi24hLech: number | null;
   /** Chênh lệch giữa báo giá cao nhất và thấp nhất, tính theo phần trăm. */
   lechPhanTram: number | null;
   mucLech: MucLech;
@@ -47,6 +66,14 @@ export interface GiaDoiChieu {
 
 /** Ngưỡng coi là lệch đáng kể, tính theo phần trăm giữa hai báo giá. */
 export const NGUONG_LECH = 1;
+
+/**
+ * Ngưỡng cho độ lệch của con số thay đổi 24h, tính bằng điểm phần trăm.
+ *
+ * Thấp hơn `NGUONG_LECH` nhiều, vì đây là đại lượng vốn đã nhỏ: 0,029% và
+ * 0,293% chỉ cách nhau 0,26 điểm phần trăm mà đã là gấp mười lần.
+ */
+export const NGUONG_LECH_DOI = 0.25;
 
 function trungVi(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
@@ -73,6 +100,7 @@ export function doiChieuGia(ma: string, baoGia: BaoGia[]): GiaDoiChieu {
       ma,
       gia: null,
       doi24h: null,
+      doi24hLech: null,
       lechPhanTram: null,
       mucLech: 'khop',
       nguon: [],
@@ -83,12 +111,18 @@ export function doiChieuGia(ma: string, baoGia: BaoGia[]): GiaDoiChieu {
   const gia = trungVi(hopLe.map((b) => b.gia));
   const cacDoi = hopLe.map((b) => b.doi24h).filter((d): d is number => d !== null);
   const doi24h = cacDoi.length ? trungVi(cacDoi) : null;
+  const doi24hLech = cacDoi.length > 1 ? Math.max(...cacDoi) - Math.min(...cacDoi) : null;
+  const doiLechNhieu = doi24hLech !== null && doi24hLech >= NGUONG_LECH_DOI;
+  const ghiChuDoi = doiLechNhieu
+    ? ` Con số thay đổi 24h giữa các sàn lệch ${doi24hLech.toFixed(2)} điểm phần trăm — cửa sổ 24 giờ của mỗi sàn bắt đầu ở thời điểm khác nhau.`
+    : '';
 
   if (hopLe.length === 1) {
     return {
       ma,
       gia,
       doi24h,
+      doi24hLech,
       lechPhanTram: null,
       mucLech: 'khop',
       nguon,
@@ -108,8 +142,8 @@ export function doiChieuGia(ma: string, baoGia: BaoGia[]): GiaDoiChieu {
 
   const ghiChu =
     mucLech === 'lech_dang_ke'
-      ? `${nguon.join(' và ')} lệch ${lechPhanTram.toFixed(2)}% — cao hơn ngưỡng ${NGUONG_LECH}%. Kiểm lại trước khi dùng con số này.`
-      : `${nguon.join(' và ')} khớp nhau trong ${lechPhanTram.toFixed(2)}%.`;
+      ? `${nguon.join(' và ')} lệch ${lechPhanTram.toFixed(2)}% — cao hơn ngưỡng ${NGUONG_LECH}%. Kiểm lại trước khi dùng con số này.${ghiChuDoi}`
+      : `${nguon.join(' và ')} khớp nhau trong ${lechPhanTram.toFixed(2)}%.${ghiChuDoi}`;
 
-  return { ma, gia, doi24h, lechPhanTram, mucLech, nguon, ghiChu };
+  return { ma, gia, doi24h, doi24hLech, lechPhanTram, mucLech, nguon, ghiChu };
 }

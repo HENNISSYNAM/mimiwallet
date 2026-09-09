@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { doiChieuGia, NGUONG_LECH, type BaoGia } from './gia-san.ts';
+import { doiChieuGia, NGUONG_LECH, NGUONG_LECH_DOI, type BaoGia } from './gia-san.ts';
 
 const bg = (san: string, gia: number, doi24h: number | null = null): BaoGia => ({ san, gia, doi24h });
 
@@ -62,5 +62,47 @@ describe('doiChieuGia', () => {
     // Coi thiếu dữ liệu là 0% sẽ kéo con số về giữa và nói dối là "đứng giá".
     const r = doiChieuGia('BTC', [bg('A', 100_000, 5), bg('B', 100_000, null)]);
     expect(r.doi24h).toBe(5);
+  });
+});
+
+/**
+ * Số đo thật ngày 09/09/2026, không phải số bịa cho vừa test.
+ *
+ * Đây là lý do `doi24hLech` tồn tại: hai sàn khớp giá tới 0,017% nhưng lệch
+ * mười lần ở con số thay đổi 24h, vì cửa sổ 24 giờ của mỗi sàn bắt đầu ở thời
+ * điểm khác nhau. Không sàn nào sai — chỉ là hai đại lượng không cùng định
+ * nghĩa, và gộp chúng lại rồi im lặng là trình bày một số blend như một phép đo.
+ */
+describe('lệch của con số thay đổi 24h — đo thật 09/09/2026', () => {
+  const btc = () =>
+    doiChieuGia('BTC', [
+      { san: 'Binance', gia: 78_893.99, doi24h: 0.029 },
+      // Coinbase không trả sẵn phần trăm; tự tính từ open 78.649,87.
+      { san: 'Coinbase', gia: 78_880.53, doi24h: ((78_880.53 - 78_649.87) / 78_649.87) * 100 },
+    ]);
+
+  it('giá vẫn khớp — dưới ngưỡng lệch', () => {
+    const r = btc();
+    expect(r.lechPhanTram).toBeLessThan(NGUONG_LECH);
+    expect(r.mucLech).not.toBe('lech_dang_ke');
+  });
+
+  it('nhưng con số thay đổi thì lệch trên ngưỡng, và phải nói ra', () => {
+    const r = btc();
+    expect(r.doi24hLech).toBeGreaterThanOrEqual(NGUONG_LECH_DOI);
+    expect(r.ghiChu).toMatch(/cửa sổ 24 giờ/);
+  });
+
+  it('không nói gì thêm khi hai sàn báo thay đổi gần nhau', () => {
+    const r = doiChieuGia('BTC', [
+      { san: 'A', gia: 100_000, doi24h: 2.5 },
+      { san: 'B', gia: 100_010, doi24h: 2.55 },
+    ]);
+    expect(r.doi24hLech).toBeCloseTo(0.05, 5);
+    expect(r.ghiChu).not.toMatch(/cửa sổ 24 giờ/);
+  });
+
+  it('một sàn duy nhất thì không có gì để so, để null', () => {
+    expect(doiChieuGia('BTC', [{ san: 'A', gia: 1, doi24h: 5 }]).doi24hLech).toBeNull();
   });
 });
