@@ -7,7 +7,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { useAuthStore } from '@/store/useAuthStore';
 import { tinhDanhMuc, type KhoanNam } from '@/lib/danhMucDauTu';
 import { BoiCanhThiTruong, type BoiCanhUI } from '@/components/web3/BoiCanhThiTruong';
-import { BieuDoGia, type ChuoiGiaUI } from '@/components/web3/BieuDoGia';
+import { BieuDoNen, type ChuoiGiaUI, type Khung } from '@/components/web3/BieuDoNen';
 
 /**
  * Danh mục tài sản số, và bối cảnh của đúng những gì đang nắm giữ.
@@ -57,6 +57,9 @@ export default function DauTuPage() {
   const [soLuong, setSoLuong] = useState('');
   const [giaVon, setGiaVon] = useState('');
   const [dangThem, setDangThem] = useState(false);
+  // Khung thời gian của biểu đồ. Đổi khung là gọi lại máy chủ — nến 1 giờ và
+  // nến 1 ngày là hai chuỗi khác nhau, không cắt được từ nhau ở máy khách.
+  const [khung, setKhung] = useState<Khung>('1d');
 
   const so = useCallback(
     (n: number, le = 2) =>
@@ -110,7 +113,7 @@ export default function DauTuPage() {
           'Content-Type': 'application/json',
           apikey: SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify(dong.length ? { ma: dong.map((d) => d.ma) } : {}),
+        body: JSON.stringify({ khung, ...(dong.length ? { ma: dong.map((d) => d.ma) } : {}) }),
       });
       const kq = await res.json();
       if (!res.ok || kq?.error) throw new Error(kq?.error ?? `Lỗi ${res.status}`);
@@ -120,9 +123,9 @@ export default function DauTuPage() {
     } finally {
       setDangDoc(false);
     }
-  }, [session, dong]);
+  }, [session, dong, khung]);
 
-  useEffect(() => { if (!dangTai) void docThiTruong(); }, [dangTai, dong.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!dangTai) void docThiTruong(); }, [dangTai, dong.length, khung]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const themDong = useCallback(async () => {
     if (!companyId) return;
@@ -303,9 +306,9 @@ export default function DauTuPage() {
 
       {/* ── Biểu đồ ───────────────────────────────────────────────────────── */}
       {thiTruong?.chuoi?.length ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           {thiTruong.chuoi.map((c) => (
-            <BieuDoGia key={c.ma} chuoi={c} />
+            <BieuDoNen key={c.ma} chuoi={c} khung={khung} onDoiKhung={setKhung} />
           ))}
         </div>
       ) : null}

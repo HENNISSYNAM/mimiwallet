@@ -5,6 +5,7 @@ import {
   docChuoiBinance,
   docChuoiCoinbase,
   type ChuoiGia,
+  type Khung,
 } from "../_shared/web3/chuoi-gia.ts";
 import {
   bangChungPhapLy,
@@ -61,7 +62,22 @@ const NGAY_TIN = 7;
  * 30 ngày là khoảng đủ thấy xu hướng mà không biến câu trả lời thành một khối
  * dữ liệu nặng — ba mã là 90 nến, còn chấp nhận được trong một phản hồi JSON.
  */
-const SO_PHIEN = 30;
+const SO_PHIEN = 60;
+
+/**
+ * Khung thời gian → tham số của từng sàn.
+ *
+ * Coinbase nhận `granularity` bằng giây và **không có khung tuần** (tối đa
+ * 86400). Nên `1w` chỉ Binance phục vụ được; giá trị `null` ở đây là cách nói
+ * điều đó bằng kiểu dữ liệu, thay vì gửi một tham số Coinbase sẽ từ chối rồi
+ * đọc lỗi ngược lại.
+ */
+const KHUNG: Record<Khung, { binance: string; coinbase: number | null }> = {
+  "1h": { binance: "1h", coinbase: 3600 },
+  "4h": { binance: "4h", coinbase: 14400 },
+  "1d": { binance: "1d", coinbase: 86400 },
+  "1w": { binance: "1w", coinbase: null },
+};
 
 interface SuCo {
   nguon: string;
@@ -121,33 +137,42 @@ async function giaCoinbase(ma: string): Promise<BaoGia> {
  * Ưu tiên Binance vì chuỗi dài và biên nến theo UTC ổn định; hỏng thì rơi sang
  * Coinbase, và nhãn sàn đổi theo để biểu đồ không bao giờ ẩn nguồn.
  */
-async function chuoiGia(ma: string, suCo: SuCo[]): Promise<ChuoiGia> {
+async function chuoiGia(ma: string, khung: Khung, suCo: SuCo[]): Promise<ChuoiGia> {
+  const cfg = KHUNG[khung];
+
   try {
     const raw = await docJson(
-      `https://api.binance.com/api/v3/klines?symbol=${ma}USDT&interval=1d&limit=${SO_PHIEN}`,
+      `https://api.binance.com/api/v3/klines?symbol=${ma}USDT&interval=${cfg.binance}&limit=${SO_PHIEN}`,
       "Binance",
     );
     const nen = docChuoiBinance(raw);
-    if (nen.length) return chuanHoaChuoi(ma, "Binance", nen);
+    if (nen.length) return chuanHoaChuoi(ma, "Binance", nen, khung);
     suCo.push({ nguon: `biểu đồ ${ma}`, loi: "Binance trả về chuỗi rỗng" });
   } catch (e) {
     suCo.push({ nguon: `biểu đồ ${ma}`, loi: `Binance: ${(e as Error).message}` });
   }
 
+  if (cfg.coinbase === null) {
+    // Nói ra thay vì im lặng trả chuỗi rỗng: người dùng đổi sang khung tuần và
+    // thấy trống thì phải biết là vì sàn dự phòng không có khung đó.
+    suCo.push({ nguon: `biểu đồ ${ma}`, loi: "Coinbase không có khung tuần" });
+    return chuanHoaChuoi(ma, "—", [], khung);
+  }
+
   try {
     const raw = await docJson(
-      `https://api.exchange.coinbase.com/products/${ma}-USD/candles?granularity=86400`,
+      `https://api.exchange.coinbase.com/products/${ma}-USD/candles?granularity=${cfg.coinbase}`,
       "Coinbase",
     );
     // Coinbase trả nhiều hơn số phiên cần và theo thứ tự giảm dần; cắt sau khi
     // `chuanHoaChuoi` đã sắp lại, chứ không cắt trên mảng thô.
-    const day = chuanHoaChuoi(ma, "Coinbase", docChuoiCoinbase(raw));
+    const day = chuanHoaChuoi(ma, "Coinbase", docChuoiCoinbase(raw), khung);
     return { ...day, nen: day.nen.slice(-SO_PHIEN) };
   } catch (e) {
     suCo.push({ nguon: `biểu đồ ${ma}`, loi: `Coinbase: ${(e as Error).message}` });
   }
 
-  return chuanHoaChuoi(ma, "—", []);
+  return chuanHoaChuoi(ma, "—", [], khung);
 }
 
 Deno.serve(async (req) => {
@@ -173,6 +198,10 @@ Deno.serve(async (req) => {
       ? body.ma.slice(0, 10).map((m: unknown) => String(m).toUpperCase().replace(/[^A-Z0-9]/g, ""))
       : MA_MAC_DINH;
 
+    const khung: Khung = ["1h", "4h", "1d", "1w"].includes(String(body.khung))
+      ? (String(body.khung) as Khung)
+      : "1d";
+
     const suCo: SuCo[] = [];
 
     // ── THU_THAP ────────────────────────────────────────────────────────────
@@ -191,7 +220,7 @@ Deno.serve(async (req) => {
     // Biểu đồ chạy song song với phần giá, nhưng KHÔNG gộp vào cùng một lời
     // gọi: một sàn có thể trả được giá hiện tại mà chặn endpoint nến, và gộp
     // lại thì mất cả hai.
-    const chuoi = await Promise.all(danhSachMa.map((m) => chuoiGia(m, suCo)));
+    const chuoi = await Promise.all(danhSachMa.map((m) => chuoiGia(m, khung, suCo)));
 
     // ── VI_MO ───────────────────────────────────────────────────────────────
     const tuNgay = new Date();

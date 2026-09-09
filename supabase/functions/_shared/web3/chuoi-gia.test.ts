@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chuanHoaChuoi, docChuoiBinance, docChuoiCoinbase } from './chuoi-gia.ts';
+import { BUOC_MS, chuanHoaChuoi, docChuoiBinance, docChuoiCoinbase } from './chuoi-gia.ts';
 
 /*
  * Dữ liệu thật, lấy ngày 09/09/2026, CÙNG MỘT NGÀY ở cả hai sàn (mốc
@@ -92,13 +92,13 @@ describe('chuanHoaChuoi', () => {
    * hình.
    */
   it('loại nến có giá cao thấp hơn giá thấp', () => {
-    const c = chuanHoaChuoi('BTC', 'X', [{ t: 1, mo: 5, cao: 3, thap: 9, dong: 4 }]);
+    const c = chuanHoaChuoi('BTC', 'X', [{ t: 1, mo: 5, cao: 3, thap: 9, dong: 4, kl: 1 }]);
     expect(c.nen).toHaveLength(0);
     expect(c.ghiChu).toMatch(/Không đọc được/);
   });
 
   it('loại nến có giá đóng nằm ngoài khoảng cao–thấp', () => {
-    const c = chuanHoaChuoi('BTC', 'X', [{ t: 1, mo: 5, cao: 6, thap: 4, dong: 99 }]);
+    const c = chuanHoaChuoi('BTC', 'X', [{ t: 1, mo: 5, cao: 6, thap: 4, dong: 99, kl: 1 }]);
     expect(c.nen).toHaveLength(0);
   });
 
@@ -106,8 +106,8 @@ describe('chuanHoaChuoi', () => {
     // Ngày 1 và ngày 4 — thiếu hai mốc ở giữa.
     const ngay = 86_400_000;
     const c = chuanHoaChuoi('BTC', 'X', [
-      { t: ngay * 1, mo: 1, cao: 2, thap: 1, dong: 2 },
-      { t: ngay * 4, mo: 2, cao: 3, thap: 2, dong: 3 },
+      { t: ngay * 1, mo: 1, cao: 2, thap: 1, dong: 2, kl: 1 },
+      { t: ngay * 4, mo: 2, cao: 3, thap: 2, dong: 3, kl: 1 },
     ]);
     expect(c.soMocThieu).toBe(2);
     expect(c.ghiChu).toMatch(/thiếu 2 mốc/);
@@ -115,8 +115,8 @@ describe('chuanHoaChuoi', () => {
 
   it('bỏ mốc trùng', () => {
     const c = chuanHoaChuoi('BTC', 'X', [
-      { t: 100, mo: 1, cao: 2, thap: 1, dong: 2 },
-      { t: 100, mo: 1, cao: 2, thap: 1, dong: 2 },
+      { t: 100, mo: 1, cao: 2, thap: 1, dong: 2, kl: 1 },
+      { t: 100, mo: 1, cao: 2, thap: 1, dong: 2, kl: 1 },
     ]);
     expect(c.nen).toHaveLength(1);
   });
@@ -133,5 +133,34 @@ describe('chuanHoaChuoi', () => {
     const c = chuanHoaChuoi('BTC', 'Coinbase', docChuoiCoinbase(COINBASE_THAT));
     expect(c.san).toBe('Coinbase');
     expect(c.ghiChu).toContain('Coinbase');
+  });
+});
+
+describe('khung thời gian', () => {
+  /*
+   * Bản đầu chia cứng cho một ngày, nên ở khung 1 giờ mọi nến liền nhau đều ra
+   * bước 0 và không mốc thiếu nào bị phát hiện — một phép kiểm tự tắt khi đổi
+   * khung, đúng loại lỗi im lặng khó thấy nhất.
+   */
+  it('đếm mốc thiếu theo đúng khung, không cứng theo ngày', () => {
+    const gio = BUOC_MS['1h'];
+    const c = chuanHoaChuoi(
+      'BTC',
+      'X',
+      [
+        { t: gio * 1, mo: 1, cao: 2, thap: 1, dong: 2, kl: 1 },
+        { t: gio * 4, mo: 2, cao: 3, thap: 2, dong: 3, kl: 1 },
+      ],
+      '1h',
+    );
+    expect(c.soMocThieu).toBe(2);
+    expect(c.khung).toBe('1h');
+  });
+
+  it('đọc khối lượng, và 0 là giá trị hợp lệ', () => {
+    const [n] = docChuoiBinance([[1, '1', '2', '1', '2', '0']]);
+    expect(n.kl).toBe(0);
+    expect(docChuoiBinance(BINANCE_THAT)[0].kl).toBe(10572.45);
+    expect(docChuoiCoinbase(COINBASE_THAT)[0].kl).toBe(612.82);
   });
 });
