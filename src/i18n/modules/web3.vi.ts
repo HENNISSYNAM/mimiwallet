@@ -9,6 +9,30 @@
  * mới chưa được dịch phải lộ ra chứ không được im lặng hiện sai ngôn ngữ.
  */
 export default {
+  dauTu: {
+    tieuDe: 'Danh mục đầu tư',
+    phuDe: 'Tài sản số bạn đang giữ, và bối cảnh tác động tới chúng',
+    tongGiaTri: 'Tổng giá trị',
+    chuaTinhDuocLaiLo: 'Chưa tính được lãi lỗ — cần giá thị trường và giá vốn.',
+    thieuGia: '{{so}} khoản chưa đọc được giá, không nằm trong tổng.',
+    thieuGiaVon: '{{so}} khoản chưa khai giá vốn, không tính vào lãi lỗ.',
+    cacKhoan: 'Các khoản đang giữ',
+    chuaCoKhoan: 'Chưa khai khoản nào. Thêm ở bên dưới.',
+    ma: 'Mã',
+    soLuong: 'Số lượng',
+    gia: 'Giá (USD)',
+    giaTri: 'Giá trị (USD)',
+    laiLo: 'Lãi lỗ (USD)',
+    xoa: 'Xoá khoản này',
+    them: 'Thêm',
+    phMa: 'BTC',
+    phSoLuong: 'Số lượng',
+    phGiaVon: 'Giá vốn USD (không bắt buộc)',
+    ghiChuGiaVon: 'Giá vốn ghi bằng USD vì giá công khai của các sàn đều quy về USD. Để trống thì vẫn tính giá trị, chỉ không tính lãi lỗ.',
+    loiMa: 'Mã tài sản gồm 2–15 chữ và số, ví dụ BTC.',
+    loiSoLuong: 'Số lượng phải là số dương.',
+    loiGiaVon: 'Giá vốn phải là số dương, hoặc để trống.',
+  },
   web3: {
     tieuDe: 'Bối cảnh thị trường tài sản số',
     phuDe: 'Giá từ nhiều sàn, tin vĩ mô, và lịch hiệu lực văn bản pháp luật',

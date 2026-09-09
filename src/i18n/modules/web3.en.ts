@@ -10,6 +10,30 @@
  * purpose: readers here will span many jurisdictions and second languages.
  */
 export default {
+  dauTu: {
+    tieuDe: 'Portfolio',
+    phuDe: 'The digital assets you hold, and what is acting on them',
+    tongGiaTri: 'Total value',
+    chuaTinhDuocLaiLo: 'No profit or loss yet — needs both a market price and a cost basis.',
+    thieuGia: '{{so}} holding(s) have no readable price and are not in the total.',
+    thieuGiaVon: '{{so}} holding(s) have no cost basis and are excluded from profit and loss.',
+    cacKhoan: 'Holdings',
+    chuaCoKhoan: 'Nothing recorded yet. Add a holding below.',
+    ma: 'Asset',
+    soLuong: 'Quantity',
+    gia: 'Price (USD)',
+    giaTri: 'Value (USD)',
+    laiLo: 'P/L (USD)',
+    xoa: 'Remove this holding',
+    them: 'Add',
+    phMa: 'BTC',
+    phSoLuong: 'Quantity',
+    phGiaVon: 'Cost basis USD (optional)',
+    ghiChuGiaVon: 'Cost basis is in USD because public exchange prices are quoted in USD. Leave it blank and the value still shows — only profit and loss is withheld.',
+    loiMa: 'An asset code is 2–15 letters or digits, e.g. BTC.',
+    loiSoLuong: 'Quantity must be a positive number.',
+    loiGiaVon: 'Cost basis must be a positive number, or left blank.',
+  },
   web3: {
     tieuDe: 'Digital asset market context',
     phuDe: 'Prices across exchanges, macro news, and the regulatory calendar',

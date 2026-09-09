@@ -388,6 +388,47 @@ export type Database = {
           },
         ]
       }
+      danh_muc_dau_tu: {
+        Row: {
+          company_id: string
+          created_at: string
+          ghi_chu: string | null
+          gia_von_usd: number | null
+          id: string
+          ma: string
+          so_luong: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          ghi_chu?: string | null
+          gia_von_usd?: number | null
+          id?: string
+          ma: string
+          so_luong: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          ghi_chu?: string | null
+          gia_von_usd?: number | null
+          id?: string
+          ma?: string
+          so_luong?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "danh_muc_dau_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_rules: {
         Row: {
           action_params: Json
