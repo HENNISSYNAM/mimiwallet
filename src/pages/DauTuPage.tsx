@@ -7,6 +7,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { useAuthStore } from '@/store/useAuthStore';
 import { tinhDanhMuc, type KhoanNam } from '@/lib/danhMucDauTu';
 import { BoiCanhThiTruong, type BoiCanhUI } from '@/components/web3/BoiCanhThiTruong';
+import { BieuDoGia, type ChuoiGiaUI } from '@/components/web3/BieuDoGia';
 
 /**
  * Danh mục tài sản số, và bối cảnh của đúng những gì đang nắm giữ.
@@ -38,6 +39,7 @@ interface Dong {
 interface PhanHoiThiTruong {
   boiCanh: BoiCanhUI;
   gia: Array<{ ma: string; gia: number | null; ghiChu: string }>;
+  chuoi: ChuoiGiaUI[];
   suCo: Array<{ nguon: string; loi: string }>;
   luc: string;
 }
@@ -298,6 +300,15 @@ export default function DauTuPage() {
         </div>
         <p className="mt-2 text-xs text-muted-foreground">{t('dauTu.ghiChuGiaVon')}</p>
       </div>
+
+      {/* ── Biểu đồ ───────────────────────────────────────────────────────── */}
+      {thiTruong?.chuoi?.length ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {thiTruong.chuoi.map((c) => (
+            <BieuDoGia key={c.ma} chuoi={c} />
+          ))}
+        </div>
+      ) : null}
 
       {/* ── Bối cảnh ──────────────────────────────────────────────────────── */}
       {thiTruong && <BoiCanhThiTruong boiCanh={thiTruong.boiCanh} suCo={thiTruong.suCo} />}

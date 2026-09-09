@@ -1,6 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { doiChieuGia, type BaoGia } from "../_shared/web3/gia-san.ts";
 import {
+  chuanHoaChuoi,
+  docChuoiBinance,
+  docChuoiCoinbase,
+  type ChuoiGia,
+} from "../_shared/web3/chuoi-gia.ts";
+import {
   bangChungPhapLy,
   bangChungThiTruong,
   bangChungViMo,
@@ -48,6 +54,14 @@ const MA_MAC_DINH = ["BTC", "ETH", "SOL"];
 
 /** Số ngày lấy tin vĩ mô. Tin cũ hơn không còn là bối cảnh của hôm nay. */
 const NGAY_TIN = 7;
+
+/**
+ * Số phiên cho biểu đồ.
+ *
+ * 30 ngày là khoảng đủ thấy xu hướng mà không biến câu trả lời thành một khối
+ * dữ liệu nặng — ba mã là 90 nến, còn chấp nhận được trong một phản hồi JSON.
+ */
+const SO_PHIEN = 30;
 
 interface SuCo {
   nguon: string;
@@ -97,6 +111,45 @@ async function giaCoinbase(ma: string): Promise<BaoGia> {
   return { san: "Coinbase", gia, doi24h };
 }
 
+/**
+ * Chuỗi nến cho biểu đồ: MỘT sàn, không trộn.
+ *
+ * Khác `doiChieuGia` — ở đó hỏi nhiều sàn rồi lấy trung vị là đúng. Với chuỗi
+ * thời gian thì trộn là sai: cửa sổ 24 giờ của hai sàn bắt đầu ở hai thời điểm
+ * khác nhau (đo được 09/09/2026), nên nến của chúng không xếp chồng lên nhau.
+ *
+ * Ưu tiên Binance vì chuỗi dài và biên nến theo UTC ổn định; hỏng thì rơi sang
+ * Coinbase, và nhãn sàn đổi theo để biểu đồ không bao giờ ẩn nguồn.
+ */
+async function chuoiGia(ma: string, suCo: SuCo[]): Promise<ChuoiGia> {
+  try {
+    const raw = await docJson(
+      `https://api.binance.com/api/v3/klines?symbol=${ma}USDT&interval=1d&limit=${SO_PHIEN}`,
+      "Binance",
+    );
+    const nen = docChuoiBinance(raw);
+    if (nen.length) return chuanHoaChuoi(ma, "Binance", nen);
+    suCo.push({ nguon: `biểu đồ ${ma}`, loi: "Binance trả về chuỗi rỗng" });
+  } catch (e) {
+    suCo.push({ nguon: `biểu đồ ${ma}`, loi: `Binance: ${(e as Error).message}` });
+  }
+
+  try {
+    const raw = await docJson(
+      `https://api.exchange.coinbase.com/products/${ma}-USD/candles?granularity=86400`,
+      "Coinbase",
+    );
+    // Coinbase trả nhiều hơn số phiên cần và theo thứ tự giảm dần; cắt sau khi
+    // `chuanHoaChuoi` đã sắp lại, chứ không cắt trên mảng thô.
+    const day = chuanHoaChuoi(ma, "Coinbase", docChuoiCoinbase(raw));
+    return { ...day, nen: day.nen.slice(-SO_PHIEN) };
+  } catch (e) {
+    suCo.push({ nguon: `biểu đồ ${ma}`, loi: `Coinbase: ${(e as Error).message}` });
+  }
+
+  return chuanHoaChuoi(ma, "—", []);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
@@ -134,6 +187,11 @@ Deno.serve(async (req) => {
         return doiChieuGia(ma, baoGia);
       }),
     );
+
+    // Biểu đồ chạy song song với phần giá, nhưng KHÔNG gộp vào cùng một lời
+    // gọi: một sàn có thể trả được giá hiện tại mà chặn endpoint nến, và gộp
+    // lại thì mất cả hai.
+    const chuoi = await Promise.all(danhSachMa.map((m) => chuoiGia(m, suCo)));
 
     // ── VI_MO ───────────────────────────────────────────────────────────────
     const tuNgay = new Date();
@@ -186,6 +244,7 @@ Deno.serve(async (req) => {
     return json({
       boiCanh,
       gia,
+      chuoi,
       /*
        * Sự cố đi kèm câu trả lời, không thay thế nó.
        *
