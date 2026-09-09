@@ -11,9 +11,11 @@ import financeVi from './modules/finance.vi';
 import financeEn from './modules/finance.en';
 import miscVi from './modules/misc.vi';
 import miscEn from './modules/misc.en';
+import web3Vi from './modules/web3.vi';
+import web3En from './modules/web3.en';
 
-const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi };
-const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn };
+const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi, ...web3Vi };
+const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn, ...web3En };
 
 i18n
   .use(LanguageDetector)

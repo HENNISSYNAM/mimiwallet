@@ -286,8 +286,29 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
          * Gặp ngày 08/09 khi đồng bộ Tổng Cục Thuế: màn hình nói "Chưa có mã số
          * thuế của doanh nghiệp." và dừng ở đó.
          */
+        /*
+         * MÃ LỖI VÀ requestId PHẢI HIỆN RA KHI KHÔNG CÓ CÁCH SỬA.
+         *
+         * Bảng mã trong `_shared/bank/errors.ts` cố ý KHÔNG bịa `remedy` cho mã
+         * lạ — bài học case 7. Nhưng hệ quả là khi Cas trả một mã chưa có trong
+         * bảng, người dùng đọc đúng một câu của Cas rồi hết: không biết nên chờ
+         * hay nên làm gì, và không có gì để hỏi lại Casso.
+         *
+         * Gặp 09/09 với "Hệ thống ngân hàng bị gián đoạn" khi đồng bộ Tổng Cục
+         * Thuế. requestId là thứ duy nhất Casso tra được ở phía họ, nên nó phải
+         * lên màn hình chứ không nằm lại trong log.
+         *
+         * Thấy mã lạ thì thêm vào `errors.ts` kèm cách sửa thật — đúng cách
+         * `INVALID_PARAM` đã được ghi vào bảng sau khi quan sát được nó.
+         */
+        const phu = [
+          result.detail,
+          result.remedy,
+          result.errorCode ? `Mã lỗi ${result.errorCode}` : null,
+          result.requestId ? `requestId ${result.requestId}` : null,
+        ].filter(Boolean);
         toast.error(result.error ?? `Lỗi ${res.status}`, {
-          description: [result.detail, result.remedy].filter(Boolean).join(' ') || undefined,
+          description: phu.length ? phu.join(' · ') : undefined,
         });
         return null;
       }
