@@ -99,6 +99,7 @@ Kết quả luôn có `ly_do: [{ ma, cau }]`. Mã:
 | `NGUOI_NHAN_CHUA_DUYET` | Người lạ bị chặn | Báo chủ doanh nghiệp thêm người nhận |
 | `NHOM_CHI_KHONG_DUOC_PHEP`, `NHOM_CHI_KHONG_RO` | Sai nhóm | Sửa `nhom_chi` |
 | `THIEU_MUC_DICH`, `SO_TIEN_KHONG_HOP_LE`, `NGAN_HANG_KHONG_RO`, `SO_TAI_KHOAN_KHONG_HOP_LE` | Sai dữ liệu | Sửa rồi gửi lại |
+| `MUC_DICH_LOI_MA_HOA` | Chữ hỏng mã hoá (có U+FFFD) | Gửi body bằng UTF-8, hoặc viết tiếng Việt dạng `\uXXXX` |
 | `TAC_TU_TAM_DUNG`, `TAC_TU_DA_THU_HOI`, `CHINH_SACH_HET_HAN` | Bị khoá | Dừng, báo người |
 | `NGUOI_DUYET_TU_CHOI` | Người từ chối | Đọc `cau`, không gửi lại y nguyên |
 

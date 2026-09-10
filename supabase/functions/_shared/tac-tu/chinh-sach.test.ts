@@ -124,6 +124,14 @@ describe('dữ liệu yêu cầu', () => {
     expect(ma(xetYeuCau(yc({ mucDich: '  ' }), cs(), bc()))).toContain('THIEU_MUC_DICH');
   });
 
+  it('mục đích hỏng mã hoá bị từ chối — chuỗi thật đã lọt vào sổ ngày 10/09', () => {
+    const q = xetYeuCau(yc({ mucDich: 'Th? v�ng ki?m so�t chi c?a MIMI' }), cs(), bc());
+    expect(q.ketQua).toBe('tu_choi');
+    expect(ma(q)).toEqual(['MUC_DICH_LOI_MA_HOA']);
+    // Tiếng Việt đúng UTF-8 vẫn qua.
+    expect(ma(xetYeuCau(yc({ mucDich: 'Thử vòng kiểm soát chi của MIMI' }), cs(), bc()))).not.toContain('MUC_DICH_LOI_MA_HOA');
+  });
+
   it('nhóm chi không có trong danh mục khác với nhóm chi không được phép', () => {
     expect(ma(xetYeuCau(yc({ nhomChi: 'an_choi' }), cs(), bc()))).toEqual(['NHOM_CHI_KHONG_RO']);
     expect(ma(xetYeuCau(yc({ nhomChi: 'quang_cao' }), cs(), bc()))).toEqual(['NHOM_CHI_KHONG_DUOC_PHEP']);

@@ -175,7 +175,11 @@ export async function goiTacTu(db: Db, khoa: string, hanhDong: string, body: Row
             chi_tra_nguoi_nhan_da_duyet: cs.chiTraNguoiNhanDaDuyet,
             het_han: cs.hetHan,
           },
-          han_muc_con_lai: hanMucConLai(cs, giu.ngay, giu.thang),
+          // Đổi sang snake_case như mọi trường khác của API. Trả thẳng kết quả
+          // của `hanMucConLai` từng làm lộ `moiLan` giữa một object toàn `moi_lan`.
+          han_muc_con_lai: (({ moiLan, ngay, thang }) => ({ moi_lan: moiLan, ngay, thang }))(
+            hanMucConLai(cs, giu.ngay, giu.thang),
+          ),
           nhom_chi: NHOM_CHI,
         },
       };

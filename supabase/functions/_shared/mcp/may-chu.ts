@@ -143,7 +143,7 @@ export function tomTat(ten: string, kq: KetQuaChay): string {
 
   if (ten === 'xem_chinh_sach' && b.han_muc_con_lai) {
     const c = b.han_muc_con_lai;
-    return `Hạn mức còn lại — mỗi khoản tối đa ${dong(c.moiLan)}, hôm nay ${dong(c.ngay)}, tháng này ${dong(c.thang)}.`;
+    return `Hạn mức còn lại — mỗi khoản tối đa ${dong(c.moi_lan)}, hôm nay ${dong(c.ngay)}, tháng này ${dong(c.thang)}.`;
   }
 
   if (ten === 'xin_chi' || ten === 'xem_yeu_cau') {

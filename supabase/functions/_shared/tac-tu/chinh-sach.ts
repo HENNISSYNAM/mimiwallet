@@ -101,6 +101,7 @@ export type MaLyDo =
   | 'NGAN_HANG_KHONG_RO'
   | 'SO_TAI_KHOAN_KHONG_HOP_LE'
   | 'THIEU_MUC_DICH'
+  | 'MUC_DICH_LOI_MA_HOA'
   | 'NHOM_CHI_KHONG_RO'
   | 'NHOM_CHI_KHONG_DUOC_PHEP'
   | 'VUOT_HAN_MUC_MOI_LAN'
@@ -153,6 +154,18 @@ export function xetYeuCau(yc: YeuCau, cs: ChinhSach, bc: BoiCanh): QuyetDinh {
     chan.push({
       ma: 'THIEU_MUC_DICH',
       cau: 'Phải nói rõ mục đích chi, ít nhất 5 ký tự. Đây là dòng sẽ nằm trong sổ và trên chứng từ.',
+    });
+  } else if (yc.mucDich.includes('�')) {
+    /*
+     * Ký tự thay thế U+FFFD là dấu vết chữ đã hỏng trên đường đi: agent gửi
+     * tiếng Việt bằng bảng mã không phải UTF-8 (thường gặp khi gọi từ dòng lệnh
+     * Windows). Tìm ra ngày 10/09/2026 khi "Thử vòng kiểm soát" về tới sổ thành
+     * "Th? v�ng ki?m so�t". Mục đích là dòng nằm trên chứng từ — không nhận nó
+     * ở dạng không ai đọc được.
+     */
+    chan.push({
+      ma: 'MUC_DICH_LOI_MA_HOA',
+      cau: 'Mục đích có ký tự lỗi mã hoá. Gửi lại bằng UTF-8, hoặc viết tiếng Việt dạng \\uXXXX trong JSON.',
     });
   }
   if (!(NHOM_CHI as readonly string[]).includes(yc.nhomChi)) {
