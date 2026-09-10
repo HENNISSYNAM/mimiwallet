@@ -39,7 +39,20 @@ const NGANH = [
 
 const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
 
-export function ChonCachTinhThue({ doanhThu }: { doanhThu: number }) {
+export function ChonCachTinhThue({
+  doanhThu,
+  chiPhiCoChungTu = 0,
+}: {
+  doanhThu: number;
+  /**
+   * Chi phí đã chứng minh được bằng hoá đơn đầu vào.
+   *
+   * Mặc định 0 cho nơi gọi chưa có số thật — khi đó `chungTuConThieu` chính là
+   * toàn bộ mức cần chứng minh, và câu chữ tự hợp. Truyền số thật vào thì câu
+   * trả lời đổi từ "cần gom bao nhiêu" sang "còn thiếu bao nhiêu".
+   */
+  chiPhiCoChungTu?: number;
+}) {
   const [maNganh, setMaNganh] = useState<string>('khac');
   const nganh = NGANH.find((n) => n.ma === maNganh) ?? NGANH[1];
 
@@ -51,8 +64,8 @@ export function ChonCachTinhThue({ doanhThu }: { doanhThu: number }) {
    * chi phí có chứng từ thật thì truyền vào đây, và câu chữ tự đổi.
    */
   const kq = useMemo(
-    () => soSanhThue({ doanhThu, chiPhiCoChungTu: 0, tyLeNganh: nganh.tyLe }),
-    [doanhThu, nganh.tyLe],
+    () => soSanhThue({ doanhThu, chiPhiCoChungTu, tyLeNganh: nganh.tyLe }),
+    [doanhThu, chiPhiCoChungTu, nganh.tyLe],
   );
 
   if (doanhThu < NGUONG_MIEN || doanhThu > TRAN_NHOM_CHON) {
@@ -100,8 +113,9 @@ export function ChonCachTinhThue({ doanhThu }: { doanhThu: number }) {
       <div className="mt-4 rounded-xl bg-primary/5 p-4">
         <p className="font-mono text-2xl font-bold text-foreground">{dong(mucHoa)}</p>
         <p className="mt-1 text-sm text-foreground/80">
-          là mức chi phí bạn cần chứng minh được — khoảng {phanTram}% doanh thu — để tính
-          theo lợi nhuận rẻ hơn tính theo tỷ lệ.
+          {chiPhiCoChungTu > 0
+            ? `là phần còn thiếu — bạn đã chứng minh được ${dong(chiPhiCoChungTu)} — để tính theo lợi nhuận rẻ hơn tính theo tỷ lệ.`
+            : `là mức chi phí bạn cần chứng minh được — khoảng ${phanTram}% doanh thu — để tính theo lợi nhuận rẻ hơn tính theo tỷ lệ.`}
         </p>
       </div>
 

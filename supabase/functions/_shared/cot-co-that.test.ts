@@ -27,7 +27,16 @@ import { join, relative, sep } from 'node:path';
  */
 
 const goc = join(__dirname, '..', '..', '..');
-const thuMucHam = join(goc, 'supabase', 'functions');
+
+/*
+ * Quét CẢ hai phía.
+ *
+ * Bản đầu chỉ quét edge function. Nhưng mã giao diện cũng gọi thẳng PostgREST
+ * qua `supabase.from(...)`, và sai tên cột ở đó cũng im lặng y hệt: truy vấn
+ * hỏng, `data` thành null, màn hình hiện bảng trống — trông không khác gì
+ * "chưa có dữ liệu".
+ */
+const THU_MUC = [join(goc, 'supabase', 'functions'), join(goc, 'src')];
 
 /** Các toán tử PostgREST mà đối số đầu là một tên cột. */
 const TOAN_TU_CO_TEN_COT = ['order', 'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'is', 'like', 'ilike'];
@@ -156,6 +165,12 @@ describe('bộ dò tên cột', () => {
 describe('tên cột trong truy vấn edge function', () => {
   const luocDo = docLuocDo();
 
+  it('quét được cả edge function lẫn mã giao diện', () => {
+    const file = THU_MUC.flatMap((d) => cacFileHam(d));
+    expect(file.some((f) => f.includes('functions'))).toBe(true);
+    expect(file.some((f) => f.includes('pages') || f.includes('components'))).toBe(true);
+  });
+
   it('đọc được lược đồ từ types.ts', () => {
     // Nếu định dạng `types.ts` đổi thì mọi test dưới sẽ xanh giả — bảng rỗng
     // thì không có gì để đối chiếu. Chốt lại ở đây.
@@ -169,7 +184,7 @@ describe('tên cột trong truy vấn edge function', () => {
   it('mọi cột đều có thật trong bảng được truy vấn', () => {
     const sai: string[] = [];
 
-    for (const f of cacFileHam(thuMucHam)) {
+    for (const f of THU_MUC.flatMap((d) => cacFileHam(d))) {
       for (const d of timCachDung(f)) {
         const cot = luocDo.get(d.bang);
         // Bảng không có trong types.ts thì bỏ qua: có thể là bảng mới chưa

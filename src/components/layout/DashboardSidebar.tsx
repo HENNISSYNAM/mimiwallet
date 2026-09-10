@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, ChevronLeft, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HandCoins, HelpCircle, LayoutDashboard, Leaf, LogOut, Settings, ShieldCheck, Sparkles, Users, Wallet } from 'lucide-react';
+import { BarChart3, ChevronLeft, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HandCoins, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, Sparkles, Users, Wallet } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,6 +76,7 @@ export default function DashboardSidebar() {
       label: t('sidebar.groupDaily'),
       items: [
         { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
+        { icon: Receipt, label: 'Chứng từ chi phí', path: '/dashboard/chung-tu' },
         { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
         { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
         { icon: ShieldCheck, label: t('sidebar.creditScore'), path: '/dashboard/credit' },
