@@ -1,21 +1,30 @@
 /**
- * Hai cách tính thuế cho hộ kinh doanh 500 triệu – 3 tỷ, và cách nào rẻ hơn.
+ * Hai cách tính thuế thu nhập cá nhân cho hộ kinh doanh trên 01 tỷ đến 3 tỷ, và
+ * cách nào rẻ hơn.
  *
- * VÌ SAO TỒN TẠI. Từ 01/01/2026 hết thuế khoán. Hộ có doanh thu 500 triệu đến
- * 3 tỷ **được chọn** một trong hai cách tính, và chọn sai là mất tiền thật:
+ * VÌ SAO TỒN TẠI. Từ 01/01/2026 hết thuế khoán. Hộ có doanh thu năm trên 01 tỷ
+ * đến 3 tỷ **được chọn** một trong hai cách tính, và chọn sai là mất tiền thật:
  *
- *   Theo lợi nhuận  — 15% trên phần lãi, CHỈ khi xác định được chi phí đầu vào.
- *   Theo doanh thu  — 0,5% đến 2% trên doanh thu, tuỳ ngành, khi không xác
- *                     định được chi phí.
+ *   Theo thu nhập — 15% × (doanh thu − chi phí), CHỈ khi xác định được chi phí.
+ *   Theo tỷ lệ    — (doanh thu − 01 tỷ) × tỷ lệ ngành. Phần 01 tỷ được trừ
+ *                   TRƯỚC khi nhân, không nhân trên toàn bộ doanh thu.
  *
- * Nguồn: Nghị quyết 198/2025/QH15 và hướng dẫn kèm theo. Tra ngày 04/09/2026.
+ * NGUỒN, tra ngày 10/09/2026:
+ *   - Luật Thuế thu nhập cá nhân số 109/2025/QH15: quyền chọn hai cách, và mức
+ *     không chịu thuế được "trừ trước khi tính thuế theo tỷ lệ trên doanh thu"
+ *     (bài giới thiệu luật trên xaydungchinhsach.chinhphu.vn).
+ *   - Nghị định 68/2026/NĐ-CP, sửa bởi Nghị định 141/2026/NĐ-CP ngày 29/04/2026:
+ *     đổi "500 triệu đồng" thành "01 tỷ đồng", áp dụng từ 01/01/2026.
  *
- * Hiểu để chọn thì cần kiến thức thuế mà phần lớn chủ hộ không có — đó chính
- * là nỗi đau, chứ không phải việc bấm nút. Nên hàm này tính cả hai và nói ra
- * một câu: cách nào rẻ hơn, rẻ hơn bao nhiêu.
+ * HAI LỖI ĐÃ SỬA NGÀY 10/09/2026, cả hai đều làm thuế theo tỷ lệ trông đắt hơn
+ * thật, và vì thế đẩy người dùng đi gom chứng từ cho một khoản không cần:
+ *   1. Ngưỡng để 500 triệu — đúng theo Luật 109, nhưng Nghị định 141 đã nâng lên
+ *      01 tỷ từ bốn tháng trước.
+ *   2. Nhân tỷ lệ với toàn bộ doanh thu. Hộ 1,2 tỷ ngành 1%: đúng là 2 triệu,
+ *      hàm cũ ra 12 triệu.
  *
  * VÀ CÂU QUAN TRỌNG NHẤT KHÔNG PHẢI "CÁCH NÀO RẺ HƠN". Là: *còn thiếu bao nhiêu
- * chứng từ nữa thì cách lợi nhuận trở nên rẻ hơn.* Con số đó biến một quyết
+ * chứng từ nữa thì cách thu nhập trở nên rẻ hơn.* Con số đó biến một quyết
  * định mù thành một việc làm được — đi tìm thêm hoá đơn đầu vào, và biết tìm
  * tới mức nào thì đủ.
  *
@@ -30,20 +39,25 @@
  *     chứng từ, do bên gọi đếm.
  */
 
-/** Ngưỡng doanh thu năm không phải nộp thuế — nâng từ 200 triệu lên 500 triệu. */
-export const NGUONG_MIEN = 500_000_000;
+/**
+ * Ngưỡng doanh thu năm không phải nộp thuế GTGT và TNCN.
+ *
+ * "Từ 01 tỷ đồng trở xuống" — nên đúng bằng ngưỡng vẫn chưa phải nộp.
+ * 200 triệu → 500 triệu (Luật 109/2025/QH15) → 01 tỷ (Nghị định 141/2026/NĐ-CP).
+ */
+export const NGUONG_MIEN = 1_000_000_000;
 
-/** Trần của nhóm được quyền chọn cách tính. */
+/** Trần của nhóm được quyền chọn cách tính. "Đến 3 tỷ" — tính cả 3 tỷ. */
 export const TRAN_NHOM_CHON = 3_000_000_000;
 
-/** Thuế suất trên phần lãi, khi xác định được chi phí đầu vào. */
+/** Thuế suất trên thu nhập, khi xác định được chi phí đầu vào. */
 export const TY_LE_TREN_LAI = 0.15;
 
 /** Khoảng tỷ lệ trên doanh thu, tuỳ ngành nghề. */
 export const TY_LE_DOANH_THU = { min: 0.005, max: 0.02 } as const;
 
 export interface DauVao {
-  /** Doanh thu năm, đồng. */
+  /** Doanh thu NĂM, đồng. Không truyền doanh thu quý — ngưỡng là ngưỡng năm. */
   doanhThu: number;
   /** Chi phí ĐÃ CÓ CHỨNG TỪ, đồng. Không phải mọi khoản chi. */
   chiPhiCoChungTu: number;
@@ -57,23 +71,23 @@ export interface DauVao {
 }
 
 export type KetLuan =
-  | 'ngoai_pham_vi'   // dưới ngưỡng miễn, hoặc trên trần nhóm được chọn
+  | 'ngoai_pham_vi'   // từ ngưỡng miễn trở xuống, hoặc trên trần nhóm được chọn
   | 'loi_nhuan_re_hon'
   | 'doanh_thu_re_hon'
   | 'bang_nhau';
 
 export interface KetQua {
   ketLuan: KetLuan;
-  /** Thuế nếu tính theo lợi nhuận. `null` khi không áp dụng được. */
+  /** Thuế nếu tính theo thu nhập. `null` khi không áp dụng được. */
   theoLoiNhuan: number | null;
-  /** Thuế nếu tính theo tỷ lệ doanh thu. `null` khi ngoài phạm vi. */
+  /** Thuế nếu tính theo tỷ lệ trên phần doanh thu vượt ngưỡng. `null` khi ngoài phạm vi. */
   theoDoanhThu: number | null;
   /** Chênh lệch tuyệt đối giữa hai cách. `null` khi không so được. */
   chenhLech: number | null;
   /**
-   * Cần thêm bao nhiêu đồng chi phí CÓ CHỨNG TỪ nữa thì cách lợi nhuận rẻ hơn.
+   * Cần thêm bao nhiêu đồng chi phí CÓ CHỨNG TỪ nữa thì cách thu nhập rẻ hơn.
    *
-   * `null` khi cách lợi nhuận đã rẻ hơn rồi, hoặc khi ngoài phạm vi. Đây là con
+   * `null` khi cách thu nhập đã rẻ hơn rồi, hoặc khi ngoài phạm vi. Đây là con
    * số biến một quyết định mù thành một việc làm được.
    */
   chungTuConThieu: number | null;
@@ -86,11 +100,13 @@ const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
 export function soSanhThue(v: DauVao): KetQua {
   const { doanhThu, chiPhiCoChungTu, tyLeNganh } = v;
 
-  if (doanhThu < NGUONG_MIEN) {
+  if (doanhThu <= NGUONG_MIEN) {
     return {
       ketLuan: 'ngoai_pham_vi', theoLoiNhuan: null, theoDoanhThu: null,
       chenhLech: null, chungTuConThieu: null,
-      cau: `Doanh thu dưới ${dong(NGUONG_MIEN)} một năm thì chưa phải nộp thuế thu nhập cá nhân.`,
+      cau:
+        `Doanh thu từ ${dong(NGUONG_MIEN)} một năm trở xuống thì chưa phải nộp thuế thu nhập ` +
+        'cá nhân và thuế giá trị gia tăng. Vẫn phải thông báo doanh thu với cơ quan thuế.',
     };
   }
 
@@ -105,25 +121,25 @@ export function soSanhThue(v: DauVao): KetQua {
   const lai = doanhThu - chiPhiCoChungTu;
   // Lỗ thì không có phần lãi để đánh thuế. Không trả số âm.
   const theoLoiNhuan = Math.max(0, lai) * TY_LE_TREN_LAI;
-  const theoDoanhThu = doanhThu * tyLeNganh;
+  const theoDoanhThu = (doanhThu - NGUONG_MIEN) * tyLeNganh;
   const chenhLech = Math.abs(theoLoiNhuan - theoDoanhThu);
 
   if (theoLoiNhuan < theoDoanhThu) {
     return {
       ketLuan: 'loi_nhuan_re_hon', theoLoiNhuan, theoDoanhThu, chenhLech,
       chungTuConThieu: null,
-      cau: `Tính theo lợi nhuận rẻ hơn ${dong(chenhLech)}. Chi phí bạn đang chứng minh được đã đủ để chọn cách này.`,
+      cau: `Tính theo thu nhập rẻ hơn ${dong(chenhLech)}. Chi phí bạn đang chứng minh được đã đủ để chọn cách này.`,
     };
   }
 
   if (theoLoiNhuan > theoDoanhThu) {
     /*
      * Cần thêm bao nhiêu chứng từ nữa để hoà? Giải theo lãi:
-     *   0.15 × (doanhThu − chiPhi) = tyLeNganh × doanhThu
-     *   chiPhi = doanhThu × (1 − tyLeNganh / 0.15)
+     *   0.15 × (doanhThu − chiPhi) = theoDoanhThu
+     *   chiPhi = doanhThu − theoDoanhThu / 0.15
      * Phần thiếu là hiệu so với chi phí đang có.
      */
-    const chiPhiCanCo = doanhThu * (1 - tyLeNganh / TY_LE_TREN_LAI);
+    const chiPhiCanCo = doanhThu - theoDoanhThu / TY_LE_TREN_LAI;
     const conThieu = Math.max(0, chiPhiCanCo - chiPhiCoChungTu);
     return {
       ketLuan: 'doanh_thu_re_hon', theoLoiNhuan, theoDoanhThu, chenhLech,
@@ -131,7 +147,7 @@ export function soSanhThue(v: DauVao): KetQua {
       cau:
         `Hiện tính theo tỷ lệ doanh thu rẻ hơn ${dong(chenhLech)}. ` +
         `Nếu gom thêm được ${dong(conThieu)} chi phí có chứng từ thì hai cách hoà nhau, ` +
-        'quá mức đó thì tính theo lợi nhuận bắt đầu có lợi.',
+        'quá mức đó thì tính theo thu nhập bắt đầu có lợi.',
     };
   }
 

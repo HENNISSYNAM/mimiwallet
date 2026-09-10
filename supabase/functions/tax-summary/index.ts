@@ -11,20 +11,17 @@ import { revenueFromInvoices, type GdtInvoiceRow } from "../_shared/tax/gdt-invo
 /**
  * "How much have I sold this year, and which obligations have I reached?"
  *
- * Two thresholds, from two different laws, met in this order as a business
- * grows:
+ * Two thresholds, met in this order as a business grows:
  *
- *   500 triệu  Below it, no VAT and no personal income tax. Luật Thuế TNCN
- *              (sửa đổi), passed 10/12/2025, raising the 200 triệu set by
- *              Luật Thuế GTGT 2024. Applies from 01/01/2026.
- *   1 tỷ       At or above it, sales must be invoiced from a cash register
- *              connected to the tax authority. Nghị định 70/2025/NĐ-CP, in
- *              force from 01/06/2025. About *how* sales are recorded, not how
- *              much tax is owed.
+ *   01 tỷ  At or below it, no VAT and no personal income tax. Above it, both,
+ *          plus e-invoices with a tax-authority code. Nghị định 68/2026/NĐ-CP
+ *          as amended by Nghị định 141/2026/NĐ-CP, from 01/01/2026.
+ *   3 tỷ   Above it, the choice between a revenue rate and tax on income ends;
+ *          income at 17% only. Luật Thuế TNCN 109/2025/QH15.
  *
- * They were once collapsed into one constant of 1 tỷ called "the exemption
- * threshold". That told a household at 800 triệu they owed nothing, when they
- * had owed tax since 500 triệu.
+ * The exemption line has been wrong here in both directions — 1 tỷ when the law
+ * said 500 triệu, then 500 triệu for four months after Nghị định 141 moved it
+ * to 01 tỷ. The constants live in `_shared/ledger/internal-transfer.ts`.
  *
  * Two numbers come back, and they are deliberately kept apart rather than
  * blended into one confident figure:

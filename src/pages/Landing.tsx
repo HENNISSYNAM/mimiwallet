@@ -1099,7 +1099,7 @@ export default function Landing() {
             </span>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng 500 triệu', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
+            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
             <PricingCard name="Growth" price="249,000₫" features={['Tự động phân loại chi phí mỗi ngày', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
             <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" annual={annual} />
           </div>

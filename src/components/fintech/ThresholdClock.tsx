@@ -12,10 +12,14 @@ import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
  * The two revenue milestones a Vietnamese household business meets, and where
  * this one stands against them.
  *
- * They come from different laws and mean different things, so they are drawn as
- * two separate bars rather than one. An earlier version collapsed them into a
- * single "1 tỷ exemption threshold" — which would have told someone at 800
- * triệu that they owed nothing, when they had owed VAT and PIT since 500 triệu.
+ *   01 tỷ  From here up: VAT, PIT and e-invoices with a tax-authority code.
+ *   3 tỷ   From here up: no more choice of method — tax on income only, at 17%.
+ *
+ * Both have been wrong on this screen before. The exemption line was once 1 tỷ
+ * when the law said 500 triệu, then stayed at 500 triệu for four months after
+ * Nghị định 141/2026/NĐ-CP moved it to 01 tỷ. The keys come from `tax-summary`;
+ * a key this file does not know draws nothing rather than crashing, so the
+ * screen survives a server deployed ahead of or behind the web app.
  *
  * Rules this component keeps:
  *
@@ -37,7 +41,7 @@ import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
  * a "crossed" state. Gamifying a tax bill would be dishonest, not friendly.
  */
 
-type MilestoneKey = 'tax_exemption' | 'cash_register_invoice';
+type MilestoneKey = 'tax_exemption' | 'profit_method_required';
 
 interface Milestone {
   key: MilestoneKey;
@@ -63,21 +67,24 @@ interface Summary {
 }
 
 /** What each milestone means, and the document that says so. */
-const MILESTONE: Record<
+const MILESTONE: Partial<Record<
+  string,
+  { label: string; below: string; above: string; law: string }
+>> & Record<
   MilestoneKey,
   { label: string; below: string; above: string; law: string }
 > = {
   tax_exemption: {
     label: 'Ngưỡng miễn thuế',
-    below: 'Chưa phải nộp GTGT và TNCN',
-    above: 'Đã phát sinh nghĩa vụ nộp GTGT và TNCN',
-    law: 'Luật Thuế TNCN (sửa đổi), thông qua 10/12/2025 · áp dụng từ 01/01/2026',
+    below: 'Chưa phải nộp GTGT và TNCN · vẫn phải thông báo doanh thu',
+    above: 'Phải nộp GTGT, TNCN và xuất hoá đơn điện tử có mã của cơ quan thuế',
+    law: 'Nghị định 68/2026/NĐ-CP, sửa bởi Nghị định 141/2026/NĐ-CP · áp dụng từ 01/01/2026',
   },
-  cash_register_invoice: {
-    label: 'Ngưỡng hoá đơn máy tính tiền',
-    below: 'Chưa bắt buộc hoá đơn điện tử từ máy tính tiền',
-    above: 'Phải xuất hoá đơn điện tử từ máy tính tiền, nối dữ liệu với cơ quan thuế',
-    law: 'Nghị định 70/2025/NĐ-CP · hiệu lực từ 01/06/2025',
+  profit_method_required: {
+    label: 'Trần được chọn cách tính',
+    below: 'Còn được chọn tính theo tỷ lệ doanh thu hoặc theo thu nhập',
+    above: 'Chỉ còn cách tính theo thu nhập (doanh thu trừ chi phí), thuế suất 17%',
+    law: 'Luật Thuế thu nhập cá nhân số 109/2025/QH15',
   },
 };
 
@@ -103,6 +110,8 @@ function goToLawPanel() {
 function MilestoneBar({ m }: { m: Milestone }) {
   const [showLaw, setShowLaw] = useState(false);
   const meta = MILESTONE[m.key];
+  // A key from a server newer or older than this file: draw nothing, not a crash.
+  if (!meta) return null;
   const pct = Math.min(100, Math.max(0, m.ratio * 100));
   const near = pct >= 80 && !m.crossed;
 

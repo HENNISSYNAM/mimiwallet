@@ -21,7 +21,7 @@ const vi = {
    *
    * What replaced it is not a softer promise — it is a harder one, because it
    * can be checked. Thuế khoán was abolished on 01/01/2026: every household
-   * business now self-declares on real revenue, and the 500 triệu–3 tỷ band may
+   * business now self-declares on real revenue, and the 1 tỷ–3 tỷ band may
    * choose between 15% on profit and a percentage of revenue. That choice is
    * only available to someone who can document costs. MIMI holds their outflows.
    * Green and carbon stay in the supporting line rather than the headline —

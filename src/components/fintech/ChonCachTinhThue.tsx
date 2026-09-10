@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Scale } from 'lucide-react';
-import { soSanhThue, NGUONG_MIEN, TRAN_NHOM_CHON, TY_LE_TREN_LAI } from '@/lib/soSanhThue';
+import { soSanhThue, NGUONG_MIEN, TY_LE_TREN_LAI } from '@/lib/soSanhThue';
 
 /**
  * "Tôi nên tính thuế theo cách nào?" — trả lời bằng số của chính họ.
@@ -39,6 +39,9 @@ const NGANH = [
 
 const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
 
+/** "1 tỷ" — đọc từ hằng số, để lần sau luật đổi ngưỡng thì chữ trên màn hình đổi theo. */
+const NGUONG_CHU = `${(NGUONG_MIEN / 1_000_000_000).toString().replace('.', ',')} tỷ`;
+
 export function ChonCachTinhThue({
   doanhThu,
   chiPhiCoChungTu = 0,
@@ -68,7 +71,9 @@ export function ChonCachTinhThue({
     [doanhThu, chiPhiCoChungTu, nganh.tyLe],
   );
 
-  if (doanhThu < NGUONG_MIEN || doanhThu > TRAN_NHOM_CHON) {
+  // Hỏi thẳng kết luận của `soSanhThue` thay vì so lại ngưỡng ở đây: hai nơi so
+  // hai kiểu (`<` ở đây, `<=` trong hàm) là cách đúng bằng 01 tỷ rơi vào khe hở.
+  if (kq.ketLuan === 'ngoai_pham_vi') {
     return (
       <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
         <div className="flex items-center gap-2">
@@ -90,8 +95,8 @@ export function ChonCachTinhThue({
         <p className="text-sm font-semibold">Bạn nên tính thuế theo cách nào</p>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Doanh thu {dong(doanhThu)} nằm trong nhóm được chọn. Chọn ngành để xem mức chi phí
-        cần chứng minh.
+        Doanh thu {dong(doanhThu)} nằm trong nhóm được chọn (trên {NGUONG_CHU} đến 3 tỷ). Chọn
+        ngành để xem mức chi phí cần chứng minh.
       </p>
 
       <label className="mt-4 block">
@@ -124,11 +129,12 @@ export function ChonCachTinhThue({
           <p className="text-xs text-muted-foreground">Theo tỷ lệ doanh thu</p>
           <p className="mt-0.5 font-mono font-semibold">{dong(kq.theoDoanhThu ?? 0)}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {(nganh.tyLe * 100).toString().replace('.', ',')}% × doanh thu · không cần chứng từ
+            {(nganh.tyLe * 100).toString().replace('.', ',')}% × (doanh thu − {NGUONG_CHU}) · không cần
+            chứng từ
           </p>
         </div>
         <div className="rounded-xl bg-muted/40 p-3">
-          <p className="text-xs text-muted-foreground">Theo lợi nhuận</p>
+          <p className="text-xs text-muted-foreground">Theo thu nhập</p>
           <p className="mt-0.5 font-mono font-semibold">
             {(TY_LE_TREN_LAI * 100).toString()}% × lãi
           </p>
@@ -145,8 +151,9 @@ export function ChonCachTinhThue({
       */}
       <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
         Đây là ước tính thuế thu nhập cá nhân, chưa gồm thuế giá trị gia tăng, và không
-        phải một xác định thuế. Tỷ lệ theo ngành lấy từ biểu áp cho hộ kinh doanh, khớp
-        khoảng 0,5–2% nêu trong Nghị quyết 198/2025/QH15.
+        phải một xác định thuế. Căn cứ: Luật Thuế thu nhập cá nhân 109/2025/QH15; ngưỡng{' '}
+        {NGUONG_CHU} theo Nghị định 141/2026/NĐ-CP, áp dụng từ 01/01/2026. Tỷ lệ theo ngành lấy
+        từ biểu áp cho hộ kinh doanh.
       </p>
     </div>
   );

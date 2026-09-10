@@ -213,47 +213,54 @@ export function revenueExcludingInternal(
 }
 
 /*
- * Two thresholds, two different laws, two different consequences.
+ * The two revenue lines that change what a household business owes.
  *
- * This was a single constant of 1 tỷ labelled "the exemption threshold", which
- * was wrong twice over: 1 tỷ is not the exemption threshold, and the exemption
- * threshold is not 1 tỷ. Someone at 800 triệu would have read the screen and
- * believed they still owed nothing, when in fact they had owed VAT and PIT
- * since 500 triệu.
+ * This constant has been wrong twice, both times because the law moved and the
+ * code did not:
+ *   - It was once 1 tỷ labelled "the exemption threshold" while the law said
+ *     500 triệu, telling a household at 800 triệu it owed nothing.
+ *   - It was then 500 triệu — right under Luật 109/2025/QH15 — until Nghị định
+ *     141/2026/NĐ-CP (29/04/2026) raised it to 01 tỷ from 01/01/2026. For four
+ *     months the screen told households between 500 triệu and 1 tỷ they owed
+ *     tax they did not owe.
  *
- * Both numbers are real. They just answer different questions.
+ * The e-invoice obligation used to be its own milestone at 1 tỷ (Nghị định
+ * 70/2025). Nghị định 141 put it on the same line as the exemption — "trên 01
+ * tỷ đồng thì phải áp dụng hóa đơn điện tử có mã của cơ quan thuế" — so a second
+ * bar would draw one line twice. The second milestone is now the next line that
+ * actually changes something: 3 tỷ, above which the choice of method ends.
  */
 
 /**
- * Below this, a household business owes neither VAT nor personal income tax.
+ * At or below this, a household business owes neither VAT nor personal income
+ * tax. Above it, it owes both and must issue e-invoices carrying a tax-authority
+ * code.
  *
- * Luật Thuế thu nhập cá nhân (sửa đổi), passed by the National Assembly on
- * 10/12/2025, raising it from the 200 triệu set by Luật Thuế GTGT 2024.
- * Applies from 01/01/2026.
+ * Nghị định 68/2026/NĐ-CP as amended by Nghị định 141/2026/NĐ-CP, from
+ * 01/01/2026. "Từ 01 tỷ đồng trở xuống" — landing exactly on it is still exempt.
  */
-export const TAX_EXEMPTION_THRESHOLD_VND = 500_000_000;
+export const TAX_EXEMPTION_THRESHOLD_VND = 1_000_000_000;
 
 /**
- * At or above this, e-invoices must be issued from a cash register connected
- * to the tax authority.
+ * Up to and including this, a household may choose between tax on a revenue
+ * rate and tax on income. Above it, tax on income (revenue − costs) at 17% is
+ * the only method — so every cost without a document starts costing money.
  *
- * Nghị định 70/2025/NĐ-CP, amending Nghị định 123/2020/NĐ-CP, in force from
- * 01/06/2025. Nothing to do with how much tax is owed — it is an obligation
- * about *how* sales are recorded, and it lands at a point where a business has
- * already been paying tax for a while.
+ * Luật Thuế thu nhập cá nhân số 109/2025/QH15.
  */
-export const CASH_REGISTER_INVOICE_THRESHOLD_VND = 1_000_000_000;
+export const PROFIT_METHOD_THRESHOLD_VND = 3_000_000_000;
 
-/** Kept so existing callers keep compiling; prefer the named pair above. */
+/** Kept so existing callers keep compiling; prefer the named constants above. */
 export const EXEMPTION_THRESHOLD_VND = TAX_EXEMPTION_THRESHOLD_VND;
 
 export interface Milestone {
   /** Machine name, so the UI does not switch on translated text. */
-  key: 'tax_exemption' | 'cash_register_invoice';
+  key: 'tax_exemption' | 'profit_method_required';
   threshold: number;
   remaining: number;
-  /** 0…1+, where 1 means the threshold has been reached. */
+  /** 0…1+, where 1 means revenue sits exactly on the threshold. */
   ratio: number;
+  /** Strictly above. Both lines are written "trở xuống" / "đến", so on it is still below. */
   crossed: boolean;
 }
 
@@ -274,23 +281,19 @@ function milestone(key: Milestone['key'], threshold: number, revenue: number): M
     threshold,
     remaining: threshold - revenue,
     ratio: revenue / threshold,
-    crossed: revenue >= threshold,
+    crossed: revenue > threshold,
   };
 }
 
 export function thresholdStatus(revenue: number): ThresholdStatus {
   const tax = milestone('tax_exemption', TAX_EXEMPTION_THRESHOLD_VND, revenue);
-  const invoice = milestone(
-    'cash_register_invoice',
-    CASH_REGISTER_INVOICE_THRESHOLD_VND,
-    revenue,
-  );
+  const profit = milestone('profit_method_required', PROFIT_METHOD_THRESHOLD_VND, revenue);
   return {
     revenue,
     threshold: tax.threshold,
     remaining: tax.remaining,
     ratio: tax.ratio,
     crossed: tax.crossed,
-    milestones: [tax, invoice],
+    milestones: [tax, profit],
   };
 }

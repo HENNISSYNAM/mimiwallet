@@ -16,8 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
  *   3. The formal wording and the source link — behind one tap, for the person
  *      who wants to verify it themselves or show it to their accountant.
  *
- * A wrong number here has already happened once in this project — 1 tỷ was
- * coded as "the tax exemption threshold" when the real figure is 500 triệu.
+ * A wrong number here has happened twice in this project — 1 tỷ was coded as
+ * "the tax exemption threshold" when the law said 500 triệu, then 500 triệu
+ * stayed for four months after Nghị định 141/2026/NĐ-CP raised it to 01 tỷ.
  * The fix was correcting the constant; this component's structure is the other
  * half of the fix, so the citation is never so far from the number that a
  * reader has no way to check it themselves.

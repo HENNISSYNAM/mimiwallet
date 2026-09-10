@@ -10,7 +10,7 @@ const m = {
      *
      * The replacement is a promise about money too, but one MIMI controls: from
      * 01/01/2026 thuế khoán is gone, every household business self-declares on
-     * real revenue, and the 500 triệu–3 tỷ band chooses between 15% on profit
+     * real revenue, and the 1 tỷ–3 tỷ band chooses between 15% on profit
      * and a percentage of revenue. Only someone who can document costs gets to
      * choose. MIMI holds the outflows that document them.
      */

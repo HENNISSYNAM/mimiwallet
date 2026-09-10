@@ -4,7 +4,7 @@ import {
   revenueExcludingInternal,
   thresholdStatus,
   TAX_EXEMPTION_THRESHOLD_VND,
-  CASH_REGISTER_INVOICE_THRESHOLD_VND,
+  PROFIT_METHOD_THRESHOLD_VND,
   type LedgerTx,
 } from './internal-transfer';
 
@@ -155,54 +155,48 @@ describe('revenueExcludingInternal', () => {
 });
 
 describe('thresholdStatus', () => {
-  it('measures tax liability against 500 triệu, not 1 tỷ', () => {
-    // The exemption threshold is 500 triệu (Luật Thuế TNCN sửa đổi, thông qua
-    // 10/12/2025, nâng từ 200 triệu). It was once coded as 1 tỷ, which would
-    // have told a household at 800 triệu they owed nothing.
-    const s = thresholdStatus(400_000_000);
+  it('measures tax liability against 01 tỷ (Nghị định 141/2026/NĐ-CP)', () => {
+    // 500 triệu under Luật 109/2025/QH15, raised to 01 tỷ from 01/01/2026 by
+    // Nghị định 141. This constant has now been wrong in both directions.
+    const s = thresholdStatus(800_000_000);
     expect(s.threshold).toBe(TAX_EXEMPTION_THRESHOLD_VND);
-    expect(TAX_EXEMPTION_THRESHOLD_VND).toBe(500_000_000);
-    expect(s.remaining).toBe(100_000_000);
-    expect(s.crossed).toBe(false);
+    expect(TAX_EXEMPTION_THRESHOLD_VND).toBe(1_000_000_000);
+    expect(s.remaining).toBe(200_000_000);
     expect(s.ratio).toBeCloseTo(0.8);
   });
 
-  it('says a household at 800 triệu has crossed into owing tax', () => {
-    // The exact case the old constant got wrong.
+  it('says a household at 800 triệu does NOT owe tax', () => {
+    // The exact case the 500 triệu constant got wrong for four months.
     const s = thresholdStatus(800_000_000);
-    expect(s.crossed).toBe(true);
-    expect(s.milestones.find((m) => m.key === 'tax_exemption')?.crossed).toBe(true);
+    expect(s.crossed).toBe(false);
+    expect(s.milestones.find((m) => m.key === 'tax_exemption')?.crossed).toBe(false);
   });
 
-  it('keeps the cash-register invoice duty separate at 1 tỷ', () => {
-    // Nghị định 70/2025 — an obligation about how sales are recorded, not
-    // about how much tax is owed. At 800 triệu one applies and the other does
-    // not, which is precisely why they cannot share a constant.
-    const s = thresholdStatus(800_000_000);
-    const invoice = s.milestones.find((m) => m.key === 'cash_register_invoice');
-    expect(invoice?.threshold).toBe(CASH_REGISTER_INVOICE_THRESHOLD_VND);
-    expect(CASH_REGISTER_INVOICE_THRESHOLD_VND).toBe(1_000_000_000);
-    expect(invoice?.crossed).toBe(false);
-    expect(invoice?.remaining).toBe(200_000_000);
+  it('landing exactly on 01 tỷ is still exempt — "từ 01 tỷ đồng trở xuống"', () => {
+    expect(thresholdStatus(1_000_000_000).crossed).toBe(false);
+    expect(thresholdStatus(1_000_000_001).crossed).toBe(true);
   });
 
-  it('reports both crossed once past 1 tỷ', () => {
-    const s = thresholdStatus(1_200_000_000);
-    expect(s.milestones.every((m) => m.crossed)).toBe(true);
-  });
-
-  it('treats landing exactly on a threshold as reaching it', () => {
-    // Warning UI: the moment to tell someone is when they arrive, not after.
-    expect(thresholdStatus(500_000_000).crossed).toBe(true);
+  it('puts the end of the choice of method at 3 tỷ, inclusive', () => {
+    const at = thresholdStatus(3_000_000_000).milestones.find((m) => m.key === 'profit_method_required');
+    expect(at?.threshold).toBe(PROFIT_METHOD_THRESHOLD_VND);
+    expect(PROFIT_METHOD_THRESHOLD_VND).toBe(3_000_000_000);
+    expect(at?.crossed).toBe(false);
     expect(
-      thresholdStatus(1_000_000_000).milestones.find((m) => m.key === 'cash_register_invoice')
-        ?.crossed,
+      thresholdStatus(3_000_000_001).milestones.find((m) => m.key === 'profit_method_required')?.crossed,
     ).toBe(true);
+  });
+
+  it('does not draw the same line twice', () => {
+    // The e-invoice duty moved onto the exemption line; two milestones at one
+    // threshold would be two bars saying the same thing.
+    const s = thresholdStatus(0);
+    expect(new Set(s.milestones.map((m) => m.threshold)).size).toBe(s.milestones.length);
   });
 
   it('orders milestones the way a growing business meets them', () => {
     const s = thresholdStatus(0);
-    expect(s.milestones.map((m) => m.key)).toEqual(['tax_exemption', 'cash_register_invoice']);
+    expect(s.milestones.map((m) => m.key)).toEqual(['tax_exemption', 'profit_method_required']);
   });
 });
 

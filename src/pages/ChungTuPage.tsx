@@ -30,7 +30,14 @@ const ngayVN = (s: string) => {
 export default function ChungTuPage() {
   const [chi, setChi] = useState<KhoanChi[]>([]);
   const [hoaDon, setHoaDon] = useState<HoaDonVao[]>([]);
-  const [doanhThu, setDoanhThu] = useState(0);
+  /*
+   * DOANH THU NĂM, KHÔNG PHẢI QUÝ. Bảng chứng từ bên dưới đọc theo quý, nhưng
+   * khối "chọn cách tính thuế" so với ngưỡng NĂM (01 tỷ, 3 tỷ). Bản trước đưa
+   * doanh thu một quý vào đó — hộ bán 2 tỷ một năm, 500 triệu một quý, bị báo
+   * "chưa phải nộp". Hai kỳ, hai bộ số, không trộn.
+   */
+  const [doanhThuNam, setDoanhThuNam] = useState(0);
+  const [chiPhiCoChungTuNam, setChiPhiCoChungTuNam] = useState(0);
   const [soDongThu, setSoDongThu] = useState(0);
   const [dangTai, setDangTai] = useState(true);
 
@@ -63,7 +70,10 @@ export default function ChungTuPage() {
       const iso = (d: Date) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-      const [gd, hd] = await Promise.all([
+      // Từ đầu năm của quý đang tới hạn tới cuối quý đó.
+      const dauNam = `${cuoiKy.getFullYear()}-01-01`;
+
+      const [gd, hd, thuNam, hdNam] = await Promise.all([
         supabase
           .from('transactions')
           .select(
@@ -79,11 +89,37 @@ export default function ChungTuPage() {
           .eq('direction', 'received')
           .gte('issued_at', iso(dauKy))
           .lte('issued_at', `${iso(cuoiKy)}T23:59:59`),
+        supabase
+          .from('transactions')
+          .select('amount, type, is_synthetic')
+          .eq('company_id', cty.id)
+          .eq('is_synthetic', false)
+          .gte('transaction_date', dauNam)
+          .lte('transaction_date', iso(cuoiKy)),
+        supabase
+          .from('gdt_invoices')
+          .select('total_amount')
+          .eq('company_id', cty.id)
+          .eq('direction', 'received')
+          .gte('issued_at', dauNam)
+          .lte('issued_at', `${iso(cuoiKy)}T23:59:59`),
       ]);
 
       // Không nuốt lỗi — bài học 08/09: truy vấn hỏng trông y hệt không có dữ liệu.
       if (gd.error) toast.error(`Không đọc được giao dịch: ${gd.error.message}`);
       if (hd.error) toast.error(`Không đọc được hoá đơn: ${hd.error.message}`);
+      if (thuNam.error) toast.error(`Không đọc được doanh thu năm: ${thuNam.error.message}`);
+      if (hdNam.error) toast.error(`Không đọc được hoá đơn năm: ${hdNam.error.message}`);
+
+      setDoanhThuNam(
+        (thuNam.data ?? [])
+          .filter((t) => !t.is_synthetic && (t.type === 'income' || Number(t.amount) > 0))
+          .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
+      );
+      // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi hoá đơn đầu vào.
+      setChiPhiCoChungTuNam(
+        (hdNam.data ?? []).reduce((s, h) => s + (Number(h.total_amount) || 0), 0),
+      );
 
       /*
        * BỎ DÒNG DỮ LIỆU THỬ.
@@ -111,12 +147,6 @@ export default function ChungTuPage() {
             noiDung: [t.merchant_name, t.payment_reference].filter(Boolean).join(' ') || null,
             tenNguoiNhan: (t.counter_account_name as string) ?? null,
           })),
-      );
-
-      setDoanhThu(
-        rows
-          .filter((t) => t.type === 'income' || Number(t.amount) > 0)
-          .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
       );
 
       setHoaDon(
@@ -323,9 +353,10 @@ export default function ChungTuPage() {
       {/* ── Nối thẳng sang câu hỏi tiền ────────────────────────────────── */}
       <div>
         <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <ArrowRight size={13} /> Con số trên đưa thẳng vào phép so sánh dưới đây
+          <ArrowRight size={13} /> Ngưỡng thuế tính theo năm, nên phép so sánh dưới đây dùng số từ
+          01/01 tới hết quý này, không chỉ riêng quý
         </p>
-        <ChonCachTinhThue doanhThu={doanhThu} chiPhiCoChungTu={kq.tongCoGiay} />
+        <ChonCachTinhThue doanhThu={doanhThuNam} chiPhiCoChungTu={chiPhiCoChungTuNam} />
       </div>
     </div>
   );

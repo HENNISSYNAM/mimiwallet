@@ -150,10 +150,11 @@ export const TIPS: Tip[] = [
     title: 'Đóng thuế trên lợi nhuận, không phải trên doanh thu',
     body:
       'Thuế khoán chấm dứt từ 01/01/2026, hộ kinh doanh tự kê khai theo doanh thu thật. ' +
-      'Với mức doanh thu 500 triệu – 3 tỷ, luật cho bạn CHỌN tính theo lợi nhuận hay theo ' +
-      '% doanh thu — nhưng chọn theo lợi nhuận chỉ có nghĩa khi chứng minh được chi phí. ' +
-      'MIMI đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó.',
-    nguon: 'Luật Thuế thu nhập cá nhân, áp dụng cho thu nhập kinh doanh từ 01/07/2026',
+      'Từ 01 tỷ trở xuống chưa phải nộp. Trên 01 tỷ đến 3 tỷ, luật cho bạn CHỌN tính theo ' +
+      'thu nhập hay theo % trên phần doanh thu vượt 01 tỷ — nhưng tính theo thu nhập chỉ có ' +
+      'nghĩa khi chứng minh được chi phí. MIMI đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó.',
+    nguon:
+      'Luật Thuế thu nhập cá nhân 109/2025/QH15; ngưỡng 01 tỷ theo Nghị định 141/2026/NĐ-CP, áp dụng từ 01/01/2026',
   },
   {
     id: 'noi-dung-chuyen-khoan',
@@ -208,7 +209,7 @@ export const TIPS: Tip[] = [
     eyebrow: 'Ngưỡng cần biết',
     title: 'Doanh thu vượt mốc làm đổi cả bậc thuế lẫn nghĩa vụ sổ sách',
     body:
-      'Các mốc 500 triệu, 3 tỷ và 50 tỷ chia ra những bậc thuế khác nhau cho thu nhập ' +
+      'Các mốc 01 tỷ, 3 tỷ và 50 tỷ chia ra những bậc thuế khác nhau cho thu nhập ' +
       'kinh doanh. Biết mình đang cách mốc kế tiếp bao xa vào giữa năm thì còn xoay được; ' +
       'biết vào tháng 12 thì chỉ còn cách chấp nhận.',
     nguon: 'Biểu thuế thu nhập cá nhân đối với thu nhập từ kinh doanh',
