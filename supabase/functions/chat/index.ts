@@ -107,7 +107,10 @@ async function buildContext(authHeader: string | null): Promise<BizContext | nul
     since.setMonth(since.getMonth() - 3);
     const { data: txs } = await supabase
       .from("transactions")
-      .select("type, amount")
+      // Lọc dòng sandbox: trợ lý mà trích số giả thì nó nói dối người dùng
+      // bằng chính giọng đáng tin nhất trong ứng dụng.
+      .select("type, amount, is_synthetic")
+      .eq("is_synthetic", false)
       .eq("company_id", company.id)
       .gte("transaction_date", since.toISOString().slice(0, 10));
     for (const t of txs ?? []) {

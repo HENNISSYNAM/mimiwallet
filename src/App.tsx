@@ -51,12 +51,9 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const DauTuPage = lazy(() => import("./pages/DauTuPage"));
 const ChungTuPage = lazy(() => import("./pages/ChungTuPage"));
-const CreditScoringPage = lazy(() => import("./pages/CreditScoringPage"));
 const FintechPage = lazy(() => import("./pages/FintechPage"));
 const M2MDevicesPage = lazy(() => import("./pages/M2MDevicesPage"));
 const TechnologyPage = lazy(() => import("./pages/TechnologyPage"));
-const LearnPage = lazy(() => import("./pages/LearnPage"));
-const CarbonPage = lazy(() => import("./pages/CarbonPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -142,12 +139,9 @@ const App = () => (
                 <Route path="dau-tu" element={<Page noIndex path="/dashboard/dau-tu" title="Danh mục đầu tư — MIMI WALLET" description="Tài sản số bạn đang giữ, giá từ nhiều sàn, và lịch hiệu lực văn bản pháp luật."><DauTuPage /></Page>} />
                 <Route path="settings" element={<Page noIndex path="/dashboard/settings" title="Cài đặt tài khoản — MIMI WALLET" description="Quản lý thông tin doanh nghiệp, bảo mật, gói dịch vụ và tuỳ chọn thông báo trong MIMI Wallet."><SettingsPage /></Page>} />
                 <Route path="cashflow" element={<Page noIndex path="/dashboard/cashflow" title="Dòng tiền — MIMI WALLET" description="Phân tích dòng tiền vào ra theo ngày, tuần, tháng và dự báo thanh khoản 90 ngày cho doanh nghiệp bạn."><DashboardOverview /></Page>} />
-                <Route path="credit" element={<Page noIndex path="/dashboard/credit" title="Điểm tín dụng — MIMI WALLET" description="Điểm tín dụng doanh nghiệp 0–1000 dựng từ dữ liệu dòng tiền thật, kèm các yếu tố ảnh hưởng và gợi ý cải thiện."><CreditScoringPage /></Page>} />
                 <Route path="fintech" element={<Page noIndex path="/dashboard/fintech" title="Ngân hàng mở & eKYC — MIMI WALLET" description="Liên kết ngân hàng, xác thực eKYC, phương thức thanh toán và trạng thái tuân thủ trong một nơi duy nhất."><FintechPage /></Page>} />
                 <Route path="m2m" element={<Page noIndex path="/dashboard/m2m" title="Thanh toán thiết bị M2M — MIMI WALLET" description="Quản lý ví thiết bị tự động với luật IF-THEN-LIMIT để máy móc tự thanh toán trong hạn mức bạn đặt."><M2MDevicesPage /></Page>} />
                 <Route path="tech" element={<Page noIndex path="/dashboard/tech" title="Công nghệ nền tảng — MIMI WALLET" description="Kiến trúc kỹ thuật của MIMI Wallet: bảo mật hậu lượng tử, hạ tầng dữ liệu và các trụ cột công nghệ."><TechnologyPage /></Page>} />
-                <Route path="learn" element={<Page noIndex path="/dashboard/learn" title="Học tài chính — MIMI WALLET" description="Bài học ngắn về dòng tiền, thuế và tín dụng dành cho chủ doanh nghiệp nhỏ, theo dõi tiến độ ngay trong ứng dụng."><LearnPage /></Page>} />
-                <Route path="carbon" element={<Page noIndex path="/dashboard/carbon" title="Tài chính xanh & ESG — MIMI WALLET" description="Đo phát thải Scope 1-3, theo dõi tín chỉ carbon và tiếp cận khoản vay xanh cho doanh nghiệp của bạn."><CarbonPage /></Page>} />
               </Route>
               <Route path="*" element={<Page noIndex path="/404" title="Không tìm thấy trang — MIMI WALLET" description="Đường dẫn bạn truy cập không tồn tại hoặc đã được chuyển đi. Quay lại trang chủ MIMI Wallet để tiếp tục."><NotFound /></Page>} />
 

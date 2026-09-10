@@ -65,7 +65,10 @@ export default function BatDauTuDau() {
       const [lk, gd, kh] = await Promise.all([
         supabase.from('bank_connections').select('id', { count: 'exact', head: true })
           .eq('company_id', companyId).neq('status', 'disconnected'),
-        supabase.from('transactions').select('id', { count: 'exact', head: true })
+        // Đếm dòng THẬT. Dòng sandbox mà tính vào thì bước "nối ngân hàng" tự
+        // đánh dấu xong trong khi người dùng chưa nối gì.
+        supabase.from('transactions').select('id, is_synthetic', { count: 'exact', head: true })
+          .eq('is_synthetic', false)
           .eq('company_id', companyId),
         supabase.from('clients').select('id', { count: 'exact', head: true })
           .eq('company_id', companyId),

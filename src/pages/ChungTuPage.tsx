@@ -31,6 +31,7 @@ export default function ChungTuPage() {
   const [chi, setChi] = useState<KhoanChi[]>([]);
   const [hoaDon, setHoaDon] = useState<HoaDonVao[]>([]);
   const [doanhThu, setDoanhThu] = useState(0);
+  const [soDongThu, setSoDongThu] = useState(0);
   const [dangTai, setDangTai] = useState(true);
 
   const ky = useMemo(() => kyKeKhaiKeTiep(), []);
@@ -65,7 +66,9 @@ export default function ChungTuPage() {
       const [gd, hd] = await Promise.all([
         supabase
           .from('transactions')
-          .select('id, amount, type, transaction_date, merchant_name, payment_reference, counter_account_name')
+          .select(
+            'id, amount, type, transaction_date, merchant_name, payment_reference, counter_account_name, is_synthetic',
+          )
           .eq('company_id', cty.id)
           .gte('transaction_date', iso(dauKy))
           .lte('transaction_date', iso(cuoiKy)),
@@ -82,7 +85,21 @@ export default function ChungTuPage() {
       if (gd.error) toast.error(`Không đọc được giao dịch: ${gd.error.message}`);
       if (hd.error) toast.error(`Không đọc được hoá đơn: ${hd.error.message}`);
 
-      const rows = gd.data ?? [];
+      /*
+       * BỎ DÒNG DỮ LIỆU THỬ.
+       *
+       * `is_synthetic` đánh dấu giao dịch do sandbox sinh ra — `open-banking`
+       * và `ingest.ts` đều gắn cờ đó. `DashboardOverview` và `tax-summary` đã
+       * lọc từ lâu; bản đầu của trang này thì không, nên nó hiện 5,8 tỷ chi phí
+       * và những cái tên như "NCC Vật tư XYZ" như thể đó là tiền thật của khách.
+       *
+       * Đây đúng loại lỗi đã gỡ bốn lần tuần này — màn hình trình bày dữ liệu
+       * bịa như dữ liệu của chính người dùng. Con số ở đây còn đi thẳng vào tờ
+       * khai thuế, nên hậu quả nặng hơn hẳn.
+       */
+      const tatCa = gd.data ?? [];
+      const rows = tatCa.filter((t) => !t.is_synthetic);
+      setSoDongThu(tatCa.length - rows.length);
 
       setChi(
         rows
@@ -137,6 +154,9 @@ export default function ChungTuPage() {
 
   const chuaNoiNganHang = chi.length === 0;
   const chuaCoHoaDon = hoaDon.length === 0;
+  // Có dòng nhưng toàn dữ liệu thử là một trạng thái RIÊNG. Nói "chưa có giao
+  // dịch nào" khi thật ra có 215 dòng sandbox cũng là một câu sai.
+  const chiToanDuLieuThu = chi.length === 0 && soDongThu > 0;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -168,15 +188,29 @@ export default function ChungTuPage() {
           đầu vào. Phần còn lại chưa có hoá đơn điện tử nào ứng với nó — có thể bạn đã có hoá đơn
           giấy mà chưa nhập.
         </p>
+        {soDongThu > 0 && (
+          // Nói ra chứ không lặng lẽ bỏ: người dùng thấy số nhỏ hơn họ tưởng
+          // thì phải biết vì sao.
+          <p className="mt-2 text-xs text-muted-foreground">
+            Đã bỏ {soDongThu} giao dịch là dữ liệu thử của sandbox, không tính vào các con số trên.
+          </p>
+        )}
       </div>
 
       {/* ── Trống thì nói vì sao trống ─────────────────────────────────── */}
-      {(chuaNoiNganHang || chuaCoHoaDon) && (
+      {(chuaNoiNganHang || chuaCoHoaDon || chiToanDuLieuThu) && (
         <div className="space-y-3 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-5">
           <p className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-500">
             <AlertTriangle size={15} /> Còn thiếu nguồn dữ liệu
           </p>
-          {chuaNoiNganHang && (
+          {chiToanDuLieuThu && (
+            <p className="text-sm">
+              Quý này có {soDongThu} giao dịch nhưng tất cả đều là <strong>dữ liệu thử</strong> do
+              môi trường sandbox sinh ra, nên không được tính vào chi phí. Nối tài khoản thật để
+              thấy số của bạn.
+            </p>
+          )}
+          {chuaNoiNganHang && !chiToanDuLieuThu && (
             <p className="text-sm">
               Chưa thấy khoản chi nào trong quý. MIMI đọc tiền ra vào từ sao kê —{' '}
               <Link to="/dashboard/fintech" className="font-medium text-primary underline">

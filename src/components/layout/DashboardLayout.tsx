@@ -39,7 +39,6 @@ const mobileNav = [
   { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
   { icon: FileText, label: 'Hóa đơn', path: '/dashboard/invoices' },
   { icon: Fingerprint, label: 'Kết nối', path: '/dashboard/fintech' },
-  { icon: ShieldCheck, label: 'Điểm', path: '/dashboard/credit' },
   { icon: BarChart3, label: 'Báo cáo', path: '/dashboard/reports' },
 ];
 
@@ -56,14 +55,11 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/cashflow': 'sidebar.cashflow',
   '/dashboard/invoices': 'sidebar.invoices',
   '/dashboard/loans': 'sidebar.loans',
-  '/dashboard/credit': 'sidebar.creditScore',
   '/dashboard/fintech': 'sidebar.fintechHub',
   '/dashboard/m2m': 'sidebar.m2mDevices',
   '/dashboard/reports': 'sidebar.reports',
   '/dashboard/settings': 'sidebar.settings',
   '/dashboard/tech': 'sidebar.technology',
-  '/dashboard/learn': 'sidebar.learn',
-  '/dashboard/carbon': 'sidebar.carbon',
 };
 
 export default function DashboardLayout() {

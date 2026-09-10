@@ -138,7 +138,9 @@ async function loadCompanyContext(
       .limit(1),
     admin
       .from("transactions")
-      .select("type, amount")
+      // Con số này đi vào câu "tin này ảnh hưởng gì tới bạn" — phải là số thật.
+      .select("type, amount, is_synthetic")
+      .eq("is_synthetic", false)
       .eq("company_id", companyId)
       .limit(2000),
   ]);

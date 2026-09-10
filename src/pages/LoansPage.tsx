@@ -189,7 +189,9 @@ export default function LoansPage() {
               </div>
             ))}
           </div>
-          <button onClick={() => navigate('/dashboard/credit')} className="mt-5 text-xs text-primary hover:underline font-medium flex items-center gap-1">
+          {/* Trỏ sang chứng từ chi phí, không sang trang chấm điểm đã gỡ. Hồ sơ
+              chi phí đầy đủ mới là thứ bên cho vay đọc được. */}
+          <button onClick={() => navigate('/dashboard/chung-tu')} className="mt-5 text-xs text-primary hover:underline font-medium flex items-center gap-1">
             {t('fin.loans.creditScore.boostCta')} <ArrowRight size={10} />
           </button>
         </motion.div>

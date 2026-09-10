@@ -121,15 +121,37 @@ Deno.serve(async (req) => {
        */
       const tu = new Date();
       tu.setDate(tu.getDate() - 60);
-      const { data: giaoDich } = await supabase
+      /*
+       * `merchant_name`, KHÔNG PHẢI `description`.
+       *
+       * Bảng `transactions` không có cột `description`. PostgREST từ chối cả
+       * truy vấn, `data` thành null, và vì chỗ này chỉ lấy `data` nên danh sách
+       * luôn rỗng — tức việc đối soát thuê bao CHƯA TỪNG khớp được khoản nào.
+       * Một tính năng thu tiền chết lặng, tìm ra ngày 10/09/2026.
+       *
+       * Nội dung chuyển khoản nằm ở `merchant_name`: `mapSepayWebhook` ghi
+       * `content` của SePay vào đó.
+       *
+       * Lọc `is_synthetic` vì đây là tiền: một dòng sandbox trùng số tiền sẽ
+       * kích hoạt gói trả phí mà không ai trả đồng nào.
+       */
+      const { data: giaoDich, error: loiGiaoDich } = await supabase
         .from("transactions")
-        .select("id, amount, description")
+        .select("id, amount, merchant_name, is_synthetic")
         .gt("amount", 0)
+        .eq("is_synthetic", false)
         .gte("transaction_date", tu.toISOString().slice(0, 10));
+      if (loiGiaoDich) {
+        console.error("doi soat thue bao: khong doc duoc giao dich", loiGiaoDich.message);
+      }
 
       const ketQua = doiSoatThueBao(
         hoaDon as unknown as SubscriptionInvoice[],
-        (giaoDich ?? []) as unknown as IncomingTransfer[],
+        (giaoDich ?? []).map((g) => ({
+          id: g.id as string,
+          amount: Number(g.amount),
+          description: (g.merchant_name as string) ?? null,
+        })) as IncomingTransfer[],
       );
 
       const hoaDonTheoId = new Map(hoaDon.map((h) => [h.id, h]));

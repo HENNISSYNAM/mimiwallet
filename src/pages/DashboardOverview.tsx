@@ -470,8 +470,11 @@ export default function DashboardOverview() {
               </div>
             </div>
           ) : (
-            <button onClick={() => navigate('/dashboard/credit')} className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1">
-              Chưa chấm điểm — chấm ngay <ArrowRight size={10} />
+            /* Trang chấm điểm đã gỡ 10/09: một điểm số tự chấm không bên cho
+               vay nào công nhận thì không mở được khoản vay nào. Việc thay thế
+               nó là dựng hồ sơ bốn quý — bắt đầu từ chứng từ chi phí. */
+            <button onClick={() => navigate('/dashboard/chung-tu')} className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1">
+              Dựng hồ sơ từ chứng từ chi phí <ArrowRight size={10} />
             </button>
           )}
         </KPICard>
@@ -593,7 +596,9 @@ export default function DashboardOverview() {
               // Reports is where the transactions that need classifying live.
               { icon: CapitalVault, label: t('dashboard.applyLoan'), path: '/dashboard/reports' },
               { icon: CashflowChart, label: t('dashboard.viewReports'), path: '/dashboard/reports' },
-              { icon: LearnCap, label: 'Học Fintech', path: '/dashboard/learn' },
+              // "Học Fintech" đã gỡ 10/09 — nội dung chung không gắn với việc
+              // nào của khách. Thay bằng việc đang có hạn: chứng từ chi phí.
+              { icon: LearnCap, label: 'Chứng từ chi phí', path: '/dashboard/chung-tu' },
             ].map((a) => (
               <motion.button key={a.label} whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }} onClick={() => navigate(a.path)}
                 className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-5 text-center hover:border-primary/20 hover:shadow-[0_8px_24px_hsla(var(--blue-500)/0.06)] transition-all duration-300">

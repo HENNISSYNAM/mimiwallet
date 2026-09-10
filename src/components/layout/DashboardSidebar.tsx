@@ -79,7 +79,6 @@ export default function DashboardSidebar() {
         { icon: Receipt, label: 'Chứng từ chi phí', path: '/dashboard/chung-tu' },
         { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
         { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
-        { icon: ShieldCheck, label: t('sidebar.creditScore'), path: '/dashboard/credit' },
         { icon: Wallet, label: t('dauTu.tieuDe'), path: '/dashboard/dau-tu' },
       ],
     },
@@ -88,13 +87,11 @@ export default function DashboardSidebar() {
       items: [
         { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
         { icon: HandCoins, label: 'Vay ngang hàng', path: '/dashboard/p2p' },
-        { icon: Leaf, label: t('sidebar.carbon'), path: '/dashboard/carbon' },
       ],
     },
     {
       label: t('sidebar.groupMore'),
       items: [
-        { icon: GraduationCap, label: t('sidebar.learn'), path: '/dashboard/learn' },
         { icon: Settings, label: t('sidebar.settings'), path: '/dashboard/settings' },
       ],
     },
