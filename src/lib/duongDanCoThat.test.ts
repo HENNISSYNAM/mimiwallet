@@ -98,8 +98,11 @@ describe('đường dẫn trong mã', () => {
     expect(sai).toEqual([]);
   });
 
-  it('ba route đã gỡ ngày 10/09 không còn được khai', () => {
-    for (const d of ['/dashboard/credit', '/dashboard/carbon', '/dashboard/learn']) {
+  it('các route đã gỡ ngày 10/09 không còn được khai', () => {
+    for (const d of [
+      '/dashboard/credit', '/dashboard/carbon', '/dashboard/learn',
+      '/dashboard/m2m', '/dashboard/loans', '/dashboard/tech',
+    ]) {
       expect(coRoute.has(d)).toBe(false);
     }
   });

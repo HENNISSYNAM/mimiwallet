@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import MimiCat from '@/components/brand/MimiCat';
 import { tamTrang } from '@/lib/mimiTamTrang';
 import { Wallet, TrendingUp, FileText, ShieldCheck, AlertTriangle, Lightbulb, Bell, ArrowRight, Loader2, Link2 } from 'lucide-react';
-import M2MDashboardWidget from '@/components/m2m/M2MDashboardWidget';
 import NewsAndLawPanel from '@/components/NewsAndLawPanel';
 import { DailyBriefCard } from '@/components/DailyBriefCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
@@ -155,16 +154,6 @@ export default function DashboardOverview() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [hasBank, setHasBank] = useState(false);
-  /**
-   * Whether the M2M widget will draw anything.
-   *
-   * `M2MDashboardWidget` returns `null` when the company owns no devices, which
-   * is the normal case — M2M is a niche feature. A layout that hands it a fixed
-   * 2-of-5 column therefore leaves 40% of that row blank for most accounts, and
-   * a hole in a grid reads as a rendering failure rather than as an absence.
-   * The row can only adapt if this screen knows in advance, so it asks.
-   */
-  const [hasDevices, setHasDevices] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,7 +170,7 @@ export default function DashboardOverview() {
       if (!company) { if (!cancelled) setLoading(false); return; }
 
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
-      const [txRes, invRes, snapRes, bankRes, deviceRes] = await Promise.all([
+      const [txRes, invRes, snapRes, bankRes] = await Promise.all([
         supabase.from('transactions')
           .select('id, amount, type, category, merchant_name, transaction_date, is_synthetic')
           .eq('company_id', company.id).gte('transaction_date', iso(yearAgo))
@@ -195,11 +184,6 @@ export default function DashboardOverview() {
           .order('computed_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('bank_connections')
           .select('id').eq('company_id', company.id).eq('status', 'connected').limit(1),
-        // Presence only — the widget fetches its own figures. One indexed row
-        // is enough to decide the layout, and asking for more would duplicate
-        // work the widget is about to do anyway.
-        supabase.from('device_wallets')
-          .select('id').eq('company_id', company.id).limit(1),
       ]);
 
       if (cancelled) return;
@@ -208,7 +192,6 @@ export default function DashboardOverview() {
       setInvoices((invRes.data as Invoice[]) ?? []);
       setSnapshot((snapRes.data as Snapshot) ?? null);
       setHasBank(!!bankRes.data?.length);
-      setHasDevices(!!deviceRes.data?.length);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -612,30 +595,15 @@ export default function DashboardOverview() {
       </motion.div>
 
       {/*
-        NewsAndLawPanel and M2MDashboardWidget used to sit as bare children of
-        the 5-column grid above, after two items that already claimed all 5
-        columns (recent-tx col-span-3 + quick-actions col-span-2). Neither
-        panel declares its own span, so the grid auto-placed them as implicit
-        1-column items — the tabbed news/law panel was rendering at a fifth of
-        the row's width, headlines clipped to two words, with the rest of the
-        row blank. That is the bug in the screenshot.
-
-        Two spans alone do not fix it, because M2MDashboardWidget returns null
-        for any company without devices: a fixed 3/2 split would still leave
-        two empty columns for most accounts. So the row is built from what is
-        actually going to render — side by side when there are devices, one
-        full-width panel when there are none, with its lists flowing in two
-        columns at that width instead of one stretched stack.
+        Full width, outside the 5-column grid above. It once sat inside that
+        grid as an implicit 1-column item and rendered at a fifth of the row,
+        headlines clipped to two words. The M2M widget that used to share this
+        row was removed on 10/09/2026, so the panel no longer has to adapt.
       */}
-      <motion.div variants={stagger} className={hasDevices ? 'grid lg:grid-cols-5 gap-4' : ''}>
-        <motion.div variants={fadeUp} className={hasDevices ? 'lg:col-span-3' : ''}>
-          <NewsAndLawPanel wide={!hasDevices} />
+      <motion.div variants={stagger}>
+        <motion.div variants={fadeUp}>
+          <NewsAndLawPanel wide />
         </motion.div>
-        {/* M2MDashboardWidget renders its own motion.div with variants={fadeUp}
-            already (see m2m/M2MDashboardWidget.tsx); wrapping it in another
-            animated element would run the same fade-up twice, so this is a
-            plain div — layout only, no duplicate animation. */}
-        {hasDevices && <div className="lg:col-span-2"><M2MDashboardWidget /></div>}
       </motion.div>
     </motion.div>
   );

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
-import { industries, provinces } from '@/lib/mockData';
+import { industries, provinces } from '@/lib/danhMucHanhChinh';
 import { formatVND } from '@/lib/formatters';
 import { getPasswordStrength } from '@/lib/validators';
 import { Check, ArrowRight, Upload, Camera, Pen, X, Loader2, Shield, Sparkles, Zap, Globe, Brain, Banknote, Lock, Eye, EyeOff, Package, Users, Wrench, ShieldCheck, Search, Smartphone } from 'lucide-react';

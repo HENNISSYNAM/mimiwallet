@@ -136,4 +136,5 @@ Khi `trang_thai = "da_duyet"`, `lenh_tra` chứa BIN, số tài khoản, số ti
    nào → cảnh báo. Đây là phần "nhìn thấy chi tiêu AI" mà Ramp ra mắt 16/07/2026.
 4. **Gắn chứng từ**: khoản `da_chi` có `so_hoa_don` → khớp với `gdt_invoices` ở trang Chứng từ.
 5. **Payment Initiation** qua ngân hàng đối tác — bỏ bước người trả tay.
-6. Gỡ M2M cũ (`device_wallets` có cột `balance` không có tiền thật đứng sau) khi trang này chạy thật.
+6. ~~Gỡ M2M cũ~~ — gỡ trang, component, edge function ngày 10/09/2026. Ba bảng `device_wallets`,
+   `device_rules`, `m2m_transactions` còn trong CSDL; xoá bảng là mất dữ liệu, cần chủ dự án quyết.

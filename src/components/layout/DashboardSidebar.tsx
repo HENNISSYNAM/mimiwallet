@@ -45,27 +45,19 @@ export default function DashboardSidebar() {
    * does not change. The route stays alive because links point at it; only the
    * duplicate door is gone.
    *
-   * "Công nghệ" is absent for a different reason: it is a marketing page —
-   * hero, three pillars, a pipeline diagram, no data belonging to this company.
-   * That is a page to show someone before they sign up, not a tab beside their
-   * invoices. It stays reachable at /dashboard/tech and from the public site.
-   *
-   * "Thiết bị M2M" nhường ô cho "Vay ngang hàng" ngày 04/09/2026. Ba bảng M2M
-   * (device_wallets, device_rules, m2m_transactions), edge function
-   * m2m-operations và route /dashboard/m2m đều còn nguyên — chỉ là không chiếm
-   * một ô cố định nữa. Bộ máy điều kiện trong device_rules dùng lại được cho
-   * quy tắc trả nợ tự động, nên xoá là mất không.
+   * Gỡ hẳn ngày 10/09/2026, không chỉ ẩn khỏi thanh này: "Công nghệ" (trang
+   * quảng bá, không có dữ liệu của công ty), "Thiết bị M2M" (ví thiết bị lưu một
+   * con số số dư không có đồng tiền nào đứng sau — thay bằng "Kiểm soát agent",
+   * nơi MIMI không giữ số dư nào) và "Vay vốn". Route, trang và edge function
+   * của chúng không còn. Ba bảng M2M còn trong CSDL để không mất dữ liệu cũ.
    *
    * Sàn vay ngang hàng chưa được NHNN cấp Giấy chứng nhận tham gia cơ chế thử
    * nghiệm theo Nghị định 94/2025/NĐ-CP, và trang tự nói ra điều đó bằng một
    * dải cảnh báo không tắt được. Đây là chỗ khác với "Vay vốn" ngày 17/08: lần
    * đó ô điều hướng quảng cáo một dịch vụ không tồn tại và không nói gì thêm.
    *
-   * "Vay vốn" is absent as of 17/08/2026 because MIMI has no credit licence and
-   * no disbursement partner — a permanent nav slot for it advertised a service
-   * that does not exist. "Điểm tín dụng" stays: it describes the customer's own
-   * profile from their own data and promises nothing about who will lend
-   * against it. The route survives for when there is a partner.
+   * "Vay vốn" left the nav on 17/08/2026 because MIMI has no credit licence and
+   * no disbursement partner, and its page was removed on 10/09/2026.
    */
   const navGroups = [
     {

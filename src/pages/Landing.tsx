@@ -17,7 +17,7 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { Shield, Zap, Brain, CheckCircle, Play, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { miniChartData } from '@/lib/mockData';
+import { DUONG_MINH_HOA } from '@/lib/minhHoa';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -747,7 +747,7 @@ export default function Landing() {
             >
               <div className="h-36 mt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={miniChartData}>
+                  <AreaChart data={DUONG_MINH_HOA}>
                     <defs>
                       <linearGradient id="bentoGreenLanding" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(158,100%,43%)" stopOpacity={0.3} />

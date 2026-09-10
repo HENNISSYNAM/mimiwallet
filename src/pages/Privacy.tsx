@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react';
  *   - `supabase/functions/bank-link/*`  — luồng cấp quyền đọc sao kê qua BankHub
  *   - `supabase/functions/_shared/crypto/*` — mã hoá token ngân hàng khi lưu
  *   - `supabase/functions/tax-lookup/*` — tra mã số thuế qua XInvoice
- *   - `supabase/functions/kyc-verify/*` — trạng thái xác minh, hiện chờ người duyệt
  *   - các migration đặt RLS theo `company_id`
  *
  * Ngược lại, KHÔNG viết vào đây: chứng nhận chưa được cấp, đối tác chưa ký, cam

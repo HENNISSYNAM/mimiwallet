@@ -15,9 +15,8 @@ import {
 /**
  * Sàn cho vay ngang hàng.
  *
- * Thay chỗ của "Thiết bị M2M" trong thanh điều hướng. Ba bảng M2M vẫn còn
- * nguyên trong CSDL và route `/dashboard/m2m` vẫn sống — chỉ là không chiếm một
- * ô cố định nữa, đúng cách đã xử lý với LoansPage ngày 17/08.
+ * Thay chỗ của "Thiết bị M2M" trong thanh điều hướng ngày 04/09/2026. Trang
+ * M2M và trang Vay vốn cũ đã gỡ hẳn ngày 10/09/2026.
  *
  * MỌI GIỚI HẠN Ở ĐÂY ĐỀU LẤY TỪ `lib/vayNgangHang.ts`, không gõ lại. Trang này
  * chỉ trình bày; luật nằm ở đó và có 17 test giữ. Con số 100 triệu không được
