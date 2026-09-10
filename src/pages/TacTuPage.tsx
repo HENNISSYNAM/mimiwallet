@@ -53,6 +53,7 @@ const TRANG_THAI_TAC_TU: Record<string, string> = {
 };
 
 const DIEM_GOI = `${SUPABASE_URL}/functions/v1/tac-tu`;
+const DIEM_MCP = `${SUPABASE_URL}/functions/v1/mcp`;
 
 async function goi(hanhDong: string, du: Record<string, unknown> = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -374,6 +375,12 @@ function KhoaMoi({ ten, khoa, dong: dongLai }: { ten: string; khoa: string; dong
   -H "x-mimi-agent-key: ${khoa}" \\
   -H "Content-Type: application/json" \\
   -d '{"hanh_dong":"xin_chi","so_tien":500000,"ngan_hang_bin":"970422","so_tai_khoan":"0123456789","nhom_chi":"ha_tang_ai","muc_dich":"Nạp tiền API tháng này","ma_yeu_cau":"don-001"}'`;
+  const lenhClaude = `claude mcp add --transport http mimi ${DIEM_MCP} --header "x-mimi-agent-key: ${khoa}"`;
+  const cauHinhCursor = JSON.stringify(
+    { mcpServers: { mimi: { url: DIEM_MCP, headers: { 'x-mimi-agent-key': khoa } } } },
+    null,
+    2,
+  );
   const chep = (s: string) =>
     navigator.clipboard.writeText(s).then(() => toast.success('Đã chép.'), () => toast.error('Không chép được — bôi đen rồi chép tay.'));
 
@@ -390,8 +397,24 @@ function KhoaMoi({ ten, khoa, dong: dongLai }: { ten: string; khoa: string; dong
         <code className="flex-1 overflow-x-auto rounded-lg bg-background px-3 py-2 font-mono text-xs">{khoa}</code>
         <button onClick={() => chep(khoa)} className={`${nut} border border-border hover:bg-muted`}><Copy size={14} /> Chép</button>
       </div>
+      <div className="mt-4 rounded-xl bg-background p-4">
+        <p className="text-xs font-semibold">Cách dễ nhất: nối qua MCP — không cần viết code</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Dán một dòng dưới đây vào công cụ AI. Trợ lý sẽ tự thấy các việc "xem hạn mức", "xin chi", "xem yêu cầu".
+        </p>
+        <p className="mt-3 text-[11px] font-medium text-muted-foreground">Claude Code — dán vào Terminal</p>
+        <div className="mt-1 flex items-start gap-2">
+          <pre className="flex-1 overflow-x-auto rounded-lg bg-muted/50 p-2 text-[11px]">{lenhClaude}</pre>
+          <button onClick={() => chep(lenhClaude)} className={`${nut} border border-border hover:bg-muted`}><Copy size={13} /></button>
+        </div>
+        <p className="mt-3 text-[11px] font-medium text-muted-foreground">Cursor — dán vào file mcp.json</p>
+        <div className="mt-1 flex items-start gap-2">
+          <pre className="flex-1 overflow-x-auto rounded-lg bg-muted/50 p-2 text-[11px]">{cauHinhCursor}</pre>
+          <button onClick={() => chep(cauHinhCursor)} className={`${nut} border border-border hover:bg-muted`}><Copy size={13} /></button>
+        </div>
+      </div>
       <details className="mt-3">
-        <summary className="cursor-pointer text-xs text-muted-foreground">Cách agent gọi MIMI</summary>
+        <summary className="cursor-pointer text-xs text-muted-foreground">Dành cho lập trình viên: gọi API trực tiếp</summary>
         <pre className="mt-2 overflow-x-auto rounded-lg bg-background p-3 text-[11px] leading-relaxed">{viDu}</pre>
         <p className="mt-2 text-xs text-muted-foreground">
           Hành động của agent: <code>xem_chinh_sach</code>, <code>xin_chi</code>, <code>xem_yeu_cau</code>. Gửi cùng{' '}

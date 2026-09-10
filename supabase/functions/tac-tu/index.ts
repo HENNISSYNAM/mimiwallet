@@ -1,13 +1,13 @@
 /**
- * Cổng của lớp kiểm soát chi cho agent AI.
+ * Cổng của lớp kiểm soát chi cho agent AI — API HTTP.
  *
  * HAI LOẠI NGƯỜI GỌI, HAI BỘ QUYỀN KHÔNG CHỒNG NHAU.
  *
  *   Agent — gửi khoá ở header `x-mimi-agent-key`. Chỉ được: xem chính sách và
- *           hạn mức còn lại, xin chi, xem yêu cầu của chính nó. Không duyệt được,
- *           không sửa chính sách được, không thấy agent khác.
+ *           hạn mức còn lại, xin chi, xem yêu cầu của chính nó. Phần này nằm ở
+ *           `_shared/tac-tu/cong-tac-tu.ts`, dùng chung với cửa `mcp`.
  *   Chủ doanh nghiệp — JWT đăng nhập. Tạo agent, đặt chính sách, quản lý người
- *           nhận, duyệt/từ chối, tạm dừng/thu hồi.
+ *           nhận, duyệt/từ chối, tạm dừng/thu hồi. Phần này ở dưới.
  *
  * Một agent bị chiếm khoá thì kẻ chiếm cũng chỉ xin được những khoản trong trần,
  * tới người nhận đã duyệt, và vẫn cần một người trả bằng ứng dụng ngân hàng.
@@ -16,32 +16,22 @@
  * người có quyền trả nó; `bank-webhook` đọc sao kê và chuyển yêu cầu sang
  * "đã chi". Giữ hay chuyển tiền hộ khách cần giấy phép trung gian thanh toán
  * theo Nghị định 52/2024/NĐ-CP.
- *
- * GHI TRƯỚC, XÉT SAU. Yêu cầu được ghi ở `dang_xet` rồi mới đọc tổng hạn mức đã
- * giữ — xem `TRANG_THAI_GIU_HAN_MUC` trong `chinh-sach.ts` về vì sao cách này
- * không để hai yêu cầu đồng thời cùng lọt trần.
  */
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveCompany } from "../_shared/company.ts";
-import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { DANH_SACH_NGAN_HANG } from "../_shared/bank/ngan-hang.ts";
+import { NHOM_CHI } from "../_shared/tac-tu/chinh-sach.ts";
+import { bamKhoa, HEADER_KHOA, hienKhoa, sinhKhoa } from "../_shared/tac-tu/khoa.ts";
 import {
-  dauNgayVN,
-  dauThangVN,
-  hanMucConLai,
-  NHOM_CHI,
-  TRANG_THAI_GIU_HAN_MUC,
-  xetYeuCau,
-  type ChinhSach,
-  type LyDo,
-  type TrangThaiTacTu,
-} from "../_shared/tac-tu/chinh-sach.ts";
-import { bamKhoa, HEADER_KHOA, hienKhoa, laKhoaTacTu, sinhKhoa } from "../_shared/tac-tu/khoa.ts";
-
-// deno-lint-ignore no-explicit-any
-type Db = SupabaseClient<any, any, any, any, any>;
-// deno-lint-ignore no-explicit-any
-type Row = Record<string, any>;
+  docChinhSach,
+  ghiNhatKy,
+  goiTacTu,
+  HAN_LENH_TRA_MS,
+  raApi,
+  TRAN_SO_TIEN,
+  type Db,
+  type Row,
+} from "../_shared/tac-tu/cong-tac-tu.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,294 +46,8 @@ const json = (body: unknown, status = 200) =>
 
 const loi = (ma: string, cau: string, status: number) => json({ error: cau, ma }, status);
 
-/**
- * Lệnh trả còn hiệu lực 72 giờ. Một lệnh duyệt tuần trước mà hôm nay mới trả là
- * trả theo thông tin có thể đã cũ. Sao kê vẫn được đối soát sau hạn — tiền đã đi
- * thì ghi nhận sự thật — nhưng màn hình báo lệnh đã quá hạn.
- */
-const HAN_LENH_TRA_MS = 72 * 3_600_000;
-
-/** Khi chưa có dòng chính sách: chặt nhất. */
-const CHINH_SACH_MAC_DINH: ChinhSach = {
-  hanMucMoiLan: 2_000_000,
-  hanMucNgay: 5_000_000,
-  hanMucThang: 50_000_000,
-  nguongCanDuyet: 0,
-  nhomChiDuocPhep: null,
-  chiTraNguoiNhanDaDuyet: true,
-  hetHan: null,
-};
-
-const TRAN_SO_TIEN = 10_000_000_000_000;
-
-function chinhSachTuDong(r: Row | null): ChinhSach {
-  if (!r) return CHINH_SACH_MAC_DINH;
-  return {
-    hanMucMoiLan: Number(r.han_muc_moi_lan),
-    hanMucNgay: Number(r.han_muc_ngay),
-    hanMucThang: Number(r.han_muc_thang),
-    nguongCanDuyet: Number(r.nguong_can_duyet),
-    nhomChiDuocPhep: r.nhom_chi_duoc_phep ?? null,
-    chiTraNguoiNhanDaDuyet: Boolean(r.chi_tra_nguoi_nhan_da_duyet),
-    hetHan: r.het_han ?? null,
-  };
-}
-
-async function docChinhSach(db: Db, tacTuId: string): Promise<ChinhSach> {
-  const { data, error } = await db.from("chinh_sach_chi").select("*").eq("tac_tu_id", tacTuId).maybeSingle();
-  if (error) throw error;
-  return chinhSachTuDong(data);
-}
-
-/** Tổng các yêu cầu đang giữ hạn mức trong ngày và tháng (giờ VN), trừ `truId`. */
-async function tongDaGiu(db: Db, tacTuId: string, truId: string | null, luc: Date) {
-  const { data, error } = await db
-    .from("yeu_cau_chi")
-    .select("id, so_tien, created_at")
-    .eq("tac_tu_id", tacTuId)
-    .in("trang_thai", [...TRANG_THAI_GIU_HAN_MUC])
-    .gte("created_at", dauThangVN(luc).toISOString());
-  if (error) throw error;
-
-  const dauNgay = dauNgayVN(luc).getTime();
-  let ngay = 0;
-  let thang = 0;
-  for (const r of data ?? []) {
-    if (r.id === truId) continue;
-    const t = Number(r.so_tien);
-    thang += t;
-    if (new Date(r.created_at).getTime() >= dauNgay) ngay += t;
-  }
-  return { ngay, thang };
-}
-
-async function ghiNhatKy(db: Db, dong: Row) {
-  const { error } = await db.from("nhat_ky_tac_tu").insert(dong);
-  if (error) console.error("nhật ký agent không ghi được:", error.message, dong.su_kien);
-}
-
-/** Hình dạng trả cho agent. Không có khoá, không có gì của agent khác. */
-function raApi(r: Row) {
-  return {
-    id: r.id,
-    ma_yeu_cau: r.ma_yeu_cau,
-    trang_thai: r.trang_thai,
-    so_tien: Number(r.so_tien),
-    nhom_chi: r.nhom_chi,
-    muc_dich: r.muc_dich,
-    ly_do: r.ly_do,
-    ma_tham_chieu: r.ma_tham_chieu,
-    tao_luc: r.created_at,
-    lenh_tra:
-      r.trang_thai === "da_duyet"
-        ? {
-            ngan_hang_bin: r.ngan_hang_bin,
-            so_tai_khoan: r.so_tai_khoan,
-            ten_nguoi_nhan: r.ten_nguoi_nhan,
-            so_tien: Number(r.so_tien),
-            noi_dung_chuyen_khoan: r.ma_tham_chieu,
-            het_han_luc: r.het_han_luc,
-            ghi_chu:
-              "MIMI không chuyển tiền. Người có quyền trả khoản này bằng ứng dụng ngân hàng, giữ nguyên nội dung chuyển khoản để sao kê tự xác nhận.",
-          }
-        : null,
-    da_chi:
-      r.trang_thai === "da_chi"
-        ? { giao_dich_id: r.giao_dich_id, so_tien: Number(r.so_tien_thuc_chi), luc: r.da_chi_luc }
-        : null,
-  };
-}
-
 const laSoNguyenKhongAm = (v: unknown): v is number =>
   typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= TRAN_SO_TIEN;
-
-// ───────────────────────────── Agent ─────────────────────────────
-
-async function xuLyTacTu(db: Db, khoa: string, hanhDong: string, body: Row): Promise<Response> {
-  if (!laKhoaTacTu(khoa)) return loi("KHOA_SAI", "Khoá agent không đúng khuôn.", 401);
-
-  const { data: tt, error } = await db
-    .from("tac_tu")
-    .select("id, company_id, ten, trang_thai")
-    .eq("khoa_bam", await bamKhoa(khoa))
-    .maybeSingle();
-  if (error) throw error;
-  if (!tt) return loi("KHOA_SAI", "Khoá agent không hợp lệ.", 401);
-  if (tt.trang_thai === "thu_hoi") return loi("TAC_TU_DA_THU_HOI", "Khoá này đã bị thu hồi.", 403);
-
-  await db.from("tac_tu").update({ dung_lan_cuoi: new Date().toISOString() }).eq("id", tt.id);
-
-  switch (hanhDong) {
-    case "xem_chinh_sach": {
-      const bayGio = new Date();
-      const [cs, giu] = await Promise.all([docChinhSach(db, tt.id), tongDaGiu(db, tt.id, null, bayGio)]);
-      return json({
-        tac_tu: { id: tt.id, ten: tt.ten, trang_thai: tt.trang_thai },
-        chinh_sach: {
-          han_muc_moi_lan: cs.hanMucMoiLan,
-          han_muc_ngay: cs.hanMucNgay,
-          han_muc_thang: cs.hanMucThang,
-          nguong_can_duyet: cs.nguongCanDuyet,
-          nhom_chi_duoc_phep: cs.nhomChiDuocPhep,
-          chi_tra_nguoi_nhan_da_duyet: cs.chiTraNguoiNhanDaDuyet,
-          het_han: cs.hetHan,
-        },
-        han_muc_con_lai: hanMucConLai(cs, giu.ngay, giu.thang),
-        nhom_chi: NHOM_CHI,
-      });
-    }
-
-    case "xin_chi":
-      return await xinChi(db, tt, body);
-
-    case "xem_yeu_cau": {
-      let q = db.from("yeu_cau_chi").select("*").eq("tac_tu_id", tt.id);
-      if (body.id) q = q.eq("id", String(body.id));
-      else if (body.ma_yeu_cau) q = q.eq("ma_yeu_cau", String(body.ma_yeu_cau));
-      else return loi("THIEU_ID", "Gửi id hoặc ma_yeu_cau.", 400);
-      const { data, error: e } = await q.maybeSingle();
-      if (e) throw e;
-      if (!data) return loi("KHONG_THAY", "Không có yêu cầu này.", 404);
-      return json({ yeu_cau: raApi(data) });
-    }
-
-    default:
-      return loi("HANH_DONG", "Agent dùng được: xem_chinh_sach, xin_chi, xem_yeu_cau.", 400);
-  }
-}
-
-async function xinChi(db: Db, tt: Row, body: Row): Promise<Response> {
-  const soTien = Number(body.so_tien);
-  const nganHangBin = String(body.ngan_hang_bin ?? "").trim();
-  const soTaiKhoan = String(body.so_tai_khoan ?? "").replace(/\s/g, "");
-  const nhomChi = String(body.nhom_chi ?? "");
-  const mucDich = String(body.muc_dich ?? "").slice(0, 300);
-  const maYeuCau = body.ma_yeu_cau ? String(body.ma_yeu_cau).slice(0, 100) : null;
-  const soHoaDon = body.so_hoa_don ? String(body.so_hoa_don).slice(0, 60) : null;
-  const tenGui = body.ten_nguoi_nhan ? String(body.ten_nguoi_nhan).slice(0, 120) : null;
-  const nganHang = DANH_SACH_NGAN_HANG.find((n) => n.bin === nganHangBin);
-  const yc = { soTien, nganHangBin, soTaiKhoan, nhomChi, mucDich };
-
-  // Gọi lại cùng `ma_yeu_cau` (mất mạng, agent thử lại) thì trả đúng yêu cầu cũ.
-  if (maYeuCau) {
-    const { data: cu, error } = await db
-      .from("yeu_cau_chi").select("*").eq("tac_tu_id", tt.id).eq("ma_yeu_cau", maYeuCau).maybeSingle();
-    if (error) throw error;
-    if (cu) return json({ yeu_cau: raApi(cu), trung_lap: true });
-  }
-
-  // Số tiền sai khuôn thì không ghi được vào bảng (CHECK so_tien > 0): xét luôn,
-  // ghi nhật ký, trả lời — không có dòng yêu cầu nào.
-  if (!Number.isInteger(soTien) || soTien <= 0 || soTien > TRAN_SO_TIEN) {
-    const q = xetYeuCau(yc, CHINH_SACH_MAC_DINH, {
-      trangThaiTacTu: tt.trang_thai as TrangThaiTacTu,
-      daGiuNgay: 0,
-      daGiuThang: 0,
-      nguoiNhanDaDuyet: [],
-      nganHangHopLe: Boolean(nganHang),
-      luc: new Date(),
-    });
-    await ghiNhatKy(db, {
-      company_id: tt.company_id, tac_tu_id: tt.id, su_kien: "xin_chi_sai_khuon", nguoi: "tac_tu",
-      chi_tiet: { so_tien: body.so_tien ?? null, ly_do: q.lyDo.map((l) => l.ma) },
-    });
-    return json({ ket_qua: "tu_choi", ly_do: q.lyDo }, 422);
-  }
-
-  // 1. Ghi trước để giữ chỗ hạn mức.
-  let dong: Row | null = null;
-  for (let lan = 0; lan < 3 && !dong; lan++) {
-    const { data, error } = await db
-      .from("yeu_cau_chi")
-      .insert({
-        company_id: tt.company_id,
-        tac_tu_id: tt.id,
-        ma_yeu_cau: maYeuCau,
-        so_tien: soTien,
-        ngan_hang_bin: nganHangBin,
-        so_tai_khoan: soTaiKhoan,
-        ten_nguoi_nhan: tenGui,
-        muc_dich: mucDich || "(trống)",
-        nhom_chi: nhomChi,
-        so_hoa_don: soHoaDon,
-        trang_thai: "dang_xet",
-        ma_tham_chieu: sinhMaThamChieu(),
-      })
-      .select("*")
-      .single();
-
-    if (!error) {
-      dong = data;
-      break;
-    }
-    if (error.code === "23505" && String(error.message).includes("ma_yeu_cau") && maYeuCau) {
-      // Hai lần gọi cùng khoá chống trùng chạy đè nhau: lần kia đã ghi.
-      const { data: cu } = await db
-        .from("yeu_cau_chi").select("*").eq("tac_tu_id", tt.id).eq("ma_yeu_cau", maYeuCau).maybeSingle();
-      if (cu) return json({ yeu_cau: raApi(cu), trung_lap: true });
-    }
-    if (error.code !== "23505") throw error;
-    // Trùng mã tham chiếu (rất hiếm): sinh mã khác, thử lại.
-  }
-  if (!dong) throw new Error("Không sinh được mã tham chiếu không trùng.");
-
-  // 2. Xét. Hỏng giữa chừng thì nhả chỗ hạn mức thay vì để dòng kẹt ở `dang_xet`.
-  try {
-    const luc = new Date();
-    const [cs, giu, dsNhan] = await Promise.all([
-      docChinhSach(db, tt.id),
-      tongDaGiu(db, tt.id, dong.id, luc),
-      db.from("nguoi_nhan_duoc_phep").select("ngan_hang_bin, so_tai_khoan, ten_chu_tai_khoan").eq("company_id", tt.company_id),
-    ]);
-    if (dsNhan.error) throw dsNhan.error;
-
-    const q = xetYeuCau(yc, cs, {
-      trangThaiTacTu: tt.trang_thai as TrangThaiTacTu,
-      daGiuNgay: giu.ngay,
-      daGiuThang: giu.thang,
-      nguoiNhanDaDuyet: (dsNhan.data ?? []).map((n) => ({ nganHangBin: n.ngan_hang_bin, soTaiKhoan: n.so_tai_khoan })),
-      nganHangHopLe: Boolean(nganHang),
-      luc,
-    });
-
-    const daBiet = (dsNhan.data ?? []).find((n) => n.ngan_hang_bin === nganHangBin && n.so_tai_khoan === soTaiKhoan);
-    const trangThai = q.ketQua === "tu_choi" ? "tu_choi" : q.ketQua === "cho_duyet" ? "cho_duyet" : "da_duyet";
-    const bayGio = new Date();
-
-    const { data: xong, error } = await db
-      .from("yeu_cau_chi")
-      .update({
-        trang_thai: trangThai,
-        ly_do: q.lyDo,
-        cach_quyet: q.ketQua === "tu_dong_duyet" ? "tu_dong" : null,
-        quyet_luc: q.ketQua === "cho_duyet" ? null : bayGio.toISOString(),
-        het_han_luc: trangThai === "da_duyet" ? new Date(bayGio.getTime() + HAN_LENH_TRA_MS).toISOString() : null,
-        // Tên trong danh sách đã duyệt thắng tên agent tự khai.
-        ten_nguoi_nhan: daBiet?.ten_chu_tai_khoan ?? tenGui,
-        updated_at: bayGio.toISOString(),
-      })
-      .eq("id", dong.id)
-      .eq("trang_thai", "dang_xet")
-      .select("*")
-      .single();
-    if (error) throw error;
-
-    await ghiNhatKy(db, {
-      company_id: tt.company_id, tac_tu_id: tt.id, yeu_cau_id: dong.id, su_kien: "xin_chi", nguoi: "tac_tu",
-      chi_tiet: { ket_qua: q.ketQua, so_tien: soTien, nhom_chi: nhomChi, ly_do: q.lyDo.map((l: LyDo) => l.ma) },
-    });
-
-    return json({ yeu_cau: raApi(xong) }, trangThai === "tu_choi" ? 422 : 200);
-  } catch (e) {
-    const lyDo = [{ ma: "LOI_HE_THONG", cau: "MIMI gặp lỗi khi xét yêu cầu. Chưa có khoản nào được duyệt; gửi lại sau." }];
-    await db.from("yeu_cau_chi")
-      .update({ trang_thai: "tu_choi", ly_do: lyDo, updated_at: new Date().toISOString() })
-      .eq("id", dong.id).eq("trang_thai", "dang_xet");
-    throw e;
-  }
-}
-
-// ──────────────────────── Chủ doanh nghiệp ────────────────────────
 
 async function layTacTu(db: Db, companyId: string, id: unknown) {
   if (typeof id !== "string") return null;
@@ -576,7 +280,10 @@ Deno.serve(async (req) => {
     const hanhDong = String(body?.hanh_dong ?? "");
 
     const khoa = req.headers.get(HEADER_KHOA);
-    if (khoa !== null) return await xuLyTacTu(db, khoa.trim(), hanhDong, body);
+    if (khoa !== null) {
+      const kq = await goiTacTu(db, khoa.trim(), hanhDong, body);
+      return json(kq.body, kq.status);
+    }
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return loi("CHUA_DANG_NHAP", `Thiếu JWT đăng nhập hoặc header ${HEADER_KHOA}.`, 401);

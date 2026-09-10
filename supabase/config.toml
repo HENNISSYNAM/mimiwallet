@@ -17,3 +17,8 @@ verify_jwt = false
 # actions it verifies the user JWT itself with auth.getUser.
 [functions.tac-tu]
 verify_jwt = false
+
+# MCP server for AI clients (Claude Code, Cursor…). Same agent key, same checks
+# as tac-tu — the handler is shared in _shared/tac-tu/cong-tac-tu.ts.
+[functions.mcp]
+verify_jwt = false

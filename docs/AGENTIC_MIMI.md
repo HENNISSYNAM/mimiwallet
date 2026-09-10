@@ -38,6 +38,28 @@ agent xin_chi ──► dang_xet ──► tu_choi                 (vượt tr�
 - **Mặc định chặt.** Agent mới: mọi khoản phải duyệt, chỉ chi cho người nhận trong danh sách.
 - **Thu hồi là vĩnh viễn** và huỷ mọi khoản chưa trả của agent đó.
 
+## Nối qua MCP — cách không cần viết code
+
+MCP (Model Context Protocol) là chuẩn chung để trợ lý AI thấy và gọi công cụ bên ngoài. MIMI có sẵn
+MCP server tại `https://xzymxgdavepvygdcmfup.supabase.co/functions/v1/mcp`, dùng cùng khoá agent.
+
+**Claude Code** — dán vào Terminal:
+```bash
+claude mcp add --transport http mimi https://xzymxgdavepvygdcmfup.supabase.co/functions/v1/mcp --header "x-mimi-agent-key: mimi_ak_..."
+```
+
+**Cursor** — thêm vào `mcp.json`:
+```json
+{ "mcpServers": { "mimi": { "url": "https://xzymxgdavepvygdcmfup.supabase.co/functions/v1/mcp",
+  "headers": { "x-mimi-agent-key": "mimi_ak_..." } } } }
+```
+
+Client nào chỉ cho đặt Bearer token thì dùng `Authorization: Bearer mimi_ak_...`.
+
+Công cụ: `xem_chinh_sach` · `xin_chi` · `xem_yeu_cau` · `tra_ma_ngan_hang`. Cùng bộ xử lý với API HTTP
+dưới đây (`_shared/tac-tu/cong-tac-tu.ts`), nên hai cửa không bao giờ kiểm khác nhau.
+Giao thức: Streamable HTTP, trả JSON, không giữ phiên (`_shared/mcp/may-chu.ts`, có test).
+
 ## API cho agent
 
 `POST https://xzymxgdavepvygdcmfup.supabase.co/functions/v1/tac-tu`
@@ -108,7 +130,7 @@ Khi `trang_thai = "da_duyet"`, `lenh_tra` chứa BIN, số tài khoản, số ti
 
 ## Chưa làm — theo thứ tự nên làm
 
-1. **MCP server** bọc ba hành động của agent, để Claude / ChatGPT / Cursor gọi MIMI không cần viết HTTP.
+1. ~~MCP server~~ — xong 10/09/2026, xem mục "Nối qua MCP".
 2. **Đối soát trên đường Cas** (`bank-link` sync) — hiện chỉ chạy sau webhook SePay.
 3. **Chi không qua MIMI**: tiền ra tới nhà cung cấp AI (OpenAI, Anthropic, Google…) mà không có yêu cầu
    nào → cảnh báo. Đây là phần "nhìn thấy chi tiêu AI" mà Ramp ra mắt 16/07/2026.
