@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { mapSepayWebhook } from "../_shared/bank/sepay-map.ts";
+import { doiSoatChiTacTu } from "../_shared/tac-tu/doi-soat.ts";
 
 /**
  * Public endpoint SePay posts to when a transaction hits a linked bank account.
@@ -235,12 +236,16 @@ Deno.serve(async (req) => {
   if (kq.settled || kq.mismatched) {
     console.log(`sepay qr reconcile: ${kq.settled} settled, ${kq.mismatched} mismatch`);
   }
+  // Cùng lúc: khoản chi đã duyệt của agent nào vừa thật sự rời tài khoản.
+  // Đường tiền ra dùng đúng cơ chế mã tham chiếu như đường tiền vào.
+  const chi = await doiSoatChiTacTu(supabase, conn.company_id);
   await ghiKetQua(
     "verified",
     `ghi 1 giao dịch cho ${conn.bank_name ?? accountNumber}` +
       (kq.settled || kq.mismatched
         ? ` · khớp QR: ${kq.settled} xong, ${kq.mismatched} lệch`
-        : " · không có mã QR nào đang chờ khớp"),
+        : " · không có mã QR nào đang chờ khớp") +
+      (chi.khop || chi.lech ? ` · chi agent: ${chi.khop} xác nhận, ${chi.lech} lệch` : ""),
   );
 
   console.log(

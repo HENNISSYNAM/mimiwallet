@@ -1431,6 +1431,226 @@ export type Database = {
           },
         ]
       }
+      chinh_sach_chi: {
+        Row: {
+          chi_tra_nguoi_nhan_da_duyet: boolean
+          company_id: string
+          han_muc_moi_lan: number
+          han_muc_ngay: number
+          han_muc_thang: number
+          het_han: string | null
+          nguong_can_duyet: number
+          nhom_chi_duoc_phep: string[] | null
+          tac_tu_id: string
+          updated_at: string
+        }
+        Insert: {
+          chi_tra_nguoi_nhan_da_duyet?: boolean
+          company_id: string
+          han_muc_moi_lan?: number
+          han_muc_ngay?: number
+          han_muc_thang?: number
+          het_han?: string | null
+          nguong_can_duyet?: number
+          nhom_chi_duoc_phep?: string[] | null
+          tac_tu_id: string
+          updated_at?: string
+        }
+        Update: {
+          chi_tra_nguoi_nhan_da_duyet?: boolean
+          company_id?: string
+          han_muc_moi_lan?: number
+          han_muc_ngay?: number
+          han_muc_thang?: number
+          het_han?: string | null
+          nguong_can_duyet?: number
+          nhom_chi_duoc_phep?: string[] | null
+          tac_tu_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      nguoi_nhan_duoc_phep: {
+        Row: {
+          company_id: string
+          created_at: string
+          ghi_chu: string | null
+          id: string
+          ngan_hang_bin: string
+          so_tai_khoan: string
+          ten_chu_tai_khoan: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          ghi_chu?: string | null
+          id?: string
+          ngan_hang_bin: string
+          so_tai_khoan: string
+          ten_chu_tai_khoan: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          ghi_chu?: string | null
+          id?: string
+          ngan_hang_bin?: string
+          so_tai_khoan?: string
+          ten_chu_tai_khoan?: string
+        }
+        Relationships: []
+      }
+      nhat_ky_tac_tu: {
+        Row: {
+          chi_tiet: Json
+          company_id: string
+          created_at: string
+          id: number
+          nguoi: string
+          su_kien: string
+          tac_tu_id: string | null
+          user_id: string | null
+          yeu_cau_id: string | null
+        }
+        Insert: {
+          chi_tiet?: Json
+          company_id: string
+          created_at?: string
+          nguoi: string
+          su_kien: string
+          tac_tu_id?: string | null
+          user_id?: string | null
+          yeu_cau_id?: string | null
+        }
+        Update: {
+          chi_tiet?: Json
+          company_id?: string
+          created_at?: string
+          nguoi?: string
+          su_kien?: string
+          tac_tu_id?: string | null
+          user_id?: string | null
+          yeu_cau_id?: string | null
+        }
+        Relationships: []
+      }
+      tac_tu: {
+        Row: {
+          company_id: string
+          created_at: string
+          dung_lan_cuoi: string | null
+          id: string
+          khoa_bam: string
+          khoa_hien: string
+          mo_ta: string | null
+          ten: string
+          trang_thai: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          dung_lan_cuoi?: string | null
+          id?: string
+          khoa_bam: string
+          khoa_hien: string
+          mo_ta?: string | null
+          ten: string
+          trang_thai?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          dung_lan_cuoi?: string | null
+          id?: string
+          khoa_bam?: string
+          khoa_hien?: string
+          mo_ta?: string | null
+          ten?: string
+          trang_thai?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      yeu_cau_chi: {
+        Row: {
+          cach_quyet: string | null
+          company_id: string
+          created_at: string
+          da_chi_luc: string | null
+          giao_dich_id: string | null
+          het_han_luc: string | null
+          id: string
+          ly_do: Json
+          ma_tham_chieu: string
+          ma_yeu_cau: string | null
+          muc_dich: string
+          ngan_hang_bin: string
+          nguoi_quyet: string | null
+          nhom_chi: string
+          quyet_luc: string | null
+          so_hoa_don: string | null
+          so_tai_khoan: string
+          so_tien: number
+          so_tien_thuc_chi: number | null
+          tac_tu_id: string
+          ten_nguoi_nhan: string | null
+          trang_thai: string
+          updated_at: string
+        }
+        Insert: {
+          cach_quyet?: string | null
+          company_id: string
+          created_at?: string
+          da_chi_luc?: string | null
+          giao_dich_id?: string | null
+          het_han_luc?: string | null
+          id?: string
+          ly_do?: Json
+          ma_tham_chieu: string
+          ma_yeu_cau?: string | null
+          muc_dich: string
+          ngan_hang_bin: string
+          nguoi_quyet?: string | null
+          nhom_chi: string
+          quyet_luc?: string | null
+          so_hoa_don?: string | null
+          so_tai_khoan: string
+          so_tien: number
+          so_tien_thuc_chi?: number | null
+          tac_tu_id: string
+          ten_nguoi_nhan?: string | null
+          trang_thai?: string
+          updated_at?: string
+        }
+        Update: {
+          cach_quyet?: string | null
+          company_id?: string
+          created_at?: string
+          da_chi_luc?: string | null
+          giao_dich_id?: string | null
+          het_han_luc?: string | null
+          id?: string
+          ly_do?: Json
+          ma_tham_chieu?: string
+          ma_yeu_cau?: string | null
+          muc_dich?: string
+          ngan_hang_bin?: string
+          nguoi_quyet?: string | null
+          nhom_chi?: string
+          quyet_luc?: string | null
+          so_hoa_don?: string | null
+          so_tai_khoan?: string
+          so_tien?: number
+          so_tien_thuc_chi?: number | null
+          tac_tu_id?: string
+          ten_nguoi_nhan?: string | null
+          trang_thai?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transaction_labels: {
         Row: {
           category: string | null

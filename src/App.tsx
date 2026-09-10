@@ -53,6 +53,7 @@ const DauTuPage = lazy(() => import("./pages/DauTuPage"));
 const ChungTuPage = lazy(() => import("./pages/ChungTuPage"));
 const FintechPage = lazy(() => import("./pages/FintechPage"));
 const M2MDevicesPage = lazy(() => import("./pages/M2MDevicesPage"));
+const TacTuPage = lazy(() => import("./pages/TacTuPage"));
 const TechnologyPage = lazy(() => import("./pages/TechnologyPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -130,6 +131,7 @@ const App = () => (
                 }
               >
                 <Route index element={<Page noIndex path="/dashboard" title="Tổng quan dòng tiền — MIMI WALLET" description="Theo dõi dòng tiền, số dư ngân hàng và dự báo 90 ngày của doanh nghiệp bạn trong một màn hình duy nhất."><DashboardOverview /></Page>} />
+                <Route path="tac-tu" element={<Page noIndex path="/dashboard/tac-tu" title="Kiểm soát chi của agent — MIMI WALLET" description="Đặt hạn mức, duyệt và đối soát mọi khoản chi do agent AI của doanh nghiệp xin — MIMI không giữ và không chuyển tiền."><TacTuPage /></Page>} />
                 <Route path="invoices" element={<Page noIndex path="/dashboard/invoices" title="Hoá đơn — MIMI WALLET" description="Quản lý hoá đơn đầu ra, đối soát công nợ và theo dõi khoản phải thu của doanh nghiệp bạn theo thời gian thực."><InvoicesPage /></Page>} />
                 <Route path="clients" element={<Page noIndex path="/dashboard/clients" title="Khách hàng — MIMI WALLET" description="Danh sách khách hàng, lịch sử giao dịch và tình trạng công nợ của từng đối tác trong hệ thống MIMI Wallet."><ClientsPage /></Page>} />
                 <Route path="loans" element={<Page noIndex path="/dashboard/loans" title="Khoản vay — MIMI WALLET" description="Theo dõi hồ sơ vay, hạn mức và lịch trả nợ; nộp yêu cầu tài trợ hoá đơn ngay trong MIMI Wallet."><LoansPage /></Page>} />
