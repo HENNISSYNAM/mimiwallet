@@ -52,6 +52,56 @@ const TRANG_THAI_TAC_TU: Record<string, string> = {
   thu_hoi: 'Đã thu hồi',
 };
 
+/**
+ * Nhật ký lưu mã sự kiện cho máy (`them_nguoi_nhan`), nhưng người đọc cần một
+ * câu. Mã lạ — ví dụ sự kiện máy chủ mới thêm mà trang chưa biết — hiện nguyên
+ * mã thay vì biến mất.
+ */
+const SU_KIEN: Record<string, string> = {
+  tao_tac_tu: 'Tạo agent',
+  xoay_khoa: 'Cấp khoá mới',
+  doi_trang_thai: 'Đổi trạng thái agent',
+  luu_chinh_sach: 'Sửa chính sách chi',
+  them_nguoi_nhan: 'Thêm người nhận',
+  xoa_nguoi_nhan: 'Bỏ người nhận',
+  xin_chi: 'Agent xin chi',
+  xin_chi_sai_khuon: 'Agent gửi yêu cầu sai khuôn',
+  duyet: 'Duyệt khoản chi',
+  tu_choi: 'Từ chối khoản chi',
+  huy: 'Huỷ khoản chi',
+  da_chi: 'Sao kê xác nhận đã chi',
+};
+
+const KET_QUA_XIN: Record<string, string> = {
+  tu_dong_duyet: 'tự duyệt',
+  cho_duyet: 'chờ bạn duyệt',
+  tu_choi: 'bị từ chối',
+};
+
+function chiTietNhatKy(n: NhatKy): string {
+  const c = (n.chi_tiet && typeof n.chi_tiet === 'object' && !Array.isArray(n.chi_tiet)
+    ? n.chi_tiet
+    : {}) as Record<string, unknown>;
+  const tien = typeof c.so_tien === 'number' ? dong(c.so_tien) : null;
+
+  switch (n.su_kien) {
+    case 'them_nguoi_nhan':
+    case 'xoa_nguoi_nhan': {
+      const ten = (c.ten_chu_tai_khoan ?? c.ten) as string | undefined;
+      const bin = c.ngan_hang_bin as string | undefined;
+      return [ten, bin ? tenNganHang(bin) : null, c.so_tai_khoan as string | undefined].filter(Boolean).join(' · ');
+    }
+    case 'xin_chi':
+      return [tien, KET_QUA_XIN[c.ket_qua as string]].filter(Boolean).join(' · ');
+    case 'doi_trang_thai':
+      return `${TRANG_THAI_TAC_TU[c.tu as string] ?? c.tu} → ${TRANG_THAI_TAC_TU[c.sang as string] ?? c.sang}`;
+    case 'tu_choi':
+      return [tien, c.ghi_chu as string | undefined].filter(Boolean).join(' · ');
+    default:
+      return tien ?? '';
+  }
+}
+
 const DIEM_GOI = `${SUPABASE_URL}/functions/v1/tac-tu`;
 const DIEM_MCP = `${SUPABASE_URL}/functions/v1/mcp`;
 
@@ -357,9 +407,10 @@ export default function TacTuPage() {
                 <span className="w-20 shrink-0 text-muted-foreground">
                   {n.nguoi === 'tac_tu' ? 'agent' : n.nguoi === 'he_thong' ? 'sao kê' : 'bạn'}
                 </span>
-                <span>
-                  {n.su_kien}
+                <span className="min-w-0">
+                  <span className="font-medium">{SU_KIEN[n.su_kien] ?? n.su_kien}</span>
                   {n.tac_tu_id && tenTacTu[n.tac_tu_id] ? ` · ${tenTacTu[n.tac_tu_id]}` : ''}
+                  {chiTietNhatKy(n) && <span className="text-muted-foreground"> · {chiTietNhatKy(n)}</span>}
                 </span>
               </li>
             ))}
