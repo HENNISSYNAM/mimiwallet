@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from chia_doan import chia_doan  # noqa: E402
+from chia_doan import PHIEN_BAN, chia_doan  # noqa: E402
 
 DIA_CHI = "https://xzymxgdavepvygdcmfup.supabase.co/functions/v1/nap-kho-luat"
 TRAN_BYTE_MOI_LO = 900_000
@@ -95,12 +95,22 @@ def main() -> None:
     for tep in sorted((kho / "van-ban").glob("*.json")):
         if a.gioi_han is not None and dem["nap"] + len(lo) >= a.gioi_han:
             break
-        d = json.loads(tep.read_text(encoding="utf-8"))
+        # Bộ cào có thể đang ghi đúng file này: bỏ qua file vừa sửa trong 60 giây
+        # và file JSON chưa ghi xong, lần nạp sau sẽ lấy.
+        if time.time() - tep.stat().st_mtime < 60:
+            dem["dang_ghi"] = dem.get("dang_ghi", 0) + 1
+            continue
+        try:
+            d = json.loads(tep.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            dem["dang_ghi"] = dem.get("dang_ghi", 0) + 1
+            continue
         van = d.get("toan_van") or ""
         if not d.get("co_toan_van") or not van:
             dem["khong_chu"] += 1
             continue
-        bam = hashlib.sha1(van.encode("utf-8")).hexdigest()
+        # Phiên bản chia đoạn nằm trong dấu băm: đổi cách chia là nạp lại hết.
+        bam = hashlib.sha1(f"chia-v{PHIEN_BAN}\n{van}".encode("utf-8")).hexdigest()
         if da_nap.get(d["ma_cong_bao"]) == bam:
             dem["khong_doi"] += 1
             continue

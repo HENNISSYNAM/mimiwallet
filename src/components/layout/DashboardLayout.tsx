@@ -3,6 +3,7 @@ import DashboardSidebar from './DashboardSidebar';
 import { Bell, Search, LayoutDashboard, FileText, ShieldCheck, BarChart3, Fingerprint, X } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
+import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
 import { toast } from 'sonner';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useEffect, useState } from 'react';
@@ -240,6 +241,7 @@ export default function DashboardLayout() {
             <NavLink
               key={item.path}
               to={item.path}
+              data-mimi={`nav:${item.path}`}
               end={item.path === '/dashboard'}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[52px] py-1.5 text-[11px] font-medium transition-colors pressable ${
@@ -257,8 +259,10 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        {/* AI Chat Widget */}
-        <AIChatWidget />
+        {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
+        <MimiLamHoProvider>
+          <AIChatWidget />
+        </MimiLamHoProvider>
       </div>
     </div>
   );

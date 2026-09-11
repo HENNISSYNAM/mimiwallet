@@ -127,6 +127,7 @@ export default function DashboardSidebar() {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  data-mimi={`nav:${item.path}`}
                   end={item.path === '/dashboard'}
                   title={collapsed ? item.label : undefined}
                   className={({ isActive }) =>

@@ -1703,6 +1703,7 @@ export type Database = {
         Row: {
           id: number
           ma_cong_bao: string
+          ngu_canh: string | null
           nhan: string | null
           noi_dung: string
           thu_tu: number
@@ -1710,12 +1711,14 @@ export type Database = {
         }
         Insert: {
           ma_cong_bao: string
+          ngu_canh?: string | null
           nhan?: string | null
           noi_dung: string
           thu_tu: number
         }
         Update: {
           ma_cong_bao?: string
+          ngu_canh?: string | null
           nhan?: string | null
           noi_dung?: string
           thu_tu?: number

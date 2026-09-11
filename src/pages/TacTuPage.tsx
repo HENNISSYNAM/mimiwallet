@@ -240,7 +240,7 @@ export default function TacTuPage() {
 
       {/* ── Việc đang chờ mình ─────────────────────────────────────── */}
       {choDuyet.length > 0 && (
-        <section className="space-y-3">
+        <section data-mimi="tac-tu.cho-duyet" className="space-y-3">
           <h2 className="text-sm font-semibold">{choDuyet.length} khoản chờ bạn duyệt</h2>
           {choDuyet.map((y) => (
             <TheChoDuyet
@@ -272,7 +272,7 @@ export default function TacTuPage() {
       )}
 
       {/* ── Agent ──────────────────────────────────────────────────── */}
-      <section className={the}>
+      <section data-mimi="tac-tu.danh-sach" className={the}>
         <h2 className="text-sm font-semibold">Agent của bạn</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Mỗi agent một khoá riêng, một chính sách riêng. Agent mới mặc định phải xin duyệt mọi khoản và chỉ được
@@ -489,9 +489,9 @@ function ThemTacTu({ tao, dangLam }: { tao: (ten: string, moTa: string) => void;
       }}
       className="mt-3 flex flex-col gap-2 sm:flex-row"
     >
-      <input value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên agent" maxLength={80} className={o} />
+      <input data-mimi="tac-tu.ten" value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên agent" maxLength={80} className={o} />
       <input value={moTa} onChange={(e) => setMoTa(e.target.value)} placeholder="Nó làm gì (không bắt buộc)" maxLength={300} className={o} />
-      <button disabled={dangLam || ten.trim().length < 2} className={`${nut} shrink-0 bg-primary text-primary-foreground hover:bg-primary/90`}>
+      <button data-mimi="tac-tu.them" data-mimi-khong-tu-bam disabled={dangLam || ten.trim().length < 2} className={`${nut} shrink-0 bg-primary text-primary-foreground hover:bg-primary/90`}>
         {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Thêm agent
       </button>
     </form>
@@ -551,7 +551,7 @@ function TheTacTu({
             <button disabled={dangLam} onClick={xoayKhoa} className={`${nut} border border-border hover:bg-muted`}>
               <KeyRound size={13} /> Khoá mới
             </button>
-            <button disabled={dangLam} onClick={() => doiTrangThai('thu_hoi')} className={`${nut} border border-destructive/40 text-destructive hover:bg-destructive/10`}>
+            <button data-mimi="tac-tu.thu-hoi" data-mimi-khong-tu-bam disabled={dangLam} onClick={() => doiTrangThai('thu_hoi')} className={`${nut} border border-destructive/40 text-destructive hover:bg-destructive/10`}>
               Thu hồi
             </button>
           </div>
@@ -681,13 +681,13 @@ function ThemNguoiNhan({ them, dangLam }: { them: (du: Record<string, unknown>) 
       }}
       className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]"
     >
-      <select value={bin} onChange={(e) => setBin(e.target.value)} className={o}>
+      <select data-mimi="tac-tu.nguoi-nhan.ngan-hang" value={bin} onChange={(e) => setBin(e.target.value)} className={o}>
         {DANH_SACH_NGAN_HANG.map((n) => <option key={n.bin} value={n.bin}>{n.ten}</option>)}
       </select>
-      <input value={stk} onChange={(e) => setStk(e.target.value)} placeholder="Số tài khoản" inputMode="numeric" className={o} />
-      <input value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên chủ tài khoản" className={o} />
+      <input data-mimi="tac-tu.nguoi-nhan.stk" value={stk} onChange={(e) => setStk(e.target.value)} placeholder="Số tài khoản" inputMode="numeric" className={o} />
+      <input data-mimi="tac-tu.nguoi-nhan.ten" value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên chủ tài khoản" className={o} />
       <input value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} placeholder="Ghi chú" className={o} />
-      <button disabled={dangLam || stk.length < 6 || ten.trim().length < 2} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
+      <button data-mimi="tac-tu.nguoi-nhan.them" data-mimi-khong-tu-bam disabled={dangLam || stk.length < 6 || ten.trim().length < 2} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
         <Plus size={14} /> Thêm
       </button>
     </form>
@@ -735,10 +735,12 @@ function TheChoDuyet({
         </label>
       )}
       <div className="mt-3 flex gap-2">
-        <button disabled={dangLam} onClick={() => duyet(themNguoiNhan)} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
+        <button data-mimi="tac-tu.duyet" data-mimi-khong-tu-bam disabled={dangLam} onClick={() => duyet(themNguoiNhan)} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
           {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Duyệt
         </button>
         <button
+          data-mimi="tac-tu.tu-choi"
+          data-mimi-khong-tu-bam
           disabled={dangLam}
           onClick={() => {
             const ghiChu = window.prompt('Lý do từ chối (agent sẽ đọc được):', '');
@@ -772,7 +774,7 @@ function TheChoTra({ y, tenTacTu, dangLam, huy }: { y: YeuCau; tenTacTu: string;
         {quaHan && <span className="text-amber-600"> Lệnh đã quá 72 giờ — kiểm lại trước khi trả.</span>}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button onClick={() => setHienQr((v) => !v)} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
+        <button data-mimi="tac-tu.tra-qr" data-mimi-khong-tu-bam onClick={() => setHienQr((v) => !v)} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
           <QrCode size={14} /> {hienQr ? 'Ẩn mã QR' : 'Trả bằng mã QR'}
         </button>
         <button disabled={dangLam} onClick={huy} className={`${nut} border border-border hover:bg-muted`}>

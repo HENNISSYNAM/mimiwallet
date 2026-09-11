@@ -25,7 +25,7 @@ export default function FintechPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t('pg.fintech.title')}</h2>
+        <h2 data-mimi="fintech.ngan-hang" className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t('pg.fintech.title')}</h2>
         <p className="text-sm text-muted-foreground mt-1">{t('pg.fintech.subtitle')}</p>
       </div>
 

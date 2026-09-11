@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Volume2, Loader2 } from 'lucide-react';
-// The agent's own face: black and gold, headset and heads-up display. A
-// separate character from the orange brand mascot on purpose — this one is the
-// thing working for you, not the logo.
-//
-// Cropped to the head. The source art is full-body at 2:3, and these avatars
-// render at 24–40px, where a whole seated cat becomes an unreadable smudge.
-import mimiAgent from '@/assets/mimi/agent.webp';
+// Trợ lý mang logo con mèo cam của MIMI từ 11/09/2026, thay con mèo đen đội tai
+// nghe trước đó. Trợ lý giờ đi lại trên giao diện như một con trỏ và làm việc
+// cùng người dùng — nó là MIMI, không phải một nhân vật riêng.
+import mimiAgent from '@/assets/mimi-cat.webp';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { nhanViec } from '@/lib/mimiLamHo';
+import { useMimiLamHo } from '@/components/mimi/MimiLamHo';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -20,14 +19,15 @@ const TTS_URL = `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 // Opening questions steer what people think this product is for, so they track
 // the tax and cost work rather than the invoice advance MIMI cannot provide.
 const SUGGESTIONS = [
+  'Khoản chi nào đang chờ tôi duyệt?',
+  'Tạo agent "Trợ lý quảng cáo" giúp tôi',
   'Khoản chi nào tháng này chưa có chứng từ?',
-  'Tôi nên nộp thuế theo doanh thu hay theo lợi nhuận?',
-  'Doanh thu năm nay của tôi đang ở mức nào so với ngưỡng?',
-  'Dòng tiền tháng này thế nào?',
+  'Hộ kinh doanh doanh thu bao nhiêu thì phải nộp thuế?',
 ];
 
 export default function AIChatWidget() {
   const { session } = useAuthStore();
+  const { chay, dangChay } = useMimiLamHo();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -95,11 +95,26 @@ export default function AIChatWidget() {
 
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
-    if (!content || isLoading) return;
+    if (!content || isLoading || dangChay) return;
     const userMsg: Msg = { role: 'user', content };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
+
+    // Câu nhờ việc → con trỏ mèo làm ngay trên giao diện. Câu khác → chat như cũ.
+    const kichBan = nhanViec(content);
+    if (kichBan) {
+      setMessages([
+        ...newMessages,
+        { role: 'assistant', content: `Để mình làm cho bạn xem: ${kichBan.moTa}. Bấm "Dừng" hoặc phím Esc bất cứ lúc nào.` },
+      ]);
+      // Màn hình nhỏ: khung chat che mất chỗ con trỏ cần đi tới.
+      if (window.matchMedia('(max-width: 639px)').matches) setOpen(false);
+      const ketQua = await chay(kichBan);
+      setMessages((prev) => [...prev, { role: 'assistant', content: ketQua.cau }]);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -213,7 +228,7 @@ export default function AIChatWidget() {
                   </div>
                   <p className="text-[15px] font-semibold text-foreground">Xin chào</p>
                   <p className="text-[13px] text-muted-foreground mt-1 max-w-[240px] mx-auto">
-                    Tôi đọc được điểm tín dụng, dòng tiền và hóa đơn của bạn — hỏi tôi bất cứ điều gì.
+                    Hỏi mình về thuế, chứng từ, dòng tiền — hoặc nhờ việc, mình đi làm ngay trên màn hình cho bạn xem.
                   </p>
                   <div className="flex flex-col gap-2 mt-5">
                     {SUGGESTIONS.map(q => (

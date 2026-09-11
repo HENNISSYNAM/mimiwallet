@@ -208,7 +208,7 @@ export default function ChungTuPage() {
       </div>
 
       {/* ── Con số duy nhất đáng nhớ ──────────────────────────────────── */}
-      <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
+      <div data-mimi="chung-tu.chua-co-giay" className="rounded-2xl border border-border/60 bg-card/50 p-5">
         <p className="text-xs text-muted-foreground">Chi phí chưa có giấy tờ trong quý này</p>
         <p className="mt-1 font-mono text-3xl font-bold text-foreground">
           {dong(kq.tongChuaCoGiay)}

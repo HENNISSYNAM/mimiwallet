@@ -20,7 +20,23 @@ from dataclasses import dataclass
 
 TOI_DA_KY_TU = 2500
 
+# Tăng số này mỗi khi đổi cách làm sạch hoặc chia đoạn: `nap_kho.py` tính nó vào
+# dấu băm, nên mọi văn bản sẽ tự được nạp lại theo cách mới.
+#   1 — chia theo Điều, bỏ dòng đầu trang Công báo.
+#   2 — bỏ khối chữ ký số ("Ký bởi… Thời gian ký…"), dòng chỉ có số trang và ký
+#       tự điều khiển. Cả ba lộ ra khi thử agent và nạp kho thật ngày 11/09/2026.
+PHIEN_BAN = 2
+
 _DAU_TRANG = re.compile(r"(?m)^[ \t]*(?:\d{1,4}[ \t]+)?CÔNG BÁO/Số[^\n]*$")
+_CHU_KY_SO = re.compile(
+    r"(?m)^[ \t]*Ký bởi:[^\n]*\n(?:[ \t]*Email:[^\n]*\n)?(?:[ \t]*Cơ quan:[^\n]*\n)?(?:[ \t]*Thời gian ký:[^\n]*(?:\n|$))?"
+)
+_SO_TRANG = re.compile(r"(?m)^[ \t]*\d{1,4}[ \t]*$")
+# Ký tự điều khiển lọt ra từ PDF (mã 0–8, 11, 12, 14–31, 127). Postgres từ chối
+# cả lô nạp khi gặp mã 0 — lần nạp đầu ngày 11/09/2026 dừng ở văn bản 16580 vì
+# đúng lỗi này. Viết bằng mã thoát, không bao giờ để ký tự thật trong mã nguồn:
+# Python không nạp nổi một file .py có byte 0.
+_DIEU_KHIEN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _DIEU = re.compile(r"(?m)^[ \t]*(Điều[ \t]+\d+[a-zđ]?)[ \t]*[\.:]")
 
 
@@ -32,8 +48,12 @@ class Doan:
 
 
 def lam_sach(van: str) -> str:
+    van = van.replace("\r\n", "\n").replace("\r", "\n")
+    van = _DIEU_KHIEN.sub("", van)
     van = _DAU_TRANG.sub("", van)
-    van = van.replace(" ", " ")
+    van = _CHU_KY_SO.sub("", van)
+    van = _SO_TRANG.sub("", van)
+    van = van.replace(" ", " ")  # khoảng trắng không ngắt dòng của PDF
     van = re.sub(r"[ \t]+", " ", van)
     van = re.sub(r" *\n *", "\n", van)
     van = re.sub(r"\n{3,}", "\n\n", van)

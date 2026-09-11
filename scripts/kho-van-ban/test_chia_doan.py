@@ -28,6 +28,36 @@ class LamSach(unittest.TestCase):
         self.assertNotIn("CÔNG BÁO/Số", s)
         self.assertIn("35.000 đồng/vé", s)
 
+    def test_bo_khoi_chu_ky_so_va_so_trang(self):
+        # Đúng khối đã lẫn vào đoạn trích của Thông tư 45/2015/TT-BTC khi thử agent thật.
+        van = (
+            "Nhân viên thu phí phát Thẻ vào đường;\n"
+            "Ký bởi: Cổng Thông tin điện tử Chính phủ\n"
+            "Email: thongtinchinhphu@chinhphu.vn\n"
+            "Cơ quan: Văn phòng Chính phủ\n"
+            "Thời gian ký: 12.05.2015 10:32:58 +07:00\n"
+            "\n4\n\n"
+            "b) Tại Trạm ra: người điều khiển dừng lại."
+        )
+        s = lam_sach(van)
+        for rac in ("Ký bởi", "thongtinchinhphu", "Thời gian ký", "\n4\n"):
+            self.assertNotIn(rac, s)
+        self.assertIn("Thẻ vào đường;", s)
+        self.assertIn("b) Tại Trạm ra", s)
+
+    def test_giu_dong_co_quan_trong_noi_dung(self):
+        # "Cơ quan:" không đi sau "Ký bởi:" thì là nội dung văn bản, không phải chữ ký.
+        self.assertIn("Cơ quan: Bộ Tài chính", lam_sach("Điều 3.\nCơ quan: Bộ Tài chính"))
+
+    def test_bo_ky_tu_dieu_khien(self):
+        # Postgres từ chối mã 0 trong text; một ký tự này làm hỏng cả lô nạp.
+        s = lam_sach("Điều 1.\x00 Phạm vi\x0b điều chỉnh\x1f")
+        self.assertEqual(s, "Điều 1. Phạm vi điều chỉnh")
+        self.assertNotIn("\x00", s)
+
+    def test_dua_xuong_dong_windows_ve_mot_kieu(self):
+        self.assertEqual(lam_sach("a\r\n\r\n\r\nb\rc"), "a\n\nb\nc")
+
     def test_gom_khoang_trang(self):
         self.assertEqual(lam_sach("a  \t b\n\n\n\nc"), "a b\n\nc")
 
