@@ -38,8 +38,10 @@ def doc_token(tep: Path) -> str:
     raise SystemExit(f"Không thấy NAP_KHO_TOKEN trong {tep}")
 
 
-def gui(lo: list[dict], token: str) -> dict:
-    du_lieu = json.dumps({"van_ban": lo}, ensure_ascii=False).encode("utf-8")
+def gui(lo: list[dict] | dict, token: str) -> dict:
+    """`lo` là danh sách văn bản, hoặc một lệnh (dict) như `{"lam_moi_tu_pho_bien": True}`."""
+    than = lo if isinstance(lo, dict) else {"van_ban": lo}
+    du_lieu = json.dumps(than, ensure_ascii=False).encode("utf-8")
     loi_cuoi = None
     for lan in range(4):
         req = urllib.request.Request(
@@ -134,6 +136,12 @@ def main() -> None:
 
     xa_lo()
     print("XONG NẠP", json.dumps(dem, ensure_ascii=False), flush=True)
+
+    # Tìm kiếm lọc bằng từ hiếm nhất; kho đổi thì tần suất phải tính lại, không
+    # thì văn bản mới nạp có những từ "không tồn tại" và không bao giờ được lọc ra.
+    if dem["nap"] > 0:
+        kq = gui({"lam_moi_tu_pho_bien": True}, token)
+        print("LÀM MỚI TẦN SUẤT TỪ", json.dumps(kq, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
