@@ -108,10 +108,12 @@ export default function AIChatWidget() {
         ...newMessages,
         { role: 'assistant', content: `Để mình làm cho bạn xem: ${kichBan.moTa}. Bấm "Dừng" hoặc phím Esc bất cứ lúc nào.` },
       ]);
-      // Màn hình nhỏ: khung chat che mất chỗ con trỏ cần đi tới.
-      if (window.matchMedia('(max-width: 639px)').matches) setOpen(false);
+      // Thu khung chat trong lúc mèo làm: khung cố định ở góc phải dễ che đúng
+      // nút mèo cần tới, trên cả máy tính. Làm xong thì mở lại, kèm kết quả.
+      setOpen(false);
       const ketQua = await chay(kichBan);
       setMessages((prev) => [...prev, { role: 'assistant', content: ketQua.cau }]);
+      setOpen(true);
       return;
     }
 

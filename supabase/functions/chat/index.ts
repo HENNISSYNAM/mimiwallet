@@ -240,10 +240,11 @@ async function traLuat(cauHoi: string): Promise<DoanLuat[]> {
     const url = Deno.env.get("SUPABASE_URL");
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !key) return [];
-    const { data, error } = await createClient(url, key).rpc("tim_phap_luat", {
-      cau_hoi: cauHoi.slice(0, 500),
-      so_ket_qua: 12,
-    });
+    // Tự huỷ sau 6 giây: kho từng hết giờ ở 8 giây (57014) và kéo cả câu trả lời
+    // treo theo. Chậm thì trả lời không có nguồn, còn hơn không trả lời.
+    const { data, error } = await createClient(url, key)
+      .rpc("tim_phap_luat", { cau_hoi: cauHoi.slice(0, 500), so_ket_qua: 12 })
+      .abortSignal(AbortSignal.timeout(6000));
     if (error) {
       console.error("tim_phap_luat:", error.message);
       return [];

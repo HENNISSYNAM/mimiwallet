@@ -151,7 +151,9 @@ export function MimiLamHoProvider({ children }: { children: ReactNode }) {
             continue;
           }
 
-          const el = await choDich(b.dich, 4000);
+          // 8 giây: trang vừa mở còn phải tải dữ liệu xong mới hiện nút. Chờ 4
+          // giây thì mạng chậm là mèo báo "không thấy" trước khi trang kịp hiện.
+          const el = await choDich(b.dich, 8000);
           if (!el) {
             if (biDung.current) return { xong: false, cau: 'Đã dừng. Phần còn lại bạn làm tiếp nhé.' };
             if (b.loai === 'chi' && b.neuKhongThay !== undefined) {
