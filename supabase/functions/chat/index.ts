@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveCompany } from "../_shared/company.ts";
+import { canTraLuat, chonNguon, nguonThanhLoiDan, tenNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -227,6 +228,45 @@ function answerInternally(message: string, c: BizContext | null): string {
   return `Chào bạn! Mình đang đọc được dữ liệu của ${c.companyName}: ${scoreLine}, dòng tiền ròng 3 tháng ${fmtVND(net3m)}, ${c.overdueCount} hóa đơn quá hạn.\n\nBạn có thể hỏi mình:\n• "Vì sao điểm tín dụng của tôi như vậy?"\n• "Làm sao để tăng điểm nhanh nhất?"\n• "Dòng tiền tháng này thế nào?"\n• "Tôi có nên vay thêm không?"`;
 }
 
+/**
+ * Tìm đoạn luật cho câu hỏi pháp lý, trong kho Công báo đã nạp (`tim_phap_luat`).
+ *
+ * Hỏng thì trả mảng rỗng chứ không ném lỗi: không tra được luật thì lời dặn
+ * vẫn bảo mô hình nói "kho chưa có", tốt hơn là trợ lý im lặng.
+ */
+async function traLuat(cauHoi: string): Promise<DoanLuat[]> {
+  if (!canTraLuat(cauHoi)) return [];
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) return [];
+    const { data, error } = await createClient(url, key).rpc("tim_phap_luat", {
+      cau_hoi: cauHoi.slice(0, 500),
+      so_ket_qua: 12,
+    });
+    if (error) {
+      console.error("tim_phap_luat:", error.message);
+      return [];
+    }
+    return chonNguon((data ?? []) as DoanLuat[]);
+  } catch (e) {
+    console.error("tra luat:", e);
+    return [];
+  }
+}
+
+/** Khi không có mô hình: trả nguyên văn đoạn luật tìm được, kèm nguồn — không diễn giải. */
+function traLoiLuatNoiBo(nguon: DoanLuat[]): string {
+  if (nguon.length === 0) {
+    return "Kho văn bản của MIMI chưa có đoạn nói về việc này. Bạn nên hỏi kế toán hoặc cơ quan thuế quản lý trực tiếp.";
+  }
+  const khoi = nguon.map((d, i) => {
+    const trich = d.noi_dung.length > 500 ? `${d.noi_dung.slice(0, 500)}…` : d.noi_dung;
+    return `[${i + 1}] ${tenNguon(d)}${d.ngay_ban_hanh ? ` · ban hành ${d.ngay_ban_hanh.split("-").reverse().join("/")}` : ""}\n${d.url}\n${trich}`;
+  });
+  return `Mình tìm thấy các đoạn luật liên quan trong Công báo:\n\n${khoi.join("\n\n")}\n\nĐây là trích nguyên văn, chưa phải lời tư vấn. Kho chưa theo dõi tình trạng hiệu lực — văn bản cũ có thể đã bị sửa hoặc thay thế.`;
+}
+
 /** Streams plain text back in the OpenAI SSE delta shape the widget already parses. */
 function streamText(text: string): Response {
   const encoder = new TextEncoder();
@@ -255,21 +295,28 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
-    const context = await buildContext(req.headers.get("Authorization"));
     const lastUser = [...(messages ?? [])].reverse().find((m: { role: string }) => m.role === "user")?.content ?? "";
+    const laCauHoiLuat = canTraLuat(lastUser);
+    const [context, nguonLuat] = await Promise.all([
+      buildContext(req.headers.get("Authorization")),
+      traLuat(lastUser),
+    ]);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    // No external key configured → answer internally from the user's own data.
+    // No external key configured → answer internally from the user's own data,
+    // or from the legal corpus verbatim when the question is about the law.
     if (!LOVABLE_API_KEY) {
-      return streamText(answerInternally(lastUser, context));
+      return streamText(laCauHoiLuat ? traLoiLuatNoiBo(nguonLuat) : answerInternally(lastUser, context));
     }
 
     // Key present → richer LLM answers, still grounded in the same context.
-    const systemPrompt = `Bạn là trợ lý tài chính AI của MIMI WALLET — nền tảng tín dụng số cho doanh nghiệp nhỏ (SME) Việt Nam.
+    // Câu giới thiệu từng là "nền tảng tín dụng số" — định vị đã bỏ từ 17/08/2026.
+    const systemPrompt = `Bạn là trợ lý của MIMI WALLET — lớp kiểm soát tài chính cho doanh nghiệp và hộ kinh doanh Việt Nam: chứng từ chi phí, thuế, và kiểm soát chi của agent AI.
 Trả lời bằng tiếng Việt, ngắn gọn, thực tế, thân thiện nhưng chuyên nghiệp. Ưu tiên câu trả lời hành động được.
 Khi có số liệu doanh nghiệp bên dưới, HÃY dùng đúng các con số đó và cá nhân hóa lời khuyên; đừng bịa số.
-${context ? `\n=== DỮ LIỆU DOANH NGHIỆP HIỆN TẠI ===\n${contextToPrompt(context)}\n=== HẾT DỮ LIỆU ===` : "\n(Chưa truy cập được dữ liệu cụ thể — hãy tư vấn tổng quát.)"}`;
+${context ? `\n=== DỮ LIỆU DOANH NGHIỆP HIỆN TẠI ===\n${contextToPrompt(context)}\n=== HẾT DỮ LIỆU ===` : "\n(Chưa truy cập được dữ liệu cụ thể — hãy tư vấn tổng quát.)"}
+${laCauHoiLuat ? `\n${nguonThanhLoiDan(nguonLuat)}` : ""}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

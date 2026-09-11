@@ -22,3 +22,8 @@ verify_jwt = false
 # as tac-tu — the handler is shared in _shared/tac-tu/cong-tac-tu.ts.
 [functions.mcp]
 verify_jwt = false
+
+# Temporary loader for the legal corpus. Authenticated by the NAP_KHO_TOKEN
+# secret (constant-time compare); returns 503 when that secret is unset.
+[functions.nap-kho-luat]
+verify_jwt = false

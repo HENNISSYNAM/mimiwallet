@@ -1651,6 +1651,77 @@ export type Database = {
         }
         Relationships: []
       }
+      van_ban_phap_luat: {
+        Row: {
+          co_quan: string | null
+          loai: string | null
+          ma_cong_bao: string
+          nap_luc: string
+          ngay_ban_hanh: string | null
+          ngay_hieu_luc: string | null
+          nguoi_ky: string | null
+          nguon_toan_van: string | null
+          so_doan: number
+          so_hieu: string | null
+          ten: string
+          trich_yeu: string | null
+          url: string
+        }
+        Insert: {
+          co_quan?: string | null
+          loai?: string | null
+          ma_cong_bao: string
+          nap_luc?: string
+          ngay_ban_hanh?: string | null
+          ngay_hieu_luc?: string | null
+          nguoi_ky?: string | null
+          nguon_toan_van?: string | null
+          so_doan?: number
+          so_hieu?: string | null
+          ten: string
+          trich_yeu?: string | null
+          url: string
+        }
+        Update: {
+          co_quan?: string | null
+          loai?: string | null
+          ma_cong_bao?: string
+          nap_luc?: string
+          ngay_ban_hanh?: string | null
+          ngay_hieu_luc?: string | null
+          nguoi_ky?: string | null
+          nguon_toan_van?: string | null
+          so_doan?: number
+          so_hieu?: string | null
+          ten?: string
+          trich_yeu?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
+      doan_phap_luat: {
+        Row: {
+          id: number
+          ma_cong_bao: string
+          nhan: string | null
+          noi_dung: string
+          thu_tu: number
+          tim: unknown
+        }
+        Insert: {
+          ma_cong_bao: string
+          nhan?: string | null
+          noi_dung: string
+          thu_tu: number
+        }
+        Update: {
+          ma_cong_bao?: string
+          nhan?: string | null
+          noi_dung?: string
+          thu_tu?: number
+        }
+        Relationships: []
+      }
       transaction_labels: {
         Row: {
           category: string | null

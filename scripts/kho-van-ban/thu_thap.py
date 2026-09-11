@@ -181,6 +181,13 @@ def doc_trang_chi_tiet(s: str) -> dict[str, str]:
     pdf_ky = re.search(r'href="(https://congbaocdn\.chinhphu\.vn/[^"]*\.pdf)"', s)
     if pdf_ky:
         ra["pdf_ky_so"] = pdf_ky.group(1)
+    # Văn bản cũ (khoảng 2010–2017) không có link tải trên trang danh sách, chỉ có
+    # trên trang chi tiết. Thiếu bước này là lý do 1.874 văn bản của đợt cào đầu
+    # (10/09/2026) không có chữ nào dù Công báo có sẵn tệp PDF.
+    for loai in ("docx", "pdf"):
+        m = re.search(rf'href="(https://g7\.cdnchinhphu\.vn/api/download/stream\?[^"]*?\.{loai})"', s)
+        if m:
+            ra[f"link_{loai}"] = html.unescape(m.group(1))
     return ra
 
 
@@ -204,13 +211,30 @@ def van_tu_docx(du_lieu: bytes) -> str:
     return "\n".join(d for d in dong if d)
 
 
+try:
+    import pymupdf  # noqa: F401
+    CO_PYMUPDF = True
+except ImportError:
+    CO_PYMUPDF = False
+
+
 def van_tu_pdf(du_lieu: bytes) -> str:
+    """PyMuPDF trước. pypdf chẻ âm tiết tiếng Việt ("Căn c ứ Ngh ị định") — số đo ở `trich_lai.py`."""
+    if CO_PYMUPDF:
+        import pymupdf
+        with pymupdf.open(stream=du_lieu, filetype="pdf") as doc:
+            return "\n".join(trang.get_text() for trang in doc).strip()
     try:
         from pypdf import PdfReader
     except ImportError:
         return ""
     doc = PdfReader(io.BytesIO(du_lieu))
     return "\n".join((trang.extract_text() or "") for trang in doc.pages).strip()
+
+
+def nhan_nguon(loai: str) -> str:
+    """Nhãn nguồn toàn văn. `pdf` trần nghĩa là trích bằng pypdf — `trich_lai.py` tìm đúng nhãn đó để sửa."""
+    return "pdf-pymupdf" if loai == "pdf" and CO_PYMUPDF else loai
 
 
 # ── Chạy ─────────────────────────────────────────────────────────────────────
@@ -245,7 +269,10 @@ def xu_ly_van_ban(cq: CoQuan, mm: MucDanhSach, tu_khoa: list[str], thu_muc: Path
         chi_tiet = doc_trang_chi_tiet(goi(url))  # type: ignore[arg-type]
 
         toan_van, nguon_van, tep_goc = "", None, None
-        for loai, link in (("docx", mm.docx), ("pdf", mm.pdf)):
+        for loai, link in (
+            ("docx", mm.docx or chi_tiet.get("link_docx")),
+            ("pdf", mm.pdf or chi_tiet.get("link_pdf")),
+        ):
             if not link:
                 continue
             try:
@@ -253,7 +280,7 @@ def xu_ly_van_ban(cq: CoQuan, mm: MucDanhSach, tu_khoa: list[str], thu_muc: Path
                 assert isinstance(du_lieu, bytes)
                 toan_van = van_tu_docx(du_lieu) if loai == "docx" else van_tu_pdf(du_lieu)
                 if toan_van:
-                    nguon_van = loai
+                    nguon_van = nhan_nguon(loai)
                     tep_goc = thu_muc / "tep-goc" / f"{ma_so}.{loai}"
                     tep_goc.write_bytes(du_lieu)
                     break
