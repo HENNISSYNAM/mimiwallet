@@ -4,6 +4,7 @@ import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { coSaoKeDeDoc } from "../_shared/bank/dong-bo.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
+import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
 
 /**
  * Inbound webhooks from Cas (BankHub).
@@ -94,10 +95,9 @@ function pick(obj: unknown, paths: string[][]): string | undefined {
 function extract(payload: unknown) {
   return {
     type: pick(payload, [["type"], ["webhookType"], ["event"], ["eventType"], ["data", "type"]]),
-    code: pick(payload, [
-      ["code"], ["errorCode"], ["eventCode"], ["status"],
-      ["data", "code"], ["data", "status"],
-    ]),
+    // `webhookCode` trước — bản cũ bỏ sót nó nên cột Mã của mọi dòng GRANT trống.
+    // Xem `_shared/bank/ma-webhook-cas.ts`.
+    code: docMaWebhookCas(payload) ?? undefined,
     grantId: pick(payload, [
       ["grantId"], ["grant_id"], ["grant", "id"],
       ["data", "grantId"], ["data", "grant_id"], ["data", "grant", "id"],
@@ -240,7 +240,9 @@ Deno.serve(async (req) => {
     });
   }
   if (!conns || conns.length === 0) {
-    return await finish("ignored", `no connection for grant ${grantId}`);
+    // Kèm mã: grant không còn liên kết thường là grant vừa bị thu hồi, và mã là
+    // thứ phân biệt "người dùng ngắt quyền" với "cập nhật định kỳ của grant cũ".
+    return await finish("ignored", `no connection for grant ${grantId}${code ? ` · ${code}` : ""}`);
   }
 
   const privateKey = Deno.env.get("PQC_KYC_PRIVATE_KEY");

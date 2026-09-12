@@ -20,6 +20,7 @@ import { mapGdtInvoices, revenueFromInvoices } from "../_shared/tax/gdt-invoice-
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { timNganHang } from "../_shared/bank/ngan-hang.ts";
+import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
@@ -1205,7 +1206,8 @@ Deno.serve(async (req) => {
         const tuLuc = new Date(Date.now() - 30 * 86_400_000).toISOString();
         let q = supabase
           .from("webhook_events")
-          .select("id, received_at, event_type, event_code, grant_id, outcome, note")
+          // `payload` chỉ để rút mã sự kiện cho dòng cũ — không bao giờ trả ra ngoài.
+          .select("id, received_at, event_type, event_code, grant_id, outcome, note, payload")
           .order("received_at", { ascending: false })
           .limit(40);
 
@@ -1285,7 +1287,21 @@ Deno.serve(async (req) => {
           }
         }
 
-        return json({ events: data ?? [], grantIds, tenLienKet: ten });
+        /*
+         * Bỏ `payload` trước khi trả, và điền mã cho dòng cũ.
+         *
+         * Trước 12/09/2026 cas-webhook không đọc `webhookCode`, nên mọi dòng GRANT
+         * lưu `event_code = null` dù payload có mã. Rút lại từ payload ở đây để
+         * đọc được những dòng đó — kể cả dòng GRANT 17:19 12/09 cần cho case 10.
+         */
+        const events = (data ?? []).map(
+          ({ payload, ...e }: { payload: unknown; event_code: string | null } & Record<string, unknown>) => ({
+            ...e,
+            event_code: e.event_code ?? docMaWebhookCas(payload),
+          }),
+        );
+
+        return json({ events, grantIds, tenLienKet: ten });
       }
 
       case "fi-services": {
