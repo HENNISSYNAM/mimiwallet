@@ -140,8 +140,19 @@ def main() -> None:
     # Tìm kiếm lọc bằng từ hiếm nhất; kho đổi thì tần suất phải tính lại, không
     # thì văn bản mới nạp có những từ "không tồn tại" và không bao giờ được lọc ra.
     if dem["nap"] > 0:
-        kq = gui({"lam_moi_tu_pho_bien": True}, token)
-        print("LÀM MỚI TẦN SUẤT TỪ", json.dumps(kq, ensure_ascii=False), flush=True)
+        # Kho lớn (125 nghìn đoạn, 12/09/2026) thì ts_stat vượt giới hạn thời gian
+        # của API. Văn bản đã nạp xong xuôi — không để bước này làm cả lần nạp
+        # báo lỗi; nói rõ cách làm mới bằng migration.
+        try:
+            kq = gui({"lam_moi_tu_pho_bien": True}, token)
+            print("LÀM MỚI TẦN SUẤT TỪ", json.dumps(kq, ensure_ascii=False), flush=True)
+        except RuntimeError as e:
+            print(
+                "CẢNH BÁO: văn bản đã nạp, nhưng chưa làm mới được tần suất từ "
+                f"({str(e)[:160]}). Tạo migration `SELECT public.lam_moi_tu_pho_bien();` "
+                "rồi chạy `npx supabase db push`.",
+                flush=True,
+            )
 
 
 if __name__ == "__main__":
