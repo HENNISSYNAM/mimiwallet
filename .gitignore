@@ -28,3 +28,6 @@ supabase/.temp/
 
 # Đầu ra sinh ra từ xuat_seed.ts — tái tạo được, không cần theo dõi.
 research/mirofish-seed/seed.json
+
+# Python bytecode (scripts/kho-van-ban)
+__pycache__/
