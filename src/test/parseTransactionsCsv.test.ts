@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseTransactionsCsv } from '@/lib/parseTransactionsCsv';
+import { parseTransactionsCsv } from '../lib/parseTransactionsCsv';
 
 describe('parseTransactionsCsv', () => {
   it('parses valid rows and skips the header', () => {
@@ -19,7 +19,7 @@ describe('parseTransactionsCsv', () => {
       amount: 48000000,
       type: 'income',
     });
-    expect(rows[1].amount).toBe(-12500000);
+    expect(rows[1].amount).toBe(12500000);
     expect(rows[1].type).toBe('expense');
   });
 

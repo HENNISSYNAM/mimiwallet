@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import {
-  Bot, Check, ChevronDown, Copy, KeyRound, Loader2, Pause, Play, Plus, QrCode, RefreshCw, ShieldCheck, Trash2, X,
+  Bot, CalendarClock, Check, ChevronDown, Copy, KeyRound, ListChecks, Loader2, Pause, Play, Plus, QrCode,
+  RefreshCw, ShieldCheck, Trash2, Users, Wallet, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -513,6 +514,33 @@ function ThanhDung({ nhan, da, tran }: { nhan: string; da: number; tran: number 
   );
 }
 
+/**
+ * Một cấu hình là một khối có tên, giá trị và điều kiện rõ ràng. Cách chia này
+ * giữ cùng mô hình tinh thần với Ramp: người quản lý nhìn một lượt biết agent
+ * là ai, được bao nhiêu tiền, lúc nào phải duyệt và được chi trong phạm vi nào.
+ */
+function TheCauHinh({
+  icon: Icon, nhan, giaTri, moTa,
+}: {
+  icon: typeof Bot;
+  nhan: string;
+  giaTri: string;
+  moTa: string;
+}) {
+  return (
+    <div className="min-h-28 rounded-xl border border-border/60 bg-background/70 p-3">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon size={14} />
+        </span>
+        {nhan}
+      </div>
+      <p className="mt-3 text-sm font-semibold">{giaTri}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{moTa}</p>
+    </div>
+  );
+}
+
 function TheTacTu({
   t, cs, suDung, dangLam, doiTrangThai, xoayKhoa, luu,
 }: {
@@ -564,16 +592,35 @@ function TheTacTu({
             <ThanhDung nhan="Hôm nay" da={suDung.ngay} tran={cs.han_muc_ngay} />
             <ThanhDung nhan="Tháng này" da={suDung.thang} tran={cs.han_muc_thang} />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Mỗi khoản tối đa {dong(cs.han_muc_moi_lan)} ·{' '}
-            {cs.nguong_can_duyet === 0 ? 'mọi khoản phải duyệt' : `trên ${dong(cs.nguong_can_duyet)} phải duyệt`} ·{' '}
-            {cs.nhom_chi_duoc_phep ? cs.nhom_chi_duoc_phep.map((n) => TEN_NHOM_CHI[n as NhomChi] ?? n).join(', ') : 'mọi nhóm chi'} ·{' '}
-            {cs.chi_tra_nguoi_nhan_da_duyet ? 'chỉ người nhận trong danh sách' : 'người lạ thì hỏi bạn'}
-            {cs.het_han ? ` · hết hạn ${luc(cs.het_han)}` : ''}
-          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <TheCauHinh
+              icon={KeyRound}
+              nhan="Danh tính & quyền"
+              giaTri={TRANG_THAI_TAC_TU[t.trang_thai] ?? t.trang_thai}
+              moTa={`Khoá ${t.khoa_hien} · lần cuối ${luc(t.dung_lan_cuoi)}`}
+            />
+            <TheCauHinh
+              icon={Wallet}
+              nhan="Ngân sách & hạn mức"
+              giaTri={`${dong(cs.han_muc_moi_lan)} / khoản`}
+              moTa={`${dong(cs.han_muc_ngay)} mỗi ngày · ${dong(cs.han_muc_thang)} mỗi tháng`}
+            />
+            <TheCauHinh
+              icon={ListChecks}
+              nhan="Phê duyệt"
+              giaTri={cs.nguong_can_duyet === 0 ? 'Duyệt mọi khoản' : `Trên ${dong(cs.nguong_can_duyet)}`}
+              moTa={cs.het_han ? `Chính sách hết hạn ${luc(cs.het_han)}` : 'Chính sách không đặt ngày hết hạn'}
+            />
+            <TheCauHinh
+              icon={Users}
+              nhan="Phạm vi chi"
+              giaTri={cs.nhom_chi_duoc_phep ? `${cs.nhom_chi_duoc_phep.length} nhóm chi` : 'Mọi nhóm chi'}
+              moTa={cs.chi_tra_nguoi_nhan_da_duyet ? 'Chỉ người nhận đã xác minh' : 'Người nhận mới cần bạn duyệt'}
+            />
+          </div>
           {!daThuHoi && (
-            <button onClick={() => setMo((v) => !v)} className="mt-2 flex items-center gap-1 text-xs font-medium text-primary">
-              Sửa chính sách <ChevronDown size={12} className={mo ? 'rotate-180' : ''} />
+            <button onClick={() => setMo((v) => !v)} className="mt-3 flex items-center gap-1 text-xs font-medium text-primary">
+              Cấu hình các khối <ChevronDown size={12} className={mo ? 'rotate-180' : ''} />
             </button>
           )}
           {mo && <SuaChinhSach cs={cs} dangLam={dangLam} luu={(du) => { luu(du); setMo(false); }} />}
@@ -615,47 +662,59 @@ function SuaChinhSach({ cs, dangLam, luu }: { cs: ChinhSachRow; dangLam: boolean
           het_han: hetHan ? new Date(`${hetHan}T23:59:59+07:00`).toISOString() : null,
         });
       }}
-      className="mt-3 space-y-3 rounded-xl bg-muted/30 p-4"
+      className="mt-3 space-y-3 rounded-xl bg-muted/30 p-3"
     >
-      <div className="grid gap-3 sm:grid-cols-4">
-        {O({ nhan: 'Mỗi khoản tối đa', gia: moiLan, dat: setMoiLan })}
-        {O({ nhan: 'Mỗi ngày tối đa', gia: ngay, dat: setNgay })}
-        {O({ nhan: 'Mỗi tháng tối đa', gia: thang, dat: setThang })}
-        {O({ nhan: 'Trên mức này phải duyệt (0 = mọi khoản)', gia: nguong, dat: setNguong })}
-      </div>
+      <section className="rounded-xl border border-border/60 bg-background p-4">
+        <h3 className="flex items-center gap-2 text-sm font-semibold"><Wallet size={15} className="text-primary" /> Ngân sách & hạn mức</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Các trần này được kiểm tra trước khi một khoản chi được duyệt.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {O({ nhan: 'Mỗi khoản tối đa', gia: moiLan, dat: setMoiLan })}
+          {O({ nhan: 'Mỗi ngày tối đa', gia: ngay, dat: setNgay })}
+          {O({ nhan: 'Mỗi tháng tối đa', gia: thang, dat: setThang })}
+          {O({ nhan: 'Trên mức này phải duyệt (0 = mọi khoản)', gia: nguong, dat: setNguong })}
+        </div>
+      </section>
 
-      <div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={moiNhom} onChange={(e) => setMoiNhom(e.target.checked)} /> Mọi nhóm chi
-        </label>
-        {!moiNhom && (
-          <div className="mt-2 flex flex-wrap gap-3">
-            {NHOM_CHI.map((n) => (
-              <label key={n} className="flex items-center gap-1.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={nhom.includes(n)}
-                  onChange={(e) => setNhom((cu) => (e.target.checked ? [...cu, n] : cu.filter((x) => x !== n)))}
-                />
-                {TEN_NHOM_CHI[n]}
-              </label>
-            ))}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="rounded-xl border border-border/60 bg-background p-4">
+          <h3 className="flex items-center gap-2 text-sm font-semibold"><ListChecks size={15} className="text-primary" /> Nhóm chi được phép</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Giới hạn agent vào đúng mục đích đã giao.</p>
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={moiNhom} onChange={(e) => setMoiNhom(e.target.checked)} /> Mọi nhóm chi
+          </label>
+          {!moiNhom && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {NHOM_CHI.map((n) => (
+                <label key={n} className="flex items-center gap-1.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={nhom.includes(n)}
+                    onChange={(e) => setNhom((cu) => (e.target.checked ? [...cu, n] : cu.filter((x) => x !== n)))}
+                  />
+                  {TEN_NHOM_CHI[n]}
+                </label>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-xl border border-border/60 bg-background p-4">
+          <h3 className="flex items-center gap-2 text-sm font-semibold"><Users size={15} className="text-primary" /> Người nhận & hiệu lực</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Quyết định cách xử lý tài khoản mới và thời điểm chính sách dừng.</p>
+          <div className="mt-3 space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs text-muted-foreground">Người nhận lạ</span>
+              <select value={chiDaDuyet ? 'chan' : 'hoi'} onChange={(e) => setChiDaDuyet(e.target.value === 'chan')} className={o}>
+                <option value="chan">Từ chối — chỉ chi cho người trong danh sách</option>
+                <option value="hoi">Hỏi tôi duyệt</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock size={12} /> Chính sách hết hạn (không bắt buộc)</span>
+              <input type="date" value={hetHan} onChange={(e) => setHetHan(e.target.value)} className={o} />
+            </label>
           </div>
-        )}
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-1 block text-xs text-muted-foreground">Người nhận lạ</span>
-          <select value={chiDaDuyet ? 'chan' : 'hoi'} onChange={(e) => setChiDaDuyet(e.target.value === 'chan')} className={o}>
-            <option value="chan">Từ chối — chỉ chi cho người trong danh sách</option>
-            <option value="hoi">Hỏi tôi duyệt</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs text-muted-foreground">Chính sách hết hạn (không bắt buộc)</span>
-          <input type="date" value={hetHan} onChange={(e) => setHetHan(e.target.value)} className={o} />
-        </label>
+        </section>
       </div>
 
       <button disabled={dangLam} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>

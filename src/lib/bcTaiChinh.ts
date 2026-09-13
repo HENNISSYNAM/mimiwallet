@@ -12,13 +12,16 @@
  *
  * HÀM THUẦN VÀ CÓ TEST, vì đây là số người dùng sẽ mang đi quyết định.
  *
- * HAI QUY TẮC:
+ * BA QUY TẮC:
  *
  *  1. Không có dữ liệu thì trả mảng rỗng, KHÔNG trả số 0 cho mọi tháng. Một
  *     biểu đồ toàn số 0 trông như "làm ăn không ra gì", còn mảng rỗng để giao
  *     diện nói được "chưa có dữ liệu".
  *  2. Chỉ đếm giao dịch thật. Người gọi lọc `is_synthetic` trước khi truyền
  *     vào — và có test cho việc một dòng thử lọt vào sẽ làm sai con số.
+ *  3. `type` là chiều tiền; `amount` chỉ là độ lớn không âm. Không suy chiều
+ *     từ dấu của amount: SePay và BankHub đều chuẩn hoá khoản chi thành số
+ *     dương, nên làm vậy sẽ biến chi phí thành doanh thu.
  */
 
 export interface GiaoDich {
@@ -74,8 +77,9 @@ export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
     const o = gom.get(khoa) ?? { thu: 0, chi: 0 };
     const tien = Math.abs(Number(t.amount));
     if (!Number.isFinite(tien)) continue;
-    if (t.type === 'income' || Number(t.amount) > 0) o.thu += tien;
-    else o.chi += tien;
+    if (t.type === 'income') o.thu += tien;
+    else if (t.type === 'expense') o.chi += tien;
+    else continue;
     gom.set(khoa, o);
   }
 
@@ -138,7 +142,7 @@ export function phanBoChiPhi(gd: GiaoDich[]): NhomChiPhi[] {
   const gom = new Map<string, number>();
 
   for (const t of gd) {
-    if (t.type !== 'expense' && Number(t.amount) >= 0) continue;
+    if (t.type !== 'expense') continue;
     const tien = Math.abs(Number(t.amount));
     if (!Number.isFinite(tien) || tien <= 0) continue;
     const ten = t.category?.trim() || 'Chưa phân loại';

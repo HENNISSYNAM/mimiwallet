@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import MimiCat from '@/components/brand/MimiCat';
 import { tamTrang } from '@/lib/mimiTamTrang';
 import { Wallet, TrendingUp, FileText, ShieldCheck, AlertTriangle, Lightbulb, Bell, ArrowRight, Loader2, Link2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import NewsAndLawPanel from '@/components/NewsAndLawPanel';
 import { DailyBriefCard } from '@/components/DailyBriefCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
@@ -88,7 +89,7 @@ function iso(d: Date) { return d.toISOString().slice(0, 10); }
  * "Luật 1 — Mỗi màn hình có đúng một số chính".
  */
 function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', muted, primary, children }: {
-  icon: any; label: string; value: string; sub?: string; subColor?: string; muted?: boolean; primary?: boolean; children?: React.ReactNode;
+  icon: LucideIcon; label: string; value: string; sub?: string; subColor?: string; muted?: boolean; primary?: boolean; children?: React.ReactNode;
 }) {
   return (
     <motion.div variants={fadeUp} className={`group bg-card/60 backdrop-blur-sm border rounded-2xl transition-all duration-300 hover:shadow-[0_8px_32px_hsla(var(--blue-500)/0.06)] ${
@@ -246,7 +247,7 @@ export default function DashboardOverview() {
   /** Observations, each one derived from the rows above. Nothing is asserted
    *  that the data does not already say. */
   const insights = useMemo(() => {
-    const out: { icon: any; color: string; bg: string; badge: string; msg: string; cta: string; action: () => void }[] = [];
+    const out: { icon: LucideIcon; color: string; bg: string; badge: string; msg: string; cta: string; action: () => void }[] = [];
     if (m.expense > m.income && m.income > 0) {
       out.push({
         icon: AlertTriangle, color: 'text-mimi-red', bg: 'bg-mimi-red/5 border-mimi-red/10', badge: 'Cảnh báo',
@@ -284,14 +285,18 @@ export default function DashboardOverview() {
   const dateStr = new Date().toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US',
     { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ name?: string; color?: string; value?: number | string }>;
+    label?: string;
+  }) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="bg-card border border-border rounded-xl p-3 shadow-xl text-xs space-y-1">
         <p className="text-muted-foreground font-medium">{label}</p>
-        {payload.map((p: any) => (
+        {payload.map((p) => (
           <p key={p.name} style={{ color: p.color }}>
-            {p.name === 'income' ? t('dashboard.income') : p.name === 'expense' ? t('dashboard.expense') : t('dashboard.net')}: {formatVNDShort(p.value)}
+            {p.name === 'income' ? t('dashboard.income') : p.name === 'expense' ? t('dashboard.expense') : t('dashboard.net')}: {formatVNDShort(Number(p.value ?? 0))}
           </p>
         ))}
       </div>
@@ -317,7 +322,7 @@ export default function DashboardOverview() {
     // Tiền về tính trong 3 ngày gần nhất, và chỉ khoản THU.
     vuaCoTienVe: txs.some(
       (t) =>
-        t.amount > 0 &&
+        isIncome(t) &&
         Date.now() - new Date(t.transaction_date).getTime() < 3 * 864e5,
     ),
   });

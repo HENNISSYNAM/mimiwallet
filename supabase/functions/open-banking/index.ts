@@ -61,7 +61,8 @@ function generateMockTransactions(bankCode: string, count: number = 20) {
       // Must match the transactions table's CHECK constraint (income|expense|loan)
       // so this data is usable by real feature engineering (credit-scoring function).
       type: isCredit ? "income" : "expense",
-      amount: isCredit ? amount : -amount,
+      // Direction lives in `type`; every writer stores a non-negative magnitude.
+      amount,
       category: categories[Math.floor(Math.random() * categories.length)],
       merchant_name: merchants[Math.floor(Math.random() * merchants.length)],
       transaction_date: date.toISOString().split("T")[0],

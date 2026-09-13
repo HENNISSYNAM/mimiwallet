@@ -67,7 +67,8 @@ export function parseTransactionsCsv(csvText: string): ParseTransactionsCsvResul
     rows.push({
       transaction_date: date,
       merchant_name: description || "Không rõ",
-      amount: type === "income" ? amount : -amount,
+      // `type` carries direction everywhere in MIMI; amount is magnitude only.
+      amount,
       type,
     });
   }

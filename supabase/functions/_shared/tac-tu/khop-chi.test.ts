@@ -21,8 +21,8 @@ describe('khớp khoản chi của agent với sao kê', () => {
     expect(khopChiTacTu([y()], [g()]).khop).toEqual([{ yeuCauId: 'yc1', giaoDichId: 'gd1', soTien: 500_000 }]);
   });
 
-  it('số tiền âm trong sao kê vẫn là tiền ra', () => {
-    expect(khopChiTacTu([y()], [g({ amount: -500_000, type: 'other' })]).khop).toHaveLength(1);
+  it('không đoán tiền ra bằng dấu khi type không hợp lệ', () => {
+    expect(khopChiTacTu([y()], [g({ amount: -500_000, type: 'other' })]).khop).toHaveLength(0);
   });
 
   it('tiền VÀO cùng mã không phải bằng chứng đã chi', () => {
