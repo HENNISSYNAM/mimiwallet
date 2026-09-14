@@ -6,6 +6,7 @@ import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { coSaoKeDeDoc } from "../_shared/bank/dong-bo.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
+import { docThanhToanQrCas } from "../_shared/bank/thanh-toan-qr-cas.ts";
 
 /**
  * Inbound webhooks from Cas (BankHub).
@@ -118,6 +119,8 @@ function extract(payload: unknown) {
       ["referenceNumber"], ["reference_number"], ["reference"],
       ["data", "referenceNumber"], ["data", "reference_number"], ["data", "reference"],
       ["invoice", "referenceNumber"], ["qrPay", "referenceNumber"],
+      // Hình dạng thật, thấy lần đầu 14/09/2026 — xem `thanh-toan-qr-cas.ts`.
+      ["transaction", "paymentMeta", "referenceNumber"],
     ]),
   };
 }
@@ -330,6 +333,33 @@ Deno.serve(async (req) => {
         await supabase.from("bank_connections").update({ status: "connected", revoked_at: null }).eq("id", conn.id);
       }
       outcomes.push(`${conn.id}:${nhanKetLuan(kl)}`);
+
+      /*
+       * THANH TOÁN QR: GHI NHẬN LỜI BÁO, TẤT TOÁN CHỈ KHI CÓ TIỀN THẬT.
+       *
+       * Từ 14/09/2026 (case 15) biết chắc Casso gửi `paymentMeta.referenceNumber`
+       * — mã do chính máy chủ này sinh lúc tạo QR. Nhưng webhook không có chữ ký,
+       * nên nó KHÔNG tự đánh dấu mã QR đã trả: chỉ ghi vào nhật ký rồi chạy đối
+       * soát, và đối soát chỉ tất toán khi một giao dịch ngân hàng thật (SePay,
+       * sao kê) khớp mã hoặc tài khoản ảo. Tiền về SePay sau webhook này thì chính
+       * `bank-webhook` sẽ tất toán.
+       */
+      const tt = kl.trangThai === "song" ? docThanhToanQrCas(payload) : null;
+      if (tt) {
+        const { data: maQr } = await supabase
+          .from("qr_payments")
+          .select("status, amount")
+          .eq("company_id", conn.company_id)
+          .eq("reference_number", tt.maThamChieu)
+          .maybeSingle();
+        const r = maQr ? await reconcileCompanyQr(supabase, conn.company_id) : null;
+        outcomes.push(
+          maQr
+            ? `qr ${tt.maThamChieu} (${tt.soTien ?? "?"}đ, ${tt.maNganHang ?? "?"}): ` +
+                (r?.settled ? `tất toán ${r.settled}` : r?.mismatched ? `lệch ${r.mismatched}` : `${maQr.status}, chờ tiền về sổ`)
+            : `qr ${tt.maThamChieu}: không thuộc công ty này`,
+        );
+      }
       continue;
     }
 

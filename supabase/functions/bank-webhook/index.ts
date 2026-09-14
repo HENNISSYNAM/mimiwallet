@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { mapSepayWebhook } from "../_shared/bank/sepay-map.ts";
+import { timTaiKhoanAoTrongNoiDung } from "../_shared/bank/ma-tai-khoan-ao.ts";
 import { doiSoatChiTacTu } from "../_shared/tac-tu/doi-soat.ts";
 
 /**
@@ -192,6 +193,28 @@ Deno.serve(async (req) => {
       `chưa khai tài khoản ${accountNumber} trong MIMI — vào Fintech Hub, khối SePay`,
     );
     return ack({ ignored: "unknown account" });
+  }
+
+  /*
+   * MÃ QR TẠO QUA CAS: KHỚP BẰNG TÀI KHOẢN ẢO TRONG NỘI DUNG.
+   *
+   * Nội dung chuyển khoản của mã Cas không mang mã tham chiếu MIMI, và SePay
+   * không trả `subAccount` — nên trước 14/09/2026 khoản tiền được ghi mà mã QR
+   * nằm `pending` mãi (nghiệm thu case 15). Chỉ so với tài khoản ảo của mã đang
+   * chờ của CHÍNH công ty này; xem `_shared/bank/ma-tai-khoan-ao.ts`.
+   */
+  if (!row.payment_reference && !row.virtual_account_number && row.amount > 0) {
+    const { data: choVa } = await supabase
+      .from("qr_payments")
+      .select("virtual_account_number")
+      .eq("company_id", conn.company_id)
+      .eq("status", "pending")
+      .not("virtual_account_number", "is", null);
+    const va = timTaiKhoanAoTrongNoiDung(
+      row.merchant_name,
+      (choVa ?? []).map((q) => q.virtual_account_number as string | null),
+    );
+    if (va) row.virtual_account_number = va;
   }
 
   const { error: writeError } = await supabase
