@@ -14,15 +14,17 @@ const m = {
      * and a percentage of revenue. Only someone who can document costs gets to
      * choose. MIMI holds the outflows that document them.
      */
+    // 14/09/2026: đổi chữ phần đầu theo định vị mới (docs/CHIEN_LUOC_MIMI.md mục 2);
+    // hình ảnh và hiệu ứng của trang giữ nguyên theo yêu cầu chủ dự án.
     hero: {
-      titleLine1: 'Đóng thuế trên lợi nhuận,',
-      titleLine2: 'không phải trên doanh thu',
+      titleLine1: 'Agent được chi.',
+      titleLine2: 'Bạn giữ quyền quyết.',
       subtitle:
-        'Từ 2026 hết thuế khoán, bạn tự kê khai theo doanh thu thật. Luật cho bạn chọn cách tính — nhưng chỉ khi chứng minh được chi phí. Mimi Wallet đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó.',
+        'MIMI xét từng khoản chi theo chính sách của bạn, dựng lệnh trả VietQR, rồi đối chiếu sao kê và hoá đơn điện tử để biết tiền đã thật sự đi đâu. MIMI không giữ tiền của bạn.',
       pills: [
-        'Phân loại chi phí mỗi ngày',
-        'Đối chiếu hoá đơn cơ quan thuế',
-        'So sánh hai cách tính thuế',
+        'Duyệt trước khi tiền đi',
+        'Chặn người nhận lạ',
+        'Đối chiếu sao kê và hoá đơn',
         'Mã hóa kháng lượng tử',
       ],
     },

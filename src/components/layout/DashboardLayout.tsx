@@ -58,13 +58,11 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/fintech': 'sidebar.fintechHub',
   '/dashboard/reports': 'sidebar.reports',
   '/dashboard/settings': 'sidebar.settings',
-  '/dashboard/dau-tu': 'dauTu.tieuDe',
   // Chưa có khoá dịch: i18next trả lại chính chuỗi khi không thấy khoá, nên tên
   // hiện đúng. Trước 10/09/2026 bốn trang này có tiêu đề "Dashboard".
   '/dashboard/tac-tu': 'Kiểm soát agent',
   '/dashboard/chung-tu': 'Chứng từ chi phí',
   '/dashboard/clients': 'Khách hàng',
-  '/dashboard/p2p': 'Vay ngang hàng',
 };
 
 export default function DashboardLayout() {

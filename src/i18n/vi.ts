@@ -29,7 +29,7 @@ const vi = {
    * this year.
    */
   hero: {
-    badge: 'Từ 2026: bỏ thuế khoán — hộ kinh doanh tự kê khai',
+    badge: 'Lớp kiểm soát chi tiêu cho doanh nghiệp chạy bằng AI',
     titleLine1: 'Đóng thuế trên lợi nhuận,',
     titleLine2: 'không phải trên doanh thu',
     subtitle: 'Luật cho bạn chọn cách tính thuế — nhưng chỉ khi chứng minh được chi phí. MIMI đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó cho bạn.',
@@ -252,8 +252,10 @@ const vi = {
     greenPlan: 'Gói Green ⭐',
     // Nhóm điều hướng. Tên nhóm đặt theo việc người dùng đang muốn làm, không
     // theo tên module bên trong — "Tiền vào ra" chứ không phải "Giao dịch".
-    groupDaily: 'Hằng ngày',
-    groupConnect: 'Kết nối & Dữ liệu',
+    // Ba khu từ 14/09/2026 — xem docs/KE_HOACH_MIMI_CHAU_A.md mục 4.3.
+    groupAgent: 'Agent & chi tiêu',
+    groupDocs: 'Hoá đơn & chứng từ',
+    groupLedger: 'Sổ & đối soát',
     groupMore: 'Khác',
   },
 

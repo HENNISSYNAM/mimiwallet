@@ -55,7 +55,7 @@
     --border: var(--border-subtle);
     --input: var(--border-subtle);
     --ring: var(--blue-500);
-    --radius: 1rem;
+    --radius: 0.5rem; /* 8px — xem ghi chú thang bo góc trong tailwind.config.ts */
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: var(--text-secondary);
@@ -72,8 +72,8 @@
 
     /* Oversized radii for hero/credential surfaces. PayPal runs up to 53px on
        its hero cards; the existing 3xl (24px) reads tight next to that. */
-    --radius-xl: 28px;
-    --radius-2xl: 40px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
 
     /* Many near-invisible layers rather than one dark drop — the surface reads
        as lifted without a visible grey smear under it. */

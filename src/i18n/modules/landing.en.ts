@@ -3,14 +3,14 @@ const m = {
     // See the note on the Vietnamese hero: the invoice-advance promise was
     // removed because MIMI cannot lend, and replaced with the 2026 tax change.
     hero: {
-      titleLine1: 'Pay tax on profit,',
-      titleLine2: 'not on revenue',
+      titleLine1: 'Let agents spend.',
+      titleLine2: 'Keep the final say.',
       subtitle:
-        'From 2026 Vietnam’s lump-sum tax is gone and you declare on real revenue. The law lets you choose how tax is calculated — but only if you can document your costs. Mimi Wallet reads your bank statements and builds that record.',
+        'MIMI checks every spend request against your policy, builds a VietQR payment order, then matches bank statements and e-invoices so you know where the money actually went. MIMI never holds your money.',
       pills: [
-        'Daily expense classification',
-        'Reconciled against tax-authority invoices',
-        'Compare both tax methods',
+        'Approve before money moves',
+        'Unknown recipients blocked',
+        'Matched to statements and invoices',
         'Quantum-resistant encryption',
       ],
     },

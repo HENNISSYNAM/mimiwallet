@@ -18,7 +18,7 @@ const en = {
   // because MIMI cannot lend, and replaced with the 2026 tax change it can
   // actually act on.
   hero: {
-    badge: 'From 2026: lump-sum tax abolished — households self-declare',
+    badge: 'The spend control layer for AI-powered businesses',
     titleLine1: 'Pay tax on profit,',
     titleLine2: 'not on revenue',
     subtitle: 'The law lets you choose how your tax is calculated — but only if you can document your costs. MIMI reads your bank statements and builds that cost record for you.',
@@ -214,8 +214,9 @@ const en = {
     support: 'Support',
     logout: 'Sign Out',
     greenPlan: 'Green Plan ⭐',
-    groupDaily: 'Daily',
-    groupConnect: 'Connections & Data',
+    groupAgent: 'Agents & spend',
+    groupDocs: 'Invoices & documents',
+    groupLedger: 'Ledger & reconciliation',
     groupMore: 'More',
   },
 

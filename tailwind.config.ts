@@ -81,9 +81,12 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        xl: "1rem",
-        "2xl": "1.25rem",
-        "3xl": "1.5rem",
+        // Thang bo góc thu nhỏ 14/09/2026: sản phẩm tài chính cần cảm giác chắc
+        // chắn. Bề mặt chạm tới tiền và dữ liệu (thẻ, bảng, ô nhập, nút) vuông
+        // hơn; chip trạng thái và ảnh đại diện vẫn dùng rounded-full.
+        xl: "0.625rem",
+        "2xl": "0.75rem",
+        "3xl": "0.875rem",
         // Oversized surfaces (hero, credential cards) — see --radius-* in index.css
         "4xl": "var(--radius-xl)",
         "5xl": "var(--radius-2xl)",

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import {
-  Bot, Check, ChevronDown, Copy, KeyRound, Loader2, Pause, Play, Plus, QrCode, RefreshCw, ShieldCheck, Trash2, X,
+  Bot, Check, ChevronDown, Copy, Download, KeyRound, Loader2, Pause, Play, Plus, QrCode, RefreshCw, ShieldCheck, Trash2, X,
 } from 'lucide-react';
+import { docSoTienBangChu } from '@/lib/soTienBangChu';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -715,12 +716,16 @@ function TheChoDuyet({
   const nguoiLa = lyDoCua(y).some((l) => l.ma === 'NGUOI_NHAN_MOI');
   const [themNguoiNhan, setThemNguoiNhan] = useState(false);
   return (
-    <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-5">
+    <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-mono text-xl font-bold">{dong(y.so_tien)}</p>
+        <p className="font-mono text-2xl font-bold tabular-nums">{dong(y.so_tien)}</p>
         <p className="text-xs text-muted-foreground">{tenTacTu} · {luc(y.created_at)}</p>
       </div>
-      <p className="mt-1 text-sm">{y.muc_dich}</p>
+      {/* Đọc lại bằng chữ: một số 0 thừa là chuyển gấp mười lần. Xem lib/soTienBangChu.ts. */}
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Bằng chữ: <span className="text-foreground">{docSoTienBangChu(Math.round(y.so_tien))}</span>
+      </p>
+      <p className="mt-2 text-sm">{y.muc_dich}</p>
       <NguoiNhanDong y={y} />
       <p className="text-xs text-muted-foreground">
         {TEN_NHOM_CHI[y.nhom_chi as NhomChi] ?? y.nhom_chi}{y.so_hoa_don ? ` · hoá đơn ${y.so_hoa_don}` : ''}
@@ -728,14 +733,28 @@ function TheChoDuyet({
       <ul className="mt-2 space-y-0.5 text-xs text-amber-700 dark:text-amber-400">
         {lyDoCua(y).map((l) => <li key={l.ma}>• {l.cau}</li>)}
       </ul>
+      {/*
+        NGƯỜI NHẬN MỚI LÀ CHỖ LỪA ĐẢO CHEN VÀO. Ở Đông Nam Á 48% thiệt hại do lừa
+        đảo đi qua chuyển khoản, và hai phần ba vụ xảy ra trong 24 giờ kể từ lần
+        liên lạc đầu (GASA 2025) — tức là kẻ gian thắng bằng sự vội. Khối này làm
+        chậm đúng một nhịp, và chỉ cho cách kiểm không phụ thuộc kênh kẻ gian đang dùng.
+      */}
       {nguoiLa && (
-        <label className="mt-2 flex items-center gap-2 text-xs">
-          <input type="checkbox" checked={themNguoiNhan} onChange={(e) => setThemNguoiNhan(e.target.checked)} />
-          Tôi đã kiểm đúng tài khoản — thêm vào danh sách người nhận được phép
-        </label>
+        <div className="mt-3 rounded-xl border border-amber-500/40 bg-background p-3 text-xs">
+          <p className="font-semibold text-amber-700 dark:text-amber-400">Lần đầu chi cho tài khoản này</p>
+          <p className="mt-1 text-muted-foreground">
+            Kẻ gian thường giả làm nhà cung cấp và gửi số tài khoản mới. Gọi xác nhận qua số điện thoại bạn đã lưu từ
+            trước — không dùng số nằm trong tin nhắn đề nghị chuyển tiền.
+          </p>
+          <label className="mt-2 flex items-start gap-2">
+            <input type="checkbox" className="mt-0.5" checked={themNguoiNhan} onChange={(e) => setThemNguoiNhan(e.target.checked)} />
+            Tôi đã kiểm đúng tài khoản — thêm vào danh sách người nhận được phép
+          </label>
+        </div>
       )}
-      <div className="mt-3 flex gap-2">
-        <button data-mimi="tac-tu.duyet" data-mimi-khong-tu-bam disabled={dangLam} onClick={() => duyet(themNguoiNhan)} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
+      {/* Hai nút chia đôi màn hình điện thoại: người duyệt thường bấm bằng ngón cái. */}
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex">
+        <button data-mimi="tac-tu.duyet" data-mimi-khong-tu-bam disabled={dangLam} onClick={() => duyet(themNguoiNhan)} className={`${nut} min-h-11 justify-center bg-primary text-primary-foreground hover:bg-primary/90 sm:min-h-0`}>
           {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Duyệt
         </button>
         <button
@@ -746,7 +765,7 @@ function TheChoDuyet({
             const ghiChu = window.prompt('Lý do từ chối (agent sẽ đọc được):', '');
             if (ghiChu !== null) tuChoi(ghiChu);
           }}
-          className={`${nut} border border-border hover:bg-muted`}
+          className={`${nut} min-h-11 justify-center border border-border hover:bg-muted sm:min-h-0`}
         >
           <X size={14} /> Từ chối
         </button>
@@ -807,12 +826,65 @@ function MaQrTra({ y }: { y: YeuCau }) {
     }
   }, [y]);
 
+  /*
+   * TRẢ NGAY TRÊN CHÍNH ĐIỆN THOẠI NÀY.
+   *
+   * Người duyệt thường mở MIMI trên điện thoại — và không thể dùng camera của
+   * một máy để quét mã đang hiện trên màn hình của chính máy đó. Bản trước chỉ
+   * có mã QR, nên đường duy nhất là tìm một máy thứ hai. Hai lối thay thế người
+   * Việt vẫn dùng khi chuyển khoản: lưu ảnh mã rồi mở từ thư viện ảnh trong app
+   * ngân hàng, hoặc chép từng dòng. Nội dung chuyển khoản phải giữ nguyên để
+   * sao kê tự khớp, nên nó là một dòng chép riêng.
+   */
+  const luuAnh = () => {
+    if (!ref.current) return;
+    const a = document.createElement('a');
+    a.href = ref.current.toDataURL('image/png');
+    a.download = `MIMI-${y.ma_tham_chieu ?? 'lenh-tra'}.png`;
+    a.click();
+  };
+
   return (
-    <div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-      <canvas ref={ref} className="rounded-lg bg-white p-2" />
-      <p className="max-w-xs text-xs text-muted-foreground">
-        {loi ?? 'Quét bằng ứng dụng ngân hàng của bạn. Kiểm tên người nhận ứng dụng hiện ra trước khi xác nhận. Sao kê về tới MIMI thì khoản này tự chuyển sang "Đã chi".'}
-      </p>
+    <div className="mt-3 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+      <div className="flex flex-col items-start gap-2">
+        <canvas ref={ref} className="rounded-lg bg-white p-2" />
+        <button type="button" disabled={Boolean(loi)} onClick={luuAnh} className={`${nut} border border-border hover:bg-muted`}>
+          <Download size={14} /> Lưu ảnh mã QR
+        </button>
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">
+          {loi ?? 'Trả trên máy tính: quét mã bằng app ngân hàng. Trả ngay trên điện thoại này: lưu ảnh mã rồi mở từ thư viện ảnh trong app ngân hàng, hoặc chép từng dòng dưới đây.'}
+        </p>
+        <div className="mt-2 rounded-xl border border-border bg-background px-3">
+          <DongChep nhan="Ngân hàng" giaTri={tenNganHang(y.ngan_hang_bin)} />
+          <DongChep nhan="Số tài khoản" giaTri={y.so_tai_khoan} />
+          <DongChep nhan="Số tiền" giaTri={String(Math.round(y.so_tien))} hien={dong(y.so_tien)} />
+          <DongChep nhan="Nội dung chuyển khoản — giữ nguyên" giaTri={y.ma_tham_chieu ?? ''} />
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Kiểm tên người nhận app ngân hàng hiện ra trước khi xác nhận. Sao kê về tới MIMI thì khoản này tự chuyển sang "Đã chi".
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function DongChep({ nhan, giaTri, hien }: { nhan: string; giaTri: string; hien?: string }) {
+  const chep = () =>
+    navigator.clipboard.writeText(giaTri).then(
+      () => toast.success(`Đã chép ${nhan.split(' — ')[0].toLowerCase()}.`),
+      () => toast.error('Không chép được — bôi đen rồi chép tay.'),
+    );
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-border/60 py-2 first:border-t-0">
+      <div className="min-w-0">
+        <p className="text-[11px] text-muted-foreground">{nhan}</p>
+        <p className="truncate font-mono text-sm text-foreground">{hien ?? giaTri}</p>
+      </div>
+      <button type="button" onClick={() => void chep()} disabled={!giaTri} className={`${nut} shrink-0 border border-border hover:bg-muted`}>
+        <Copy size={14} /> Chép
+      </button>
     </div>
   );
 }

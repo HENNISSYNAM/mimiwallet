@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Bot, ChevronLeft, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HandCoins, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, Sparkles, Users, Wallet } from 'lucide-react';
+import { BarChart3, Bot, ChevronLeft, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,13 +51,14 @@ export default function DashboardSidebar() {
    * nơi MIMI không giữ số dư nào) và "Vay vốn". Route, trang và edge function
    * của chúng không còn. Ba bảng M2M còn trong CSDL để không mất dữ liệu cũ.
    *
-   * Sàn vay ngang hàng chưa được NHNN cấp Giấy chứng nhận tham gia cơ chế thử
-   * nghiệm theo Nghị định 94/2025/NĐ-CP, và trang tự nói ra điều đó bằng một
-   * dải cảnh báo không tắt được. Đây là chỗ khác với "Vay vốn" ngày 17/08: lần
-   * đó ô điều hướng quảng cáo một dịch vụ không tồn tại và không nói gì thêm.
-   *
    * "Vay vốn" left the nav on 17/08/2026 because MIMI has no credit licence and
    * no disbursement partner, and its page was removed on 10/09/2026.
+   *
+   * BA KHU TỪ 14/09/2026 (docs/KE_HOACH_MIMI_CHAU_A.md mục 4). "Vay ngang hàng"
+   * và "Danh mục đầu tư" gỡ hẳn — không phục vụ việc kiểm soát chi tiêu, và vay
+   * ngang hàng kéo theo rủi ro pháp lý tín dụng. Bảng dữ liệu của chúng còn
+   * trong CSDL. Mỗi khu đặt tên theo việc người dùng đến làm: cho agent chi,
+   * giữ chứng từ, và biết tiền đã thật sự đi đâu.
    */
   const navGroups = [
     {
@@ -65,23 +66,24 @@ export default function DashboardSidebar() {
       items: [{ icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' }],
     },
     {
-      label: t('sidebar.groupDaily'),
+      label: t('sidebar.groupAgent'),
       items: [
-        // Đứng đầu từ 10/09/2026: MIMI định vị là lớp kiểm soát tài chính cho
-        // doanh nghiệp chạy bằng agent AI.
         { icon: Bot, label: 'Kiểm soát agent', path: '/dashboard/tac-tu' },
-        { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
-        { icon: Receipt, label: 'Chứng từ chi phí', path: '/dashboard/chung-tu' },
-        { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
-        { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
-        { icon: Wallet, label: t('dauTu.tieuDe'), path: '/dashboard/dau-tu' },
       ],
     },
     {
-      label: t('sidebar.groupConnect'),
+      label: t('sidebar.groupDocs'),
+      items: [
+        { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
+        { icon: Receipt, label: 'Chứng từ chi phí', path: '/dashboard/chung-tu' },
+        { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
+      ],
+    },
+    {
+      label: t('sidebar.groupLedger'),
       items: [
         { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
-        { icon: HandCoins, label: 'Vay ngang hàng', path: '/dashboard/p2p' },
+        { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
       ],
     },
     {
