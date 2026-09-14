@@ -42,9 +42,9 @@ export function khopChiTacTu(
   const ketQua: KetQuaKhop = { khop: [], lech: [] };
   const dung = new Set(daDung);
 
-  const tienRa = giaoDich.filter(
-    (g) => g.payment_reference && (g.type === 'expense' || Number(g.amount) < 0),
-  );
+  // `type` is the only direction field. Bank mappers store expense amounts as
+  // positive magnitudes, so a sign fallback would make two competing ledgers.
+  const tienRa = giaoDich.filter((g) => g.payment_reference && g.type === 'expense');
 
   for (const y of yeuCau) {
     const ungVien = tienRa.filter((g) => g.payment_reference === y.maThamChieu && !dung.has(g.id));

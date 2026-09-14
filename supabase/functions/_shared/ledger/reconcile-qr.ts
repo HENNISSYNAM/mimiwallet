@@ -29,8 +29,9 @@ export interface PendingQr {
 
 export interface CandidateTx {
   id: string;
-  /** Signed: positive is money in. Only incoming payments can settle a QR. */
+  /** Non-negative magnitude. Direction is carried only by `type`. */
   amount: number;
+  type: string;
   payment_reference: string | null;
   virtual_account_number: string | null;
 }
@@ -79,8 +80,9 @@ export function matchQrPayments(
 
   const consider = (qr: PendingQr, tx: CandidateTx, basis: MatchBasis): boolean => {
     if (usedTx.has(tx.id) || settledQr.has(qr.id)) return false;
-    // Money out can never settle a request for money in.
-    if (tx.amount <= 0) return false;
+    // Money out can never settle a request for money in. Amount is a magnitude,
+    // so reading its sign here would allow a positive expense to close an invoice.
+    if (tx.type !== 'income' || tx.amount <= 0) return false;
 
     if (tx.amount !== qr.amount) {
       mismatched.push({

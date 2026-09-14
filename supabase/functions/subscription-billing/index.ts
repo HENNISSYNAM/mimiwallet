@@ -137,7 +137,8 @@ Deno.serve(async (req) => {
        */
       const { data: giaoDich, error: loiGiaoDich } = await supabase
         .from("transactions")
-        .select("id, amount, merchant_name, is_synthetic")
+        .select("id, amount, type, merchant_name, is_synthetic")
+        .eq("type", "income")
         .gt("amount", 0)
         .eq("is_synthetic", false)
         .gte("transaction_date", tu.toISOString().slice(0, 10));

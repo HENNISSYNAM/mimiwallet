@@ -19,7 +19,7 @@ describe('theoThang', () => {
   it('gộp thu chi theo tháng và tính lợi nhuận', () => {
     const r = theoThang([
       gd(10_000_000, 'income', '2026-08-05'),
-      gd(-3_000_000, 'expense', '2026-08-20'),
+      gd(3_000_000, 'expense', '2026-08-20'),
       gd(5_000_000, 'income', '2026-09-01'),
     ]);
     expect(r).toHaveLength(2);
@@ -44,10 +44,13 @@ describe('theoThang', () => {
     expect(theoThang([gd(1, 'income', ''), gd(1, 'income', 'hôm qua')])).toEqual([]);
   });
 
-  it('nhận cả dấu âm lẫn nhãn type để xác định chiều tiền', () => {
-    // SePay ghi type; nguồn khác có thể chỉ có dấu.
-    const r = theoThang([gd(-500, '', '2026-08-01'), gd(700, '', '2026-08-01')]);
-    expect(r[0]).toMatchObject({ doanhThu: 700, chiPhi: 500 });
+  it('không biến khoản chi dương từ ngân hàng thành doanh thu', () => {
+    const r = theoThang([gd(500, 'expense', '2026-08-01'), gd(700, 'income', '2026-08-01')]);
+    expect(r[0]).toMatchObject({ doanhThu: 700, chiPhi: 500, loiNhuan: 200 });
+  });
+
+  it('bỏ loại giao dịch không thuộc sổ thu chi thay vì đoán bằng dấu', () => {
+    expect(theoThang([gd(700, 'loan', '2026-08-01')])).toEqual([]);
   });
 });
 
@@ -93,9 +96,9 @@ describe('tuoiHoaDon', () => {
 describe('phanBoChiPhi', () => {
   it('gộp theo nhóm và sắp giảm dần', () => {
     const r = phanBoChiPhi([
-      gd(-1_000_000, 'expense', '2026-08-01', 'Nguyên vật liệu'),
-      gd(-3_000_000, 'expense', '2026-08-02', 'Thuê mặt bằng'),
-      gd(-500_000, 'expense', '2026-08-03', 'Nguyên vật liệu'),
+      gd(1_000_000, 'expense', '2026-08-01', 'Nguyên vật liệu'),
+      gd(3_000_000, 'expense', '2026-08-02', 'Thuê mặt bằng'),
+      gd(500_000, 'expense', '2026-08-03', 'Nguyên vật liệu'),
     ]);
     expect(r).toEqual([
       { ten: 'Thuê mặt bằng', tien: 3_000_000 },
@@ -108,7 +111,7 @@ describe('phanBoChiPhi', () => {
    * không ai biết vì sao thiếu.
    */
   it('gom giao dịch chưa phân loại thay vì bỏ đi', () => {
-    const r = phanBoChiPhi([gd(-2_000_000, 'expense', '2026-08-01', null)]);
+    const r = phanBoChiPhi([gd(2_000_000, 'expense', '2026-08-01', null)]);
     expect(r).toEqual([{ ten: 'Chưa phân loại', tien: 2_000_000 }]);
   });
 

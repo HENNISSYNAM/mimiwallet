@@ -44,7 +44,7 @@ export async function reconcileCompanyQr(
   // cannot match by construction, so there is no reason to load it.
   const { data: txs, error: txError } = await supabase
     .from("transactions")
-    .select("id, amount, payment_reference, virtual_account_number")
+    .select("id, amount, type, payment_reference, virtual_account_number")
     .eq("company_id", companyId)
     .gte("transaction_date", since.toISOString().slice(0, 10))
     .or("payment_reference.not.is.null,virtual_account_number.not.is.null");

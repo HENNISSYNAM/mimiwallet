@@ -113,7 +113,7 @@ export default function ChungTuPage() {
 
       setDoanhThuNam(
         (thuNam.data ?? [])
-          .filter((t) => !t.is_synthetic && (t.type === 'income' || Number(t.amount) > 0))
+          .filter((t) => !t.is_synthetic && t.type === 'income')
           .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
       );
       // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi hoá đơn đầu vào.
@@ -139,7 +139,7 @@ export default function ChungTuPage() {
 
       setChi(
         rows
-          .filter((t) => t.type === 'expense' || Number(t.amount) < 0)
+          .filter((t) => t.type === 'expense')
           .map((t) => ({
             id: t.id as string,
             soTien: Math.abs(Number(t.amount)),

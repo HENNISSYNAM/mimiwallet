@@ -13,6 +13,7 @@ const qr = (over: Partial<PendingQr> = {}): PendingQr => ({
 const tx = (over: Partial<CandidateTx> = {}): CandidateTx => ({
   id: 'tx1',
   amount: 2_000_000,
+  type: 'income',
   payment_reference: null,
   virtual_account_number: null,
   ...over,
@@ -62,8 +63,8 @@ describe('matchQrPayments', () => {
     expect(r.mismatched[0].received).toBe(2_500_000);
   });
 
-  it('never settles a QR with money going out', () => {
-    const r = matchQrPayments([qr()], [tx({ payment_reference: 'abc123', amount: -2_000_000 })]);
+  it('never settles a QR with money going out even when amount is positive', () => {
+    const r = matchQrPayments([qr()], [tx({ payment_reference: 'abc123', type: 'expense' })]);
     expect(r.matched).toHaveLength(0);
     expect(r.mismatched).toHaveLength(0);
   });

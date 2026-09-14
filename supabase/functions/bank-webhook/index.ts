@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
     .insert({
       provider: "sepay",
       event_type: "TRANSACTION",
-      event_code: row ? (row.amount >= 0 ? "IN" : "OUT") : null,
+      event_code: row ? (row.type === "income" ? "IN" : "OUT") : null,
       grant_id: null,
       payload: payload as Record<string, unknown>,
       outcome: "received",
