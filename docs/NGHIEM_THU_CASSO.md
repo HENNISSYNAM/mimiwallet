@@ -6,10 +6,15 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
-## 12–14/09/2026 — case 10: Casso đã gửi đúng, MIMI xử lý sai một nửa
+## 12–14/09/2026 — case 10 Passed · 17/20 (85%)
 
-**Case 10 chưa ghi Passed.** Phía Casso đã chứng minh; phía MIMI vừa sửa và cần
-chạy lại một lần trên bản sửa.
+**Case 10 Passed ngày 14/09/2026, 20:27.** Người dùng ngắt quyền trong app Cas →
+Casso gửi `USER_PERMISSION_REVOKED` → MIMI hỏi lại Cas bằng chính grant → Cas trả
+`GRANT_NOT_FOUND` → liên kết chuyển sang đã ngắt. Lần thử đầu (12/09) lộ ra hai
+lỗi phía MIMI, ghi dưới đây; lần chạy lại trên bản sửa đi trọn vòng.
+
+Tổng nghiệm thu: **17/20 (85%)**. Còn case 4, 15, 18 — lý do và đề nghị ở mục
+04/09 bên dưới vẫn nguyên giá trị.
 
 **Điều kiện chặn đã được gỡ.** Ngày 12/09 app Cas quét được mã Cas Link của MIMI
 và cấp quyền `qrpay` qua MB Bank — trước đó app Cas ID không quét được mã QR
@@ -21,6 +26,7 @@ sandbox, đúng lý do case 10 bị treo. Người dùng sau đó ngắt quyền
 |---|---|---|---|---|
 | 17:18 12/09 | GRANT | `USER_PERMISSION_REVOKED` | grant đang gắn với liên kết MB ••••2002 `qrpay` | `verified · alive:khong-co-sao-ke` — **sai** |
 | 17:19 12/09 | GRANT | `USER_PERMISSION_REVOKED` | `36ff83f6-aadb-11f1-9313-fa163e5398eb` (grant `qrpay` cũ, 07/09) | `ignored · no connection for grant` — đúng |
+| **20:27 14/09** | GRANT | `USER_PERMISSION_REVOKED` | grant `qrpay` MB ••••2002, chạy lại trên bản sửa | **`verified · da-thu-hoi:GRANT_NOT_FOUND`** — liên kết chuyển sang đã ngắt. **Passed.** |
 
 **Hai lỗi phía MIMI, tìm ra nhờ đúng lần thử này:**
 
@@ -36,10 +42,14 @@ sandbox, đúng lý do case 10 bị treo. Người dùng sau đó ngắt quyền
    chỉ mã chắc chắn là thu hồi (`GRANT_NOT_FOUND`, `USER_PERMISSION_REVOKED`, …)
    mới ngắt liên kết, mã lạ chỉ ghi lại. Nút Đồng bộ dùng cùng phép kiểm.
 
-**Việc còn lại để đóng case 10:** bấm Đồng bộ để kiểm grant hiện tại; cấp lại
-quyền `qrpay` nếu nó đã mất; ngắt quyền một lần nữa trong app Cas; nhật ký phải
-ghi `USER_PERMISSION_REVOKED` kèm `da-thu-hoi:<mã>` và liên kết biến khỏi danh
-sách. Có dòng đó mới ghi Passed.
+**Chạy lại 14/09 trên bản sửa (`a486c81`):** dòng 20:27 trong bảng trên. Mã Cas
+trả khi hỏi lại một grant đã bị người dùng ngắt là `GRANT_NOT_FOUND` — nay đã
+biết chắc, không còn đoán. Webhook này không mang requestId; bằng chứng là dòng
+`webhook_events` (loại, mã, grant, kết quả, ghi chú) xem được trong Fintech Hub.
+
+Sau khi đóng case, liên kết `qrpay` qua Cas đã ngắt: muốn nhận tiền QR qua Cas
+thì quét lại mã trong app Cas. Hoá đơn QR của MIMI hiện đi đường VietQR + SePay
+nên không bị ảnh hưởng.
 
 ## Chốt đợt 08/09/2026 — vòng thu tiền đã đóng, nhưng KHÔNG qua Cas
 
