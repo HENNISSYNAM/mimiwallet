@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ChuyenSangToi from '@/components/ChuyenSangToi';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useScrolled } from '@/hooks/useScrolled';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-cat.webp';
+import { MenuSanPhamDiDong, NHAN_TIEU_DE, TamMenuSanPham } from '@/components/layout/MenuSanPham';
 
 const navLinks = [
   { labelKey: 'nav.solutions', href: '#solutions' },
@@ -15,6 +16,22 @@ const navLinks = [
 
 // Kept apart from navLinks: those are in-page anchors, this is a route.
 const navRoutes = [{ labelKey: 'nav.about', to: '/about' }];
+
+/*
+ * DẢI THÔNG BÁO. Chỉ báo điều đã chạy thật trên production — ở đây là ba luật an
+ * toàn cho agent (14/09/2026). Đổi nội dung thì đổi cả KHOA_THONG_BAO để người đã
+ * đóng bản cũ vẫn thấy bản mới.
+ */
+const KHOA_THONG_BAO = 'mimi-thong-bao-luat-an-toan-2026-09';
+const CAO_THONG_BAO = 36;
+
+function daDongThongBao(): boolean {
+  try {
+    return localStorage.getItem(KHOA_THONG_BAO) === '1';
+  } catch {
+    return false;
+  }
+}
 
 export default function Navbar() {
   const { pathname } = useLocation();
@@ -29,19 +46,84 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const vi = !i18n.language.startsWith('en');
+
+  const [dongThongBao, setDongThongBao] = useState(daDongThongBao);
+  // Dải chỉ đứng ở đầu trang; cuộn xuống thì nhường chỗ cho thanh điều hướng.
+  const coThongBao = !dongThongBao && !scrolled;
+
+  const [moMenu, setMoMenu] = useState(false);
+  const henDong = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moNgay = () => {
+    if (henDong.current) clearTimeout(henDong.current);
+    setMoMenu(true);
+  };
+  // Trễ một nhịp để rê chuột từ nút xuống tấm menu không làm menu đóng giữa đường.
+  const dongTre = () => {
+    if (henDong.current) clearTimeout(henDong.current);
+    henDong.current = setTimeout(() => setMoMenu(false), 140);
+  };
+
+  useEffect(() => {
+    if (!moMenu) return;
+    const phim = (e: KeyboardEvent) => e.key === 'Escape' && setMoMenu(false);
+    window.addEventListener('keydown', phim);
+    return () => window.removeEventListener('keydown', phim);
+  }, [moMenu]);
+
+  useEffect(() => () => { if (henDong.current) clearTimeout(henDong.current); }, []);
 
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
   };
 
+  const dongDaiThongBao = () => {
+    setDongThongBao(true);
+    try { localStorage.setItem(KHOA_THONG_BAO, '1'); } catch { /* chế độ riêng tư: chỉ ẩn trong phiên này */ }
+  };
+
+  const tren = coThongBao ? CAO_THONG_BAO : 0;
+
   return (
     <>
+      <AnimatePresence>
+        {coThongBao && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-x-0 top-0 z-[51] flex items-center justify-center gap-3 bg-foreground px-10 text-[13px] text-background"
+            style={{ height: CAO_THONG_BAO }}
+          >
+            <span className="truncate">
+              <strong className="font-semibold">{vi ? 'Mới:' : 'New:'}</strong>{' '}
+              {vi ? 'Ba luật chống chuyển nhầm cho agent' : 'Three transfer-safety rules for agents'}
+              <span className="hidden sm:inline">
+                {vi ? ' — giữ người nhận mới 24 giờ, bắt đổi số tài khoản.' : ' — 24-hour hold on new payees, account-swap alerts.'}
+              </span>
+            </span>
+            <a href={anchor('#demo')} className="shrink-0 font-medium underline underline-offset-4">
+              {vi ? 'Xem cách hoạt động' : 'See how it works'}
+            </a>
+            <button
+              type="button"
+              onClick={dongDaiThongBao}
+              aria-label={vi ? 'Đóng thông báo' : 'Dismiss'}
+              className="absolute right-3 grid h-7 w-7 place-items-center rounded-md opacity-80 hover:opacity-100"
+            >
+              <X size={15} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 h-16 flex items-center transition-all duration-300 ${
-          scrolled
+        className={`fixed left-0 right-0 z-50 h-16 flex items-center transition-all duration-300 ${
+          scrolled || moMenu
             ? 'lg-surface lg-regular border-b hairline'
             : 'bg-transparent'
         }`}
+        style={{ top: tren }}
       >
         <div className="container mx-auto flex items-center justify-between px-4 lg:px-8">
           {/* Head plus wordmark. The old asset carried its own lettering; the
@@ -58,6 +140,18 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
+            <div onMouseEnter={moNgay} onMouseLeave={dongTre}>
+              <button
+                type="button"
+                onClick={() => (moMenu ? setMoMenu(false) : moNgay())}
+                aria-expanded={moMenu}
+                aria-controls="menu-san-pham"
+                className={`flex items-center gap-1 text-sm transition-colors ${moMenu ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {NHAN_TIEU_DE.sanPham[vi ? 'vi' : 'en']}
+                <ChevronDown size={14} className={`transition-transform duration-200 ${moMenu ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
             {navLinks.map((l) => (
               <a
                 key={l.labelKey}
@@ -121,13 +215,34 @@ export default function Navbar() {
         </div>
       </nav>
 
+      {/* Tấm menu sản phẩm — nằm ngoài <nav> để rộng theo container, không theo hàng nút. */}
+      <AnimatePresence>
+        {moMenu && (
+          <motion.div
+            id="menu-san-pham"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.16 }}
+            onMouseEnter={moNgay}
+            onMouseLeave={dongTre}
+            className="fixed inset-x-0 z-50 hidden md:block"
+            style={{ top: tren + 64 }}
+          >
+            <div className="container mx-auto px-4 lg:px-8">
+              <TamMenuSanPham lang={i18n.language} anchor={anchor} dong={() => setMoMenu(false)} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-8"
+            className="fixed inset-0 z-[60] bg-background flex flex-col items-center gap-8 overflow-y-auto px-6 pb-12 pt-20"
           >
             <button
               className="absolute top-5 right-5 text-foreground"
@@ -135,6 +250,7 @@ export default function Navbar() {
             >
               <X size={28} />
             </button>
+            <MenuSanPhamDiDong lang={i18n.language} anchor={anchor} dong={() => setMobileOpen(false)} />
             {navLinks.map((l) => (
               <a
                 key={l.labelKey}
