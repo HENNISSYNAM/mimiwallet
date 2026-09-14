@@ -6,6 +6,42 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
+## 14/09/2026 — case 15 Passed · 19/20 (95%)
+
+**Case 15 (Webhook xác nhận thanh toán) Passed ngày 14/09/2026, 20:54.** Mã QR
+tạo qua Cas QR Pay, khách trả bằng MoMo, Casso gửi `TRANSACTIONS` **một giây**
+sau khi tiền vào tài khoản, mang đúng mã tham chiếu MIMI đã sinh.
+
+| Lúc | Nguồn | Sự việc |
+|---|---|---|
+| 20:54:22 | MIMI `create-qr` (đường Cas) | mã QR 2.000đ, tham chiếu **`MIMIJNFGB3`**, tài khoản ảo `VQRQAMAEE7338` |
+| 20:54:39 | MB Bank | tiền vào ••••2002, mã giao dịch ngân hàng **`FT26257034131893`** |
+| **20:54:40** | **Casso** | `TRANSACTIONS / DEFAULT_UPDATE` tới grant QR đang hoạt động `adf77640-b043-11f1-9bfe-fa163e5398eb`, `transaction.amount = 2000`, `transaction.reference = FT26257034131893`, **`paymentMeta.referenceNumber = MIMIJNFGB3`**. MIMI hỏi lại Cas: `alive:qr-da-hoi-cas` |
+| 20:54:40–41 | Casso | cùng giao dịch gửi tới **7 grant cũ** của cùng tài khoản, `paymentMeta: {}` → MIMI `ignored · no connection for grant` (đúng) |
+| 20:54:42 | SePay | cùng khoản 2.000đ, cùng `FT26257034131893` → ghi sổ `sepay:81779459` |
+
+Bằng chứng là các dòng `webhook_events` kèm payload gốc; webhook không mang
+requestId.
+
+**Lỗi phía MIMI lộ ra ở lần chạy này — mã QR vẫn `pending`:**
+
+1. Nhánh QR của `cas-webhook` chỉ kiểm grant còn sống, không đọc
+   `paymentMeta.referenceNumber` (hình dạng payload trước đó chưa từng thấy).
+2. Nội dung chuyển khoản của mã Cas **không** chứa mã tham chiếu MIMI, và SePay
+   không trả `subAccount`, nên đối soát phía SePay cũng trượt. Thứ nội dung có
+   mang là mã tài khoản ảo bỏ tiền tố `VQR` (`Qamaee7338`), khớp với mẫu 07/09
+   (`VQRQALVCF0444` → `Qalvcf0444`).
+
+**Bản sửa `04356ec`:** `bank-webhook` khớp tài khoản ảo của mã đang chờ trong
+nội dung (`_shared/bank/ma-tai-khoan-ao.ts`); `cas-webhook` đọc mã tham chiếu,
+ghi nhật ký và chạy đối soát (`_shared/bank/thanh-toan-qr-cas.ts`). Webhook
+Casso không có chữ ký nên **không tự tất toán** — mã QR chỉ chuyển `paid` khi
+có giao dịch ngân hàng thật khớp. Bản sửa **chưa được chạy lại** bằng một lần
+thanh toán mới; mã `MIMIJNFGB3` của lần thử này vẫn để `pending`, không sửa tay.
+
+Tổng nghiệm thu: **19/20 (95%)**. Còn case 4 (chờ Casso trả lời). Nên thu hồi 7
+grant cũ vẫn nhận webhook (nút "Thu hồi grant cũ" trong nhật ký webhook).
+
 ## 14/09/2026 — case 18 Passed · 18/20 (90%)
 
 **Case 18 (Thông tin tài khoản — KYC) Passed ngày 14/09/2026.** Chủ dự án quyết
@@ -626,7 +662,7 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 10 | `USER_PERMISSION_REVOKED` | *Một nửa — đường ống đã chứng minh, thiếu đúng cái kích hoạt* | **Phía nhận: ĐÃ CHỨNG MINH** (xem case 11) — Casso gửi thật, endpoint nhận và xử lý đúng. **Phía xử lý riêng cho mã này: đạt.** Bắn một `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi theo payload: nó hỏi Cas, Cas nói grant còn sống, trả `verified/alive`. **Còn thiếu:** chưa lần nào Casso gửi mã này thật — đếm trên `webhook_events` tới 18/08: `DEFAULT_UPDATE` 25 lần, `ERROR` 10 lần, `USER_PERMISSION_REVOKED` **0 lần**. Mã này chỉ phát sinh khi khách thu hồi quyền từ app Cas ID, mà app không quét được mã QR sandbox. Đây là thứ duy nhất còn thiếu, không phải cả đường ống. |
+| 10 | `USER_PERMISSION_REVOKED` | **Passed (14/09/2026, 20:27)** | Ngắt quyền trong app Cas → Casso gửi mã này → MIMI hỏi lại Cas, nhận `GRANT_NOT_FOUND` → liên kết chuyển sang đã ngắt. Chi tiết ở mục 12–14/09 đầu tài liệu. *Ghi chú cũ, trước 12/09:* **Phía nhận: ĐÃ CHỨNG MINH** (xem case 11) — Casso gửi thật, endpoint nhận và xử lý đúng. **Phía xử lý riêng cho mã này: đạt.** Bắn một `USER_PERMISSION_REVOKED` giả mạo cho grant thật `5455fe9b-9640-11f1-b705-fa163e5398eb` (13/08). Endpoint **không** thu hồi theo payload: nó hỏi Cas, Cas nói grant còn sống, trả `verified/alive`. **Còn thiếu:** chưa lần nào Casso gửi mã này thật — đếm trên `webhook_events` tới 18/08: `DEFAULT_UPDATE` 25 lần, `ERROR` 10 lần, `USER_PERMISSION_REVOKED` **0 lần**. Mã này chỉ phát sinh khi khách thu hồi quyền từ app Cas ID, mà app không quét được mã QR sandbox. Đây là thứ duy nhất còn thiếu, không phải cả đường ống. |
 | 11 | `DEFAULT_UPDATE` | **Passed** — Casso gửi thật, xác minh 18/08 | Casso đã gửi **25 lần** mã `DEFAULT_UPDATE` (loại `GRANT`), lần đầu 17/08 13:30:35, lần cuối 18/08 13:47:16. Envelope thật: `{webhookCode, webhookType, grantId, environment:"dev", error}` — khác hẳn hình dạng ta tự bịa khi thử ngày 13/08, nên không thể nhầm là của mình. Kết quả xử lý: **6 lần `verified`**, trong đó có `1fdc82dd-…:alive+2` — endpoint hỏi ngược lại Cas, Cas xác nhận grant còn sống, hệ thống đồng bộ lại và **nạp về 2 giao dịch**. Đúng kết quả dự kiến của case: "hệ thống đối tác có thể tiếp tục gọi API lấy giao dịch bình thường". 19 lần còn lại `ignored` kèm "no connection for grant …" — đó là các grant cũ đã ngắt, bỏ qua là đúng. Mã `ERROR` cũng chạy đúng: 9 lần `verified` với các nhánh `needs-relink`, `PREVENTED`, `rate-limited`. |
 
 ### 3. QRPay
@@ -636,7 +672,7 @@ không dò ra được nếu chỉ nhìn mã, và cũng không phải điều Ca
 | 12 | Tạo mã QR Pay hợp lệ | **Passed** — chạy thật 04/09 | Luồng hiện thực đầy đủ 13/08: grant riêng `scopes: "qrpay"`, Cas Link mở với `feature: "qrpay"`, dò tài khoản bằng `GET /qr-pay/identity`, tạo QR bằng `POST /qr-pay`, đối soát qua webhook `TRANSACTIONS`. **Đã thử BIDV** — nhận yêu cầu và trả *"Thông tin nhập không chính xác"*, tức đã tới khâu kiểm tra của ngân hàng; màn hình hỏi **số tài khoản + tên chủ tài khoản**. **Đã thử Vietcombank 18/08** — màn hình hỏi bộ trường **khác hẳn**: `Mã định danh doanh nghiệp (Business ID)`, `Mã điểm thu (TID)`, `Số tài khoản`. Đây là luồng **VietQRPay** của Vietcombank hợp tác Napas; Business ID và TID là credential **ngân hàng cấp khi doanh nghiệp đăng ký làm merchant**, không phải giá trị Cas sinh ra. **Tra tài liệu Cas 18/08: không trang nào mô tả ba trường này** — trang QR Pay chỉ nói tầng API (`amount`, `description`, `referenceNumber`), phần Cas Link hỏi merchant hoàn toàn không có tài liệu. Kết luận: mỗi ngân hàng đòi một bộ credential merchant khác nhau và **không bộ nào công bố**. Đây là thứ chỉ Casso hoặc ngân hàng cấp được cho môi trường thử. **Cập nhật 04/09:** Casso xác nhận sandbox chỉ hỗ trợ **MB Bank**, và liên kết MB với `feature: "qrpay"` đã dựng được — lần đầu có một dòng `scopes = 'qrpay'` trong `bank_connections`. Nhưng dòng đó rơi vào `needs_relink`, và giao diện mời bấm **"Cập nhật"**, vốn trả về *"Dịch vụ tài chính này không hỗ trợ Update Mode"* — ngõ cụt kín. Đã gỡ (commit `5110667`, 16 test): dòng `qrpay` nay mời **"Liên kết lại"**. **Vẫn chưa Passed, và cũng chưa nên ghi là sắp xong:** chưa rõ vì sao dòng MB rơi vào `needs_relink` — có thể grant hết hạn, cũng có thể MB đòi credential merchant như Vietcombank. Xem mục 04/09 ở đầu tài liệu. **Cập nhật lần hai, 04/09 tối:** dòng MB đã ở `connected` và ổn định (nguyên nhân trước đó: chính vòng đồng bộ của MIMI gọi `/transactions` lên grant `qrpay` rồi đánh dấu hỏng — đã sửa). Lần tạo mã đầu tiên đi tới **khâu kiểm tham số** của Cas, tức **MB KHÔNG đòi Business ID/TID** như Vietcombank từng đòi. Giả thuyết "MB cũng cần credential merchant" **đã bị loại**. **ĐÓNG 04/09 tối:** gửi lại với nội dung `HD 0042` (7 ký tự) — **mã QR hiện ra**, số tiền ₫500.000, trạng thái *"Đang chờ thanh toán"*. Bản ghi nằm ở `qr_payments` kèm `reference_number` do máy chủ sinh, `virtual_account_number` và `bin` do Cas trả về. Đây là case bế tắc lâu nhất của cả đợt nghiệm thu — mở được nhờ ba việc nối tiếp trong cùng một ngày: (1) Casso xác nhận sandbox chỉ hỗ trợ MB, (2) sửa vòng đồng bộ vốn tự đập hỏng grant `qrpay` của chính mình, (3) phát hiện giới hạn 9 ký tự không có trong tài liệu. Không việc nào trong ba tìm ra được bằng đọc mã. |
 | 13 | Thiếu/sai trường bắt buộc | **Passed** — chạy thật 04/09 | Probe trả `GRANT_NOT_FOUND` (`rLDsrCRHsC8cqHcp`) chứ không phải `INVALID_PARAM`: Cas kiểm token **trước** tham số. Muốn chứng minh `INVALID_PARAM` phải có grant kèm scope `qrpay`. **ĐÓNG 04/09:** với grant MB `qrpay` sống, lần tạo mã đầu tiên trả về **`INVALID_PARAM`**, requestId **`Bgv44JpvIbxfvfmr`**, nguyên văn *"description must has maximum 9 characters"*. Đúng mã lỗi case này đòi, và đúng điều kiện tài liệu đã dự đoán: phải có grant kèm scope `qrpay` thì Cas mới đi qua khâu kiểm token để tới khâu kiểm tham số. Ràng buộc 9 ký tự **không có trong tài liệu Cas** — trang QR Pay liệt kê `amount`, `description`, `referenceNumber` mà không nêu giới hạn nào. Kiến nghị Casso bổ sung. Đã chặn ở cả giao diện và máy chủ (`src/lib/moTaQr.ts`, 9 test). |
 | 14 | Token không hợp lệ | **Passed** | `POST /qr-pay` → 400 `GRANT_NOT_FOUND`, requestId `4B0BqYAD5UCMwobq`, 196ms. |
-| 15 | Webhook xác nhận thanh toán | *Đã hiện thực — chặn bởi case 12* | **Đính chính 19/08:** bản trước ghi "không có endpoint nhận webhook Cas". Sai. `cas-webhook/index.ts` phân nhánh riêng cho `type === "TRANSACTIONS"` (dòng 223, cửa sổ truy hồi 7 ngày phòng khi lỡ một lần gửi) và gọi `reconcileCompanyQr` sau khi lưu xong. Truy vấn `webhook_events` ngày 19/08: **5 envelope loại `TRANSACTIONS`**, trong đó **4 lần `verified`** với ghi chú `1fdc82dd-…:alive+8` — endpoint không tin payload mà hỏi ngược lại Cas, Cas xác nhận grant còn sống, hệ thống **nạp về 8 giao dịch**. Lần thứ 5 `ignored` kèm "no grant id in payload", đúng. **Vẫn không tính Passed**, vì 5 lần đó do ta tự bắn ngày 12–13/08 chứ không phải Casso gửi. **Cập nhật 04/09 tối — nguyên nhân đã xác định, và nó KHÔNG nằm ở mã MIMI:** mã QR đã phát (case 12 Passed), đã trả **₫5.000 thật** vào tài khoản MB, đã liên kết thêm một grant `transaction` trên **cùng** tài khoản để đọc sao kê. Bấm đồng bộ, Cas trả về:
+| 15 | Webhook xác nhận thanh toán | **Passed (14/09/2026, 20:54)** | Mã QR qua Cas tham chiếu `MIMIJNFGB3` được trả 2.000đ; Casso gửi `TRANSACTIONS / DEFAULT_UPDATE` một giây sau, kèm `paymentMeta.referenceNumber = MIMIJNFGB3` và mã ngân hàng `FT26257034131893`. Lỗi đối soát phía MIMI lộ ra ở lần này đã sửa trong `04356ec`, chưa chạy lại — chi tiết ở mục 14/09 đầu tài liệu. *Ghi chú cũ, trước 14/09:* **Đính chính 19/08:** bản trước ghi "không có endpoint nhận webhook Cas". Sai. `cas-webhook/index.ts` phân nhánh riêng cho `type === "TRANSACTIONS"` (dòng 223, cửa sổ truy hồi 7 ngày phòng khi lỡ một lần gửi) và gọi `reconcileCompanyQr` sau khi lưu xong. Truy vấn `webhook_events` ngày 19/08: **5 envelope loại `TRANSACTIONS`**, trong đó **4 lần `verified`** với ghi chú `1fdc82dd-…:alive+8` — endpoint không tin payload mà hỏi ngược lại Cas, Cas xác nhận grant còn sống, hệ thống **nạp về 8 giao dịch**. Lần thứ 5 `ignored` kèm "no grant id in payload", đúng. **Vẫn không tính Passed**, vì 5 lần đó do ta tự bắn ngày 12–13/08 chứ không phải Casso gửi. **Cập nhật 04/09 tối — nguyên nhân đã xác định, và nó KHÔNG nằm ở mã MIMI:** mã QR đã phát (case 12 Passed), đã trả **₫5.000 thật** vào tài khoản MB, đã liên kết thêm một grant `transaction` trên **cùng** tài khoản để đọc sao kê. Bấm đồng bộ, Cas trả về:
 
 ```
 requestId, accounts[1], transactions[0]
