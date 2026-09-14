@@ -28,6 +28,26 @@ const m = {
         'Mã hóa kháng lượng tử',
       ],
     },
+    // Mục ba nguyên tắc agent — src/components/landing/AgentAiSection.tsx.
+    agentAi: {
+      title: 'AI chi tiêu theo luật của bạn.',
+      subtitle:
+        'Agent của MIMI chạy trong chính sách bạn đặt, ghi lý do cho mọi quyết định, và dừng lại hỏi bạn đúng lúc cần.',
+      items: [
+        {
+          title: 'Làm việc liên tục, trong trần bạn đặt.',
+          desc: 'Agent gửi yêu cầu chi bất kỳ lúc nào qua MCP hoặc API. Mỗi khoản được xét ngay theo trần mỗi lần, mỗi ngày, mỗi tháng — vượt trần là bị từ chối.',
+        },
+        {
+          title: 'Chạy đúng chính sách của bạn.',
+          desc: 'Nhóm chi được phép, người nhận trong danh sách, ngưỡng tự duyệt — bạn đặt và sửa bất cứ lúc nào. Mọi quyết định kèm mã lý do để bạn đọc lại.',
+        },
+        {
+          title: 'Biết khi nào tự làm, khi nào hỏi bạn.',
+          desc: 'Khoản nhỏ trong chính sách được tự duyệt. Khoản trên ngưỡng hoặc tới người nhận mới luôn chờ bạn — và tiền chỉ đi khi bạn trả trong app ngân hàng.',
+        },
+      ],
+    },
     metrics: {
       items: [
         { prefix: '~', suffix: ' giây', label: 'Thời gian chấm điểm', sub: 'Đo trên máy chủ thật' },

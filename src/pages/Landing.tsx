@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TrustSection from '@/components/landing/TrustSection';
+import AgentAiSection from '@/components/landing/AgentAiSection';
 import {
   ScoringBolt,
   CashflowChart,
@@ -655,6 +656,9 @@ export default function Landing() {
       <section className="py-16 border-y border-border/50 bg-secondary/30">
         <TrustSection />
       </section>
+
+      {/* ═══ BA NGUYÊN TẮC AGENT ═══ */}
+      <AgentAiSection />
 
       {/* ═══ VERIFIED CAPABILITY ═══
           Technical facts we can demonstrate on demand, rather than traction the

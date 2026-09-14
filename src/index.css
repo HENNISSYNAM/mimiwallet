@@ -647,6 +647,19 @@
 }
 
 /* Cánh đồng kem quay lại, đè bản tối đã dựng sẵn ngay bên trên. */
+/* Đường chấm chạy trong hình nét mảnh của mục agent (AgentAiSection.tsx). */
+@keyframes mimi-luong {
+  to { stroke-dashoffset: -12; }
+}
+.mimi-luong {
+  stroke-dasharray: 1.5 4.5;
+  stroke-linecap: round;
+  animation: mimi-luong 1.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mimi-luong { animation: none; }
+}
+
 .dark .landing-light .mimi-hero-warm {
   background:
     radial-gradient(120% 90% at 78% 18%, hsl(28 92% 96%) 0%, transparent 58%),

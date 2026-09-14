@@ -14,6 +14,25 @@ const m = {
         'Quantum-resistant encryption',
       ],
     },
+    agentAi: {
+      title: 'AI that spends by your rules.',
+      subtitle:
+        'MIMI agents run inside the policy you set, record a reason for every decision, and stop to ask you exactly when it matters.',
+      items: [
+        {
+          title: 'Always on, inside your caps.',
+          desc: 'Agents submit spend requests any time via MCP or the API. Each one is checked instantly against per-transaction, daily and monthly caps — over the cap means rejected.',
+        },
+        {
+          title: 'Runs on your policy.',
+          desc: 'Allowed categories, approved recipients, auto-approve threshold — you set them and change them any time. Every decision carries a reason code you can read back.',
+        },
+        {
+          title: 'Knows when to act and when to ask.',
+          desc: 'Small in-policy spend is auto-approved. Anything above threshold or to a new recipient always waits for you — and money only moves when you pay in your banking app.',
+        },
+      ],
+    },
     metrics: {
       items: [
         { prefix: '~', suffix: ' sec', label: 'Scoring time', sub: 'Runs on production infrastructure' },
