@@ -6,6 +6,30 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
+## CHỐT NGHIỆM THU — 14/09/2026 · 19/20 (95%)
+
+Phạm vi 20 case (liên kết, webhook, QR Pay, truy vấn giao dịch, định danh):
+**19 Passed, 1 chưa đạt.** Mọi case Passed đều có requestId hoặc dòng
+`webhook_events` / `bank_connections` làm bằng chứng — xem bảng "Chi tiết từng case".
+
+| Nhóm | Case | Kết quả |
+|---|---|---|
+| Liên kết | 1–9 | 8 Passed · **case 4 chưa đạt** |
+| Webhook Cas ID | 10–11 | 2 Passed |
+| QR Pay | 12–15 | 4 Passed |
+| Truy vấn giao dịch | 16–17 | 2 Passed |
+| Định danh, giới hạn gọi | 18–20 | 3 Passed |
+| Chuyển tiền | 21–30 | ngoài phạm vi (quyết định 18/08), `IP_NOT_ALLOWED` |
+
+**Case 4 (xoá liên kết cần OTP)** — đã hiện thực, có 3 unit test; sandbox chưa có
+ngân hàng đòi OTP khi gỡ grant (thử lại 14/09 21:10 qua grant cấp bằng app Cas vẫn
+gỡ thẳng). Đề nghị Casso: chỉ cách dựng tình huống, hoặc hai bên ghi nhận theo
+logic + test.
+
+**Việc phía MIMI còn lại, không ảnh hưởng kết quả:** chạy lại một lần thanh toán
+QR qua Cas để thấy bản sửa đối soát `04356ec` tất toán tự động; thu hồi các grant
+cũ vẫn nhận webhook.
+
 ## 14/09/2026 — case 15 Passed · 19/20 (95%)
 
 **Case 15 (Webhook xác nhận thanh toán) Passed ngày 14/09/2026, 20:54.** Mã QR
