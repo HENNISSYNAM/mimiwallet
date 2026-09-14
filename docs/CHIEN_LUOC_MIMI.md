@@ -218,8 +218,42 @@ Chu kỳ 2 tuần. Mỗi chu kỳ kết thúc bằng một bản chạy thật c
 
 ---
 
+## 7. Hướng đi ban đầu tốt nhất (14/09/2026)
+
+### Dữ liệu quyết định
+- **18% doanh nghiệp Việt Nam đã dùng AI** (khoảng 170.000 doanh nghiệp, tăng 39% trong năm), nhưng
+  **74% chỉ ở mức dùng cơ bản**; chỉ 9% ở mức chuyển đổi sâu. **55% startup dùng AI**, so với 41% doanh
+  nghiệp lớn. Rào cản lớn nhất: thiếu kỹ năng số (55%). — AWS & Strand Partners, 18/09/2025, khảo sát
+  1.000 lãnh đạo doanh nghiệp.
+- 48% thiệt hại do lừa đảo ở Đông Nam Á đi qua chuyển khoản (GASA 2025).
+- 44% doanh số bán chịu B2B ở châu Á bị trễ hạn (Atradius 2025).
+
+### Kết luận
+1. **"Agent AI tự tiêu tiền" còn sớm với số đông doanh nghiệp Việt.** Ba phần tư doanh nghiệp đã dùng AI
+   vẫn ở mức cơ bản. Nếu chỉ bán lớp kiểm soát agent, thị trường hôm nay rất nhỏ.
+2. **Nhưng nhóm startup và doanh nghiệp công nghệ đã sẵn sàng** — 55% startup dùng AI, 35% đang xây sản
+   phẩm dựa trên AI. Đây đúng là khách hàng lý tưởng số 1 đã chọn.
+3. **Nỗi đau có sẵn hôm nay không cần agent:** chủ doanh nghiệp duyệt chi qua tin nhắn, chuyển nhầm,
+   bị lừa đổi số tài khoản, và không biết mình chi bao nhiêu cho công cụ AI.
+
+### Hướng đi: vào bằng thứ đau hôm nay, lớn lên cùng agent
+
+| Bước | Khách thấy gì | Vì sao trước |
+|---|---|---|
+| **1. Cửa vào miễn phí** | Chi phí AI tháng này, theo dự án (S1) | Không cần ngân hàng; startup nào dùng AI cũng có câu hỏi này |
+| **2. Lý do trả tiền** | Duyệt chi một chạm, chặn người nhận lạ, bắt đổi số tài khoản, đối soát sao kê | **Đã chạy hôm nay**; ai chuyển khoản cũng cần |
+| **3. Lớn lên cùng khách** | Agent xin chi qua MCP trong chính sách | Khi khách chuyển từ AI cơ bản sang agent, MIMI đã nằm sẵn trên đường tiền |
+
+- **Kênh đầu:** mạng lưới ươm tạo đã có (Trung tâm Khởi nghiệp Sáng tạo TP.HCM, Quyết định 231/QĐ-KNST)
+  để tìm 10 đối tác thiết kế trong nhóm startup, agency, thương mại điện tử.
+- **Thông điệp theo đối tượng:** với startup giữ "Agent được chi. Bạn giữ quyền quyết."; với doanh nghiệp
+  truyền thống mở bằng "Duyệt chi và chống chuyển nhầm" — cùng một sản phẩm, khác cửa vào.
+- **Tín hiệu dừng hoặc đổi hướng sau 8 tuần:** dưới 3 trong 10 đối tác dùng mỗi tuần, hoặc không ai nối
+  ngân hàng sau khi xem chi phí AI → cửa vào không dẫn tới lý do trả tiền, phải xem lại.
+
 ## Nguồn
 
+- AWS & Strand Partners, nghiên cứu áp dụng AI tại Việt Nam (18/09/2025) — https://press.aboutamazon.com/sg/aws/2025/9/new-aws-research-shows-strong-ai-adoption-momentum-in-vietnam
 - GASA, *The State of Scams in Southeast Asia 2025* (27/08/2025) — https://gasa.org/knowledge-base/blog/new-study-reveals-63-of-southeast-asians-experienced-scams-in-past-year
 - Atradius, *Payment Practices Barometer Asia 2025* — https://atradius.us/knowledge-and-research/reports/b2b-payment-practices-trends-asia-2025
 - e-Conomy SEA 2025 (Google, Temasek, Bain), số liệu Việt Nam qua VietNamNet — https://vietnamnet.vn/en/vietnam-s-digital-economy-hits-usd-39-billion-ai-and-e-commerce-drive-growth-2466540.html
