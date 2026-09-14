@@ -823,11 +823,21 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       const result = await call('disconnect', { connection_id: connectionId });
       if (!result) return;
 
+      // requestId của /grant/remove hiện ra để chụp làm bằng chứng nghiệm thu
+      // (case 3: gỡ thẳng, case 4: đòi OTP).
+      const maYeuCau = (r: { thuHoi?: { requestId?: string | null; loi?: string | null } } | null) =>
+        r?.thuHoi?.loi
+          ? ` · Cas báo lỗi ${r.thuHoi.loi}${r.thuHoi.requestId ? ` (${r.thuHoi.requestId})` : ''}`
+          : r?.thuHoi?.requestId ? ` · requestId ${r.thuHoi.requestId}` : '';
+
       if (result.otp_required && result.grant_token) {
         try {
           await loadLinkScript();
           if (!window.BankHub) throw new Error('Cas Link chưa sẵn sàng');
-          toast.info(result.message ?? 'Ngân hàng yêu cầu xác thực OTP để ngắt kết nối.');
+          toast.info(
+            `${result.message ?? 'Ngân hàng yêu cầu xác thực OTP để ngắt kết nối.'}${maYeuCau(result)}`,
+            { duration: 30000 },
+          );
           const { open } = window.BankHub.useBankHubLink({
             grantToken: result.grant_token,
             redirectUri: result.redirectUri,
@@ -836,7 +846,9 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             onSuccess: () => {
               // Confirmed at the bank. Ask again — this time Cas should let go.
               void call('disconnect', { connection_id: connectionId }).then(async (second) => {
-                if (second?.disconnected) toast.success('Đã ngắt liên kết');
+                if (second?.disconnected) {
+                  toast.success(`Đã ngắt liên kết sau OTP${maYeuCau(second)}`, { duration: 30000 });
+                }
                 await loadConnections();
               });
             },
@@ -854,7 +866,11 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         return;
       }
 
-      toast.success('Đã ngắt liên kết');
+      if (result.thuHoi?.loi) {
+        toast.warning(`Đã ngắt phía MIMI${maYeuCau(result)}`, { duration: 30000 });
+      } else {
+        toast.success(`Đã ngắt liên kết${maYeuCau(result)}`, { duration: 30000 });
+      }
       await loadConnections();
     },
     [call, loadConnections]

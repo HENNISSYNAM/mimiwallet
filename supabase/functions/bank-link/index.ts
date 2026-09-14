@@ -1623,6 +1623,14 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (!conn) return json({ error: "Không tìm thấy liên kết này. Có thể nó vừa bị ngắt ở tab khác — tải lại trang." }, 404);
 
+        /*
+         * BẰNG CHỨNG CHO CASE 3 VÀ 4. Trước 14/09/2026 nhánh này không giữ lại
+         * requestId của `/grant/remove`, và lỗi Cas bị nuốt — nên một lần thử
+         * case 4 dù ra kết quả gì cũng không để lại gì để ghi nghiệm thu.
+         */
+        let thuHoi: { requestId: string | null; otpRequired: boolean | null; loi: string | null } = {
+          requestId: null, otpRequired: null, loi: null,
+        };
         if (conn.access_token_enc) {
           try {
             const accessToken = await decryptField(
@@ -1630,6 +1638,10 @@ Deno.serve(async (req) => {
               privateKey,
             );
             const removal = await removeGrant(cfg, accessToken);
+            thuHoi = { requestId: removal.requestId ?? null, otpRequired: removal.otpRequired, loi: null };
+            console.log(
+              `grant/remove connection=${connectionId} requestId=${thuHoi.requestId ?? "?"} otpRequired=${removal.otpRequired}`,
+            );
 
             /*
              * Some banks will not end an authorisation without the customer
@@ -1655,6 +1667,7 @@ Deno.serve(async (req) => {
                 // allowed to supply its own.
                 redirectUri,
                 connection_id: connectionId,
+                thuHoi,
                 message:
                   "Ngân hàng yêu cầu xác thực OTP trước khi ngắt kết nối. Hãy hoàn tất bước xác thực, liên kết sẽ được gỡ ngay sau đó.",
               });
@@ -1663,6 +1676,9 @@ Deno.serve(async (req) => {
             // Log, but still disconnect on our side. A customer asking to
             // disconnect must not be blocked by Cas being unreachable.
             console.error(`connection ${connectionId}: remote revoke failed`, e);
+            thuHoi = e instanceof BankhubError
+              ? { requestId: e.requestId ?? null, otpRequired: null, loi: e.errorCode ?? e.message }
+              : { requestId: null, otpRequired: null, loi: (e as Error).message };
           }
         }
 
@@ -1678,7 +1694,7 @@ Deno.serve(async (req) => {
           .eq("id", connectionId)
           .eq("company_id", company.id);
 
-        return json({ disconnected: connectionId });
+        return json({ disconnected: connectionId, thuHoi });
       }
 
       default:
