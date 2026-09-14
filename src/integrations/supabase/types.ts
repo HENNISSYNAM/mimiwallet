@@ -1441,6 +1441,7 @@ export type Database = {
           het_han: string | null
           nguong_can_duyet: number
           nhom_chi_duoc_phep: string[] | null
+          so_yeu_cau_moi_gio: number | null
           tac_tu_id: string
           updated_at: string
         }
@@ -1453,6 +1454,7 @@ export type Database = {
           het_han?: string | null
           nguong_can_duyet?: number
           nhom_chi_duoc_phep?: string[] | null
+          so_yeu_cau_moi_gio?: number | null
           tac_tu_id: string
           updated_at?: string
         }
@@ -1465,6 +1467,7 @@ export type Database = {
           het_han?: string | null
           nguong_can_duyet?: number
           nhom_chi_duoc_phep?: string[] | null
+          so_yeu_cau_moi_gio?: number | null
           tac_tu_id?: string
           updated_at?: string
         }

@@ -61,6 +61,7 @@ export const CHINH_SACH_MAC_DINH: ChinhSach = {
   nhomChiDuocPhep: null,
   chiTraNguoiNhanDaDuyet: true,
   hetHan: null,
+  soYeuCauMoiGio: 30,
 };
 
 export const TRAN_SO_TIEN = 10_000_000_000_000;
@@ -75,6 +76,13 @@ function chinhSachTuDong(r: Row | null): ChinhSach {
     nhomChiDuocPhep: r.nhom_chi_duoc_phep ?? null,
     chiTraNguoiNhanDaDuyet: Boolean(r.chi_tra_nguoi_nhan_da_duyet),
     hetHan: r.het_han ?? null,
+    // `undefined` = CSDL chưa chạy migration 20260914120000: dùng mặc định, không bỏ trần.
+    soYeuCauMoiGio:
+      r.so_yeu_cau_moi_gio === undefined
+        ? CHINH_SACH_MAC_DINH.soYeuCauMoiGio
+        : r.so_yeu_cau_moi_gio === null
+          ? null
+          : Number(r.so_yeu_cau_moi_gio),
   };
 }
 
@@ -174,6 +182,7 @@ export async function goiTacTu(db: Db, khoa: string, hanhDong: string, body: Row
             nhom_chi_duoc_phep: cs.nhomChiDuocPhep,
             chi_tra_nguoi_nhan_da_duyet: cs.chiTraNguoiNhanDaDuyet,
             het_han: cs.hetHan,
+            so_yeu_cau_moi_gio: cs.soYeuCauMoiGio ?? null,
           },
           // Đổi sang snake_case như mọi trường khác của API. Trả thẳng kết quả
           // của `hanMucConLai` từng làm lộ `moiLan` giữa một object toàn `moi_lan`.
@@ -282,23 +291,50 @@ async function xinChi(db: Db, tt: Row, body: Row): Promise<KetQuaGoi> {
   // 2. Xét. Hỏng giữa chừng thì nhả chỗ hạn mức thay vì để dòng kẹt ở `dang_xet`.
   try {
     const luc = new Date();
-    const [cs, giu, dsNhan] = await Promise.all([
+    const [cs, giu, dsNhan, demGio, lichSu] = await Promise.all([
       docChinhSach(db, tt.id),
       tongDaGiu(db, tt.id, dong.id, luc),
-      db.from("nguoi_nhan_duoc_phep").select("ngan_hang_bin, so_tai_khoan, ten_chu_tai_khoan").eq("company_id", tt.company_id),
+      db.from("nguoi_nhan_duoc_phep")
+        .select("ngan_hang_bin, so_tai_khoan, ten_chu_tai_khoan, created_at")
+        .eq("company_id", tt.company_id),
+      // Trần tần suất: yêu cầu KHÁC của agent này trong 60 phút qua.
+      db.from("yeu_cau_chi")
+        .select("id", { count: "exact", head: true })
+        .eq("tac_tu_id", tt.id)
+        .neq("id", dong.id)
+        .gte("created_at", new Date(luc.getTime() - 3_600_000).toISOString()),
+      // Đổi số tài khoản: các lần đã duyệt/đã chi của cả công ty trong 180 ngày.
+      db.from("yeu_cau_chi")
+        .select("ngan_hang_bin, so_tai_khoan, ten_nguoi_nhan")
+        .eq("company_id", tt.company_id)
+        .in("trang_thai", ["da_duyet", "da_chi"])
+        .gte("created_at", new Date(luc.getTime() - 180 * 86_400_000).toISOString())
+        .limit(1000),
     ]);
     if (dsNhan.error) throw dsNhan.error;
+    if (demGio.error) throw demGio.error;
+    if (lichSu.error) throw lichSu.error;
+
+    const daBiet = (dsNhan.data ?? []).find((n) => n.ngan_hang_bin === nganHangBin && n.so_tai_khoan === soTaiKhoan);
 
     const q = xetYeuCau(yc, cs, {
       trangThaiTacTu: tt.trang_thai as TrangThaiTacTu,
       daGiuNgay: giu.ngay,
       daGiuThang: giu.thang,
-      nguoiNhanDaDuyet: (dsNhan.data ?? []).map((n) => ({ nganHangBin: n.ngan_hang_bin, soTaiKhoan: n.so_tai_khoan })),
+      nguoiNhanDaDuyet: (dsNhan.data ?? []).map((n) => ({
+        nganHangBin: n.ngan_hang_bin,
+        soTaiKhoan: n.so_tai_khoan,
+        themLuc: n.created_at,
+      })),
       nganHangHopLe: Boolean(nganHang),
       luc,
+      soYeuCauGioQua: demGio.count ?? 0,
+      tenNguoiNhan: daBiet?.ten_chu_tai_khoan ?? tenGui,
+      taiKhoanDaBiet: [
+        ...(dsNhan.data ?? []).map((n) => ({ nganHangBin: n.ngan_hang_bin, soTaiKhoan: n.so_tai_khoan, ten: n.ten_chu_tai_khoan })),
+        ...(lichSu.data ?? []).map((r) => ({ nganHangBin: r.ngan_hang_bin, soTaiKhoan: r.so_tai_khoan, ten: r.ten_nguoi_nhan })),
+      ],
     });
-
-    const daBiet = (dsNhan.data ?? []).find((n) => n.ngan_hang_bin === nganHangBin && n.so_tai_khoan === soTaiKhoan);
     const trangThai = q.ketQua === "tu_choi" ? "tu_choi" : q.ketQua === "cho_duyet" ? "cho_duyet" : "da_duyet";
     const bayGio = new Date();
 

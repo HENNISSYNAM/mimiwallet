@@ -5,6 +5,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TrustSection from '@/components/landing/TrustSection';
 import AgentAiSection from '@/components/landing/AgentAiSection';
+import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
+import DemoTuChay from '@/components/landing/DemoTuChay';
 import {
   ScoringBolt,
   CashflowChart,
@@ -657,8 +659,14 @@ export default function Landing() {
         <TrustSection />
       </section>
 
+      {/* ═══ VẤN ĐỀ: HỆ THỐNG RỜI RẠC ═══ */}
+      <HeThongRoiRac />
+
       {/* ═══ BA NGUYÊN TẮC AGENT ═══ */}
       <AgentAiSection />
+
+      {/* ═══ KHUNG DEMO TỰ CHẠY ═══ */}
+      <DemoTuChay />
 
       {/* ═══ VERIFIED CAPABILITY ═══
           Technical facts we can demonstrate on demand, rather than traction the

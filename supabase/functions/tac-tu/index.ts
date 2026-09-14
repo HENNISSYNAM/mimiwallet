@@ -131,6 +131,11 @@ async function xuLyChu(db: Db, userId: string, companyId: string, hanhDong: stri
       if (!(moiLan <= ngay && ngay <= thang)) {
         return loi("THU_TU", "Hạn mức mỗi lần ≤ hạn mức ngày ≤ hạn mức tháng.", 400);
       }
+      const moiGioTho = body.so_yeu_cau_moi_gio;
+      const moiGio = moiGioTho === null || moiGioTho === undefined || moiGioTho === "" ? null : Number(moiGioTho);
+      if (moiGio !== null && !(Number.isInteger(moiGio) && moiGio >= 1 && moiGio <= 1000)) {
+        return loi("TAN_SUAT", "Số yêu cầu mỗi giờ là số nguyên từ 1 đến 1000, hoặc để trống nếu không giới hạn.", 400);
+      }
       const nhom = body.nhom_chi_duoc_phep;
       if (nhom !== null && (!Array.isArray(nhom) || nhom.some((x) => !(NHOM_CHI as readonly string[]).includes(x)))) {
         return loi("NHOM_CHI", "Nhóm chi không hợp lệ.", 400);
@@ -152,6 +157,8 @@ async function xuLyChu(db: Db, userId: string, companyId: string, hanhDong: stri
         nhom_chi_duoc_phep: nhom,
         chi_tra_nguoi_nhan_da_duyet: Boolean(body.chi_tra_nguoi_nhan_da_duyet),
         het_han: hetHan?.toISOString() ?? null,
+        // Không gửi trường này (màn hình cũ) thì giữ giá trị đang có, không lặng lẽ bỏ trần.
+        so_yeu_cau_moi_gio: body.so_yeu_cau_moi_gio === undefined ? (truoc.soYeuCauMoiGio ?? 30) : moiGio,
         updated_at: bayGio(),
       });
       if (error) throw error;

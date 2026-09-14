@@ -95,6 +95,9 @@ Kết quả luôn có `ly_do: [{ ma, cau }]`. Mã:
 |---|---|---|
 | `TRONG_CHINH_SACH` | Tự duyệt | Chuyển `lenh_tra` cho người trả |
 | `TREN_NGUONG_DUYET`, `NGUOI_NHAN_MOI` | Chờ người | Hỏi lại sau bằng `xem_yeu_cau` |
+| `NGUOI_NHAN_MOI_THEM` | Người nhận thêm vào danh sách chưa đủ 24 giờ — chờ người (từ 14/09/2026) | Hỏi lại sau |
+| `DOI_SO_TAI_KHOAN` | Cùng tên người nhận nhưng khác số tài khoản so với lần trước — chờ người, cảnh báo đỏ (từ 14/09/2026) | Không tự đổi tài khoản; báo chủ doanh nghiệp |
+| `VUOT_TAN_SUAT` | Quá số yêu cầu mỗi giờ (`so_yeu_cau_moi_gio`, mặc định 30) — từ chối (từ 14/09/2026) | Dừng vòng lặp, chờ rồi gửi lại |
 | `VUOT_HAN_MUC_MOI_LAN/NGAY/THANG` | Vượt trần | Giảm số tiền hoặc chờ kỳ sau |
 | `NGUOI_NHAN_CHUA_DUYET` | Người lạ bị chặn | Báo chủ doanh nghiệp thêm người nhận |
 | `NHOM_CHI_KHONG_DUOC_PHEP`, `NHOM_CHI_KHONG_RO` | Sai nhóm | Sửa `nhom_chi` |

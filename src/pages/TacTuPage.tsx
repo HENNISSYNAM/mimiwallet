@@ -593,6 +593,7 @@ function SuaChinhSach({ cs, dangLam, luu }: { cs: ChinhSachRow; dangLam: boolean
   const [nhom, setNhom] = useState<string[]>(cs.nhom_chi_duoc_phep ?? []);
   const [chiDaDuyet, setChiDaDuyet] = useState(cs.chi_tra_nguoi_nhan_da_duyet);
   const [hetHan, setHetHan] = useState(cs.het_han ? cs.het_han.slice(0, 10) : '');
+  const [moiGio, setMoiGio] = useState(cs.so_yeu_cau_moi_gio == null ? '' : String(cs.so_yeu_cau_moi_gio));
 
   const O = ({ nhan, gia, dat }: { nhan: string; gia: string; dat: (s: string) => void }) => (
     <label className="block">
@@ -614,6 +615,7 @@ function SuaChinhSach({ cs, dangLam, luu }: { cs: ChinhSachRow; dangLam: boolean
           nhom_chi_duoc_phep: moiNhom ? null : nhom,
           chi_tra_nguoi_nhan_da_duyet: chiDaDuyet,
           het_han: hetHan ? new Date(`${hetHan}T23:59:59+07:00`).toISOString() : null,
+          so_yeu_cau_moi_gio: moiGio.trim() === '' ? null : soTu(moiGio),
         });
       }}
       className="mt-3 space-y-3 rounded-xl bg-muted/30 p-4"
@@ -645,7 +647,12 @@ function SuaChinhSach({ cs, dangLam, luu }: { cs: ChinhSachRow; dangLam: boolean
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block">
+          <span className="mb-1 block text-xs text-muted-foreground">Tối đa yêu cầu mỗi giờ</span>
+          <input value={moiGio} onChange={(e) => setMoiGio(e.target.value)} inputMode="numeric" placeholder="Không giới hạn" className={o} />
+          <span className="mt-0.5 block text-[11px] text-muted-foreground">Chặn agent chạy vòng lặp. Để trống = không giới hạn.</span>
+        </label>
         <label className="block">
           <span className="mb-1 block text-xs text-muted-foreground">Người nhận lạ</span>
           <select value={chiDaDuyet ? 'chan' : 'hoi'} onChange={(e) => setChiDaDuyet(e.target.value === 'chan')} className={o}>
@@ -733,6 +740,15 @@ function TheChoDuyet({
       <ul className="mt-2 space-y-0.5 text-xs text-amber-700 dark:text-amber-400">
         {lyDoCua(y).map((l) => <li key={l.ma}>• {l.cau}</li>)}
       </ul>
+      {lyDoCua(y).some((l) => l.ma === 'DOI_SO_TAI_KHOAN') && (
+        <div className="mt-3 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs">
+          <p className="font-semibold text-destructive">Số tài khoản khác lần trả trước cho cùng người nhận</p>
+          <p className="mt-1 text-muted-foreground">
+            Đây là dấu hiệu thường gặp của lừa đảo giả danh nhà cung cấp. Chỉ duyệt sau khi đã gọi xác nhận qua số điện
+            thoại bạn lưu từ trước.
+          </p>
+        </div>
+      )}
       {/*
         NGƯỜI NHẬN MỚI LÀ CHỖ LỪA ĐẢO CHEN VÀO. Ở Đông Nam Á 48% thiệt hại do lừa
         đảo đi qua chuyển khoản, và hai phần ba vụ xảy ra trong 24 giờ kể từ lần
