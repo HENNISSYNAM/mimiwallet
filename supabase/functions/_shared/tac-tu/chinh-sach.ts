@@ -156,27 +156,33 @@ export interface BoiCanh {
   taiKhoanDaBiet?: TaiKhoanDaBiet[];
 }
 
-export type MaLyDo =
-  | 'TAC_TU_TAM_DUNG'
-  | 'TAC_TU_DA_THU_HOI'
-  | 'CHINH_SACH_HET_HAN'
-  | 'SO_TIEN_KHONG_HOP_LE'
-  | 'NGAN_HANG_KHONG_RO'
-  | 'SO_TAI_KHOAN_KHONG_HOP_LE'
-  | 'THIEU_MUC_DICH'
-  | 'MUC_DICH_LOI_MA_HOA'
-  | 'NHOM_CHI_KHONG_RO'
-  | 'NHOM_CHI_KHONG_DUOC_PHEP'
-  | 'VUOT_HAN_MUC_MOI_LAN'
-  | 'VUOT_HAN_MUC_NGAY'
-  | 'VUOT_HAN_MUC_THANG'
-  | 'VUOT_TAN_SUAT'
-  | 'NGUOI_NHAN_CHUA_DUYET'
-  | 'NGUOI_NHAN_MOI'
-  | 'NGUOI_NHAN_MOI_THEM'
-  | 'DOI_SO_TAI_KHOAN'
-  | 'TREN_NGUONG_DUYET'
-  | 'TRONG_CHINH_SACH';
+/**
+ * Mọi mã lý do bộ luật có thể trả. Là mảng chạy được (không chỉ kiểu) để bộ case
+ * vàng kiểm độ phủ: mã nào không có case nào chạm tới thì test đỏ.
+ */
+export const MA_LY_DO = [
+  'TAC_TU_TAM_DUNG',
+  'TAC_TU_DA_THU_HOI',
+  'CHINH_SACH_HET_HAN',
+  'SO_TIEN_KHONG_HOP_LE',
+  'NGAN_HANG_KHONG_RO',
+  'SO_TAI_KHOAN_KHONG_HOP_LE',
+  'THIEU_MUC_DICH',
+  'MUC_DICH_LOI_MA_HOA',
+  'NHOM_CHI_KHONG_RO',
+  'NHOM_CHI_KHONG_DUOC_PHEP',
+  'VUOT_HAN_MUC_MOI_LAN',
+  'VUOT_HAN_MUC_NGAY',
+  'VUOT_HAN_MUC_THANG',
+  'VUOT_TAN_SUAT',
+  'NGUOI_NHAN_CHUA_DUYET',
+  'NGUOI_NHAN_MOI',
+  'NGUOI_NHAN_MOI_THEM',
+  'DOI_SO_TAI_KHOAN',
+  'TREN_NGUONG_DUYET',
+  'TRONG_CHINH_SACH',
+] as const;
+export type MaLyDo = (typeof MA_LY_DO)[number];
 
 export interface LyDo {
   ma: MaLyDo;

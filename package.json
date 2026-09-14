@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "kiem-nghiem": "vite-node scripts/kiem-nghiem.ts",
     "typecheck": "tsc -b --noEmit",
     "check:functions": "npx --yes deno check supabase/functions/bank-link/index.ts supabase/functions/cas-webhook/index.ts supabase/functions/bank-webhook/index.ts supabase/functions/open-banking/index.ts supabase/functions/chat/index.ts supabase/functions/tac-tu/index.ts supabase/functions/mcp/index.ts supabase/functions/nap-kho-luat/index.ts supabase/functions/macro-news/index.ts"
   },

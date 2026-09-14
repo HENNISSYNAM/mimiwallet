@@ -132,6 +132,26 @@ Khi `trang_thai = "da_duyet"`, `lenh_tra` chứa BIN, số tài khoản, số ti
 | Đối soát sau webhook | `supabase/functions/bank-webhook/index.ts` | — |
 | Màn hình | `src/pages/TacTuPage.tsx` (`/dashboard/tac-tu`) | — |
 
+## Kiểm nghiệm
+
+```bash
+npm run kiem-nghiem
+```
+
+Ba tầng, ghi `docs/BAO_CAO_KIEM_NGHIEM.md`, thoát mã 1 nếu có tầng trượt:
+
+1. **Bộ case vàng** — `_shared/tac-tu/eval/bo-case-vang.ts`. Mỗi case có nhóm, mô tả, **nguồn**
+   (thiết kế, lỗi thật, lừa đảo, ca biên) và kỳ vọng soát theo chính sách đúng. Test đòi 100% và đòi
+   **mọi mã lý do có ít nhất một case**; bộ chấm cũng tự kiểm là nó biết trượt.
+2. **Test tích hợp** — `eval/cong-tac-tu.test.ts` chạy trọn vòng xin chi trên CSDL giả trong bộ nhớ
+   (`eval/db-gia.ts`): chống trùng, giữ chỗ hạn mức, bất biến gọi đồng thời không lọt trần, cách ly
+   giữa agent, ba luật an toàn, cửa MCP.
+3. **Dò production chỉ-đọc** — MCP liệt kê công cụ, khoá sai và thiếu khoá bị chặn. Không tạo dữ liệu
+   thử trên CSDL thật vì nhật ký agent là chỉ-thêm.
+
+**Thêm case khi có lỗi thật:** chép case gần nhất trong `bo-case-vang.ts`, đổi đúng một điều, ghi
+`nguon: 'loi-that dd/mm/yyyy'`. Không sửa kỳ vọng cho khớp kết quả.
+
 ## Chưa làm — theo thứ tự nên làm
 
 1. ~~MCP server~~ — xong 10/09/2026, xem mục "Nối qua MCP".
