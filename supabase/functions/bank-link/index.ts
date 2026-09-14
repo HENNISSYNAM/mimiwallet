@@ -21,6 +21,7 @@ import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { timNganHang } from "../_shared/bank/ngan-hang.ts";
 import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
+import { kiemGrantQr, nhanKetLuan } from "../_shared/bank/kiem-grant-qr.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
@@ -555,6 +556,38 @@ Deno.serve(async (req) => {
           // Fetching, mapping and storing all live in _shared/bank/ingest.ts so
           // that a transaction arriving here by poll is written under exactly
           // the same rules as one arriving at cas-webhook by push.
+          /*
+           * Liên kết QR: không có sao kê, nhưng nút Đồng bộ vẫn phải cho biết
+           * grant còn sống không. Trước 14/09/2026 nó im lặng trả rỗng, nên một
+           * grant đã bị thu hồi trong app Cas vẫn hiện "Sẵn sàng nhận tiền QR".
+           */
+          if (conn.scopes === "qrpay") {
+            const kl = await kiemGrantQr(() => fetchQrPayIdentity(cfg, accessToken));
+            const coBan = { connection_id: conn.id, account_number: conn.account_number, fetched: 0, inserted: 0, skipped: 0 };
+            if (kl.trangThai === "da_thu_hoi") {
+              await supabase
+                .from("bank_connections")
+                .update({
+                  status: "disconnected",
+                  revoked_at: new Date().toISOString(),
+                  access_token_enc: null,
+                  grant_id: null,
+                })
+                .eq("id", conn.id);
+              results.push({
+                ...coBan,
+                error: "Quyền nhận tiền QR đã bị thu hồi trong app Cas.",
+                errorCode: kl.ma,
+                action: "relink",
+                remedy: 'Bấm "Liên kết để nhận tiền QR" rồi quét lại mã trong app Cas.',
+                kiemGrant: nhanKetLuan(kl),
+              });
+            } else {
+              results.push({ ...coBan, kiemGrant: nhanKetLuan(kl) });
+            }
+            continue;
+          }
+
           results.push(
             await ingestConnection(
               supabase,

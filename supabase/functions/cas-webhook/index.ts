@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { bankhubConfigFromEnv } from "../_shared/bank/bankhub.ts";
+import { bankhubConfigFromEnv, fetchQrPayIdentity } from "../_shared/bank/bankhub.ts";
+import { kiemGrantQr, nhanKetLuan } from "../_shared/bank/kiem-grant-qr.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { coSaoKeDeDoc } from "../_shared/bank/dong-bo.ts";
@@ -306,6 +307,32 @@ Deno.serve(async (req) => {
       continue;
     }
 
+    /*
+     * LIÊN KẾT QR: HỎI CAS, KHÔNG MẶC ĐỊNH "CÒN SỐNG".
+     *
+     * Liên kết QR không có sao kê nên `ingestConnection` không gọi Cas, và bản
+     * trước ghi `alive` cho mọi webhook tới nó — kể cả `USER_PERMISSION_REVOKED`
+     * thật ngày 12/09/2026. Xem `_shared/bank/kiem-grant-qr.ts`.
+     */
+    if (conn.scopes === "qrpay") {
+      const kl = await kiemGrantQr(() => fetchQrPayIdentity(cfg, accessToken));
+      if (kl.trangThai === "da_thu_hoi") {
+        await supabase
+          .from("bank_connections")
+          .update({
+            status: "disconnected",
+            revoked_at: new Date().toISOString(),
+            access_token_enc: null,
+            grant_id: null,
+          })
+          .eq("id", conn.id);
+      } else if (kl.trangThai === "song" && conn.status !== "connected") {
+        await supabase.from("bank_connections").update({ status: "connected", revoked_at: null }).eq("id", conn.id);
+      }
+      outcomes.push(`${conn.id}:${nhanKetLuan(kl)}`);
+      continue;
+    }
+
     const result = await ingestConnection(supabase, cfg, accessToken, conn, window);
 
     if (result.needsRelink) {
@@ -365,7 +392,9 @@ Deno.serve(async (req) => {
        * dữ liệu", cái kia là "mình cố ý bỏ qua". Ngày 07/09 chính sự mơ hồ này
        * suýt làm đọc sai một dòng nhật ký thành bằng chứng chống lại đối tác.
        */
-      const nhan = coSaoKeDeDoc(conn) ? `alive+${result.inserted}` : "alive:khong-co-sao-ke";
+      // Tới đây mà không có sao kê thì là liên kết thuế: KHÔNG hỏi Cas, nên không
+      // được ghi "alive" — ghi đúng là không hỏi.
+      const nhan = coSaoKeDeDoc(conn) ? `alive+${result.inserted}` : "khong-hoi-cas:khong-co-sao-ke";
       outcomes.push(`${conn.id}:${nhan}`);
     }
   }

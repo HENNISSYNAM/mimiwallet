@@ -6,6 +6,41 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
+## 12–14/09/2026 — case 10: Casso đã gửi đúng, MIMI xử lý sai một nửa
+
+**Case 10 chưa ghi Passed.** Phía Casso đã chứng minh; phía MIMI vừa sửa và cần
+chạy lại một lần trên bản sửa.
+
+**Điều kiện chặn đã được gỡ.** Ngày 12/09 app Cas quét được mã Cas Link của MIMI
+và cấp quyền `qrpay` qua MB Bank — trước đó app Cas ID không quét được mã QR
+sandbox, đúng lý do case 10 bị treo. Người dùng sau đó ngắt quyền ngay trong app.
+
+**Casso gửi gì** (nhật ký webhook trong Fintech Hub, bảng `webhook_events`):
+
+| Lúc | Loại | Mã | Grant | MIMI xử lý |
+|---|---|---|---|---|
+| 17:18 12/09 | GRANT | `USER_PERMISSION_REVOKED` | grant đang gắn với liên kết MB ••••2002 `qrpay` | `verified · alive:khong-co-sao-ke` — **sai** |
+| 17:19 12/09 | GRANT | `USER_PERMISSION_REVOKED` | `36ff83f6-aadb-11f1-9313-fa163e5398eb` (grant `qrpay` cũ, 07/09) | `ignored · no connection for grant` — đúng |
+
+**Hai lỗi phía MIMI, tìm ra nhờ đúng lần thử này:**
+
+1. **Cột Mã trống cho mọi dòng GRANT từ trước tới nay.** `cas-webhook` đọc được
+   `webhookType` nhưng dò mã ở `code`/`errorCode`/`eventCode`/`status` — thiếu
+   `webhookCode`. Hai dòng trên chỉ đọc được sau bản sửa `93723cb`
+   (`_shared/bank/ma-webhook-cas.ts`); dòng cũ được rút mã lại từ payload đã lưu.
+2. **Liên kết QR không bao giờ được kiểm lại với Cas.** Liên kết QR không có sao
+   kê nên `ingestConnection` không gọi Cas, và webhook coi "không lỗi" là "còn
+   sống". Nguyên tắc của `cas-webhook` — nội dung chỉ là lời báo, phải hỏi lại
+   Cas — lọt mất đúng ở loại liên kết này. Bản sửa 14/09
+   (`_shared/bank/kiem-grant-qr.ts`) gọi `/qr-pay/identity` bằng chính grant đó;
+   chỉ mã chắc chắn là thu hồi (`GRANT_NOT_FOUND`, `USER_PERMISSION_REVOKED`, …)
+   mới ngắt liên kết, mã lạ chỉ ghi lại. Nút Đồng bộ dùng cùng phép kiểm.
+
+**Việc còn lại để đóng case 10:** bấm Đồng bộ để kiểm grant hiện tại; cấp lại
+quyền `qrpay` nếu nó đã mất; ngắt quyền một lần nữa trong app Cas; nhật ký phải
+ghi `USER_PERMISSION_REVOKED` kèm `da-thu-hoi:<mã>` và liên kết biến khỏi danh
+sách. Có dòng đó mới ghi Passed.
+
 ## Chốt đợt 08/09/2026 — vòng thu tiền đã đóng, nhưng KHÔNG qua Cas
 
 Ngày 08/09 luồng **khách quét mã → tiền về → hoá đơn tự tất toán** đã chạy trọn
