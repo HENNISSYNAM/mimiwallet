@@ -1,5 +1,20 @@
 const m = {
   landing: {
+    chaos: {
+      title: 'Những hệ thống chưa từng nói chuyện với nhau',
+      subtitle: 'Đây là hình ảnh một khoản chi phải đi qua năm phần mềm khác nhau.',
+      labels: {
+        sheet: 'Bảng chi phí.xlsx',
+        chat: 'Chị gửi giúp chứng từ hôm nay nhé?',
+        form: 'Nhập thông tin thanh toán',
+        pdf: 'hoa-don.pdf',
+        folder: 'Hóa đơn CHƯA trả',
+        mail: '7.251',
+        policy: 'Quy chế chi tiêu',
+        bank: 'Sao kê ngân hàng',
+        receipt: 'Biên lai',
+      },
+    },
     /*
      * This is the headline the page actually renders (`landing.hero.*`); the
      * root `hero.*` block only supplies the badge and secondary CTA.

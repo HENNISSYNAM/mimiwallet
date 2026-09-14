@@ -1,5 +1,20 @@
 const m = {
   landing: {
+    chaos: {
+      title: 'Systems that never spoke',
+      subtitle: 'This is what one expense crossing five separate tools looks like.',
+      labels: {
+        sheet: 'Expenses.xlsx',
+        chat: 'Can you submit your receipts today?',
+        form: 'Enter your payment details',
+        pdf: 'invoice.pdf',
+        folder: 'UNPAID invoices',
+        mail: '7,251',
+        policy: 'Company policy',
+        bank: 'Bank statement',
+        receipt: 'Receipt',
+      },
+    },
     // See the note on the Vietnamese hero: the invoice-advance promise was
     // removed because MIMI cannot lend, and replaced with the 2026 tax change.
     hero: {

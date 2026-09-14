@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TrustSection from '@/components/landing/TrustSection';
+import ChaosCanvas from '@/components/landing/ChaosCanvas';
 import {
   ScoringBolt,
   CashflowChart,
@@ -681,6 +682,9 @@ export default function Landing() {
           })()}
         </div>
       </section>
+
+      {/* ═══ HỖN LOẠN HỆ THỐNG ═══ */}
+      <ChaosCanvas />
 
       {/* ═══ CORE TECHNOLOGY ═══ */}
       <section className="py-24 bg-background" id="technology">
