@@ -6,6 +6,32 @@ ba mã dịch vụ `qrpay`, `transaction`, `transfer,identity`.
 Chạy ngày **12/08/2026**, môi trường **sandbox** (`sandbox.bankhub.dev`),
 client id `7f98926a…`.
 
+## 14/09/2026 — case 18 Passed · 18/20 (90%)
+
+**Case 18 (Thông tin tài khoản — KYC) Passed ngày 14/09/2026.** Chủ dự án quyết
+định đóng case này thay cho đề nghị "ngoài phạm vi", với điều kiện giảm thiểu dữ
+liệu tối đa: **đọc `/identity` một lần → chỉ giữ requestId và TÊN trường → thu hồi
+grant ngay → không lưu dòng liên kết nào** (commit `4928eff`,
+`_shared/bank/dinh-danh-mot-lan.ts`, nhánh `forIdentity` trong `bank-link`).
+
+| Bước | Kết quả |
+|---|---|
+| Liên kết scope `identity` qua Cas Link | thành công, 1 tài khoản, đuôi `2002` |
+| `GET /identity` | requestId **`CdZ91og5nFChBi9l`** |
+| Thu hồi grant ngay sau đó | requestId **`xhvD0NgW0LRMcWCH`** |
+| Lưu vào `bank_connections` | không — nhánh này không ghi dòng nào |
+
+Các trường Cas trả về (chỉ tên — giá trị không rời máy chủ, có test chặn):
+`accounts`, `accounts[].accountName`, `accounts[].accountNumber`,
+`accounts[].currency`, `company`, `fiService` (`code`, `id`, `logo`,
+`maxHistoryDays`, `name`, `type`), `owner` (`legalId`, `name`, `phone`).
+
+Phản hồi có `owner.legalId` và `owner.phone` — xác nhận đúng lý do MIMI không
+dùng scope này cho liên kết thường. Nút kiểm tra chỉ hiện ở môi trường sandbox.
+
+Tổng nghiệm thu: **18/20 (90%)**. Còn case 4 (chờ Casso trả lời) và case 15
+(webhook `TRANSACTIONS` khi mã QR tạo qua Cas được thanh toán).
+
 ## 12–14/09/2026 — case 10 Passed · 17/20 (85%)
 
 **Case 10 Passed ngày 14/09/2026, 20:27.** Người dùng ngắt quyền trong app Cas →
@@ -632,7 +658,7 @@ Tức Cas **biết đúng tài khoản** (`2002`, khớp liên kết) và trả 
 
 | # | Tình huống | Kết quả | Bằng chứng |
 |---|---|---|---|
-| 18 | Thông tin tài khoản (KYC) | **Ngoài phạm vi — theo thiết kế** | Không phải thiếu sót nên không tính vào nhóm "chưa hiện thực". Đã **chủ động bỏ** scope `identity` để Cas không gửi CCCD, ngày sinh, địa chỉ, số điện thoại. Không nhận dữ liệu thì mạnh hơn nhận rồi hứa không lưu — thứ không tồn tại trong hệ thống thì không rò rỉ được. Ghi trong `bank-link/index.ts`. Muốn đóng case này theo đúng chữ trong hợp đồng thì phải bật lại scope `identity`, tức đi ngược quyết định trên; cần Casso và bạn thống nhất là **bỏ khỏi phạm vi**, không phải làm cho có. |
+| 18 | Thông tin tài khoản (KYC) | **Passed (14/09/2026)** | `/identity` requestId `CdZ91og5nFChBi9l`, thu hồi grant requestId `xhvD0NgW0LRMcWCH`. Đọc một lần, chỉ giữ tên trường, không lưu liên kết — chi tiết ở mục 14/09 đầu tài liệu. *Ghi chú cũ, trước quyết định 14/09:* Không phải thiếu sót nên không tính vào nhóm "chưa hiện thực". Đã **chủ động bỏ** scope `identity` để Cas không gửi CCCD, ngày sinh, địa chỉ, số điện thoại. Không nhận dữ liệu thì mạnh hơn nhận rồi hứa không lưu — thứ không tồn tại trong hệ thống thì không rò rỉ được. Ghi trong `bank-link/index.ts`. Muốn đóng case này theo đúng chữ trong hợp đồng thì phải bật lại scope `identity`, tức đi ngược quyết định trên; cần Casso và bạn thống nhất là **bỏ khỏi phạm vi**, không phải làm cho có. |
 | 19 | Recall API <1 phút | **Passed** | `RATE_LIMIT`, requestId `p3xWQO8zGpdyMh5T` (quan sát trên `/transactions`). |
 | 20 | Token không hợp lệ (identity) | **Passed** | `GET /identity` → 400 `GRANT_NOT_FOUND`, requestId `ex7NzqLUT2jM9UVv`, 15ms. |
 | 21 | Chuyển tiền thành công | Bị chặn | 403 `IP_NOT_ALLOWED`. |
