@@ -10,6 +10,7 @@ import {
   fetchTransactions,
   fetchFiServices,
   fetchGdtInvoices,
+  fetchIdentity,
   fetchQrPayIdentity,
   removeGrant,
   BankhubError,
@@ -22,6 +23,7 @@ import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { timNganHang } from "../_shared/bank/ngan-hang.ts";
 import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
 import { kiemGrantQr, nhanKetLuan } from "../_shared/bank/kiem-grant-qr.ts";
+import { tomTatDinhDanh } from "../_shared/bank/dinh-danh-mot-lan.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
@@ -173,6 +175,8 @@ Deno.serve(async (req) => {
         if (!allowedRedirects.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
         const forQrPay = body.feature === "qrpay";
         const forGdt = body.feature === "gdt";
+        // Case 18: grant chỉ dùng một lần để gọi /identity rồi thu hồi — xem nhánh `exchange`.
+        const forIdentity = body.feature === "identity";
         // Refused here rather than at `exchange`, so the customer is stopped
         // before Cas Link opens and asks them for their banking password.
         if (demoBlocked) {
@@ -210,12 +214,14 @@ Deno.serve(async (req) => {
            * `transaction` cannot be satisfied by a screen that never asks for a
            * login, so the QR link failed with a bare "Có lỗi xảy ra".
            *
-           * Neither branch asks for `identity` — that would hand us the account
-           * holder's national ID number, date of birth and address, which this
-           * product does not use. Neither asks for `transfer`: MIMI records
-           * money in, it does not move money out.
+           * `identity` is asked for only by the one-shot acceptance check (case
+           * 18): it hands us the holder's national ID number, date of birth and
+           * address, which this product does not use — so `exchange` reads it
+           * once, keeps only field names, and revokes the grant immediately.
+           * Nothing asks for `transfer`: MIMI records money in, it does not
+           * move money out.
            */
-          scopes: forGdt ? ["gdt"] : forQrPay ? ["qrpay"] : ["transaction"],
+          scopes: forIdentity ? ["identity"] : forGdt ? ["gdt"] : forQrPay ? ["qrpay"] : ["transaction"],
           language: "vi",
           // Opens Cas Link directly on one service instead of the bank picker.
           ...(typeof body.fi_service_id === "string" && body.fi_service_id
@@ -223,7 +229,7 @@ Deno.serve(async (req) => {
             : {}),
           // Cas caps this at 40 characters and shows it in their console, which
           // is what makes a support ticket traceable to one customer.
-          name: `mimi-${forQrPay ? "qr-" : ""}${company.id}`.slice(0, 40),
+          name: `mimi-${forIdentity ? "id-" : forQrPay ? "qr-" : ""}${company.id}`.slice(0, 40),
         });
         // The redirectUri travels back with the token deliberately. Cas Link
         // requires the browser to pass the same value the grant was created
@@ -234,7 +240,7 @@ Deno.serve(async (req) => {
           grantToken: grant.grantToken,
           expiresAt: grant.expiredAt ?? grant.expiration ?? null,
           redirectUri,
-          scopes: forGdt ? "gdt" : forQrPay ? "qrpay" : "transaction",
+          scopes: forIdentity ? "identity" : forGdt ? "gdt" : forQrPay ? "qrpay" : "transaction",
         });
       }
 
@@ -243,6 +249,7 @@ Deno.serve(async (req) => {
         // Read before the consent gate below, so they must be declared first.
         const forQrPay = body.feature === "qrpay";
         const forGdt = body.feature === "gdt";
+        const forIdentity = body.feature === "identity";
         // Checked again here, not only at create-token. These are separate HTTP
         // calls and nothing stops a client skipping the first one.
         if (demoBlocked) {
@@ -259,6 +266,47 @@ Deno.serve(async (req) => {
         if (!publicToken) return json({ error: "publicToken required" }, 400);
 
         const { accessToken, grantId } = await exchangePublicToken(cfg, publicToken);
+
+        /*
+         * CASE 18 — ĐỊNH DANH MỘT LẦN, KHÔNG LƯU, THU HỒI NGAY.
+         *
+         * `/identity` trả số CCCD, ngày sinh, địa chỉ, số điện thoại. MIMI không
+         * dùng chúng, nên luồng này: đọc một lần, tóm tắt thành requestId + tên
+         * trường (`tomTatDinhDanh`), thu hồi grant ngay, và KHÔNG ghi dòng nào
+         * vào `bank_connections`. Token không được mã hoá hay lưu ở đâu cả.
+         *
+         * Quyết định của chủ dự án ngày 14/09/2026 để đóng case 18 nghiệm thu
+         * Casso, thay cho đề nghị "ngoài phạm vi" trước đó.
+         */
+        if (forIdentity) {
+          let tomTat;
+          try {
+            tomTat = tomTatDinhDanh(await fetchIdentity(cfg, accessToken));
+          } catch (e) {
+            const daThuHoi = await removeGrant(cfg, accessToken).then(() => true, () => false);
+            if (e instanceof BankhubError) {
+              return json(
+                { error: e.message, errorCode: e.errorCode, requestId: e.requestId, daThuHoi },
+                409,
+              );
+            }
+            throw e;
+          }
+
+          let thuHoi: { requestId?: string; otpRequired?: boolean; loi?: string };
+          try {
+            const r = await removeGrant(cfg, accessToken);
+            thuHoi = { requestId: r.requestId, otpRequired: r.otpRequired };
+          } catch (e) {
+            thuHoi = { loi: e instanceof BankhubError ? e.errorCode : (e as Error).message };
+          }
+
+          console.log(
+            `case 18 identity: requestId=${tomTat.requestId} grant=${grantId} ` +
+              `truong=${tomTat.cacTruong.join(",")} thuHoi=${thuHoi.requestId ?? thuHoi.loi ?? "?"}`,
+          );
+          return json({ dinhDanh: tomTat, grantId, thuHoi });
+        }
 
         // One grant can cover several accounts, and each becomes its own
         // connection row so they can be synced and revoked independently.
@@ -615,6 +663,14 @@ Deno.serve(async (req) => {
         const description = typeof body.description === "string" ? body.description.trim() : "";
         if (!description) return json({ error: "description required" }, 400);
         const invoiceId = typeof body.invoice_id === "string" ? body.invoice_id : null;
+        /*
+         * `duong: "cas"` ép tạo mã qua Cas QR Pay, bỏ qua VietQR + SePay.
+         *
+         * Chỉ để nghiệm thu case 15 (webhook TRANSACTIONS của Casso khi tiền thật
+         * về mã QR của Cas). Đường mặc định vẫn là VietQR + SePay — xem ghi chú
+         * dài bên dưới về vì sao.
+         */
+        const epCas = body.duong === "cas";
 
         // An invoice from another company must not be payable through this one.
         if (invoiceId) {
@@ -708,7 +764,7 @@ Deno.serve(async (req) => {
           );
         }
 
-        if (!tkNhan) {
+        if (!tkNhan && !epCas) {
           /*
            * MỘT CÂU CHO NHIỀU NGUYÊN NHÂN LÀ BẮT NGƯỜI DÙNG ĐOÁN.
            *
@@ -779,9 +835,8 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Khối riêng chỉ để giữ nguyên thụt lề của phần bên dưới sau khi đảo
-        // `if (tkNhan)` thành một lần trả về sớm. Không có ý nghĩa nào khác.
-        {
+        // Đường VietQR + SePay. Bỏ qua khi `epCas` — lúc đó đi thẳng xuống Cas.
+        if (tkNhan && !epCas) {
           /*
            * BIN LẤY TỪ DỮ LIỆU ĐÃ LƯU, KHÔNG LẤY TỪ YÊU CẦU GỬI LÊN.
            *
@@ -887,12 +942,18 @@ Deno.serve(async (req) => {
 
         if (!conn?.access_token_enc) {
           return json(
-            {
-              error: "Chưa khai tài khoản ngân hàng để nhận tiền.",
-              action: "relink",
-              remedy:
-                'Vào Fintech Hub, khối "Nhận thông báo tiền về qua SePay", khai số tài khoản và chọn ngân hàng. Không cần liên kết Cas.',
-            },
+            epCas
+              ? {
+                  error: "Chưa có liên kết nhận tiền QR qua Cas đang hoạt động.",
+                  action: "relink",
+                  remedy: 'Bấm "Liên kết để nhận tiền QR" và quét mã trong app Cas, rồi tạo lại mã thử.',
+                }
+              : {
+                  error: "Chưa khai tài khoản ngân hàng để nhận tiền.",
+                  action: "relink",
+                  remedy:
+                    'Vào Fintech Hub, khối "Nhận thông báo tiền về qua SePay", khai số tài khoản và chọn ngân hàng. Không cần liên kết Cas.',
+                },
             404,
           );
         }

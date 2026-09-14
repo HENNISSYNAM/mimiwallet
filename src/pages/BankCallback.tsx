@@ -94,6 +94,18 @@ export default function BankCallback() {
           setDetail(ex.body?.error ?? `Lỗi ${'' + ex.ok}`);
           return;
         }
+        // Case 18: định danh một lần — không có liên kết nào để đồng bộ. Hiện
+        // bằng chứng (requestId + tên trường) và để người dùng tự quay về.
+        if (feature === 'identity' && ex.body?.dinhDanh) {
+          const d = ex.body.dinhDanh as { requestId: string | null; cacTruong: string[] };
+          setDetail(
+            `requestId /identity: ${d.requestId ?? '—'} · Trường Cas trả: ${d.cacTruong.join(', ') || '—'} · Thu hồi grant: ${
+              ex.body.thuHoi?.loi ? `lỗi ${ex.body.thuHoi.loi}` : ex.body.thuHoi?.requestId ?? 'đã gọi'
+            }`,
+          );
+          setState('done');
+          return;
+        }
         // Pull history straight away so the dashboard has something to show
         // when they arrive; a failure here is not fatal to the link itself.
         await post('sync').catch(() => undefined);
@@ -119,8 +131,23 @@ export default function BankCallback() {
         {state === 'done' && (
           <>
             <CheckCircle2 className="text-mimi-green mx-auto mb-4" size={30} />
-            <p className="text-sm text-foreground font-medium">Đã liên kết xong</p>
-            <p className="text-xs text-muted-foreground mt-1">Đang đưa bạn về Fintech Hub…</p>
+            {detail ? (
+              <>
+                <p className="text-sm text-foreground font-medium">Đã đọc định danh một lần, không lưu, đã thu hồi quyền</p>
+                <p className="text-xs text-muted-foreground mt-1 break-words font-mono">{detail}</p>
+                <button
+                  onClick={() => navigate('/dashboard/fintech')}
+                  className="text-xs text-primary hover:underline font-medium mt-4 inline-flex items-center gap-1"
+                >
+                  Về Fintech Hub <ArrowRight size={11} />
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-foreground font-medium">Đã liên kết xong</p>
+                <p className="text-xs text-muted-foreground mt-1">Đang đưa bạn về Fintech Hub…</p>
+              </>
+            )}
           </>
         )}
         {state === 'error' && (

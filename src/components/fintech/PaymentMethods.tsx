@@ -63,6 +63,12 @@ export default function PaymentMethods() {
   const [soTienChu, setSoTienChu] = useState('');
   const [noiDung, setNoiDung] = useState('');
   const [moQr, setMoQr] = useState(false);
+  /*
+   * Mặc định máy chủ tạo mã VietQR và xác nhận tiền vào qua SePay. Ô này ép đi
+   * đường Cas QR Pay — chỉ để nghiệm thu case 15 (Casso gửi webhook
+   * TRANSACTIONS khi mã Cas được thanh toán). Không phải lựa chọn cho khách.
+   */
+  const [quaCas, setQuaCas] = useState(false);
 
   const soTien = Number(soTienChu.replace(/\D/g, '')) || 0;
   // Chặn tại chỗ thay vì để ngân hàng từ chối: giới hạn 9 ký tự là ràng buộc
@@ -285,6 +291,18 @@ export default function PaymentMethods() {
                   MIMI khớp bằng mã tham chiếu riêng.
                 </p>
               </label>
+
+              <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={quaCas}
+                  onChange={(e) => setQuaCas(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  Tạo qua Cas QR Pay (nghiệm thu webhook Casso). Bỏ trống thì dùng VietQR + SePay như bình thường.
+                </span>
+              </label>
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -313,6 +331,7 @@ export default function PaymentMethods() {
         onOpenChange={setMoQr}
         amount={soTien}
         description={noiDung.trim()}
+        {...(quaCas ? { duong: 'cas' as const } : {})}
       />
     </div>
   );

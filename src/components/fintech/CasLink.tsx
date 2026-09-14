@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode,
+  Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode, X,
 } from 'lucide-react';
 import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -78,16 +78,16 @@ function newLinkState(): string {
  */
 export const CAS_FEATURE_KEY = 'mimi:cas-link-feature';
 
-export function rememberLinkFeature(feature: 'bank' | 'qrpay' | 'gdt'): void {
+export function rememberLinkFeature(feature: 'bank' | 'qrpay' | 'gdt' | 'identity'): void {
   if (feature === 'bank') sessionStorage.removeItem(CAS_FEATURE_KEY);
   else sessionStorage.setItem(CAS_FEATURE_KEY, feature);
 }
 
 /** Doc mot lan roi xoa, cung ly do voi `consumeLinkState`. */
-export function consumeLinkFeature(): 'qrpay' | 'gdt' | undefined {
+export function consumeLinkFeature(): 'qrpay' | 'gdt' | 'identity' | undefined {
   const v = sessionStorage.getItem(CAS_FEATURE_KEY);
   sessionStorage.removeItem(CAS_FEATURE_KEY);
-  return v === 'qrpay' || v === 'gdt' ? v : undefined;
+  return v === 'qrpay' || v === 'gdt' || v === 'identity' ? v : undefined;
 }
 
 /**
@@ -235,7 +235,18 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
    * authority — and each opens a different Cas Link screen, so the choice has
    * to travel all the way from the button to `exchange`.
    */
-  const [linkFeature, setLinkFeature] = useState<'bank' | 'qrpay' | 'gdt'>('bank');
+  const [linkFeature, setLinkFeature] = useState<'bank' | 'qrpay' | 'gdt' | 'identity'>('bank');
+  /**
+   * Kết quả kiểm tra định danh một lần (case 18). Chỉ có requestId, số tài
+   * khoản, 4 số cuối và TÊN trường — máy chủ không gửi giá trị định danh nào.
+   */
+  const [dinhDanh, setDinhDanh] = useState<{
+    requestId: string | null;
+    soTaiKhoan: number;
+    duoiTaiKhoan: string[];
+    cacTruong: string[];
+    thuHoi: { requestId?: string | null; loi?: string } | null;
+  } | null>(null);
   // 'sandbox' unlocks the controls that deliberately break a connection.
   const [environment, setEnvironment] = useState<string | null>(null);
   // QR Pay only: the services Cas will actually accept, so the customer picks
@@ -485,7 +496,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
   /** Exchange → store → first sync. Shared by the SDK callback and our listener. */
   // Set when a link attempt starts, read when its token comes back.
-  const pendingFeature = useRef<'qrpay' | 'gdt' | undefined>(undefined);
+  const pendingFeature = useRef<'qrpay' | 'gdt' | 'identity' | undefined>(undefined);
 
   const completeLink = useCallback(
     /**
@@ -544,6 +555,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         if (!exchanged) {
           track('bank_link_failed', { feature: pendingFeature.current ?? 'bank' });
           setLastError('Không lưu được liên kết. Thử lại hoặc gửi ảnh màn hình này.');
+          return;
+        }
+        // Định danh một lần: không có dòng liên kết nào được lưu, nên không
+        // tải lại danh sách và không đồng bộ — chỉ hiện bằng chứng.
+        if (exchanged.dinhDanh) {
+          setDinhDanh({ ...exchanged.dinhDanh, thuHoi: exchanged.thuHoi ?? null });
+          toast.success('Đã đọc định danh một lần và thu hồi quyền');
           return;
         }
         toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
@@ -610,7 +628,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   }, [call, loadConnections]);
 
 
-  const startLink = useCallback(async (feature: 'bank' | 'qrpay' | 'gdt' = 'bank') => {
+  const startLink = useCallback(async (feature: 'bank' | 'qrpay' | 'gdt' | 'identity' = 'bank') => {
     setConsentOpen(false);
     setLinking(true);
     try {
@@ -922,6 +940,19 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               />
               Kết nối Tổng Cục Thuế
             </button>
+            {/* Case 18 nghiệm thu Casso. Chỉ hiện ở sandbox: sản phẩm không dùng
+                CCCD, ngày sinh hay địa chỉ, nên đây không phải tính năng cho
+                khách thật — chỉ là bằng chứng gọi /identity thành công. */}
+            {environment === 'sandbox' && (
+              <button
+                onClick={() => { setLinkFeature('identity'); setChosenService(null); setConsentOpen(true); }}
+                disabled={linking}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium border border-dashed border-border text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+              >
+                <Shield size={14} />
+                Kiểm tra định danh (nghiệm thu)
+              </button>
+            )}
           </div>
         </div>
 
@@ -1088,6 +1119,36 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           </p>
         )}
 
+        {dinhDanh && (
+          <div className="mt-3 rounded-xl border border-mimi-green/25 bg-mimi-green/5 p-3 text-xs">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-mimi-green font-medium">Định danh đọc một lần — không lưu, đã thu hồi quyền</p>
+              <button onClick={() => setDinhDanh(null)} className="text-muted-foreground hover:text-foreground">
+                <X size={12} />
+              </button>
+            </div>
+            <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-muted-foreground">
+              <dt>requestId /identity</dt>
+              <dd className="font-mono text-foreground break-all">{dinhDanh.requestId ?? '—'}</dd>
+              <dt>Tài khoản</dt>
+              <dd className="text-foreground">
+                {dinhDanh.soTaiKhoan}
+                {dinhDanh.duoiTaiKhoan.length > 0 && ` · đuôi ${dinhDanh.duoiTaiKhoan.join(', ')}`}
+              </dd>
+              <dt>Thu hồi grant</dt>
+              <dd className="font-mono text-foreground break-all">
+                {dinhDanh.thuHoi?.loi
+                  ? `lỗi: ${dinhDanh.thuHoi.loi}`
+                  : dinhDanh.thuHoi?.requestId ?? 'đã gọi'}
+              </dd>
+            </dl>
+            <p className="mt-1.5 text-muted-foreground">
+              Cas trả các trường (chỉ tên, không giá trị):{' '}
+              <span className="font-mono text-foreground">{dinhDanh.cacTruong.join(', ') || '—'}</span>
+            </p>
+          </div>
+        )}
+
         {lastError && (
           <div className="mt-3 rounded-xl border border-mimi-red/25 bg-mimi-red/5 p-3">
             <p className="text-xs text-mimi-red font-medium">Liên kết chưa hoàn tất</p>
@@ -1132,6 +1193,31 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 <p className="text-base font-semibold text-foreground">Trước khi liên kết</p>
               </div>
 
+              {linkFeature === 'identity' ? (
+              <ul className="space-y-2.5 text-sm text-muted-foreground">
+                <li className="flex gap-2">
+                  <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
+                  <span>
+                    Đây là <strong className="text-foreground">kiểm tra nghiệm thu</strong> quyền định danh
+                    của Cas (CCCD, ngày sinh, địa chỉ) — MIMI không dùng những thông tin này.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
+                  <span>
+                    Máy chủ đọc <strong className="text-foreground">một lần</strong>, chỉ giữ tên các trường
+                    và mã yêu cầu, <strong className="text-foreground">không lưu giá trị nào</strong>.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
+                  <span>
+                    Quyền truy cập bị <strong className="text-foreground">thu hồi ngay</strong> sau lần đọc
+                    đó; không có liên kết nào được tạo.
+                  </span>
+                </li>
+              </ul>
+              ) : (
               <ul className="space-y-2.5 text-sm text-muted-foreground">
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
@@ -1168,6 +1254,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   </span>
                 </li>
               </ul>
+              )}
 
               {linkFeature === 'qrpay' && qrServices.length > 0 && (
                 <div className="mt-5">

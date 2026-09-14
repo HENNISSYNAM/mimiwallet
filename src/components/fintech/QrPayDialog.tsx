@@ -56,6 +56,11 @@ interface Props {
   /** Optional: raise a QR against an invoice so paying it closes the invoice. */
   invoiceId?: string;
   invoiceNumber?: string;
+  /**
+   * `'cas'` ép máy chủ tạo mã qua Cas QR Pay thay vì VietQR + SePay. Chỉ dùng
+   * cho mã thử nghiệm thu case 15 (webhook TRANSACTIONS của Casso).
+   */
+  duong?: 'cas';
   amount: number;
   description: string;
   /** Called once the payment is confirmed, so the caller can refresh. */
@@ -69,6 +74,7 @@ export function QrPayDialog({
   onOpenChange,
   invoiceId,
   invoiceNumber,
+  duong,
   amount,
   description,
   onPaid,
@@ -116,7 +122,7 @@ export function QrPayDialog({
           'Content-Type': 'application/json',
           apikey: SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ amount, description, invoice_id: invoiceId ?? null }),
+        body: JSON.stringify({ amount, description, invoice_id: invoiceId ?? null, ...(duong ? { duong } : {}) }),
       });
       const result = await res.json();
 
@@ -146,7 +152,7 @@ export function QrPayDialog({
     } finally {
       setLoading(false);
     }
-  }, [amount, description, invoiceId, session]);
+  }, [amount, description, invoiceId, duong, session]);
 
   useEffect(() => {
     if (!open) {
