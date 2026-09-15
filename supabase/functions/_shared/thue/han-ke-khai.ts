@@ -125,6 +125,24 @@ export function mucKhan(conLai: number): MucKhan {
   return 'con_xa';
 }
 
+/** Hạn nộp của một quý — dùng cho lịch nhắc nhiều kỳ. */
+export const hanNopCuaQuy = hanCuaQuy;
+
+/** `so` kỳ kê khai liên tiếp, bắt đầu từ kỳ đang tới hạn. */
+export function cacKyKeTiep(luc: Date = new Date(), so = 4): { quy: number; nam: number; han: Date; conLai: number }[] {
+  const dau = kyKeKhaiKeTiep(luc);
+  const ds: { quy: number; nam: number; han: Date; conLai: number }[] = [];
+  let quy = dau.quy;
+  let nam = dau.nam;
+  for (let i = 0; i < so; i++) {
+    const han = hanCuaQuy(quy, nam);
+    ds.push({ quy, nam, han, conLai: soNgayLich(luc, han) });
+    quy += 1;
+    if (quy > 4) { quy = 1; nam += 1; }
+  }
+  return ds;
+}
+
 const iso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 

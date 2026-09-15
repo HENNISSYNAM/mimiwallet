@@ -23,12 +23,15 @@ import type { NhomNangLuc } from "../_shared/tro-ly/kieu.ts";
 import { NHOM_NANG_LUC } from "../_shared/tro-ly/kieu.ts";
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
-import { docAnhChungTu, docKetQuaQuet, hoiMoHinh, kiemAnh, LoiMoHinh, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
+import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
 import {
   congNgay,
   danhSachKetNoi,
   duLieuTrong,
   NANG_LUC,
+  phanTichNhanh,
+  SO_THANG_BIEU_DO_AI,
+  thangLui,
   viecHomNay,
   type DuLieu,
   type NguonCan,
@@ -51,6 +54,22 @@ const loi = (ma: string, cau: string, status: number) => json({ error: cau, ma }
 type Db = any;
 // deno-lint-ignore no-explicit-any
 type Row = Record<string, any>;
+
+const KICH_THUOC_THAN_TOI_DA = 8_000_000;
+
+/**
+ * Giới hạn mỗi người dùng, mỗi phút. Đủ rộng cho người thật bấm liên tục, đủ chặt để một
+ * phiên bị chiếm không dò hết dữ liệu hay đốt hạn mức mô hình. Lỗi đếm (ví dụ migration chưa
+ * chạy) thì cho qua và ghi log — không khoá người dùng thật vì lỗi hạ tầng.
+ */
+const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
+  hoi: { cuaSoGiay: 60, toiDa: 30 },
+  quet_chung_tu: { cuaSoGiay: 60, toiDa: 10 },
+  luu_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
+  xoa_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
+  boi_canh: { cuaSoGiay: 60, toiDa: 60 },
+  trang_thai: { cuaSoGiay: 60, toiDa: 120 },
+};
 
 const NGAY_LICH_SU = 180;
 const TOI_DA_GIAO_DICH = 10_000;
@@ -94,10 +113,20 @@ async function docGiaoDich(db: Db, companyId: string, tu: string) {
 }
 
 /** Đọc đúng những nguồn các năng lực cần. Một lần hỏi đọc mỗi nguồn nhiều nhất một lần. */
-async function docDuLieu(db: Db, companyId: string, can: Set<NguonCan>, moc: ReturnType<typeof mocThoiGian>): Promise<DuLieu> {
+async function docDuLieu(
+  db: Db,
+  companyId: string,
+  can: Set<NguonCan>,
+  moc: ReturnType<typeof mocThoiGian>,
+  tuyChon: { soThangAi?: number } = {},
+): Promise<DuLieu> {
   const d = duLieuTrong(moc.homNay, moc.ky);
   const tuLichSu = [congNgay(moc.homNay, -NGAY_LICH_SU), moc.ky.tu].sort()[0];
-  const tuAi = [congNgay(moc.homNay, -31), `${congNgay(`${moc.homNay.slice(0, 7)}-01`, -1).slice(0, 7)}-01`].sort()[0];
+  // Mặc định từ đầu tháng trước (so cùng kỳ) hoặc 31 ngày (token); biểu đồ màn đầu cần 5 tháng.
+  const tuAi = [
+    congNgay(moc.homNay, -31),
+    `${thangLui(moc.homNay, Math.max(1, (tuyChon.soThangAi ?? 2) - 1))}-01`,
+  ].sort()[0];
   const viec: Promise<void>[] = [];
 
   if (can.has("giao_dich")) viec.push(docGiaoDich(db, companyId, tuLichSu).then((r) => { d.giaoDich = r as DuLieu["giaoDich"]; }));
@@ -193,8 +222,14 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
   switch (hanhDong) {
     case "boi_canh": {
-      const d = await docDuLieu(db, company.id, new Set(TAT_CA_NGUON), moc);
-      return json({ cong_ty: company.name, viec: viecHomNay(d), ket_noi: danhSachKetNoi(d), co_mo_hinh: !!khoaMoHinh });
+      const d = await docDuLieu(db, company.id, new Set(TAT_CA_NGUON), moc, { soThangAi: SO_THANG_BIEU_DO_AI });
+      return json({
+        cong_ty: company.name,
+        viec: viecHomNay(d),
+        ket_noi: danhSachKetNoi(d),
+        phan_tich: phanTichNhanh(d),
+        co_mo_hinh: !!khoaMoHinh,
+      });
     }
 
     case "hoi": {
@@ -306,7 +341,49 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         user_id: userId,
       }).select("id").single();
       if (error) throw error;
-      return json({ id: data.id });
+
+      // Ảnh gốc là tuỳ chọn. Hỏng ảnh không làm mất các trường người dùng vừa kiểm.
+      let anhPath: string | null = null;
+      let canhBao: string | null = null;
+      if (typeof body.anh === "string" && body.anh) {
+        const k = kiemAnh(body.anh);
+        // Chữ ký nhị phân đã kiểm trong `kiemAnh`; đường dẫn chỉ ghép từ id công ty và id dòng (uuid).
+        const anh = k.ok ? giaiMaAnh(body.anh as string) : null;
+        if (!k.ok || !anh) {
+          canhBao = `Đã lưu chứng từ nhưng không lưu ảnh: ${k.ok ? "ảnh không đọc được." : k.cau}`;
+        } else {
+          const duongDan = `${company.id}/${data.id}.${anh.duoi}`;
+          const { error: loiAnh } = await db.storage.from("chung-tu").upload(duongDan, anh.bytes, { contentType: anh.mime, upsert: true });
+          if (loiAnh) {
+            console.error("tro-ly luu anh:", loiAnh.message);
+            canhBao = "Đã lưu chứng từ nhưng chưa lưu được ảnh. Chụp lại sau nếu cần ảnh.";
+          } else {
+            const { error: loiCapNhat } = await db.from("chung_tu_quet").update({ anh_path: duongDan }).eq("id", data.id);
+            if (loiCapNhat) throw loiCapNhat;
+            anhPath = duongDan;
+          }
+        }
+      }
+      return json({ id: data.id, anh_path: anhPath, canh_bao: canhBao });
+    }
+
+    case "trang_thai": {
+      // Nhẹ: cho các trang chỉ cần biết có đọc được ảnh chứng từ không.
+      return json({ cong_ty: company.name, co_mo_hinh: !!khoaMoHinh });
+    }
+
+    case "xoa_chung_tu": {
+      const { data: ct, error } = await db.from("chung_tu_quet").select("id, anh_path")
+        .eq("id", String(body.id ?? "")).eq("company_id", company.id).maybeSingle();
+      if (error) throw error;
+      if (!ct) return loi("KHONG_THAY", "Không có chứng từ này.", 404);
+      if (ct.anh_path) {
+        const { error: loiAnh } = await db.storage.from("chung-tu").remove([ct.anh_path]);
+        if (loiAnh) console.error("tro-ly xoa anh:", loiAnh.message);
+      }
+      const { error: loiXoa } = await db.from("chung_tu_quet").delete().eq("id", ct.id).eq("company_id", company.id);
+      if (loiXoa) throw loiXoa;
+      return json({ ok: true });
     }
 
     default:
@@ -317,6 +394,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return loi("PHUONG_THUC", "Chỉ nhận POST.", 405);
+  // Ảnh tối đa 5 MB (~6,7 MB base64) cộng vài trường: thân lớn hơn là bất thường.
+  if (Number(req.headers.get("content-length") ?? 0) > KICH_THUOC_THAN_TOI_DA) return loi("QUA_LON", "Dữ liệu gửi lên quá lớn.", 413);
 
   try {
     const db = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
@@ -335,7 +414,18 @@ Deno.serve(async (req) => {
     const company = await resolveCompany<{ id: string; name: string | null }>(db, user.id, "id, name");
     if (!company) return loi("KHONG_CO_CONG_TY", "Chưa có công ty.", 404);
 
-    return await xuLy(db, user.id, company, String(body.hanh_dong ?? ""), body);
+    const hanhDong = String(body.hanh_dong ?? "");
+    const gioiHan = GIOI_HAN[hanhDong];
+    if (gioiHan) {
+      // Chặn gọi dồn (dò dữ liệu, đốt tiền mô hình). Đếm ở CSDL vì edge function không giữ trạng thái.
+      const { data: duoc, error: loiDem } = await db.rpc("tang_luot_goi", {
+        p_user: user.id, p_hanh_dong: hanhDong, p_cua_so_giay: gioiHan.cuaSoGiay, p_toi_da: gioiHan.toiDa,
+      });
+      if (loiDem) console.error("tro-ly gioi han:", loiDem.message);
+      else if (duoc === false) return loi("QUA_NHIEU", "Bạn thao tác hơi nhanh. Đợi khoảng một phút rồi thử lại.", 429);
+    }
+
+    return await xuLy(db, user.id, company, hanhDong, body);
   } catch (e) {
     // Không in thân yêu cầu: có thể chứa ảnh chứng từ hoặc câu hỏi về tiền của khách.
     console.error("tro-ly:", e instanceof Error ? e.message : e);

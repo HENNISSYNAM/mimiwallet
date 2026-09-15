@@ -112,10 +112,30 @@ export interface KetNoiHienThi {
   duong_dan: string;
 }
 
+/** Ba thẻ "MIMI vừa phân tích cho bạn" ở màn đầu — tính từ dữ liệu thật, không có thì null/rỗng. */
+export interface PhanTichNhanh {
+  chi_phi_ai: null | {
+    thang_nay_usd: number;
+    /** So với cùng kỳ tháng trước; null khi tháng trước chưa có số. */
+    thay_doi_phan_tram: number | null;
+    ngan_sach_usd: number | null;
+    phan_tram_ngan_sach: number | null;
+    /** 5 tháng gần nhất, cũ trước. `usd` null = tháng đó chưa có số liệu (không phải 0). */
+    theo_thang: { khoa: string; nhan: string; usd: number | null }[];
+  };
+  toi_uu: { y: string[]; tiet_kiem_usd: number | null; hoi: string };
+  can_xac_nhan: {
+    so_khoan: number;
+    tong_tien: number;
+    muc: { yeu_cau_id: string; muc_dich: string; nguoi_nhan: string; agent: string; so_tien: number; ngay: string; duyet: DeXuat | null }[];
+  };
+}
+
 export interface BoiCanh {
   cong_ty: string | null;
   viec: ViecHomNay[];
   ket_noi: KetNoiHienThi[];
+  phan_tich: PhanTichNhanh;
   /** Có mô hình hiểu câu tự do và đọc ảnh chứng từ hay không. */
   co_mo_hinh: boolean;
 }

@@ -32,7 +32,7 @@ import { LoiTroLy, type ViecTroLy } from '@/components/tro-ly/LoiTroLy';
  * hiện chữ cho tới khi có bản chính thức.
  */
 
-type NccApi = 'anthropic' | 'openai';
+type NccApi = 'anthropic' | 'openai' | 'openrouter';
 
 interface KetNoi {
   id: string;
@@ -84,13 +84,15 @@ const nhanTruong = 'mb-1 block text-xs font-medium text-muted-foreground';
 
 /**
  * Màu nhà cung cấp theo bảng màu phân loại của dataviz, thứ tự cố định (màu đi theo
- * nhà cung cấp, không theo thứ hạng). Bộ bốn này đã chạy validator cho cặp liền kề,
- * sáng và tối. Chữ không bao giờ mang màu dữ liệu — màu chỉ ở ô màu bên cạnh.
+ * nhà cung cấp, không theo thứ hạng). Bộ năm này (thêm tím OpenRouter 15/09/2026) đã chạy
+ * validator cho cặp liền kề, sáng và tối: đạt; nền sáng có cảnh báo tương phản cho xanh lá
+ * và vàng, nên biểu đồ luôn có bảng số đi kèm. Chữ không bao giờ mang màu dữ liệu.
  */
 const MAU_NCC: Record<NhaCungCapAi, string> = {
   openai: 'bg-[#2a78d6] dark:bg-[#3987e5]',
   anthropic: 'bg-[#eb6834] dark:bg-[#d95926]',
   gemini: 'bg-[#1baf7a] dark:bg-[#199e70]',
+  openrouter: 'bg-[#7c5ce0] dark:bg-[#8e72e8]',
   khac: 'bg-[#eda100] dark:bg-[#c98500]',
 };
 
@@ -220,8 +222,8 @@ export default function ChiPhiAiPage() {
             </ol>
           </nav>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Chi phí AI</h1>
-          <p className="mt-1 truncate text-sm text-muted-foreground" title="Bạn đã trả bao nhiêu cho OpenAI, Anthropic và Gemini — đúng số nhà cung cấp tính, bằng USD.">
-            Bạn đã trả bao nhiêu cho OpenAI, Anthropic và Gemini — đúng số nhà cung cấp tính, bằng USD.
+          <p className="mt-1 truncate text-sm text-muted-foreground" title="Bạn đã trả bao nhiêu cho OpenAI, Anthropic, Gemini và OpenRouter — đúng số nhà cung cấp tính, bằng USD.">
+            Bạn đã trả bao nhiêu cho OpenAI, Anthropic, Gemini và OpenRouter — đúng số nhà cung cấp tính, bằng USD.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
@@ -236,7 +238,7 @@ export default function ChiPhiAiPage() {
           khoa: v.khoa,
           cau: v.cau,
           hanhDong:
-            v.loai === 'lay_tu_dong_loi' && (v.ncc === 'openai' || v.ncc === 'anthropic')
+            v.loai === 'lay_tu_dong_loi' && (v.ncc === 'openai' || v.ncc === 'anthropic' || v.ncc === 'openrouter')
               ? { nhan: 'Nhập lại khoá', lam: () => moKetNoi(v.ncc as NccApi) }
               : v.loai === 'so_lieu_cu'
                 ? { nhan: 'Tải file mới', lam: () => moNhap('openai') }
@@ -286,7 +288,7 @@ export default function ChiPhiAiPage() {
             </div>
             <div className="rounded-lg border border-border p-4">
               <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><Plug size={16} /> Tự động lấy số liệu</p>
-              <p className="mt-1 text-xs text-muted-foreground">MIMI tự lấy chi phí OpenAI và Anthropic khi bạn bấm Cập nhật. Cần khoá quản trị của tài khoản — khoá này có quyền rất rộng, chỉ dùng khi bạn chấp nhận.</p>
+              <p className="mt-1 text-xs text-muted-foreground">MIMI tự lấy chi phí và số token của OpenAI, Anthropic và OpenRouter khi bạn bấm Cập nhật. Cần khoá quản trị của tài khoản — khoá này có quyền rất rộng, chỉ dùng khi bạn chấp nhận.</p>
               <button onClick={() => moKetNoi('anthropic')} className={`${nutPhu} mt-3`}>Tự động lấy số liệu</button>
             </div>
           </div>
@@ -315,7 +317,7 @@ export default function ChiPhiAiPage() {
             <section aria-labelledby="nguon" className={khoi}>
               <h2 id="nguon" className="border-b border-border px-4 py-3 text-sm font-semibold text-foreground">Nguồn dữ liệu</h2>
               <ul className="divide-y divide-border">
-                {(['openai', 'anthropic', 'gemini'] as const).map((ncc) => (
+                {(['openai', 'anthropic', 'gemini', 'openrouter'] as const).map((ncc) => (
                   <li key={ncc}>
                     <TheNguon
                       ncc={ncc}
@@ -662,7 +664,7 @@ function DauNguon({ ncc }: { ncc: NhaCungCapAi }) {
 function TheNguon({
   ncc, ketNoi, soLanNhap, tongThang, dangLam, dongBo, moKetNoi, moNhap, goKetNoi,
 }: {
-  ncc: 'openai' | 'anthropic' | 'gemini';
+  ncc: 'openai' | 'anthropic' | 'gemini' | 'openrouter';
   ketNoi: KetNoi | undefined;
   soLanNhap: number;
   tongThang: number;
@@ -915,13 +917,15 @@ function FormKetNoi({
   const [hieu, setHieu] = useState(false);
   const huongDan = ncc === 'anthropic'
     ? 'Người quản trị tài khoản Anthropic tạo khoá này trong Claude Console, phần cài đặt tổ chức (Admin keys). Khoá thường dùng cho ứng dụng không đọc được chi phí.'
-    : 'Người quản trị tài khoản OpenAI tạo khoá này trong phần cài đặt tổ chức (Admin keys). Khoá thường dùng cho ứng dụng không đọc được chi phí.';
+    : ncc === 'openrouter'
+      ? 'Người quản trị tài khoản OpenRouter tạo Management key trong phần cài đặt tài khoản. Khoá thường dùng để gọi model không đọc được lịch sử chi phí.'
+      : 'Người quản trị tài khoản OpenAI tạo khoá này trong phần cài đặt tổ chức (Admin keys). Khoá thường dùng cho ứng dụng không đọc được chi phí.';
 
   return (
     <>
       <SheetHeader className="text-left">
         <SheetTitle>Tự động lấy số liệu chi phí</SheetTitle>
-        <SheetDescription>MIMI lấy chi phí 31 ngày gần nhất mỗi khi bạn bấm Cập nhật — không cần tải file.</SheetDescription>
+        <SheetDescription>MIMI lấy chi phí và số token khoảng 30 ngày gần nhất mỗi khi bạn bấm Cập nhật — không cần tải file.</SheetDescription>
       </SheetHeader>
       <form
         className="mt-5 space-y-4"
@@ -930,8 +934,8 @@ function FormKetNoi({
           if (hieu && khoa.trim()) gui(ncc, khoa.trim());
         }}
       >
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-accent p-1" role="group" aria-label="Nhà cung cấp">
-          {(['anthropic', 'openai'] as const).map((n) => (
+        <div className="grid grid-cols-3 gap-1 rounded-lg bg-accent p-1" role="group" aria-label="Nhà cung cấp">
+          {(['anthropic', 'openai', 'openrouter'] as const).map((n) => (
             <button
               key={n}
               type="button"
@@ -961,7 +965,7 @@ function FormKetNoi({
             onChange={(e) => setKhoa(e.target.value)}
             autoComplete="off"
             spellCheck={false}
-            placeholder={ncc === 'anthropic' ? 'sk-ant-admin01-…' : 'sk-admin-…'}
+            placeholder={ncc === 'anthropic' ? 'sk-ant-admin01-…' : ncc === 'openrouter' ? 'sk-or-v1-…' : 'sk-admin-…'}
             className={`${o} font-mono`}
           />
           <p className="mt-1 text-xs text-muted-foreground">{huongDan}</p>

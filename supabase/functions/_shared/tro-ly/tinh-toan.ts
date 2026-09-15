@@ -10,7 +10,7 @@
  *  2. Đề xuất chỉ nhắm vào thứ có thật trong dữ liệu (mã yêu cầu, agent) và chỉ gồm việc
  *     đã có backend. Việc chạm tiền luôn qua hộp xác nhận ở giao diện.
  */
-import type { DeXuat, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, NhomNangLuc, O, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
+import type { DeXuat, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
@@ -973,6 +973,93 @@ export function viecHomNay(d: DuLieu): ViecHomNay[] {
     viec.push({ khoa: 'chua_ngan_hang', nhom: 'ket_noi', muc_do: 'thong_tin', hoi: 'Kết nối ngân hàng đang thế nào?', cau: 'Chưa liên kết ngân hàng — MIMI chưa đọc được tiền ra vào' });
   }
   return viec.slice(0, 6);
+}
+
+// ── Ba thẻ phân tích ở màn đầu ───────────────────────────────────────────────
+
+/** "YYYY-MM" của tháng lùi `n` tháng từ ngày `ymd`. */
+export function thangLui(ymd: string, n: number): string {
+  const [y, m] = ymd.split('-').map(Number);
+  const tong = y * 12 + (m - 1) - n;
+  return `${Math.floor(tong / 12)}-${pad((tong % 12) + 1)}`;
+}
+
+const tron2 = (n: number) => Math.round(n * 100) / 100;
+
+export const SO_THANG_BIEU_DO_AI = 5;
+
+export function phanTichNhanh(d: DuLieu): PhanTichNhanh {
+  // Chi phí AI tháng này, so cùng kỳ, và 5 tháng gần nhất.
+  let chi_phi_ai: PhanTichNhanh['chi_phi_ai'] = null;
+  if (d.chiPhiAi.length) {
+    const c = tinhChiPhiAiThang(d);
+    const loc = locTrungNguon(d.chiPhiAi);
+    const denTruoc = cungNgayThangTruoc(d.homNay);
+    const coThangTruoc = loc.some((r) => r.ngay.slice(0, 7) === denTruoc.slice(0, 7));
+    const truoc = loc.filter((r) => r.ngay >= dauThang(denTruoc) && r.ngay <= denTruoc).reduce((s, r) => s + Number(r.so_tien_usd), 0);
+    const theo_thang = [];
+    for (let i = SO_THANG_BIEU_DO_AI - 1; i >= 0; i--) {
+      const khoa = thangLui(d.homNay, i);
+      const cua = loc.filter((r) => r.ngay.slice(0, 7) === khoa);
+      theo_thang.push({ khoa, nhan: `T${Number(khoa.slice(5, 7))}`, usd: cua.length ? tron2(cua.reduce((s, r) => s + Number(r.so_tien_usd), 0)) : null });
+    }
+    chi_phi_ai = {
+      thang_nay_usd: tron2(c.tong),
+      thay_doi_phan_tram: coThangTruoc && truoc > 0 ? Math.round(((c.tong - truoc) / truoc) * 100) : null,
+      ngan_sach_usd: c.ns?.han_muc_thang_usd ?? null,
+      phan_tram_ngan_sach: c.pct,
+      theo_thang,
+    };
+  }
+
+  // Đề xuất tối ưu: chỉ những ý có dữ liệu đứng sau.
+  const y: string[] = [];
+  let tiet_kiem_usd: number | null = null;
+  let hoi = 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.';
+  const tok = trong30Ngay(d);
+  if (tok.length && d.bangGia.length) {
+    const r = deXuatModelReHon(tok, d.bangGia);
+    if (r.de_xuat.length) {
+      tiet_kiem_usd = tron2(r.de_xuat.reduce((s, x) => s + x.tiet_kiem_usd, 0));
+      y.push(`Chuyển ${r.de_xuat[0].model} sang ${r.de_xuat[0].thay_bang.ten} cho việc không cần model mạnh nhất`);
+    }
+  } else if (d.chiPhiAi.length && !tok.length) {
+    y.push('Bật tự động lấy số liệu để MIMI đọc số token và tìm model rẻ hơn');
+  }
+  if (d.chiPhiAi.length && !d.nganSachAi) y.push('Đặt ngân sách AI tháng để được cảnh báo trước khi vượt');
+  const trung = d.giaoDich.length ? nghiTraTrung(d) : [];
+  if (trung.length) {
+    y.push(`Kiểm ${trung.length} cặp khoản chi có thể bị trả trùng (${vnd(trung.reduce((s, c) => s + doLonTien(c.b), 0))})`);
+    if (tiet_kiem_usd === null) hoi = 'Có khoản nào bị trả trùng không?';
+  }
+  if (!y.length) {
+    y.push(d.chiPhiAi.length || d.giaoDich.length
+      ? 'Chưa thấy chỗ nào cần tối ưu ngay từ số liệu hiện có'
+      : 'Liên kết ngân hàng hoặc tải chi phí AI để MIMI bắt đầu tìm chỗ tiết kiệm');
+  }
+
+  // Cần bạn xác nhận: khoản chờ lâu nhất trước.
+  const cho = d.yeuCau.filter((q) => q.trang_thai === 'cho_duyet').sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const deXuat = cho.length ? yeuCauChoDuyet(d).de_xuat : [];
+  const ten = tenAgent(d);
+
+  return {
+    chi_phi_ai,
+    toi_uu: { y: y.slice(0, 3), tiet_kiem_usd, hoi },
+    can_xac_nhan: {
+      so_khoan: cho.length,
+      tong_tien: cho.reduce((s, q) => s + q.so_tien, 0),
+      muc: cho.slice(0, 3).map((q) => ({
+        yeu_cau_id: q.id,
+        muc_dich: q.muc_dich,
+        nguoi_nhan: q.ten_nguoi_nhan || 'Người nhận chưa rõ tên',
+        agent: ten(q.tac_tu_id),
+        so_tien: q.so_tien,
+        ngay: q.created_at.slice(0, 10),
+        duyet: deXuat.find((x) => x.khoa === `duyet:${q.id}`) ?? null,
+      })),
+    },
+  };
 }
 
 // ── Danh mục năng lực ────────────────────────────────────────────────────────

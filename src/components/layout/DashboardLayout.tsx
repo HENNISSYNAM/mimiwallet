@@ -1,6 +1,18 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
-import { Bell, ChevronRight, Search, LayoutDashboard, Settings, Sparkles, Users, X } from 'lucide-react';
+import { Bell, ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, Users, X } from 'lucide-react';
+import { IconMeo } from '@/components/brand/IconMeo';
+import { AnhCongTy } from './AnhCongTy';
+import { HopTaiUngDung } from './HopTaiUngDung';
+import { useCongTy } from '@/hooks/useCongTy';
+import { apDungMauGiaoDien } from '@/lib/mauGiaoDien';
+import { TRANG_CHI_TIET } from '@/lib/trangChiTiet';
+import { useAuthStore } from '@/store/useAuthStore';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useCongCuGhim } from '@/hooks/useCongCuGhim';
+import { duongDanCongCu } from '@/lib/congCu';
+import { IconCongCu } from '@/components/cong-cu/IconCongCu';
+import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
 import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
@@ -9,6 +21,7 @@ import { useScrolled } from '@/hooks/useScrolled';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { layDichSauDangNhap } from '@/lib/sauDangNhap';
 
 /**
  * Two initials for the avatar, from whatever real name we actually have.
@@ -36,19 +49,20 @@ function initialsOf(name: string | null): string {
  * everything else on this product depends on, and it was previously buried in
  * the sidebar where a phone user would rarely find it.
  */
+/*
+ * 15/09/2026, tính lại cho điện thoại: bốn chỗ người dùng quay lại hằng ngày — cùng thứ tự
+ * thanh bên máy tính — và ô thứ năm "Thêm" mở bảng chứa mọi nơi khác. Năm ô rộng tối thiểu
+ * 56px vừa màn 320px, chữ nhãn một từ để không xuống dòng.
+ */
 const mobileNav = [
-  // 15/09/2026: hoá đơn, kết nối, báo cáo đều hỏi được trong MIMI Assistant — xem DashboardSidebar.
-  { icon: Sparkles, label: 'Trợ lý', path: '/dashboard/tro-ly' },
-  { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
-  { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
-  { icon: Settings, label: 'Cài đặt', path: '/dashboard/settings' },
+  { icon: IconMeo, label: 'Trợ lý', path: '/dashboard/tro-ly' },
+  { icon: Images, label: 'Chứng từ', path: '/dashboard/thu-vien' },
+  { icon: Clock, label: 'Nhắc thuế', path: '/dashboard/nhac-thue' },
+  { icon: Puzzle, label: 'Kết nối', path: '/dashboard/ket-noi' },
 ];
 
 /** Trang chi tiết mở từ MIMI Assistant: tiêu đề kèm đường quay về trợ lý. */
-const TRANG_CHI_TIET_CUA_TRO_LY = new Set([
-  '/dashboard/tac-tu', '/dashboard/chinh-sach', '/dashboard/chi-phi-ai', '/dashboard/invoices',
-  '/dashboard/chung-tu', '/dashboard/fintech', '/dashboard/reports',
-]);
+const TRANG_CHI_TIET_CUA_TRO_LY = new Set(TRANG_CHI_TIET.map((t) => t.duong_dan));
 
 /**
  * Header title per route, keyed to the same i18n strings the sidebar uses.
@@ -68,6 +82,9 @@ const pageTitleKeys: Record<string, string> = {
   // Chưa có khoá dịch: i18next trả lại chính chuỗi khi không thấy khoá, nên tên
   // hiện đúng. Trước 10/09/2026 bốn trang này có tiêu đề "Dashboard".
   '/dashboard/tro-ly': 'MIMI Assistant',
+  '/dashboard/thu-vien': 'Thư viện chứng từ',
+  '/dashboard/nhac-thue': 'Nhắc thuế',
+  '/dashboard/ket-noi': 'Kết nối',
   '/dashboard/chinh-sach': 'Chính sách chi',
   '/dashboard/tac-tu': 'Kiểm soát agent',
   '/dashboard/chi-phi-ai': 'Chi phí AI',
@@ -103,6 +120,27 @@ export default function DashboardLayout() {
    */
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const [moThem, setMoThem] = useState(false);
+  const [moTaiApp, setMoTaiApp] = useState(false);
+  const [moKho, setMoKho] = useState(false);
+  const congTy = useCongTy();
+  const congCuGhim = useCongCuGhim();
+  const logout = useAuthStore((s) => s.logout);
+
+  // Màu nhấn công ty chọn ở Cài đặt; chưa chọn thì giữ bảng màu gốc. Rời khu dashboard
+  // (về trang chủ) thì trả lại màu gốc.
+  useEffect(() => {
+    apDungMauGiaoDien(congTy?.mau ?? null);
+  }, [congTy?.mau]);
+  useEffect(() => () => apDungMauGiaoDien(null), []);
+
+  // Link email và Google quay về /dashboard (URL đã khai với Supabase); đích thật do trang
+  // đăng ký nhớ ở trình duyệt — xem `lib/sauDangNhap.ts`. Chỉ đọc một lần khi vào layout.
+  useEffect(() => {
+    const dich = layDichSauDangNhap();
+    if (dich && dich !== location.pathname && location.pathname === '/dashboard') navigate(dich, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -275,7 +313,67 @@ export default function DashboardLayout() {
               )}
             </NavLink>
           ))}
+          <button
+            type="button"
+            onClick={() => setMoThem(true)}
+            aria-expanded={moThem}
+            className="flex min-h-[52px] min-w-[56px] flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-muted-foreground pressable"
+          >
+            <Menu size={22} strokeWidth={1.9} />
+            <span>Thêm</span>
+          </button>
         </nav>
+
+        <Sheet open={moThem} onOpenChange={setMoThem}>
+          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
+            <SheetHeader className="text-left">
+              <SheetTitle className="flex items-center gap-3">
+                <AnhCongTy ten={congTy?.ten ?? null} mau={congTy?.mau ?? null} className="h-10 w-10 text-sm" />
+                <span className="min-w-0 truncate">{congTy?.ten ?? 'Công ty của bạn'}</span>
+              </SheetTitle>
+              <SheetDescription className="sr-only">Mọi trang khác của MIMI</SheetDescription>
+            </SheetHeader>
+            <nav className="mt-4 grid gap-1" aria-label="Thêm">
+              {[
+                { icon: LayoutDashboard, nhan: 'Tổng quan & giao dịch', duong: '/dashboard' },
+                { icon: Users, nhan: 'Khách hàng', duong: '/dashboard/clients' },
+                { icon: Settings, nhan: 'Cài đặt', duong: '/dashboard/settings' },
+              ].map((m) => (
+                <NavLink key={m.duong} to={m.duong} end onClick={() => setMoThem(false)} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
+                  <m.icon size={20} className="text-muted-foreground" /> {m.nhan}
+                </NavLink>
+              ))}
+              <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Công cụ của bạn</p>
+              {congCuGhim.ds.map((c) => (
+                <NavLink key={c.khoa} to={duongDanCongCu(c)} end onClick={() => setMoThem(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
+                  <IconCongCu khoa={c.khoa} size={19} className="text-muted-foreground" /> {c.ten}
+                </NavLink>
+              ))}
+              <button type="button" onClick={() => { setMoThem(false); setMoKho(true); }} className="flex min-h-11 items-center rounded-lg px-3 text-left text-[15px] text-primary hover:bg-accent">
+                + Tuỳ chỉnh công cụ
+              </button>
+              <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Trang chi tiết</p>
+              {TRANG_CHI_TIET.map((t) => (
+                <NavLink key={t.duong_dan} to={t.duong_dan} onClick={() => setMoThem(false)} className="flex min-h-11 items-center rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
+                  {t.nhan}
+                </NavLink>
+              ))}
+              <div className="mt-3 grid gap-1 border-t border-border pt-3">
+                <button type="button" onClick={() => { setMoThem(false); setMoTaiApp(true); }} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-left text-[15px] text-foreground hover:bg-accent">
+                  <Store size={20} className="text-muted-foreground" /> Dùng MIMI như ứng dụng
+                </button>
+                <a href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet" className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
+                  <HelpCircle size={20} className="text-muted-foreground" /> Hỗ trợ
+                </a>
+                <button type="button" onClick={() => { setMoThem(false); void logout(); navigate('/'); }} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-left text-[15px] text-destructive hover:bg-destructive/10">
+                  <LogOut size={20} /> Đăng xuất
+                </button>
+              </div>
+            </nav>
+          </SheetContent>
+        </Sheet>
+        <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} tab="dien_thoai" />
+        <KhoCongCu mo={moKho} onDong={() => setMoKho(false)} />
 
         {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
         {/* Trên màn MIMI Assistant đã có ô hỏi ở giữa; nút chat nổi chỉ là ô hỏi thứ hai. */}

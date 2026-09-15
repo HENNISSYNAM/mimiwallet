@@ -55,6 +55,9 @@ const TacTuPage = lazy(() => import("./pages/TacTuPage"));
 const ChinhSachChiPage = lazy(() => import("./pages/ChinhSachChiPage"));
 const ChiPhiAiPage = lazy(() => import("./pages/ChiPhiAiPage"));
 const TroLyPage = lazy(() => import("./pages/TroLyPage"));
+const ThuVienChungTuPage = lazy(() => import("./pages/ThuVienChungTuPage"));
+const NhacThuePage = lazy(() => import("./pages/NhacThuePage"));
+const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -137,6 +140,9 @@ const App = () => (
               >
                 <Route index element={<Page noIndex path="/dashboard" title="Tổng quan dòng tiền — MIMI WALLET" description="Theo dõi dòng tiền, số dư ngân hàng và dự báo 90 ngày của doanh nghiệp bạn trong một màn hình duy nhất."><DashboardOverview /></Page>} />
                 <Route path="tro-ly" element={<Page noIndex path="/dashboard/tro-ly" title="MIMI Assistant — MIMI WALLET" description="Hỏi MIMI về tiền, chứng từ, chi phí AI và kết nối của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
+                <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Hoá đơn điện tử và chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
+                <Route path="nhac-thue" element={<Page noIndex path="/dashboard/nhac-thue" title="Nhắc thuế — MIMI WALLET" description="Hạn nộp tờ khai theo quý và ngưỡng doanh thu năm, tính từ lịch kê khai và doanh thu thật."><NhacThuePage /></Page>} />
+                <Route path="ket-noi" element={<Page noIndex path="/dashboard/ket-noi" title="Kết nối — MIMI WALLET" description="Nối ngân hàng, Casso, Tổng cục Thuế và nhà cung cấp AI để MIMI đọc số liệu thật."><KetNoiPage /></Page>} />
                 <Route path="tac-tu" element={<Page noIndex path="/dashboard/tac-tu" title="Kiểm soát chi của agent — MIMI WALLET" description="Đặt hạn mức, duyệt và đối soát mọi khoản chi do agent AI của doanh nghiệp xin — MIMI không giữ và không chuyển tiền."><TacTuPage /></Page>} />
                 <Route path="chinh-sach" element={<Page noIndex path="/dashboard/chinh-sach" title="Chính sách chi — MIMI WALLET" description="Đặt ngưỡng duyệt, hạn mức, nhóm chi và người nhận cho từng agent, rồi đọc lại toàn bộ thành văn bản chính sách."><ChinhSachChiPage /></Page>} />
                 <Route path="chi-phi-ai" element={<Page noIndex path="/dashboard/chi-phi-ai" title="Chi phí AI — MIMI WALLET" description="Chi phí thật của OpenAI, Anthropic và Gemini theo ngày, từ file xuất của nhà cung cấp hoặc Admin API key, kèm ngân sách tháng."><ChiPhiAiPage /></Page>} />

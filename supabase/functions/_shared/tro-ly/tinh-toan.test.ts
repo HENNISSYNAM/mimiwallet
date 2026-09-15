@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  chiPhiAi, chiPhiThang, danhSachKetNoi, duLieuTrong, modelReHon, nghiTraTrung, NANG_LUC, phanTichTietKiem,
+  chiPhiAi, chiPhiThang, danhSachKetNoi, duLieuTrong, modelReHon, nghiTraTrung, NANG_LUC, phanTichNhanh, phanTichTietKiem, thangLui,
   thieuChungTu, tinhHinhAgent, viecHomNay, yeuCauChoDuyet, type DuLieu, type GiaoDichTL,
 } from './tinh-toan';
 import { ghepChungTu } from '../chung-tu/khop-chung-tu';
@@ -169,5 +169,49 @@ describe('kết nối', () => {
     expect(ds.find((k) => k.khoa === 'ngan_hang')?.trang_thai).toBe('can_xu_ly');
     expect(ds.find((k) => k.khoa === 'tong_cuc_thue')?.trang_thai).toBe('chua_ket_noi');
     expect(viecHomNay(d)[0].khoa).toBe('dang_nhap_lai');
+  });
+});
+
+describe('ba thẻ phân tích ở màn đầu', () => {
+  it('lùi tháng qua năm', () => {
+    expect(thangLui('2026-02-10', 3)).toBe('2025-11');
+    expect(thangLui('2026-09-15', 0)).toBe('2026-09');
+  });
+
+  it('chưa có gì: không số giả, không đề xuất bịa, không khoản chờ', () => {
+    const p = phanTichNhanh(moi());
+    expect(p.chi_phi_ai).toBeNull();
+    expect(p.toi_uu.tiet_kiem_usd).toBeNull();
+    expect(p.toi_uu.y).toEqual(['Liên kết ngân hàng hoặc tải chi phí AI để MIMI bắt đầu tìm chỗ tiết kiệm']);
+    expect(p.can_xac_nhan).toEqual({ so_khoan: 0, tong_tien: 0, muc: [] });
+  });
+
+  it('chi phí AI: tháng chưa có số là null chứ không phải 0; so cùng kỳ tháng trước', () => {
+    const p = phanTichNhanh(moi({
+      chiPhiAi: [
+        { nha_cung_cap: 'openai', ngay: '2026-08-05', hang_muc: 'gpt', so_tien_usd: 40, nguon: 'api' },
+        { nha_cung_cap: 'openai', ngay: '2026-08-25', hang_muc: 'gpt', so_tien_usd: 500, nguon: 'api' },
+        { nha_cung_cap: 'openai', ngay: '2026-09-05', hang_muc: 'gpt', so_tien_usd: 50, nguon: 'api' },
+      ],
+    }));
+    expect(p.chi_phi_ai?.thang_nay_usd).toBe(50);
+    // Cùng kỳ tháng trước (01–15/08) là $40, không phải cả tháng $540.
+    expect(p.chi_phi_ai?.thay_doi_phan_tram).toBe(25);
+    expect(p.chi_phi_ai?.theo_thang.map((t) => t.usd)).toEqual([null, null, null, 540, 50]);
+    expect(p.chi_phi_ai?.theo_thang.map((t) => t.nhan)).toEqual(['T5', 'T6', 'T7', 'T8', 'T9']);
+    expect(p.toi_uu.y).toContain('Đặt ngân sách AI tháng để được cảnh báo trước khi vượt');
+  });
+
+  it('cần xác nhận: khoản chờ lâu nhất trước, kèm đúng đề xuất duyệt của khoản đó', () => {
+    const cho = (id: string, luc: string, so_tien: number) => ({ id, tac_tu_id: 't', so_tien, ten_nguoi_nhan: null, muc_dich: `Mua ${id}`, trang_thai: 'cho_duyet', created_at: luc, so_tien_thuc_chi: null, ly_do: [] });
+    const p = phanTichNhanh(moi({
+      tacTu: [{ id: 't', ten: 'Bot mua hàng', trang_thai: 'hoat_dong' }],
+      yeuCau: [cho('b', '2026-09-14T00:00:00Z', 300), cho('a', '2026-09-10T00:00:00Z', 200)],
+    }));
+    expect(p.can_xac_nhan.so_khoan).toBe(2);
+    expect(p.can_xac_nhan.tong_tien).toBe(500);
+    expect(p.can_xac_nhan.muc.map((m) => m.yeu_cau_id)).toEqual(['a', 'b']);
+    expect(p.can_xac_nhan.muc[0].duyet?.tham_so).toEqual({ yeu_cau_id: 'a' });
+    expect(p.can_xac_nhan.muc[0]).toMatchObject({ agent: 'Bot mua hàng', nguoi_nhan: 'Người nhận chưa rõ tên' });
   });
 });

@@ -1,177 +1,184 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Bot, ChevronLeft, CircleDollarSign, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Globe, HelpCircle, Images, LayoutDashboard, LogOut, Puzzle, Store, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import { IconMeo } from '@/components/brand/IconMeo';
+import { AnhCongTy } from './AnhCongTy';
+import { HopTaiUngDung } from './HopTaiUngDung';
+import { useCongTy } from '@/hooks/useCongTy';
+import { useCongCuGhim } from '@/hooks/useCongCuGhim';
+import { duongDanCongCu } from '@/lib/congCu';
+import { IconCongCu } from '@/components/cong-cu/IconCongCu';
+import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
+import { Plus } from 'lucide-react';
+
+/**
+ * Thanh bên theo nhịp ChatGPT (15/09/2026): một trợ lý ở trên cùng, rồi vài chỗ người dùng
+ * quay lại hằng ngày, tài khoản ở dưới cùng.
+ *
+ *   MIMI Assistant (logo mèo) — nơi làm việc chính, như "New chat".
+ *   Thư viện chứng từ — như "Images/Library": hoá đơn, chứng từ đã lưu.
+ *   Nhắc thuế — như "Scheduled": các mốc nghĩa vụ thuế sắp tới.
+ *   Kết nối — như "Plugins": nối ngân hàng, cơ quan thuế, nhà cung cấp AI.
+ *   Tổng quan (giao dịch chi tiết), Khách hàng (module riêng).
+ *
+ * Kiểm soát agent, Chính sách chi, Chi phí AI, Hoá đơn, Báo cáo vẫn còn, mở từ MIMI
+ * Assistant. Cài đặt (tài khoản, bảo mật) nằm ở hàng công ty dưới cùng.
+ *
+ * Công ty mang ảnh đại diện chữ cái kiểu tài khoản Google, màu theo lựa chọn ở Cài đặt.
+ * Nút cửa hàng cạnh đó mở hộp "Dùng MIMI như ứng dụng".
+ */
+
+type Icon = ComponentType<{ size?: number | string; strokeWidth?: number | string; className?: string }>;
 
 export default function DashboardSidebar() {
-  /** The real company, not a constant. The sidebar used to print
-   *  "Đức Phát Foods" from mockData while the dashboard beside it showed the
-   *  signed-in company's actual name — two different companies on one screen. */
-  const [companyName, setCompanyName] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from('companies').select('name').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle();
-      if (!cancelled && data?.name) setCompanyName(data.name.slice(0, 24));
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
+  const congTy = useCongTy();
   const [collapsed, setCollapsed] = useState(false);
+  const [moTaiApp, setMoTaiApp] = useState(false);
+  const [moKho, setMoKho] = useState(false);
+  const congCu = useCongCuGhim();
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
-  /**
-   * Twelve destinations, grouped by what the person came to do.
-   *
-   * They used to be one flat list, which meant "Cài đặt" and "Hóa đơn" carried
-   * the same visual weight — a list that long reads as an undifferentiated
-   * wall and pushes the daily work (hoá đơn, dòng tiền) into the same scan as
-   * things opened once a quarter. Grouping is the cheapest fix: four short
-   * lists are read as four, a twelve-item list is read as twelve.
-   *
-   * "Dòng tiền" is deliberately absent. `/dashboard/cashflow` renders the very
-   * same `DashboardOverview` component as `/dashboard` (see App.tsx), so the
-   * sidebar was offering two doors into one room — press either and the screen
-   * does not change. The route stays alive because links point at it; only the
-   * duplicate door is gone.
-   *
-   * Gỡ hẳn ngày 10/09/2026, không chỉ ẩn khỏi thanh này: "Công nghệ" (trang
-   * quảng bá, không có dữ liệu của công ty), "Thiết bị M2M" (ví thiết bị lưu một
-   * con số số dư không có đồng tiền nào đứng sau — thay bằng "Kiểm soát agent",
-   * nơi MIMI không giữ số dư nào) và "Vay vốn". Route, trang và edge function
-   * của chúng không còn. Ba bảng M2M còn trong CSDL để không mất dữ liệu cũ.
-   *
-   * "Vay vốn" left the nav on 17/08/2026 because MIMI has no credit licence and
-   * no disbursement partner, and its page was removed on 10/09/2026.
-   *
-   * BA KHU TỪ 14/09/2026 (docs/KE_HOACH_MIMI_CHAU_A.md mục 4). "Vay ngang hàng"
-   * và "Danh mục đầu tư" gỡ hẳn — không phục vụ việc kiểm soát chi tiêu, và vay
-   * ngang hàng kéo theo rủi ro pháp lý tín dụng. Bảng dữ liệu của chúng còn
-   * trong CSDL. Mỗi khu đặt tên theo việc người dùng đến làm: cho agent chi,
-   * giữ chứng từ, và biết tiền đã thật sự đi đâu.
-   */
-  /*
-   * MỘT TRỢ LÝ, KHÔNG PHẢI BẢY TRANG (15/09/2026). Kiểm soát agent, Chính sách chi, Chi
-   * phí AI, Hoá đơn, Chứng từ chi phí, Fintech Hub và Báo cáo gộp vào MIMI Assistant: người
-   * dùng hỏi một chỗ, trợ lý mở đúng trang chi tiết khi cần. Các trang đó vẫn sống (route,
-   * dữ liệu, test), chỉ không còn tranh chỗ trên thanh này — mở từ kết quả hoặc từ "Trang chi
-   * tiết" trong trợ lý. Ở lại: Tổng quan (giao dịch chi tiết cần trang riêng), Khách hàng
-   * (module riêng) và Cài đặt (tài khoản, bảo mật — không đưa vào ô hỏi).
-   */
-  const navGroups = [
-    {
-      label: null,
-      items: [
-        { icon: Sparkles, label: 'MIMI Assistant', path: '/dashboard/tro-ly' },
-        { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
-        { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
-      ],
-    },
-    {
-      label: t('sidebar.groupMore'),
-      items: [
-        { icon: Settings, label: t('sidebar.settings'), path: '/dashboard/settings' },
-      ],
-    },
+  const muc: { icon: Icon; label: string; path: string }[] = [
+    { icon: IconMeo, label: 'MIMI Assistant', path: '/dashboard/tro-ly' },
+    { icon: Images, label: 'Thư viện chứng từ', path: '/dashboard/thu-vien' },
+    { icon: Clock, label: 'Nhắc thuế', path: '/dashboard/nhac-thue' },
+    { icon: Puzzle, label: 'Kết nối', path: '/dashboard/ket-noi' },
+    { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
+    { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
   ];
+
+  const lopMuc = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+      isActive ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+    }`;
 
   return (
     <motion.aside
-      animate={{ width: collapsed ? 72 : 240 }}
+      animate={{ width: collapsed ? 72 : 248 }}
       transition={{ duration: 0.2 }}
-      className="hidden lg:flex flex-col h-screen sticky top-0 bg-secondary border-r border-border"
+      className="sticky top-0 hidden h-screen flex-col border-r border-border bg-secondary lg:flex"
     >
-      <div className="p-4 flex items-center gap-3 border-b border-border">
-        <img src={mimiLogo} alt="MIMI WALLET" className="h-9 w-auto shrink-0 no-save" draggable={false} />
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-foreground truncate">{companyName ?? '—'}</p>
-            <p className="text-xs text-mimi-green flex items-center gap-1"><Leaf size={10} /> {t('sidebar.greenPlan')}</p>
-          </div>
-        )}
-      </div>
+      <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Điều hướng chính">
+        <div className="space-y-1">
+          {muc.map((m) => (
+            <NavLink
+              key={m.path}
+              to={m.path}
+              data-mimi={`nav:${m.path}`}
+              end={m.path === '/dashboard'}
+              title={collapsed ? m.label : undefined}
+              className={lopMuc}
+            >
+              <m.icon size={19} className="shrink-0" />
+              {!collapsed && <span className="truncate">{m.label}</span>}
+            </NavLink>
+          ))}
+        </div>
 
-      <nav className="flex-1 py-4 px-2 overflow-y-auto">
-        {navGroups.map((group, gi) => (
-          <div key={group.label ?? 'root'} className={gi === 0 ? '' : 'mt-5'}>
-            {/* When collapsed there is no room for a word, so the grouping is
-                carried by a hairline instead — the rhythm survives, the label
-                does not need to. */}
-            {group.label &&
-              (collapsed ? (
-                <div className="mx-3 mb-2 border-t border-border/60" />
-              ) : (
-                <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {group.label}
-                </p>
-              ))}
-            <div className="space-y-1">
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  data-mimi={`nav:${item.path}`}
-                  end={item.path === '/dashboard'}
-                  title={collapsed ? item.label : undefined}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                      isActive
-                        ? 'bg-primary/10 text-primary border-l-[3px] border-primary font-medium'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                    }`
-                  }
-                >
-                  <item.icon size={18} className="shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                </NavLink>
-              ))}
-            </div>
+        {/* Công cụ người dùng tự ghim — như mục "Pinned" của ChatGPT. */}
+        <div className="mt-5">
+          {collapsed ? (
+            <div className="mx-3 mb-2 border-t border-border/60" />
+          ) : (
+            <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">Công cụ</p>
+          )}
+          <div className="space-y-0.5">
+            {congCu.ds.map((c) => (
+              <NavLink
+                key={c.khoa}
+                to={duongDanCongCu(c)}
+                end
+                title={collapsed ? c.ten : undefined}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                    isActive && c.loai === 'trang' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  }`
+                }
+              >
+                <IconCongCu khoa={c.khoa} size={17} />
+                {!collapsed && <span className="truncate">{c.ten}</span>}
+              </NavLink>
+            ))}
+            <button
+              type="button"
+              onClick={() => setMoKho(true)}
+              title={collapsed ? 'Thêm công cụ' : undefined}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Plus size={17} className="shrink-0" />
+              {!collapsed && <span>Thêm công cụ</span>}
+            </button>
           </div>
-        ))}
+        </div>
       </nav>
+      <KhoCongCu mo={moKho} onDong={() => setMoKho(false)} />
 
-      <div className="border-t border-border p-3 space-y-2">
+      <div className="space-y-1 border-t border-border p-2">
         <button
           onClick={() => i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi')}
           aria-label={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
           title={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <Globe size={18} className="shrink-0" />
           {!collapsed && <span>{i18n.language === 'vi' ? 'Tiếng Việt · VI' : 'English · EN'}</span>}
         </button>
         <a
           href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-all w-full"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <HelpCircle size={18} className="shrink-0" />
           {!collapsed && <span>{t('sidebar.support')}</span>}
         </a>
         <button
           onClick={() => { logout(); navigate('/'); }}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut size={18} className="shrink-0" />
           {!collapsed && <span>{t('sidebar.logout')}</span>}
         </button>
+
+        {/* Hàng công ty, như hàng tài khoản của ChatGPT: bấm vào là Cài đặt; nút cửa hàng mở hộp tải app. */}
+        <div className={`mt-1 flex items-center gap-1 ${collapsed ? 'flex-col' : ''}`}>
+          <NavLink
+            to="/dashboard/settings"
+            title={collapsed ? 'Cài đặt' : undefined}
+            className={({ isActive }) => `flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent ${isActive ? 'bg-accent' : ''}`}
+          >
+            <AnhCongTy ten={congTy?.ten ?? null} mau={congTy?.mau ?? null} className="h-8 w-8 text-[11px]" />
+            {!collapsed && (
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-foreground">{congTy?.ten ?? '—'}</span>
+                <span className="block text-xs text-muted-foreground">Cài đặt</span>
+              </span>
+            )}
+          </NavLink>
+          <button
+            type="button"
+            onClick={() => setMoTaiApp(true)}
+            aria-label="Dùng MIMI như ứng dụng"
+            title="Dùng MIMI như ứng dụng"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Store size={18} />
+          </button>
+        </div>
       </div>
 
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        aria-label={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+        className="absolute -right-3 top-6 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
       >
         {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
       </button>
+
+      <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} tab="may_tinh" />
     </motion.aside>
   );
 }

@@ -4,7 +4,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown, X } from 'lucide-react';
+import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown, X, Palette } from 'lucide-react';
+import { ChonMauGiaoDien } from '@/components/settings/ChonMauGiaoDien';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
@@ -333,6 +334,10 @@ export default function SettingsPage() {
           khong co that — trinh bay nhu ho so cua chinh ho. */}
       <SettingsSection icon={Building} title={t('settings.business')}>
         <ThongTinDoanhNghiep />
+      </SettingsSection>
+
+      <SettingsSection icon={Palette} title="Màu giao diện">
+        <ChonMauGiaoDien />
       </SettingsSection>
 
       <SettingsSection icon={CreditCard} title={t('settings.subscription')}>

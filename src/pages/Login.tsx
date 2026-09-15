@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Loader2, Leaf, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import MimiCat from '@/components/brand/MimiCat';
+import { ghiDichSauDangNhap } from '@/lib/sauDangNhap';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -183,6 +184,7 @@ export default function Login() {
           type="button"
           onClick={async () => {
             setGoogleLoading(true);
+            ghiDichSauDangNhap('/dashboard/tro-ly');
             const { error } = await signInWithGoogle();
             // Only reached when the redirect never happened; on success the
             // browser has already left this page.

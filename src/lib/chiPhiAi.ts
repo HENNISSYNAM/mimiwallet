@@ -9,15 +9,16 @@
  * đếm đôi; giữ bản API vì nó là số của nhà cung cấp tại lần hỏi gần nhất.
  */
 
-export type NhaCungCapAi = 'openai' | 'anthropic' | 'gemini' | 'khac';
+export type NhaCungCapAi = 'openai' | 'anthropic' | 'gemini' | 'openrouter' | 'khac';
 
 /** Thứ tự cố định: màu và vị trí đi theo nhà cung cấp, không theo thứ hạng. */
-export const THU_TU_NCC: readonly NhaCungCapAi[] = ['openai', 'anthropic', 'gemini', 'khac'];
+export const THU_TU_NCC: readonly NhaCungCapAi[] = ['openai', 'anthropic', 'gemini', 'openrouter', 'khac'];
 
 export const TEN_NCC: Record<NhaCungCapAi, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   gemini: 'Google Gemini',
+  openrouter: 'OpenRouter',
   khac: 'Khác',
 };
 
