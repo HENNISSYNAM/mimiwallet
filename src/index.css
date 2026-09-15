@@ -75,6 +75,9 @@
     --radius-xl: 16px;
     --radius-2xl: 20px;
 
+    /* Chấm của vòng hạt sau ô hỏi MIMI Assistant (HSL, đọc bằng JS trong NenVongHat). */
+    --vong-hat: 216 62% 56%;
+
     /* Many near-invisible layers rather than one dark drop — the surface reads
        as lifted without a visible grey smear under it. */
     --shadow-soft:
@@ -129,10 +132,22 @@
     /* Không có vệt mờ: một đường viền mảnh là thứ duy nhất đọc được ở đây. */
     --shadow-card: 0 0 0 1px hsl(var(--border-subtle));
     --shadow-soft: 0 0 0 1px hsl(var(--border-subtle));
+    --vong-hat: 214 70% 70%;
   }
 
   /* Tên cũ giữ lại làm bí danh — nếu còn chỗ nào ngoài mã nguồn đang gọi nó. */
   .theme-dark { }
+}
+
+@layer components {
+  /* Nền màn MIMI Assistant: xanh nhạt ở trên tan dần vào nền trang, để ô hỏi trắng nổi lên
+     mà không cần đổ bóng đậm. Bản tối dùng than chì ngả xanh, cùng hướng chuyển. */
+  .mimi-tro-ly-nen {
+    background: linear-gradient(180deg, hsl(215 60% 89%) 15%, hsl(216 40% 95%) 70%, hsl(var(--background)) 100%);
+  }
+  .dark .mimi-tro-ly-nen {
+    background: linear-gradient(180deg, hsl(215 25% 14%) 10%, hsl(var(--background)) 95%);
+  }
 }
 
 @layer base {

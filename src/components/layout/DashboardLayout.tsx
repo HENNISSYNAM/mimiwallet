@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
-import { Bell, Search, LayoutDashboard, FileText, ShieldCheck, BarChart3, Fingerprint, X } from 'lucide-react';
+import { Bell, ChevronRight, Search, LayoutDashboard, Settings, Sparkles, Users, X } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
 import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
@@ -37,11 +37,18 @@ function initialsOf(name: string | null): string {
  * the sidebar where a phone user would rarely find it.
  */
 const mobileNav = [
+  // 15/09/2026: hoá đơn, kết nối, báo cáo đều hỏi được trong MIMI Assistant — xem DashboardSidebar.
+  { icon: Sparkles, label: 'Trợ lý', path: '/dashboard/tro-ly' },
   { icon: LayoutDashboard, label: 'Tổng quan', path: '/dashboard' },
-  { icon: FileText, label: 'Hóa đơn', path: '/dashboard/invoices' },
-  { icon: Fingerprint, label: 'Kết nối', path: '/dashboard/fintech' },
-  { icon: BarChart3, label: 'Báo cáo', path: '/dashboard/reports' },
+  { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
+  { icon: Settings, label: 'Cài đặt', path: '/dashboard/settings' },
 ];
+
+/** Trang chi tiết mở từ MIMI Assistant: tiêu đề kèm đường quay về trợ lý. */
+const TRANG_CHI_TIET_CUA_TRO_LY = new Set([
+  '/dashboard/tac-tu', '/dashboard/chinh-sach', '/dashboard/chi-phi-ai', '/dashboard/invoices',
+  '/dashboard/chung-tu', '/dashboard/fintech', '/dashboard/reports',
+]);
 
 /**
  * Header title per route, keyed to the same i18n strings the sidebar uses.
@@ -60,7 +67,10 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/settings': 'sidebar.settings',
   // Chưa có khoá dịch: i18next trả lại chính chuỗi khi không thấy khoá, nên tên
   // hiện đúng. Trước 10/09/2026 bốn trang này có tiêu đề "Dashboard".
+  '/dashboard/tro-ly': 'MIMI Assistant',
+  '/dashboard/chinh-sach': 'Chính sách chi',
   '/dashboard/tac-tu': 'Kiểm soát agent',
+  '/dashboard/chi-phi-ai': 'Chi phí AI',
   '/dashboard/chung-tu': 'Chứng từ chi phí',
   '/dashboard/clients': 'Khách hàng',
 };
@@ -146,7 +156,17 @@ export default function DashboardLayout() {
             scrolled ? 'lg-surface lg-regular border-b hairline' : 'bg-background border-b border-transparent'
           }`}
         >
-          <h1 className="font-display font-bold text-[19px] text-foreground tracking-tight">{title}</h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            {TRANG_CHI_TIET_CUA_TRO_LY.has(location.pathname) && (
+              <>
+                <NavLink to="/dashboard/tro-ly" className="hidden shrink-0 text-sm text-muted-foreground hover:text-foreground sm:inline">
+                  MIMI Assistant
+                </NavLink>
+                <ChevronRight size={14} className="hidden shrink-0 text-muted-foreground sm:inline" aria-hidden />
+              </>
+            )}
+            <h1 className="truncate font-display font-bold text-[19px] text-foreground tracking-tight">{title}</h1>
+          </div>
           <div className="flex items-center gap-3">
             <form
               onSubmit={(e) => { e.preventDefault(); submitSearch(); }}
@@ -258,8 +278,9 @@ export default function DashboardLayout() {
         </nav>
 
         {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
+        {/* Trên màn MIMI Assistant đã có ô hỏi ở giữa; nút chat nổi chỉ là ô hỏi thứ hai. */}
         <MimiLamHoProvider>
-          <AIChatWidget />
+          {location.pathname !== '/dashboard/tro-ly' && <AIChatWidget />}
         </MimiLamHoProvider>
       </div>
     </div>

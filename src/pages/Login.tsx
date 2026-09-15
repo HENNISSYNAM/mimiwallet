@@ -41,7 +41,8 @@ export default function Login() {
     if (error) {
       toast.error(error === 'Invalid login credentials' ? t('login.errorInvalid') : error);
     } else {
-      navigate('/dashboard');
+      // MIMI Assistant là màn làm việc chính từ 15/09/2026.
+      navigate('/dashboard/tro-ly');
     }
   };
 

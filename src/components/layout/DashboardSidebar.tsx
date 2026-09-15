@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Bot, ChevronLeft, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
+import { BarChart3, Bot, ChevronLeft, CircleDollarSign, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,31 +60,21 @@ export default function DashboardSidebar() {
    * trong CSDL. Mỗi khu đặt tên theo việc người dùng đến làm: cho agent chi,
    * giữ chứng từ, và biết tiền đã thật sự đi đâu.
    */
+  /*
+   * MỘT TRỢ LÝ, KHÔNG PHẢI BẢY TRANG (15/09/2026). Kiểm soát agent, Chính sách chi, Chi
+   * phí AI, Hoá đơn, Chứng từ chi phí, Fintech Hub và Báo cáo gộp vào MIMI Assistant: người
+   * dùng hỏi một chỗ, trợ lý mở đúng trang chi tiết khi cần. Các trang đó vẫn sống (route,
+   * dữ liệu, test), chỉ không còn tranh chỗ trên thanh này — mở từ kết quả hoặc từ "Trang chi
+   * tiết" trong trợ lý. Ở lại: Tổng quan (giao dịch chi tiết cần trang riêng), Khách hàng
+   * (module riêng) và Cài đặt (tài khoản, bảo mật — không đưa vào ô hỏi).
+   */
   const navGroups = [
     {
-      label: null, // Tổng quan stands alone above the groups — it is the home.
-      items: [{ icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' }],
-    },
-    {
-      label: t('sidebar.groupAgent'),
+      label: null,
       items: [
-        { icon: Bot, label: 'Kiểm soát agent', path: '/dashboard/tac-tu' },
-        { icon: SlidersHorizontal, label: 'Chính sách chi', path: '/dashboard/chinh-sach' },
-      ],
-    },
-    {
-      label: t('sidebar.groupDocs'),
-      items: [
-        { icon: FileText, label: t('sidebar.invoices'), path: '/dashboard/invoices' },
-        { icon: Receipt, label: 'Chứng từ chi phí', path: '/dashboard/chung-tu' },
+        { icon: Sparkles, label: 'MIMI Assistant', path: '/dashboard/tro-ly' },
+        { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
         { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
-      ],
-    },
-    {
-      label: t('sidebar.groupLedger'),
-      items: [
-        { icon: Fingerprint, label: t('sidebar.fintechHub'), path: '/dashboard/fintech' },
-        { icon: BarChart3, label: t('sidebar.reports'), path: '/dashboard/reports' },
       ],
     },
     {
