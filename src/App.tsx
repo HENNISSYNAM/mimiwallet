@@ -34,6 +34,7 @@ function Page({
 
 const Landing = lazy(() => import("./pages/Landing"));
 const About = lazy(() => import("./pages/About"));
+const TrangNoiDungPage = lazy(() => import("./pages/TrangNoiDungPage"));
 const Login = lazy(() => import("./pages/Login"));
 const BankCallback = lazy(() => import("./pages/BankCallback"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -103,6 +104,10 @@ const App = () => (
               {/* Bộ nhận diện — công khai, không nằm sau đăng nhập: người thiết kế
                   và người viết nội dung phải mở được mà không cần tài khoản. */}
               <Route path="/thuong-hieu" element={<Page path="/thuong-hieu" title="Bộ nhận diện — MIMI WALLET" description="Màu, chữ, và quy tắc viết tiếng Việt của MIMI Wallet. Trang đọc thẳng token đang chạy nên không lệch khỏi sản phẩm."><ThuongHieu /></Page>} />
+              {/* Trang Sản phẩm và Giải pháp — công khai; nội dung ở content/trangNoiDung.ts,
+                  tiêu đề SEO đặt ngay trong trang vì mỗi đường dẫn một tiêu đề. */}
+              <Route path="/san-pham/:slug" element={<TrangNoiDungPage />} />
+              <Route path="/giai-phap/:slug" element={<TrangNoiDungPage />} />
               <Route path="/privacy" element={<Page path="/privacy" title="Chính sách bảo mật — MIMI WALLET" description="Cách MIMI Wallet thu thập, lưu trữ và bảo vệ dữ liệu tài chính của doanh nghiệp bạn, cùng quyền của bạn với dữ liệu đó."><Privacy /></Page>} />
               <Route path="/terms" element={<Page path="/terms" title="Điều khoản sử dụng — MIMI WALLET" description="Điều khoản và điều kiện khi sử dụng dịch vụ MIMI Wallet: quyền, nghĩa vụ và giới hạn trách nhiệm của các bên."><Terms /></Page>} />
               <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, khoản vay và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
