@@ -185,7 +185,7 @@ function CanhPhanLoai() {
   const vt = useViTri(khung, dich, buoc);
 
   return (
-    <Khung khungRef={khung} nen="bg-primary/5" nhan="Minh hoạ">
+    <Khung khungRef={khung} nen="bg-primary/5" nhan="Đang xây · minh hoạ">
       <div className="w-full max-w-md overflow-hidden rounded-lg border border-border bg-card shadow-sm">
         <div className="grid grid-cols-[1.4fr_1fr_auto] border-b border-border bg-muted/50 px-3 py-2 text-[11px] font-medium text-muted-foreground">
           <span>Sao kê · tiền ra</span><span>Nhóm chi</span><span className="text-right">Số tiền</span>
@@ -307,7 +307,8 @@ const CANH = [
   {
     Canh: CanhPhanLoai,
     tieuDe: 'Sao kê tự vào đúng nhóm chi.',
-    mo: 'Mỗi dòng tiền ra được xếp vào nhóm chi phí, để cuối kỳ có sẵn sổ chi phí kèm nguồn từng dòng.',
+    // Chưa có code tự phân loại sao kê (sepay-map ghi category: null) — nên khung ghi "Đang xây".
+    mo: 'Mỗi dòng tiền ra được xếp vào nhóm chi phí, để cuối kỳ có sẵn sổ chi phí kèm nguồn từng dòng. Chức năng đang xây.',
   },
   {
     Canh: CanhDoiTaiKhoan,

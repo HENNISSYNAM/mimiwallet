@@ -81,7 +81,8 @@ const m = {
       ],
       timeline: [
         { step: 'Đọc sao kê', time: '2 phút' },
-        { step: 'Phân loại chi phí', time: 'mỗi ngày' },
+        // Trước ghi "Phân loại chi phí · mỗi ngày": chưa có code tự phân loại (sepay-map ghi category: null).
+        { step: 'Ghép hoá đơn với sao kê', time: 'theo kỳ' },
         { step: 'Kết xuất tờ khai', time: 'cuối kỳ' },
       ],
     },

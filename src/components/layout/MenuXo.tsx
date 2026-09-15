@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bell, Bot, Briefcase, Calculator, CheckCircle2, ChevronDown, Code2, FileText, Handshake, Landmark, LineChart, ListChecks, Lock,
-  PlayCircle, Plug, QrCode, Receipt, ShieldAlert, type LucideIcon,
+  PlayCircle, Plug, QrCode, Receipt, ShieldAlert, Sparkles, type LucideIcon,
 } from 'lucide-react';
 import mimiLogo from '@/assets/mimi-cat.webp';
 import sokhcnLogo from '@/assets/logos/sokhcn.png';
@@ -93,6 +93,7 @@ const MENU_SAN_PHAM: CauHinhMenu = {
   hangDuoi: {
     tieuDe: { vi: 'Nền tảng', en: 'Platform' },
     muc: [
+      { icon: Sparkles, ten: { vi: 'Trí tuệ nhân tạo', en: 'Intelligence' }, mo: { vi: 'Agent làm gì, và bạn giữ gì', en: 'What agents do, what you keep' }, href: '/tri-tue-nhan-tao' },
       { icon: Code2, ten: { vi: 'MCP & API cho agent', en: 'MCP & agent API' }, mo: { vi: 'Nối Claude, Cursor trong một lệnh', en: 'Connect Claude, Cursor in one command' }, href: '/san-pham/mcp-api' },
       { icon: LineChart, ten: { vi: 'Chi phí AI', en: 'AI costs' }, mo: { vi: 'Thấy và giới hạn chi phí AI', en: 'See and cap your AI spend' }, href: '/san-pham/chi-phi-ai', nhan: { vi: 'Đang xây', en: 'In progress' } },
       { icon: Lock, ten: { vi: 'Bảo mật', en: 'Security' }, mo: { vi: 'Mã hoá kháng lượng tử, tách dữ liệu', en: 'Post-quantum encryption, data isolation' }, href: '/san-pham/bao-mat' },
@@ -102,7 +103,7 @@ const MENU_SAN_PHAM: CauHinhMenu = {
   noiBat: {
     kieu: 'meo',
     tieuDe: { vi: 'Xem MIMI làm việc', en: 'Watch MIMI work' },
-    mo: { vi: 'Bốn khung tự chạy: duyệt chi, phân loại sao kê, bắt đổi số tài khoản.', en: 'Four self-running panels: approvals, statement sorting, account-swap alerts.' },
+    mo: { vi: 'Bốn khung tự chạy: duyệt chi, bắt đổi số tài khoản, và hai chức năng đang xây.', en: 'Four self-running panels: approvals, account-swap alerts, and two features in progress.' },
     href: '#demo',
   },
 };
@@ -349,7 +350,7 @@ export function TamMenu({ cauHinh, lang, anchor, dong }: { cauHinh: CauHinhMenu;
           <>
             <div className="my-7 border-t border-border" />
             <p className="mb-5 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{cauHinh.hangDuoi.tieuDe[nn]}</p>
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div className={`grid gap-5 md:grid-cols-2 ${cauHinh.hangDuoi.muc.length > 4 ? 'xl:grid-cols-3' : 'xl:grid-cols-4'}`}>
               {cauHinh.hangDuoi.muc.map((m) => <Muc key={m.ten.vi} m={m} nn={nn} anchor={anchor} dong={dong} />)}
             </div>
           </>

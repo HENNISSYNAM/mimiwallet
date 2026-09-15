@@ -127,7 +127,7 @@ function SubscriptionSection() {
                   // "Ứng vốn hóa đơn" was listed as a paid feature of a product
                   // that does not lend. Replaced with what this tier will
                   // actually do more of.
-                  : ['Tất cả Starter', 'Tự động phân loại chi phí', 'So sánh hai cách tính thuế', 'Tin tức thị trường']
+                  : ['Tất cả Starter', 'Tự phân loại chi phí (đang xây)','So sánh hai cách tính thuế', 'Tin tức thị trường']
                 ).map(f => (
                   <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Check size={12} className="text-primary shrink-0" /> {f}
