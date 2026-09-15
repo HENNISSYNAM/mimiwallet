@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ghepChungTu, type HoaDonVao, type KhoanChi } from '@/lib/khopChungTu';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
+import { chieuTien } from '@/lib/chieuTien';
 
 /**
  * Chứng từ chi phí: khoản nào đã có giấy tờ, khoản nào chưa.
@@ -113,7 +114,9 @@ export default function ChungTuPage() {
 
       setDoanhThuNam(
         (thuNam.data ?? [])
-          .filter((t) => !t.is_synthetic && (t.type === 'income' || Number(t.amount) > 0))
+          // Chiều tiền dùng chung (`lib/chieuTien.ts`). Bản cũ coi `amount > 0` là thu, nên
+          // mọi khoản chi ngân hàng (ghi số dương) bị cộng vào doanh thu năm — con số so ngưỡng thuế.
+          .filter((t) => !t.is_synthetic && chieuTien(t) === 'vao')
           .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
       );
       // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi hoá đơn đầu vào.
@@ -139,7 +142,7 @@ export default function ChungTuPage() {
 
       setChi(
         rows
-          .filter((t) => t.type === 'expense' || Number(t.amount) < 0)
+          .filter((t) => chieuTien(t) === 'ra')
           .map((t) => ({
             id: t.id as string,
             soTien: Math.abs(Number(t.amount)),

@@ -7,6 +7,7 @@ import { DailyBriefCard } from '@/components/DailyBriefCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
 import BatDauTuDau from '@/components/onboarding/BatDauTuDau';
 import { formatVNDShort } from '@/lib/formatters';
+import { chieuTien } from '@/lib/chieuTien';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
@@ -72,7 +73,9 @@ const RANGES = [
  * negative amount for money out. Reading the sign here as well as the type
  * would double-count that negative and file an expense as income.
  */
-const isIncome = (t: Tx) => t.type === 'income';
+// Dùng chung định nghĩa với Báo cáo và Chứng từ chi phí (`lib/chieuTien.ts`): `type`
+// quyết định, dấu chỉ đọc khi thiếu `type` — nên không đếm đôi, và ba màn ra cùng một số.
+const isIncome = (t: Tx) => chieuTien(t) === 'vao';
 const magnitude = (t: Tx) => Math.abs(Number(t.amount) || 0);
 
 function iso(d: Date) { return d.toISOString().slice(0, 10); }
@@ -317,7 +320,8 @@ export default function DashboardOverview() {
     // Tiền về tính trong 3 ngày gần nhất, và chỉ khoản THU.
     vuaCoTienVe: txs.some(
       (t) =>
-        t.amount > 0 &&
+        // `amount > 0` cũ bắt cả khoản chi ngân hàng (cũng ghi số dương) thành "vừa có tiền về".
+        isIncome(t) &&
         Date.now() - new Date(t.transaction_date).getTime() < 3 * 864e5,
     ),
   });

@@ -208,14 +208,29 @@ export default function Onboarding() {
     if (error) { toast.error(error); setRegistering(false); return; }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from('companies').insert({
-        user_id: user.id, name: companyName, tax_id: taxId, industry, province,
+      /*
+       * CẬP NHẬT CÔNG TY SẴN CÓ, KHÔNG CHÈN THÊM.
+       *
+       * Từ 12/08/2026 trigger `create_default_company_trg` tự tạo một công ty ngay
+       * khi tài khoản ra đời (cho người đăng nhập Google). Bản cũ ở đây vẫn chèn
+       * thêm công ty thứ hai mang tên, mã số thuế, ngành, tỉnh vừa khai — trong khi
+       * mọi màn hình đọc công ty CŨ NHẤT. Kết quả (phát hiện 15/09/2026): thông tin
+       * người dùng khai lúc đăng ký không hiện ở đâu, và đồng bộ thuế báo "chưa có
+       * mã số thuế" dù họ đã nhập.
+       *
+       * connected_banks bỏ đi cùng bước "Kết nối dữ liệu": các ô ngân hàng ở đó chỉ
+       * setTimeout 1,5 giây rồi tự đánh dấu đã nối, không gọi API nào. Liên kết thật
+       * nằm ở Fintech Hub qua Cas Link, và ghi vào bank_connections.
+       */
+      const thongTin = {
+        name: companyName, tax_id: taxId, industry, province,
         years_operating: yearsOp, monthly_revenue: revenue, employee_count: empCount,
-        // connected_banks bỏ đi cùng bước "Kết nối dữ liệu": các ô ngân hàng ở
-        // đó chỉ setTimeout 1,5 giây rồi tự đánh dấu đã nối, không gọi API nào.
-        // Liên kết thật nằm ở Fintech Hub qua Cas Link, và ghi vào
-        // bank_connections chứ không phải cột này.
-      });
+      };
+      const { data: coSan } = await supabase
+        .from('companies').select('id').eq('user_id', user.id)
+        .order('created_at', { ascending: true }).limit(1).maybeSingle();
+      if (coSan) await supabase.from('companies').update(thongTin).eq('id', coSan.id);
+      else await supabase.from('companies').insert({ user_id: user.id, ...thongTin });
     }
     setRegistering(false);
     setCompleted(true);

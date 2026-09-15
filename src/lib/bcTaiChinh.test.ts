@@ -49,6 +49,13 @@ describe('theoThang', () => {
     const r = theoThang([gd(-500, '', '2026-08-01'), gd(700, '', '2026-08-01')]);
     expect(r[0]).toMatchObject({ doanhThu: 700, chiPhi: 500 });
   });
+
+  it('HỒI QUY 15/09/2026: khoản chi ngân hàng mang số dương là chi phí, không phải doanh thu', () => {
+    // Đúng hình dạng bankhub-map/sepay-map ghi: số dương, chiều trong type.
+    const r = theoThang([gd(10_000_000, 'income', '2026-09-01'), gd(2_000_000, 'expense', '2026-09-02')]);
+    expect(r[0]).toMatchObject({ doanhThu: 10_000_000, chiPhi: 2_000_000, loiNhuan: 8_000_000 });
+    expect(phanBoChiPhi([gd(2_000_000, 'expense', '2026-09-02', 'Điện')])).toEqual([{ ten: 'Điện', tien: 2_000_000 }]);
+  });
 });
 
 describe('tuoiHoaDon', () => {

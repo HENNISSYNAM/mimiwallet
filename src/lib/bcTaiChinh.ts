@@ -1,3 +1,5 @@
+import { chieuTien } from './chieuTien';
+
 /**
  * Gộp giao dịch và hoá đơn thành số liệu cho trang Báo cáo.
  *
@@ -73,8 +75,11 @@ export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
     if (!/^\d{4}-\d{2}$/.test(khoa)) continue;
     const o = gom.get(khoa) ?? { thu: 0, chi: 0 };
     const tien = Math.abs(Number(t.amount));
-    if (!Number.isFinite(tien)) continue;
-    if (t.type === 'income' || Number(t.amount) > 0) o.thu += tien;
+    // Chiều tiền dùng chung với mọi màn: `type` quyết định, dấu chỉ khi thiếu `type`.
+    // Bản cũ coi `amount > 0` là tiền vào, nên khoản chi ngân hàng (số dương) thành doanh thu.
+    const chieu = chieuTien(t);
+    if (!Number.isFinite(tien) || chieu === null) continue;
+    if (chieu === 'vao') o.thu += tien;
     else o.chi += tien;
     gom.set(khoa, o);
   }
@@ -138,7 +143,7 @@ export function phanBoChiPhi(gd: GiaoDich[]): NhomChiPhi[] {
   const gom = new Map<string, number>();
 
   for (const t of gd) {
-    if (t.type !== 'expense' && Number(t.amount) >= 0) continue;
+    if (chieuTien(t) !== 'ra') continue;
     const tien = Math.abs(Number(t.amount));
     if (!Number.isFinite(tien) || tien <= 0) continue;
     const ten = t.category?.trim() || 'Chưa phân loại';
