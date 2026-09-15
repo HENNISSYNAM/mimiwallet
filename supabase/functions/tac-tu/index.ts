@@ -7,7 +7,8 @@
  *           hạn mức còn lại, xin chi, xem yêu cầu của chính nó. Phần này nằm ở
  *           `_shared/tac-tu/cong-tac-tu.ts`, dùng chung với cửa `mcp`.
  *   Chủ doanh nghiệp — JWT đăng nhập. Tạo agent, đặt chính sách, quản lý người
- *           nhận, duyệt/từ chối, tạm dừng/thu hồi. Phần này ở dưới.
+ *           nhận, tạo yêu cầu chi (qua đúng bộ xét của agent), duyệt/từ chối,
+ *           tạm dừng/thu hồi. Phần này ở dưới.
  *
  * Một agent bị chiếm khoá thì kẻ chiếm cũng chỉ xin được những khoản trong trần,
  * tới người nhận đã duyệt, và vẫn cần một người trả bằng ứng dụng ngân hàng.
@@ -29,6 +30,7 @@ import {
   HAN_LENH_TRA_MS,
   raApi,
   TRAN_SO_TIEN,
+  xinChi,
   type Db,
   type Row,
 } from "../_shared/tac-tu/cong-tac-tu.ts";
@@ -82,6 +84,22 @@ async function xuLyChu(db: Db, userId: string, companyId: string, hanhDong: stri
       await nk({ tac_tu_id: tt.id, su_kien: "tao_tac_tu", chi_tiet: { ten } });
       // Khoá chỉ đi ra đúng lần này.
       return json({ tac_tu: tt, khoa });
+    }
+
+    case "tao_yeu_cau": {
+      // Chủ doanh nghiệp tạo khoản chi, tính vào hạn mức của một agent. Đi đúng đường
+      // `xinChi` của agent: cùng bộ luật, cùng giữ hạn mức, cùng chống trùng bằng
+      // `ma_yeu_cau`. Agent tạm dừng hay thu hồi thì luật từ chối như với agent.
+      const tt = await layTacTu(db, companyId, body.tac_tu_id);
+      if (!tt) return loi("KHONG_THAY", "Không có agent này.", 404);
+      // Thu hồi là vĩnh viễn: không sinh thêm dòng yêu cầu "từ chối" vô nghĩa cho agent đã chết.
+      if (tt.trang_thai === "thu_hoi") return loi("DA_THU_HOI", "Agent đã thu hồi. Chọn agent khác.", 409);
+      const kq = await xinChi(db, tt, body, { nguoi: "nguoi_dung", user_id: userId });
+      // Có dòng yêu cầu (kể cả bị luật từ chối) là tạo thành công: màn hình mở dòng đó
+      // để người tạo đọc lý do. Không có dòng nghĩa là số tiền sai khuôn.
+      if (kq.body.yeu_cau) return json(kq.body);
+      const cau = Array.isArray(kq.body.ly_do) ? kq.body.ly_do.map((l: Row) => l.cau).join(" ") : "";
+      return loi("KHONG_TAO_DUOC", cau || "Không tạo được yêu cầu chi.", kq.status);
     }
 
     case "xoay_khoa": {

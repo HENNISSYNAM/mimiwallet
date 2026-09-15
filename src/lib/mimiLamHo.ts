@@ -47,6 +47,7 @@ export const DICH_KHONG_TU_BAM: ReadonlySet<string> = new Set([
   'tac-tu.khoa-moi',
   'tac-tu.nguoi-nhan.them',
   'tac-tu.nguoi-nhan.xoa',
+  'tac-tu.tao-yeu-cau.gui',
 ]);
 
 export const SO_BUOC_TOI_DA = 12;
@@ -108,6 +109,8 @@ export function nhanViec(cau: string): KichBan | null {
       moTa: `tạo agent "${ten}"`,
       buoc: [
         ...moTrang(KB_TAC_TU, 'Kiểm soát agent'),
+        // Ô thêm agent nằm trong tab Agents. Bấm tab không làm đi tiền nên con trỏ tự bấm được.
+        { loai: 'bam', dich: 'tac-tu.tab.agents', noi: 'Mở tab Agents.' },
         { loai: 'go', dich: 'tac-tu.ten', chu: ten, noi: 'Gõ tên agent vào đây.' },
         {
           loai: 'nhuong',
@@ -123,6 +126,7 @@ export function nhanViec(cau: string): KichBan | null {
     const ten = layTen(cau);
     const buoc: Buoc[] = [
       ...moTrang(KB_TAC_TU, 'Kiểm soát agent'),
+      { loai: 'bam', dich: 'tac-tu.tab.nguoi-nhan', noi: 'Mở tab Người nhận.' },
       { loai: 'chi', dich: 'tac-tu.nguoi-nhan.ngan-hang', noi: 'Chọn đúng ngân hàng của người nhận ở ô này.' },
     ];
     if (stk) buoc.push({ loai: 'go', dich: 'tac-tu.nguoi-nhan.stk', chu: stk, noi: 'Gõ số tài khoản.' });

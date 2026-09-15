@@ -213,7 +213,15 @@ export async function goiTacTu(db: Db, khoa: string, hanhDong: string, body: Row
   }
 }
 
-async function xinChi(db: Db, tt: Row, body: Row): Promise<KetQuaGoi> {
+/**
+ * Ai gửi yêu cầu — để nhật ký ghi đúng người. Agent gửi bằng khoá (mặc định).
+ * Chủ doanh nghiệp gửi từ màn Kiểm soát chi qua hành động `tao_yeu_cau` của
+ * `tac-tu`: cùng hàm này, cùng bộ luật, cùng hạn mức của agent được chọn — người
+ * tạo không có lối tắt qua chính sách.
+ */
+export type NguoiGui = { nguoi: "tac_tu" } | { nguoi: "nguoi_dung"; user_id: string };
+
+export async function xinChi(db: Db, tt: Row, body: Row, nguoiGui: NguoiGui = { nguoi: "tac_tu" }): Promise<KetQuaGoi> {
   const soTien = Number(body.so_tien);
   const nganHangBin = String(body.ngan_hang_bin ?? "").trim();
   const soTaiKhoan = String(body.so_tai_khoan ?? "").replace(/\s/g, "");
@@ -245,7 +253,7 @@ async function xinChi(db: Db, tt: Row, body: Row): Promise<KetQuaGoi> {
       luc: new Date(),
     });
     await ghiNhatKy(db, {
-      company_id: tt.company_id, tac_tu_id: tt.id, su_kien: "xin_chi_sai_khuon", nguoi: "tac_tu",
+      company_id: tt.company_id, tac_tu_id: tt.id, su_kien: "xin_chi_sai_khuon", ...nguoiGui,
       chi_tiet: { so_tien: body.so_tien ?? null, ly_do: q.lyDo.map((l) => l.ma) },
     });
     return { status: 422, body: { ket_qua: "tu_choi", ly_do: q.lyDo } };
@@ -357,7 +365,7 @@ async function xinChi(db: Db, tt: Row, body: Row): Promise<KetQuaGoi> {
     if (error) throw error;
 
     await ghiNhatKy(db, {
-      company_id: tt.company_id, tac_tu_id: tt.id, yeu_cau_id: dong.id, su_kien: "xin_chi", nguoi: "tac_tu",
+      company_id: tt.company_id, tac_tu_id: tt.id, yeu_cau_id: dong.id, su_kien: "xin_chi", ...nguoiGui,
       chi_tiet: { ket_qua: q.ketQua, so_tien: soTien, nhom_chi: nhomChi, ly_do: q.lyDo.map((l: LyDo) => l.ma) },
     });
 

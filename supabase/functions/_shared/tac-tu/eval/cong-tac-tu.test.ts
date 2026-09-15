@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { goiTacTu, HAN_LENH_TRA_MS, type Db } from '../cong-tac-tu';
+import { goiTacTu, HAN_LENH_TRA_MS, xinChi, type Db } from '../cong-tac-tu';
 import { bamKhoa, sinhKhoa } from '../khoa';
 import { xuLyMcp } from '../../mcp/may-chu';
 import { DbGia, type Dong } from './db-gia';
@@ -212,5 +212,54 @@ describe('qua cửa MCP', () => {
     expect(tra.result.isError).not.toBe(true);
     expect(m.db.bang.yeu_cau_chi).toHaveLength(1);
     expect(m.db.bang.yeu_cau_chi[0].trang_thai).toBe('da_duyet');
+  });
+});
+
+describe('chủ doanh nghiệp tạo yêu cầu chi (hành động tao_yeu_cau)', () => {
+  const chu = { nguoi: 'nguoi_dung' as const, user_id: 'user-chu' };
+  const tao = (m: Awaited<ReturnType<typeof moiTruong>>, body: Dong) =>
+    xinChi(m.db as unknown as Db, m.db.bang.tac_tu[0], body, chu);
+
+  it('không có lối tắt qua luật: vượt hạn mức mỗi khoản vẫn bị từ chối, có dòng để đọc lý do', async () => {
+    const m = await moiTruong();
+    const r = await tao(m, xin({ so_tien: 6_000_000 }));
+    expect(r.status).toBe(422);
+    expect(r.body.yeu_cau.trang_thai).toBe('tu_choi');
+    expect(maLyDo(r.body)).toContain('VUOT_HAN_MUC_MOI_LAN');
+  });
+
+  it('nhật ký ghi đúng người tạo, không ghi là agent', async () => {
+    const m = await moiTruong();
+    const r = await tao(m, xin());
+    expect(r.body.yeu_cau.trang_thai).toBe('da_duyet');
+    const nk = m.db.bang.nhat_ky_tac_tu.filter((n) => n.su_kien === 'xin_chi');
+    expect(nk).toHaveLength(1);
+    expect(nk[0]).toMatchObject({ nguoi: 'nguoi_dung', user_id: 'user-chu', yeu_cau_id: r.body.yeu_cau.id });
+  });
+
+  it('khoản chủ tạo giữ chỗ hạn mức chung với khoản agent xin', async () => {
+    const m = await moiTruong({ nguong_can_duyet: 10_000_000 });
+    for (let i = 0; i < 3; i++) expect((await tao(m, xin({ so_tien: 5_000_000 }))).body.yeu_cau.trang_thai).toBe('da_duyet');
+    expect((await m.goi('xin_chi', xin({ so_tien: 5_000_000 }))).body.yeu_cau.trang_thai).toBe('da_duyet');
+    const vuot = await m.goi('xin_chi', xin({ so_tien: 5_000_000 }));
+    expect(vuot.status).toBe(422);
+    expect(maLyDo(vuot.body)).toContain('VUOT_HAN_MUC_NGAY');
+  });
+
+  it('gửi lại cùng mã yêu cầu (bấm hai lần, mạng chập) không tạo khoản thứ hai', async () => {
+    const m = await moiTruong();
+    const a = await tao(m, xin({ ma_yeu_cau: 'nguoi-dung-1' }));
+    const b = await tao(m, xin({ ma_yeu_cau: 'nguoi-dung-1' }));
+    expect(b.body.trung_lap).toBe(true);
+    expect(b.body.yeu_cau.id).toBe(a.body.yeu_cau.id);
+    expect(m.db.bang.yeu_cau_chi).toHaveLength(1);
+  });
+
+  it('agent đang tạm dừng: luật từ chối như khi agent tự xin', async () => {
+    const m = await moiTruong();
+    m.db.bang.tac_tu[0].trang_thai = 'tam_dung';
+    const r = await tao(m, xin());
+    expect(r.body.yeu_cau.trang_thai).toBe('tu_choi');
+    expect(maLyDo(r.body)).toContain('TAC_TU_TAM_DUNG');
   });
 });
