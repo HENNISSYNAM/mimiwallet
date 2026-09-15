@@ -6,13 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Globe, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-cat.webp';
-import { MenuSanPhamDiDong, NHAN_TIEU_DE, TamMenuSanPham } from '@/components/layout/MenuSanPham';
+import { CAC_MENU, MenuDiDong, TamMenu, ngonNguMenu, type KhoaMenu } from '@/components/layout/MenuXo';
 
-const navLinks = [
-  { labelKey: 'nav.solutions', href: '#solutions' },
-  { labelKey: 'nav.features', href: '#features' },
-  { labelKey: 'nav.pricing', href: '#pricing' },
-];
+/*
+ * "Giải pháp" và "Tính năng" từng là liên kết thẳng tới một khu trên trang chủ.
+ * Từ 14/09/2026 chúng nằm trong ba menu xổ (Sản phẩm, Giải pháp, Đối tác — xem
+ * MenuXo.tsx); chỉ Bảng giá còn là liên kết thẳng.
+ */
+const navLinks = [{ labelKey: 'nav.pricing', href: '#pricing' }];
 
 // Kept apart from navLinks: those are in-page anchors, this is a route.
 const navRoutes = [{ labelKey: 'nav.about', to: '/about' }];
@@ -35,10 +36,9 @@ function daDongThongBao(): boolean {
 
 export default function Navbar() {
   const { pathname } = useLocation();
-  // These three point at sections that only exist on the landing page, but the
-  // navbar renders on every route. A bare "#pricing" on /about matches nothing,
-  // so "Bảng giá" simply did nothing there. Prefixing with the root sends the
-  // reader home first and then to the section.
+  // Anchors point at sections that only exist on the landing page, but the
+  // navbar renders on every route. Prefixing with the root sends the reader
+  // home first and then to the section.
   const onLanding = pathname === '/';
   const anchor = (href: string) => (onLanding ? href : `/${href}`);
 
@@ -46,32 +46,37 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const vi = !i18n.language.startsWith('en');
+  const nn = ngonNguMenu(i18n.language);
+  const vi = nn === 'vi';
 
   const [dongThongBao, setDongThongBao] = useState(daDongThongBao);
   // Dải chỉ đứng ở đầu trang; cuộn xuống thì nhường chỗ cho thanh điều hướng.
   const coThongBao = !dongThongBao && !scrolled;
 
-  const [moMenu, setMoMenu] = useState(false);
+  const [menuMo, setMenuMo] = useState<KhoaMenu | null>(null);
   const henDong = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const moNgay = () => {
+  const huyHen = () => {
     if (henDong.current) clearTimeout(henDong.current);
-    setMoMenu(true);
   };
+  const moMenu = (khoa: KhoaMenu) => {
+    huyHen();
+    setMenuMo(khoa);
+  };
+  const giuMenu = () => huyHen();
   // Trễ một nhịp để rê chuột từ nút xuống tấm menu không làm menu đóng giữa đường.
   const dongTre = () => {
-    if (henDong.current) clearTimeout(henDong.current);
-    henDong.current = setTimeout(() => setMoMenu(false), 140);
+    huyHen();
+    henDong.current = setTimeout(() => setMenuMo(null), 140);
   };
 
   useEffect(() => {
-    if (!moMenu) return;
-    const phim = (e: KeyboardEvent) => e.key === 'Escape' && setMoMenu(false);
+    if (!menuMo) return;
+    const phim = (e: KeyboardEvent) => e.key === 'Escape' && setMenuMo(null);
     window.addEventListener('keydown', phim);
     return () => window.removeEventListener('keydown', phim);
-  }, [moMenu]);
+  }, [menuMo]);
 
-  useEffect(() => () => { if (henDong.current) clearTimeout(henDong.current); }, []);
+  useEffect(() => huyHen, []);
 
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
@@ -83,6 +88,7 @@ export default function Navbar() {
   };
 
   const tren = coThongBao ? CAO_THONG_BAO : 0;
+  const menuDangMo = CAC_MENU.find((m) => m.khoa === menuMo) ?? null;
 
   return (
     <>
@@ -119,7 +125,7 @@ export default function Navbar() {
 
       <nav
         className={`fixed left-0 right-0 z-50 h-16 flex items-center transition-all duration-300 ${
-          scrolled || moMenu
+          scrolled || menuMo
             ? 'lg-surface lg-regular border-b hairline'
             : 'bg-transparent'
         }`}
@@ -139,19 +145,24 @@ export default function Navbar() {
             <span className="mimi-wordmark">MIMI WALLET</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
-            <div onMouseEnter={moNgay} onMouseLeave={dongTre}>
-              <button
-                type="button"
-                onClick={() => (moMenu ? setMoMenu(false) : moNgay())}
-                aria-expanded={moMenu}
-                aria-controls="menu-san-pham"
-                className={`flex items-center gap-1 text-sm transition-colors ${moMenu ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                {NHAN_TIEU_DE.sanPham[vi ? 'vi' : 'en']}
-                <ChevronDown size={14} className={`transition-transform duration-200 ${moMenu ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
+          <div className="hidden md:flex items-center gap-7">
+            {CAC_MENU.map((m) => {
+              const dangMo = menuMo === m.khoa;
+              return (
+                <div key={m.khoa} onMouseEnter={() => moMenu(m.khoa)} onMouseLeave={dongTre}>
+                  <button
+                    type="button"
+                    onClick={() => (dangMo ? setMenuMo(null) : moMenu(m.khoa))}
+                    aria-expanded={dangMo}
+                    aria-controls="menu-xo"
+                    className={`flex items-center gap-1 text-sm transition-colors ${dangMo ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    {m.ten[nn]}
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${dangMo ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+              );
+            })}
             {navLinks.map((l) => (
               <a
                 key={l.labelKey}
@@ -215,22 +226,23 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Tấm menu sản phẩm — nằm ngoài <nav> để rộng theo container, không theo hàng nút. */}
+      {/* Tấm menu — nằm ngoài <nav> để rộng theo container, không theo hàng nút. */}
       <AnimatePresence>
-        {moMenu && (
+        {menuDangMo && (
           <motion.div
-            id="menu-san-pham"
+            key={menuDangMo.khoa}
+            id="menu-xo"
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16 }}
-            onMouseEnter={moNgay}
+            onMouseEnter={giuMenu}
             onMouseLeave={dongTre}
             className="fixed inset-x-0 z-50 hidden md:block"
             style={{ top: tren + 64 }}
           >
             <div className="container mx-auto px-4 lg:px-8">
-              <TamMenuSanPham lang={i18n.language} anchor={anchor} dong={() => setMoMenu(false)} />
+              <TamMenu cauHinh={menuDangMo} lang={i18n.language} anchor={anchor} dong={() => setMenuMo(null)} />
             </div>
           </motion.div>
         )}
@@ -250,7 +262,9 @@ export default function Navbar() {
             >
               <X size={28} />
             </button>
-            <MenuSanPhamDiDong lang={i18n.language} anchor={anchor} dong={() => setMobileOpen(false)} />
+            {CAC_MENU.map((m) => (
+              <MenuDiDong key={m.khoa} cauHinh={m} lang={i18n.language} anchor={anchor} dong={() => setMobileOpen(false)} />
+            ))}
             {navLinks.map((l) => (
               <a
                 key={l.labelKey}

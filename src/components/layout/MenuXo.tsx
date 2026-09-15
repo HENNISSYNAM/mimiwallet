@@ -1,0 +1,323 @@
+import { useState } from 'react';
+import {
+  Bot, Briefcase, Calculator, CheckCircle2, ChevronDown, Code2, FileText, Handshake, Landmark, LineChart, Lock, Plug, QrCode,
+  Receipt, ShieldAlert, type LucideIcon,
+} from 'lucide-react';
+import mimiLogo from '@/assets/mimi-cat.webp';
+import sokhcnLogo from '@/assets/logos/sokhcn.png';
+import { CONTACT } from '@/config/company';
+
+/**
+ * Ba menu xổ lớn của trang chủ: Sản phẩm, Giải pháp, Đối tác.
+ *
+ * LUẬT CHUNG — menu là danh sách đầu tiên người ta đọc về MIMI, nên nó không
+ * được khoe nhiều hơn app làm được:
+ *   - Mỗi mục là chức năng hoặc cách dùng có thật, trỏ tới đúng khu trên trang chủ.
+ *   - Chưa xong thì gắn nhãn ngay trong menu ("Đang xây").
+ *   - "Đối tác": MIMI CHƯA có chương trình đối tác chính thức. Menu chỉ nêu gói
+ *     cho văn phòng kế toán (có trong bảng giá), các dịch vụ MIMI đang kết nối
+ *     (ghi rõ không phải thoả thuận đối tác), công nhận ươm tạo có số quyết định,
+ *     và lối liên hệ bằng email.
+ */
+
+type NgonNgu = 'vi' | 'en';
+type Chu = Record<NgonNgu, string>;
+export type KhoaMenu = 'san-pham' | 'giai-phap' | 'doi-tac';
+
+interface MucMenu {
+  ten: Chu;
+  mo?: Chu;
+  href: string;
+  icon?: LucideIcon;
+  nhan?: Chu;
+  /** Mục nổi thành một hộp nền xám, như lời mời hành động. */
+  hop?: boolean;
+}
+
+interface NhomMenu {
+  tieuDe: Chu;
+  muc: MucMenu[];
+  ghiChu?: Chu;
+}
+
+interface NoiBat {
+  kieu: 'meo' | 'ma-lenh' | 'logo';
+  tieuDe: Chu;
+  mo: Chu;
+  href: string;
+}
+
+export interface CauHinhMenu {
+  khoa: KhoaMenu;
+  ten: Chu;
+  /** Mỗi phần tử là một cột; một cột có thể xếp nhiều nhóm. */
+  cot: NhomMenu[][];
+  hangDuoi?: NhomMenu;
+  noiBat: NoiBat;
+}
+
+/** Email hợp tác kèm tiêu đề; chưa cấu hình email thì về khu đăng ký, không để liên kết chết. */
+const email = (chuDe: string) =>
+  CONTACT.email ? `mailto:${CONTACT.email}?subject=${encodeURIComponent(chuDe)}` : '#dang-ky';
+
+const MENU_SAN_PHAM: CauHinhMenu = {
+  khoa: 'san-pham',
+  ten: { vi: 'Sản phẩm', en: 'Products' },
+  cot: [
+    [{
+      tieuDe: { vi: 'Chi tiêu & duyệt', en: 'Spend & approvals' },
+      muc: [
+        { icon: Bot, ten: { vi: 'Kiểm soát agent', en: 'Agent controls' }, mo: { vi: 'Hạn mức, duyệt, nhật ký', en: 'Limits, approvals, audit log' }, href: '#agent-ai' },
+        { icon: CheckCircle2, ten: { vi: 'Duyệt chi', en: 'Spend approvals' }, mo: { vi: 'Một chạm, tiền đi khi bạn trả', en: 'One tap, money moves when you pay' }, href: '#demo' },
+        { icon: ShieldAlert, ten: { vi: 'Chống chuyển nhầm', en: 'Transfer protection' }, mo: { vi: 'Bắt đổi số tài khoản, giữ người nhận mới', en: 'Catch account swaps, hold new payees' }, href: '#demo' },
+      ],
+    }],
+    [{
+      tieuDe: { vi: 'Hoá đơn & chứng từ', en: 'Invoices & documents' },
+      muc: [
+        { icon: QrCode, ten: { vi: 'Hoá đơn kèm mã QR', en: 'QR invoices' }, mo: { vi: 'Tự khớp khi tiền về', en: 'Reconcile when money arrives' }, href: '#solutions' },
+        { icon: Receipt, ten: { vi: 'Chứng từ chi phí', en: 'Expense records' }, mo: { vi: 'Sổ chi phí kèm nguồn từng dòng', en: 'Every line with its source' }, href: '#solutions' },
+        { icon: FileText, ten: { vi: 'Hoá đơn điện tử', en: 'E-invoices' }, mo: { vi: 'Đọc từ cơ quan thuế, chỉ đọc', en: 'Read-only from the tax authority' }, href: '#solutions' },
+      ],
+    }],
+    [{
+      tieuDe: { vi: 'Sổ & thuế', en: 'Ledger & tax' },
+      muc: [
+        { icon: Landmark, ten: { vi: 'Đối soát sao kê', en: 'Statement matching' }, mo: { vi: 'Khớp tiền theo mã tham chiếu', en: 'Match money by reference code' }, href: '#features' },
+        { icon: Calculator, ten: { vi: 'Hai cách tính thuế', en: 'Two tax methods' }, mo: { vi: 'Cho hộ kinh doanh từ 2026', en: 'For household businesses from 2026' }, href: '#solutions' },
+      ],
+    }],
+  ],
+  hangDuoi: {
+    tieuDe: { vi: 'Nền tảng', en: 'Platform' },
+    muc: [
+      { icon: Code2, ten: { vi: 'MCP & API cho agent', en: 'MCP & agent API' }, mo: { vi: 'Nối Claude, Cursor trong một lệnh', en: 'Connect Claude, Cursor in one command' }, href: '#agent-ai' },
+      { icon: LineChart, ten: { vi: 'Chi phí AI', en: 'AI costs' }, mo: { vi: 'Thấy và giới hạn chi phí AI', en: 'See and cap your AI spend' }, href: '#demo', nhan: { vi: 'Đang xây', en: 'In progress' } },
+      { icon: Lock, ten: { vi: 'Bảo mật', en: 'Security' }, mo: { vi: 'Mã hoá kháng lượng tử, tách dữ liệu', en: 'Post-quantum encryption, data isolation' }, href: '#technology' },
+      { icon: Plug, ten: { vi: 'Kết nối', en: 'Connections' }, mo: { vi: 'Ngân hàng, SePay, hoá đơn điện tử', en: 'Banks, SePay, e-invoices' }, href: '#features' },
+    ],
+  },
+  noiBat: {
+    kieu: 'meo',
+    tieuDe: { vi: 'Xem MIMI làm việc', en: 'Watch MIMI work' },
+    mo: { vi: 'Bốn khung tự chạy: duyệt chi, phân loại sao kê, bắt đổi số tài khoản.', en: 'Four self-running panels: approvals, statement sorting, account-swap alerts.' },
+    href: '#demo',
+  },
+};
+
+const MENU_GIAI_PHAP: CauHinhMenu = {
+  khoa: 'giai-phap',
+  ten: { vi: 'Giải pháp', en: 'Solutions' },
+  cot: [
+    [{
+      tieuDe: { vi: 'Theo quy mô', en: 'By size' },
+      muc: [
+        { ten: { vi: 'Startup & công ty công nghệ', en: 'Startups & tech companies' }, mo: { vi: 'Đã dùng AI, bắt đầu giao việc cho agent', en: 'Already on AI, starting to hand work to agents' }, href: '#agent-ai' },
+        { ten: { vi: 'Doanh nghiệp nhỏ và vừa', en: 'Small & medium businesses' }, mo: { vi: 'Duyệt chi, chống chuyển nhầm, đối soát sao kê', en: 'Approvals, transfer protection, statement matching' }, href: '#demo' },
+        { ten: { vi: 'Hộ kinh doanh', en: 'Household businesses' }, mo: { vi: 'Chứng từ chi phí và hai cách tính thuế', en: 'Expense records and two tax methods' }, href: '#solutions' },
+        { ten: { vi: 'Văn phòng kế toán', en: 'Accounting firms' }, mo: { vi: 'Nhiều khách hàng trên một chỗ', en: 'Many clients in one place' }, href: '#pricing' },
+        { ten: { vi: 'Dùng thử cùng đội MIMI', en: 'Try it with the MIMI team' }, mo: { vi: 'Để lại email, chúng tôi liên hệ trong 24 giờ', en: 'Leave your email, we reply within 24 hours' }, href: '#dang-ky', hop: true },
+      ],
+    }],
+    [{
+      tieuDe: { vi: 'Theo ngành', en: 'By industry' },
+      muc: [
+        { ten: { vi: 'Agency & quảng cáo', en: 'Agencies & advertising' }, mo: { vi: 'Duyệt ngân sách quảng cáo trước khi nạp', en: 'Approve ad budgets before top-ups' }, href: '#demo' },
+        { ten: { vi: 'Thương mại điện tử', en: 'E-commerce' }, mo: { vi: 'Thu tiền bằng mã QR, tự khớp khi tiền về', en: 'Collect by QR, reconcile when money arrives' }, href: '#solutions' },
+        { ten: { vi: 'Phần mềm & AI', en: 'Software & AI' }, mo: { vi: 'Giới hạn chi cho API, máy chủ, công cụ AI', en: 'Cap spend on APIs, servers and AI tools' }, href: '#agent-ai' },
+        { ten: { vi: 'Dịch vụ chuyên môn', en: 'Professional services' }, mo: { vi: 'Hoá đơn, chứng từ và công nợ khách hàng', en: 'Invoices, records and client receivables' }, href: '#solutions' },
+        { ten: { vi: 'Bán lẻ & dịch vụ', en: 'Retail & services' }, mo: { vi: 'Sổ chi phí sẵn cho kỳ kê khai', en: 'Expense books ready for filing' }, href: '#solutions' },
+      ],
+    }],
+  ],
+  noiBat: {
+    kieu: 'ma-lenh',
+    tieuDe: { vi: 'Nối agent vào MIMI trong một lệnh', en: 'Connect an agent in one command' },
+    mo: { vi: 'MCP server có sẵn cho Claude, Cursor và mọi ứng dụng hỗ trợ MCP.', en: 'A ready MCP server for Claude, Cursor and any MCP client.' },
+    href: '#agent-ai',
+  },
+};
+
+const MENU_DOI_TAC: CauHinhMenu = {
+  khoa: 'doi-tac',
+  ten: { vi: 'Đối tác', en: 'Partners' },
+  cot: [
+    [{
+      tieuDe: { vi: 'Cho văn phòng kế toán', en: 'For accounting firms' },
+      muc: [
+        { icon: Briefcase, ten: { vi: 'Gói Kế toán & đại lý thuế', en: 'Accountants & tax agents plan' }, mo: { vi: 'Nhiều doanh nghiệp, nhật ký ai duyệt khoản nào', en: 'Many businesses, a log of who approved what' }, href: '#pricing' },
+        { icon: Handshake, ten: { vi: 'Hợp tác cùng văn phòng kế toán', en: 'Partner as an accounting firm' }, mo: { vi: 'Để lại liên hệ, đội MIMI trả lời trực tiếp', en: 'Leave your details, the MIMI team replies directly' }, href: email('Hợp tác văn phòng kế toán') },
+      ],
+    }],
+    [{
+      tieuDe: { vi: 'Đang kết nối trong sản phẩm', en: 'Connected in the product' },
+      muc: [
+        { ten: { vi: 'Cas', en: 'Cas' }, mo: { vi: 'Liên kết tài khoản ngân hàng', en: 'Bank account linking' }, href: '#features' },
+        { ten: { vi: 'SePay', en: 'SePay' }, mo: { vi: 'Báo tiền về theo thời gian thực', en: 'Real-time incoming payment alerts' }, href: '#features' },
+        { ten: { vi: 'Hoá đơn điện tử', en: 'E-invoices' }, mo: { vi: 'Đọc từ cơ quan thuế, chỉ đọc', en: 'Read-only from the tax authority' }, href: '#solutions' },
+        { ten: { vi: 'MCP', en: 'MCP' }, mo: { vi: 'Claude, Cursor và ứng dụng hỗ trợ MCP', en: 'Claude, Cursor and other MCP clients' }, href: '#agent-ai' },
+      ],
+      ghiChu: { vi: 'Đây là dịch vụ MIMI kết nối tới, không phải thoả thuận đối tác.', en: 'Services MIMI connects to — not partnership agreements.' },
+    }],
+    [{
+      tieuDe: { vi: 'Hợp tác cùng MIMI', en: 'Build with MIMI' },
+      muc: [
+        { ten: { vi: 'Ngân hàng & ví điện tử', en: 'Banks & e-wallets' }, mo: { vi: 'Đường tiền cho doanh nghiệp dùng agent', en: 'Payment rails for agent-run businesses' }, href: email('Hợp tác ngân hàng và ví') },
+        { ten: { vi: 'Phần mềm kế toán & ERP', en: 'Accounting software & ERP' }, mo: { vi: 'Đưa khoản chi đã đối soát vào sổ', en: 'Send reconciled spend to the books' }, href: email('Hợp tác phần mềm kế toán') },
+        { ten: { vi: 'Ươm tạo & nhà đầu tư', en: 'Incubators & investors' }, mo: { vi: 'Trao đổi về MIMI', en: 'Talk to us about MIMI' }, href: email('Ươm tạo và đầu tư') },
+      ],
+      ghiChu: { vi: 'Chưa có chương trình đối tác chính thức — chúng tôi trả lời từng liên hệ.', en: 'No formal partner program yet — we answer every enquiry.' },
+    }],
+  ],
+  noiBat: {
+    kieu: 'logo',
+    tieuDe: { vi: 'Được tuyển chọn ươm tạo', en: 'Selected for incubation' },
+    mo: { vi: 'Trung tâm Khởi nghiệp Sáng tạo TP.HCM · Quyết định 231/QĐ-KNST, 25/11/2025', en: 'Ho Chi Minh City Innovative Startup Center · Decision 231/QĐ-KNST, 25/11/2025' },
+    href: '#cong-nhan',
+  },
+};
+
+export const CAC_MENU: CauHinhMenu[] = [MENU_SAN_PHAM, MENU_GIAI_PHAP, MENU_DOI_TAC];
+
+export const ngonNguMenu = (lang: string): NgonNgu => (lang.startsWith('en') ? 'en' : 'vi');
+
+const TIEU_DE_NOI_BAT: Chu = { vi: 'Nổi bật', en: 'Featured' };
+
+type Dan = (href: string) => string;
+const diToi = (anchor: Dan, href: string) => (href.startsWith('mailto:') ? href : anchor(href));
+
+function Muc({ m, nn, anchor, dong }: { m: MucMenu; nn: NgonNgu; anchor: Dan; dong: () => void }) {
+  const href = diToi(anchor, m.href);
+  const nhan = m.nhan && (
+    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">{m.nhan[nn]}</span>
+  );
+
+  if (m.hop) {
+    return (
+      <a href={href} onClick={dong} className="mt-2 block rounded-lg bg-muted/70 px-5 py-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <span className="block text-[15px] font-medium text-foreground">{m.ten[nn]}</span>
+        {m.mo && <span className="block text-sm text-muted-foreground">{m.mo[nn]}</span>}
+      </a>
+    );
+  }
+
+  if (m.icon) {
+    const Icon = m.icon;
+    return (
+      <a href={href} onClick={dong} className="group -m-2 flex items-start gap-3.5 rounded-lg p-2 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-foreground transition-colors group-hover:bg-background">
+          <Icon size={18} strokeWidth={1.75} />
+        </span>
+        <span className="min-w-0">
+          <span className="flex items-center gap-2 text-[15px] font-medium text-foreground">{m.ten[nn]}{nhan}</span>
+          {m.mo && <span className="block text-sm text-muted-foreground">{m.mo[nn]}</span>}
+        </span>
+      </a>
+    );
+  }
+
+  return (
+    <a href={href} onClick={dong} className="-mx-2 block rounded-md px-2 py-1 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <span className="flex items-center gap-2 text-[15px] font-medium text-foreground">{m.ten[nn]}{nhan}</span>
+      {m.mo && <span className="block text-sm text-muted-foreground">{m.mo[nn]}</span>}
+    </a>
+  );
+}
+
+function Nhom({ nhom, nn, anchor, dong }: { nhom: NhomMenu; nn: NgonNgu; anchor: Dan; dong: () => void }) {
+  const coIcon = nhom.muc.some((m) => m.icon);
+  return (
+    <div>
+      <p className="mb-5 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{nhom.tieuDe[nn]}</p>
+      <div className={`grid ${coIcon ? 'gap-5' : 'gap-3'}`}>
+        {nhom.muc.map((m) => <Muc key={m.ten.vi} m={m} nn={nn} anchor={anchor} dong={dong} />)}
+      </div>
+      {nhom.ghiChu && <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{nhom.ghiChu[nn]}</p>}
+    </div>
+  );
+}
+
+function CotNoiBat({ nb, nn, anchor, dong }: { nb: NoiBat; nn: NgonNgu; anchor: Dan; dong: () => void }) {
+  return (
+    <div className="hidden border-l border-border bg-muted/40 p-8 lg:block">
+      <p className="mb-5 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{TIEU_DE_NOI_BAT[nn]}</p>
+      <a href={diToi(anchor, nb.href)} onClick={dong} className="group block focus-visible:outline-none">
+        {nb.kieu === 'meo' && (
+          <span className="mimi-hero-warm grid h-36 place-items-center overflow-hidden rounded-lg border border-border">
+            <img src={mimiLogo} alt="" aria-hidden draggable={false} className="h-20 w-20 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105" />
+          </span>
+        )}
+        {nb.kieu === 'ma-lenh' && (
+          <span className="block h-36 overflow-hidden rounded-lg bg-foreground p-4 font-mono text-[11px] leading-relaxed text-background">
+            <span className="block opacity-60">$ claude mcp add --transport http \</span>
+            <span className="block">&nbsp;&nbsp;mimi …/functions/v1/mcp \</span>
+            <span className="block">&nbsp;&nbsp;--header "x-mimi-agent-key: mimi_ak_…"</span>
+            <span className="mt-3 block text-emerald-400">✓ xin_chi · xem_chinh_sach</span>
+            <span className="block text-emerald-400">✓ xem_yeu_cau · tra_ma_ngan_hang</span>
+          </span>
+        )}
+        {nb.kieu === 'logo' && (
+          <span className="grid h-36 place-items-center rounded-lg border border-border bg-white">
+            <img src={sokhcnLogo} alt="" aria-hidden draggable={false} className="h-20 w-20 object-contain" />
+          </span>
+        )}
+        <span className="mt-4 block text-[15px] font-medium text-foreground underline-offset-4 group-hover:underline">{nb.tieuDe[nn]}</span>
+        <span className="mt-1 block text-sm text-muted-foreground">{nb.mo[nn]}</span>
+      </a>
+    </div>
+  );
+}
+
+/** Tấm menu trên máy tính. `anchor` đổi "#demo" thành "/#demo" khi không ở trang chủ. */
+export function TamMenu({ cauHinh, lang, anchor, dong }: { cauHinh: CauHinhMenu; lang: string; anchor: Dan; dong: () => void }) {
+  const nn = ngonNguMenu(lang);
+  const lopCot = cauHinh.cot.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3';
+  return (
+    <div className="grid overflow-hidden rounded-xl border border-border bg-card shadow-[0_24px_60px_-24px_rgba(15,23,42,0.35)] lg:grid-cols-[1fr_300px]">
+      <div className="p-8">
+        <div className={`grid gap-8 ${lopCot}`}>
+          {cauHinh.cot.map((cot, i) => (
+            <div key={i} className={`grid content-start gap-8 ${i > 0 ? 'md:border-l md:border-border md:pl-8' : ''}`}>
+              {cot.map((nhom) => <Nhom key={nhom.tieuDe.vi} nhom={nhom} nn={nn} anchor={anchor} dong={dong} />)}
+            </div>
+          ))}
+        </div>
+        {cauHinh.hangDuoi && (
+          <>
+            <div className="my-7 border-t border-border" />
+            <p className="mb-5 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{cauHinh.hangDuoi.tieuDe[nn]}</p>
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {cauHinh.hangDuoi.muc.map((m) => <Muc key={m.ten.vi} m={m} nn={nn} anchor={anchor} dong={dong} />)}
+            </div>
+          </>
+        )}
+      </div>
+      <CotNoiBat nb={cauHinh.noiBat} nn={nn} anchor={anchor} dong={dong} />
+    </div>
+  );
+}
+
+/** Bản điện thoại: mỗi menu là một mục xổ xuống trong menu toàn màn hình. */
+export function MenuDiDong({ cauHinh, lang, anchor, dong }: { cauHinh: CauHinhMenu; lang: string; anchor: Dan; dong: () => void }) {
+  const nn = ngonNguMenu(lang);
+  const [mo, setMo] = useState(false);
+  const cacNhom = [...cauHinh.cot.flat(), ...(cauHinh.hangDuoi ? [cauHinh.hangDuoi] : [])];
+  return (
+    <div className="w-full max-w-sm">
+      <button
+        type="button"
+        onClick={() => setMo((v) => !v)}
+        aria-expanded={mo}
+        className="flex w-full items-center justify-center gap-2 text-2xl font-display font-bold text-foreground"
+      >
+        {cauHinh.ten[nn]}
+        <ChevronDown size={22} className={`transition-transform ${mo ? 'rotate-180' : ''}`} />
+      </button>
+      {mo && (
+        <div className="mt-6 grid gap-6 text-left">
+          {cacNhom.map((nhom) => <Nhom key={nhom.tieuDe.vi} nhom={nhom} nn={nn} anchor={anchor} dong={dong} />)}
+        </div>
+      )}
+    </div>
+  );
+}

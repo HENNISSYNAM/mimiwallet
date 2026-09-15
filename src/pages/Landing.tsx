@@ -655,7 +655,7 @@ export default function Landing() {
       </section>
 
       {/* ═══ RECOGNITION & INCUBATION ═══ */}
-      <section className="py-16 border-y border-border/50 bg-secondary/30">
+      <section id="cong-nhan" className="py-16 border-y border-border/50 bg-secondary/30">
         <TrustSection />
       </section>
 
@@ -1189,7 +1189,7 @@ export default function Landing() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section className="py-24 relative overflow-hidden bg-background">
+      <section id="dang-ky" className="py-24 relative overflow-hidden bg-background">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-mimi-green/5" />
           <div className="absolute inset-0 opacity-[0.02]" style={{
