@@ -145,7 +145,7 @@ export default function Navbar() {
             <span className="mimi-wordmark">MIMI WALLET</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-7">
+          <div className="hidden md:flex items-center gap-5 lg:gap-7">
             {CAC_MENU.map((m) => {
               const dangMo = menuMo === m.khoa;
               return (
@@ -177,7 +177,8 @@ export default function Navbar() {
               <Link
                 key={r.labelKey}
                 to={r.to}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
+                // Ẩn ở màn vừa: bốn menu xổ đã chiếm chỗ, và "Về chúng tôi" có sẵn trong menu Tài nguyên.
+                className="hidden xl:inline text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
               >
                 {t(r.labelKey)}
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />

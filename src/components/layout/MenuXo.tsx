@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Bot, Briefcase, Calculator, CheckCircle2, ChevronDown, Code2, FileText, Handshake, Landmark, LineChart, Lock, Plug, QrCode,
-  Receipt, ShieldAlert, type LucideIcon,
+  Bell, Bot, Briefcase, Calculator, CheckCircle2, ChevronDown, Code2, FileText, Handshake, Landmark, LineChart, ListChecks, Lock,
+  PlayCircle, Plug, QrCode, Receipt, ShieldAlert, type LucideIcon,
 } from 'lucide-react';
 import mimiLogo from '@/assets/mimi-cat.webp';
 import sokhcnLogo from '@/assets/logos/sokhcn.png';
@@ -22,7 +22,7 @@ import { CONTACT } from '@/config/company';
 
 type NgonNgu = 'vi' | 'en';
 type Chu = Record<NgonNgu, string>;
-export type KhoaMenu = 'san-pham' | 'giai-phap' | 'doi-tac';
+export type KhoaMenu = 'san-pham' | 'giai-phap' | 'doi-tac' | 'tai-nguyen';
 
 interface MucMenu {
   ten: Chu;
@@ -41,7 +41,7 @@ interface NhomMenu {
 }
 
 interface NoiBat {
-  kieu: 'meo' | 'ma-lenh' | 'logo';
+  kieu: 'meo' | 'ma-lenh' | 'logo' | 'moi';
   tieuDe: Chu;
   mo: Chu;
   href: string;
@@ -177,14 +177,60 @@ const MENU_DOI_TAC: CauHinhMenu = {
   },
 };
 
-export const CAC_MENU: CauHinhMenu[] = [MENU_SAN_PHAM, MENU_GIAI_PHAP, MENU_DOI_TAC];
+/*
+ * "Tài nguyên" chỉ trỏ tới thứ MIMI có thật: khu trên trang chủ và các trang
+ * đang có (Về chúng tôi, Thương hiệu, Quyền riêng tư, Điều khoản). Chưa có blog,
+ * trung tâm trợ giúp hay tuyển dụng — menu không có các mục đó.
+ */
+const MENU_TAI_NGUYEN: CauHinhMenu = {
+  khoa: 'tai-nguyen',
+  ten: { vi: 'Tài nguyên', en: 'Resources' },
+  cot: [
+    [{
+      tieuDe: { vi: 'Khám phá', en: 'Discover' },
+      muc: [
+        { icon: Bell, ten: { vi: 'Cập nhật sản phẩm', en: 'Product updates' }, mo: { vi: 'Những gì vừa chạy thật trên MIMI', en: "What just shipped on MIMI" }, href: '#cap-nhat' },
+        { icon: ListChecks, ten: { vi: 'Nhật ký agent', en: 'Agent activity log' }, mo: { vi: 'Mỗi bước đều để lại dấu vết', en: 'Every step leaves a trace' }, href: '#nhat-ky' },
+        { icon: PlayCircle, ten: { vi: 'Xem MIMI làm việc', en: 'Watch MIMI work' }, mo: { vi: 'Bốn khung tự chạy', en: 'Four self-running panels' }, href: '#demo' },
+        { icon: Code2, ten: { vi: 'Hướng dẫn nối agent', en: 'Connect an agent' }, mo: { vi: 'MCP và API trong một lệnh', en: 'MCP and API in one command' }, href: '#agent-ai' },
+      ],
+    }],
+    [{
+      tieuDe: { vi: 'Kết nối', en: 'Connect' },
+      muc: [
+        { ten: { vi: 'Về chúng tôi', en: 'About us' }, href: '/about' },
+        { ten: { vi: 'Công nhận & ươm tạo', en: 'Recognition & incubation' }, href: '#cong-nhan' },
+        { ten: { vi: 'Bộ nhận diện thương hiệu', en: 'Brand kit' }, href: '/thuong-hieu' },
+        { ten: { vi: 'Liên hệ', en: 'Contact' }, href: '#dang-ky' },
+      ],
+    }],
+    [{
+      tieuDe: { vi: 'Bắt đầu', en: 'Get started' },
+      muc: [
+        { ten: { vi: 'Đăng ký miễn phí', en: 'Sign up free' }, href: '/register' },
+        { ten: { vi: 'Bảng giá', en: 'Pricing' }, href: '#pricing' },
+        { ten: { vi: 'Quyền riêng tư', en: 'Privacy' }, href: '/privacy' },
+        { ten: { vi: 'Điều khoản sử dụng', en: 'Terms of use' }, href: '/terms' },
+      ],
+    }],
+  ],
+  noiBat: {
+    kieu: 'moi',
+    tieuDe: { vi: 'Mới: ba luật chống chuyển nhầm', en: 'New: three transfer-safety rules' },
+    mo: { vi: 'Chặn vòng lặp, giữ người nhận mới 24 giờ, cảnh báo đổi số tài khoản.', en: 'Loop limits, 24-hour payee hold, account-swap alerts.' },
+    href: '#cap-nhat',
+  },
+};
+
+export const CAC_MENU: CauHinhMenu[] = [MENU_SAN_PHAM, MENU_GIAI_PHAP, MENU_DOI_TAC, MENU_TAI_NGUYEN];
 
 export const ngonNguMenu = (lang: string): NgonNgu => (lang.startsWith('en') ? 'en' : 'vi');
 
 const TIEU_DE_NOI_BAT: Chu = { vi: 'Nổi bật', en: 'Featured' };
 
 type Dan = (href: string) => string;
-const diToi = (anchor: Dan, href: string) => (href.startsWith('mailto:') ? href : anchor(href));
+// Mốc trên trang chủ ("#…") đi qua `anchor`; trang riêng ("/…") và thư ("mailto:") giữ nguyên.
+const diToi = (anchor: Dan, href: string) => (href.startsWith('#') ? anchor(href) : href);
 
 function Muc({ m, nn, anchor, dong }: { m: MucMenu; nn: NgonNgu; anchor: Dan; dong: () => void }) {
   const href = diToi(anchor, m.href);
@@ -254,6 +300,17 @@ function CotNoiBat({ nb, nn, anchor, dong }: { nb: NoiBat; nn: NgonNgu; anchor: 
             <span className="block">&nbsp;&nbsp;--header "x-mimi-agent-key: mimi_ak_…"</span>
             <span className="mt-3 block text-emerald-400">✓ xin_chi · xem_chinh_sach</span>
             <span className="block text-emerald-400">✓ xem_yeu_cau · tra_ma_ngan_hang</span>
+          </span>
+        )}
+        {nb.kieu === 'moi' && (
+          <span className="block h-36 overflow-hidden rounded-lg border border-border bg-card p-4">
+            <span className="block font-mono text-[11px] text-muted-foreground">14/09/2026</span>
+            {['VUOT_TAN_SUAT', 'NGUOI_NHAN_MOI_THEM', 'DOI_SO_TAI_KHOAN'].map((ma) => (
+              <span key={ma} className="mt-2 flex items-center gap-2 font-mono text-[11px] text-foreground">
+                <span className="grid h-4 w-4 place-items-center rounded-full bg-emerald-500/15 text-[9px] text-emerald-700 dark:text-emerald-400">✓</span>
+                {ma}
+              </span>
+            ))}
           </span>
         )}
         {nb.kieu === 'logo' && (

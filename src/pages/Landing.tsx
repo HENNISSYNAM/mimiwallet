@@ -7,6 +7,8 @@ import TrustSection from '@/components/landing/TrustSection';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
+import NhatKyAgent from '@/components/landing/NhatKyAgent';
+import CapNhatSanPham from '@/components/landing/CapNhatSanPham';
 import {
   ScoringBolt,
   CashflowChart,
@@ -667,6 +669,12 @@ export default function Landing() {
 
       {/* ═══ KHUNG DEMO TỰ CHẠY ═══ */}
       <DemoTuChay />
+
+      {/* ═══ NHẬT KÝ AGENT + SOẠN LUẬT (ĐANG XÂY) ═══ */}
+      <NhatKyAgent />
+
+      {/* ═══ CẬP NHẬT SẢN PHẨM ═══ */}
+      <CapNhatSanPham />
 
       {/* ═══ VERIFIED CAPABILITY ═══
           Technical facts we can demonstrate on demand, rather than traction the

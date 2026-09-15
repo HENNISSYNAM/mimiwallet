@@ -71,7 +71,7 @@ function ConTro({ x, y, bam }: { x: number; y: number; bam: boolean }) {
   );
 }
 
-function Khung({ khungRef, nen, nhan, children }: { khungRef: RefObject<HTMLDivElement>; nen: string; nhan: string; children: ReactNode }) {
+export function Khung({ khungRef, nen, nhan, children }: { khungRef: RefObject<HTMLDivElement>; nen: string; nhan: string; children: ReactNode }) {
   return (
     <div ref={khungRef} className={`relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-xl p-5 sm:p-8 ${nen}`}>
       <span className="absolute right-3 top-3 z-10 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -82,7 +82,7 @@ function Khung({ khungRef, nen, nhan, children }: { khungRef: RefObject<HTMLDivE
   );
 }
 
-function Chip({ loai, children, chipRef }: { loai: 'cho' | 'duyet' | 'chi' | 'chan'; children: ReactNode; chipRef?: RefObject<HTMLSpanElement> }) {
+export function Chip({ loai, children, chipRef }: { loai: 'cho' | 'duyet' | 'chi' | 'chan'; children: ReactNode; chipRef?: RefObject<HTMLSpanElement> }) {
   const lop = {
     cho: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
     duyet: 'bg-primary/10 text-primary',
@@ -109,7 +109,7 @@ function HoaTietQr() {
   );
 }
 
-function useCanh(thoiGian: readonly number[], buocTinh: number) {
+export function useCanh(thoiGian: readonly number[], buocTinh: number) {
   const khung = useRef<HTMLDivElement>(null);
   const trongKhung = useInView(khung, { amount: 0.35 });
   const giam = useReducedMotion();
