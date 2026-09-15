@@ -52,6 +52,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ChungTuPage = lazy(() => import("./pages/ChungTuPage"));
 const FintechPage = lazy(() => import("./pages/FintechPage"));
 const TacTuPage = lazy(() => import("./pages/TacTuPage"));
+const ChinhSachChiPage = lazy(() => import("./pages/ChinhSachChiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -134,6 +135,7 @@ const App = () => (
               >
                 <Route index element={<Page noIndex path="/dashboard" title="Tổng quan dòng tiền — MIMI WALLET" description="Theo dõi dòng tiền, số dư ngân hàng và dự báo 90 ngày của doanh nghiệp bạn trong một màn hình duy nhất."><DashboardOverview /></Page>} />
                 <Route path="tac-tu" element={<Page noIndex path="/dashboard/tac-tu" title="Kiểm soát chi của agent — MIMI WALLET" description="Đặt hạn mức, duyệt và đối soát mọi khoản chi do agent AI của doanh nghiệp xin — MIMI không giữ và không chuyển tiền."><TacTuPage /></Page>} />
+                <Route path="chinh-sach" element={<Page noIndex path="/dashboard/chinh-sach" title="Chính sách chi — MIMI WALLET" description="Đặt ngưỡng duyệt, hạn mức, nhóm chi và người nhận cho từng agent, rồi đọc lại toàn bộ thành văn bản chính sách."><ChinhSachChiPage /></Page>} />
                 <Route path="invoices" element={<Page noIndex path="/dashboard/invoices" title="Hoá đơn — MIMI WALLET" description="Quản lý hoá đơn đầu ra, đối soát công nợ và theo dõi khoản phải thu của doanh nghiệp bạn theo thời gian thực."><InvoicesPage /></Page>} />
                 <Route path="clients" element={<Page noIndex path="/dashboard/clients" title="Khách hàng — MIMI WALLET" description="Danh sách khách hàng, lịch sử giao dịch và tình trạng công nợ của từng đối tác trong hệ thống MIMI Wallet."><ClientsPage /></Page>} />
                 <Route path="reports" element={<Page noIndex path="/dashboard/reports" title="Báo cáo tài chính — MIMI WALLET" description="Báo cáo dòng tiền, chi phí và thuế được dựng tự động từ sao kê ngân hàng của doanh nghiệp bạn."><ReportsPage /></Page>} />

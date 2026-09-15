@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Bot, ChevronLeft, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { BarChart3, Bot, ChevronLeft, ChevronRight, Cpu, FileText, Fingerprint, Globe, GraduationCap, HelpCircle, LayoutDashboard, Leaf, LogOut, Receipt, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,6 +69,7 @@ export default function DashboardSidebar() {
       label: t('sidebar.groupAgent'),
       items: [
         { icon: Bot, label: 'Kiểm soát agent', path: '/dashboard/tac-tu' },
+        { icon: SlidersHorizontal, label: 'Chính sách chi', path: '/dashboard/chinh-sach' },
       ],
     },
     {

@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import {
-  Bot, Check, ChevronDown, Copy, Download, KeyRound, Loader2, Pause, Play, Plus, QrCode, RefreshCw, ShieldCheck, Trash2, X,
+  Bot, Check, Copy, Download, KeyRound, Loader2, Pause, Play, Plus, QrCode, RefreshCw, ShieldCheck, SlidersHorizontal, Trash2, X,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { docSoTienBangChu } from '@/lib/soTienBangChu';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { SUPABASE_URL } from '@/lib/env';
+import { DIEM_GOI_TAC_TU as DIEM_GOI, goiTacTu as goi } from '@/lib/goiTacTu';
 import { taoChuoiVietQr } from '@/lib/vietqr';
 import { DANH_SACH_NGAN_HANG } from '@/lib/nganHang';
-import { NHOM_CHI, TEN_NHOM_CHI, TRANG_THAI_GIU_HAN_MUC, dauNgayVN, dauThangVN, type NhomChi } from '@/lib/tacTu';
+import { TEN_NHOM_CHI,TRANG_THAI_GIU_HAN_MUC, dauNgayVN, dauThangVN, type NhomChi } from '@/lib/tacTu';
 
 /**
  * Kiểm soát chi của agent — màn hình của chủ doanh nghiệp.
@@ -36,7 +38,6 @@ const tenNganHang = (bin: string) => DANH_SACH_NGAN_HANG.find((n) => n.bin === b
 const lyDoCua = (y: YeuCau) => (Array.isArray(y.ly_do) ? y.ly_do : []) as unknown as Array<{ ma: string; cau: string }>;
 const luc = (s: string | null) =>
   s ? new Date(s).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
-const soTu = (s: string) => Number(s.replace(/\D/g, '') || 0);
 
 const TRANG_THAI: Record<string, { nhan: string; lop: string }> = {
   dang_xet: { nhan: 'Đang xét', lop: 'bg-muted text-muted-foreground' },
@@ -103,25 +104,7 @@ function chiTietNhatKy(n: NhatKy): string {
   }
 }
 
-const DIEM_GOI = `${SUPABASE_URL}/functions/v1/tac-tu`;
 const DIEM_MCP = `${SUPABASE_URL}/functions/v1/mcp`;
-
-async function goi(hanhDong: string, du: Record<string, unknown> = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('Phiên đăng nhập đã hết. Đăng nhập lại.');
-  const res = await fetch(DIEM_GOI, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ hanh_dong: hanhDong, ...du }),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok || body?.error) throw new Error(body?.error ?? `Lỗi ${res.status}`);
-  return body;
-}
 
 const o = 'w-full rounded-xl border border-border bg-background px-3 py-2 text-sm';
 const nut = 'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50';
@@ -310,7 +293,6 @@ export default function TacTuPage() {
                   const kq = await lam(t.id, 'xoay_khoa', { tac_tu_id: t.id });
                   if (kq?.khoa) setKhoaMoi({ ten: t.ten, khoa: kq.khoa });
                 }}
-                luu={(du) => lam(t.id, 'luu_chinh_sach', { tac_tu_id: t.id, ...du }, 'Đã lưu chính sách.')}
               />
             ))}
           </div>
@@ -515,7 +497,7 @@ function ThanhDung({ nhan, da, tran }: { nhan: string; da: number; tran: number 
 }
 
 function TheTacTu({
-  t, cs, suDung, dangLam, doiTrangThai, xoayKhoa, luu,
+  t, cs, suDung, dangLam, doiTrangThai, xoayKhoa,
 }: {
   t: TacTu;
   cs: ChinhSachRow | undefined;
@@ -523,9 +505,7 @@ function TheTacTu({
   dangLam: boolean;
   doiTrangThai: (tt: 'hoat_dong' | 'tam_dung' | 'thu_hoi') => void;
   xoayKhoa: () => void;
-  luu: (du: Record<string, unknown>) => void;
 }) {
-  const [mo, setMo] = useState(false);
   const daThuHoi = t.trang_thai === 'thu_hoi';
 
   return (
@@ -572,104 +552,15 @@ function TheTacTu({
             {cs.chi_tra_nguoi_nhan_da_duyet ? 'chỉ người nhận trong danh sách' : 'người lạ thì hỏi bạn'}
             {cs.het_han ? ` · hết hạn ${luc(cs.het_han)}` : ''}
           </p>
+          {/* Sửa luật ở màn Chính sách chi: mỗi luật một hàng, kèm văn bản chính sách đọc lại được. */}
           {!daThuHoi && (
-            <button onClick={() => setMo((v) => !v)} className="mt-2 flex items-center gap-1 text-xs font-medium text-primary">
-              Sửa chính sách <ChevronDown size={12} className={mo ? 'rotate-180' : ''} />
-            </button>
+            <Link to={`/dashboard/chinh-sach?agent=${t.id}`} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+              <SlidersHorizontal size={12} /> Sửa chính sách
+            </Link>
           )}
-          {mo && <SuaChinhSach cs={cs} dangLam={dangLam} luu={(du) => { luu(du); setMo(false); }} />}
         </>
       )}
     </div>
-  );
-}
-
-function SuaChinhSach({ cs, dangLam, luu }: { cs: ChinhSachRow; dangLam: boolean; luu: (du: Record<string, unknown>) => void }) {
-  const [moiLan, setMoiLan] = useState(String(cs.han_muc_moi_lan));
-  const [ngay, setNgay] = useState(String(cs.han_muc_ngay));
-  const [thang, setThang] = useState(String(cs.han_muc_thang));
-  const [nguong, setNguong] = useState(String(cs.nguong_can_duyet));
-  const [moiNhom, setMoiNhom] = useState(cs.nhom_chi_duoc_phep === null);
-  const [nhom, setNhom] = useState<string[]>(cs.nhom_chi_duoc_phep ?? []);
-  const [chiDaDuyet, setChiDaDuyet] = useState(cs.chi_tra_nguoi_nhan_da_duyet);
-  const [hetHan, setHetHan] = useState(cs.het_han ? cs.het_han.slice(0, 10) : '');
-  const [moiGio, setMoiGio] = useState(cs.so_yeu_cau_moi_gio == null ? '' : String(cs.so_yeu_cau_moi_gio));
-
-  const O = ({ nhan, gia, dat }: { nhan: string; gia: string; dat: (s: string) => void }) => (
-    <label className="block">
-      <span className="mb-1 block text-xs text-muted-foreground">{nhan}</span>
-      <input value={gia} onChange={(e) => dat(e.target.value)} inputMode="numeric" className={o} />
-      <span className="mt-0.5 block text-[11px] text-muted-foreground">{dong(soTu(gia))}</span>
-    </label>
-  );
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        luu({
-          han_muc_moi_lan: soTu(moiLan),
-          han_muc_ngay: soTu(ngay),
-          han_muc_thang: soTu(thang),
-          nguong_can_duyet: soTu(nguong),
-          nhom_chi_duoc_phep: moiNhom ? null : nhom,
-          chi_tra_nguoi_nhan_da_duyet: chiDaDuyet,
-          het_han: hetHan ? new Date(`${hetHan}T23:59:59+07:00`).toISOString() : null,
-          so_yeu_cau_moi_gio: moiGio.trim() === '' ? null : soTu(moiGio),
-        });
-      }}
-      className="mt-3 space-y-3 rounded-xl bg-muted/30 p-4"
-    >
-      <div className="grid gap-3 sm:grid-cols-4">
-        {O({ nhan: 'Mỗi khoản tối đa', gia: moiLan, dat: setMoiLan })}
-        {O({ nhan: 'Mỗi ngày tối đa', gia: ngay, dat: setNgay })}
-        {O({ nhan: 'Mỗi tháng tối đa', gia: thang, dat: setThang })}
-        {O({ nhan: 'Trên mức này phải duyệt (0 = mọi khoản)', gia: nguong, dat: setNguong })}
-      </div>
-
-      <div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={moiNhom} onChange={(e) => setMoiNhom(e.target.checked)} /> Mọi nhóm chi
-        </label>
-        {!moiNhom && (
-          <div className="mt-2 flex flex-wrap gap-3">
-            {NHOM_CHI.map((n) => (
-              <label key={n} className="flex items-center gap-1.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={nhom.includes(n)}
-                  onChange={(e) => setNhom((cu) => (e.target.checked ? [...cu, n] : cu.filter((x) => x !== n)))}
-                />
-                {TEN_NHOM_CHI[n]}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <label className="block">
-          <span className="mb-1 block text-xs text-muted-foreground">Tối đa yêu cầu mỗi giờ</span>
-          <input value={moiGio} onChange={(e) => setMoiGio(e.target.value)} inputMode="numeric" placeholder="Không giới hạn" className={o} />
-          <span className="mt-0.5 block text-[11px] text-muted-foreground">Chặn agent chạy vòng lặp. Để trống = không giới hạn.</span>
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs text-muted-foreground">Người nhận lạ</span>
-          <select value={chiDaDuyet ? 'chan' : 'hoi'} onChange={(e) => setChiDaDuyet(e.target.value === 'chan')} className={o}>
-            <option value="chan">Từ chối — chỉ chi cho người trong danh sách</option>
-            <option value="hoi">Hỏi tôi duyệt</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs text-muted-foreground">Chính sách hết hạn (không bắt buộc)</span>
-          <input type="date" value={hetHan} onChange={(e) => setHetHan(e.target.value)} className={o} />
-        </label>
-      </div>
-
-      <button disabled={dangLam} className={`${nut} bg-primary text-primary-foreground hover:bg-primary/90`}>
-        {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Lưu chính sách
-      </button>
-    </form>
   );
 }
 
