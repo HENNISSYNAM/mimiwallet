@@ -358,7 +358,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             console.error("tro-ly luu anh:", loiAnh.message);
             canhBao = "Đã lưu chứng từ nhưng chưa lưu được ảnh. Chụp lại sau nếu cần ảnh.";
           } else {
-            const { error: loiCapNhat } = await db.from("chung_tu_quet").update({ anh_path: duongDan }).eq("id", data.id);
+            // Mã băm ảnh vào nội dung chuẩn hoá → sổ cái ghi cả ảnh: đổi ảnh gốc là lộ.
+            const bamAnh = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", anh.bytes)), (x) => x.toString(16).padStart(2, "0")).join("");
+            const { error: loiCapNhat } = await db.from("chung_tu_quet").update({ anh_path: duongDan, anh_sha256: bamAnh }).eq("id", data.id);
             if (loiCapNhat) throw loiCapNhat;
             anhPath = duongDan;
           }

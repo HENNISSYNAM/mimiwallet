@@ -7,6 +7,12 @@ import ThuVienChungTuPage from './ThuVienChungTuPage';
 const gia = vi.hoisted(() => ({ troLy: vi.fn(), bang: {} as Record<string, unknown> }));
 
 vi.mock('@/lib/goiTroLy', () => ({ goiTroLy: gia.troLy }));
+vi.mock('@/lib/goiDauThoiGian', () => ({
+  goiDauThoiGian: vi.fn(async (h: string) => (h === 'trang_thai'
+    ? { so_muc: 3, so_chua_neo: 1, so_cho_bitcoin: 2, so_da_vao_bitcoin: 0, so_loi: 0, khoi_gan_nhat: null }
+    : { trang_thai: 'chua_neo' })),
+  taiTepBase64: vi.fn(),
+}));
 vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() }) }));
 vi.mock('@/integrations/supabase/client', () => {
   const chuoi = (data: unknown) => {

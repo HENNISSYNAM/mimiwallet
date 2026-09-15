@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Clock, Globe, HelpCircle, Images, LayoutDashboard, LogOut, Puzzle, Store, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Globe, HelpCircle, Images, LayoutDashboard, LogOut, Puzzle, Settings, Store, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +27,8 @@ import { Plus } from 'lucide-react';
  * Kiểm soát agent, Chính sách chi, Chi phí AI, Hoá đơn, Báo cáo vẫn còn, mở từ MIMI
  * Assistant. Cài đặt (tài khoản, bảo mật) nằm ở hàng công ty dưới cùng.
  *
- * Công ty mang ảnh đại diện chữ cái kiểu tài khoản Google, màu theo lựa chọn ở Cài đặt.
- * Nút cửa hàng cạnh đó mở hộp "Dùng MIMI như ứng dụng".
+ * Dưới cùng: Cài đặt và nút cửa hàng mở hộp "Dùng MIMI như ứng dụng". Người dùng hiện ở ảnh
+ * đại diện góc trên, không lặp ở đây. Công cụ ghim không lặp mục chính (lọc theo đường dẫn).
  */
 
 type Icon = ComponentType<{ size?: number | string; strokeWidth?: number | string; className?: string }>;
@@ -88,7 +88,7 @@ export default function DashboardSidebar() {
             <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">Công cụ</p>
           )}
           <div className="space-y-0.5">
-            {congCu.ds.map((c) => (
+            {congCu.ds.filter((c) => !muc.some((m) => m.path === c.dich)).map((c) => (
               <NavLink
                 key={c.khoa}
                 to={duongDanCongCu(c)}
@@ -143,20 +143,19 @@ export default function DashboardSidebar() {
           {!collapsed && <span>{t('sidebar.logout')}</span>}
         </button>
 
-        {/* Hàng công ty, như hàng tài khoản của ChatGPT: bấm vào là Cài đặt; nút cửa hàng mở hộp tải app. */}
+        {/* Người dùng đã hiện ở ảnh đại diện góc trên; ở đây chỉ còn Cài đặt và nút tải app. */}
         <div className={`mt-1 flex items-center gap-1 ${collapsed ? 'flex-col' : ''}`}>
           <NavLink
             to="/dashboard/settings"
             title={collapsed ? 'Cài đặt' : undefined}
-            className={({ isActive }) => `flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent ${isActive ? 'bg-accent' : ''}`}
+            className={({ isActive }) =>
+              `flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                isActive ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`
+            }
           >
-            <AnhCongTy ten={congTy?.ten ?? null} mau={congTy?.mau ?? null} className="h-8 w-8 text-[11px]" />
-            {!collapsed && (
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-foreground">{congTy?.ten ?? '—'}</span>
-                <span className="block text-xs text-muted-foreground">Cài đặt</span>
-              </span>
-            )}
+            <Settings size={18} className="shrink-0" />
+            {!collapsed && <span>Cài đặt</span>}
           </NavLink>
           <button
             type="button"

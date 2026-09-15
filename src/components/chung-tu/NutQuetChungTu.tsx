@@ -58,6 +58,8 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
 }) {
   const oAnh = useRef<HTMLInputElement>(null);
   const [quet, setQuet] = useState<TrangThaiQuet>(null);
+  // Điện thoại (màn cảm ứng): bấm là mở thẳng máy ảnh sau. Máy tính: chọn tệp để tải lên.
+  const dungMayAnh = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
 
   const mo = () => {
     if (coMoHinh === false) {
@@ -91,7 +93,7 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
         ref={oAnh}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        capture="environment"
+        capture={dungMayAnh ? 'environment' : undefined}
         className="hidden"
         aria-label="Ảnh chứng từ"
         onChange={(e) => void chon(e.target.files?.[0])}

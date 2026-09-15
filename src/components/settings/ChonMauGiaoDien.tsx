@@ -66,7 +66,6 @@ export function ChonMauGiaoDien() {
         />
       </div>
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3" aria-label="Xem trước">
-        <AnhCongTy ten={congTy?.ten ?? null} mau={sac} className="h-9 w-9 text-xs" />
         <span className="inline-flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground">Nút chính</span>
         <span className="text-sm font-medium text-primary underline underline-offset-4">Liên kết</span>
         <span className="text-xs text-muted-foreground">{sac === null ? 'Đang dùng màu mặc định' : 'Xem trước — chưa lưu'}</span>

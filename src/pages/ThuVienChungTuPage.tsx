@@ -10,6 +10,9 @@ import {
   type ChungTuQuetDong, type GiaoDichGan, type HoaDonDienTuDong, type LocThuVien, type MucThuVien,
 } from '@/lib/thuVienChungTu';
 import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
+import { ChongSuaChungTu } from '@/components/chung-tu/ChongSuaChungTu';
+import { goiDauThoiGian, taiTepBase64 } from '@/lib/goiDauThoiGian';
+import { Stamp } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -109,6 +112,22 @@ export default function ThuVienChungTuPage() {
     URL.revokeObjectURL(url);
   };
 
+  const taiBangChung = async (m: MucThuVien) => {
+    try {
+      const r = await goiDauThoiGian('bang_chung', { loai: m.nguon === 'chup' ? 'chung_tu_quet' : 'hoa_don_dien_tu', ban_ghi_id: m.id });
+      if (r.trang_thai === 'chua_neo') {
+        toast.info('Chứng từ này đã ghi sổ, sẽ neo lên Bitcoin lúc 0 giờ đêm nay. Tải bằng chứng sau.');
+        return;
+      }
+      taiTepBase64(String(r.ots), `mimi-${m.nguon === 'chup' ? 'chung-tu' : 'hoa-don'}-${m.id.slice(0, 8)}.ots`);
+      toast.success(r.trang_thai === 'da_vao_bitcoin'
+        ? `Đã tải bằng chứng — nằm trong khối Bitcoin #${Number(r.khoi_bitcoin).toLocaleString('vi-VN')}.`
+        : 'Đã tải bằng chứng — đang chờ Bitcoin xác nhận; tải lại sau vài giờ để có bản đầy đủ.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Chưa tải được bằng chứng.');
+    }
+  };
+
   const xacNhanXoa = async () => {
     if (!xoa) return;
     setDangXoa(true);
@@ -153,6 +172,8 @@ export default function ThuVienChungTuPage() {
           </button>
         </div>
       </header>
+
+      <ChongSuaChungTu />
 
       {loi && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
@@ -247,8 +268,16 @@ export default function ThuVienChungTuPage() {
                         </p>
                       )
                     )}
+                    <div className="mt-auto flex justify-end gap-1 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => void taiBangChung(m)}
+                        aria-label={`Tải bằng chứng chống sửa của ${m.ben_ban}`}
+                        className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        <Stamp size={14} /> Bằng chứng
+                      </button>
                     {m.nguon === 'chup' && (
-                      <div className="mt-auto flex justify-end pt-2">
                         <button
                           type="button"
                           onClick={() => setXoa(m)}
@@ -257,8 +286,8 @@ export default function ThuVienChungTuPage() {
                         >
                           <Trash2 size={14} /> Xoá
                         </button>
-                      </div>
                     )}
+                    </div>
                   </div>
                 </li>
               ))}

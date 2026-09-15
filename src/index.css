@@ -161,6 +161,24 @@
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.011em;
   }
+  /* Thanh cuộn mảnh kiểu kính mờ (15/09/2026): không dùng thanh cuộn hệ thống dày có mũi tên,
+     không trắng đặc — nền trong suốt, con trượt xám xanh nhạt viền trắng mờ. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsla(215 22% 62% / 0.38) transparent;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-button { display: none; }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsla(215 22% 62% / 0.35);
+    border: 1px solid hsla(0 0% 100% / 0.55);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: hsla(215 22% 50% / 0.5); }
+  .dark * { scrollbar-color: hsla(0 0% 100% / 0.22) transparent; }
+  .dark ::-webkit-scrollbar-thumb { background-color: hsla(0 0% 100% / 0.18); border-color: hsla(0 0% 100% / 0.08); }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: -0.025em;

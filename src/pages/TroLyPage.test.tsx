@@ -100,10 +100,17 @@ describe('MIMI Assistant — màn đầu', () => {
   it('câu hỏi, chip nhóm việc trong ô hỏi, hàng kết nối, nền chỉ trang trí', async () => {
     dung();
     expect(screen.getByRole('heading', { name: 'MIMI có thể giúp gì cho bạn?' })).toBeTruthy();
-    const nhom = screen.getByRole('group', { name: 'Chọn nhóm việc' });
-    expect(nhom.closest('form')).toBeTruthy();
-    const ketNoi = await screen.findByRole('region', { name: 'Kết nối' });
+    // Như ChatGPT: không hàng chip cuộn ngang trong ô hỏi — chỉ một nút chọn nhóm việc.
+    expect(screen.getByRole('button', { name: /Nhóm việc/ }).closest('form')).toBeTruthy();
+    expect(screen.queryByRole('group', { name: 'Chọn nhóm việc' })).toBeNull();
+    // Kết nối gọn một nút; bấm mới mở danh sách.
+    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
+    expect(screen.queryByRole('list', { name: 'Các kết nối' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Kết nối/ }));
+    const ketNoi = await screen.findByRole('list', { name: 'Các kết nối' });
     expect(within(ketNoi).getByRole('link', { name: /Ngân hàng/ }).textContent).toContain('Cần xử lý');
+    fireEvent.change(screen.getByLabelText('Tìm kết nối'), { target: { value: 'anthro' } });
+    expect(within(screen.getByRole('list', { name: 'Các kết nối' })).getAllByRole('listitem')).toHaveLength(1);
     expect(screen.getByTestId('nen').getAttribute('aria-hidden')).toBe('true');
     // Chưa có mô hình thì nói thật cách MIMI đang hiểu câu hỏi.
     expect(document.body.textContent).toContain('theo các mẫu có sẵn');
@@ -139,8 +146,9 @@ describe('MIMI Assistant — màn đầu', () => {
 
   it('chọn nhóm việc rồi bấm mẹo nhanh: câu hỏi gửi kèm phạm vi', async () => {
     dung();
-    await screen.findByRole('region', { name: 'Kết nối' });
-    fireEvent.click(screen.getByRole('button', { name: 'AI & token' }));
+    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
+    fireEvent.click(screen.getByRole('button', { name: /Nhóm việc/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'AI & token' }));
     fireEvent.click(screen.getByRole('button', { name: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.' }));
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ pham_vi: 'ai_token' })));
   });
@@ -159,8 +167,9 @@ describe('MIMI Assistant — công cụ', () => {
 
   it('dải công cụ dùng đường dẫn thật', async () => {
     dung();
-    const vung = await screen.findByRole('region', { name: 'Công cụ của bạn' });
-    expect(within(vung).getByRole('link', { name: /Thư viện chứng từ/ }).getAttribute('href')).toBe('/dashboard/thu-vien');
+    fireEvent.click(await screen.findByRole('button', { name: /^Công cụ$/ }));
+    const vung = await screen.findByRole('list', { name: 'Công cụ của bạn' });
+    expect(within(vung).getByRole('link', { name: /Khoản chi thiếu chứng từ/ }).getAttribute('href')).toBe('/dashboard/chung-tu');
     expect(within(vung).getByRole('link', { name: /Đối soát tiền về/ }).getAttribute('href')).toContain('/dashboard/tro-ly?hoi=');
   });
 });
@@ -168,7 +177,7 @@ describe('MIMI Assistant — công cụ', () => {
 describe('MIMI Assistant — hỏi đáp', () => {
   it('hỏi → gửi đúng câu, hiện bước làm, bảng số, nguồn và nút việc', async () => {
     dung();
-    await screen.findByRole('region', { name: 'Kết nối' });
+    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
     hoiBangTay('Khoản nào đang chờ tôi duyệt?');
 
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?', pham_vi: null, lich_su: [] }));

@@ -13,6 +13,9 @@ import { useCongCuGhim } from '@/hooks/useCongCuGhim';
 import { duongDanCongCu } from '@/lib/congCu';
 import { IconCongCu } from '@/components/cong-cu/IconCongCu';
 import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
+import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
+import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
+import { ScanLine } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import AIChatWidget from '@/components/AIChatWidget';
 import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
@@ -54,11 +57,15 @@ function initialsOf(name: string | null): string {
  * thanh bên máy tính — và ô thứ năm "Thêm" mở bảng chứa mọi nơi khác. Năm ô rộng tối thiểu
  * 56px vừa màn 320px, chữ nhãn một từ để không xuống dòng.
  */
+/*
+ * Người dùng ưu tiên quét hoá đơn trên điện thoại (15/09/2026, như nút quét giữa của MoMo):
+ * giữa thanh là nút quét nhô lên, bấm là mở máy ảnh sau. Hai ô trái, hai ô phải; Kết nối vào
+ * bảng "Thêm".
+ */
 const mobileNav = [
   { icon: IconMeo, label: 'Trợ lý', path: '/dashboard/tro-ly' },
   { icon: Images, label: 'Chứng từ', path: '/dashboard/thu-vien' },
   { icon: Clock, label: 'Nhắc thuế', path: '/dashboard/nhac-thue' },
-  { icon: Puzzle, label: 'Kết nối', path: '/dashboard/ket-noi' },
 ];
 
 /** Trang chi tiết mở từ MIMI Assistant: tiêu đề kèm đường quay về trợ lý. */
@@ -125,6 +132,28 @@ export default function DashboardLayout() {
   const [moKho, setMoKho] = useState(false);
   const congTy = useCongTy();
   const congCuGhim = useCongCuGhim();
+  const coMoHinh = useCoMoHinh();
+
+  const oDieuHuong = (item: (typeof mobileNav)[number]) => (
+    <NavLink
+      key={item.path}
+      to={item.path}
+      data-mimi={`nav:${item.path}`}
+      end={item.path === '/dashboard'}
+      className={({ isActive }) =>
+        `flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[52px] py-1.5 text-[11px] font-medium transition-colors pressable ${
+          isActive ? 'text-primary' : 'text-muted-foreground'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <item.icon size={22} strokeWidth={isActive ? 2.4 : 1.9} />
+          <span>{item.label}</span>
+        </>
+      )}
+    </NavLink>
+  );
   const logout = useAuthStore((s) => s.logout);
 
   // Màu nhấn công ty chọn ở Cài đặt; chưa chọn thì giữ bảng màu gốc. Rời khu dashboard
@@ -293,26 +322,18 @@ export default function DashboardLayout() {
         {/* Mobile bottom nav — iOS tab bar */}
         {/* Tab bar always has content underneath, so it always reads as glass. */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 lg-surface lg-regular border-t hairline flex justify-around z-40 safe-bottom">
-          {mobileNav.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              data-mimi={`nav:${item.path}`}
-              end={item.path === '/dashboard'}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[52px] py-1.5 text-[11px] font-medium transition-colors pressable ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`
-              }
+          {mobileNav.slice(0, 2).map(oDieuHuong)}
+          <div className="flex min-w-[64px] flex-col items-center justify-end pb-1">
+            <NutQuetChungTu
+              coMoHinh={coMoHinh}
+              nhanAn="Quét hoá đơn"
+              className="-mt-7 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_24px_hsla(var(--blue-500)/0.4)] ring-4 ring-background pressable"
             >
-              {({ isActive }) => (
-                <>
-                  <item.icon size={22} strokeWidth={isActive ? 2.4 : 1.9} />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+              <ScanLine size={26} strokeWidth={2.2} />
+            </NutQuetChungTu>
+            <span className="mt-0.5 text-[11px] font-medium text-primary">Quét</span>
+          </div>
+          {mobileNav.slice(2).map(oDieuHuong)}
           <button
             type="button"
             onClick={() => setMoThem(true)}
@@ -327,14 +348,12 @@ export default function DashboardLayout() {
         <Sheet open={moThem} onOpenChange={setMoThem}>
           <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
             <SheetHeader className="text-left">
-              <SheetTitle className="flex items-center gap-3">
-                <AnhCongTy ten={congTy?.ten ?? null} mau={congTy?.mau ?? null} className="h-10 w-10 text-sm" />
-                <span className="min-w-0 truncate">{congTy?.ten ?? 'Công ty của bạn'}</span>
-              </SheetTitle>
+              <SheetTitle className="truncate">{congTy?.ten ?? 'Công ty của bạn'}</SheetTitle>
               <SheetDescription className="sr-only">Mọi trang khác của MIMI</SheetDescription>
             </SheetHeader>
             <nav className="mt-4 grid gap-1" aria-label="Thêm">
               {[
+                { icon: Puzzle, nhan: 'Kết nối', duong: '/dashboard/ket-noi' },
                 { icon: LayoutDashboard, nhan: 'Tổng quan & giao dịch', duong: '/dashboard' },
                 { icon: Users, nhan: 'Khách hàng', duong: '/dashboard/clients' },
                 { icon: Settings, nhan: 'Cài đặt', duong: '/dashboard/settings' },
@@ -344,7 +363,7 @@ export default function DashboardLayout() {
                 </NavLink>
               ))}
               <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Công cụ của bạn</p>
-              {congCuGhim.ds.map((c) => (
+              {congCuGhim.ds.filter((c) => ![...mobileNav.map((m) => m.path), '/dashboard/ket-noi', '/dashboard', '/dashboard/clients', '/dashboard/settings'].includes(c.dich)).map((c) => (
                 <NavLink key={c.khoa} to={duongDanCongCu(c)} end onClick={() => setMoThem(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
                   <IconCongCu khoa={c.khoa} size={19} className="text-muted-foreground" /> {c.ten}
                 </NavLink>

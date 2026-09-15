@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, Check, FileUp, KeyRound, Loader2, Pl
 import { toast } from 'sonner';
 import claudeLogo from '@/assets/logos/claude.webp';
 import geminiLogo from '@/assets/logos/gemini.png';
+import openaiLogo from '@/assets/logos/openai.webp';
 import { goiChiPhiAi as goi } from '@/lib/goiChiPhiAi';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import {
@@ -28,8 +29,7 @@ import { LoiTroLy, type ViecTroLy } from '@/components/tro-ly/LoiTroLy';
  * hoặc Admin API key cho Anthropic/OpenAI (tuỳ chọn, tự đồng bộ). Gemini không có
  * API chi phí nên chỉ nhập file. Ngày là ngày UTC, đúng cách nhà cung cấp chia.
  *
- * Logo OpenAI chưa dùng: bản đã tải có watermark stock chưa trả phí, nên thẻ OpenAI
- * hiện chữ cho tới khi có bản chính thức.
+ * Logo Claude, Gemini, OpenAI là bản người dùng cập nhật 15/09/2026 (không watermark).
  */
 
 type NccApi = 'anthropic' | 'openai' | 'openrouter';
@@ -656,8 +656,10 @@ function BangHangMuc({ ds }: { ds: ReturnType<typeof topHangMuc> }) {
 }
 
 function DauNguon({ ncc }: { ncc: NhaCungCapAi }) {
-  if (ncc === 'anthropic') return <img src={claudeLogo} alt="Claude (Anthropic)" className="h-5 w-auto" />;
-  if (ncc === 'gemini') return <img src={geminiLogo} alt="Google Gemini" className="-my-2 h-9 w-auto" />;
+  // Logo dạng biểu tượng vuông (bản người dùng cập nhật 15/09/2026) nên đi kèm tên.
+  if (ncc === 'anthropic') return <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><img src={claudeLogo} alt="" className="h-4 w-4 object-contain" /> Claude</span>;
+  if (ncc === 'gemini') return <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><img src={geminiLogo} alt="" className="h-4 w-4 object-contain" /> Gemini</span>;
+  if (ncc === 'openai') return <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><img src={openaiLogo} alt="" className="h-4 w-4 object-contain" /> OpenAI</span>;
   return <span className="text-sm font-semibold tracking-tight text-foreground">{TEN_NCC[ncc]}</span>;
 }
 

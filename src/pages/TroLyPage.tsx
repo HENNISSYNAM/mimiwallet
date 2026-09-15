@@ -5,12 +5,13 @@ import { duongDanCongCu } from '@/lib/congCu';
 import { IconCongCu } from '@/components/cong-cu/IconCongCu';
 import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import {
-  AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, Cpu, FileText, Landmark, LayoutGrid, Lightbulb, Loader2,
-  Paperclip, QrCode, RotateCcw, Shuffle, X,
+  AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2,
+  Monitor, Plus, Puzzle, RotateCcw, X,
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
 import { toast } from 'sonner';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
-import MimiCat from '@/components/brand/MimiCat';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -84,6 +85,9 @@ export default function TroLyPage() {
   const [hienMeo, setHienMeo] = useState(true);
   const demLuot = useRef(0);
   const [moKhoCongCu, setMoKhoCongCu] = useState(false);
+  const [moTaiApp, setMoTaiApp] = useState(false);
+  const [moNhom, setMoNhom] = useState(false);
+  const [timKetNoi, setTimKetNoi] = useState('');
   const congCu = useCongCuGhim();
   const [thamSo, datThamSo] = useSearchParams();
   const daHoiTuDuongDan = useRef(false);
@@ -159,6 +163,9 @@ export default function TroLyPage() {
 
   const viecKhac = (boiCanh?.viec ?? []).filter((v) => !VIEC_DA_CO_THE.has(v.khoa));
   const ketNoi = boiCanh?.ket_noi ?? [];
+  const soCanXuLy = ketNoi.filter((k) => k.trang_thai === 'can_xu_ly').length;
+  const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
+  const ketNoiLoc = ketNoi.filter((k) => boDau(k.ten).includes(boDau(timKetNoi.trim())));
   const coHoiThoai = luot.length > 0;
   const goiYMeo = phamVi
     ? GOI_Y_THEO_NHOM[phamVi].slice(0, 2)
@@ -173,11 +180,6 @@ export default function TroLyPage() {
       >
         <NenVongHat />
         <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
-          {!coHoiThoai && (
-            <div className="mx-auto mb-3 h-20 w-20 sm:h-24 sm:w-24">
-              <MimiCat variant="live" glow="none" className="w-full" />
-            </div>
-          )}
           <h2 className={`font-display font-semibold tracking-tight text-foreground ${coHoiThoai ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-5xl'}`}>
             MIMI có thể giúp gì cho bạn?
           </h2>
@@ -209,29 +211,43 @@ export default function TroLyPage() {
               className="block w-full resize-none rounded-t-2xl bg-transparent px-5 pt-4 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
             <div className="flex items-end gap-2 px-3 pb-3 pt-2">
-              <div className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 pb-0.5" role="group" aria-label="Chọn nhóm việc">
-                {NHOM_NANG_LUC.map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    aria-pressed={phamVi === n}
-                    onClick={() => setPhamVi((p) => (p === n ? null : n))}
-                    className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      phamVi === n ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-foreground hover:bg-accent'
-                    }`}
-                  >
-                    {TEN_NHOM[n]}
-                  </button>
-                ))}
-              </div>
+              {/* Như ChatGPT: "+" để đưa tệp vào, bên cạnh là một nút chọn — không hàng chip cuộn ngang. */}
               <NutQuetChungTu
                 coMoHinh={boiCanh ? boiCanh.co_mo_hinh : undefined}
                 onDaLuu={() => void taiBoiCanh()}
-                nhanAn="Chụp hoặc tải ảnh chứng từ"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                nhanAn="Tải ảnh chứng từ lên"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <Paperclip size={18} />
+                <Plus size={20} />
               </NutQuetChungTu>
+              <Popover open={moNhom} onOpenChange={setMoNhom}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`Nhóm việc: ${phamVi ? TEN_NHOM[phamVi] : 'Tất cả việc'}`}
+                    className="inline-flex h-9 min-w-0 items-center gap-1 rounded-full px-3 text-sm text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="truncate">{phamVi ? TEN_NHOM[phamVi] : 'Tất cả việc'}</span>
+                    <ChevronDown size={14} className="shrink-0 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-60 rounded-2xl p-1.5">
+                  <div role="group" aria-label="Chọn nhóm việc">
+                    {([null, ...NHOM_NANG_LUC] as (NhomNangLuc | null)[]).map((n) => (
+                      <button
+                        key={n ?? 'tat_ca'}
+                        type="button"
+                        aria-pressed={phamVi === n}
+                        onClick={() => { setPhamVi(n); setMoNhom(false); }}
+                        className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
+                      >
+                        {n ? TEN_NHOM[n] : 'Tất cả việc'}
+                        {phamVi === n && <Check size={14} className="text-primary" aria-hidden />}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <button
                 type="submit"
                 disabled={!nhap.trim() || dangHoi}
@@ -243,36 +259,94 @@ export default function TroLyPage() {
             </div>
           </form>
 
-          {/* Hàng kết nối */}
-          {!coHoiThoai && (
-            <div className="mx-auto mt-4 flex max-w-4xl items-center gap-3" role="region" aria-label="Kết nối">
-              <span className="hidden shrink-0 text-sm font-medium text-foreground sm:inline">Kết nối</span>
-              <ul className="-mx-4 flex min-w-0 flex-1 gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-                {!boiCanh && !loiBoiCanh && <li className="py-2 text-sm text-muted-foreground">Đang đọc kết nối…</li>}
-                {ketNoi.map((k) => (
-                  <li key={k.khoa} className="shrink-0">
-                    <Link
-                      to={k.duong_dan}
-                      title={k.cau}
-                      className="flex items-center gap-2.5 rounded-xl border border-border bg-card/90 px-3 py-2 text-left hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <DauKetNoi khoa={k.khoa} />
-                      <span>
-                        <span className="block text-sm font-medium leading-tight text-foreground">{k.ten}</span>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <span className={`h-1.5 w-1.5 rounded-full ${MAU_CHAM_KET_NOI[k.trang_thai]}`} aria-hidden />
-                          {TEN_TRANG_THAI_KET_NOI[k.trang_thai]}
+          {/* Dải dưới ô hỏi, kiểu ChatGPT: một hàng gọn, kính trắng mờ, bấm mới mở danh sách. */}
+          <div className="mx-auto max-w-3xl px-3 text-left">
+            <nav
+              aria-label="Công cụ và kết nối"
+              className="flex items-center gap-0.5 rounded-b-2xl border-x border-b border-white/70 bg-white/45 px-2 py-1.5 text-sm text-muted-foreground shadow-[0_6px_20px_hsla(220,30%,20%,0.05)] backdrop-blur-md dark:border-white/10 dark:bg-white/5"
+            >
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10">
+                    <LayoutGrid size={15} aria-hidden /> Công cụ
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 rounded-2xl p-1.5">
+                  <ul aria-label="Công cụ của bạn">
+                    {congCu.ds.map((c) => (
+                      <li key={c.khoa}>
+                        <Link to={duongDanCongCu(c)} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent">
+                          <IconCongCu khoa={c.khoa} size={16} className="text-muted-foreground" /> {c.ten}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="my-1 border-t border-border" />
+                  <button type="button" onClick={() => setMoKhoCongCu(true)} className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent">
+                    <span className="flex items-center gap-2.5"><Plus size={16} className="text-muted-foreground" aria-hidden /> Tuỳ chỉnh công cụ</span>
+                    <ChevronRight size={15} className="text-muted-foreground" aria-hidden />
+                  </button>
+                </PopoverContent>
+              </Popover>
+
+              <Popover onOpenChange={(v) => { if (!v) setTimKetNoi(''); }}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg px-2.5 hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10">
+                    <span className="flex -space-x-1.5" aria-hidden>
+                      {['tong_cuc_thue', 'openai', 'anthropic'].map((k) => (
+                        <span key={k} className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-white bg-white shadow-sm">
+                          <DauKetNoi khoa={k} tron />
                         </span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <Link to="/dashboard/fintech" className="hidden shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline md:inline-flex">
-                Quản lý kết nối <ArrowRight size={14} />
-              </Link>
-            </div>
-          )}
+                      ))}
+                    </span>
+                    Kết nối
+                    {soCanXuLy > 0 && <span className="rounded-full bg-mimi-amber/15 px-1.5 text-xs font-semibold text-mimi-amber">{soCanXuLy}</span>}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 rounded-2xl p-1.5">
+                  <input
+                    value={timKetNoi}
+                    onChange={(e) => setTimKetNoi(e.target.value)}
+                    placeholder="Tìm kết nối…"
+                    aria-label="Tìm kết nối"
+                    className="h-9 w-full rounded-lg bg-transparent px-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  />
+                  {!boiCanh && !loiBoiCanh && <p className="px-2.5 py-2 text-sm text-muted-foreground">Đang đọc kết nối…</p>}
+                  <ul aria-label="Các kết nối" className="max-h-72 overflow-y-auto">
+                    {ketNoiLoc.map((k) => (
+                      <li key={k.khoa}>
+                        <Link to={k.duong_dan} title={k.cau} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent">
+                          <DauKetNoi khoa={k.khoa} />
+                          <span className="flex-1">{k.ten}</span>
+                          {k.trang_thai === 'chua_ket_noi'
+                            ? <Plus size={16} className="text-muted-foreground" aria-hidden />
+                            : <span className={`h-2 w-2 rounded-full ${MAU_CHAM_KET_NOI[k.trang_thai]}`} aria-hidden />}
+                          <span className="sr-only">{TEN_TRANG_THAI_KET_NOI[k.trang_thai]}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="my-1 border-t border-border" />
+                  <Link to="/dashboard/ket-noi" className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent">
+                    <span className="flex items-center gap-2.5"><Puzzle size={16} className="text-muted-foreground" aria-hidden /> Quản lý kết nối</span>
+                    <ChevronRight size={15} className="text-muted-foreground" aria-hidden />
+                  </Link>
+                </PopoverContent>
+              </Popover>
+
+              <span className="ml-auto" />
+              <button
+                type="button"
+                onClick={() => setMoTaiApp(true)}
+                aria-label="Dùng MIMI như ứng dụng"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10"
+              >
+                <Monitor size={15} aria-hidden /> <span className="hidden sm:inline">Dùng như ứng dụng</span>
+              </button>
+            </nav>
+          </div>
+          <KhoCongCu mo={moKhoCongCu} onDong={() => setMoKhoCongCu(false)} />
+          <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} />
 
           {boiCanh && !boiCanh.co_mo_hinh && (
             <p className="mx-auto mt-4 max-w-lg text-xs leading-relaxed text-muted-foreground">
@@ -308,28 +382,6 @@ export default function TroLyPage() {
               ))}
             </div>
           )}
-
-          <div className="mb-4" role="region" aria-label="Công cụ của bạn">
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-              {congCu.ds.map((c) => (
-                <Link
-                  key={c.khoa}
-                  to={duongDanCongCu(c)}
-                  className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm text-foreground hover:bg-accent"
-                >
-                  <IconCongCu khoa={c.khoa} size={16} className="text-muted-foreground" /> {c.ten}
-                </Link>
-              ))}
-              <button
-                type="button"
-                onClick={() => setMoKhoCongCu(true)}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-dashed border-border px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                + Tuỳ chỉnh công cụ
-              </button>
-            </div>
-          </div>
-          <KhoCongCu mo={moKhoCongCu} onDong={() => setMoKhoCongCu(false)} />
 
           {viecKhac.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-2" role="region" aria-label="Cũng cần để ý">

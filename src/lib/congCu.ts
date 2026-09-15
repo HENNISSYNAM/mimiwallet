@@ -30,11 +30,8 @@ export const TEN_NHOM_CONG_CU: Record<NhomCongCu, string> = {
 };
 
 export const DANH_MUC_CONG_CU: CongCu[] = [
-  { khoa: 'thu_vien', ten: 'Thư viện chứng từ', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/thu-vien', mo_ta: 'Hoá đơn điện tử và chứng từ chụp, xuất file cho kế toán.', tu_khoa: ['hoa don', 'anh', 'bien lai', 'luu tru', 'chup'] },
   { khoa: 'thieu_chung_tu', ten: 'Khoản chi thiếu chứng từ', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/chung-tu', mo_ta: 'Khoản chi trong kỳ kê khai chưa có hoá đơn điện tử.', tu_khoa: ['chi phi', 'hoa don dau vao', 'khau tru'] },
-  { khoa: 'nhac_thue', ten: 'Nhắc thuế', nhom: 'thue', loai: 'trang', dich: '/dashboard/nhac-thue', mo_ta: 'Hạn nộp tờ khai theo quý và ngưỡng doanh thu năm.', tu_khoa: ['to khai', 'han nop', 'quy', 'nguong', 'doanh thu'] },
   { khoa: 'bao_cao', ten: 'Báo cáo thu chi', nhom: 'thue', loai: 'trang', dich: '/dashboard/reports', mo_ta: 'Thu, chi, chênh lệch theo tháng từ sao kê ngân hàng.', tu_khoa: ['loi nhuan', 'lai lo', 'bao cao'] },
-  { khoa: 'giao_dich', ten: 'Giao dịch ngân hàng', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard', mo_ta: 'Tổng quan dòng tiền và từng giao dịch.', tu_khoa: ['sao ke', 'so du', 'tong quan'] },
   { khoa: 'dong_tien', ten: 'Dòng tiền 6 tháng', nhom: 'ngan_hang', loai: 'hoi', dich: 'Dòng tiền 6 tháng qua thế nào?', mo_ta: 'Tiền vào, tiền ra, chênh lệch từng tháng.', tu_khoa: ['thu chi', 'tien vao', 'tien ra'] },
   { khoa: 'doi_soat', ten: 'Đối soát tiền về', nhom: 'ngan_hang', loai: 'hoi', dich: 'Tiền về tháng này khớp hoá đơn nào?', mo_ta: 'Khoản tiền về có thể là tiền của hoá đơn nào đang chờ thu.', tu_khoa: ['khop', 'tien ve', 'da thu'] },
   { khoa: 'lien_ket_ngan_hang', ten: 'Liên kết ngân hàng', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/fintech', mo_ta: 'Liên kết tài khoản, nhận tiền QR, kết nối Tổng cục Thuế.', tu_khoa: ['casso', 'sepay', 'qr', 'tong cuc thue'] },
@@ -46,13 +43,16 @@ export const DANH_MUC_CONG_CU: CongCu[] = [
   { khoa: 'model_re_hon', ten: 'Model AI rẻ hơn', nhom: 'ai', loai: 'hoi', dich: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.', mo_ta: 'Ước tính tiết kiệm khi đổi sang model rẻ hơn cùng hãng.', tu_khoa: ['token', 'toi uu', 'tiet kiem'] },
   { khoa: 'hoa_don_ban', ten: 'Hoá đơn bán ra', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/invoices', mo_ta: 'Lập hoá đơn cho khách và theo dõi khoản chưa thu.', tu_khoa: ['xuat hoa don', 'phai thu'] },
   { khoa: 'cong_no', ten: 'Khách nợ quá hạn', nhom: 'ban_hang', loai: 'hoi', dich: 'Khách nào đang nợ quá hạn?', mo_ta: 'Hoá đơn bán ra đã quá hạn, lâu nhất trước.', tu_khoa: ['cong no', 'nhac no', 'qua han'] },
-  { khoa: 'khach_hang', ten: 'Khách hàng', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/clients', mo_ta: 'Danh sách khách và trạng thái tiếp cận.', tu_khoa: ['crm', 'lien he'] },
 ];
 
 export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH_MUC_CONG_CU.map((c) => [c.khoa, c]));
 
-/** Bộ mặc định khi người dùng chưa tự chọn. */
-export const CONG_CU_MAC_DINH = ['thu_vien', 'nhac_thue', 'doi_soat', 'duyet_chi', 'chi_phi_ai'];
+/**
+ * Bộ mặc định khi người dùng chưa tự chọn. Không có công cụ trùng mục chính của thanh điều
+ * hướng (Thư viện chứng từ, Nhắc thuế, Tổng quan, Khách hàng, Kết nối) — người dùng báo trùng
+ * chức năng 15/09/2026, nên các mục đó đã bỏ khỏi danh mục.
+ */
+export const CONG_CU_MAC_DINH = ['thieu_chung_tu', 'doi_soat', 'duyet_chi', 'chi_phi_ai', 'cong_no'];
 
 export const SO_CONG_CU_TOI_DA = 12;
 

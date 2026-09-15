@@ -23,8 +23,8 @@ describe('danh mục công cụ', () => {
   });
 
   it('tìm không dấu, nhiều từ, theo cả từ khoá', () => {
-    expect(timCongCu('hoá đơn').map((c) => c.khoa)).toContain('thu_vien');
-    expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['nhac_thue']);
+    expect(timCongCu('hoá đơn').map((c) => c.khoa)).toContain('thieu_chung_tu');
+    expect(timCongCu('đối soát').map((c) => c.khoa)).toEqual(['doi_soat']);
     expect(timCongCu('claude').map((c) => c.khoa)).toEqual(['chi_phi_ai']);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
     expect(timCongCu('  ')).toHaveLength(DANH_MUC_CONG_CU.length);
@@ -32,6 +32,11 @@ describe('danh mục công cụ', () => {
 
   it('công cụ câu hỏi mở trợ lý với câu hỏi đã mã hoá', () => {
     expect(duongDanCongCu(CONG_CU_THEO_KHOA.doi_soat)).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Tiền về tháng này khớp hoá đơn nào?')}`);
-    expect(duongDanCongCu(CONG_CU_THEO_KHOA.thu_vien)).toBe('/dashboard/thu-vien');
+    expect(duongDanCongCu(CONG_CU_THEO_KHOA.thieu_chung_tu)).toBe('/dashboard/chung-tu');
+  });
+
+  it('không công cụ nào trùng mục chính của thanh điều hướng', () => {
+    const mucChinh = ['/dashboard/tro-ly', '/dashboard/thu-vien', '/dashboard/nhac-thue', '/dashboard/ket-noi', '/dashboard', '/dashboard/clients'];
+    expect(DANH_MUC_CONG_CU.filter((c) => c.loai === 'trang' && mucChinh.includes(c.dich))).toEqual([]);
   });
 });
