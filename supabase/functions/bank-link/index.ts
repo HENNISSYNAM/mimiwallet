@@ -22,7 +22,13 @@ import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { timNganHang } from "../_shared/bank/ngan-hang.ts";
 import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
-import { kiemGrantQr, nhanKetLuan } from "../_shared/bank/kiem-grant-qr.ts";
+import {
+  kiemGrantQr,
+  loiNhacLienKetLai,
+  nhanKetLuan,
+  truongNgatGrant,
+  xuLyLoiGrant,
+} from "../_shared/bank/kiem-grant-qr.ts";
 import { tomTatDinhDanh } from "../_shared/bank/dinh-danh-mot-lan.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
@@ -613,21 +619,14 @@ Deno.serve(async (req) => {
             const kl = await kiemGrantQr(() => fetchQrPayIdentity(cfg, accessToken));
             const coBan = { connection_id: conn.id, account_number: conn.account_number, fetched: 0, inserted: 0, skipped: 0 };
             if (kl.trangThai === "da_thu_hoi") {
-              await supabase
-                .from("bank_connections")
-                .update({
-                  status: "disconnected",
-                  revoked_at: new Date().toISOString(),
-                  access_token_enc: null,
-                  grant_id: null,
-                })
-                .eq("id", conn.id);
+              await supabase.from("bank_connections").update(truongNgatGrant(new Date())).eq("id", conn.id);
               results.push({
                 ...coBan,
                 error: "Quyền nhận tiền QR đã bị thu hồi trong app Cas.",
                 errorCode: kl.ma,
+                revoked: true,
                 action: "relink",
-                remedy: 'Bấm "Liên kết để nhận tiền QR" rồi quét lại mã trong app Cas.',
+                remedy: loiNhacLienKetLai("qrpay"),
                 kiemGrant: nhanKetLuan(kl),
               });
             } else {
@@ -1076,6 +1075,29 @@ Deno.serve(async (req) => {
             scopes: conn.scopes ?? "transaction",
           });
         } catch (e) {
+          /*
+           * GRANT KHÔNG CÒN THÌ UPDATE MODE KHÔNG CÓ GÌ ĐỂ CẬP NHẬT.
+           *
+           * Casso thử 15/09/2026: xoá cấp quyền trên Cas ID, bấm "Cập nhật" ở
+           * liên kết đọc sao kê, nhận toast GRANT_NOT_FOUND — và dòng vẫn nằm đó,
+           * bấm lại bao nhiêu lần cũng vậy. Ngắt ngay tại đây, trả 200 kèm
+           * `revoked` để màn hình tải lại danh sách thay vì chỉ báo lỗi.
+           */
+          if (e instanceof BankhubError && xuLyLoiGrant(e.errorCode, e.needsRelink) === "ngat") {
+            await supabase
+              .from("bank_connections")
+              .update(truongNgatGrant(new Date()))
+              .eq("id", conn.id)
+              .eq("company_id", company.id);
+            return json({
+              revoked: true,
+              errorCode: e.errorCode,
+              requestId: e.requestId ?? null,
+              scopes: conn.scopes ?? "transaction",
+              message: "Quyền truy cập đã bị thu hồi trong app Cas.",
+              remedy: loiNhacLienKetLai(conn.scopes),
+            });
+          }
           if (e instanceof BankhubError && e.errorCode === "FI_SERVICE_ACCOUNT_CONNECTING") {
             // Documented as "nothing to update", not a failure. The connection
             // was parked on a stale error, so let it go back to work.
@@ -1550,6 +1572,18 @@ Deno.serve(async (req) => {
           payload = await fetchGdtInvoices(cfg, accessToken, { fromDate, toDate });
         } catch (e) {
           if (!(e instanceof BankhubError)) throw e;
+
+          // Grant thuế bị thu hồi trên Cas ID: ngắt như mọi liên kết khác, không mời "Cập nhật".
+          if (xuLyLoiGrant(e.errorCode, e.needsRelink) === "ngat") {
+            await supabase.from("bank_connections").update(truongNgatGrant(new Date())).eq("id", conn.id);
+            return json({
+              revoked: true,
+              errorCode: e.errorCode,
+              requestId: e.requestId ?? null,
+              message: "Quyền đọc hoá đơn từ Tổng Cục Thuế đã bị thu hồi trong app Cas.",
+              remedy: loiNhacLienKetLai("gdt"),
+            });
+          }
 
           if (e.needsRelink) {
             await supabase

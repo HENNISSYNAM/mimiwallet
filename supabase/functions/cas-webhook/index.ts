@@ -365,26 +365,21 @@ Deno.serve(async (req) => {
 
     const result = await ingestConnection(supabase, cfg, accessToken, conn, window);
 
+    /*
+     * GRANT ĐÃ MẤT: `ingestConnection` đã ngắt và xoá token, giống liên kết QR ở
+     * trên. Nhánh này phải đứng TRƯỚC `needsRelink` — bản cũ kiểm GRANT_NOT_FOUND
+     * sau `needsRelink`, mà GRANT_NOT_FOUND cũng mang `needsRelink`, nên liên kết
+     * đọc sao kê bị thu hồi trên Cas ID không bao giờ được ngắt (Casso 15/09/2026).
+     */
+    if (result.revoked) {
+      outcomes.push(`${conn.id}:da-thu-hoi:${result.errorCode ?? "?"}`);
+      continue;
+    }
+
     if (result.needsRelink) {
       // ingestConnection already parked the connection; CasLink.tsx surfaces
       // that status as a prompt to link again.
       outcomes.push(`${conn.id}:needs-relink`);
-      continue;
-    }
-
-    if (result.errorCode === "GRANT_NOT_FOUND") {
-      // The grant is gone at Cas. The stored credential can never work again
-      // and keeping it is only liability.
-      await supabase
-        .from("bank_connections")
-        .update({
-          status: "disconnected",
-          revoked_at: new Date().toISOString(),
-          access_token_enc: null,
-          grant_id: null,
-        })
-        .eq("id", conn.id);
-      outcomes.push(`${conn.id}:disconnected`);
       continue;
     }
 

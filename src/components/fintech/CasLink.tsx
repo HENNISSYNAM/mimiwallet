@@ -383,6 +383,15 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       setSyncing(null);
       if (!kq) return;
 
+      if (kq.revoked) {
+        toast.warning(kq.message ?? 'Quyền truy cập đã bị thu hồi trong app Cas.', {
+          description: kq.remedy,
+          duration: 10000,
+        });
+        await loadConnections();
+        return;
+      }
+
       await loadConnections();
       track('gdt_synced', { stored: kq.stored ?? 0 });
 
@@ -423,6 +432,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         taiKhoanCasThay?: string;
         error?: string;
         needsRelink?: boolean;
+        /** Grant đã bị thu hồi trên Cas ID; máy chủ đã gỡ liên kết. */
+        revoked?: boolean;
         action?: string;
         remedy?: string;
       }>;
@@ -461,13 +472,21 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
            * translated remedy; an unknown one gets whatever Cas said, which is
            * still better than a green row implying nothing happened.
            */
-          if (r.needsRelink) continue; // has its own amber banner already
+          // needsRelink has its own amber banner; revoked rows leave the list entirely.
+          if (r.needsRelink || r.revoked) continue;
           next[r.connection_id] = r.remedy ?? r.error;
         }
         return next;
       });
 
-      if (failed.some((r) => r.needsRelink)) {
+      const thuHoi = failed.filter((r) => r.revoked);
+      if (thuHoi.length) {
+        // Không phải "đăng nhập lại": grant đã mất, dòng đã được gỡ. Nói đúng việc đã xảy ra.
+        toast.warning(thuHoi[0].error ?? 'Quyền truy cập đã bị thu hồi trong app Cas.', {
+          description: thuHoi[0].remedy,
+          duration: 10000,
+        });
+      } else if (failed.some((r) => r.needsRelink)) {
         toast.error('Ngân hàng yêu cầu đăng nhập lại. Vui lòng liên kết lại tài khoản.');
       } else if (failed.length) {
         // Cas allows roughly one call per grant per minute and answers RATE_LIMIT
@@ -718,6 +737,26 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         await loadLinkScript();
         const grant = await call('update-token', { connection_id: connectionId });
         if (!grant) { setLinking(false); return; }
+
+        /*
+         * Grant đã bị thu hồi trên Cas ID (Casso 15/09/2026). Máy chủ đã ngắt
+         * liên kết; tải lại để dòng rời danh sách, như liên kết QR vẫn làm.
+         */
+        if (grant.revoked) {
+          setLastError(null);
+          setBankNotes((prev) => {
+            const next = { ...prev };
+            delete next[connectionId];
+            return next;
+          });
+          toast.warning(grant.message ?? 'Quyền truy cập đã bị thu hồi trong app Cas.', {
+            description: grant.remedy,
+            duration: 10000,
+          });
+          setLinking(false);
+          await loadConnections();
+          return;
+        }
 
         if (grant.upToDate) {
           // FI_SERVICE_ACCOUNT_CONNECTING — the bank says nothing is wrong, so

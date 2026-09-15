@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { coSaoKeDeDoc } from "./dong-bo.ts";
 import { fetchTransactions, BankhubError, type BankhubConfig } from "./bankhub.ts";
 import { describeBankError, type BankErrorAction } from "./errors.ts";
+import { loiNhacLienKetLai, truongNgatGrant, xuLyLoiGrant } from "./kiem-grant-qr.ts";
 import {
   mapBankhubTransactions,
   latestReference,
@@ -56,6 +57,8 @@ export interface IngestResult {
   error?: string;
   errorCode?: string;
   needsRelink?: boolean;
+  /** Grant đã bị thu hồi bên Cas; hàm này đã ngắt liên kết và xoá token. */
+  revoked?: boolean;
   /**
    * What kind of failure this is, from `errors.ts`'s documented code table —
    * carried all the way to the UI so a connection that is fine on MIMI's side
@@ -132,6 +135,24 @@ export async function ingestConnection(
         : {}),
     });
   } catch (e) {
+    /*
+     * GRANT ĐÃ MẤT THÌ NGẮT, KHÔNG ĐỖ VÀO `needs_relink`.
+     *
+     * Phải hỏi trước `needsRelink`: GRANT_NOT_FOUND cũng mang `needsRelink`, và
+     * trước 15/09/2026 nó rơi vào nhánh dưới — liên kết bị thu hồi trên Cas ID
+     * nằm lại với nút "Cập nhật" không bao giờ chạy được. Xem `kiem-grant-qr.ts`.
+     */
+    if (e instanceof BankhubError && xuLyLoiGrant(e.errorCode, e.needsRelink) === "ngat") {
+      await supabase.from("bank_connections").update(truongNgatGrant(new Date())).eq("id", conn.id);
+      return {
+        ...base,
+        error: "Quyền đọc sao kê đã bị thu hồi trong app Cas.",
+        errorCode: e.errorCode,
+        revoked: true,
+        action: "relink",
+        remedy: loiNhacLienKetLai(conn.scopes),
+      };
+    }
     if (e instanceof BankhubError && e.needsRelink) {
       // The customer's authorisation lapsed or was withdrawn. Mark it so the
       // UI can ask them to re-link instead of retrying forever.
