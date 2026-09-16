@@ -14,6 +14,7 @@ import type { DeXuat, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, NhomNangLuc, O,
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
+import { NGUONG_DOANH_THU as NGUONG_THUE, suyLuan as suyLuanThue, type SuKienThue } from '../luat/he-luat.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -100,17 +101,24 @@ export interface DuLieu {
   bangGia: GiaModel[];
   bangGiaLuc: string | null;
   chungTuQuet: ChungTuQuetTL[];
+  /**
+   * Hồ sơ thuế + doanh thu đã chọn nguồn, cho hệ luật thuế. `canCuDaKiem` là kết quả đối chiếu
+   * từng câu trích với kho Công báo (`luat/doc-can-cu.ts`) — năng lực chỉ nói "đã đối chiếu"
+   * khi kho xác nhận.
+   */
+  thue: { suKien: SuKienThue; canhBao: string[]; canCuDaKiem: Record<string, boolean> } | null;
 }
 
 export type NguonCan =
   | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau' | 'ket_noi_ngan_hang'
-  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet';
+  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue';
 
 export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuLieu {
   return {
     homNay, kyChungTu,
     giaoDich: [], hoaDonVao: [], hoaDonBan: [], yeuCau: [], tacTu: [], chinhSach: [], ketNoiNganHang: [],
     chiPhiAi: [], nganSachAi: null, ketNoiAi: [], nhapFileAi: [], tokenAi: [], bangGia: [], bangGiaLuc: null, chungTuQuet: [],
+    thue: null,
   };
 }
 
@@ -159,6 +167,7 @@ const N = {
   chiPhiAi: { ten: 'Chi phí AI', mo_ta: 'Số nhà cung cấp tính (USD), từ kết nối tự động hoặc file bạn tải lên.' },
   tokenAi: { ten: 'Số token AI', mo_ta: 'Từ báo cáo sử dụng của Anthropic, OpenAI hoặc OpenRouter.' },
   chungTuQuet: { ten: 'Chứng từ đã quét', mo_ta: 'Chứng từ bạn chụp và xác nhận trong MIMI Assistant.' },
+  khoLuat: { ten: 'Kho văn bản Công báo', mo_ta: 'Luật, Nghị định, Thông tư về thuế MIMI đã nạp từ congbao.chinhphu.vn, đối chiếu nguyên văn từng câu trích.' },
 } satisfies Record<string, NguonDuLieu>;
 
 const bangGiaNguon = (luc: string | null): NguonDuLieu => ({
@@ -176,6 +185,7 @@ const T = {
   ketNoi: { nhan: 'Mở Kết nối ngân hàng & thuế', duong_dan: '/dashboard/fintech' },
   chiPhiAi: { nhan: 'Mở Chi phí AI', duong_dan: '/dashboard/chi-phi-ai' },
   baoCao: { nhan: 'Mở Báo cáo', duong_dan: '/dashboard/reports' },
+  toKhai: { nhan: 'Mở Tờ khai thuế', duong_dan: '/dashboard/to-khai' },
 } satisfies Record<string, TrangChiTiet>;
 
 function kq(
@@ -1062,6 +1072,73 @@ export function phanTichNhanh(d: DuLieu): PhanTichNhanh {
   };
 }
 
+// ── Thuế: nghĩa vụ suy ra từ hệ luật ─────────────────────────────────────────
+
+/**
+ * "Năm nay tôi phải khai thuế gì?" — chạy hệ luật (`_shared/luat/he-luat.ts`) trên doanh thu
+ * thật, trả nghĩa vụ kèm hạn, mẫu tờ khai và chuỗi nhân quả. Số thuế cụ thể do trang Tờ khai
+ * điền vào mẫu; ở đây trả lời bằng lời và mở đường sang đó.
+ */
+export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
+  if (!d.thue) {
+    return kq('nghia_vu_thue', 'chung_tu', 'Chưa đọc được hồ sơ thuế của công ty. Mở Tờ khai thuế để MIMI hỏi vài điều còn thiếu (hộ kinh doanh hay doanh nghiệp, nhóm ngành).', {
+      nguon: [N.khoLuat], trang: [T.toKhai],
+    });
+  }
+  const { suKien, canhBao, canCuDaKiem } = d.thue;
+  const sl = suyLuanThue(suKien);
+  const chinh = sl.ket_luan.filter((k) => k.loai === 'mien' || k.loai === 'nghia_vu' || k.loai === 'chua_ho_tro');
+  const giaiThich = sl.ket_luan.find((k) => k.id === 'giai_thich_hai_thue');
+  const chuaKiem = [...new Set(sl.ket_luan.flatMap((k) => k.can_cu))].filter((c) => canCuDaKiem[c] === false);
+
+  const the: The[] = [];
+  if (sl.doanh_thu_nam !== null) {
+    the.push({
+      loai: 'so_lieu', tieu_de: `Doanh thu năm ${suKien.nam}`, muc: [
+        { nhan: sl.tam_tinh ? 'Lũy kế tới nay' : 'Cả năm', gia_tri: sl.doanh_thu_nam, don_vi: 'vnd' },
+        { nhan: 'Ngưỡng phải nộp thuế', gia_tri: NGUONG_THUE, don_vi: 'vnd', ghi_chu: 'NĐ 68/2026 sửa bởi NĐ 141/2026' },
+        {
+          nhan: sl.doanh_thu_nam > NGUONG_THUE ? 'Đã vượt' : 'Còn cách ngưỡng',
+          gia_tri: Math.abs(NGUONG_THUE - sl.doanh_thu_nam),
+          don_vi: 'vnd',
+          can_chu_y: sl.doanh_thu_nam > NGUONG_THUE,
+        },
+      ],
+    });
+  }
+  if (chinh.length) {
+    the.push({
+      loai: 'bang', tieu_de: 'Nghĩa vụ thuế của bạn',
+      cot: [{ nhan: 'Việc', don_vi: 'chu' }, { nhan: 'Mẫu', don_vi: 'chu' }, { nhan: 'Hạn', don_vi: 'ngay' }],
+      dong: chinh.slice(0, 8).map((k) => [k.cau, k.mau ?? '—', (k.han ?? [])[0] ?? '—']),
+      con_lai: Math.max(0, chinh.length - 8),
+    });
+  }
+  if (giaiThich) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: giaiThich.cau });
+  for (const c of canhBao.slice(0, 2)) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: c });
+  for (const t of sl.thieu.slice(0, 3)) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: t.cau });
+  if (chuaKiem.length) {
+    the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `${chuaKiem.length} căn cứ chưa đối chiếu được với kho văn bản — mở Tờ khai thuế để đọc bản gốc.` });
+  }
+
+  const tomTat = chinh.length
+    ? `${chinh.map((k) => k.cau).join(' ')}${sl.doanh_thu_nam !== null ? ` Doanh thu năm ${suKien.nam}${sl.tam_tinh ? ' tới nay' : ''}: ${vnd(sl.doanh_thu_nam)}.` : ''}`
+    : 'Chưa đủ dữ liệu để kết luận nghĩa vụ thuế. Mở Tờ khai thuế để bổ sung hồ sơ thuế.';
+
+  return kq('nghia_vu_thue', 'chung_tu', tomTat, {
+    the,
+    de_xuat: [{
+      khoa: 'mo_to_khai',
+      loai: 'mo_trang',
+      nhan: 'Mở Tờ khai thuế',
+      mo_ta: 'Xem chuỗi suy luận kèm trích dẫn văn bản và bản nháp tờ khai MIMI soạn.',
+      tham_so: { duong_dan: '/dashboard/to-khai' },
+    }],
+    nguon: [N.khoLuat, N.hoaDonVao, N.giaoDich],
+    trang: [T.toKhai],
+  });
+}
+
 // ── Danh mục năng lực ────────────────────────────────────────────────────────
 
 export interface NangLuc {
@@ -1086,5 +1163,6 @@ export const NANG_LUC: Record<string, NangLuc> = {
   model_re_hon: { nhom: 'ai_token', can: ['token_ai', 'bang_gia'], chay: modelReHon, mo_ta: 'Ước tính tiết kiệm nếu đổi sang model rẻ hơn cùng hãng, theo số token thật và bảng giá OpenRouter.' },
   bao_cao_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich'], chay: baoCaoTaiChinh, mo_ta: 'Báo cáo thu, chi, chênh lệch theo tháng từ sao kê ngân hàng.' },
   phan_tich_tiet_kiem: { nhom: 'bao_cao', can: ['giao_dich', 'token_ai', 'bang_gia'], chay: phanTichTietKiem, mo_ta: 'Chỗ có thể tiết kiệm: khoản chi nghi trả trùng, tiền bớt được nếu đổi model AI.' },
+  nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },
   tat_ca_ket_noi: { nhom: 'ket_noi', can: ['ket_noi_ngan_hang', 'chi_phi_ai'], chay: tatCaKetNoi, mo_ta: 'Trạng thái mọi kết nối: ngân hàng, Casso, Tổng cục Thuế, OpenAI, Anthropic, Google AI, OpenRouter.' },
 };

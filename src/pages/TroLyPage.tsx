@@ -263,12 +263,12 @@ export default function TroLyPage() {
           <div className="mx-auto max-w-3xl px-3 text-left">
             <nav
               aria-label="Công cụ và kết nối"
-              className="flex items-center gap-0.5 rounded-b-2xl border-x border-b border-white/70 bg-white/45 px-2 py-1.5 text-sm text-muted-foreground shadow-[0_6px_20px_hsla(220,30%,20%,0.05)] backdrop-blur-md dark:border-white/10 dark:bg-white/5"
+              className="flex items-center gap-0.5 rounded-b-xl border-x border-b border-white/80 bg-white/70 px-1.5 py-0.5 text-[13px] text-muted-foreground shadow-[0_4px_14px_hsla(220,30%,20%,0.04)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5"
             >
               <Popover>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10">
-                    <LayoutGrid size={15} aria-hidden /> Công cụ
+                  <button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 hover:bg-white/90 hover:text-foreground dark:hover:bg-white/10">
+                    <LayoutGrid size={14} aria-hidden /> Công cụ
                   </button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-72 rounded-2xl p-1.5">
@@ -291,10 +291,10 @@ export default function TroLyPage() {
 
               <Popover onOpenChange={(v) => { if (!v) setTimKetNoi(''); }}>
                 <PopoverTrigger asChild>
-                  <button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg px-2.5 hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10">
+                  <button type="button" className="inline-flex h-8 items-center gap-2 rounded-lg px-2 hover:bg-white/90 hover:text-foreground dark:hover:bg-white/10">
                     <span className="flex -space-x-1.5" aria-hidden>
                       {['tong_cuc_thue', 'openai', 'anthropic'].map((k) => (
-                        <span key={k} className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-white bg-white shadow-sm">
+                        <span key={k} className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border border-white bg-white shadow-sm">
                           <DauKetNoi khoa={k} tron />
                         </span>
                       ))}
@@ -339,9 +339,9 @@ export default function TroLyPage() {
                 type="button"
                 onClick={() => setMoTaiApp(true)}
                 aria-label="Dùng MIMI như ứng dụng"
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 hover:bg-white/90 hover:text-foreground dark:hover:bg-white/10"
               >
-                <Monitor size={15} aria-hidden /> <span className="hidden sm:inline">Dùng như ứng dụng</span>
+                <Monitor size={14} aria-hidden /> <span className="hidden sm:inline">Dùng như ứng dụng</span>
               </button>
             </nav>
           </div>

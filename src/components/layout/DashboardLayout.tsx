@@ -2,10 +2,8 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
 import { Bell, ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, Users, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
-import { AnhCongTy } from './AnhCongTy';
 import { HopTaiUngDung } from './HopTaiUngDung';
 import { useCongTy } from '@/hooks/useCongTy';
-import { apDungMauGiaoDien } from '@/lib/mauGiaoDien';
 import { TRANG_CHI_TIET } from '@/lib/trangChiTiet';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -96,6 +94,7 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/tac-tu': 'Kiểm soát agent',
   '/dashboard/chi-phi-ai': 'Chi phí AI',
   '/dashboard/chung-tu': 'Chứng từ chi phí',
+  '/dashboard/to-khai': 'Tờ khai thuế',
   '/dashboard/clients': 'Khách hàng',
 };
 
@@ -155,13 +154,6 @@ export default function DashboardLayout() {
     </NavLink>
   );
   const logout = useAuthStore((s) => s.logout);
-
-  // Màu nhấn công ty chọn ở Cài đặt; chưa chọn thì giữ bảng màu gốc. Rời khu dashboard
-  // (về trang chủ) thì trả lại màu gốc.
-  useEffect(() => {
-    apDungMauGiaoDien(congTy?.mau ?? null);
-  }, [congTy?.mau]);
-  useEffect(() => () => apDungMauGiaoDien(null), []);
 
   // Link email và Google quay về /dashboard (URL đã khai với Supabase); đích thật do trang
   // đăng ký nhớ ở trình duyệt — xem `lib/sauDangNhap.ts`. Chỉ đọc một lần khi vào layout.
@@ -237,7 +229,7 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-3">
             <form
               onSubmit={(e) => { e.preventDefault(); submitSearch(); }}
-              className="hidden md:flex items-center gap-2 bg-accent rounded-xl px-3 py-2 focus-within:ring-1 focus-within:ring-primary/40 transition-shadow"
+              className="mimi-o-kinh hidden h-9 items-center gap-2 rounded-full px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-primary/25 md:flex"
             >
               <Search size={14} className="text-muted-foreground shrink-0" />
               <input
@@ -297,7 +289,7 @@ export default function DashboardLayout() {
             onSubmit={(e) => { e.preventDefault(); submitSearch(); }}
             className="md:hidden px-4 pb-3 flex items-center gap-2 bg-background border-b hairline"
           >
-            <div className="flex items-center gap-2 bg-accent rounded-xl px-3 py-2.5 flex-1">
+            <div className="mimi-o-kinh flex h-10 flex-1 items-center gap-2 rounded-full px-3.5">
               <Search size={15} className="text-muted-foreground shrink-0" />
               <input
                 autoFocus

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarClock, FileCheck2, Loader2 } from 'lucide-react';
+import { CalendarClock, ExternalLink, FileCheck2, Loader2, ScrollText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { DUONG_DAN_NOP_TO_KHAI } from '@/lib/goiToKhai';
+import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { cacKyKeTiep, khoangNgayKyKeKhai, kyKeKhaiKeTiep, mucKhan, type MucKhan } from '@/lib/hanKeKhai';
 import { dinhDang } from '@/lib/troLy';
 
@@ -93,16 +95,28 @@ export default function NhacThuePage() {
           <span className={`self-start rounded-full px-3 py-1 text-sm font-medium ${MAU_KHAN[khan]}`}>{conLaiChu(ky.conLai)}</span>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Hộ kinh doanh tự kê khai theo quý; hạn là ngày cuối của tháng liền sau quý. Nếu hạn rơi vào ngày nghỉ, luật cho lùi — ngày trên đây là mốc sớm nhất.
+          Hộ kinh doanh có doanh thu năm trên 01 tỷ đồng khai theo quý; hạn là ngày cuối của tháng liền sau quý. Doanh thu năm từ 01 tỷ
+          đồng trở xuống thì không khai quý, chỉ thông báo doanh thu năm, hạn 31/01 năm sau.{' '}
+          <span className="italic">Nguồn: Nghị định 68/2026/NĐ-CP Điều 8, sửa bởi Nghị định 141/2026/NĐ-CP.</span>{' '}
+          Nếu hạn rơi vào ngày nghỉ, luật cho lùi — ngày trên đây là mốc sớm nhất.
         </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <Link to="/dashboard/chung-tu" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Link to="/dashboard/to-khai" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110">
+            <ScrollText size={16} /> Soạn tờ khai quý {ky.quy}
+          </Link>
+          <a
+            href={DUONG_DAN_NOP_TO_KHAI}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent"
+          >
+            <img src={logoDichVuCong} alt="" className="h-4 w-4 object-contain" /> Nộp trên Cổng dịch vụ công <ExternalLink size={14} />
+          </a>
+          <Link to="/dashboard/chung-tu" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent">
             <FileCheck2 size={16} /> Kiểm chứng từ quý {ky.quy}
           </Link>
-          <Link to="/dashboard/tro-ly" className="inline-flex h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent">
-            Hỏi MIMI khoản chi thiếu chứng từ
-          </Link>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">MIMI soạn bản nháp và mở cổng nộp; bạn ký và nộp — MIMI không nộp thay.</p>
       </section>
 
       <section aria-labelledby="lich-ke-khai" className="rounded-2xl border border-border bg-card">

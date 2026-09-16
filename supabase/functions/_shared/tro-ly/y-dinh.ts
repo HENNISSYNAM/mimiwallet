@@ -27,6 +27,7 @@ const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   [/\btoken\b/, 'token_ai'],
   [/\b(chi phi ai|chi ai|ngan sach ai|dich vu ai|tien ai|openai|gpt|chatgpt|claude|anthropic|gemini|openrouter|llm|ngan sach)\b/, 'chi_phi_ai'],
   [/\b(re hon|model re|mo hinh re|doi model|doi mo hinh|thay model|toi uu model|toi uu mo hinh)\b/, 'model_re_hon'],
+  [/\b(to khai|khai thue|nop thue|nghia vu thue|mien thue|thue gtgt|thue tncn|thue thu nhap|thong bao doanh thu|nguong doanh thu|ty le thue|quyet toan)\b/, 'nghia_vu_thue'],
   [/\b(chung tu|thieu hoa don|chua co hoa don|hoa don dau vao|hoa don mua vao)\b/, 'thieu_chung_tu'],
   [/\b(qua han|cong no|phai thu|khach no|hoa don ban)\b/, 'hoa_don_qua_han'],
   [/\b(doi soat|khop tien|tien ve|da thu|chua khop)\b/, 'doi_soat'],
@@ -49,6 +50,12 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   // hoá đơn"). Chi phí chung chỉ là câu trả lời khi không có ý nào cụ thể hơn.
   if (khop.length > 1) {
     const i = khop.indexOf('chi_phi_thang');
+    if (i >= 0) khop.splice(i, 1);
+  }
+  // "Thông báo doanh thu" là tên một hồ sơ thuế (mẫu 01/TKN-CNKD), không phải hỏi báo cáo
+  // doanh thu — chữ "doanh thu" trong đó kéo cả năng lực báo cáo vào nếu không chặn.
+  if (/\bthong bao doanh thu\b/.test(s)) {
+    const i = khop.indexOf('bao_cao_tai_chinh');
     if (i >= 0) khop.splice(i, 1);
   }
   // Muốn đề xuất model rẻ hơn thì phải thấy đang chi bao nhiêu trước.

@@ -33,12 +33,12 @@ beforeEach(() => {
 describe('Kho công cụ', () => {
   it('chưa chọn gì: hiện bộ mặc định đã ghim; ghim thêm thì lưu cả danh sách theo thứ tự', async () => {
     render(<KhoCongCu mo onDong={() => {}} />);
-    expect(await screen.findByRole('button', { name: 'Bỏ ghim Khoản chi thiếu chứng từ' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Bỏ ghim Soạn tờ khai thuế' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Ghim Báo cáo thu chi' }));
     await waitFor(() => expect(gia.chen).toHaveBeenCalled());
     expect(gia.xoa).toHaveBeenCalledWith('user_id', 'u1');
     const rows = gia.chen.mock.calls[0][0] as { khoa: string; thu_tu: number; user_id: string }[];
-    expect(rows.map((r) => r.khoa)).toEqual(['thieu_chung_tu', 'doi_soat', 'duyet_chi', 'chi_phi_ai', 'cong_no', 'bao_cao']);
+    expect(rows.map((r) => r.khoa)).toEqual(['soan_to_khai', 'thieu_chung_tu', 'dong_tien', 'tra_trung', 'chi_phi_ai', 'bao_cao']);
     expect(rows.every((r) => r.user_id === 'u1')).toBe(true);
     expect(rows.at(-1)?.thu_tu).toBe(5);
   });
@@ -47,8 +47,8 @@ describe('Kho công cụ', () => {
     gia.dong = [{ khoa: 'bao_cao', thu_tu: 0 }];
     render(<KhoCongCu mo onDong={() => {}} />);
     await screen.findByRole('button', { name: 'Bỏ ghim Báo cáo thu chi' });
-    fireEvent.change(screen.getByLabelText('Tìm công cụ'), { target: { value: 'doi soat' } });
+    fireEvent.change(screen.getByLabelText('Tìm công cụ'), { target: { value: 'tra trung' } });
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
-    expect(screen.getByText('Đối soát tiền về')).toBeTruthy();
+    expect(screen.getByText('Tìm khoản trả trùng')).toBeTruthy();
   });
 });

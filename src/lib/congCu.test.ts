@@ -5,6 +5,7 @@ import { nhanYDinh } from '../../supabase/functions/_shared/tro-ly/y-dinh';
 const TRANG_CO_THAT = new Set([
   '/dashboard', '/dashboard/thu-vien', '/dashboard/chung-tu', '/dashboard/nhac-thue', '/dashboard/reports', '/dashboard/fintech',
   '/dashboard/tac-tu', '/dashboard/chinh-sach', '/dashboard/chi-phi-ai', '/dashboard/invoices', '/dashboard/clients',
+  '/dashboard/to-khai',
 ]);
 
 describe('danh mục công cụ', () => {
@@ -24,15 +25,22 @@ describe('danh mục công cụ', () => {
 
   it('tìm không dấu, nhiều từ, theo cả từ khoá', () => {
     expect(timCongCu('hoá đơn').map((c) => c.khoa)).toContain('thieu_chung_tu');
-    expect(timCongCu('đối soát').map((c) => c.khoa)).toEqual(['doi_soat']);
+    expect(timCongCu('trả trùng').map((c) => c.khoa)).toEqual(['tra_trung']);
     expect(timCongCu('claude').map((c) => c.khoa)).toEqual(['chi_phi_ai']);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
     expect(timCongCu('  ')).toHaveLength(DANH_MUC_CONG_CU.length);
   });
 
   it('công cụ câu hỏi mở trợ lý với câu hỏi đã mã hoá', () => {
-    expect(duongDanCongCu(CONG_CU_THEO_KHOA.doi_soat)).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Tiền về tháng này khớp hoá đơn nào?')}`);
+    expect(duongDanCongCu(CONG_CU_THEO_KHOA.dong_tien)).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Dòng tiền 6 tháng qua thế nào?')}`);
     expect(duongDanCongCu(CONG_CU_THEO_KHOA.thieu_chung_tu)).toBe('/dashboard/chung-tu');
+  });
+
+  it('đã bỏ công cụ trùng trang trợ lý và công cụ không chạy được', () => {
+    for (const k of ['doi_soat', 'duyet_chi', 'cong_no']) {
+      expect(CONG_CU_THEO_KHOA[k], k).toBeUndefined();
+      expect(CONG_CU_MAC_DINH).not.toContain(k);
+    }
   });
 
   it('không công cụ nào trùng mục chính của thanh điều hướng', () => {

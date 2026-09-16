@@ -28,7 +28,7 @@ export const laCotSo = (d: DonVi) => d !== 'chu' && d !== 'ngay';
 export const GOI_Y_THEO_NHOM: Record<NhomNangLuc, string[]> = {
   tro_ly: ['Khoản nào đang chờ tôi duyệt?', 'Agent nào sắp hết hạn mức tháng?'],
   chi_phi: ['Chi phí tháng này tăng hay giảm?', 'Tháng này tôi chi tiêu nhiều nhất cho ai?'],
-  chung_tu: ['Khoản chi nào chưa có chứng từ?', 'Khách nào đang nợ quá hạn?'],
+  chung_tu: ['Khoản chi nào chưa có chứng từ?', 'Năm nay tôi có phải nộp thuế không?'],
   ngan_hang: ['Dòng tiền 6 tháng qua thế nào?', 'Tiền về tháng này khớp hoá đơn nào?', 'Kết nối ngân hàng đang thế nào?'],
   ai_token: ['Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.', 'Token dùng theo model 30 ngày qua?'],
   bao_cao: ['Báo cáo thu chi 6 tháng', 'Có khoản nào bị trả trùng không?'],

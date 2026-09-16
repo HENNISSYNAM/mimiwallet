@@ -37,6 +37,42 @@ describe('danh mục năng lực', () => {
   });
 });
 
+describe('nghĩa vụ thuế', () => {
+  const suKien = {
+    nam: 2026, homNay: HOM_NAY, loai: 'ho_kinh_doanh' as const, doanhThuQuy: [200e6, 200e6, 200e6, 0] as [number, number, number, number],
+    nguonDoanhThu: 'hoa_don_dien_tu' as const, nhomNganh: ['dich_vu' as const], kenh: 'dia_diem_co_dinh' as const,
+    phuongPhapTncn: null, batDauKinhDoanh: null, daNopThueTrongNam: null, doanhThuNamTruoc: null, coQuanHeLienKet: null,
+  };
+
+  it('dưới ngưỡng: nói được miễn, đưa mẫu và hạn, mở được trang Tờ khai', () => {
+    const r = NANG_LUC.nghia_vu_thue.chay(moi({ thue: { suKien, canhBao: [], canCuDaKiem: {} } }));
+    expect(r.tom_tat).toContain('Không chịu thuế giá trị gia tăng');
+    expect(r.tom_tat).toContain('Không phải nộp thuế thu nhập cá nhân');
+    const bang = r.the.find((t) => t.loai === 'bang');
+    expect(bang && bang.loai === 'bang' && bang.dong.some((d) => d[1] === '01/TKN-CNKD' && d[2] === '2027-01-31')).toBe(true);
+    expect(r.de_xuat[0]).toMatchObject({ loai: 'mo_trang', tham_so: { duong_dan: '/dashboard/to-khai' } });
+    expect(r.nguon.map((n) => n.ten)).toContain('Kho văn bản Công báo');
+  });
+
+  it('nêu rõ quan hệ nhân quả giữa GTGT và TNCN', () => {
+    const r = NANG_LUC.nghia_vu_thue.chay(moi({ thue: { suKien, canhBao: [], canCuDaKiem: {} } }));
+    const ghi = r.the.filter((t) => t.loai === 'ghi_chu').map((t) => (t.loai === 'ghi_chu' ? t.cau : '')).join(' ');
+    expect(ghi).toContain('song song');
+  });
+
+  it('căn cứ chưa đối chiếu được với kho thì nói ra', () => {
+    const r = NANG_LUC.nghia_vu_thue.chay(moi({ thue: { suKien, canhBao: [], canCuDaKiem: { nd68_d3_k1: false } } }));
+    const ghi = r.the.filter((t) => t.loai === 'ghi_chu').map((t) => (t.loai === 'ghi_chu' ? t.cau : '')).join(' ');
+    expect(ghi).toContain('chưa đối chiếu được');
+  });
+
+  it('chưa có hồ sơ thuế thì mời bổ sung, không đoán', () => {
+    const r = NANG_LUC.nghia_vu_thue.chay(moi());
+    expect(r.tom_tat).toContain('Chưa đọc được hồ sơ thuế');
+    expect(r.the).toEqual([]);
+  });
+});
+
 describe('yêu cầu chờ duyệt', () => {
   it('chỉ đề xuất duyệt/từ chối cho khoản đang chờ, nói rõ MIMI không chuyển tiền', () => {
     const d = moi({

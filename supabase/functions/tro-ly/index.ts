@@ -37,6 +37,9 @@ import {
   type NguonCan,
 } from "../_shared/tro-ly/tinh-toan.ts";
 import { khoangNgayKyKeKhai, kyKeKhaiKeTiep, lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
+import { CAN_CU } from "../_shared/luat/he-luat.ts";
+import { kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
+import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
 
@@ -198,6 +201,22 @@ async function docDuLieu(
         d.bangGiaLuc = ds.map((g) => String(g.lay_luc)).sort().at(-1) ?? null;
       }));
   }
+  if (can.has("thue")) {
+    viec.push((async () => {
+      const [hs, dt] = await Promise.all([
+        docHoSo(db, companyId),
+        docDoanhThuQuy(db, companyId, Number(moc.homNay.slice(0, 4))),
+      ]);
+      const dung = dungSuKien({ nam: Number(moc.homNay.slice(0, 4)), homNay: moc.homNay, congTy: hs.cong_ty, hoSo: hs.ho_so, doanhThu: dt });
+      // Đối chiếu trước cả bộ căn cứ: năng lực là hàm thuần, không gọi được CSDL.
+      const kiem = await kiemCanCu(db, Object.keys(CAN_CU));
+      d.thue = {
+        suKien: dung.su_kien,
+        canhBao: dung.canh_bao,
+        canCuDaKiem: Object.fromEntries(kiem.map((c) => [c.id, c.da_doi_chieu])),
+      };
+    })());
+  }
   if (can.has("chung_tu_quet")) {
     viec.push(db.from("chung_tu_quet").select("id, tong_tien, ngay, giao_dich_id").eq("company_id", companyId).limit(5000)
       .then((r: Row) => { d.chungTuQuet = (kiem(r, "chứng từ quét") as Row[]).map((c) => ({ ...c, tong_tien: Number(c.tong_tien) })) as DuLieu["chungTuQuet"]; }));
@@ -206,6 +225,7 @@ async function docDuLieu(
   return d;
 }
 
+// `boi_canh` (màn đầu) không cần hệ luật thuế: nó chỉ chạy khi người dùng hỏi về thuế.
 const TAT_CA_NGUON: NguonCan[] = ["giao_dich", "hoa_don_vao", "hoa_don_ban", "yeu_cau", "ket_noi_ngan_hang", "chi_phi_ai", "token_ai", "bang_gia", "chung_tu_quet"];
 
 function docLichSu(v: unknown): TinNhanCu[] {

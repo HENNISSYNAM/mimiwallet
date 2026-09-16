@@ -16,8 +16,6 @@ export function chuCaiDau(ten: string | null): string {
   return (tu[0][0] + tu[tu.length - 1][0]).toUpperCase();
 }
 
-import { hslChu, mauNhan } from '@/lib/mauGiaoDien';
-
 /** Nền đậm vừa đủ để chữ trắng đọc được (tương phản ≥ 4.5:1). */
 const MAU = ['#1a73e8', '#188038', '#c5221f', '#b06000', '#7b1fa2', '#00796b', '#3949ab', '#ad1457'];
 
@@ -25,11 +23,6 @@ export function mauTheoTen(ten: string | null): string {
   let h = 0;
   for (const c of ten ?? '') h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return MAU[h % MAU.length];
-}
-
-/** Nền ảnh đại diện: màu người dùng chọn (cùng màu nhấn giao diện), không thì theo tên. */
-export function nenAnhDaiDien(ten: string | null, sacDo: number | null): string {
-  return sacDo === null ? mauTheoTen(ten) : `hsl(${hslChu(mauNhan(sacDo))})`;
 }
 
 /** Ảnh Google của người đăng nhập (Supabase chép claim OAuth vào user_metadata). */

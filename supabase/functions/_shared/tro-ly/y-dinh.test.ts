@@ -25,6 +25,13 @@ describe('nhận ý định không cần mô hình', () => {
     expect(nhanYDinh('Kết nối Tổng cục Thuế đã chạy chưa?')).toEqual(['tat_ca_ket_noi']);
   });
 
+  it('câu hỏi về thuế đi vào năng lực nghĩa vụ thuế', () => {
+    expect(nhanYDinh('Năm nay tôi có phải nộp thuế không?')).toEqual(['nghia_vu_thue']);
+    expect(nhanYDinh('to khai thue quy nay the nao')).toEqual(['nghia_vu_thue']);
+    expect(nhanYDinh('Thông báo doanh thu hạn bao giờ?')).toEqual(['nghia_vu_thue']);
+    expect(nhanYDinh('Tôi được miễn thuế TNCN không?')).toEqual(['nghia_vu_thue']);
+  });
+
   it('chữ "ai" là "người nào" thì không kéo chi phí AI vào', () => {
     expect(nhanYDinh('Ai đã duyệt khoản này?')).toEqual(['yeu_cau_cho_duyet']);
   });

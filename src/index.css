@@ -176,6 +176,10 @@
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover { background-color: hsla(215 22% 50% / 0.5); }
+  /* Vùng cuộn phụ (thanh bên): thanh cuộn chỉ hiện khi rê chuột vào — lúc đứng yên không có
+     vệt xám nào chiếm chỗ. Chừa sẵn rãnh để nội dung không nhảy khi thanh hiện ra. */
+  .mimi-cuon-an { scrollbar-gutter: stable; scrollbar-color: transparent transparent; }
+  .mimi-cuon-an:hover { scrollbar-color: hsla(215 22% 62% / 0.38) transparent; }
   .dark * { scrollbar-color: hsla(0 0% 100% / 0.22) transparent; }
   .dark ::-webkit-scrollbar-thumb { background-color: hsla(0 0% 100% / 0.18); border-color: hsla(0 0% 100% / 0.08); }
 
@@ -566,6 +570,49 @@
     animation: none !important;
   }
   .animate-pop-in { opacity: 1; transform: none; }
+}
+
+/* Thanh bên kính trắng: nền gần trắng trong suốt trên một lớp mờ, viền phải sáng như mép kính
+   bắt sáng, thêm một đường tối rất nhạt ngoài cùng để tách khỏi nội dung. */
+.mimi-thanh-kinh {
+  background: linear-gradient(180deg, hsla(0 0% 100% / 0.78), hsla(210 40% 98% / 0.62));
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  box-shadow: inset -1px 0 0 hsla(0 0% 100% / 0.9), 1px 0 0 hsla(215 25% 20% / 0.06);
+}
+.dark .mimi-thanh-kinh {
+  background: linear-gradient(180deg, hsla(210 6% 10% / 0.78), hsla(210 6% 8% / 0.62));
+  box-shadow: inset -1px 0 0 hsla(0 0% 100% / 0.06), 1px 0 0 hsla(0 0% 0% / 0.4);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .mimi-thanh-kinh { background: hsl(var(--bg-card)); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+/* Ô tìm kiếm kính trắng ở thanh đầu trang. */
+.mimi-o-kinh {
+  background: hsla(0 0% 100% / 0.62);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid hsla(0 0% 100% / 0.85);
+  box-shadow: inset 0 1px 0 hsla(0 0% 100% / 0.9), 0 1px 3px hsla(215 25% 20% / 0.07);
+}
+.dark .mimi-o-kinh { background: hsla(0 0% 100% / 0.06); border-color: hsla(0 0% 100% / 0.1); box-shadow: none; }
+
+/* In tờ khai: chỉ tờ giấy ra máy in, mọi thứ khác của ứng dụng ẩn đi.
+   Dùng visibility (không phải display) để bảng bên trong không bị dựng lại khi in. */
+@media print {
+  body * { visibility: hidden !important; }
+  .to-khai-giay, .to-khai-giay * { visibility: visible !important; }
+  .to-khai-giay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+  .no-print { display: none !important; }
 }
 
 /* Hide custom scrollbars for a cleaner Apple look */

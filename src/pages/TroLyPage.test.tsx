@@ -170,7 +170,8 @@ describe('MIMI Assistant — công cụ', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Công cụ$/ }));
     const vung = await screen.findByRole('list', { name: 'Công cụ của bạn' });
     expect(within(vung).getByRole('link', { name: /Khoản chi thiếu chứng từ/ }).getAttribute('href')).toBe('/dashboard/chung-tu');
-    expect(within(vung).getByRole('link', { name: /Đối soát tiền về/ }).getAttribute('href')).toContain('/dashboard/tro-ly?hoi=');
+    expect(within(vung).getByRole('link', { name: /Dòng tiền 6 tháng/ }).getAttribute('href')).toContain('/dashboard/tro-ly?hoi=');
+    expect(within(vung).queryByRole('link', { name: /Đối soát tiền về|Khoản chờ duyệt|Khách nợ quá hạn/ })).toBeNull();
   });
 });
 
