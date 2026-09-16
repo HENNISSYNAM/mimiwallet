@@ -41,7 +41,7 @@ describe('nghĩa vụ thuế', () => {
   const suKien = {
     nam: 2026, homNay: HOM_NAY, loai: 'ho_kinh_doanh' as const, doanhThuQuy: [200e6, 200e6, 200e6, 0] as [number, number, number, number],
     nguonDoanhThu: 'hoa_don_dien_tu' as const, nhomNganh: ['dich_vu' as const], kenh: 'dia_diem_co_dinh' as const,
-    phuongPhapTncn: null, batDauKinhDoanh: null, daNopThueTrongNam: null, doanhThuNamTruoc: null, coQuanHeLienKet: null,
+    phuongPhapTncn: null, batDauKinhDoanh: null, daNopThueTrongNam: null, nganhDacThu: null, doanhThuNamTruoc: null, coQuanHeLienKet: null,
   };
 
   it('dưới ngưỡng: nói được miễn, đưa mẫu và hạn, mở được trang Tờ khai', () => {

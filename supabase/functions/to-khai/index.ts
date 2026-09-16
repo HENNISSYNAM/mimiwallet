@@ -156,6 +156,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         phuong_phap_tncn: r.ho_so.phuong_phap_tncn,
         bat_dau_kinh_doanh: r.ho_so.bat_dau_kinh_doanh,
         da_nop_thue_trong_nam: r.ho_so.da_nop_thue_trong_nam,
+        nganh_dac_thu: r.ho_so.nganh_dac_thu,
         doanh_thu_nam_truoc: r.ho_so.doanh_thu_nam_truoc,
         co_quan_he_lien_ket: r.ho_so.co_quan_he_lien_ket,
         updated_by: userId,

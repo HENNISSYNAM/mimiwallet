@@ -18,6 +18,7 @@ const sk = (p: Partial<SuKienThue> = {}): SuKienThue => ({
   phuongPhapTncn: null,
   batDauKinhDoanh: null,
   daNopThueTrongNam: null,
+  nganhDacThu: null,
   doanhThuNamTruoc: null,
   coQuanHeLienKet: null,
   ...p,
@@ -181,6 +182,37 @@ describe('ngoài phạm vi và thiếu dữ liệu', () => {
   it('bán trên sàn có thanh toán thì nhắc sàn đã khấu trừ', () => {
     const r = suyLuan(sk({ kenh: 'tmdt_co_thanh_toan', doanhThuQuy: [100e6, 0, 0, 0] }));
     expect(tim(r.ket_luan, 'san_khau_tru')?.can_cu).toEqual(['nd68_d11_k1']);
+  });
+});
+
+describe('ngành đặc thù dùng mẫu tờ khai riêng', () => {
+  it('cho thuê bất động sản: mẫu 01/BĐS, khai hai lần hoặc một lần, TNCN 5%', () => {
+    const r = suyLuan(sk({ doanhThuQuy: [100e6, 0, 0, 0], nganhDacThu: 'cho_thue_bat_dong_san' }));
+    const k = tim(r.ket_luan, 'cho_thue_bds');
+    expect(k?.mau).toBe('01/BĐS');
+    expect(k?.han).toEqual(['2026-07-31', '2027-01-31']);
+    expect(k?.can_cu).toEqual(['tt18_d4_k4', 'nd68_d8_k3d', 'luat109_d7_k4', 'nd141_d1_k1']);
+    expect(tim(r.ket_luan, 'chua_soan_bds')?.loai).toBe('chua_ho_tro');
+  });
+
+  it('đại lý xổ số, bảo hiểm, đa cấp: khai năm phần chưa bị khấu trừ', () => {
+    const r = suyLuan(sk({ doanhThuQuy: [100e6, 0, 0, 0], nganhDacThu: 'dai_ly_xo_so_bao_hiem_da_cap' }));
+    expect(tim(r.ket_luan, 'dai_ly_khau_tru')?.can_cu).toEqual(['tt18_d4_k3']);
+  });
+
+  it('hàng chịu thuế khác: nhắc khai thêm loại thuế đó', () => {
+    const r = suyLuan(sk({ doanhThuQuy: [100e6, 0, 0, 0], nganhDacThu: 'hang_thue_khac' }));
+    expect(tim(r.ket_luan, 'thue_khac')?.can_cu).toEqual(['nd68_d7']);
+  });
+
+  it('không có ngành đặc thù thì không thêm gì', () => {
+    const r = suyLuan(sk({ doanhThuQuy: [100e6, 0, 0, 0], nganhDacThu: 'khong' }));
+    expect(id(r.ket_luan).some((x) => ['cho_thue_bds', 'dai_ly_khau_tru', 'thue_khac'].includes(x))).toBe(false);
+  });
+
+  it('hồ sơ nhận giá trị ngành đặc thù hợp lệ, chối giá trị lạ', () => {
+    expect(docHoSoThue({ nganh_dac_thu: 'cho_thue_bat_dong_san' }).ok).toBe(true);
+    expect(docHoSoThue({ nganh_dac_thu: 'ban_vang' }).ok).toBe(false);
   });
 });
 

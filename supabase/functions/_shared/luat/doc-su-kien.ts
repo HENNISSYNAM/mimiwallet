@@ -102,7 +102,7 @@ export async function docHoSo(db: Db, companyId: string): Promise<{ cong_ty: HoS
   const ct = await db.from('companies').select('id, name, tax_id, account_type').eq('id', companyId).maybeSingle();
   if (ct.error) throw new Error(`Không đọc được thông tin công ty: ${ct.error.message}`);
   const hs = await db.from('ho_so_thue')
-    .select('loai_nguoi_nop, nhom_nganh, kenh, phuong_phap_tncn, bat_dau_kinh_doanh, da_nop_thue_trong_nam, doanh_thu_nam_truoc, co_quan_he_lien_ket')
+    .select('loai_nguoi_nop, nhom_nganh, kenh, phuong_phap_tncn, bat_dau_kinh_doanh, da_nop_thue_trong_nam, nganh_dac_thu, doanh_thu_nam_truoc, co_quan_he_lien_ket')
     .eq('company_id', companyId).maybeSingle();
   if (hs.error) throw new Error(`Không đọc được hồ sơ thuế: ${hs.error.message}`);
   const r = (hs.data ?? null) as Row | null;
@@ -121,6 +121,7 @@ export async function docHoSo(db: Db, companyId: string): Promise<{ cong_ty: HoS
         phuong_phap_tncn: r.phuong_phap_tncn ?? null,
         bat_dau_kinh_doanh: r.bat_dau_kinh_doanh ?? null,
         da_nop_thue_trong_nam: r.da_nop_thue_trong_nam ?? null,
+        nganh_dac_thu: r.nganh_dac_thu ?? null,
         doanh_thu_nam_truoc: r.doanh_thu_nam_truoc === null || r.doanh_thu_nam_truoc === undefined ? null : Number(r.doanh_thu_nam_truoc),
         co_quan_he_lien_ket: r.co_quan_he_lien_ket ?? null,
       }
@@ -164,6 +165,7 @@ export function dungSuKien(o: {
       phuongPhapTncn: o.hoSo.phuong_phap_tncn,
       batDauKinhDoanh: o.hoSo.bat_dau_kinh_doanh,
       daNopThueTrongNam: o.hoSo.da_nop_thue_trong_nam,
+      nganhDacThu: o.hoSo.nganh_dac_thu,
       doanhThuNamTruoc: o.hoSo.doanh_thu_nam_truoc,
       coQuanHeLienKet: o.hoSo.co_quan_he_lien_ket,
     },

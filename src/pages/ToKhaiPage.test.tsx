@@ -21,7 +21,7 @@ const HOM_NAY = '2026-10-05';
 const suKien = (p: Partial<SuKienThue> = {}): SuKienThue => ({
   nam: 2026, homNay: HOM_NAY, loai: 'ho_kinh_doanh', doanhThuQuy: [200e6, 200e6, 200e6, 0],
   nguonDoanhThu: 'hoa_don_dien_tu', nhomNganh: ['dich_vu'], kenh: 'dia_diem_co_dinh', phuongPhapTncn: null,
-  batDauKinhDoanh: null, daNopThueTrongNam: null, doanhThuNamTruoc: null, coQuanHeLienKet: null, ...p,
+  batDauKinhDoanh: null, daNopThueTrongNam: null, nganhDacThu: null, doanhThuNamTruoc: null, coQuanHeLienKet: null, ...p,
 });
 
 function ketQua(sk: SuKienThue): KetQuaPhanTich {
@@ -38,7 +38,7 @@ function ketQua(sk: SuKienThue): KetQuaPhanTich {
     cong_ty: { ten: 'HỘ KINH DOANH NAM ĐINH', mst: '0123456789' },
     ho_so: {
       loai_nguoi_nop: sk.loai, nhom_nganh: sk.nhomNganh, kenh: sk.kenh, phuong_phap_tncn: sk.phuongPhapTncn,
-      bat_dau_kinh_doanh: null, da_nop_thue_trong_nam: null, doanh_thu_nam_truoc: null, co_quan_he_lien_ket: null,
+      bat_dau_kinh_doanh: null, da_nop_thue_trong_nam: null, nganh_dac_thu: null, doanh_thu_nam_truoc: null, co_quan_he_lien_ket: null,
     },
     su_kien: sk,
     doanh_thu: { hoa_don: sk.doanhThuQuy, ngan_hang: [210e6, 200e6, 200e6, 0], so_hoa_don: 12, co_ket_noi_ngan_hang: true, quy: sk.doanhThuQuy, nguon: 'hoa_don_dien_tu' },

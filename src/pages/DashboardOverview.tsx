@@ -328,17 +328,8 @@ export default function DashboardOverview() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      {/* Lời chào không kèm mèo (người dùng bỏ 16/09/2026): mèo MIMI đã có ở thanh bên và thẻ mẹo. */}
       <motion.div variants={fadeUp} className="flex items-start gap-3">
-        {/* 56px, `live` — cô ấy nháy mắt và phản ứng khi bị chạm vào. Không có
-            quầng sáng: quầng ngọc bích dựng cho hero trên nền kem, ở đây nó chỉ
-            là một vệt màu thừa cạnh dòng chữ. */}
-        <MimiCat
-          variant="live"
-          pose={mimi.pose}
-          glow="none"
-          tilt={8}
-          className="w-14 shrink-0 -mt-1"
-        />
         <div className="min-w-0">
           <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">
             Xin chào{companyName ? `, ${companyName}` : ''}

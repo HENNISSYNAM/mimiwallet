@@ -93,6 +93,11 @@ export const CAN_CU: Record<string, CanCu> = {
   tt18_d4_k1b: { van_ban: '18/2026/TT-BTC', dieu: 'Điều 4', vi_tri: 'Điều 4 khoản 1 điểm b', trich: 'hồ sơ khai thuế giá trị gia tăng, thuế thu nhập cá nhân và các loại thuế khác là Tờ khai theo Mẫu số 01/CNKD ban hành kèm theo Thông tư này.', y: 'Hộ nộp GTGT, TNCN khai trên mẫu 01/CNKD.' },
   tt18_d4_k1c: { van_ban: '18/2026/TT-BTC', dieu: 'Điều 4', vi_tri: 'Điều 4 khoản 1 điểm c', trich: 'Hồ sơ khai quyết toán thuế thu nhập cá nhân là Tờ khai quyết toán thuế thu nhập cá nhân theo Mẫu số 02/CNKD-TNCN-QTT ban hành kèm theo Thông tư này.', y: 'Quyết toán TNCN dùng mẫu 02/CNKD-TNCN-QTT.' },
   tt18_d4_k1d: { van_ban: '18/2026/TT-BTC', dieu: 'Điều 4', vi_tri: 'Điều 4 khoản 1 điểm d', trich: 'Hộ kinh doanh, cá nhân kinh doanh mới ra kinh doanh gửi Thông báo số tài khoản/số hiệu ví điện tử theo mẫu số 01/BK-STK ban hành kèm theo Thông tư này kèm theo Thông báo doanh thu hoặc Tờ khai thuế đầu tiên của năm.', y: 'Thông báo số tài khoản dùng mẫu 01/BK-STK.' },
+  tt18_d4_k3: { van_ban: '18/2026/TT-BTC', dieu: 'Điều 4', vi_tri: 'Điều 4 khoản 3', trich: 'Đối với cá nhân trực tiếp ký hợp đồng làm đại lý xổ số, đại lý bảo hiểm, đại lý bán hàng đa cấp, hoạt động kinh doanh khác chưa khấu trừ, nộp thuế trong năm là Tờ khai thuế năm theo Mẫu số 01/TKN-CNKD ban hành kèm theo Thông tư này.', y: 'Đại lý xổ số, bảo hiểm, bán hàng đa cấp: phần chưa bị khấu trừ thì khai theo năm trên mẫu 01/TKN-CNKD.' },
+  tt18_d4_k4: { van_ban: '18/2026/TT-BTC', dieu: 'Điều 4', vi_tri: 'Điều 4 khoản 4', trich: 'Đối với cá nhân cho thuê bất động sản trực tiếp khai thuế với cơ quan thuế là Tờ khai thuế đối với hoạt động cho thuê bất động sản theo Mẫu số 01/BĐS và Phụ lục Bảng kê chi tiết bất động sản theo Mẫu số 01/BK-BĐS ban hành kèm theo Thông tư này.', y: 'Cho thuê bất động sản khai trên mẫu 01/BĐS kèm phụ lục 01/BK-BĐS.' },
+  nd68_d8_k3d: { van_ban: '68/2026/NĐ-CP', dieu: 'Điều 8', vi_tri: 'Điều 8 khoản 3 điểm d', trich: 'Trường hợp cá nhân trực tiếp khai thuế đối với hoạt động cho thuê bất động sản thì cá nhân được lựa chọn khai thuế hai lần trong năm tính thuế hoặc khai thuế một lần theo năm tính thuế.', y: 'Cho thuê bất động sản: được chọn khai hai lần trong năm hoặc một lần theo năm.' },
+  luat109_d7_k4: { van_ban: '109/2025/QH15', dieu: 'Điều 7', vi_tri: 'Điều 7 khoản 4', trich: 'Cá nhân cho thuê bất động sản, trừ hoạt động kinh doanh lưu trú, nộp thuế thu nhập cá nhân được xác định bằng phần doanh thu vượt trên mức quy định tại khoản 1 Điều này nhân (x) với thuế suất 5%.', y: 'Cho thuê bất động sản: TNCN 5% trên phần doanh thu vượt ngưỡng.' },
+  nd68_d7: { van_ban: '68/2026/NĐ-CP', dieu: 'Điều 7', vi_tri: 'Điều 7', trich: 'Trường hợp hộ kinh doanh, cá nhân kinh doanh có hoạt động sản xuất, kinh doanh hàng hóa, dịch vụ thuộc đối tượng chịu thuế tiêu thụ đặc biệt, thuế tài nguyên, thuế bảo vệ môi trường theo quy định của pháp luật thuế thì việc xác định nghĩa vụ thuế được thực hiện theo quy định của pháp luật về từng loại thuế tương ứng.', y: 'Hàng chịu thuế tiêu thụ đặc biệt, tài nguyên, bảo vệ môi trường thì theo luật của từng loại thuế đó.' },
   tt18_d5_k1: { van_ban: '18/2026/TT-BTC', dieu: 'Điều 5', vi_tri: 'Điều 5 khoản 1', trich: 'Hồ sơ đề nghị hoàn thuế nộp thừa đối với hộ kinh doanh, cá nhân kinh doanh nộp thuế thu nhập cá nhân theo phương pháp thuế suất nhân (x) với doanh thu tính thuế là Tờ khai thuế theo Mẫu số 01/TKN-CNKD ban hành kèm theo Thông tư này.', y: 'Đề nghị hoàn thuế nộp thừa khai trên mẫu 01/TKN-CNKD.' },
   tt50_d3: { van_ban: '50/2026/TT-BTC', dieu: 'Điều 3', vi_tri: 'Điều 3', trich: 'Thay thế Mẫu số 01/TKN-CNKD, Mẫu số 01/CNKD, Mẫu số 01/BĐS, Mẫu số 02/BK-KTBĐS theo danh mục mẫu biểu ban hành kèm theo Thông tư số 18/2026/TT-BTC', y: 'Mẫu 01/TKN-CNKD và 01/CNKD đang dùng là bản kèm Thông tư 50/2026.' },
   tt50_d4_k2: { van_ban: '50/2026/TT-BTC', dieu: 'Điều 4', vi_tri: 'Điều 4 khoản 2', trich: 'thì gửi Thông báo số tài khoản/số hiệu ví điện tử theo Mẫu số 01/BK-STK ban hành kèm theo Thông tư số 18/2026/TT-BTC chậm nhất là ngày 31 tháng 7 năm 2026.', y: 'Hộ doanh thu từ 01 tỷ trở xuống chưa gửi thông báo số tài khoản thì hạn là 31/07/2026.' },
@@ -124,6 +129,17 @@ export type Kenh = 'dia_diem_co_dinh' | 'tmdt_khong_thanh_toan' | 'tmdt_co_thanh
 export type PhuongPhapTncn = 'doanh_thu' | 'thu_nhap';
 export type NguonDoanhThu = 'hoa_don_dien_tu' | 'ngan_hang' | 'tu_khai';
 
+/**
+ * Hoạt động có tờ khai RIÊNG, không dùng mẫu 01/CNKD hay 01/TKN-CNKD thường.
+ *
+ * Đây là câu hỏi MIMI hỏi ngay lúc bắt đầu, vì ngành quyết định mẫu tờ khai: người cho thuê
+ * nhà khai 01/BĐS, người làm đại lý bảo hiểm khai theo năm sau khi bị khấu trừ, còn người bán
+ * hàng chịu thuế tiêu thụ đặc biệt còn phải khai thêm loại thuế đó.
+ */
+export type NganhDacThu = 'khong' | 'cho_thue_bat_dong_san' | 'dai_ly_xo_so_bao_hiem_da_cap' | 'hang_thue_khac';
+
+export const NGANH_DAC_THU: readonly NganhDacThu[] = ['khong', 'cho_thue_bat_dong_san', 'dai_ly_xo_so_bao_hiem_da_cap', 'hang_thue_khac'];
+
 export const NHOM_NGANH: readonly NhomNganh[] = ['phan_phoi_hang_hoa', 'dich_vu', 'cho_thue_tai_san', 'san_xuat_van_tai', 'noi_dung_so', 'khac'];
 export const KENH: readonly Kenh[] = ['dia_diem_co_dinh', 'tmdt_khong_thanh_toan', 'tmdt_co_thanh_toan'];
 
@@ -141,6 +157,13 @@ export const TEN_KENH: Record<Kenh, string> = {
   dia_diem_co_dinh: 'Có địa điểm kinh doanh cố định',
   tmdt_khong_thanh_toan: 'Bán trên nền tảng số không có chức năng đặt hàng, thanh toán',
   tmdt_co_thanh_toan: 'Bán trên sàn có chức năng thanh toán (sàn khấu trừ thuế thay)',
+};
+
+export const TEN_NGANH_DAC_THU: Record<NganhDacThu, string> = {
+  khong: 'Không có hoạt động đặc thù',
+  cho_thue_bat_dong_san: 'Cho thuê bất động sản (nhà, đất, mặt bằng)',
+  dai_ly_xo_so_bao_hiem_da_cap: 'Đại lý xổ số, bảo hiểm, bán hàng đa cấp',
+  hang_thue_khac: 'Hàng chịu thuế tiêu thụ đặc biệt, tài nguyên hoặc bảo vệ môi trường',
 };
 
 export const TEN_NGUON_DOANH_THU: Record<NguonDoanhThu, string> = {
@@ -162,6 +185,7 @@ export interface SuKienThue {
   phuongPhapTncn: PhuongPhapTncn | null;
   batDauKinhDoanh: string | null;
   daNopThueTrongNam: boolean | null;
+  nganhDacThu: NganhDacThu | null;
   /** Doanh nghiệp: tổng doanh thu trên quyết toán TNDN năm trước. */
   doanhThuNamTruoc: number | null;
   coQuanHeLienKet: boolean | null;
@@ -422,6 +446,29 @@ export function suyLuan(sk: SuKienThue): SuyLuan {
     }
   }
 
+  // Ngành đặc thù dùng mẫu khác — đây là lý do MIMI hỏi ngành ngay lúc bắt đầu.
+  if (sk.nganhDacThu === 'cho_thue_bat_dong_san') {
+    them({
+      id: 'cho_thue_bds', loai: 'nghia_vu', mau: '01/BĐS', han: [`${sk.nam}-07-31`, `${sk.nam + 1}-01-31`], vi: [],
+      can_cu: ['tt18_d4_k4', 'nd68_d8_k3d', 'luat109_d7_k4', 'nd141_d1_k1'],
+      cau: `Cho thuê bất động sản khai riêng trên mẫu 01/BĐS kèm phụ lục 01/BK-BĐS: được chọn khai hai lần trong năm (hạn 31/07/${sk.nam} và 31/01/${sk.nam + 1}) hoặc một lần theo năm. TNCN 5% trên phần doanh thu vượt mức được trừ.`,
+    });
+    them({ id: 'chua_soan_bds', loai: 'chua_ho_tro', vi: ['cho_thue_bds'], can_cu: [], cau: 'MIMI chưa soạn mẫu 01/BĐS — phần trên là nghĩa vụ và hạn, tờ khai vẫn lập tay hoặc trên eTax.' });
+  }
+  if (sk.nganhDacThu === 'dai_ly_xo_so_bao_hiem_da_cap') {
+    them({
+      id: 'dai_ly_khau_tru', loai: 'nghia_vu', mau: '01/TKN-CNKD', han: [`${sk.nam + 1}-01-31`], vi: [],
+      can_cu: ['tt18_d4_k3'],
+      cau: 'Làm đại lý xổ số, bảo hiểm hoặc bán hàng đa cấp: doanh nghiệp trả hoa hồng đã khấu trừ thuế; phần doanh thu trong năm chưa bị khấu trừ thì bạn khai theo năm trên mẫu 01/TKN-CNKD.',
+    });
+  }
+  if (sk.nganhDacThu === 'hang_thue_khac') {
+    them({
+      id: 'thue_khac', loai: 'nghia_vu', vi: [], can_cu: ['nd68_d7'],
+      cau: 'Hàng hoá, dịch vụ chịu thuế tiêu thụ đặc biệt, thuế tài nguyên hoặc thuế bảo vệ môi trường: khai thêm các loại thuế đó theo pháp luật riêng của từng loại, cùng hồ sơ khai thuế của bạn.',
+    });
+  }
+
   if (sk.kenh === 'tmdt_co_thanh_toan') {
     them({
       id: 'san_khau_tru', loai: 'canh_bao', vi: [], can_cu: ['nd68_d11_k1'],
@@ -491,13 +538,15 @@ export interface HoSoThue {
   phuong_phap_tncn: PhuongPhapTncn | null;
   bat_dau_kinh_doanh: string | null;
   da_nop_thue_trong_nam: boolean | null;
+  nganh_dac_thu: NganhDacThu | null;
   doanh_thu_nam_truoc: number | null;
   co_quan_he_lien_ket: boolean | null;
 }
 
 export const HO_SO_TRONG: HoSoThue = {
   loai_nguoi_nop: null, nhom_nganh: [], kenh: null, phuong_phap_tncn: null,
-  bat_dau_kinh_doanh: null, da_nop_thue_trong_nam: null, doanh_thu_nam_truoc: null, co_quan_he_lien_ket: null,
+  bat_dau_kinh_doanh: null, da_nop_thue_trong_nam: null, nganh_dac_thu: null,
+  doanh_thu_nam_truoc: null, co_quan_he_lien_ket: null,
 };
 
 /** Loại người nộp khi hồ sơ thuế chưa ghi: đọc loại tài khoản chọn lúc đăng ký. */
@@ -527,6 +576,8 @@ export function docHoSoThue(v: unknown): { ok: true; ho_so: HoSoThue } | { ok: f
     }
     bd = o.bat_dau_kinh_doanh;
   }
+  const nganh = o.nganh_dac_thu == null ? null : trongDs(o.nganh_dac_thu, NGANH_DAC_THU);
+  if (o.nganh_dac_thu != null && !nganh) return { ok: false, cau: 'Hoạt động đặc thù không hợp lệ.' };
   const bool = (x: unknown) => (typeof x === 'boolean' ? x : null);
   let truoc: number | null = null;
   if (o.doanh_thu_nam_truoc != null && o.doanh_thu_nam_truoc !== '') {
@@ -538,7 +589,8 @@ export function docHoSoThue(v: unknown): { ok: true; ho_so: HoSoThue } | { ok: f
     ok: true,
     ho_so: {
       loai_nguoi_nop: loai, nhom_nganh: [...new Set(nhom as NhomNganh[])], kenh, phuong_phap_tncn: pp, bat_dau_kinh_doanh: bd,
-      da_nop_thue_trong_nam: bool(o.da_nop_thue_trong_nam), doanh_thu_nam_truoc: truoc, co_quan_he_lien_ket: bool(o.co_quan_he_lien_ket),
+      da_nop_thue_trong_nam: bool(o.da_nop_thue_trong_nam), nganh_dac_thu: nganh,
+      doanh_thu_nam_truoc: truoc, co_quan_he_lien_ket: bool(o.co_quan_he_lien_ket),
     },
   };
 }

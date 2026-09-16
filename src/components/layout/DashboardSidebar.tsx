@@ -70,34 +70,55 @@ export default function DashboardSidebar() {
       className="mimi-thanh-kinh sticky top-0 hidden h-screen flex-col lg:flex"
     >
       <nav className="mimi-cuon-an flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" aria-label={t('man.chung.dieuHuongChinh')}>
-        {/* Nút thu gọn nằm ngay trên cùng, có chữ — vòng tròn nhỏ ở mép ngoài trước đây bị cắt
-            và không ai thấy (người dùng báo 16/09/2026). */}
-        <button
-          type="button"
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? t('man.chung.moRongThanhBen') : t('man.chung.thuGonThanhBen')}
-          aria-expanded={!collapsed}
-          title={collapsed ? t('man.chung.moRongThanhBen') : t('man.chung.thuGonThanhBen')}
-          className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10 ${collapsed ? 'mx-auto' : ''}`}
-        >
-          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-        </button>
-
-        <div className="space-y-0.5">
-          {muc.map((m) => (
+        {/*
+          Nút thu gọn đứng cùng hàng với MIMI Assistant (16/09/2026): một hàng riêng cho nó là
+          phí một dòng ở chỗ đắt nhất của thanh bên. Khi đã thu gọn, thanh chỉ rộng 72px nên
+          nút mở rộng xếp trên, mèo MIMI xếp dưới.
+        */}
+        {(() => {
+          const [dau, ...conLai] = muc;
+          const nutThuGon = (
+            <button
+              type="button"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? t('man.chung.moRongThanhBen') : t('man.chung.thuGonThanhBen')}
+              aria-expanded={!collapsed}
+              title={collapsed ? t('man.chung.moRongThanhBen') : t('man.chung.thuGonThanhBen')}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10"
+            >
+              {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+          );
+          const oDieuHuong = (m: (typeof muc)[number]) => (
             <NavLink
               key={m.path}
               to={m.path}
               data-mimi={`nav:${m.path}`}
               end={m.path === '/dashboard'}
               title={collapsed ? m.label : undefined}
-              className={({ isActive }) => lop(isActive)}
+              className={({ isActive }) => `${lop(isActive)} ${!collapsed && m === dau ? 'min-w-0 flex-1' : ''}`}
             >
               <m.icon size={18} className="shrink-0" />
               {!collapsed && <span className="truncate">{m.label}</span>}
             </NavLink>
-          ))}
-        </div>
+          );
+          return (
+            <div className="space-y-0.5">
+              {collapsed ? (
+                <div className="flex flex-col items-center gap-0.5">
+                  {nutThuGon}
+                  <div className="w-full">{oDieuHuong(dau)}</div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  {oDieuHuong(dau)}
+                  {nutThuGon}
+                </div>
+              )}
+              {conLai.map(oDieuHuong)}
+            </div>
+          );
+        })()}
 
         {/* Công cụ người dùng tự ghim — như mục "Pinned" của ChatGPT. */}
         <div className="mt-5">

@@ -9,7 +9,7 @@ const HO_SO = { ten: 'HỘ KINH DOANH NAM ĐINH', mst: '0123456789' };
 const sk = (p: Partial<SuKienThue> = {}): SuKienThue => ({
   nam: 2026, homNay: HOM_NAY, loai: 'ho_kinh_doanh', doanhThuQuy: [0, 0, 0, 0], nguonDoanhThu: 'hoa_don_dien_tu',
   nhomNganh: ['dich_vu'], kenh: 'dia_diem_co_dinh', phuongPhapTncn: null, batDauKinhDoanh: null,
-  daNopThueTrongNam: null, doanhThuNamTruoc: null, coQuanHeLienKet: null, ...p,
+  daNopThueTrongNam: null, nganhDacThu: null, doanhThuNamTruoc: null, coQuanHeLienKet: null, ...p,
 });
 
 function soan(s: SuKienThue, ky: KyToKhai) {
