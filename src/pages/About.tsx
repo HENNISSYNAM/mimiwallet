@@ -17,8 +17,12 @@ import MimiStory from '@/components/brand/MimiStory';
 export default function About() {
   // Deep links land at the top; without this the router keeps the scroll
   // position from whatever page the visitor came from.
+  // `?muc=doi-ngu` (menu "Về chúng tôi" → Đội ngũ) thì cuộn tới phần đội ngũ.
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const muc = new URLSearchParams(window.location.search).get('muc');
+    const dich = muc === 'doi-ngu' ? document.getElementById('about') : null;
+    if (dich) dich.scrollIntoView({ block: 'start' });
+    else window.scrollTo(0, 0);
   }, []);
 
   return (

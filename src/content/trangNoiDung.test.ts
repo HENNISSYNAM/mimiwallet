@@ -70,3 +70,16 @@ describe('trang sản phẩm và giải pháp', () => {
     }
   });
 });
+
+describe('menu Về chúng tôi', () => {
+  it('đứng cuối thanh, chỉ trỏ tới trang có route, mốc trang chủ có thật hoặc thư liên hệ', () => {
+    expect(CAC_MENU.at(-1)?.khoa).toBe('ve-chung-toi');
+    const menu = CAC_MENU.find((m) => m.khoa === 've-chung-toi')!;
+    const TRANG = ['/about', '/about?muc=doi-ngu', '/thuong-hieu', '/register', '/privacy', '/terms'];
+    const MOC = ['#cong-nhan', '#cap-nhat', '#dang-ky', '#pricing'];
+    const sai = menu.cot.flat().flatMap((n) => n.muc)
+      .map((m) => m.href)
+      .filter((h) => !TRANG.includes(h) && !MOC.includes(h) && !h.startsWith('mailto:'));
+    expect(sai).toEqual([]);
+  });
+});

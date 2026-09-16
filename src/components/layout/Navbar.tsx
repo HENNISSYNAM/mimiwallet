@@ -16,7 +16,6 @@ import { CAC_MENU, MenuDiDong, TamMenu, ngonNguMenu, type KhoaMenu } from '@/com
 const navLinks = [{ labelKey: 'nav.pricing', href: '#pricing' }];
 
 // Kept apart from navLinks: those are in-page anchors, this is a route.
-const navRoutes = [{ labelKey: 'nav.about', to: '/about' }];
 
 /*
  * DẢI THÔNG BÁO. Chỉ báo điều đã chạy thật trên production — ở đây là ba luật an
@@ -173,17 +172,6 @@ export default function Navbar() {
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
               </a>
             ))}
-            {navRoutes.map((r) => (
-              <Link
-                key={r.labelKey}
-                to={r.to}
-                // Ẩn ở màn vừa: bốn menu xổ đã chiếm chỗ, và "Về chúng tôi" có sẵn trong menu Tài nguyên.
-                className="hidden xl:inline text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
-              >
-                {t(r.labelKey)}
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-              </Link>
-            ))}
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -275,16 +263,6 @@ export default function Navbar() {
               >
                 {t(l.labelKey)}
               </a>
-            ))}
-            {navRoutes.map((r) => (
-              <Link
-                key={r.labelKey}
-                to={r.to}
-                className="text-2xl font-display font-bold text-foreground"
-                onClick={() => setMobileOpen(false)}
-              >
-                {t(r.labelKey)}
-              </Link>
             ))}
             <button
               onClick={() => { setMobileOpen(false); navigate('/register'); }}
