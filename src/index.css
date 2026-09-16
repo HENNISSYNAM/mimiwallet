@@ -615,6 +615,44 @@
   .no-print { display: none !important; }
 }
 
+/*
+ * Thang chữ của các trang giới thiệu (Về chúng tôi, Câu chuyện MIMI, Đội ngũ) — 16/09/2026.
+ * Trước đó mỗi khối tự đặt độ đậm, giãn chữ, cỡ chữ riêng nên cùng một trang mà tiêu đề trông
+ * như hai bộ chữ. Một nguồn: nhãn mục, tiêu đề trang, tiêu đề mục, đoạn dẫn.
+ */
+.mimi-nhan-muc {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.mimi-tieu-de-trang {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  text-wrap: balance;
+}
+.mimi-tieu-de-muc {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  font-size: clamp(1.9rem, 3.2vw, 2.75rem);
+  text-wrap: balance;
+}
+.mimi-doan-dan {
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+@media (min-width: 640px) {
+  .mimi-doan-dan { font-size: 1.125rem; }
+}
+
 /* Hide custom scrollbars for a cleaner Apple look */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

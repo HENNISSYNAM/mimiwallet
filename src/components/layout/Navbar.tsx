@@ -5,7 +5,7 @@ import { useScrolled } from '@/hooks/useScrolled';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Globe, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import mimiLogo from '@/assets/mimi-cat.png';
 import { CAC_MENU, MenuDiDong, TamMenu, ngonNguMenu, type KhoaMenu } from '@/components/layout/MenuXo';
 
 /*

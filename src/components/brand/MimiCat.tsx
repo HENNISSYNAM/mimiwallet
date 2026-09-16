@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import catLogo from '@/assets/mimi-cat.webp';
-import frIdle from '@/assets/mimi/idle.webp';
-import frBlink from '@/assets/mimi/blink.webp';
-import frContent from '@/assets/mimi/content.webp';
-import frHappy from '@/assets/mimi/happy.webp';
-import frWink from '@/assets/mimi/wink.webp';
-import frLove from '@/assets/mimi/love.webp';
-import frLaugh from '@/assets/mimi/laugh.webp';
-import frSleep from '@/assets/mimi/sleep.webp';
-import frWatch from '@/assets/mimi/watch.webp';
-import frSurprised from '@/assets/mimi/surprised.webp';
-import frLookSide from '@/assets/mimi/look-side.webp';
-import frWave from '@/assets/mimi/wave.webp';
-import frSit from '@/assets/mimi/sit.webp';
-import frStretch from '@/assets/mimi/stretch.webp';
+import catLogo from '@/assets/mimi-cat.png';
+import frIdle from '@/assets/mimi/idle.png';
+import frBlink from '@/assets/mimi/blink.png';
+import frContent from '@/assets/mimi/content.png';
+import frHappy from '@/assets/mimi/happy.png';
+import frWink from '@/assets/mimi/wink.png';
+import frLove from '@/assets/mimi/love.png';
+import frLaugh from '@/assets/mimi/laugh.png';
+import frSleep from '@/assets/mimi/sleep.png';
+import frWatch from '@/assets/mimi/watch.png';
+import frSurprised from '@/assets/mimi/surprised.png';
+import frLookSide from '@/assets/mimi/look-side.png';
+import frWave from '@/assets/mimi/wave.png';
+import frSit from '@/assets/mimi/sit.png';
+import frStretch from '@/assets/mimi/stretch.png';
 import type { Pose } from '@/lib/mimiTamTrang';
 
 /**

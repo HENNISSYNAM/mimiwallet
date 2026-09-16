@@ -4,7 +4,7 @@ import {
   Bell, Bot, Briefcase, Calculator, CheckCircle2, ChevronDown, Code2, FileText, Handshake, Landmark, LineChart, ListChecks, Lock,
   PlayCircle, Plug, QrCode, Receipt, ShieldAlert, Sparkles, type LucideIcon,
 } from 'lucide-react';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import mimiLogo from '@/assets/mimi-cat.png';
 import sokhcnLogo from '@/assets/logos/sokhcn.png';
 import { CONTACT } from '@/config/company';
 

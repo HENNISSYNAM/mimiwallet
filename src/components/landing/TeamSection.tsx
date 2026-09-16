@@ -92,13 +92,12 @@ export default function TeamSection() {
               chúng tôi", and repeating it two headings apart reads as a
               copy-paste slip rather than structure. */}
           <h2
-            className="font-display font-extrabold text-foreground leading-[1.08] tracking-[-0.03em]"
-            style={{ fontSize: 'clamp(2rem, 3.4vw, 3rem)' }}
+            className="mimi-tieu-de-muc text-foreground"
           >
             Bốn người, bốn trường,
             <br className="hidden sm:block" /> một sản phẩm đang có người dùng
           </h2>
-          <p className="mt-5 text-muted-foreground text-lg leading-relaxed">
+          <p className="mimi-doan-dan mt-5 text-muted-foreground">
             Hai thành viên kỹ thuật đủ để xây và vận hành sản phẩm, hai thành viên kinh doanh và
             tài chính đủ để kiểm tra giả định thị trường và làm việc với ngân hàng.
           </p>

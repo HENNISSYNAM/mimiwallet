@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import mimiLogo from '@/assets/mimi-cat.png';
 import { COMPANY, CONTACT, hasContact } from '@/config/company';
 import { Mail, Globe } from 'lucide-react';
 

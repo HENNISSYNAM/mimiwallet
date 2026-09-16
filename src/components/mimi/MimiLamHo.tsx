@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import meoDi from '@/assets/mimi/walk.webp';
-import meoBam from '@/assets/mimi/paw.webp';
+import meoDi from '@/assets/mimi/walk.png';
+import meoBam from '@/assets/mimi/paw.png';
 import { kiemKichBan, type KichBan } from '@/lib/mimiLamHo';
 
 /**

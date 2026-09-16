@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
-import mimiWatch from '@/assets/mimi/watch.webp';
+import mimiWatch from '@/assets/mimi/watch.png';
 
 /**
  * The opening questions, as three taps instead of a five-step form.

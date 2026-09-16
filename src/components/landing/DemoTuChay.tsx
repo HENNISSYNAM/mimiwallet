@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import meoDi from '@/assets/mimi/walk.webp';
-import meoBam from '@/assets/mimi/paw.webp';
+import meoDi from '@/assets/mimi/walk.png';
+import meoBam from '@/assets/mimi/paw.png';
 import { docSoTienBangChu } from '@/lib/soTienBangChu';
 
 /**

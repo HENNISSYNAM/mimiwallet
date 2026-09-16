@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import frSleep from '@/assets/mimi/sleep.webp';
-import frStretch from '@/assets/mimi/stretch.webp';
-import frWatch from '@/assets/mimi/watch.webp';
-import frLove from '@/assets/mimi/love.webp';
-import frSurprised from '@/assets/mimi/surprised.webp';
-import frWalk from '@/assets/mimi/walk.webp';
-import frSit from '@/assets/mimi/sit.webp';
-import frHappy from '@/assets/mimi/happy.webp';
-import frHero from '@/assets/mimi/hero.webp';
+import frSleep from '@/assets/mimi/sleep.png';
+import frStretch from '@/assets/mimi/stretch.png';
+import frWatch from '@/assets/mimi/watch.png';
+import frLove from '@/assets/mimi/love.png';
+import frSurprised from '@/assets/mimi/surprised.png';
+import frWalk from '@/assets/mimi/walk.png';
+import frSit from '@/assets/mimi/sit.png';
+import frHappy from '@/assets/mimi/happy.png';
+import frHero from '@/assets/mimi/hero.png';
 
 /**
  * MIMI's story, told by scrolling.
@@ -202,13 +202,13 @@ export default function MimiStory() {
 
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <header className="max-w-2xl mb-14 sm:mb-20">
-          <p className="text-xs font-semibold tracking-[0.18em] uppercase text-mimi-green mb-3">
+          <p className="mimi-nhan-muc mb-3 text-mimi-green">
             Câu chuyện MIMI
           </p>
-          <h2 className="font-display text-3xl sm:text-5xl font-bold text-foreground tracking-tight leading-[1.1]">
+          <h2 className="mimi-tieu-de-muc text-foreground">
             Chú mèo cam của những gia đình Việt
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed">
+          <p className="mimi-doan-dan mt-4 text-muted-foreground">
             Gần như nhà nào buôn bán nhỏ cũng có một chú mèo nằm trước cửa. MIMI bắt đầu từ đó.
           </p>
         </header>
@@ -277,7 +277,7 @@ export default function MimiStory() {
                   className="lg:hidden w-40 h-auto mb-5 select-none no-save"
                 />
                 {b.kicker && (
-                  <p className="text-xs font-semibold tracking-[0.16em] uppercase text-mimi-green mb-3">
+                  <p className="mimi-nhan-muc mb-3 text-mimi-green">
                     {b.kicker}
                   </p>
                 )}
@@ -311,7 +311,7 @@ export default function MimiStory() {
         </div>
 
         <div className="mt-8 lg:mt-16 max-w-2xl">
-          <p className="text-xl sm:text-3xl font-display font-bold text-foreground leading-snug">
+          <p className="font-display text-xl font-extrabold leading-snug tracking-[-0.02em] text-foreground sm:text-3xl">
             MIMI không đưa con người đến tương lai.
             <br />
             <span className="text-mimi-green">MIMI giúp tương lai đến gần con người hơn.</span>

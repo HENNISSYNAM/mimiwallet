@@ -26,7 +26,7 @@ import { DUONG_MINH_HOA } from '@/lib/minhHoa';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import mimiLogo from '@/assets/mimi-cat.png';
 import MimiCat from '@/components/brand/MimiCat';
 import { QuantumLockArt, MLScoreArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';

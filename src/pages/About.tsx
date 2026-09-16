@@ -34,7 +34,7 @@ export default function About() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-sm font-medium text-muted-foreground mb-4"
+                className="mimi-nhan-muc mb-4 text-mimi-green"
               >
                 Về chúng tôi
               </motion.p>
@@ -42,8 +42,7 @@ export default function About() {
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.08 }}
-                className="font-display font-extrabold text-foreground leading-[1.06] tracking-[-0.03em]"
-                style={{ fontSize: 'clamp(2.2rem, 4vw, 3.6rem)' }}
+                className="mimi-tieu-de-trang text-foreground"
               >
                 Chúng tôi xây thứ
                 <br className="hidden sm:block" /> mình muốn có
@@ -52,7 +51,7 @@ export default function About() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.16 }}
-                className="mt-6 text-muted-foreground text-lg leading-relaxed max-w-xl"
+                className="mimi-doan-dan mt-6 max-w-xl text-muted-foreground"
               >
                 Mimi Wallet bắt đầu từ một quan sát đơn giản: hộ kinh doanh không phải là khách
                 vay xấu, họ chỉ vô hình với ngân hàng. Không báo cáo kiểm toán, không tài sản thế

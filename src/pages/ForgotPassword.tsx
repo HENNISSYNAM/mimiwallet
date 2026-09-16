@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Loader2, MailCheck } from 'lucide-react';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import mimiLogo from '@/assets/mimi-cat.png';
 
 /**
  * Quên mật khẩu — nửa đầu của luồng khôi phục.

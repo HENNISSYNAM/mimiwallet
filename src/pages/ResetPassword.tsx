@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ShieldAlert } from 'lucide-react';
-import mimiLogo from '@/assets/mimi-cat.webp';
+import mimiLogo from '@/assets/mimi-cat.png';
 
 /**
  * Đặt lại mật khẩu — nửa sau của luồng khôi phục.

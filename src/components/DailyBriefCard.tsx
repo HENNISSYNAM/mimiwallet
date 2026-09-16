@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ArrowUpRight, TrendingDown, TrendingUp, Lightbulb, BookMarked } from 'lucide-react';
-import mimiCat from '@/assets/mimi-cat.webp';
+import mimiCat from '@/assets/mimi-cat.png';
 import {
   chonBanTin,
   TIPS,

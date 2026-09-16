@@ -4,7 +4,7 @@ import { X, Send, Volume2, Loader2 } from 'lucide-react';
 // Trợ lý mang logo con mèo cam của MIMI từ 11/09/2026, thay con mèo đen đội tai
 // nghe trước đó. Trợ lý giờ đi lại trên giao diện như một con trỏ và làm việc
 // cùng người dùng — nó là MIMI, không phải một nhân vật riêng.
-import mimiAgent from '@/assets/mimi-cat.webp';
+import mimiAgent from '@/assets/mimi-cat.png';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
