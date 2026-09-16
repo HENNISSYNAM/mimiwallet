@@ -61,9 +61,9 @@ function initialsOf(name: string | null): string {
  * bảng "Thêm".
  */
 const mobileNav = [
-  { icon: IconMeo, label: 'Trợ lý', path: '/dashboard/tro-ly' },
-  { icon: Images, label: 'Chứng từ', path: '/dashboard/thu-vien' },
-  { icon: Clock, label: 'Nhắc thuế', path: '/dashboard/nhac-thue' },
+  { icon: IconMeo, khoa: 'man.ten.troLyNgan', path: '/dashboard/tro-ly' },
+  { icon: Images, khoa: 'man.ten.thuVienNgan', path: '/dashboard/thu-vien' },
+  { icon: Clock, khoa: 'man.ten.nhacThue', path: '/dashboard/nhac-thue' },
 ];
 
 /** Trang chi tiết mở từ MIMI Assistant: tiêu đề kèm đường quay về trợ lý. */
@@ -86,16 +86,16 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/settings': 'sidebar.settings',
   // Chưa có khoá dịch: i18next trả lại chính chuỗi khi không thấy khoá, nên tên
   // hiện đúng. Trước 10/09/2026 bốn trang này có tiêu đề "Dashboard".
-  '/dashboard/tro-ly': 'MIMI Assistant',
-  '/dashboard/thu-vien': 'Thư viện chứng từ',
-  '/dashboard/nhac-thue': 'Nhắc thuế',
-  '/dashboard/ket-noi': 'Kết nối',
-  '/dashboard/chinh-sach': 'Chính sách chi',
-  '/dashboard/tac-tu': 'Kiểm soát agent',
-  '/dashboard/chi-phi-ai': 'Chi phí AI',
-  '/dashboard/chung-tu': 'Chứng từ chi phí',
-  '/dashboard/to-khai': 'Tờ khai thuế',
-  '/dashboard/clients': 'Khách hàng',
+  '/dashboard/tro-ly': 'man.ten.troLy',
+  '/dashboard/thu-vien': 'man.ten.thuVien',
+  '/dashboard/nhac-thue': 'man.ten.nhacThue',
+  '/dashboard/ket-noi': 'man.ten.ketNoi',
+  '/dashboard/chinh-sach': 'man.ten.chinhSach',
+  '/dashboard/tac-tu': 'man.ten.tacTu',
+  '/dashboard/chi-phi-ai': 'man.ten.chiPhiAi',
+  '/dashboard/chung-tu': 'man.ten.chungTu',
+  '/dashboard/to-khai': 'man.ten.toKhai',
+  '/dashboard/clients': 'man.ten.khachHang',
 };
 
 export default function DashboardLayout() {
@@ -148,7 +148,7 @@ export default function DashboardLayout() {
       {({ isActive }) => (
         <>
           <item.icon size={22} strokeWidth={isActive ? 2.4 : 1.9} />
-          <span>{item.label}</span>
+          <span>{t(item.khoa)}</span>
         </>
       )}
     </NavLink>
@@ -219,7 +219,7 @@ export default function DashboardLayout() {
             {TRANG_CHI_TIET_CUA_TRO_LY.has(location.pathname) && (
               <>
                 <NavLink to="/dashboard/tro-ly" className="hidden shrink-0 text-sm text-muted-foreground hover:text-foreground sm:inline">
-                  MIMI Assistant
+                  {t('man.ten.troLy')}
                 </NavLink>
                 <ChevronRight size={14} className="hidden shrink-0 text-muted-foreground sm:inline" aria-hidden />
               </>
@@ -254,7 +254,7 @@ export default function DashboardLayout() {
               <Search size={19} />
             </button>
             <button
-              onClick={() => toast('Chưa có thông báo mới')}
+              onClick={() => toast(t('man.chung.chuaCoThongBao'))}
               className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
               aria-label="Thông báo"
             >
@@ -323,7 +323,7 @@ export default function DashboardLayout() {
             >
               <ScanLine size={26} strokeWidth={2.2} />
             </NutQuetChungTu>
-            <span className="mt-0.5 text-[11px] font-medium text-primary">Quét</span>
+            <span className="mt-0.5 text-[11px] font-medium text-primary">{t('man.chung.quet')}</span>
           </div>
           {mobileNav.slice(2).map(oDieuHuong)}
           <button
@@ -333,28 +333,28 @@ export default function DashboardLayout() {
             className="flex min-h-[52px] min-w-[56px] flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-muted-foreground pressable"
           >
             <Menu size={22} strokeWidth={1.9} />
-            <span>Thêm</span>
+            <span>{t('man.chung.them')}</span>
           </button>
         </nav>
 
         <Sheet open={moThem} onOpenChange={setMoThem}>
           <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
             <SheetHeader className="text-left">
-              <SheetTitle className="truncate">{congTy?.ten ?? 'Công ty của bạn'}</SheetTitle>
-              <SheetDescription className="sr-only">Mọi trang khác của MIMI</SheetDescription>
+              <SheetTitle className="truncate">{congTy?.ten ?? t('man.chung.congTyCuaBan')}</SheetTitle>
+              <SheetDescription className="sr-only">{t('man.chung.moiTrangKhac')}</SheetDescription>
             </SheetHeader>
             <nav className="mt-4 grid gap-1" aria-label="Thêm">
               {[
-                { icon: Puzzle, nhan: 'Kết nối', duong: '/dashboard/ket-noi' },
-                { icon: LayoutDashboard, nhan: 'Tổng quan & giao dịch', duong: '/dashboard' },
-                { icon: Users, nhan: 'Khách hàng', duong: '/dashboard/clients' },
-                { icon: Settings, nhan: 'Cài đặt', duong: '/dashboard/settings' },
+                { icon: Puzzle, khoa: 'man.ten.ketNoi', duong: '/dashboard/ket-noi' },
+                { icon: LayoutDashboard, khoa: 'man.ten.tongQuanGiaoDich', duong: '/dashboard' },
+                { icon: Users, khoa: 'man.ten.khachHang', duong: '/dashboard/clients' },
+                { icon: Settings, khoa: 'man.ten.caiDat', duong: '/dashboard/settings' },
               ].map((m) => (
                 <NavLink key={m.duong} to={m.duong} end onClick={() => setMoThem(false)} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
-                  <m.icon size={20} className="text-muted-foreground" /> {m.nhan}
+                  <m.icon size={20} className="text-muted-foreground" /> {t(m.khoa)}
                 </NavLink>
               ))}
-              <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Công cụ của bạn</p>
+              <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('man.chung.congCuCuaBan')}</p>
               {congCuGhim.ds.filter((c) => ![...mobileNav.map((m) => m.path), '/dashboard/ket-noi', '/dashboard', '/dashboard/clients', '/dashboard/settings'].includes(c.dich)).map((c) => (
                 <NavLink key={c.khoa} to={duongDanCongCu(c)} end onClick={() => setMoThem(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
                   <IconCongCu khoa={c.khoa} size={19} className="text-muted-foreground" /> {c.ten}
@@ -363,10 +363,10 @@ export default function DashboardLayout() {
               <button type="button" onClick={() => { setMoThem(false); setMoKho(true); }} className="flex min-h-11 items-center rounded-lg px-3 text-left text-[15px] text-primary hover:bg-accent">
                 + Tuỳ chỉnh công cụ
               </button>
-              <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Trang chi tiết</p>
-              {TRANG_CHI_TIET.map((t) => (
-                <NavLink key={t.duong_dan} to={t.duong_dan} onClick={() => setMoThem(false)} className="flex min-h-11 items-center rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
-                  {t.nhan}
+              <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('man.chung.trangChiTiet')}</p>
+              {TRANG_CHI_TIET.map((tr) => (
+                <NavLink key={tr.duong_dan} to={tr.duong_dan} onClick={() => setMoThem(false)} className="flex min-h-11 items-center rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
+                  {t(tr.khoa)}
                 </NavLink>
               ))}
               <div className="mt-3 grid gap-1 border-t border-border pt-3">

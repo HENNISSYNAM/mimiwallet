@@ -11,6 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -61,8 +62,11 @@ interface Luot {
 
 type TrangThaiViec = { trangThai: 'dang' | 'xong' | 'loi'; cau: string };
 
-const TEN_TRANG_THAI_KET_NOI: Record<KetNoiHienThi['trang_thai'], string> = {
-  dang_chay: 'Đang chạy', can_xu_ly: 'Cần xử lý', chua_ket_noi: 'Chưa kết nối', chi_nhap_file: 'Nhập file',
+const KHOA_TRANG_THAI_KET_NOI: Record<KetNoiHienThi['trang_thai'], string> = {
+  dang_chay: 'man.troLy.trangThai.dangChay',
+  can_xu_ly: 'man.troLy.trangThai.canXuLy',
+  chua_ket_noi: 'man.troLy.trangThai.chuaKetNoi',
+  chi_nhap_file: 'man.troLy.trangThai.chiNhapFile',
 };
 
 const MAU_CHAM_KET_NOI: Record<KetNoiHienThi['trang_thai'], string> = {
@@ -73,6 +77,7 @@ const THE = 'flex flex-col rounded-2xl border border-border bg-card p-5 text-lef
 
 export default function TroLyPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [boiCanh, setBoiCanh] = useState<BoiCanh | null>(null);
   const [loiBoiCanh, setLoiBoiCanh] = useState<string | null>(null);
   const [luot, setLuot] = useState<Luot[]>([]);
@@ -98,7 +103,7 @@ export default function TroLyPage() {
       setBoiCanh((await goiTroLy('boi_canh')) as BoiCanh);
       setLoiBoiCanh(null);
     } catch (e) {
-      setLoiBoiCanh(e instanceof Error ? e.message : 'Chưa đọc được tình hình công ty.');
+      setLoiBoiCanh(e instanceof Error ? e.message : t('man.troLy.loi.boiCanh'));
     }
   }, []);
 
@@ -124,7 +129,7 @@ export default function TroLyPage() {
       const traLoi = (await goiTroLy('hoi', { cau, pham_vi: pv, lich_su: lichSu })) as TraLoi;
       setLuot((ds) => ds.map((l) => (l.id === id ? { ...l, traLoi } : l)));
     } catch (e) {
-      setLuot((ds) => ds.map((l) => (l.id === id ? { ...l, loi: e instanceof Error ? e.message : 'Không hỏi được MIMI.' } : l)));
+      setLuot((ds) => ds.map((l) => (l.id === id ? { ...l, loi: e instanceof Error ? e.message : t('man.troLy.loi.hoi') } : l)));
     } finally {
       setDangHoi(false);
     }
@@ -155,7 +160,7 @@ export default function TroLyPage() {
       if (luotId === LUOT_MAN_DAU) toast.success(cau);
       void taiBoiCanh();
     } catch (e) {
-      const cau = e instanceof Error ? e.message : 'Chưa làm được việc này.';
+      const cau = e instanceof Error ? e.message : t('man.troLy.loi.viec');
       setViec((m) => ({ ...m, [k]: { trangThai: 'loi', cau } }));
       if (luotId === LUOT_MAN_DAU) toast.error(cau);
     }
@@ -175,17 +180,17 @@ export default function TroLyPage() {
     <div className="pb-10">
       {/* Nền vòng hạt tràn hết vùng nội dung: bù lại phần đệm của <main>. */}
       <section
-        aria-label="Hỏi MIMI Assistant"
+        aria-label={t('man.troLy.vungHoi')}
         className={`mimi-tro-ly-nen relative -mx-4 -mt-4 overflow-hidden px-4 lg:-mx-6 lg:-mt-6 lg:px-6 ${coHoiThoai ? 'pb-8 pt-8' : 'pb-10 pt-10 sm:pt-14'}`}
       >
         <NenVongHat />
         <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
           <h2 className={`font-display font-semibold tracking-tight text-foreground ${coHoiThoai ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-5xl'}`}>
-            MIMI có thể giúp gì cho bạn?
+            {t('man.troLy.tieuDe')}
           </h2>
           {!coHoiThoai && (
             <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-              Hỏi, yêu cầu hoặc giao việc — MIMI đọc số liệu của {boiCanh?.cong_ty ?? 'công ty bạn'} và đề xuất cách làm. Việc nào đổi dữ liệu, bạn xác nhận là xong.
+              {t('man.troLy.gioiThieu', { congTy: boiCanh?.cong_ty ?? t('man.troLy.congTyBan') })}
             </p>
           )}
 
@@ -194,7 +199,7 @@ export default function TroLyPage() {
             onSubmit={(e) => { e.preventDefault(); void hoi(nhap); }}
             className="mx-auto mt-7 max-w-3xl rounded-2xl border border-border bg-card text-left shadow-[0_8px_30px_hsla(220,30%,20%,0.08)]"
           >
-            <label htmlFor="o-hoi-mimi" className="sr-only">Câu hỏi cho MIMI</label>
+            <label htmlFor="o-hoi-mimi" className="sr-only">{t('man.troLy.nhanOHoi')}</label>
             <textarea
               id="o-hoi-mimi"
               value={nhap}
@@ -207,7 +212,7 @@ export default function TroLyPage() {
               }}
               rows={coHoiThoai ? 1 : 2}
               maxLength={1000}
-              placeholder="Bạn muốn MIMI xử lý việc gì?"
+              placeholder={t('man.troLy.oHoiPlaceholder')}
               className="block w-full resize-none rounded-t-2xl bg-transparent px-5 pt-4 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
             <div className="flex items-end gap-2 px-3 pb-3 pt-2">
@@ -215,7 +220,7 @@ export default function TroLyPage() {
               <NutQuetChungTu
                 coMoHinh={boiCanh ? boiCanh.co_mo_hinh : undefined}
                 onDaLuu={() => void taiBoiCanh()}
-                nhanAn="Tải ảnh chứng từ lên"
+                nhanAn={t('man.troLy.taiAnhChungTu')}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Plus size={20} />
@@ -224,15 +229,15 @@ export default function TroLyPage() {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    aria-label={`Nhóm việc: ${phamVi ? TEN_NHOM[phamVi] : 'Tất cả việc'}`}
+                    aria-label={t('man.troLy.nhomViec', { nhom: phamVi ? TEN_NHOM[phamVi] : t('man.troLy.tatCaViec') })}
                     className="inline-flex h-9 min-w-0 items-center gap-1 rounded-full px-3 text-sm text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <span className="truncate">{phamVi ? TEN_NHOM[phamVi] : 'Tất cả việc'}</span>
+                    <span className="truncate">{phamVi ? TEN_NHOM[phamVi] : t('man.troLy.tatCaViec')}</span>
                     <ChevronDown size={14} className="shrink-0 text-muted-foreground" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-60 rounded-2xl p-1.5">
-                  <div role="group" aria-label="Chọn nhóm việc">
+                  <div role="group" aria-label={t('man.troLy.chonNhomViec')}>
                     {([null, ...NHOM_NANG_LUC] as (NhomNangLuc | null)[]).map((n) => (
                       <button
                         key={n ?? 'tat_ca'}
@@ -241,7 +246,7 @@ export default function TroLyPage() {
                         onClick={() => { setPhamVi(n); setMoNhom(false); }}
                         className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
                       >
-                        {n ? TEN_NHOM[n] : 'Tất cả việc'}
+                        {n ? TEN_NHOM[n] : t('man.troLy.tatCaViec')}
                         {phamVi === n && <Check size={14} className="text-primary" aria-hidden />}
                       </button>
                     ))}
@@ -251,7 +256,7 @@ export default function TroLyPage() {
               <button
                 type="submit"
                 disabled={!nhap.trim() || dangHoi}
-                aria-label="Gửi câu hỏi"
+                aria-label={t('man.troLy.guiCauHoi')}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-opacity disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {dangHoi ? <Loader2 size={17} className="animate-spin" /> : <ArrowUp size={18} />}
@@ -262,17 +267,17 @@ export default function TroLyPage() {
           {/* Dải dưới ô hỏi, kiểu ChatGPT: một hàng gọn, kính trắng mờ, bấm mới mở danh sách. */}
           <div className="mx-auto max-w-3xl px-3 text-left">
             <nav
-              aria-label="Công cụ và kết nối"
+              aria-label={t('man.troLy.congCuVaKetNoi')}
               className="flex items-center gap-0.5 rounded-b-xl border-x border-b border-white/80 bg-white/70 px-1.5 py-0.5 text-[13px] text-muted-foreground shadow-[0_4px_14px_hsla(220,30%,20%,0.04)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5"
             >
               <Popover>
                 <PopoverTrigger asChild>
                   <button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 hover:bg-white/90 hover:text-foreground dark:hover:bg-white/10">
-                    <LayoutGrid size={14} aria-hidden /> Công cụ
+                    <LayoutGrid size={14} aria-hidden /> {t('man.chung.congCu')}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-72 rounded-2xl p-1.5">
-                  <ul aria-label="Công cụ của bạn">
+                  <ul aria-label={t('man.chung.congCuCuaBan')}>
                     {congCu.ds.map((c) => (
                       <li key={c.khoa}>
                         <Link to={duongDanCongCu(c)} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent">
@@ -283,7 +288,7 @@ export default function TroLyPage() {
                   </ul>
                   <div className="my-1 border-t border-border" />
                   <button type="button" onClick={() => setMoKhoCongCu(true)} className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent">
-                    <span className="flex items-center gap-2.5"><Plus size={16} className="text-muted-foreground" aria-hidden /> Tuỳ chỉnh công cụ</span>
+                    <span className="flex items-center gap-2.5"><Plus size={16} className="text-muted-foreground" aria-hidden /> {t('man.troLy.tuyChinhCongCu')}</span>
                     <ChevronRight size={15} className="text-muted-foreground" aria-hidden />
                   </button>
                 </PopoverContent>
@@ -299,7 +304,7 @@ export default function TroLyPage() {
                         </span>
                       ))}
                     </span>
-                    Kết nối
+                    {t('man.ten.ketNoi')}
                     {soCanXuLy > 0 && <span className="rounded-full bg-mimi-amber/15 px-1.5 text-xs font-semibold text-mimi-amber">{soCanXuLy}</span>}
                   </button>
                 </PopoverTrigger>
@@ -307,12 +312,12 @@ export default function TroLyPage() {
                   <input
                     value={timKetNoi}
                     onChange={(e) => setTimKetNoi(e.target.value)}
-                    placeholder="Tìm kết nối…"
-                    aria-label="Tìm kết nối"
+                    placeholder={t('man.troLy.timKetNoiPlaceholder')}
+                    aria-label={t('man.troLy.timKetNoi')}
                     className="h-9 w-full rounded-lg bg-transparent px-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                   />
-                  {!boiCanh && !loiBoiCanh && <p className="px-2.5 py-2 text-sm text-muted-foreground">Đang đọc kết nối…</p>}
-                  <ul aria-label="Các kết nối" className="max-h-72 overflow-y-auto">
+                  {!boiCanh && !loiBoiCanh && <p className="px-2.5 py-2 text-sm text-muted-foreground">{t('man.troLy.dangDocKetNoi')}</p>}
+                  <ul aria-label={t('man.troLy.cacKetNoi')} className="max-h-72 overflow-y-auto">
                     {ketNoiLoc.map((k) => (
                       <li key={k.khoa}>
                         <Link to={k.duong_dan} title={k.cau} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent">
@@ -321,14 +326,14 @@ export default function TroLyPage() {
                           {k.trang_thai === 'chua_ket_noi'
                             ? <Plus size={16} className="text-muted-foreground" aria-hidden />
                             : <span className={`h-2 w-2 rounded-full ${MAU_CHAM_KET_NOI[k.trang_thai]}`} aria-hidden />}
-                          <span className="sr-only">{TEN_TRANG_THAI_KET_NOI[k.trang_thai]}</span>
+                          <span className="sr-only">{t(KHOA_TRANG_THAI_KET_NOI[k.trang_thai])}</span>
                         </Link>
                       </li>
                     ))}
                   </ul>
                   <div className="my-1 border-t border-border" />
                   <Link to="/dashboard/ket-noi" className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent">
-                    <span className="flex items-center gap-2.5"><Puzzle size={16} className="text-muted-foreground" aria-hidden /> Quản lý kết nối</span>
+                    <span className="flex items-center gap-2.5"><Puzzle size={16} className="text-muted-foreground" aria-hidden /> {t('man.troLy.quanLyKetNoi')}</span>
                     <ChevronRight size={15} className="text-muted-foreground" aria-hidden />
                   </Link>
                 </PopoverContent>
@@ -338,10 +343,10 @@ export default function TroLyPage() {
               <button
                 type="button"
                 onClick={() => setMoTaiApp(true)}
-                aria-label="Dùng MIMI như ứng dụng"
+                aria-label={t('man.troLy.dungNhuUngDung')}
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 hover:bg-white/90 hover:text-foreground dark:hover:bg-white/10"
               >
-                <Monitor size={14} aria-hidden /> <span className="hidden sm:inline">Dùng như ứng dụng</span>
+                <Monitor size={14} aria-hidden /> <span className="hidden sm:inline">{t('man.troLy.dungNhuUngDungNgan')}</span>
               </button>
             </nav>
           </div>
@@ -350,7 +355,7 @@ export default function TroLyPage() {
 
           {boiCanh && !boiCanh.co_mo_hinh && (
             <p className="mx-auto mt-4 max-w-lg text-xs leading-relaxed text-muted-foreground">
-              MIMI đang hiểu câu hỏi theo các mẫu có sẵn. Hỏi ngắn và đúng việc — như gợi ý ở mẹo nhanh — để có câu trả lời chính xác.
+              {t('man.troLy.cheDoCoDinh')}
             </p>
           )}
           {loiBoiCanh && <p className="mt-4 text-sm text-destructive">{loiBoiCanh}</p>}
@@ -361,30 +366,30 @@ export default function TroLyPage() {
       {!coHoiThoai && (
         <div className="mx-auto mt-8 max-w-5xl">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-foreground">MIMI vừa phân tích cho bạn</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('man.troLy.vuaPhanTich')}</h2>
             <button
               type="button"
               aria-expanded={moTrangChiTiet}
               onClick={() => setMoTrangChiTiet((v) => !v)}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
             >
-              <LayoutGrid size={15} /> Trang chi tiết
+              <LayoutGrid size={15} /> {t('man.chung.trangChiTiet')}
             </button>
           </div>
 
           {moTrangChiTiet && (
-            <div className="mb-4 grid gap-1 rounded-xl border border-border bg-card p-2 sm:grid-cols-2 lg:grid-cols-4" role="region" aria-label="Trang chi tiết">
-              {TRANG_CHI_TIET.map((t) => (
-                <Link key={t.duong_dan} to={t.duong_dan} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-accent">
-                  <span className="text-foreground">{t.nhan}</span>
-                  <span className="text-xs text-muted-foreground">{TEN_NHOM[t.nhom]}</span>
+            <div className="mb-4 grid gap-1 rounded-xl border border-border bg-card p-2 sm:grid-cols-2 lg:grid-cols-4" role="region" aria-label={t('man.chung.trangChiTiet')}>
+              {TRANG_CHI_TIET.map((tr) => (
+                <Link key={tr.duong_dan} to={tr.duong_dan} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-accent">
+                  <span className="text-foreground">{t(tr.khoa)}</span>
+                  <span className="text-xs text-muted-foreground">{TEN_NHOM[tr.nhom]}</span>
                 </Link>
               ))}
             </div>
           )}
 
           {viecKhac.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2" role="region" aria-label="Cũng cần để ý">
+            <div className="mb-4 flex flex-wrap gap-2" role="region" aria-label={t('man.troLy.cungCanDeY')}>
               {viecKhac.map((v) => (
                 <button
                   key={v.khoa}
@@ -411,22 +416,22 @@ export default function TroLyPage() {
               />
             </div>
           ) : !loiBoiCanh ? (
-            <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground"><Loader2 size={15} className="animate-spin" /> MIMI đang đọc số liệu…</p>
+            <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground"><Loader2 size={15} className="animate-spin" /> {t('man.troLy.dangDocSoLieu')}</p>
           ) : null}
 
           {hienMeo && (
             <div className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm" role="note">
               <Lightbulb size={17} className="mt-0.5 shrink-0 text-mimi-amber" aria-hidden />
               <p className="flex-1 leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">Mẹo nhanh:</span> Bạn có thể hỏi{' '}
+                <span className="font-medium text-foreground">{t('man.troLy.meoNhanh')}</span> {t('man.troLy.banCoTheHoi')}{' '}
                 {goiYMeo.map((g, i) => (
                   <span key={g}>
-                    {i > 0 && ' hoặc '}“<button type="button" onClick={() => void hoi(g, phamVi)} className="text-foreground underline underline-offset-4 hover:text-primary">{g}</button>”
+                    {i > 0 && ` ${t('man.troLy.hoac')} `}“<button type="button" onClick={() => void hoi(g, phamVi)} className="text-foreground underline underline-offset-4 hover:text-primary">{g}</button>”
                   </span>
                 ))}{' '}
-                để MIMI xử lý ngay.
+                {t('man.troLy.deMimiXuLy')}
               </p>
-              <button type="button" onClick={() => setHienMeo(false)} aria-label="Ẩn mẹo" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent">
+              <button type="button" onClick={() => setHienMeo(false)} aria-label={t('man.troLy.anMeo')} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent">
                 <X size={15} />
               </button>
             </div>
@@ -444,24 +449,24 @@ export default function TroLyPage() {
               disabled={dangHoi}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
             >
-              <RotateCcw size={14} /> Cuộc hỏi mới
+              <RotateCcw size={14} /> {t('man.troLy.cuocHoiMoi')}
             </button>
           </div>
           {luot.map((l) => (
-            <article key={l.id} aria-label={`Câu hỏi: ${l.cau}`} className="flex flex-col gap-4">
+            <article key={l.id} aria-label={t('man.troLy.cauHoiLa', { cau: l.cau })} className="flex flex-col gap-4">
               <div className="flex justify-end">
                 <p className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] text-primary-foreground">{l.cau}</p>
               </div>
               {!l.traLoi && !l.loi && (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 size={15} className="animate-spin" /> MIMI đang đọc dữ liệu và tính…
+                  <Loader2 size={15} className="animate-spin" /> {t('man.troLy.dangTinh')}
                 </p>
               )}
               {l.loi && (
                 <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
                   <span className="text-foreground">{l.loi}</span>
                   <button type="button" onClick={() => void hoi(l.cau, l.phamVi)} className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-4">
-                    <RotateCcw size={14} /> Hỏi lại
+                    <RotateCcw size={14} /> {t('man.troLy.hoiLai')}
                   </button>
                 </div>
               )}
@@ -485,13 +490,13 @@ export default function TroLyPage() {
             <AlertDialogDescription>{xacNhan?.dx.mo_ta}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Để sau</AlertDialogCancel>
+            <AlertDialogCancel>{t('man.chung.deSau')}</AlertDialogCancel>
             <AlertDialogAction
               data-mimi-khong-tu-bam={xacNhan && dinhTien(xacNhan.dx) ? '' : undefined}
               className={xacNhan?.dx.loai === 'tu_choi_yeu_cau' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : undefined}
               onClick={() => { if (xacNhan) void lamDeXuat(xacNhan.luotId, xacNhan.dx); setXacNhan(null); }}
             >
-              {xacNhan?.dx.loai === 'duyet_yeu_cau' ? 'Xác nhận duyệt' : xacNhan?.dx.loai === 'tu_choi_yeu_cau' ? 'Xác nhận từ chối' : 'Xác nhận'}
+              {xacNhan?.dx.loai === 'duyet_yeu_cau' ? t('man.chung.xacNhanDuyet') : xacNhan?.dx.loai === 'tu_choi_yeu_cau' ? t('man.chung.xacNhanTuChoi') : t('man.chung.xacNhan')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -503,30 +508,31 @@ export default function TroLyPage() {
 // ── Màn đầu ─────────────────────────────────────────────────────────────────
 
 function TheChiPhiAi({ p }: { p: PhanTichNhanh['chi_phi_ai'] }) {
+  const { t } = useTranslation();
   return (
     <section aria-labelledby="the-chi-phi-ai" className={THE}>
-      <h3 id="the-chi-phi-ai" className="text-base font-semibold text-foreground">Chi phí AI tháng này</h3>
+      <h3 id="the-chi-phi-ai" className="text-base font-semibold text-foreground">{t('man.troLy.the.chiPhiAi')}</h3>
       {!p ? (
         <>
-          <p className="mt-2 text-sm text-muted-foreground">Chưa có số liệu chi phí AI. MIMI chỉ ghi đúng số nhà cung cấp tính, không tự ước tính.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('man.troLy.the.chuaCoChiPhiAi')}</p>
           <Link to="/dashboard/chi-phi-ai" className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-primary hover:underline">
-            Tải file hoặc bật tự động <ArrowRight size={14} />
+            {t('man.troLy.the.taiFileHoacBat')} <ArrowRight size={14} />
           </Link>
         </>
       ) : (
         <>
           <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-foreground">{dinhDang(p.thang_nay_usd, 'usd')}</p>
           <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-            {p.thay_doi_phan_tram === null ? 'Chưa có số tháng trước để so' : (
+            {p.thay_doi_phan_tram === null ? t('man.troLy.the.chuaCoThangTruoc') : (
               <>
                 {p.thay_doi_phan_tram >= 0 ? <ArrowUp size={14} aria-hidden /> : <ArrowDown size={14} aria-hidden />}
-                {Math.abs(p.thay_doi_phan_tram)}% so với cùng kỳ tháng trước
+                {t('man.troLy.the.soVoiCungKy', { phanTram: Math.abs(p.thay_doi_phan_tram) })}
               </>
             )}
           </p>
           {p.ngan_sach_usd !== null && (
             <p className={`mt-1 text-sm ${p.phan_tram_ngan_sach !== null && p.phan_tram_ngan_sach >= 100 ? 'font-medium text-mimi-amber' : 'text-muted-foreground'}`}>
-              Đã dùng {p.phan_tram_ngan_sach}% ngân sách {dinhDang(p.ngan_sach_usd, 'usd')}
+              {t('man.troLy.the.daDungNganSach', { phanTram: p.phan_tram_ngan_sach, nganSach: dinhDang(p.ngan_sach_usd, 'usd') })}
             </p>
           )}
           <BieuDoThang ds={p.theo_thang} />
@@ -538,12 +544,13 @@ function TheChiPhiAi({ p }: { p: PhanTichNhanh['chi_phi_ai'] }) {
 
 /** Cột theo tháng, một dãy số nên không cần chú giải; tháng chưa có số hiện gạch, không vẽ cột 0. */
 function BieuDoThang({ ds }: { ds: { khoa: string; nhan: string; usd: number | null }[] }) {
+  const { t } = useTranslation();
   const lonNhat = Math.max(0, ...ds.map((d) => d.usd ?? 0));
   return (
     <figure className="mt-auto pt-5">
       <div className="flex h-24 items-end gap-3" aria-hidden>
         {ds.map((d, i) => (
-          <div key={d.khoa} className="flex h-full flex-1 flex-col items-center justify-end" title={d.usd === null ? `${d.nhan}: chưa có số liệu` : `${d.nhan}: ${dinhDang(d.usd, 'usd')}`}>
+          <div key={d.khoa} className="flex h-full flex-1 flex-col items-center justify-end" title={d.usd === null ? t('man.troLy.the.cotChuaCoSoLieu', { nhan: d.nhan }) : `${d.nhan}: ${dinhDang(d.usd, 'usd')}`}>
             {d.usd === null ? (
               <span className="mb-1 text-xs text-muted-foreground">—</span>
             ) : (
@@ -559,9 +566,9 @@ function BieuDoThang({ ds }: { ds: { khoa: string; nhan: string; usd: number | n
         {ds.map((d) => <span key={d.khoa} className="flex-1 text-center">{d.nhan}</span>)}
       </div>
       <table className="sr-only">
-        <caption>Chi phí AI 5 tháng gần nhất</caption>
+        <caption>{t('man.troLy.the.bieuDoCaption')}</caption>
         <tbody>
-          {ds.map((d) => <tr key={d.khoa}><th scope="row">{d.nhan}</th><td>{d.usd === null ? 'Chưa có số liệu' : dinhDang(d.usd, 'usd')}</td></tr>)}
+          {ds.map((d) => <tr key={d.khoa}><th scope="row">{d.nhan}</th><td>{d.usd === null ? t('man.troLy.the.chuaCoSoLieu') : dinhDang(d.usd, 'usd')}</td></tr>)}
         </tbody>
       </table>
     </figure>
@@ -569,10 +576,11 @@ function BieuDoThang({ ds }: { ds: { khoa: string; nhan: string; usd: number | n
 }
 
 function TheToiUu({ p, onHoi }: { p: PhanTichNhanh['toi_uu']; onHoi: (cau: string) => void }) {
+  const { t } = useTranslation();
   return (
     <section aria-labelledby="the-toi-uu" className={THE}>
-      <h3 id="the-toi-uu" className="text-base font-semibold text-foreground">Đề xuất tối ưu</h3>
-      <p className="text-sm text-muted-foreground">Từ số liệu thật của công ty</p>
+      <h3 id="the-toi-uu" className="text-base font-semibold text-foreground">{t('man.troLy.the.deXuatToiUu')}</h3>
+      <p className="text-sm text-muted-foreground">{t('man.troLy.the.tuSoLieuThat')}</p>
       <ul className="mt-3 space-y-2">
         {p.y.map((y) => (
           <li key={y} className="flex gap-2 text-sm text-foreground">
@@ -582,12 +590,12 @@ function TheToiUu({ p, onHoi }: { p: PhanTichNhanh['toi_uu']; onHoi: (cau: strin
       </ul>
       {p.tiet_kiem_usd !== null && (
         <div className="mt-4 rounded-xl bg-mimi-green/10 px-4 py-3">
-          <p className="text-xs text-muted-foreground">Tiết kiệm ước tính</p>
-          <p className="font-display text-xl font-semibold tabular-nums text-foreground">~ {dinhDang(p.tiet_kiem_usd, 'usd')} / 30 ngày</p>
+          <p className="text-xs text-muted-foreground">{t('man.troLy.the.tietKiemUocTinh')}</p>
+          <p className="font-display text-xl font-semibold tabular-nums text-foreground">~ {dinhDang(p.tiet_kiem_usd, 'usd')} {t('man.troLy.the.moi30Ngay')}</p>
         </div>
       )}
       <button type="button" onClick={() => onHoi(p.hoi)} className="mt-auto inline-flex items-center gap-1 self-start pt-4 text-sm font-medium text-primary hover:underline">
-        Hỏi MIMI chi tiết <ArrowRight size={14} />
+        {t('man.troLy.the.hoiChiTiet')} <ArrowRight size={14} />
       </button>
     </section>
   );
@@ -598,11 +606,14 @@ function TheCanXacNhan({ p, viec, onDuyet }: {
   viec: Record<string, TrangThaiViec>;
   onDuyet: (dx: DeXuat) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section aria-labelledby="the-can-xac-nhan" className={THE}>
-      <h3 id="the-can-xac-nhan" className="text-base font-semibold text-foreground">Cần bạn xác nhận</h3>
+      <h3 id="the-can-xac-nhan" className="text-base font-semibold text-foreground">{t('man.troLy.the.canBanXacNhan')}</h3>
       <p className="text-sm text-muted-foreground">
-        {p.so_khoan ? `${p.so_khoan} khoản chi cần phê duyệt, tổng ${dinhDang(p.tong_tien, 'vnd')}` : 'Không có khoản nào đang chờ bạn duyệt.'}
+        {p.so_khoan
+          ? t('man.troLy.the.khoanCanPheDuyet', { so: p.so_khoan, tien: dinhDang(p.tong_tien, 'vnd') })
+          : t('man.troLy.the.khongCoKhoanCho')}
       </p>
       {p.muc.length > 0 && (
         <ul className="mt-3 divide-y divide-border">
@@ -626,10 +637,10 @@ function TheCanXacNhan({ p, viec, onDuyet }: {
                       onClick={() => onDuyet(m.duyet as DeXuat)}
                       disabled={tt?.trangThai === 'dang'}
                       data-mimi-khong-tu-bam=""
-                      aria-label={`Phê duyệt ${dinhDang(m.so_tien, 'vnd')} cho ${m.nguoi_nhan}`}
+                      aria-label={t('man.troLy.the.pheDuyetCho', { tien: dinhDang(m.so_tien, 'vnd'), nguoiNhan: m.nguoi_nhan })}
                       className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:brightness-110 disabled:opacity-50"
                     >
-                      {tt?.trangThai === 'dang' && <Loader2 size={13} className="animate-spin" />} Phê duyệt
+                      {tt?.trangThai === 'dang' && <Loader2 size={13} className="animate-spin" />} {t('man.troLy.the.pheDuyet')}
                     </button>
                   )}
                 </div>
@@ -640,7 +651,7 @@ function TheCanXacNhan({ p, viec, onDuyet }: {
       )}
       {p.so_khoan > p.muc.length && (
         <Link to="/dashboard/tac-tu?tab=yeu-cau" className="mt-auto inline-flex items-center gap-1 pt-3 text-sm font-medium text-primary hover:underline">
-          Xem cả {p.so_khoan} khoản <ArrowRight size={14} />
+          {t('man.troLy.the.xemCa', { so: p.so_khoan })} <ArrowRight size={14} />
         </Link>
       )}
     </section>
@@ -655,6 +666,7 @@ function TraLoiMimi({ luotId, traLoi, viec, onChon }: {
   viec: Record<string, TrangThaiViec>;
   onChon: (dx: DeXuat) => void;
 }) {
+  const { t } = useTranslation();
   // Duyệt xong một khoản thì nút "Từ chối" của chính khoản đó cũng hết nghĩa.
   const yeuCauDaXong = useMemo(() => {
     const s = new Set<string>();
@@ -669,7 +681,7 @@ function TraLoiMimi({ luotId, traLoi, viec, onChon }: {
   return (
     <div className="flex flex-col gap-4">
       {traLoi.buoc.length > 1 && (
-        <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="MIMI đã làm gì">
+        <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label={t('man.troLy.mimiDaLamGi')}>
           {traLoi.buoc.map((b) => (
             <li key={b.ten} className="inline-flex items-center gap-1"><Check size={12} className="text-mimi-green" aria-hidden /> {b.cau}</li>
           ))}
@@ -690,6 +702,7 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
   yeuCauDaXong: Set<string>;
   onChon: (dx: DeXuat) => void;
 }) {
+  const { t } = useTranslation();
   if (!r.the.length && !r.de_xuat.length && !r.trang.length) return null;
   return (
     <section aria-label={TEN_NHOM[r.nhom]} className="rounded-xl border border-border bg-card p-4">
@@ -699,7 +712,7 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
       </div>
 
       {r.de_xuat.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-2 border-t border-border pt-4" aria-label="Việc bạn có thể làm">
+        <ul className="mt-4 flex flex-col gap-2 border-t border-border pt-4" aria-label={t('man.troLy.viecBanCoTheLam')}>
           {r.de_xuat.map((dx) => {
             const tt = viec[`${luotId}:${dx.khoa}`];
             const hetNghia = !tt && dx.tham_so.yeu_cau_id && yeuCauDaXong.has(String(dx.tham_so.yeu_cau_id));
@@ -733,14 +746,14 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
 
       {(r.trang.length > 0 || r.nguon.length > 0) && (
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          {r.trang.map((t) => (
-            <Link key={t.duong_dan} to={t.duong_dan} className="font-medium text-foreground underline underline-offset-4 hover:text-foreground/80">
-              {t.nhan}
+          {r.trang.map((tr) => (
+            <Link key={tr.duong_dan} to={tr.duong_dan} className="font-medium text-foreground underline underline-offset-4 hover:text-foreground/80">
+              {tr.nhan}
             </Link>
           ))}
           {r.nguon.length > 0 && (
             <span className="text-xs text-muted-foreground">
-              Nguồn:{' '}
+              {t('man.troLy.nguon')}{' '}
               {r.nguon.map((n, i) => (
                 <span key={n.ten} title={n.mo_ta}>{i > 0 ? ' · ' : ''}{n.ten}</span>
               ))}
@@ -753,6 +766,7 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
 }
 
 function TheKetQua({ the }: { the: The }) {
+  const { t } = useTranslation();
   if (the.loai === 'ghi_chu') {
     return (
       <p className={`flex gap-2 rounded-lg px-3 py-2 text-sm ${the.muc_do === 'can_chu_y' ? 'bg-mimi-amber/10 text-foreground' : 'bg-accent text-muted-foreground'}`}>
@@ -802,7 +816,7 @@ function TheKetQua({ the }: { the: The }) {
           ))}
         </tbody>
       </table>
-      {!!the.con_lai && <p className="mt-2 text-xs text-muted-foreground">Còn {the.con_lai} dòng nữa ở trang chi tiết.</p>}
+      {!!the.con_lai && <p className="mt-2 text-xs text-muted-foreground">{t('man.troLy.conDongNua', { so: the.con_lai })}</p>}
     </div>
   );
 }

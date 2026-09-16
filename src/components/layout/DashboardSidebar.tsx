@@ -54,11 +54,11 @@ export default function DashboardSidebar() {
    * và ở đường /dashboard/clients.
    */
   const muc: { icon: Icon; label: string; path: string }[] = [
-    { icon: IconMeo, label: 'MIMI Assistant', path: '/dashboard/tro-ly' },
+    { icon: IconMeo, label: t('man.ten.troLy'), path: '/dashboard/tro-ly' },
     { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
-    { icon: Images, label: 'Thư viện chứng từ', path: '/dashboard/thu-vien' },
-    { icon: Clock, label: 'Nhắc thuế', path: '/dashboard/nhac-thue' },
-    { icon: Puzzle, label: 'Kết nối', path: '/dashboard/ket-noi' },
+    { icon: Images, label: t('man.ten.thuVien'), path: '/dashboard/thu-vien' },
+    { icon: Clock, label: t('man.ten.nhacThue'), path: '/dashboard/nhac-thue' },
+    { icon: Puzzle, label: t('man.ten.ketNoi'), path: '/dashboard/ket-noi' },
   ];
 
   const lop = (dangMo: boolean) => `${DONG} ${dangMo ? DONG_DANG_MO : DONG_THUONG} ${collapsed ? 'justify-center px-0' : ''}`;
@@ -69,19 +69,18 @@ export default function DashboardSidebar() {
       transition={{ duration: 0.2 }}
       className="mimi-thanh-kinh sticky top-0 hidden h-screen flex-col lg:flex"
     >
-      <nav className="mimi-cuon-an flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" aria-label="Điều hướng chính">
+      <nav className="mimi-cuon-an flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" aria-label={t('man.chung.dieuHuongChinh')}>
         {/* Nút thu gọn nằm ngay trên cùng, có chữ — vòng tròn nhỏ ở mép ngoài trước đây bị cắt
             và không ai thấy (người dùng báo 16/09/2026). */}
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+          aria-label={collapsed ? t('man.chung.moRongThanhBen') : t('man.chung.thuGonThanhBen')}
           aria-expanded={!collapsed}
-          title={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
-          className={`mb-2 w-full ${DONG} ${DONG_THUONG} ${collapsed ? 'justify-center px-0' : ''}`}
+          title={collapsed ? t('man.chung.moRongThanhBen') : t('man.chung.thuGonThanhBen')}
+          className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10 ${collapsed ? 'mx-auto' : ''}`}
         >
-          {collapsed ? <PanelLeftOpen size={18} className="shrink-0" /> : <PanelLeftClose size={18} className="shrink-0" />}
-          {!collapsed && <span className="truncate">Thu gọn thanh bên</span>}
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
 
         <div className="space-y-0.5">
@@ -105,7 +104,7 @@ export default function DashboardSidebar() {
           {collapsed ? (
             <div className="mx-2 mb-2 border-t border-slate-900/[0.06]" />
           ) : (
-            <p className="mb-1 px-2.5 text-[11px] font-medium uppercase tracking-wider text-slate-400">Công cụ</p>
+            <p className="mb-1 px-2.5 text-[11px] font-medium uppercase tracking-wider text-slate-400">{t('man.chung.congCu')}</p>
           )}
           <div className="space-y-0.5">
             {congCu.ds.filter((c) => !muc.some((m) => m.path === c.dich)).map((c) => (
@@ -120,9 +119,9 @@ export default function DashboardSidebar() {
                 {!collapsed && <span className="truncate">{c.ten}</span>}
               </NavLink>
             ))}
-            <button type="button" onClick={() => setMoKho(true)} title={collapsed ? 'Thêm công cụ' : undefined} className={`w-full ${lop(false)}`}>
+            <button type="button" onClick={() => setMoKho(true)} title={collapsed ? t('man.chung.themCongCu') : undefined} className={`w-full ${lop(false)}`}>
               <Plus size={17} className="shrink-0" />
-              {!collapsed && <span>Thêm công cụ</span>}
+              {!collapsed && <span>{t('man.chung.themCongCu')}</span>}
             </button>
           </div>
         </div>
@@ -135,8 +134,8 @@ export default function DashboardSidebar() {
           <PopoverTrigger asChild>
             <button
               type="button"
-              aria-label={`Ngôn ngữ: ${ngonNguHienTai.ten}`}
-              title={`Ngôn ngữ: ${ngonNguHienTai.ten}`}
+              aria-label={t('man.chung.ngonNgu', { ten: ngonNguHienTai.ten })}
+              title={t('man.chung.ngonNgu', { ten: ngonNguHienTai.ten })}
               className={`w-full ${lop(false)}`}
             >
               <Globe size={17} className="shrink-0" />
@@ -144,7 +143,7 @@ export default function DashboardSidebar() {
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" side="top" className="w-52 rounded-2xl p-1.5">
-            <div role="group" aria-label="Chọn ngôn ngữ">
+            <div role="group" aria-label={t('man.chung.chonNgonNgu')}>
               {NGON_NGU.map((n) => (
                 <button
                   key={n.ma}
@@ -176,17 +175,17 @@ export default function DashboardSidebar() {
         <div className={`flex items-center gap-1 ${collapsed ? 'flex-col' : ''}`}>
           <NavLink
             to="/dashboard/settings"
-            title={collapsed ? 'Cài đặt' : undefined}
+            title={collapsed ? t('man.ten.caiDat') : undefined}
             className={({ isActive }) => `min-w-0 flex-1 ${lop(isActive)}`}
           >
             <Settings size={17} className="shrink-0" />
-            {!collapsed && <span>Cài đặt</span>}
+            {!collapsed && <span>{t('man.ten.caiDat')}</span>}
           </NavLink>
           <button
             type="button"
             onClick={() => setMoTaiApp(true)}
-            aria-label="Dùng MIMI như ứng dụng"
-            title="Dùng MIMI như ứng dụng"
+            aria-label={t('man.troLy.dungNhuUngDung')}
+            title={t('man.troLy.dungNhuUngDung')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-600 hover:bg-white/70 hover:text-foreground dark:text-muted-foreground dark:hover:bg-white/10"
           >
             <Store size={17} />

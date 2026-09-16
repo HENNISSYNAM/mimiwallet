@@ -13,9 +13,13 @@ import miscVi from './modules/misc.vi';
 import miscEn from './modules/misc.en';
 import ko from './ko';
 import zh from './zh';
+import manVi from './modules/man.vi';
+import manEn from './modules/man.en';
+import manKo from './modules/man.ko';
+import manZh from './modules/man.zh';
 
-const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi };
-const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn };
+const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi, ...manVi };
+const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn, ...manEn };
 
 /**
  * Bốn ngôn ngữ, cùng một bộ khoá. `NGON_NGU` là nguồn duy nhất cho menu chọn ngôn ngữ và cho
@@ -33,8 +37,11 @@ export const NGON_NGU = [
 
 export type MaNgonNgu = (typeof NGON_NGU)[number]['ma'];
 
+const koAll = { ...ko, ...manKo };
+const zhAll = { ...zh, ...manZh };
+
 export const BO_DICH: Record<MaNgonNgu, Record<string, unknown>> = {
-  vi: viAll, en: enAll, ko, zh,
+  vi: viAll, en: enAll, ko: koAll, zh: zhAll,
 };
 
 i18n
@@ -45,8 +52,8 @@ i18n
     resources: {
       vi: { translation: viAll },
       en: { translation: enAll },
-      ko: { translation: ko },
-      zh: { translation: zh },
+      ko: { translation: koAll },
+      zh: { translation: zhAll },
     },
     fallbackLng: 'vi',
     interpolation: { escapeValue: false },

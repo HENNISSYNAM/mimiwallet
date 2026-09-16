@@ -1,0 +1,128 @@
+/**
+ * Chuỗi của các màn trong khu làm việc (dashboard) — tiếng Việt là bản gốc.
+ *
+ * VÌ SAO TÁCH RA. Trước 16/09/2026 các trang này viết thẳng tiếng Việt trong JSX, nên chọn
+ * tiếng Hàn hay tiếng Trung chỉ đổi được phần khung, còn nội dung vẫn tiếng Việt — giao diện
+ * lẫn lộn. Mỗi chuỗi người dùng đọc được chuyển thành khoá ở đây, bốn ngôn ngữ cùng một bộ khoá
+ * (test `dongBoNgonNgu.test.ts` giữ điều đó).
+ *
+ * KHÔNG ĐƯA VÀO ĐÂY: câu trích văn bản pháp luật (Nghị định, Thông tư) ở trang Tờ khai thuế.
+ * Đó là nguyên văn để đối chiếu với kho Công báo; dịch ra là mất giá trị đối chiếu.
+ */
+const m = {
+  man: {
+    // Tên các nơi — dùng cho thanh bên, thanh dưới điện thoại và tiêu đề đầu trang.
+    ten: {
+      troLy: 'MIMI Assistant',
+      troLyNgan: 'Trợ lý',
+      thuVien: 'Thư viện chứng từ',
+      thuVienNgan: 'Chứng từ',
+      nhacThue: 'Nhắc thuế',
+      ketNoi: 'Kết nối',
+      tongQuanGiaoDich: 'Tổng quan & giao dịch',
+      khachHang: 'Khách hàng',
+      chinhSach: 'Chính sách chi',
+      tacTu: 'Kiểm soát agent',
+      chiPhiAi: 'Chi phí AI',
+      chungTu: 'Chứng từ chi phí',
+      toKhai: 'Tờ khai thuế',
+      caiDat: 'Cài đặt',
+    },
+
+    chung: {
+      dieuHuongChinh: 'Điều hướng chính',
+      congCu: 'Công cụ',
+      themCongCu: 'Thêm công cụ',
+      congCuCuaBan: 'Công cụ của bạn',
+      trangChiTiet: 'Trang chi tiết',
+      thuGonThanhBen: 'Thu gọn thanh bên',
+      moRongThanhBen: 'Mở rộng thanh bên',
+      ngonNgu: 'Ngôn ngữ: {{ten}}',
+      chonNgonNgu: 'Chọn ngôn ngữ',
+      quet: 'Quét',
+      them: 'Thêm',
+      congTyCuaBan: 'Công ty của bạn',
+      moiTrangKhac: 'Mọi trang khác của MIMI',
+      chuaCoThongBao: 'Chưa có thông báo mới',
+      deSau: 'Để sau',
+      xacNhan: 'Xác nhận',
+      xacNhanDuyet: 'Xác nhận duyệt',
+      xacNhanTuChoi: 'Xác nhận từ chối',
+    },
+
+    troLy: {
+      vungHoi: 'Hỏi MIMI Assistant',
+      tieuDe: 'MIMI có thể giúp gì cho bạn?',
+      gioiThieu: 'Hỏi, yêu cầu hoặc giao việc — MIMI đọc số liệu của {{congTy}} và đề xuất cách làm. Việc nào đổi dữ liệu, bạn xác nhận là xong.',
+      congTyBan: 'công ty bạn',
+      nhanOHoi: 'Câu hỏi cho MIMI',
+      oHoiPlaceholder: 'Bạn muốn MIMI xử lý việc gì?',
+      taiAnhChungTu: 'Tải ảnh chứng từ lên',
+      nhomViec: 'Nhóm việc: {{nhom}}',
+      tatCaViec: 'Tất cả việc',
+      chonNhomViec: 'Chọn nhóm việc',
+      guiCauHoi: 'Gửi câu hỏi',
+      congCuVaKetNoi: 'Công cụ và kết nối',
+      tuyChinhCongCu: 'Tuỳ chỉnh công cụ',
+      timKetNoi: 'Tìm kết nối',
+      timKetNoiPlaceholder: 'Tìm kết nối…',
+      dangDocKetNoi: 'Đang đọc kết nối…',
+      cacKetNoi: 'Các kết nối',
+      quanLyKetNoi: 'Quản lý kết nối',
+      dungNhuUngDung: 'Dùng MIMI như ứng dụng',
+      dungNhuUngDungNgan: 'Dùng như ứng dụng',
+      cheDoCoDinh: 'MIMI đang hiểu câu hỏi theo các mẫu có sẵn. Hỏi ngắn và đúng việc — như gợi ý ở mẹo nhanh — để có câu trả lời chính xác.',
+      vuaPhanTich: 'MIMI vừa phân tích cho bạn',
+      cungCanDeY: 'Cũng cần để ý',
+      dangDocSoLieu: 'MIMI đang đọc số liệu…',
+      meoNhanh: 'Mẹo nhanh:',
+      banCoTheHoi: 'Bạn có thể hỏi',
+      hoac: 'hoặc',
+      deMimiXuLy: 'để MIMI xử lý ngay.',
+      anMeo: 'Ẩn mẹo',
+      cuocHoiMoi: 'Cuộc hỏi mới',
+      cauHoiLa: 'Câu hỏi: {{cau}}',
+      dangTinh: 'MIMI đang đọc dữ liệu và tính…',
+      hoiLai: 'Hỏi lại',
+      mimiDaLamGi: 'MIMI đã làm gì',
+      viecBanCoTheLam: 'Việc bạn có thể làm',
+      nguon: 'Nguồn:',
+      conDongNua: 'Còn {{so}} dòng nữa ở trang chi tiết.',
+      trangThai: {
+        dangChay: 'Đang chạy',
+        canXuLy: 'Cần xử lý',
+        chuaKetNoi: 'Chưa kết nối',
+        chiNhapFile: 'Nhập file',
+      },
+      loi: {
+        boiCanh: 'Chưa đọc được tình hình công ty.',
+        hoi: 'Không hỏi được MIMI.',
+        viec: 'Chưa làm được việc này.',
+      },
+      the: {
+        chiPhiAi: 'Chi phí AI tháng này',
+        chuaCoChiPhiAi: 'Chưa có số liệu chi phí AI. MIMI chỉ ghi đúng số nhà cung cấp tính, không tự ước tính.',
+        taiFileHoacBat: 'Tải file hoặc bật tự động',
+        chuaCoThangTruoc: 'Chưa có số tháng trước để so',
+        soVoiCungKy: '{{phanTram}}% so với cùng kỳ tháng trước',
+        daDungNganSach: 'Đã dùng {{phanTram}}% ngân sách {{nganSach}}',
+        bieuDoCaption: 'Chi phí AI 5 tháng gần nhất',
+        chuaCoSoLieu: 'Chưa có số liệu',
+        cotChuaCoSoLieu: '{{nhan}}: chưa có số liệu',
+        deXuatToiUu: 'Đề xuất tối ưu',
+        tuSoLieuThat: 'Từ số liệu thật của công ty',
+        tietKiemUocTinh: 'Tiết kiệm ước tính',
+        moi30Ngay: '/ 30 ngày',
+        hoiChiTiet: 'Hỏi MIMI chi tiết',
+        canBanXacNhan: 'Cần bạn xác nhận',
+        khoanCanPheDuyet: '{{so}} khoản chi cần phê duyệt, tổng {{tien}}',
+        khongCoKhoanCho: 'Không có khoản nào đang chờ bạn duyệt.',
+        pheDuyet: 'Phê duyệt',
+        pheDuyetCho: 'Phê duyệt {{tien}} cho {{nguoiNhan}}',
+        xemCa: 'Xem cả {{so}} khoản',
+      },
+    },
+  },
+};
+
+export default m;
