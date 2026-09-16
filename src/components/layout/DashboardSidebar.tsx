@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Clock, Globe, HelpCircle, Images, LayoutDashboard, LogOut, Plus, Puzzle, Settings, Store, Users } from 'lucide-react';
+import { Clock, Globe, HelpCircle, Images, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Puzzle, Settings, Store } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,8 @@ import { useCongCuGhim } from '@/hooks/useCongCuGhim';
 import { duongDanCongCu } from '@/lib/congCu';
 import { IconCongCu } from '@/components/cong-cu/IconCongCu';
 import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { NGON_NGU } from '@/i18n';
 
 /**
  * Thanh bên theo nhịp ChatGPT (15/09/2026): một trợ lý ở trên cùng, rồi vài chỗ người dùng
@@ -43,14 +45,20 @@ export default function DashboardSidebar() {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const ngonNguHienTai = NGON_NGU.find((n) => i18n.language?.startsWith(n.ma)) ?? NGON_NGU[0];
 
+  /*
+   * Thứ tự: nơi làm việc trước, rồi cái nhìn toàn cảnh, rồi các chỗ quay lại hằng ngày.
+   * "Khách hàng" đã rời thanh bên (16/09/2026): đó là danh sách tra cứu, mở vài lần một tháng,
+   * không phải việc hằng ngày — nó vẫn còn nguyên ở bảng "Thêm" trên điện thoại, ở kho công cụ
+   * và ở đường /dashboard/clients.
+   */
   const muc: { icon: Icon; label: string; path: string }[] = [
     { icon: IconMeo, label: 'MIMI Assistant', path: '/dashboard/tro-ly' },
+    { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
     { icon: Images, label: 'Thư viện chứng từ', path: '/dashboard/thu-vien' },
     { icon: Clock, label: 'Nhắc thuế', path: '/dashboard/nhac-thue' },
     { icon: Puzzle, label: 'Kết nối', path: '/dashboard/ket-noi' },
-    { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
-    { icon: Users, label: 'Khách hàng', path: '/dashboard/clients' },
   ];
 
   const lop = (dangMo: boolean) => `${DONG} ${dangMo ? DONG_DANG_MO : DONG_THUONG} ${collapsed ? 'justify-center px-0' : ''}`;
@@ -62,6 +70,20 @@ export default function DashboardSidebar() {
       className="mimi-thanh-kinh sticky top-0 hidden h-screen flex-col lg:flex"
     >
       <nav className="mimi-cuon-an flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" aria-label="Điều hướng chính">
+        {/* Nút thu gọn nằm ngay trên cùng, có chữ — vòng tròn nhỏ ở mép ngoài trước đây bị cắt
+            và không ai thấy (người dùng báo 16/09/2026). */}
+        <button
+          type="button"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+          aria-expanded={!collapsed}
+          title={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+          className={`mb-2 w-full ${DONG} ${DONG_THUONG} ${collapsed ? 'justify-center px-0' : ''}`}
+        >
+          {collapsed ? <PanelLeftOpen size={18} className="shrink-0" /> : <PanelLeftClose size={18} className="shrink-0" />}
+          {!collapsed && <span className="truncate">Thu gọn thanh bên</span>}
+        </button>
+
         <div className="space-y-0.5">
           {muc.map((m) => (
             <NavLink
@@ -108,15 +130,36 @@ export default function DashboardSidebar() {
       <KhoCongCu mo={moKho} onDong={() => setMoKho(false)} />
 
       <div className="space-y-0.5 border-t border-slate-900/[0.06] px-3 py-2 dark:border-white/10">
-        <button
-          onClick={() => i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi')}
-          aria-label={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-          title={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-          className={`w-full ${lop(false)}`}
-        >
-          <Globe size={17} className="shrink-0" />
-          {!collapsed && <span>{i18n.language === 'vi' ? 'Tiếng Việt · VI' : 'English · EN'}</span>}
-        </button>
+        {/* Bốn ngôn ngữ (16/09/2026): chọn trong danh sách, không còn nút bật/tắt hai thứ tiếng. */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Ngôn ngữ: ${ngonNguHienTai.ten}`}
+              title={`Ngôn ngữ: ${ngonNguHienTai.ten}`}
+              className={`w-full ${lop(false)}`}
+            >
+              <Globe size={17} className="shrink-0" />
+              {!collapsed && <span className="truncate">{ngonNguHienTai.ten} · {ngonNguHienTai.ma_ngan}</span>}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" side="top" className="w-52 rounded-2xl p-1.5">
+            <div role="group" aria-label="Chọn ngôn ngữ">
+              {NGON_NGU.map((n) => (
+                <button
+                  key={n.ma}
+                  type="button"
+                  aria-pressed={n.ma === ngonNguHienTai.ma}
+                  onClick={() => void i18n.changeLanguage(n.ma)}
+                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
+                >
+                  <span>{n.ten}</span>
+                  <span className="text-xs text-muted-foreground">{n.ma_ngan}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
         <a href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet" className={lop(false)}>
           <HelpCircle size={17} className="shrink-0" />
           {!collapsed && <span>{t('sidebar.support')}</span>}
@@ -150,14 +193,6 @@ export default function DashboardSidebar() {
           </button>
         </div>
       </div>
-
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        aria-label={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
-        className="absolute -right-3 top-6 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-white/90 text-slate-500 shadow-[0_1px_3px_hsla(215,25%,20%,0.12)] backdrop-blur transition-colors hover:text-foreground"
-      >
-        {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-      </button>
 
       <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} tab="may_tinh" />
     </motion.aside>

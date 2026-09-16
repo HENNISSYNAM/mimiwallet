@@ -11,17 +11,42 @@ import financeVi from './modules/finance.vi';
 import financeEn from './modules/finance.en';
 import miscVi from './modules/misc.vi';
 import miscEn from './modules/misc.en';
+import ko from './ko';
+import zh from './zh';
 
 const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi };
 const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn };
+
+/**
+ * Bốn ngôn ngữ, cùng một bộ khoá. `NGON_NGU` là nguồn duy nhất cho menu chọn ngôn ngữ và cho
+ * test `dongBoNgonNgu.test.ts` — thêm ngôn ngữ ở đây là chỗ duy nhất phải sửa.
+ *
+ * Chữ tiếng Việt trong văn bản pháp luật (câu trích Nghị định, Thông tư ở trang Tờ khai thuế)
+ * KHÔNG dịch: đó là nguyên văn để đối chiếu, dịch ra là mất giá trị pháp lý.
+ */
+export const NGON_NGU = [
+  { ma: 'vi', ten: 'Tiếng Việt', ma_ngan: 'VI' },
+  { ma: 'en', ten: 'English', ma_ngan: 'EN' },
+  { ma: 'ko', ten: '한국어', ma_ngan: 'KO' },
+  { ma: 'zh', ten: '中文', ma_ngan: 'ZH' },
+] as const;
+
+export type MaNgonNgu = (typeof NGON_NGU)[number]['ma'];
+
+export const BO_DICH: Record<MaNgonNgu, Record<string, unknown>> = {
+  vi: viAll, en: enAll, ko, zh,
+};
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    supportedLngs: NGON_NGU.map((n) => n.ma),
     resources: {
       vi: { translation: viAll },
       en: { translation: enAll },
+      ko: { translation: ko },
+      zh: { translation: zh },
     },
     fallbackLng: 'vi',
     interpolation: { escapeValue: false },

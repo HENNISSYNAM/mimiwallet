@@ -211,7 +211,7 @@ export default function DashboardLayout() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header
-          className={`h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 safe-top transition-[background-color,box-shadow,border-color] duration-300 ${
+          className={`h-[72px] flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 safe-top transition-[background-color,box-shadow,border-color] duration-300 ${
             scrolled ? 'lg-surface lg-regular border-b hairline' : 'bg-background border-b border-transparent'
           }`}
         >
@@ -229,7 +229,7 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-3">
             <form
               onSubmit={(e) => { e.preventDefault(); submitSearch(); }}
-              className="mimi-o-kinh hidden h-9 items-center gap-2 rounded-full px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-primary/25 md:flex"
+              className="mimi-o-kinh hidden h-10 items-center gap-2 rounded-full px-4 transition-shadow focus-within:ring-2 focus-within:ring-primary/25 md:flex"
             >
               <Search size={14} className="text-muted-foreground shrink-0" />
               <input

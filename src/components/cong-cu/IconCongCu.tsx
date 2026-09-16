@@ -1,6 +1,6 @@
 import {
   ArrowLeftRight, Bot, CircleDollarSign, FileSearch, FileText, Images, Landmark, Receipt,
-  ScrollText, SlidersHorizontal, Sparkles, TrendingUp,
+  ScrollText, SlidersHorizontal, Sparkles, TrendingUp, Users,
 } from 'lucide-react';
 
 const ICON: Record<string, typeof Images> = {
@@ -15,6 +15,7 @@ const ICON: Record<string, typeof Images> = {
   chi_phi_ai: CircleDollarSign,
   model_re_hon: Sparkles,
   hoa_don_ban: FileText,
+  khach_hang: Users,
 };
 
 export function IconCongCu({ khoa, size = 18, className = '' }: { khoa: string; size?: number; className?: string }) {

@@ -38,17 +38,17 @@ describe('Kho công cụ', () => {
     await waitFor(() => expect(gia.chen).toHaveBeenCalled());
     expect(gia.xoa).toHaveBeenCalledWith('user_id', 'u1');
     const rows = gia.chen.mock.calls[0][0] as { khoa: string; thu_tu: number; user_id: string }[];
-    expect(rows.map((r) => r.khoa)).toEqual(['soan_to_khai', 'thieu_chung_tu', 'dong_tien', 'tra_trung', 'chi_phi_ai', 'bao_cao']);
+    expect(rows.map((r) => r.khoa)).toEqual(['soan_to_khai', 'thieu_chung_tu', 'chi_phi_ai', 'bao_cao']);
     expect(rows.every((r) => r.user_id === 'u1')).toBe(true);
-    expect(rows.at(-1)?.thu_tu).toBe(5);
+    expect(rows.at(-1)?.thu_tu).toBe(3);
   });
 
   it('tìm không dấu thu hẹp danh mục', async () => {
     gia.dong = [{ khoa: 'bao_cao', thu_tu: 0 }];
     render(<KhoCongCu mo onDong={() => {}} />);
     await screen.findByRole('button', { name: 'Bỏ ghim Báo cáo thu chi' });
-    fireEvent.change(screen.getByLabelText('Tìm công cụ'), { target: { value: 'tra trung' } });
+    fireEvent.change(screen.getByLabelText('Tìm công cụ'), { target: { value: 'to khai' } });
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
-    expect(screen.getByText('Tìm khoản trả trùng')).toBeTruthy();
+    expect(screen.getByText('Soạn tờ khai thuế')).toBeTruthy();
   });
 });

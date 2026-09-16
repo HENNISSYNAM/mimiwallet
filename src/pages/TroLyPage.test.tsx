@@ -170,8 +170,8 @@ describe('MIMI Assistant — công cụ', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Công cụ$/ }));
     const vung = await screen.findByRole('list', { name: 'Công cụ của bạn' });
     expect(within(vung).getByRole('link', { name: /Khoản chi thiếu chứng từ/ }).getAttribute('href')).toBe('/dashboard/chung-tu');
-    expect(within(vung).getByRole('link', { name: /Dòng tiền 6 tháng/ }).getAttribute('href')).toContain('/dashboard/tro-ly?hoi=');
-    expect(within(vung).queryByRole('link', { name: /Đối soát tiền về|Khoản chờ duyệt|Khách nợ quá hạn/ })).toBeNull();
+    expect(within(vung).getByRole('link', { name: /Soạn tờ khai thuế/ }).getAttribute('href')).toBe('/dashboard/to-khai');
+    expect(within(vung).queryByRole('link', { name: /Đối soát tiền về|Khoản chờ duyệt|Khách nợ quá hạn|Dòng tiền 6 tháng|Tìm khoản trả trùng/ })).toBeNull();
   });
 });
 

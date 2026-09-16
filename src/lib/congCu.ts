@@ -35,14 +35,13 @@ export const DANH_MUC_CONG_CU: CongCu[] = [
   { khoa: 'thieu_chung_tu', ten: 'Khoản chi thiếu chứng từ', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/chung-tu', mo_ta: 'Khoản chi trong kỳ kê khai chưa có hoá đơn điện tử.', tu_khoa: ['chi phi', 'hoa don dau vao', 'khau tru'] },
   { khoa: 'soan_to_khai', ten: 'Soạn tờ khai thuế', nhom: 'thue', loai: 'trang', dich: '/dashboard/to-khai', mo_ta: 'MIMI điền mẫu tờ khai từ hoá đơn, sao kê và quy định trong kho văn bản.', tu_khoa: ['to khai', 'khai thue', 'thong bao doanh thu', 'gtgt', 'tncn'] },
   { khoa: 'bao_cao', ten: 'Báo cáo thu chi', nhom: 'thue', loai: 'trang', dich: '/dashboard/reports', mo_ta: 'Thu, chi, chênh lệch theo tháng từ sao kê ngân hàng.', tu_khoa: ['loi nhuan', 'lai lo', 'bao cao'] },
-  { khoa: 'dong_tien', ten: 'Dòng tiền 6 tháng', nhom: 'ngan_hang', loai: 'hoi', dich: 'Dòng tiền 6 tháng qua thế nào?', mo_ta: 'Tiền vào, tiền ra, chênh lệch từng tháng.', tu_khoa: ['thu chi', 'tien vao', 'tien ra'] },
   { khoa: 'lien_ket_ngan_hang', ten: 'Liên kết ngân hàng', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/fintech', mo_ta: 'Liên kết tài khoản, nhận tiền QR, kết nối Tổng cục Thuế.', tu_khoa: ['casso', 'sepay', 'qr', 'tong cuc thue'] },
-  { khoa: 'tra_trung', ten: 'Tìm khoản trả trùng', nhom: 'chi_tieu', loai: 'hoi', dich: 'Có khoản nào bị trả trùng không?', mo_ta: 'Hai khoản cùng người nhận, cùng số tiền, sát ngày nhau.', tu_khoa: ['trung lap', 'tiet kiem', 'hai lan'] },
   { khoa: 'kiem_soat_agent', ten: 'Kiểm soát agent', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/tac-tu', mo_ta: 'Agent AI được phép xin chi, hạn mức, người nhận.', tu_khoa: ['agent', 'bot', 'han muc'] },
   { khoa: 'chinh_sach_chi', ten: 'Chính sách chi', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/chinh-sach', mo_ta: 'Ngưỡng duyệt, hạn mức, nhóm chi cho từng agent.', tu_khoa: ['quy dinh', 'nguong duyet'] },
   { khoa: 'chi_phi_ai', ten: 'Chi phí AI', nhom: 'ai', loai: 'trang', dich: '/dashboard/chi-phi-ai', mo_ta: 'Chi phí OpenAI, Anthropic, Gemini, OpenRouter so với ngân sách.', tu_khoa: ['openai', 'claude', 'gemini', 'ngan sach'] },
   { khoa: 'model_re_hon', ten: 'Model AI rẻ hơn', nhom: 'ai', loai: 'hoi', dich: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.', mo_ta: 'Ước tính tiết kiệm khi đổi sang model rẻ hơn cùng hãng.', tu_khoa: ['token', 'toi uu', 'tiet kiem'] },
   { khoa: 'hoa_don_ban', ten: 'Hoá đơn bán ra', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/invoices', mo_ta: 'Lập hoá đơn cho khách và theo dõi khoản chưa thu.', tu_khoa: ['xuat hoa don', 'phai thu'] },
+  { khoa: 'khach_hang', ten: 'Khách hàng', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/clients', mo_ta: 'Danh sách khách, mã số thuế, tình trạng tiếp cận.', tu_khoa: ['doi tac', 'ma so thue', 'crm'] },
 ];
 
 export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH_MUC_CONG_CU.map((c) => [c.khoa, c]));
@@ -55,8 +54,11 @@ export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH
  * Cũng bỏ (15/09/2026): "Đối soát tiền về" và "Khoản chờ duyệt" — MIMI Assistant đã tự đưa
  * hai việc này lên màn đầu, công cụ riêng là lặp; "Khách nợ quá hạn" — chỉ đọc hoá đơn tự lập
  * trong MIMI, nên với người lấy hoá đơn từ Tổng cục Thuế nó luôn trả "chưa có hoá đơn".
+ *
+ * Bỏ tiếp (16/09/2026): "Dòng tiền 6 tháng" và "Tìm khoản trả trùng" — trang Tổng quan đã có
+ * đủ hai thứ này, người dùng báo trùng.
  */
-export const CONG_CU_MAC_DINH = ['soan_to_khai', 'thieu_chung_tu', 'dong_tien', 'tra_trung', 'chi_phi_ai'];
+export const CONG_CU_MAC_DINH = ['soan_to_khai', 'thieu_chung_tu', 'chi_phi_ai'];
 
 export const SO_CONG_CU_TOI_DA = 12;
 
