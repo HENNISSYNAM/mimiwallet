@@ -11,6 +11,7 @@ const zh = {
     solutions: '解决方案',
     features: '功能',
     pricing: '价格',
+    customers: '客户',
     about: '关于我们',
     login: '登录',
     startFree: '免费开始 →',

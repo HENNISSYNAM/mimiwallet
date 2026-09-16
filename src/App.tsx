@@ -35,6 +35,7 @@ function Page({
 const Landing = lazy(() => import("./pages/Landing"));
 const About = lazy(() => import("./pages/About"));
 const TrangNoiDungPage = lazy(() => import("./pages/TrangNoiDungPage"));
+const KhachHang = lazy(() => import("./pages/KhachHang"));
 const TriTueNhanTaoPage = lazy(() => import("./pages/TriTueNhanTaoPage"));
 const Login = lazy(() => import("./pages/Login"));
 const BankCallback = lazy(() => import("./pages/BankCallback"));
@@ -106,6 +107,7 @@ const App = () => (
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               <Route path="/" element={<Page path="/" title="MIMI WALLET — Kiểm soát chi tiêu cho doanh nghiệp chạy bằng AI" description="Agent được chi, bạn giữ quyền quyết: MIMI xét khoản chi theo chính sách, dựng lệnh trả VietQR, đối chiếu sao kê và hoá đơn điện tử. MIMI không giữ tiền của bạn."><Landing /></Page>} />
+              <Route path="/khach-hang" element={<Page path="/khach-hang" title="Khách hàng — MIMI WALLET" description="MIMI làm gì cho hộ kinh doanh, doanh nghiệp nhỏ và vừa, startup và văn phòng kế toán."><KhachHang /></Page>} />
               <Route path="/about" element={<Page path="/about" title="Về chúng tôi — MIMI WALLET" description="Câu chuyện và đội ngũ đứng sau MIMI Wallet: đưa hộ kinh doanh Việt Nam ra khỏi vùng vô hình với ngân hàng."><About /></Page>} />
               {/* Công khai, không nằm sau đăng nhập — App Store yêu cầu
                   Privacy Policy URL truy cập được mà không cần tài khoản. */}

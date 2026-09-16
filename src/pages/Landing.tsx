@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TrustSection from '@/components/landing/TrustSection';
+import DaiLogo from '@/components/landing/DaiLogo';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
@@ -655,6 +656,9 @@ export default function Landing() {
           </div>
         </motion.div>
       </section>
+
+      {/* ═══ ĐỒNG HÀNH CÙNG MIMI ═══ */}
+      <DaiLogo className="border-y border-border/60" />
 
       {/* ═══ RECOGNITION & INCUBATION ═══ */}
       <section id="cong-nhan" className="py-16 border-y border-border/50 bg-secondary/30">

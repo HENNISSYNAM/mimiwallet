@@ -1,15 +1,15 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Award, Bell, BookOpen, Bot, Briefcase, Calculator, CheckCircle2, ChevronDown, Code2, FileText, Handshake, Landmark, LineChart, ListChecks, Lock,
-  Mail, Palette, PlayCircle, Plug, QrCode, Receipt, ShieldAlert, Sparkles, Users, type LucideIcon,
+  Bell, Bot, Calculator, CheckCircle2, ChevronDown, Code2, FileText, Handshake, Landmark, LineChart, ListChecks, Lock,
+  Plug, QrCode, Receipt, ShieldAlert, Sparkles, type LucideIcon,
 } from 'lucide-react';
 import mimiLogo from '@/assets/mimi-cat.png';
 import sokhcnLogo from '@/assets/logos/sokhcn.png';
 import { CONTACT } from '@/config/company';
 
 /**
- * Năm menu xổ lớn của trang chủ: Sản phẩm, Giải pháp, Đối tác, Tài nguyên, Về chúng tôi.
+ * Bốn menu xổ lớn của trang chủ: Sản phẩm, Giải pháp, Đối tác, Tài nguyên.
  *
  * LUẬT CHUNG — menu là danh sách đầu tiên người ta đọc về MIMI, nên nó không
  * được khoe nhiều hơn app làm được:
@@ -24,7 +24,7 @@ import { CONTACT } from '@/config/company';
 
 type NgonNgu = 'vi' | 'en';
 type Chu = Record<NgonNgu, string>;
-export type KhoaMenu = 'san-pham' | 'giai-phap' | 'doi-tac' | 'tai-nguyen' | 've-chung-toi';
+export type KhoaMenu = 'san-pham' | 'giai-phap' | 'doi-tac' | 'tai-nguyen';
 
 interface MucMenu {
   ten: Chu;
@@ -182,6 +182,16 @@ const MENU_TAI_NGUYEN: CauHinhMenu = {
       ],
     }],
     [{
+      tieuDe: { vi: 'Kết nối', en: 'Connect' },
+      muc: [
+        { ten: { vi: 'Về chúng tôi', en: 'About us' }, href: '/about' },
+        { ten: { vi: 'Đội ngũ', en: 'Team' }, href: '/about?muc=doi-ngu' },
+        { ten: { vi: 'Công nhận & ươm tạo', en: 'Recognition & incubation' }, href: '#cong-nhan' },
+        { ten: { vi: 'Bộ nhận diện thương hiệu', en: 'Brand kit' }, href: '/thuong-hieu' },
+        { ten: { vi: 'Liên hệ', en: 'Contact' }, href: '#dang-ky' },
+      ],
+    }],
+    [{
       tieuDe: { vi: 'Pháp lý', en: 'Legal' },
       muc: [
         { ten: { vi: 'Quyền riêng tư', en: 'Privacy' }, href: '/privacy' },
@@ -197,41 +207,7 @@ const MENU_TAI_NGUYEN: CauHinhMenu = {
   },
 };
 
-/** Về chúng tôi: chỉ trỏ tới trang và mốc có thật (câu chuyện + đội ngũ nằm chung trang /about). */
-const MENU_VE_CHUNG_TOI: CauHinhMenu = {
-  khoa: 've-chung-toi',
-  ten: { vi: 'Về chúng tôi', en: 'About' },
-  cot: [
-    [{
-      tieuDe: { vi: 'Khám phá', en: 'Discover' },
-      muc: [
-        { icon: BookOpen, ten: { vi: 'Câu chuyện MIMI', en: 'The MIMI story' }, mo: { vi: 'Vì sao chúng tôi làm MIMI', en: 'Why we built MIMI' }, href: '/about' },
-        { icon: Users, ten: { vi: 'Đội ngũ', en: 'Team' }, mo: { vi: 'Những người đứng sau MIMI', en: 'The people behind MIMI' }, href: '/about?muc=doi-ngu' },
-      ],
-    }],
-    [{
-      tieuDe: { vi: 'Thương hiệu', en: 'Brand' },
-      muc: [
-        { icon: Award, ten: { vi: 'Công nhận & ươm tạo', en: 'Recognition & incubation' }, mo: { vi: 'Quyết định 231/QĐ-KNST', en: 'Decision 231/QĐ-KNST' }, href: '#cong-nhan' },
-        { icon: Palette, ten: { vi: 'Bộ nhận diện thương hiệu', en: 'Brand kit' }, mo: { vi: 'Màu, chữ, cách viết của MIMI', en: 'Colours, type and voice' }, href: '/thuong-hieu' },
-      ],
-    }],
-    [{
-      tieuDe: { vi: 'Kết nối', en: 'Connect' },
-      muc: [
-        { ten: { vi: 'Liên hệ', en: 'Contact' }, mo: { vi: 'Để lại email, đội MIMI trả lời', en: 'Leave your email, the team replies' }, href: '#dang-ky' },
-      ],
-    }],
-  ],
-  noiBat: {
-    kieu: 'meo',
-    tieuDe: { vi: 'Câu chuyện của MIMI', en: 'The story of MIMI' },
-    mo: { vi: 'Trợ lý kế toán cho hộ kinh doanh và doanh nghiệp nhỏ Việt Nam.', en: 'An accounting assistant for Vietnamese small businesses.' },
-    href: '/about',
-  },
-};
-
-export const CAC_MENU: CauHinhMenu[] = [MENU_SAN_PHAM, MENU_GIAI_PHAP, MENU_DOI_TAC, MENU_TAI_NGUYEN, MENU_VE_CHUNG_TOI];
+export const CAC_MENU: CauHinhMenu[] = [MENU_SAN_PHAM, MENU_GIAI_PHAP, MENU_DOI_TAC, MENU_TAI_NGUYEN];
 
 export const ngonNguMenu = (lang: string): NgonNgu => (lang.startsWith('en') ? 'en' : 'vi');
 

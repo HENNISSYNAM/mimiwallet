@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-cat.png';
 import { COMPANY, CONTACT, hasContact } from '@/config/company';
-import { Mail, Globe } from 'lucide-react';
+import { Facebook, Mail, Globe } from 'lucide-react';
 
 /**
  * Chân trang — danh tính pháp nhân, không phải trang trí.
@@ -86,6 +86,11 @@ export default function Footer() {
                 {CONTACT.email && (
                   <a href={`mailto:${CONTACT.email}`} className="inline-flex items-center gap-1.5 text-primary hover:underline">
                     <Mail className="w-3.5 h-3.5" /> {CONTACT.email}
+                  </a>
+                )}
+                {CONTACT.facebook && (
+                  <a href={CONTACT.facebook} target="_blank" rel="noopener noreferrer" aria-label="MIMI trên Facebook" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                    <Facebook className="w-3.5 h-3.5" /> Facebook
                   </a>
                 )}
                 {CONTACT.website && (

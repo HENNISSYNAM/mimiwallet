@@ -68,10 +68,12 @@ export const COMPANY = {
 export const CONTACT = {
   email: '',
   website: '',
+  /** Trang Facebook chính thức của MIMI (chủ dự án cung cấp 16/09/2026). */
+  facebook: 'https://www.facebook.com/profile.php?id=61593186898315',
 } as const;
 
 /** Đã điền đủ kênh liên hệ chưa — dùng để ẩn/hiện phần liên hệ. */
-export const hasContact = (): boolean => Boolean(CONTACT.email || CONTACT.website);
+export const hasContact = (): boolean => Boolean(CONTACT.email || CONTACT.website || CONTACT.facebook);
 
 /** Ngày ban hành/cập nhật gần nhất của bộ văn bản pháp lý trong ứng dụng. */
 export const LEGAL_UPDATED_ON = '19/08/2026';

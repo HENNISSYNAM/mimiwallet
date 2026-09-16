@@ -4,6 +4,7 @@ const en = {
     solutions: 'Solutions',
     features: 'Features',
     pricing: 'Pricing',
+    customers: 'Customers',
     about: 'About us',
     login: 'Sign In',
     startFree: 'Get Started Free →',

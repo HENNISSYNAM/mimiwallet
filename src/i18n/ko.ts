@@ -13,6 +13,7 @@ const ko = {
     solutions: '솔루션',
     features: '기능',
     pricing: '요금',
+    customers: '고객',
     about: '회사 소개',
     login: '로그인',
     startFree: '무료로 시작 →',

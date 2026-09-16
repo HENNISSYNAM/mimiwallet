@@ -651,6 +651,17 @@
   line-height: 1.625;
 }
 
+/* Dải logo "Đồng hành cùng MIMI": danh sách nhân đôi, chạy -50% rồi lặp. */
+.mimi-dai-logo-khung {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.mimi-dai-logo { animation: mimi-dai-logo 40s linear infinite; }
+.mimi-dai-logo-khung:hover .mimi-dai-logo { animation-play-state: paused; }
+@keyframes mimi-dai-logo { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .mimi-dai-logo { animation: none; }
+}
+
 /* Hide custom scrollbars for a cleaner Apple look */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

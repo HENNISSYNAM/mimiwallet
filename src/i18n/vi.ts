@@ -4,6 +4,7 @@ const vi = {
     solutions: 'Giải pháp',
     features: 'Tính năng',
     pricing: 'Bảng giá',
+    customers: 'Khách hàng',
     about: 'Về chúng tôi',
     login: 'Đăng nhập',
     startFree: 'Bắt đầu miễn phí →',

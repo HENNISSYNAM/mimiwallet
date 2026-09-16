@@ -71,16 +71,9 @@ describe('trang sản phẩm và giải pháp', () => {
   });
 });
 
-describe('menu Về chúng tôi', () => {
-  it('đứng cuối thanh, chỉ trỏ tới trang có route, mốc trang chủ có thật hoặc thư liên hệ', () => {
-    expect(CAC_MENU.at(-1)?.khoa).toBe('ve-chung-toi');
-    const menu = CAC_MENU.find((m) => m.khoa === 've-chung-toi')!;
-    const TRANG = ['/about', '/about?muc=doi-ngu', '/thuong-hieu'];
-    const MOC = ['#cong-nhan', '#dang-ky'];
-    const sai = menu.cot.flat().flatMap((n) => n.muc)
-      .map((m) => m.href)
-      .filter((h) => !TRANG.includes(h) && !MOC.includes(h) && !h.startsWith('mailto:'));
-    expect(sai).toEqual([]);
+describe('thanh điều hướng', () => {
+  it('chỉ có bốn menu xổ, không còn menu Về chúng tôi riêng', () => {
+    expect(CAC_MENU.map((m) => m.khoa)).toEqual(['san-pham', 'giai-phap', 'doi-tac', 'tai-nguyen']);
   });
 });
 

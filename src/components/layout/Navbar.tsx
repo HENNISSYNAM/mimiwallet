@@ -14,6 +14,8 @@ import { CAC_MENU, MenuDiDong, TamMenu, ngonNguMenu, type KhoaMenu } from '@/com
  * MenuXo.tsx); chỉ Bảng giá còn là liên kết thẳng.
  */
 const navLinks = [{ labelKey: 'nav.pricing', href: '#pricing' }];
+// Trang riêng (route), khác navLinks là mốc trên trang chủ.
+const navRoutes = [{ labelKey: 'nav.customers', to: '/khach-hang' }];
 
 // Kept apart from navLinks: those are in-page anchors, this is a route.
 
@@ -162,6 +164,11 @@ export default function Navbar() {
                 </div>
               );
             })}
+            {navRoutes.map((r) => (
+              <Link key={r.labelKey} to={r.to} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                {t(r.labelKey)}
+              </Link>
+            ))}
             {navLinks.map((l) => (
               <a
                 key={l.labelKey}
@@ -253,6 +260,11 @@ export default function Navbar() {
             </button>
             {CAC_MENU.map((m) => (
               <MenuDiDong key={m.khoa} cauHinh={m} lang={i18n.language} anchor={anchor} dong={() => setMobileOpen(false)} />
+            ))}
+            {navRoutes.map((r) => (
+              <Link key={r.labelKey} to={r.to} className="text-2xl font-display font-bold text-foreground" onClick={() => setMobileOpen(false)}>
+                {t(r.labelKey)}
+              </Link>
             ))}
             {navLinks.map((l) => (
               <a
