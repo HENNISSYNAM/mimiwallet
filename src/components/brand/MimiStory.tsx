@@ -311,7 +311,7 @@ export default function MimiStory() {
         </div>
 
         <div className="mt-8 lg:mt-16 max-w-2xl">
-          <p className="font-display text-xl font-extrabold leading-snug tracking-[-0.02em] text-foreground sm:text-3xl">
+          <p className="font-serif text-2xl font-normal leading-snug tracking-[-0.015em] text-foreground sm:text-4xl">
             MIMI không đưa con người đến tương lai.
             <br />
             <span className="text-mimi-green">MIMI giúp tương lai đến gần con người hơn.</span>

@@ -629,28 +629,26 @@
   text-transform: uppercase;
 }
 .mimi-tieu-de-trang {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.08;
-  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  /* Cùng giọng với tiêu đề trang sản phẩm và trang chủ: Playfair nét thường. */
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-size: clamp(2.4rem, 5vw, 4rem);
   text-wrap: balance;
 }
 .mimi-tieu-de-muc {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
-  font-size: clamp(1.9rem, 3.2vw, 2.75rem);
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  font-size: clamp(2rem, 4.2vw, 3.25rem);
   text-wrap: balance;
 }
 .mimi-doan-dan {
   font-family: var(--font-body);
-  font-size: 1.0625rem;
-  line-height: 1.7;
-}
-@media (min-width: 640px) {
-  .mimi-doan-dan { font-size: 1.125rem; }
+  font-size: 1.125rem;
+  line-height: 1.625;
 }
 
 /* Hide custom scrollbars for a cleaner Apple look */
