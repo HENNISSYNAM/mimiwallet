@@ -131,11 +131,41 @@ export interface PhanTichNhanh {
   };
 }
 
+/**
+ * Phần thuế của màn đầu — nền cho cá nhân hoá.
+ *
+ * `co_ho_so` false nghĩa là người dùng chưa trả lời khảo sát đầu vào (tư cách nộp thuế, ngành),
+ * nên màn đầu hỏi trước khi kết luận: ngành khác nhau thì mẫu tờ khai khác nhau.
+ */
+export interface ThueManDau {
+  co_ho_so: boolean;
+  ho_so: {
+    loai_nguoi_nop: 'ho_kinh_doanh' | 'doanh_nghiep' | null;
+    nhom_nganh: string[];
+    kenh: string | null;
+    phuong_phap_tncn: 'doanh_thu' | 'thu_nhap' | null;
+    bat_dau_kinh_doanh: string | null;
+    da_nop_thue_trong_nam: boolean | null;
+    nganh_dac_thu: string | null;
+    doanh_thu_nam_truoc: number | null;
+    co_quan_he_lien_ket: boolean | null;
+  };
+  nam: number;
+  doanh_thu_nam: number | null;
+  nguon_doanh_thu: 'hoa_don_dien_tu' | 'ngan_hang' | 'tu_khai' | null;
+  tam_tinh: boolean;
+  quy_vuot: number | null;
+  nghia_vu: { id: string; cau: string; mau: string | null; han: string | null }[];
+  thieu: { truong: string; cau: string }[];
+}
+
 export interface BoiCanh {
   cong_ty: string | null;
   viec: ViecHomNay[];
   ket_noi: KetNoiHienThi[];
   phan_tich: PhanTichNhanh;
+  /** null khi chưa đọc được hồ sơ thuế (lỗi đọc, không phải "chưa có hồ sơ"). */
+  thue: ThueManDau | null;
   /** Có mô hình hiểu câu tự do và đọc ảnh chứng từ hay không. */
   co_mo_hinh: boolean;
 }

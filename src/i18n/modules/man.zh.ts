@@ -111,6 +111,52 @@ const m = {
         xemCa: '查看全部 {{so}} 笔',
       },
     },
+
+    khaoSat: {
+      buoc: '第 {{so}}/{{tong}} 题',
+      deSau: '以后再说',
+      quayLai: '返回',
+      dangLuu: '正在保存…',
+      loiLuu: '没能保存你的回答，请再试一次。',
+      viSao: '行业和销售方式决定你要填哪种申报表。MIMI 用你的回答填对表格、为你挑选工具，随时可以修改。',
+      q: {
+        loai: { hoi: '你以什么身份纳税？', goiY: '个体户和企业适用不同的规定。' },
+        nganh: { hoi: '你主要做哪一类生意？', goiY: '每一类都有自己的税率和申报表上的行。' },
+        kenh: { hoi: '你在哪里销售？', goiY: '带支付功能的电商平台会代扣代缴并代为申报。' },
+        dacThu: { hoi: '你有以下哪种业务吗？', goiY: '这些业务使用单独的申报表。' },
+      },
+      loai: { ho_kinh_doanh: '个体户 / 个人经营者', doanh_nghiep: '企业' },
+      nganh: {
+        phan_phoi_hang_hoa: '商品批发、零售',
+        dich_vu: '服务、咨询、不包料的建筑',
+        cho_thue_tai_san: '资产出租（车辆、机器等）',
+        san_xuat_van_tai: '生产、运输、餐饮',
+        noi_dung_so: '数字内容、软件、数字广告',
+        khac: '其他业务',
+      },
+      kenh: {
+        dia_diem_co_dinh: '门店或固定经营场所',
+        tmdt_khong_thanh_toan: '没有支付功能的社交媒体或网站',
+        tmdt_co_thanh_toan: '带支付功能的电商平台',
+      },
+      dacThu: {
+        khong: '都没有',
+        cho_thue_bat_dong_san: '出租房屋、土地、铺面',
+        dai_ly_xo_so_bao_hiem_da_cap: '彩票、保险、多层次直销代理',
+        hang_thue_khac: '属于消费税、资源税或环保税征税范围的商品',
+      },
+      the: {
+        tieuDe: '你的 {{nam}} 年税务',
+        doanhThuTamTinh: '截至目前营业额：{{tien}}',
+        doanhThuCaNam: '全年营业额：{{tien}}',
+        chuaCoDoanhThu: '还没有营业额 —— 连接税务机关或银行，MIMI 才能计算。',
+        mau: '表 {{mau}}',
+        han: '截止 {{ngay}}',
+        soanToKhai: '填写申报表',
+        suaCauTraLoi: '修改回答',
+        canBoSung: 'MIMI 还需要一项信息',
+      },
+    },
   },
 };
 

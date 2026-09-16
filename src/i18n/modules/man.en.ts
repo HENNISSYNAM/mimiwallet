@@ -111,6 +111,52 @@ const m = {
         xemCa: 'See all {{so}} requests',
       },
     },
+
+    khaoSat: {
+      buoc: 'Question {{so}} of {{tong}}',
+      deSau: 'Later',
+      quayLai: 'Back',
+      dangLuu: 'Saving…',
+      loiLuu: 'Could not save your answers. Try again.',
+      viSao: 'Your line of business and where you sell decide which tax form you file. MIMI uses your answers to fill the right form and pick your tools; you can change them any time.',
+      q: {
+        loai: { hoi: 'How do you pay tax?', goiY: 'Household businesses and companies follow different rules.' },
+        nganh: { hoi: 'What is your main line of business?', goiY: 'Each group has its own tax rate and its own line on the form.' },
+        kenh: { hoi: 'Where do you sell?', goiY: 'Marketplaces that take payment withhold and file tax on your behalf.' },
+        dacThu: { hoi: 'Do you do any of the following?', goiY: 'These activities use a separate tax form.' },
+      },
+      loai: { ho_kinh_doanh: 'Household or individual business', doanh_nghiep: 'Company' },
+      nganh: {
+        phan_phoi_hang_hoa: 'Wholesale and retail of goods',
+        dich_vu: 'Services, consulting, construction without materials',
+        cho_thue_tai_san: 'Renting out assets (vehicles, machinery…)',
+        san_xuat_van_tai: 'Manufacturing, transport, food and drink',
+        noi_dung_so: 'Digital content, software, digital advertising',
+        khac: 'Other activities',
+      },
+      kenh: {
+        dia_diem_co_dinh: 'A shop or fixed location',
+        tmdt_khong_thanh_toan: 'Social media or a website without checkout',
+        tmdt_co_thanh_toan: 'An online marketplace with checkout',
+      },
+      dacThu: {
+        khong: 'None of these',
+        cho_thue_bat_dong_san: 'Renting out a house, land or premises',
+        dai_ly_xo_so_bao_hiem_da_cap: 'Lottery, insurance or multi-level sales agent',
+        hang_thue_khac: 'Goods subject to excise, resource or environmental tax',
+      },
+      the: {
+        tieuDe: 'Your tax for {{nam}}',
+        doanhThuTamTinh: 'Revenue so far: {{tien}}',
+        doanhThuCaNam: 'Revenue for the year: {{tien}}',
+        chuaCoDoanhThu: 'No revenue yet — connect the tax authority or your bank so MIMI can calculate.',
+        mau: 'Form {{mau}}',
+        han: 'Due {{ngay}}',
+        soanToKhai: 'Prepare the form',
+        suaCauTraLoi: 'Edit answers',
+        canBoSung: 'MIMI needs one more thing',
+      },
+    },
   },
 };
 

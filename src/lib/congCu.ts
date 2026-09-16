@@ -79,3 +79,35 @@ export function timCongCu(tuKhoa: string, ds: CongCu[] = DANH_MUC_CONG_CU): Cong
 export function duongDanCongCu(c: CongCu): string {
   return c.loai === 'trang' ? c.dich : `/dashboard/tro-ly?hoi=${encodeURIComponent(c.dich)}`;
 }
+
+/**
+ * Công cụ gợi ý theo khảo sát đầu vào — cùng cách chia với các giải pháp trên trang chủ
+ * (theo quy mô, theo ngành), chỉ khác là ở đây chọn từ công cụ đã chạy thật.
+ *
+ *   Hộ kinh doanh          → chứng từ chi phí, soạn tờ khai (ai cũng cần)
+ *   Bán trên nền tảng số   → liên kết ngân hàng (thu tiền, tự khớp khi tiền về)
+ *   Phần mềm & AI          → chi phí AI, model rẻ hơn
+ *   Dịch vụ chuyên môn     → hoá đơn bán ra, khách hàng
+ *   Bán lẻ, sản xuất       → báo cáo thu chi
+ *   Doanh nghiệp           → chính sách chi, kiểm soát agent
+ *
+ * Chỉ áp khi người dùng chưa tự chọn công cụ nào — không ghi đè lựa chọn của họ.
+ */
+export function congCuGoiY(h: {
+  loai_nguoi_nop: string | null;
+  nhom_nganh: string[];
+  kenh: string | null;
+  nganh_dac_thu: string | null;
+}): string[] {
+  const ds = ['soan_to_khai', 'thieu_chung_tu'];
+  if (h.kenh === 'tmdt_co_thanh_toan' || h.kenh === 'tmdt_khong_thanh_toan') ds.push('lien_ket_ngan_hang');
+  for (const n of h.nhom_nganh) {
+    if (n === 'noi_dung_so') ds.push('chi_phi_ai', 'model_re_hon');
+    if (n === 'dich_vu') ds.push('hoa_don_ban', 'khach_hang');
+    if (n === 'cho_thue_tai_san') ds.push('hoa_don_ban');
+    if (n === 'phan_phoi_hang_hoa' || n === 'san_xuat_van_tai' || n === 'khac') ds.push('bao_cao');
+  }
+  if (h.nganh_dac_thu === 'cho_thue_bat_dong_san') ds.push('hoa_don_ban');
+  if (h.loai_nguoi_nop === 'doanh_nghiep') ds.push('chinh_sach_chi', 'kiem_soat_agent');
+  return [...new Set(ds)].filter((k) => CONG_CU_THEO_KHOA[k]).slice(0, 6);
+}

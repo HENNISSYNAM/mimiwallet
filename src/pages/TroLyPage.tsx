@@ -6,7 +6,7 @@ import { IconCongCu } from '@/components/cong-cu/IconCongCu';
 import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import {
   AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2,
-  Monitor, Plus, Puzzle, RotateCcw, X,
+  Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, X,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
@@ -25,7 +25,7 @@ import { goiChiPhiAi } from '@/lib/goiChiPhiAi';
 import {
   canXacNhan, dinhDang, dinhTien, GOI_Y_THEO_NHOM, laCotSo, NHOM_NANG_LUC, TEN_NHOM, thucHienDeXuat,
   type BoiCanh, type DeXuat, type KetNoiHienThi, type KetQuaNangLuc, type KetQuaQuet, type NhomNangLuc, type PhanTichNhanh,
-  type The, type TraLoi,
+  type The, type ThueManDau, type TraLoi,
 } from '@/lib/troLy';
 import claudeLogo from '@/assets/logos/claude.webp';
 import geminiLogo from '@/assets/logos/gemini.png';
@@ -45,6 +45,8 @@ import thueLogo from '@/assets/logos/tax-authority.png';
  */
 
 import { TRANG_CHI_TIET } from '@/lib/trangChiTiet';
+import { daHoanKhaoSatTrongPhien, KhaoSatThue } from '@/components/onboarding/KhaoSatThue';
+import type { HoSoThue } from '@/lib/heLuat';
 
 /** Việc đã có thẻ riêng ở màn đầu thì không lặp lại thành chip. */
 const VIEC_DA_CO_THE = new Set(['cho_duyet', 'ngan_sach_ai']);
@@ -93,6 +95,7 @@ export default function TroLyPage() {
   const [moTaiApp, setMoTaiApp] = useState(false);
   const [moNhom, setMoNhom] = useState(false);
   const [timKetNoi, setTimKetNoi] = useState('');
+  const [suaKhaoSat, setSuaKhaoSat] = useState(false);
   const congCu = useCongCuGhim();
   const [thamSo, datThamSo] = useSearchParams();
   const daHoiTuDuongDan = useRef(false);
@@ -365,6 +368,23 @@ export default function TroLyPage() {
       {/* Màn đầu: MIMI vừa phân tích cho bạn */}
       {!coHoiThoai && (
         <div className="mx-auto mt-8 max-w-5xl">
+          {/*
+            Cá nhân hoá từ khảo sát đầu vào: chưa trả lời thì hỏi (ngành quyết định mẫu tờ khai),
+            trả lời rồi thì nói đúng nghĩa vụ thuế của người này.
+          */}
+          {boiCanh?.thue && ((!boiCanh.thue.co_ho_so && !daHoanKhaoSatTrongPhien()) || suaKhaoSat) && (
+            <div className="mb-6">
+              <KhaoSatThue
+                hoSo={boiCanh.thue.ho_so as HoSoThue}
+                onXong={() => { setSuaKhaoSat(false); void taiBoiCanh(); }}
+              />
+            </div>
+          )}
+          {boiCanh?.thue?.co_ho_so && !suaKhaoSat && (
+            <div className="mb-6">
+              <TheThueCuaBan thue={boiCanh.thue} onSua={() => setSuaKhaoSat(true)} />
+            </div>
+          )}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-foreground">{t('man.troLy.vuaPhanTich')}</h2>
             <button
@@ -654,6 +674,67 @@ function TheCanXacNhan({ p, viec, onDuyet }: {
           {t('man.troLy.the.xemCa', { so: p.so_khoan })} <ArrowRight size={14} />
         </Link>
       )}
+    </section>
+  );
+}
+
+/** Thẻ thuế cá nhân hoá — dựng từ khảo sát đầu vào và doanh thu thật. */
+function TheThueCuaBan({ thue, onSua }: { thue: ThueManDau; onSua: () => void }) {
+  const { t } = useTranslation();
+  const h = thue.ho_so;
+  const moTa = [
+    h.loai_nguoi_nop ? t(`man.khaoSat.loai.${h.loai_nguoi_nop}`) : null,
+    ...h.nhom_nganh.map((n) => t(`man.khaoSat.nganh.${n}`)),
+    h.kenh ? t(`man.khaoSat.kenh.${h.kenh}`) : null,
+    h.nganh_dac_thu && h.nganh_dac_thu !== 'khong' ? t(`man.khaoSat.dacThu.${h.nganh_dac_thu}`) : null,
+  ].filter(Boolean).join(' · ');
+
+  return (
+    <section aria-labelledby="the-thue-cua-ban" className="rounded-2xl border border-border bg-card p-5 text-left">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 id="the-thue-cua-ban" className="flex items-center gap-2 text-base font-semibold text-foreground">
+            <ScrollText size={17} className="text-primary" aria-hidden /> {t('man.khaoSat.the.tieuDe', { nam: thue.nam })}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">{moTa}</p>
+        </div>
+        <button type="button" onClick={onSua} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <Pencil size={13} aria-hidden /> {t('man.khaoSat.the.suaCauTraLoi')}
+        </button>
+      </div>
+
+      <p className="mt-3 text-sm text-foreground">
+        {thue.doanh_thu_nam === null
+          ? t('man.khaoSat.the.chuaCoDoanhThu')
+          : t(thue.tam_tinh ? 'man.khaoSat.the.doanhThuTamTinh' : 'man.khaoSat.the.doanhThuCaNam', { tien: dinhDang(thue.doanh_thu_nam, 'vnd') })}
+      </p>
+
+      {thue.nghia_vu.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {thue.nghia_vu.map((n) => (
+            <li key={n.id} className="rounded-xl bg-accent/60 px-3 py-2">
+              <p className="text-sm text-foreground">{n.cau}</p>
+              {(n.mau || n.han) && (
+                <p className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  {n.mau && <span className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">{t('man.khaoSat.the.mau', { mau: n.mau })}</span>}
+                  {n.han && <span className="rounded-full bg-card px-2 py-0.5">{t('man.khaoSat.the.han', { ngay: dinhDang(n.han, 'ngay') })}</span>}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {thue.thieu.length > 0 && (
+        <p className="mt-3 flex gap-2 text-sm text-mimi-amber">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden />
+          <span><span className="font-medium">{t('man.khaoSat.the.canBoSung')}:</span> {thue.thieu[0].cau}</span>
+        </p>
+      )}
+
+      <Link to="/dashboard/to-khai" className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110">
+        <ScrollText size={15} /> {t('man.khaoSat.the.soanToKhai')}
+      </Link>
     </section>
   );
 }

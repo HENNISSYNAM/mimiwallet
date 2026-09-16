@@ -122,6 +122,52 @@ const m = {
         xemCa: 'Xem cả {{so}} khoản',
       },
     },
+
+    khaoSat: {
+      buoc: 'Câu {{so}}/{{tong}}',
+      deSau: 'Để sau',
+      quayLai: 'Quay lại',
+      dangLuu: 'Đang lưu…',
+      loiLuu: 'Chưa lưu được câu trả lời. Thử lại.',
+      viSao: 'Ngành và cách bán quyết định bạn khai mẫu tờ khai nào. MIMI dùng câu trả lời để soạn đúng mẫu và chọn công cụ cho bạn; sửa lại được bất cứ lúc nào.',
+      q: {
+        loai: { hoi: 'Bạn nộp thuế với tư cách nào?', goiY: 'Hộ kinh doanh và doanh nghiệp theo hai bộ quy định khác nhau.' },
+        nganh: { hoi: 'Bạn kinh doanh chủ yếu nhóm ngành nào?', goiY: 'Mỗi nhóm có tỷ lệ thuế và dòng riêng trên tờ khai.' },
+        kenh: { hoi: 'Bạn bán hàng ở đâu?', goiY: 'Sàn có chức năng thanh toán sẽ khấu trừ và khai thuế thay bạn.' },
+        dacThu: { hoi: 'Bạn có hoạt động nào dưới đây không?', goiY: 'Những hoạt động này dùng mẫu tờ khai riêng.' },
+      },
+      loai: { ho_kinh_doanh: 'Hộ kinh doanh / cá nhân kinh doanh', doanh_nghiep: 'Doanh nghiệp' },
+      nganh: {
+        phan_phoi_hang_hoa: 'Bán buôn, bán lẻ hàng hoá',
+        dich_vu: 'Dịch vụ, tư vấn, xây dựng không kèm vật tư',
+        cho_thue_tai_san: 'Cho thuê tài sản (xe, máy móc…)',
+        san_xuat_van_tai: 'Sản xuất, vận tải, ăn uống',
+        noi_dung_so: 'Nội dung số, phần mềm, quảng cáo số',
+        khac: 'Hoạt động khác',
+      },
+      kenh: {
+        dia_diem_co_dinh: 'Cửa hàng, địa điểm cố định',
+        tmdt_khong_thanh_toan: 'Mạng xã hội, website không có thanh toán',
+        tmdt_co_thanh_toan: 'Sàn thương mại điện tử có thanh toán',
+      },
+      dacThu: {
+        khong: 'Không có',
+        cho_thue_bat_dong_san: 'Cho thuê nhà, đất, mặt bằng',
+        dai_ly_xo_so_bao_hiem_da_cap: 'Đại lý xổ số, bảo hiểm, bán hàng đa cấp',
+        hang_thue_khac: 'Hàng chịu thuế tiêu thụ đặc biệt, tài nguyên, bảo vệ môi trường',
+      },
+      the: {
+        tieuDe: 'Thuế của bạn năm {{nam}}',
+        doanhThuTamTinh: 'Doanh thu tới nay: {{tien}}',
+        doanhThuCaNam: 'Doanh thu cả năm: {{tien}}',
+        chuaCoDoanhThu: 'Chưa có doanh thu — kết nối Tổng cục Thuế hoặc ngân hàng để MIMI tính.',
+        mau: 'Mẫu {{mau}}',
+        han: 'Hạn {{ngay}}',
+        soanToKhai: 'Soạn tờ khai',
+        suaCauTraLoi: 'Sửa câu trả lời',
+        canBoSung: 'MIMI cần thêm một điều',
+      },
+    },
   },
 };
 

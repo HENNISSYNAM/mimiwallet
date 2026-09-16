@@ -111,6 +111,52 @@ const m = {
         xemCa: '{{so}}건 모두 보기',
       },
     },
+
+    khaoSat: {
+      buoc: '질문 {{so}}/{{tong}}',
+      deSau: '나중에',
+      quayLai: '뒤로',
+      dangLuu: '저장 중…',
+      loiLuu: '답변을 저장하지 못했습니다. 다시 시도하세요.',
+      viSao: '업종과 판매 방식에 따라 제출할 신고서 양식이 달라집니다. MIMI는 답변으로 알맞은 양식을 작성하고 도구를 골라 드리며, 언제든 수정할 수 있습니다.',
+      q: {
+        loai: { hoi: '어떤 자격으로 세금을 내시나요?', goiY: '가계사업자와 기업은 적용 규정이 다릅니다.' },
+        nganh: { hoi: '주된 업종은 무엇인가요?', goiY: '업종마다 세율과 신고서의 행이 다릅니다.' },
+        kenh: { hoi: '어디에서 판매하시나요?', goiY: '결제 기능이 있는 마켓플레이스는 세금을 원천징수하고 대신 신고합니다.' },
+        dacThu: { hoi: '다음 중 해당하는 활동이 있나요?', goiY: '이 활동들은 별도의 신고서 양식을 사용합니다.' },
+      },
+      loai: { ho_kinh_doanh: '가계사업자 / 개인사업자', doanh_nghiep: '기업' },
+      nganh: {
+        phan_phoi_hang_hoa: '상품 도소매',
+        dich_vu: '서비스, 컨설팅, 자재 미포함 건설',
+        cho_thue_tai_san: '자산 임대(차량, 기계 등)',
+        san_xuat_van_tai: '제조, 운송, 요식업',
+        noi_dung_so: '디지털 콘텐츠, 소프트웨어, 디지털 광고',
+        khac: '기타 활동',
+      },
+      kenh: {
+        dia_diem_co_dinh: '매장 또는 고정 사업장',
+        tmdt_khong_thanh_toan: '결제 기능이 없는 SNS나 웹사이트',
+        tmdt_co_thanh_toan: '결제 기능이 있는 온라인 마켓플레이스',
+      },
+      dacThu: {
+        khong: '해당 없음',
+        cho_thue_bat_dong_san: '주택, 토지, 점포 임대',
+        dai_ly_xo_so_bao_hiem_da_cap: '복권, 보험, 다단계 판매 대리점',
+        hang_thue_khac: '특별소비세, 자원세, 환경보호세 대상 상품',
+      },
+      the: {
+        tieuDe: '{{nam}}년 세금',
+        doanhThuTamTinh: '현재까지 매출: {{tien}}',
+        doanhThuCaNam: '연간 매출: {{tien}}',
+        chuaCoDoanhThu: '매출 데이터가 없습니다 — 세무당국이나 은행을 연결하면 MIMI가 계산합니다.',
+        mau: '양식 {{mau}}',
+        han: '기한 {{ngay}}',
+        soanToKhai: '신고서 작성',
+        suaCauTraLoi: '답변 수정',
+        canBoSung: 'MIMI에게 한 가지가 더 필요합니다',
+      },
+    },
   },
 };
 

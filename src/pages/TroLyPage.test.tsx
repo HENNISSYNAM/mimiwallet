@@ -12,10 +12,11 @@ import type { BoiCanh, TraLoi } from '@/lib/troLy';
 class RO { observe() {} unobserve() {} disconnect() {} }
 (globalThis as unknown as { ResizeObserver?: unknown }).ResizeObserver ??= RO;
 
-const gia = vi.hoisted(() => ({ troLy: vi.fn(), tacTu: vi.fn(), chiPhiAi: vi.fn(), saoKe: vi.fn() }));
+const gia = vi.hoisted(() => ({ troLy: vi.fn(), tacTu: vi.fn(), chiPhiAi: vi.fn(), saoKe: vi.fn(), toKhai: vi.fn(), datLai: vi.fn() }));
 vi.mock('@/lib/goiTroLy', () => ({ goiTroLy: gia.troLy, dongBoSaoKe: gia.saoKe }));
 vi.mock('@/lib/goiTacTu', () => ({ goiTacTu: gia.tacTu }));
 vi.mock('@/lib/goiChiPhiAi', () => ({ goiChiPhiAi: gia.chiPhiAi }));
+vi.mock('@/lib/goiToKhai', () => ({ goiToKhai: gia.toKhai, DUONG_DAN_NOP_TO_KHAI: 'https://dichvucong.gdt.gov.vn/tthc/homelogin' }));
 // Canvas và ảnh động không chạy trong jsdom; cả hai chỉ trang trí.
 vi.mock('@/components/tro-ly/NenVongHat', () => ({ NenVongHat: () => <canvas aria-hidden="true" data-testid="nen" /> }));
 vi.mock('@/components/brand/MimiCat', () => ({ default: () => <span /> }));
@@ -24,7 +25,7 @@ vi.mock('@/hooks/useCongCuGhim', async () => {
   return {
     useCongCuGhim: () => ({
       ds: CONG_CU_MAC_DINH.map((k) => CONG_CU_THEO_KHOA[k]), laMacDinh: true, daTai: true,
-      ghim: vi.fn(), boGhim: vi.fn(), dangLuu: false, loi: null,
+      ghim: vi.fn(), boGhim: vi.fn(), datLai: gia.datLai, dangLuu: false, loi: null,
     }),
   };
 });
@@ -35,6 +36,7 @@ const DUYET_Y1 = { khoa: 'duyet:y1', loai: 'duyet_yeu_cau' as const, nhan: 'Duy�
 const BOI_CANH: BoiCanh = {
   cong_ty: 'Công ty Thử',
   co_mo_hinh: false,
+  thue: null,
   viec: [
     { khoa: 'cho_duyet', nhom: 'tro_ly', cau: '1 khoản chi đang chờ bạn duyệt, tổng 2.000.000 ₫', hoi: 'Khoản nào đang chờ tôi duyệt?', muc_do: 'can_chu_y' },
     { khoa: 'qua_han', nhom: 'chung_tu', cau: '2 hoá đơn bán ra quá hạn, tổng 9.000.000 ₫', hoi: 'Khách nào đang nợ quá hạn?', muc_do: 'can_chu_y' },
@@ -91,6 +93,8 @@ const hoiBangTay = (cau: string) => {
 };
 
 beforeEach(() => {
+  gia.toKhai.mockReset();
+  gia.datLai.mockReset();
   gia.troLy.mockReset();
   gia.tacTu.mockReset();
   gia.troLy.mockImplementation(async (hanhDong: string) => (hanhDong === 'boi_canh' ? BOI_CANH : TRA_LOI));
@@ -218,5 +222,76 @@ describe('MIMI Assistant — hỏi đáp', () => {
     expect(await screen.findByRole('table')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Cuộc hỏi mới/ }));
     expect(await screen.findByRole('region', { name: 'Chi phí AI tháng này' })).toBeTruthy();
+  });
+});
+
+const HO_SO_TRONG = {
+  loai_nguoi_nop: null, nhom_nganh: [], kenh: null, phuong_phap_tncn: null, bat_dau_kinh_doanh: null,
+  da_nop_thue_trong_nam: null, nganh_dac_thu: null, doanh_thu_nam_truoc: null, co_quan_he_lien_ket: null,
+};
+
+describe('MIMI Assistant — khảo sát đầu vào và thuế cá nhân hoá', () => {
+  it('chưa có hồ sơ: hỏi bốn câu, lưu qua backend, chọn công cụ theo ngành, rồi đọc lại màn đầu', async () => {
+    gia.toKhai.mockResolvedValue({ ok: true });
+    gia.datLai.mockResolvedValue(true);
+    gia.troLy.mockImplementation(async (hanhDong: string) => (hanhDong === 'boi_canh'
+      ? { ...BOI_CANH, thue: { co_ho_so: false, ho_so: HO_SO_TRONG, nam: 2026, doanh_thu_nam: null, nguon_doanh_thu: null, tam_tinh: true, quy_vuot: null, nghia_vu: [], thieu: [] } }
+      : TRA_LOI));
+    dung();
+    expect(await screen.findByRole('heading', { name: 'Bạn nộp thuế với tư cách nào?' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Hộ kinh doanh / cá nhân kinh doanh' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dịch vụ, tư vấn, xây dựng không kèm vật tư' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Sàn thương mại điện tử có thanh toán' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cho thuê nhà, đất, mặt bằng' }));
+
+    await waitFor(() => expect(gia.toKhai).toHaveBeenCalledWith('luu_ho_so', {
+      ho_so: expect.objectContaining({
+        loai_nguoi_nop: 'ho_kinh_doanh', nhom_nganh: ['dich_vu'], kenh: 'tmdt_co_thanh_toan', nganh_dac_thu: 'cho_thue_bat_dong_san',
+      }),
+    }));
+    // Người dùng chưa tự chọn công cụ nên MIMI chọn theo ngành.
+    expect(gia.datLai).toHaveBeenCalledWith(['soan_to_khai', 'thieu_chung_tu', 'lien_ket_ngan_hang', 'hoa_don_ban', 'khach_hang']);
+    await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBeGreaterThanOrEqual(2));
+  });
+
+  it('doanh nghiệp chỉ hỏi hai câu', async () => {
+    gia.toKhai.mockResolvedValue({ ok: true });
+    gia.datLai.mockResolvedValue(true);
+    gia.troLy.mockImplementation(async (hanhDong: string) => (hanhDong === 'boi_canh'
+      ? { ...BOI_CANH, thue: { co_ho_so: false, ho_so: HO_SO_TRONG, nam: 2026, doanh_thu_nam: null, nguon_doanh_thu: null, tam_tinh: true, quy_vuot: null, nghia_vu: [], thieu: [] } }
+      : TRA_LOI));
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: 'Doanh nghiệp' }));
+    expect(screen.getByText('Câu 2/2')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Nội dung số, phần mềm, quảng cáo số' }));
+    await waitFor(() => expect(gia.toKhai).toHaveBeenCalledWith('luu_ho_so', {
+      ho_so: expect.objectContaining({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['noi_dung_so'] }),
+    }));
+  });
+
+  it('đã có hồ sơ: thẻ thuế nói đúng nghĩa vụ, mẫu, hạn và dẫn sang Tờ khai', async () => {
+    gia.troLy.mockImplementation(async (hanhDong: string) => (hanhDong === 'boi_canh'
+      ? {
+        ...BOI_CANH,
+        thue: {
+          co_ho_so: true,
+          ho_so: { ...HO_SO_TRONG, loai_nguoi_nop: 'ho_kinh_doanh', nhom_nganh: ['dich_vu'], kenh: 'dia_diem_co_dinh', nganh_dac_thu: 'khong' },
+          nam: 2026, doanh_thu_nam: 600_000_000, nguon_doanh_thu: 'hoa_don_dien_tu', tam_tinh: true, quy_vuot: null,
+          nghia_vu: [{ id: 'thong_bao_doanh_thu', cau: 'Thông báo doanh thu thực tế năm 2026 với cơ quan thuế.', mau: '01/TKN-CNKD', han: '2027-01-31' }],
+          thieu: [],
+        },
+      }
+      : TRA_LOI));
+    dung();
+    const the = await screen.findByRole('region', { name: /Thuế của bạn năm 2026/ });
+    expect(the.textContent).toContain('Hộ kinh doanh / cá nhân kinh doanh · Dịch vụ, tư vấn, xây dựng không kèm vật tư · Cửa hàng, địa điểm cố định');
+    expect(the.textContent).toContain('Doanh thu tới nay: 600.000.000 ₫');
+    expect(the.textContent).toContain('Mẫu 01/TKN-CNKD');
+    expect(the.textContent).toContain('Hạn 31/01/2027');
+    expect(within(the).getByRole('link', { name: /Soạn tờ khai/ }).getAttribute('href')).toBe('/dashboard/to-khai');
+    // Không hỏi lại khảo sát khi đã có hồ sơ.
+    expect(screen.queryByRole('heading', { name: 'Bạn nộp thuế với tư cách nào?' })).toBeNull();
+    fireEvent.click(within(the).getByRole('button', { name: /Sửa câu trả lời/ }));
+    expect(await screen.findByRole('heading', { name: 'Bạn nộp thuế với tư cách nào?' })).toBeTruthy();
   });
 });

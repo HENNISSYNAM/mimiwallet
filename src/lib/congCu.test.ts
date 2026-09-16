@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONG_CU_MAC_DINH, CONG_CU_THEO_KHOA, DANH_MUC_CONG_CU, duongDanCongCu, SO_CONG_CU_TOI_DA, timCongCu } from './congCu';
+import { congCuGoiY, CONG_CU_MAC_DINH, CONG_CU_THEO_KHOA, DANH_MUC_CONG_CU, duongDanCongCu, SO_CONG_CU_TOI_DA, timCongCu } from './congCu';
 import { nhanYDinh } from '../../supabase/functions/_shared/tro-ly/y-dinh';
 
 const TRANG_CO_THAT = new Set([
@@ -46,5 +46,15 @@ describe('danh mục công cụ', () => {
   it('không công cụ nào trùng mục chính của thanh điều hướng', () => {
     const mucChinh = ['/dashboard/tro-ly', '/dashboard/thu-vien', '/dashboard/nhac-thue', '/dashboard/ket-noi', '/dashboard'];
     expect(DANH_MUC_CONG_CU.filter((c) => c.loai === 'trang' && mucChinh.includes(c.dich))).toEqual([]);
+  });
+
+  it('gợi ý công cụ theo khảo sát: đúng ngành, chỉ công cụ có thật, tối đa 6', () => {
+    const ho = congCuGoiY({ loai_nguoi_nop: 'ho_kinh_doanh', nhom_nganh: ['noi_dung_so'], kenh: 'tmdt_khong_thanh_toan', nganh_dac_thu: 'khong' });
+    expect(ho).toEqual(['soan_to_khai', 'thieu_chung_tu', 'lien_ket_ngan_hang', 'chi_phi_ai', 'model_re_hon']);
+    const dn = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['dich_vu'], kenh: null, nganh_dac_thu: null });
+    expect(dn).toEqual(['soan_to_khai', 'thieu_chung_tu', 'hoa_don_ban', 'khach_hang', 'chinh_sach_chi', 'kiem_soat_agent']);
+    const nhieu = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['noi_dung_so', 'dich_vu', 'khac'], kenh: 'tmdt_co_thanh_toan', nganh_dac_thu: 'cho_thue_bat_dong_san' });
+    expect(nhieu.length).toBe(6);
+    for (const k of nhieu) expect(CONG_CU_THEO_KHOA[k], k).toBeTruthy();
   });
 });

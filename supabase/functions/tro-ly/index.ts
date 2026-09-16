@@ -37,7 +37,7 @@ import {
   type NguonCan,
 } from "../_shared/tro-ly/tinh-toan.ts";
 import { khoangNgayKyKeKhai, kyKeKhaiKeTiep, lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
-import { CAN_CU } from "../_shared/luat/he-luat.ts";
+import { CAN_CU, suyLuan } from "../_shared/luat/he-luat.ts";
 import { kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
@@ -225,7 +225,38 @@ async function docDuLieu(
   return d;
 }
 
-// `boi_canh` (màn đầu) không cần hệ luật thuế: nó chỉ chạy khi người dùng hỏi về thuế.
+/**
+ * Khối thuế cho màn đầu: hồ sơ khảo sát lúc vào app + nghĩa vụ suy ra từ doanh thu thật.
+ *
+ * Đây là phần cá nhân hoá: ngành và kênh bán quyết định mẫu tờ khai, nên màn đầu nói đúng việc
+ * của người này, không nói chung chung. Không đối chiếu câu trích ở đây (nặng) — trang Tờ khai
+ * thuế mới làm việc đó; màn đầu chỉ dẫn sang.
+ */
+async function docThueManDau(db: Db, companyId: string, homNay: string) {
+  const nam = Number(homNay.slice(0, 4));
+  const [{ cong_ty, ho_so }, doanhThu] = await Promise.all([
+    docHoSo(db, companyId),
+    docDoanhThuQuy(db, companyId, nam),
+  ]);
+  const dung = dungSuKien({ nam, homNay, congTy: cong_ty, hoSo: ho_so, doanhThu });
+  const sl = suyLuan(dung.su_kien);
+  const chinh = sl.ket_luan.filter((k) => k.loai === "nghia_vu" || k.loai === "mien");
+  // Đã trả lời khảo sát chưa: loại người nộp và ngành là hai câu quyết định mẫu tờ khai.
+  const coHoSo = !!ho_so.loai_nguoi_nop && (ho_so.nhom_nganh.length > 0 || ho_so.loai_nguoi_nop === "doanh_nghiep");
+  return {
+    co_ho_so: coHoSo,
+    ho_so,
+    nam,
+    doanh_thu_nam: sl.doanh_thu_nam,
+    nguon_doanh_thu: dung.nguon,
+    tam_tinh: sl.tam_tinh,
+    quy_vuot: sl.quy_vuot,
+    nghia_vu: chinh.slice(0, 4).map((k) => ({ id: k.id, cau: k.cau, mau: k.mau ?? null, han: (k.han ?? [])[0] ?? null })),
+    thieu: sl.thieu,
+  };
+}
+
+// `boi_canh` (màn đầu) không cần đọc mọi nguồn của hệ luật thuế: khối thuế đọc riêng.
 const TAT_CA_NGUON: NguonCan[] = ["giao_dich", "hoa_don_vao", "hoa_don_ban", "yeu_cau", "ket_noi_ngan_hang", "chi_phi_ai", "token_ai", "bang_gia", "chung_tu_quet"];
 
 function docLichSu(v: unknown): TinNhanCu[] {
@@ -242,12 +273,20 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
   switch (hanhDong) {
     case "boi_canh": {
-      const d = await docDuLieu(db, company.id, new Set(TAT_CA_NGUON), moc, { soThangAi: SO_THANG_BIEU_DO_AI });
+      const [d, thue] = await Promise.all([
+        docDuLieu(db, company.id, new Set(TAT_CA_NGUON), moc, { soThangAi: SO_THANG_BIEU_DO_AI }),
+        // Hỏng hồ sơ thuế không được làm mất cả màn đầu.
+        docThueManDau(db, company.id, moc.homNay).catch((e) => {
+          console.error("boi_canh thue:", e instanceof Error ? e.message : e);
+          return null;
+        }),
+      ]);
       return json({
         cong_ty: company.name,
         viec: viecHomNay(d),
         ket_noi: danhSachKetNoi(d),
         phan_tich: phanTichNhanh(d),
+        thue,
         co_mo_hinh: !!khoaMoHinh,
       });
     }

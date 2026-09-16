@@ -86,6 +86,8 @@ export function useCongCuGhim() {
     daTai: trangThai !== null,
     ghim,
     boGhim,
+    /** Thay cả danh sách — dùng khi khảo sát đầu vào chọn công cụ theo ngành. */
+    datLai: luu,
     dangLuu,
     loi,
   };
