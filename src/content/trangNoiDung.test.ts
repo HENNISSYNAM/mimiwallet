@@ -75,11 +75,29 @@ describe('menu Về chúng tôi', () => {
   it('đứng cuối thanh, chỉ trỏ tới trang có route, mốc trang chủ có thật hoặc thư liên hệ', () => {
     expect(CAC_MENU.at(-1)?.khoa).toBe('ve-chung-toi');
     const menu = CAC_MENU.find((m) => m.khoa === 've-chung-toi')!;
-    const TRANG = ['/about', '/about?muc=doi-ngu', '/thuong-hieu', '/register', '/privacy', '/terms'];
-    const MOC = ['#cong-nhan', '#cap-nhat', '#dang-ky', '#pricing'];
+    const TRANG = ['/about', '/about?muc=doi-ngu', '/thuong-hieu'];
+    const MOC = ['#cong-nhan', '#dang-ky'];
     const sai = menu.cot.flat().flatMap((n) => n.muc)
       .map((m) => m.href)
       .filter((h) => !TRANG.includes(h) && !MOC.includes(h) && !h.startsWith('mailto:'));
     expect(sai).toEqual([]);
+  });
+});
+
+describe('các menu không trùng nhau', () => {
+  const tatCaMuc = CAC_MENU.flatMap((m) => [...m.cot.flat(), ...(m.hangDuoi ? [m.hangDuoi] : [])]).flatMap((n) => n.muc);
+
+  it('không có hai mục cùng tên', () => {
+    const ten = tatCaMuc.map((m) => m.ten.vi);
+    expect(ten.filter((x, i) => ten.indexOf(x) !== i)).toEqual([]);
+  });
+
+  it('không có hai mục cùng trỏ một trang (trừ lối liên hệ)', () => {
+    const dich = tatCaMuc.map((m) => m.href).filter((h) => h !== '#dang-ky' && !h.startsWith('mailto:'));
+    expect(dich.filter((x, i) => dich.indexOf(x) !== i)).toEqual([]);
+  });
+
+  it('không lặp lại liên kết đã có sẵn trên thanh (Bảng giá, Bắt đầu miễn phí)', () => {
+    expect(tatCaMuc.map((m) => m.href).filter((h) => h === '#pricing' || h === '/register')).toEqual([]);
   });
 });

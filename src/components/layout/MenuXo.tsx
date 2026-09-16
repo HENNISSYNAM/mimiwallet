@@ -148,19 +148,9 @@ const MENU_DOI_TAC: CauHinhMenu = {
     [{
       tieuDe: { vi: 'Cho văn phòng kế toán', en: 'For accounting firms' },
       muc: [
-        { icon: Briefcase, ten: { vi: 'Gói Kế toán & đại lý thuế', en: 'Accountants & tax agents plan' }, mo: { vi: 'Nhiều doanh nghiệp, liên hệ để dùng', en: 'Many businesses, contact us to start' }, href: '/giai-phap/van-phong-ke-toan' },
+        { ten: { vi: 'Gói cho văn phòng kế toán', en: 'Plan for accounting firms' }, mo: { vi: 'Nhiều doanh nghiệp, liên hệ để dùng', en: 'Many businesses, contact us to start' }, href: email('Gói văn phòng kế toán') },
         { icon: Handshake, ten: { vi: 'Hợp tác cùng văn phòng kế toán', en: 'Partner as an accounting firm' }, mo: { vi: 'Để lại liên hệ, đội MIMI trả lời trực tiếp', en: 'Leave your details, the MIMI team replies directly' }, href: email('Hợp tác văn phòng kế toán') },
       ],
-    }],
-    [{
-      tieuDe: { vi: 'Đang kết nối trong sản phẩm', en: 'Connected in the product' },
-      muc: [
-        { ten: { vi: 'Cas', en: 'Cas' }, mo: { vi: 'Liên kết tài khoản ngân hàng', en: 'Bank account linking' }, href: '/san-pham/ket-noi' },
-        { ten: { vi: 'SePay', en: 'SePay' }, mo: { vi: 'Báo tiền về theo thời gian thực', en: 'Real-time incoming payment alerts' }, href: '/san-pham/ket-noi' },
-        { ten: { vi: 'Hoá đơn điện tử', en: 'E-invoices' }, mo: { vi: 'Đọc từ cơ quan thuế, chỉ đọc', en: 'Read-only from the tax authority' }, href: '/san-pham/hoa-don-dien-tu' },
-        { ten: { vi: 'MCP', en: 'MCP' }, mo: { vi: 'Claude, Cursor và ứng dụng hỗ trợ MCP', en: 'Claude, Cursor and other MCP clients' }, href: '/san-pham/mcp-api' },
-      ],
-      ghiChu: { vi: 'Đây là dịch vụ MIMI kết nối tới, không phải thoả thuận đối tác.', en: 'Services MIMI connects to — not partnership agreements.' },
     }],
     [{
       tieuDe: { vi: 'Hợp tác cùng MIMI', en: 'Build with MIMI' },
@@ -189,23 +179,11 @@ const MENU_TAI_NGUYEN: CauHinhMenu = {
       muc: [
         { icon: Bell, ten: { vi: 'Cập nhật sản phẩm', en: 'Product updates' }, mo: { vi: 'Những gì vừa chạy thật trên MIMI', en: 'What just shipped on MIMI' }, href: '#cap-nhat' },
         { icon: ListChecks, ten: { vi: 'Nhật ký agent', en: 'Agent activity log' }, mo: { vi: 'Mỗi bước đều để lại dấu vết', en: 'Every step leaves a trace' }, href: '#nhat-ky' },
-        { icon: PlayCircle, ten: { vi: 'Xem MIMI làm việc', en: 'Watch MIMI work' }, mo: { vi: 'Bốn khung tự chạy', en: 'Four self-running panels' }, href: '#demo' },
-        { icon: Code2, ten: { vi: 'Hướng dẫn nối agent', en: 'Connect an agent' }, mo: { vi: 'MCP và API trong một lệnh', en: 'MCP and API in one command' }, href: '/san-pham/mcp-api' },
       ],
     }],
     [{
-      tieuDe: { vi: 'Kết nối', en: 'Connect' },
+      tieuDe: { vi: 'Pháp lý', en: 'Legal' },
       muc: [
-        { ten: { vi: 'Công nhận & ươm tạo', en: 'Recognition & incubation' }, href: '#cong-nhan' },
-        { ten: { vi: 'Bộ nhận diện thương hiệu', en: 'Brand kit' }, href: '/thuong-hieu' },
-        { ten: { vi: 'Liên hệ', en: 'Contact' }, href: '#dang-ky' },
-      ],
-    }],
-    [{
-      tieuDe: { vi: 'Bắt đầu', en: 'Get started' },
-      muc: [
-        { ten: { vi: 'Đăng ký miễn phí', en: 'Sign up free' }, href: '/register' },
-        { ten: { vi: 'Bảng giá', en: 'Pricing' }, href: '#pricing' },
         { ten: { vi: 'Quyền riêng tư', en: 'Privacy' }, href: '/privacy' },
         { ten: { vi: 'Điều khoản sử dụng', en: 'Terms of use' }, href: '/terms' },
       ],
@@ -229,26 +207,19 @@ const MENU_VE_CHUNG_TOI: CauHinhMenu = {
       muc: [
         { icon: BookOpen, ten: { vi: 'Câu chuyện MIMI', en: 'The MIMI story' }, mo: { vi: 'Vì sao chúng tôi làm MIMI', en: 'Why we built MIMI' }, href: '/about' },
         { icon: Users, ten: { vi: 'Đội ngũ', en: 'Team' }, mo: { vi: 'Những người đứng sau MIMI', en: 'The people behind MIMI' }, href: '/about?muc=doi-ngu' },
+      ],
+    }],
+    [{
+      tieuDe: { vi: 'Thương hiệu', en: 'Brand' },
+      muc: [
         { icon: Award, ten: { vi: 'Công nhận & ươm tạo', en: 'Recognition & incubation' }, mo: { vi: 'Quyết định 231/QĐ-KNST', en: 'Decision 231/QĐ-KNST' }, href: '#cong-nhan' },
         { icon: Palette, ten: { vi: 'Bộ nhận diện thương hiệu', en: 'Brand kit' }, mo: { vi: 'Màu, chữ, cách viết của MIMI', en: 'Colours, type and voice' }, href: '/thuong-hieu' },
-        { icon: Bell, ten: { vi: 'Cập nhật sản phẩm', en: 'Product updates' }, mo: { vi: 'Những gì vừa chạy thật', en: 'What just shipped' }, href: '#cap-nhat' },
       ],
     }],
     [{
       tieuDe: { vi: 'Kết nối', en: 'Connect' },
       muc: [
-        { ten: { vi: 'Liên hệ', en: 'Contact' }, href: '#dang-ky' },
-        { ten: { vi: 'Hợp tác', en: 'Partnerships' }, href: email('Hợp tác cùng MIMI') },
-        { ten: { vi: 'Ươm tạo & nhà đầu tư', en: 'Incubators & investors' }, href: email('Ươm tạo và đầu tư') },
-      ],
-    }],
-    [{
-      tieuDe: { vi: 'Bắt đầu', en: 'Get started' },
-      muc: [
-        { ten: { vi: 'Đăng ký miễn phí', en: 'Sign up free' }, href: '/register' },
-        { ten: { vi: 'Bảng giá', en: 'Pricing' }, href: '#pricing' },
-        { ten: { vi: 'Quyền riêng tư', en: 'Privacy' }, href: '/privacy' },
-        { ten: { vi: 'Điều khoản sử dụng', en: 'Terms of use' }, href: '/terms' },
+        { ten: { vi: 'Liên hệ', en: 'Contact' }, mo: { vi: 'Để lại email, đội MIMI trả lời', en: 'Leave your email, the team replies' }, href: '#dang-ky' },
       ],
     }],
   ],
