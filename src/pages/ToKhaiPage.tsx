@@ -1,85 +1,32 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, BadgeCheck, ExternalLink, Info, Loader2, Printer, Save, ScrollText, Sparkles } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AlertTriangle, ExternalLink, Info, Loader2, Printer, Save, ScrollText } from 'lucide-react';
+
 import { toast } from 'sonner';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type KetQuaPhanTich } from '@/lib/goiToKhai';
 import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
-  type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiKetLuan, type NhomNganh, type ToKhai,
+  type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type NhomNganh, type ToKhai,
 } from '@/lib/heLuat';
 
 /**
  * Tờ khai thuế — chỗ công nghệ lõi của MIMI hiện ra thành giấy tờ hành chính.
  *
- * Ba lớp, đọc từ trên xuống:
+ * Hai lớp, đọc từ trên xuống:
  *   1. Hồ sơ thuế — vài điều chỉ người dùng biết (hộ hay doanh nghiệp, nhóm ngành, bán ở đâu).
- *   2. MIMI suy luận — chuỗi nhân quả từ doanh thu thật tới nghĩa vụ, mỗi mắt xích kèm căn cứ
- *      trích nguyên văn và dấu "đã đối chiếu Công báo" do máy chủ so chữ với kho luật.
- *   3. Bản nháp tờ khai — đúng mẫu 01/TKN-CNKD hoặc 01/CNKD kèm Thông tư 50/2026, in được.
+ *   2. Bản nháp tờ khai — đúng mẫu 01/TKN-CNKD hoặc 01/CNKD kèm Thông tư 50/2026, in được.
+ *
+ * Chuỗi suy luận kèm căn cứ không bày ở đây nữa: người dùng hỏi MIMI Assistant thì MIMI trả lời
+ * (năng lực nghia_vu_thue), để trang này chỉ còn việc cần làm.
  *
  * MIMI không nộp thay: nút cuối mở Cổng dịch vụ công của cơ quan thuế để người dùng tự nộp.
  */
-
-const TEN_LOAI: Record<LoaiKetLuan, string> = {
-  su_kien: 'Dữ kiện',
-  mien: 'Được miễn',
-  nghia_vu: 'Phải làm',
-  phuong_phap: 'Cách tính',
-  quyen_loi: 'Quyền lợi',
-  canh_bao: 'Cần chú ý',
-  giai_thich: 'Giải thích',
-  chua_ho_tro: 'MIMI chưa làm được',
-};
-
-const MAU_LOAI: Record<LoaiKetLuan, string> = {
-  su_kien: 'bg-accent text-muted-foreground',
-  mien: 'bg-mimi-green/15 text-mimi-green',
-  nghia_vu: 'bg-primary/10 text-primary',
-  phuong_phap: 'bg-accent text-foreground',
-  quyen_loi: 'bg-mimi-green/15 text-mimi-green',
-  canh_bao: 'bg-mimi-amber/15 text-mimi-amber',
-  giai_thich: 'bg-accent text-muted-foreground',
-  chua_ho_tro: 'bg-muted text-muted-foreground',
-};
 
 const so = (n: number | null | undefined) => (n === null || n === undefined ? '' : new Intl.NumberFormat('vi-VN').format(n));
 const ngay = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
 const nhanKy = (ky: KyToKhai) => (ky.loai === 'quy' ? `Quý ${ky.quy}/${ky.nam}` : ky.loai === '6_thang_dau' ? `6 tháng đầu ${ky.nam}` : `Năm ${ky.nam}`);
 const cungKy = (a: KyToKhai, b: KyToKhai) => a.loai === b.loai && a.nam === b.nam && (a.loai !== 'quy' || b.loai !== 'quy' || a.quy === b.quy);
-
-function ChipCanCu({ c }: { c: CanCuDaKiem }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <span className="truncate">{c.van_ban} · {c.vi_tri}</span>
-          {c.da_doi_chieu
-            ? <BadgeCheck size={12} className="shrink-0 text-mimi-green" aria-label="Đã đối chiếu kho Công báo" />
-            : <AlertTriangle size={12} className="shrink-0 text-mimi-amber" aria-label="Chưa đối chiếu được" />}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 space-y-2 rounded-2xl p-3 text-left">
-        <p className="text-xs font-semibold text-foreground">{c.ten_van_ban}</p>
-        <p className="text-xs text-muted-foreground">{c.vi_tri}{c.ngay_ban_hanh ? ` · ban hành ${ngay(c.ngay_ban_hanh)}` : ''}</p>
-        <blockquote className="border-l-2 border-border pl-2 text-xs italic leading-relaxed text-foreground">{c.trich}</blockquote>
-        <p className="text-xs text-muted-foreground">{c.y}</p>
-        <p className={`text-xs ${c.da_doi_chieu ? 'text-mimi-green' : 'text-mimi-amber'}`}>
-          {c.da_doi_chieu ? 'Đã đối chiếu nguyên văn với kho Công báo của MIMI.' : 'Chưa đối chiếu được với kho — đọc bản gốc trước khi dựa vào.'}
-        </p>
-        {c.url && (
-          <a href={c.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-            Mở bản gốc trên Công báo <ExternalLink size={12} />
-          </a>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 function GiayToKhai({ tk, canCu }: { tk: ToKhai; canCu: CanCuDaKiem[] }) {
   const oCot = (khoa: string) => tk.cot.find((c) => c.khoa === khoa);
@@ -357,8 +304,6 @@ export default function ToKhaiPage() {
     }
   };
 
-  const canCuTheoId = useMemo(() => new Map((kq?.can_cu ?? []).map((c) => [c.id, c])), [kq]);
-  const tenKetLuan = useMemo(() => new Map((kq?.suy_luan.ket_luan ?? []).map((k) => [k.id, k.cau])), [kq]);
   const kyDs: KyToKhai[] = kq
     ? [{ loai: 'nam', nam: kq.nam }, ...[1, 2, 3, 4].map((q) => ({ loai: 'quy' as const, nam: kq.nam, quy: q }))]
     : [];
@@ -473,46 +418,6 @@ export default function ToKhaiPage() {
                   </button>
                 </div>
               </form>
-            )}
-          </section>
-
-          <section aria-labelledby="suy-luan" className="no-print rounded-2xl border border-border bg-card p-5">
-            <h2 id="suy-luan" className="flex items-center gap-2 text-lg font-semibold text-foreground">
-              <Sparkles size={17} className="text-primary" aria-hidden /> MIMI suy luận
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">Mỗi mắt xích kèm căn cứ trích nguyên văn; bấm vào căn cứ để đọc và mở bản gốc trên Công báo.</p>
-            <ol className="mt-4 space-y-3">
-              {kq.suy_luan.ket_luan.map((k) => (
-                <li key={k.id} className="rounded-xl border border-border/70 bg-background p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${MAU_LOAI[k.loai]}`}>{TEN_LOAI[k.loai]}</span>
-                    {k.mau && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Mẫu {k.mau}</span>}
-                    {(k.han ?? []).map((h) => (
-                      <span key={h} className="rounded-full bg-accent px-2 py-0.5 text-[11px] text-muted-foreground">Hạn {ngay(h)}</span>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-foreground">{k.cau}</p>
-                  {!!k.vi.length && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Vì: {k.vi.map((v) => tenKetLuan.get(v) ?? v).join(' · ')}
-                    </p>
-                  )}
-                  {!!k.can_cu.length && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {k.can_cu.map((c) => {
-                        const cc = canCuTheoId.get(c);
-                        return cc ? <ChipCanCu key={c} c={cc} /> : null;
-                      })}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ol>
-            {!!kq.chua_doi_chieu.length && (
-              <p className="mt-3 flex gap-2 text-sm text-mimi-amber">
-                <AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden />
-                {kq.chua_doi_chieu.length} căn cứ chưa đối chiếu được với kho văn bản — đọc bản gốc trước khi dựa vào.
-              </p>
             )}
           </section>
 

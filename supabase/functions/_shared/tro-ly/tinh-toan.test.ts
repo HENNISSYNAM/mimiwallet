@@ -54,6 +54,19 @@ describe('nghĩa vụ thuế', () => {
     expect(r.nguon.map((n) => n.ten)).toContain('Kho văn bản Công báo');
   });
 
+  it('trả lời kèm chuỗi suy luận: mỗi kết luận có văn bản, vị trí và câu trích nguyên văn', () => {
+    const r = NANG_LUC.nghia_vu_thue.chay(moi({ thue: { suKien, canhBao: [], canCuDaKiem: { nd68_d3_k1: false } } }));
+    const bang = r.the.find((t) => t.loai === 'bang' && t.tieu_de === 'Vì sao MIMI kết luận vậy');
+    expect(bang && bang.loai === 'bang').toBe(true);
+    if (!bang || bang.loai !== 'bang') return;
+    expect(bang.dong.length).toBeGreaterThan(0);
+    for (const d of bang.dong) {
+      expect(String(d[1])).toMatch(/\/20\d\d\/(NĐ-CP|TT-BTC|QH1[56]) · Điều/);
+      expect(String(d[2])).toMatch(/^“.+”$/);
+    }
+    expect(bang.dong.some((d) => String(d[1]).includes('(chưa đối chiếu)'))).toBe(true);
+  });
+
   it('nêu rõ quan hệ nhân quả giữa GTGT và TNCN', () => {
     const r = NANG_LUC.nghia_vu_thue.chay(moi({ thue: { suKien, canhBao: [], canCuDaKiem: {} } }));
     const ghi = r.the.filter((t) => t.loai === 'ghi_chu').map((t) => (t.loai === 'ghi_chu' ? t.cau : '')).join(' ');

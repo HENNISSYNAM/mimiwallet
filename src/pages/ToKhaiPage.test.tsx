@@ -81,14 +81,11 @@ describe('Tờ khai thuế', () => {
     expect(within(bang).queryByText('0')).toBeNull();
   });
 
-  it('nói rõ hai thuế là hai hệ quả song song, kèm căn cứ đọc được nguyên văn', async () => {
+  it('không bày chuỗi suy luận trên trang — người dùng hỏi MIMI Assistant mới trả lời', async () => {
     dung();
     await screen.findByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM');
-    expect(document.body.textContent).toContain('song song');
-    const chip = screen.getAllByRole('button', { name: /68\/2026\/NĐ-CP · Điều 3 khoản 1/ })[0];
-    fireEvent.click(chip);
-    expect(await screen.findByText(CAN_CU.nd68_d3_k1.trich)).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Mở bản gốc trên Công báo/ }).getAttribute('href')).toBe('https://congbao.chinhphu.vn/x');
+    expect(screen.queryByRole('heading', { name: /MIMI suy luận/ })).toBeNull();
+    expect(screen.queryByText(CAN_CU.nd68_d3_k1.trich)).toBeNull();
   });
 
   it('có đường nộp trên Cổng dịch vụ công và nói rõ MIMI không nộp thay', async () => {

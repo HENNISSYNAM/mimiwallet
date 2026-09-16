@@ -14,7 +14,7 @@ import type { DeXuat, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, NhomNangLuc, O,
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
-import { NGUONG_DOANH_THU as NGUONG_THUE, suyLuan as suyLuanThue, type SuKienThue } from '../luat/he-luat.ts';
+import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, suyLuan as suyLuanThue, type SuKienThue } from '../luat/he-luat.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -1114,6 +1114,25 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
       con_lai: Math.max(0, chinh.length - 8),
     });
   }
+  // Chuỗi suy luận: người dùng hỏi thì MIMI trả lời kèm căn cứ, thay vì bày sẵn trên trang Tờ khai.
+  // Chỉ trích câu đã có trong CAN_CU (đã đối chiếu nguyên văn với kho Công báo); câu nào máy chủ
+  // chưa đối chiếu được lúc chạy thì ghi rõ ngay trên dòng đó.
+  const coCanCu = sl.ket_luan.filter((k) => k.can_cu.some((c) => CAN_CU[c]));
+  if (coCanCu.length) {
+    the.push({
+      loai: 'bang', tieu_de: 'Vì sao MIMI kết luận vậy',
+      cot: [{ nhan: 'Kết luận', don_vi: 'chu' }, { nhan: 'Căn cứ', don_vi: 'chu' }, { nhan: 'Trích nguyên văn', don_vi: 'chu' }],
+      dong: coCanCu.slice(0, 8).map((k) => {
+        const ids = k.can_cu.filter((c) => CAN_CU[c]);
+        return [
+          k.cau,
+          ids.map((c) => `${CAN_CU[c].van_ban} · ${CAN_CU[c].vi_tri}${canCuDaKiem[c] === false ? ' (chưa đối chiếu)' : ''}`).join('; '),
+          `“${CAN_CU[ids[0]].trich}”`,
+        ];
+      }),
+      con_lai: Math.max(0, coCanCu.length - 8),
+    });
+  }
   if (giaiThich) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: giaiThich.cau });
   for (const c of canhBao.slice(0, 2)) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: c });
   for (const t of sl.thieu.slice(0, 3)) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: t.cau });
@@ -1131,7 +1150,7 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
       khoa: 'mo_to_khai',
       loai: 'mo_trang',
       nhan: 'Mở Tờ khai thuế',
-      mo_ta: 'Xem chuỗi suy luận kèm trích dẫn văn bản và bản nháp tờ khai MIMI soạn.',
+      mo_ta: 'Xem bản nháp tờ khai MIMI soạn từ doanh thu thật, in hoặc lưu lại.',
       tham_so: { duong_dan: '/dashboard/to-khai' },
     }],
     nguon: [N.khoLuat, N.hoaDonVao, N.giaoDich],
