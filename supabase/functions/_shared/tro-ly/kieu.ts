@@ -70,6 +70,24 @@ export interface TrangChiTiet {
   duong_dan: string;
 }
 
+/**
+ * MIMI-P0-002: độ đầy đủ của một nguồn dữ liệu đứng sau câu trả lời.
+ * `partial` = truy vấn bị cắt; `stale` = đồng bộ đã cũ; `unavailable` = chưa có kết nối (không phải số 0).
+ */
+export type TrangThaiDoDay = 'complete' | 'partial' | 'stale' | 'unavailable';
+
+export interface DoDayNguon {
+  nguon: string;
+  ten: string;
+  row_count: number;
+  total_available: number | null;
+  truncated: boolean;
+  period_from: string | null;
+  period_to: string | null;
+  last_synced_at: string | null;
+  coverage_status: TrangThaiDoDay;
+}
+
 export interface KetQuaNangLuc {
   nang_luc: string;
   nhom: NhomNangLuc;
@@ -79,6 +97,8 @@ export interface KetQuaNangLuc {
   de_xuat: DeXuat[];
   nguon: NguonDuLieu[];
   trang: TrangChiTiet[];
+  /** Độ đầy đủ của từng nguồn năng lực này đã đọc. Rỗng khi năng lực không đọc CSDL. */
+  do_day?: DoDayNguon[];
 }
 
 export interface BuocXuLy {
@@ -92,6 +112,8 @@ export interface TraLoi {
   ket_qua: KetQuaNangLuc[];
   /** `co_dinh`: chưa có mô hình, MIMI nhận câu hỏi bằng bộ luật và trả lời bằng câu dựng sẵn. */
   che_do: 'mo_hinh' | 'co_dinh';
+  /** Trạng thái xấu nhất trong mọi nguồn đã đọc cho câu trả lời này. */
+  do_day: TrangThaiDoDay;
 }
 
 export interface ViecHomNay {
@@ -168,6 +190,9 @@ export interface BoiCanh {
   thue: ThueManDau | null;
   /** Có mô hình hiểu câu tự do và đọc ảnh chứng từ hay không. */
   co_mo_hinh: boolean;
+  /** MIMI-P0-002: độ đầy đủ của các nguồn màn đầu đã đọc. Bản máy chủ cũ không gửi. */
+  do_day?: DoDayNguon[];
+  do_day_chung?: TrangThaiDoDay;
 }
 
 export interface KetQuaQuet {

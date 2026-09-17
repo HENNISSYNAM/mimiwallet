@@ -76,6 +76,15 @@ const m = {
       mimiDaLamGi: 'MIMI 做了什么',
       viecBanCoTheLam: '你可以做的事',
       nguon: '来源：',
+      doDay: {
+        dong: '{{ten}}：{{so}} 行',
+        ky: '从 {{tu}} 到 {{den}}',
+        dongBo: '同步于 {{luc}}',
+        complete: '完整',
+        partial: '不完整',
+        stale: '可能已过时',
+        unavailable: '未连接',
+      },
       conDongNua: '详情页还有 {{so}} 行。',
       trangThai: {
         dangChay: '运行中',

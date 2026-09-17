@@ -23,8 +23,8 @@ import { dongBoSaoKe, goiTroLy } from '@/lib/goiTroLy';
 import { goiTacTu } from '@/lib/goiTacTu';
 import { goiChiPhiAi } from '@/lib/goiChiPhiAi';
 import {
-  canXacNhan, dinhDang, dinhTien, GOI_Y_THEO_NHOM, laCotSo, NHOM_NANG_LUC, TEN_NHOM, thucHienDeXuat,
-  type BoiCanh, type DeXuat, type KetNoiHienThi, type KetQuaNangLuc, type KetQuaQuet, type NhomNangLuc, type PhanTichNhanh,
+  canXacNhan, dinhDang, dinhTien, dungLichSu, GOI_Y_THEO_NHOM, laCotSo, NHOM_NANG_LUC, TEN_NHOM, thucHienDeXuat,
+  type BoiCanh, type DeXuat, type DoDayNguon, type KetNoiHienThi, type KetQuaNangLuc, type KetQuaQuet, type NhomNangLuc, type PhanTichNhanh,
   type The, type ThueManDau, type TraLoi,
 } from '@/lib/troLy';
 import claudeLogo from '@/assets/logos/claude.webp';
@@ -120,10 +120,7 @@ export default function TroLyPage() {
     const cau = cauHoi.trim();
     if (!cau || dangHoi) return;
     const id = ++demLuot.current;
-    const lichSu = luot
-      .filter((l) => l.traLoi)
-      .slice(-3)
-      .flatMap((l) => [{ vai: 'nguoi_dung', noi_dung: l.cau }, { vai: 'tro_ly', noi_dung: (l.traLoi as TraLoi).cau }]);
+    const lichSu = dungLichSu(luot);
     setLuot((ds) => [...ds, { id, cau, phamVi: pv }]);
     setNhap('');
     setMoTrangChiTiet(false);
@@ -825,6 +822,8 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
         </ul>
       )}
 
+      {!!r.do_day?.length && <DoDayKetQua ds={r.do_day} />}
+
       {(r.trang.length > 0 || r.nguon.length > 0) && (
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           {r.trang.map((tr) => (
@@ -843,6 +842,36 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
         </div>
       )}
     </section>
+  );
+}
+
+const ngayNgan = (s: string) => s.slice(0, 10).split('-').reverse().join('/');
+
+/**
+ * MIMI-P0-002: mỗi kết quả nói rõ dữ liệu đứng sau nó — bao nhiêu dòng, kỳ nào, đồng bộ lúc nào,
+ * có đủ hay không. Cảnh báo chi tiết đã nằm ở thẻ đầu kết quả; dòng này là nhãn tra cứu nhanh.
+ */
+function DoDayKetQua({ ds }: { ds: DoDayNguon[] }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="mt-4 flex flex-col gap-1 border-t border-border pt-3 text-xs text-muted-foreground" aria-label={t('man.troLy.nguon')}>
+      {ds.map((d) => (
+        <li key={d.nguon} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span
+            className={`rounded-full px-2 py-0.5 font-medium ${
+              d.coverage_status === 'complete' ? 'bg-mimi-green/10 text-mimi-green' : 'bg-mimi-amber/15 text-mimi-amber'
+            }`}
+          >
+            {t(`man.troLy.doDay.${d.coverage_status}`)}
+          </span>
+          <span>{t('man.troLy.doDay.dong', { ten: d.ten, so: new Intl.NumberFormat('vi-VN').format(d.row_count) })}</span>
+          {d.period_from && d.period_to && (
+            <span>· {t('man.troLy.doDay.ky', { tu: ngayNgan(d.period_from), den: ngayNgan(d.period_to) })}</span>
+          )}
+          {d.last_synced_at && <span>· {t('man.troLy.doDay.dongBo', { luc: ngayNgan(d.last_synced_at) })}</span>}
+        </li>
+      ))}
+    </ul>
   );
 }
 

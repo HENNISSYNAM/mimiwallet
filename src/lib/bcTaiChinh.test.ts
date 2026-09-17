@@ -23,8 +23,8 @@ describe('theoThang', () => {
       gd(5_000_000, 'income', '2026-09-01'),
     ]);
     expect(r).toHaveLength(2);
-    expect(r[0]).toMatchObject({ thang: 'T08', doanhThu: 10_000_000, chiPhi: 3_000_000, loiNhuan: 7_000_000 });
-    expect(r[1].loiNhuan).toBe(5_000_000);
+    expect(r[0]).toMatchObject({ thang: 'T08', tienVao: 10_000_000, tienRa: 3_000_000, chenhLech: 7_000_000 });
+    expect(r[1].chenhLech).toBe(5_000_000);
   });
 
   it('sắp theo thời gian, không theo thứ tự đầu vào', () => {
@@ -47,13 +47,13 @@ describe('theoThang', () => {
   it('nhận cả dấu âm lẫn nhãn type để xác định chiều tiền', () => {
     // SePay ghi type; nguồn khác có thể chỉ có dấu.
     const r = theoThang([gd(-500, '', '2026-08-01'), gd(700, '', '2026-08-01')]);
-    expect(r[0]).toMatchObject({ doanhThu: 700, chiPhi: 500 });
+    expect(r[0]).toMatchObject({ tienVao: 700, tienRa: 500 });
   });
 
   it('HỒI QUY 15/09/2026: khoản chi ngân hàng mang số dương là chi phí, không phải doanh thu', () => {
     // Đúng hình dạng bankhub-map/sepay-map ghi: số dương, chiều trong type.
     const r = theoThang([gd(10_000_000, 'income', '2026-09-01'), gd(2_000_000, 'expense', '2026-09-02')]);
-    expect(r[0]).toMatchObject({ doanhThu: 10_000_000, chiPhi: 2_000_000, loiNhuan: 8_000_000 });
+    expect(r[0]).toMatchObject({ tienVao: 10_000_000, tienRa: 2_000_000, chenhLech: 8_000_000 });
     expect(phanBoChiPhi([gd(2_000_000, 'expense', '2026-09-02', 'Điện')])).toEqual([{ ten: 'Điện', tien: 2_000_000 }]);
   });
 });

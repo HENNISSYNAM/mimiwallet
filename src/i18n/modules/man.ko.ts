@@ -76,6 +76,15 @@ const m = {
       mimiDaLamGi: 'MIMI가 한 일',
       viecBanCoTheLam: '할 수 있는 일',
       nguon: '출처:',
+      doDay: {
+        dong: '{{ten}}: {{so}}행',
+        ky: '{{tu}}부터 {{den}}까지',
+        dongBo: '{{luc}} 동기화',
+        complete: '완전함',
+        partial: '불완전',
+        stale: '오래되었을 수 있음',
+        unavailable: '연결 안 됨',
+      },
       conDongNua: '상세 페이지에 {{so}}행이 더 있습니다.',
       trangThai: {
         dangChay: '작동 중',

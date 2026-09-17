@@ -94,3 +94,14 @@ export async function thucHienDeXuat(dx: DeXuat, g: BoGoi): Promise<string> {
       return '';
   }
 }
+
+/**
+ * MIMI-P0-001: lịch sử gửi kèm câu hỏi — một cách dựng duy nhất cho trang Trợ lý và widget,
+ * để cùng câu hỏi, cùng lịch sử thì máy chủ nhận đúng cùng một yêu cầu.
+ */
+export function dungLichSu(luot: { cau: string; traLoi?: { cau: string } | null }[]) {
+  return luot
+    .filter((l): l is { cau: string; traLoi: { cau: string } } => !!l.traLoi)
+    .slice(-3)
+    .flatMap((l) => [{ vai: 'nguoi_dung' as const, noi_dung: l.cau }, { vai: 'tro_ly' as const, noi_dung: l.traLoi.cau }]);
+}

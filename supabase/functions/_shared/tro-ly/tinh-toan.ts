@@ -10,11 +10,13 @@
  *  2. Đề xuất chỉ nhắm vào thứ có thật trong dữ liệu (mã yêu cầu, agent) và chỉ gồm việc
  *     đã có backend. Việc chạm tiền luôn qua hộp xác nhận ở giao diện.
  */
-import type { DeXuat, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
+import type { DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
 import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, suyLuan as suyLuanThue, type SuKienThue } from '../luat/he-luat.ts';
+import type { DoanLuat } from '../luat/nguon-luat.ts';
+import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -107,11 +109,15 @@ export interface DuLieu {
    * khi kho xác nhận.
    */
   thue: { suKien: SuKienThue; canhBao: string[]; canCuDaKiem: Record<string, boolean> } | null;
+  /** MIMI-P0-002: độ đầy đủ của từng nguồn đã đọc (edge function điền; test để trống). */
+  doDay: Partial<Record<NguonCan, DoDayNguon>>;
+  /** Đoạn luật kho tìm được cho câu hỏi. null = chưa tra được (lỗi), khác với [] = không có. */
+  khoLuat: DoanLuat[] | null;
 }
 
 export type NguonCan =
   | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau' | 'ket_noi_ngan_hang'
-  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue';
+  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat';
 
 export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuLieu {
   return {
@@ -119,6 +125,8 @@ export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuL
     giaoDich: [], hoaDonVao: [], hoaDonBan: [], yeuCau: [], tacTu: [], chinhSach: [], ketNoiNganHang: [],
     chiPhiAi: [], nganSachAi: null, ketNoiAi: [], nhapFileAi: [], tokenAi: [], bangGia: [], bangGiaLuc: null, chungTuQuet: [],
     thue: null,
+    doDay: {},
+    khoLuat: [],
   };
 }
 
@@ -792,15 +800,23 @@ export function baoCaoTaiChinh(d: DuLieu): KetQuaNangLuc {
   const thu = thang.reduce((s, t) => s + t.vao, 0);
   const chi = thang.reduce((s, t) => s + t.ra, 0);
   const bien = phanTram(thu - chi, thu);
-  const cau = `${thang.length} tháng gần nhất có giao dịch: thu ${vnd(thu)}, chi ${vnd(chi)}, chênh lệch ${vnd(thu - chi)}${bien !== null ? ` (${bien}% số thu)` : ''}.`;
+  // P0-004: tên gọi theo TU_DIEN_CHI_SO — đây là dòng tiền ngân hàng, không phải doanh thu/lợi nhuận.
+  const cau = `Tổng hợp dòng tiền ngân hàng ${thang.length} tháng gần nhất có giao dịch: tiền vào ${vnd(thu)}, tiền ra ${vnd(chi)}, chênh lệch ${vnd(thu - chi)}${bien !== null ? ` (${bien}% tiền vào)` : ''}.`;
   return kq('bao_cao_tai_chinh', 'bao_cao', cau, {
     the: [
       {
-        loai: 'bang', tieu_de: 'Thu chi theo tháng',
-        cot: [{ nhan: 'Tháng', don_vi: 'chu' }, { nhan: 'Thu', don_vi: 'vnd' }, { nhan: 'Chi', don_vi: 'vnd' }, { nhan: 'Chênh lệch', don_vi: 'vnd' }, { nhan: 'Tỷ lệ', don_vi: 'phan_tram' }],
+        loai: 'bang', tieu_de: 'Dòng tiền ngân hàng theo tháng',
+        cot: [
+          { nhan: 'Tháng', don_vi: 'chu' }, { nhan: TU_DIEN_CHI_SO.tien_vao_ngan_hang.ten, don_vi: 'vnd' },
+          { nhan: TU_DIEN_CHI_SO.tien_ra_ngan_hang.ten, don_vi: 'vnd' }, { nhan: 'Chênh lệch', don_vi: 'vnd' },
+          { nhan: 'Chênh lệch / tiền vào', don_vi: 'phan_tram' },
+        ],
         dong: thang.map((t) => [t.nhan, t.vao, t.ra, t.rong, phanTram(t.rong, t.vao)]),
       },
-      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Tính từ tiền thật vào và ra tài khoản ngân hàng, chưa phải báo cáo tài chính lập theo chuẩn mực kế toán.' },
+      {
+        loai: 'ghi_chu', muc_do: 'thong_tin',
+        cau: 'Đây là tiền vào và ra tài khoản ngân hàng, chưa phải doanh thu, lợi nhuận hay báo cáo tài chính: tiền vào gồm cả tiền vay, góp vốn, chuyển khoản nội bộ, và MIMI chưa có sổ kế toán của bạn.',
+      },
     ],
     nguon: [N.giaoDich],
     trang: [T.baoCao],
@@ -1168,6 +1184,54 @@ export interface NangLuc {
   chay: (d: DuLieu) => KetQuaNangLuc;
 }
 
+// ── Tra cứu văn bản (chuyển từ function `chat` cũ, MIMI-P0-001) ─────────────
+
+/** Văn bản ban hành trước năm này: nói rõ có thể đã bị sửa đổi hoặc thay thế. */
+const NAM_LUAT_CAN_CANH_BAO = 2024;
+
+/**
+ * Trích nguyên văn các đoạn luật kho tìm được cho câu hỏi — không diễn giải, không kết luận.
+ *
+ * Đây là thông tin tham khảo (đặc tả mục 2.2): kho chưa theo dõi đầy đủ tình trạng hiệu lực,
+ * nên câu trả lời ghi rõ ngày ban hành, ngày hiệu lực, và cảnh báo văn bản cũ. Kho lỗi (null)
+ * khác kho không có đoạn nào ([]): lỗi thì nói chưa tra được, không nói "không có quy định".
+ */
+export function traCuuLuat(d: DuLieu): KetQuaNangLuc {
+  if (d.khoLuat === null) {
+    return kq('tra_cuu_luat', 'chung_tu', 'Chưa tra được kho văn bản lúc này. Thử lại sau ít phút — MIMI không trả lời câu hỏi pháp lý khi chưa đọc được nguồn.', {
+      nguon: [N.khoLuat],
+    });
+  }
+  if (!d.khoLuat.length) {
+    return kq('tra_cuu_luat', 'chung_tu', 'Kho văn bản của MIMI chưa có đoạn nói về việc này. Bạn nên hỏi kế toán hoặc cơ quan thuế quản lý trực tiếp.', {
+      nguon: [N.khoLuat],
+    });
+  }
+  const cu = d.khoLuat.filter((v) => v.ngay_ban_hanh && Number(v.ngay_ban_hanh.slice(0, 4)) < NAM_LUAT_CAN_CANH_BAO);
+  const the: The[] = [{
+    loai: 'bang', tieu_de: 'Đoạn văn bản tìm thấy (trích nguyên văn)',
+    cot: [{ nhan: 'Văn bản', don_vi: 'chu' }, { nhan: 'Ban hành', don_vi: 'ngay' }, { nhan: 'Hiệu lực', don_vi: 'ngay' }, { nhan: 'Trích', don_vi: 'chu' }, { nhan: 'Bản gốc', don_vi: 'chu' }],
+    dong: d.khoLuat.map((v) => [
+      [[v.loai, v.so_hieu].filter(Boolean).join(' ') || v.ten, v.nhan].filter(Boolean).join(' · '),
+      v.ngay_ban_hanh,
+      v.ngay_hieu_luc,
+      `“${v.noi_dung.length > 400 ? `${v.noi_dung.slice(0, 400)}…` : v.noi_dung}”`,
+      v.url,
+    ]),
+  }];
+  the.push({
+    loai: 'ghi_chu', muc_do: 'can_chu_y',
+    cau: 'Đây là trích dẫn để tham khảo, chưa phải tư vấn: kho chưa theo dõi đầy đủ tình trạng hiệu lực. Đối chiếu bản gốc và hỏi kế toán hoặc cơ quan thuế trước khi nộp hồ sơ.',
+  });
+  if (cu.length) {
+    the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `${cu.length} văn bản ban hành trước ${NAM_LUAT_CAN_CANH_BAO} — có thể đã bị sửa đổi hoặc thay thế.` });
+  }
+  return kq('tra_cuu_luat', 'chung_tu', `MIMI tìm thấy ${d.khoLuat.length} đoạn văn bản liên quan trong Công báo. Dưới đây là trích nguyên văn kèm ngày ban hành và hiệu lực — chỉ để tham khảo.`, {
+    the,
+    nguon: [N.khoLuat],
+  });
+}
+
 export const NANG_LUC: Record<string, NangLuc> = {
   yeu_cau_cho_duyet: { nhom: 'tro_ly', can: ['yeu_cau'], chay: yeuCauChoDuyet, mo_ta: 'Các khoản chi agent hoặc người dùng xin, đang chờ chủ doanh nghiệp duyệt; kèm đề xuất duyệt/từ chối.' },
   tinh_hinh_agent: { nhom: 'tro_ly', can: ['yeu_cau'], chay: tinhHinhAgent, mo_ta: 'Các agent AI được phép xin chi: trạng thái, đã dùng bao nhiêu hạn mức tháng, agent bị từ chối nhiều.' },
@@ -1180,8 +1244,9 @@ export const NANG_LUC: Record<string, NangLuc> = {
   chi_phi_ai: { nhom: 'ai_token', can: ['chi_phi_ai'], chay: chiPhiAi, mo_ta: 'Chi phí OpenAI, Anthropic, Gemini, OpenRouter tháng này so với ngân sách AI, dự kiến cuối tháng, model tốn nhất.' },
   token_ai: { nhom: 'ai_token', can: ['token_ai', 'chi_phi_ai'], chay: tokenAi, mo_ta: 'Số token theo model 30 ngày, tỷ lệ cache, chi phí mỗi triệu token.' },
   model_re_hon: { nhom: 'ai_token', can: ['token_ai', 'bang_gia'], chay: modelReHon, mo_ta: 'Ước tính tiết kiệm nếu đổi sang model rẻ hơn cùng hãng, theo số token thật và bảng giá OpenRouter.' },
-  bao_cao_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich'], chay: baoCaoTaiChinh, mo_ta: 'Báo cáo thu, chi, chênh lệch theo tháng từ sao kê ngân hàng.' },
+  bao_cao_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich'], chay: baoCaoTaiChinh, mo_ta: 'Tổng hợp dòng tiền ngân hàng theo tháng: tiền vào, tiền ra, chênh lệch. Không phải doanh thu, lợi nhuận hay báo cáo tài chính — MIMI chưa có sổ kế toán.' },
   phan_tich_tiet_kiem: { nhom: 'bao_cao', can: ['giao_dich', 'token_ai', 'bang_gia'], chay: phanTichTietKiem, mo_ta: 'Chỗ có thể tiết kiệm: khoản chi nghi trả trùng, tiền bớt được nếu đổi model AI.' },
   nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },
+  tra_cuu_luat: { nhom: 'chung_tu', can: ['kho_luat'], chay: traCuuLuat, mo_ta: 'Tìm và trích nguyên văn đoạn Luật, Nghị định, Thông tư trong kho Công báo cho một câu hỏi pháp lý chung (không phải nghĩa vụ thuế của chính công ty). Chỉ tham khảo, kèm ngày ban hành và hiệu lực.' },
   tat_ca_ket_noi: { nhom: 'ket_noi', can: ['ket_noi_ngan_hang', 'chi_phi_ai'], chay: tatCaKetNoi, mo_ta: 'Trạng thái mọi kết nối: ngân hàng, Casso, Tổng cục Thuế, OpenAI, Anthropic, Google AI, OpenRouter.' },
 };

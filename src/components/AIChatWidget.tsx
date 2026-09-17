@@ -1,19 +1,29 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Volume2, Loader2 } from 'lucide-react';
+import { X, Send, Volume2, Loader2, AlertTriangle, ArrowUpRight } from 'lucide-react';
 // Trợ lý mang logo con mèo cam của MIMI từ 11/09/2026, thay con mèo đen đội tai
 // nghe trước đó. Trợ lý giờ đi lại trên giao diện như một con trỏ và làm việc
 // cùng người dùng — nó là MIMI, không phải một nhân vật riêng.
 import mimiAgent from '@/assets/mimi-cat.png';
 import { toast } from 'sonner';
-import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { nhanViec } from '@/lib/mimiLamHo';
 import { useMimiLamHo } from '@/components/mimi/MimiLamHo';
+import { goiTroLy } from '@/lib/goiTroLy';
+import { dungLichSu, type TraLoi } from '@/lib/troLy';
 
-type Msg = { role: 'user' | 'assistant'; content: string };
+/**
+ * Widget trợ lý ở góc màn hình.
+ *
+ * MIMI-P0-001: widget KHÔNG có bộ não riêng. Nó gọi đúng `tro-ly` với đúng payload trang MIMI
+ * Assistant gửi (`dungLichSu`), nên cùng câu hỏi thì cùng kết quả có cấu trúc. Widget chỉ khác
+ * cách trình bày: câu trả lời, độ đầy đủ, liên kết chi tiết. Nút hành động (duyệt, từ chối…) chỉ
+ * có ở trang MIMI Assistant — nơi có hộp xác nhận — widget dẫn sang đó.
+ */
 
-const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat`;
+type Msg = { role: 'user' | 'assistant'; content: string; traLoi?: TraLoi };
+
 const TTS_URL = `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
 // Opening questions steer what people think this product is for, so they track
@@ -25,8 +35,37 @@ const SUGGESTIONS = [
   'Hộ kinh doanh doanh thu bao nhiêu thì phải nộp thuế?',
 ];
 
+const NHAN_DO_DAY: Record<Exclude<TraLoi['do_day'], 'complete'>, string> = {
+  partial: 'Dữ liệu chưa đủ — xem cảnh báo',
+  stale: 'Dữ liệu có thể đã cũ',
+  unavailable: 'Có nguồn chưa kết nối',
+};
+
+function ChiTietTraLoi({ cau, traLoi }: { cau: string; traLoi: TraLoi }) {
+  const trang = [...new Map(traLoi.ket_qua.flatMap((r) => r.trang).map((t) => [t.duong_dan, t])).values()].slice(0, 3);
+  const coViec = traLoi.ket_qua.some((r) => r.de_xuat.some((d) => d.loai !== 'mo_trang'));
+  return (
+    <div className="mt-2 flex flex-col gap-1.5 border-t border-border/60 pt-2 text-[12px]">
+      {traLoi.do_day !== 'complete' && (
+        <span className="inline-flex items-center gap-1 font-medium text-mimi-amber">
+          <AlertTriangle size={12} aria-hidden /> {NHAN_DO_DAY[traLoi.do_day]}
+        </span>
+      )}
+      {trang.map((t) => (
+        <Link key={t.duong_dan} to={t.duong_dan} className="inline-flex items-center gap-1 text-primary hover:underline">
+          {t.nhan} <ArrowUpRight size={12} aria-hidden />
+        </Link>
+      ))}
+      {coViec && (
+        <Link to={`/dashboard/tro-ly?hoi=${encodeURIComponent(cau)}`} className="inline-flex items-center gap-1 font-medium text-foreground hover:underline">
+          Xem bảng số và việc cần xác nhận trong MIMI Assistant <ArrowUpRight size={12} aria-hidden />
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function AIChatWidget() {
-  const { session } = useAuthStore();
   const { chay, dangChay } = useMimiLamHo();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -36,62 +75,8 @@ export default function AIChatWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo?.({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
-
-  const streamChat = useCallback(async (allMessages: Msg[]) => {
-    const resp = await fetch(CHAT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-        // Send the user's session so the AI can read their real business data.
-        Authorization: `Bearer ${session?.access_token ?? SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ messages: allMessages }),
-    });
-
-    if (!resp.ok) {
-      const data = await resp.json().catch(() => ({}));
-      throw new Error(data.error || `Error ${resp.status}`);
-    }
-    if (!resp.body) throw new Error('No stream body');
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let assistantContent = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      let idx: number;
-      while ((idx = buffer.indexOf('\n')) !== -1) {
-        let line = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 1);
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (!line.startsWith('data: ')) continue;
-        const json = line.slice(6).trim();
-        if (json === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(json);
-          const delta = parsed.choices?.[0]?.delta?.content;
-          if (delta) {
-            assistantContent += delta;
-            setMessages(prev => {
-              const last = prev[prev.length - 1];
-              if (last?.role === 'assistant') {
-                return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-              }
-              return [...prev, { role: 'assistant', content: assistantContent }];
-            });
-          }
-        } catch { /* partial */ }
-      }
-    }
-  }, [session]);
 
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
@@ -101,7 +86,7 @@ export default function AIChatWidget() {
     setMessages(newMessages);
     setInput('');
 
-    // Câu nhờ việc → con trỏ mèo làm ngay trên giao diện. Câu khác → chat như cũ.
+    // Câu nhờ việc → con trỏ mèo làm ngay trên giao diện. Câu khác → hỏi bộ não chung.
     const kichBan = nhanViec(content);
     if (kichBan) {
       setMessages([
@@ -118,11 +103,18 @@ export default function AIChatWidget() {
     }
 
     setIsLoading(true);
-
     try {
-      await streamChat(newMessages);
-    } catch (e: any) {
-      toast.error(e.message || 'Lỗi kết nối AI');
+      // Cùng cách dựng lịch sử với trang MIMI Assistant: mỗi lượt là câu hỏi + câu trả lời.
+      const luot: { cau: string; traLoi?: { cau: string } }[] = [];
+      for (let i = 0; i < messages.length; i++) {
+        const m = messages[i];
+        const sau = messages[i + 1];
+        if (m.role === 'user' && sau?.role === 'assistant' && sau.traLoi) luot.push({ cau: m.content, traLoi: sau.traLoi });
+      }
+      const traLoi = (await goiTroLy('hoi', { cau: content, pham_vi: null, lich_su: dungLichSu(luot) })) as TraLoi;
+      setMessages((prev) => [...prev, { role: 'assistant', content: traLoi.cau, traLoi }]);
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : 'MIMI chưa trả lời được. Thử lại sau ít phút.');
     } finally {
       setIsLoading(false);
     }
@@ -198,7 +190,7 @@ export default function AIChatWidget() {
                 </div>
                 <div>
                   <p className="text-sm font-display font-bold text-foreground">Trợ lý MIMI</p>
-                  <p className="text-[11px] text-muted-foreground">Hiểu dữ liệu của bạn</p>
+                  <p className="text-[11px] text-muted-foreground">Cùng bộ não với MIMI Assistant</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -214,6 +206,7 @@ export default function AIChatWidget() {
                 )}
                 <button
                   onClick={() => setOpen(false)}
+                  aria-label="Đóng trợ lý"
                   className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground hover:text-foreground pressable sm:hidden"
                 >
                   <X size={16} />
@@ -230,7 +223,7 @@ export default function AIChatWidget() {
                   </div>
                   <p className="text-[15px] font-semibold text-foreground">Xin chào</p>
                   <p className="text-[13px] text-muted-foreground mt-1 max-w-[240px] mx-auto">
-                    Hỏi mình về thuế, chứng từ, dòng tiền — hoặc nhờ việc, mình đi làm ngay trên màn hình cho bạn xem.
+                    Hỏi mình về thuế, chứng từ, khoản chi — hoặc nhờ việc, mình đi làm ngay trên màn hình cho bạn xem.
                   </p>
                   <div className="flex flex-col gap-2 mt-5">
                     {SUGGESTIONS.map(q => (
@@ -253,12 +246,13 @@ export default function AIChatWidget() {
                       : 'bg-accent text-foreground rounded-[20px] rounded-bl-md'
                   }`}>
                     {m.content}
+                    {m.traLoi && <ChiTietTraLoi cau={messages[i - 1]?.content ?? ''} traLoi={m.traLoi} />}
                   </div>
                 </div>
               ))}
-              {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+              {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-accent px-4 py-3 rounded-[20px] rounded-bl-md">
+                  <div className="bg-accent px-4 py-3 rounded-[20px] rounded-bl-md" aria-label="MIMI đang trả lời">
                     <Loader2 size={14} className="animate-spin text-muted-foreground" />
                   </div>
                 </div>
@@ -273,11 +267,13 @@ export default function AIChatWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
                   placeholder="Hỏi trợ lý tài chính..."
+                  aria-label="Câu hỏi cho trợ lý"
                   className="flex-1 bg-accent rounded-full px-4 py-3 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                 />
                 <button
                   onClick={() => send()}
                   disabled={!input.trim() || isLoading}
+                  aria-label="Gửi"
                   className="w-11 h-11 shrink-0 bg-primary text-white rounded-full flex items-center justify-center hover:brightness-110 transition-all disabled:opacity-40 pressable"
                 >
                   <Send size={16} />

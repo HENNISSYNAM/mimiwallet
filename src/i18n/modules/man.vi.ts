@@ -87,6 +87,15 @@ const m = {
       mimiDaLamGi: 'MIMI đã làm gì',
       viecBanCoTheLam: 'Việc bạn có thể làm',
       nguon: 'Nguồn:',
+      doDay: {
+        dong: '{{ten}}: {{so}} dòng',
+        ky: 'từ {{tu}} đến {{den}}',
+        dongBo: 'đồng bộ {{luc}}',
+        complete: 'Đủ',
+        partial: 'Chưa đủ',
+        stale: 'Có thể đã cũ',
+        unavailable: 'Chưa có kết nối',
+      },
       conDongNua: 'Còn {{so}} dòng nữa ở trang chi tiết.',
       trangThai: {
         dangChay: 'Đang chạy',

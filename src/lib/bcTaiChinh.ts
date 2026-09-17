@@ -42,9 +42,12 @@ export interface ThangTaiChinh {
   thang: string;
   /** Khoá sắp xếp, dạng YYYY-MM. */
   khoa: string;
-  doanhThu: number;
-  chiPhi: number;
-  loiNhuan: number;
+  /** Tiền vào tài khoản ngân hàng — KHÔNG phải doanh thu (P0-004, xem TU_DIEN_CHI_SO). */
+  tienVao: number;
+  /** Tiền ra khỏi tài khoản ngân hàng — không phải chi phí kế toán. */
+  tienRa: number;
+  /** Tiền vào trừ tiền ra — không phải lợi nhuận. */
+  chenhLech: number;
 }
 
 export interface NhomTuoi {
@@ -62,10 +65,10 @@ export interface NhomChiPhi {
 export const MOC_TUOI = [30, 60, 90] as const;
 
 /**
- * Doanh thu và chi phí theo tháng.
+ * Dòng tiền ngân hàng theo tháng: tiền vào, tiền ra, chênh lệch.
  *
  * Chỉ trả về những tháng CÓ giao dịch. Đắp thêm tháng rỗng cho biểu đồ đẹp là
- * vẽ ra những tháng doanh thu bằng 0 chưa từng xảy ra.
+ * vẽ ra những tháng không có tiền vào chưa từng xảy ra.
  */
 export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
   const gom = new Map<string, { thu: number; chi: number }>();
@@ -76,7 +79,7 @@ export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
     const o = gom.get(khoa) ?? { thu: 0, chi: 0 };
     const tien = Math.abs(Number(t.amount));
     // Chiều tiền dùng chung với mọi màn: `type` quyết định, dấu chỉ khi thiếu `type`.
-    // Bản cũ coi `amount > 0` là tiền vào, nên khoản chi ngân hàng (số dương) thành doanh thu.
+    // Bản cũ coi `amount > 0` là tiền vào, nên khoản chi ngân hàng (số dương) bị tính thành tiền vào.
     const chieu = chieuTien(t);
     if (!Number.isFinite(tien) || chieu === null) continue;
     if (chieu === 'vao') o.thu += tien;
@@ -89,9 +92,9 @@ export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
     .map(([khoa, o]) => ({
       khoa,
       thang: `T${khoa.slice(5)}`,
-      doanhThu: o.thu,
-      chiPhi: o.chi,
-      loiNhuan: o.thu - o.chi,
+      tienVao: o.thu,
+      tienRa: o.chi,
+      chenhLech: o.thu - o.chi,
     }));
 }
 

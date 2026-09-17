@@ -1,345 +1,74 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
-import { canTraLuat, chonNguon, nguonThanhLoiDan, tenNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
+/**
+ * `chat` — ĐÃ GỘP vào `tro-ly` (MIMI-P0-001, 17/09/2026).
+ *
+ * Trước đây đây là bộ não thứ hai của trợ lý: prompt riêng, nguồn dữ liệu riêng, định nghĩa
+ * số liệu riêng (gọi dòng tiền ngân hàng là "doanh thu", còn khuyên vay và ứng vốn hoá đơn —
+ * định vị đã bỏ từ 17/08/2026), và tổng giao dịch không phân trang. Cùng câu hỏi có thể ra hai
+ * câu trả lời khác nhau.
+ *
+ * Giờ function này không còn logic tài chính nào. Nó chỉ giữ tương thích cho bản giao diện cũ
+ * còn nằm trong bộ nhớ đệm trình duyệt: chuyển câu hỏi cuối sang `tro-ly` (hành động `hoi`, cùng
+ * phiên đăng nhập, cùng kiểm quyền và giới hạn tần suất), rồi trả lời theo dạng SSE cũ.
+ */
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const fmtVND = (n: number) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(n);
+type TinNhan = { role?: unknown; content?: unknown };
 
-const FACTOR_LABELS: Record<string, string> = {
-  revenueTrend: "xu hướng doanh thu",
-  expenseToIncomeRatio: "tỷ lệ chi phí/doanh thu",
-  invoicePunctuality: "độ đúng hạn thanh toán hóa đơn",
-  loanRepaymentRatio: "tỷ lệ trả nợ vay",
-  cashFlowVolatility: "ổn định dòng tiền",
-};
-
-/** Concrete, actionable advice per weak credit factor (mirrors the Learn lessons). */
-const FACTOR_ADVICE: Record<string, string> = {
-  revenueTrend:
-    "Giữ đà tăng doanh thu đều đặn thay vì tăng vọt rồi tụt: ưu tiên giữ chân khách cũ, bán kèm/nâng cấp để tăng giá trị đơn hàng, và đảm bảo mọi khoản thu đều được ghi nhận vào hệ thống.",
-  expenseToIncomeRatio:
-    "Kéo tỷ lệ chi phí xuống dưới ~60% doanh thu: rà soát chi phí cố định lớn nhất để đàm phán lại, cắt các dịch vụ không dùng, và gộp đơn nhập hàng để lấy chiết khấu.",
-  invoicePunctuality:
-    "Siết quy trình thu hồi công nợ: ghi rõ hạn thanh toán, nhắc khách trước hạn 3 ngày, nhắc ngay ngày quá hạn đầu tiên, và cân nhắc chiết khấu nhỏ cho khách trả sớm.",
-  loanRepaymentRatio:
-    "Duy trì kỷ luật trả nợ đúng tiến độ: đặt nhắc/tự động trích trả, chỉ vay trong khả năng dòng tiền, và chủ động thương lượng giãn nợ TRƯỚC khi trễ hạn.",
-  cashFlowVolatility:
-    "Làm phẳng dòng tiền: xây nguồn thu định kỳ (hợp đồng dài hạn), rải lịch thu–chi tránh dồn cục, và giữ quỹ dự phòng 1–3 tháng chi phí.",
-};
-
-interface BizContext {
-  companyName: string;
-  score: number | null;
-  pd: number | null;
-  creditLimit: number | null;
-  factors: { name: string; label: string; score: number }[]; // ascending (weakest first)
-  income3m: number;
-  expense3m: number;
-  overdueCount: number;
-  overdueTotal: number;
-  pendingCount: number;
-  pendingTotal: number;
-  loanCount: number;
-  loanOutstanding: number;
+/** Trả văn bản theo dạng SSE delta mà widget cũ đọc được. */
+function traSse(text: string, status = 200): Response {
+  const enc = new TextEncoder();
+  const body = `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\ndata: [DONE]\n\n`;
+  return new Response(enc.encode(body), { status, headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
 }
 
-/**
- * Reads the caller's real business data (credit score + factors, 3-month cash
- * flow, invoices, loans) so answers are grounded in their own numbers.
- * Never touches KYC / identity data. Returns null if the user isn't identifiable.
- */
-async function buildContext(authHeader: string | null): Promise<BizContext | null> {
-  try {
-    if (!authHeader) return null;
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceKey) return null;
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (!user) return null;
-
-    // A user may own several `companies` rows — the demo account owns four.
-    // Resolving through the shared helper is what stopped the assistant
-    // telling a signed-in user to sign in.
-    const company = await resolveCompany<{ id: string; name: string }>(
-      supabase,
-      user.id,
-      "id, name",
-    );
-    if (!company) return null;
-
-    const ctx: BizContext = {
-      companyName: company.name,
-      score: null, pd: null, creditLimit: null, factors: [],
-      income3m: 0, expense3m: 0,
-      overdueCount: 0, overdueTotal: 0, pendingCount: 0, pendingTotal: 0,
-      loanCount: 0, loanOutstanding: 0,
-    };
-
-    const { data: snap } = await supabase
-      .from("credit_score_snapshots")
-      .select("id, score, credit_limit, probability_of_default")
-      .eq("company_id", company.id)
-      .order("computed_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (snap) {
-      ctx.score = snap.score;
-      ctx.pd = snap.probability_of_default;
-      ctx.creditLimit = snap.credit_limit;
-      const { data: factors } = await supabase
-        .from("credit_score_factors")
-        .select("factor_name, normalized_score")
-        .eq("snapshot_id", snap.id);
-      ctx.factors = (factors ?? [])
-        .map((f) => ({ name: f.factor_name, label: FACTOR_LABELS[f.factor_name] ?? f.factor_name, score: f.normalized_score }))
-        .sort((a, b) => a.score - b.score);
-    }
-
-    const since = new Date();
-    since.setMonth(since.getMonth() - 3);
-    const { data: txs } = await supabase
-      .from("transactions")
-      // Lọc dòng sandbox: trợ lý mà trích số giả thì nó nói dối người dùng
-      // bằng chính giọng đáng tin nhất trong ứng dụng.
-      .select("type, amount, is_synthetic")
-      .eq("is_synthetic", false)
-      .eq("company_id", company.id)
-      .gte("transaction_date", since.toISOString().slice(0, 10));
-    for (const t of txs ?? []) {
-      if (t.type === "income") ctx.income3m += t.amount;
-      else if (t.type === "expense") ctx.expense3m += Math.abs(t.amount);
-    }
-
-    const { data: invoices } = await supabase
-      .from("invoices").select("status, total").eq("company_id", company.id);
-    for (const i of invoices ?? []) {
-      if (i.status === "overdue") { ctx.overdueCount++; ctx.overdueTotal += i.total; }
-      else if (i.status === "pending") { ctx.pendingCount++; ctx.pendingTotal += i.total; }
-    }
-
-    const { data: loans } = await supabase
-      .from("loan_applications").select("amount, amount_repaid")
-      .eq("company_id", company.id).in("status", ["disbursed", "approved"]);
-    ctx.loanCount = (loans ?? []).length;
-    ctx.loanOutstanding = (loans ?? []).reduce((s, l) => s + (l.amount - (l.amount_repaid ?? 0)), 0);
-
-    return ctx;
-  } catch (_e) {
-    return null;
-  }
+/** Lịch sử dạng OpenAI → dạng `tro-ly` (tối đa 6 tin, như `tro-ly` tự cắt). */
+export function doiLichSu(ds: TinNhan[]): { vai: "nguoi_dung" | "tro_ly"; noi_dung: string }[] {
+  return ds
+    .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+    .map((m) => ({ vai: m.role === "user" ? "nguoi_dung" as const : "tro_ly" as const, noi_dung: String(m.content).slice(0, 1000) }))
+    .slice(-6);
 }
 
-function contextToPrompt(c: BizContext): string {
-  const lines = [`Doanh nghiệp: ${c.companyName}`];
-  if (c.score != null) {
-    lines.push(`Điểm tín dụng: ${c.score}/850; xác suất vỡ nợ ${((c.pd ?? 0) * 100).toFixed(1)}%; hạn mức ${fmtVND(c.creditLimit ?? 0)}.`);
-    if (c.factors.length) lines.push(`Yếu tố yếu nhất: ${c.factors.slice(0, 2).map((f) => `${f.label} (${Math.round(f.score)}/100)`).join(", ")}.`);
-  } else lines.push("Chưa có điểm tín dụng.");
-  lines.push(`Dòng tiền 3 tháng: thu ${fmtVND(c.income3m)}, chi ${fmtVND(c.expense3m)}, ròng ${fmtVND(c.income3m - c.expense3m)}.`);
-  lines.push(`Hóa đơn: ${c.overdueCount} quá hạn (${fmtVND(c.overdueTotal)}), ${c.pendingCount} chưa thu (${fmtVND(c.pendingTotal)}).`);
-  if (c.loanCount) lines.push(`${c.loanCount} khoản vay, dư nợ ${fmtVND(c.loanOutstanding)}.`);
-  return lines.join("\n");
-}
-
-// ── Internal (no external API) assistant ─────────────────────────────────────
-const strip = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d");
-
-const has = (t: string, words: string[]) => words.some((w) => t.includes(w));
-
-/**
- * Deterministic Vietnamese financial assistant. Matches the user's intent and
- * answers using the company's own numbers — no external LLM required, so it
- * always works. Used when no LLM key is configured.
- */
-function answerInternally(message: string, c: BizContext | null): string {
-  const t = strip(message);
-
-  if (!c) {
-    return "Mình cần bạn đăng nhập để đọc dữ liệu doanh nghiệp và tư vấn chính xác theo số liệu của bạn. Sau khi đăng nhập, bạn có thể hỏi: điểm tín dụng, dòng tiền, hóa đơn quá hạn, hoặc cách tăng hạn mức vay.";
-  }
-
-  const weakest = c.factors.slice(0, 2);
-  const net3m = c.income3m - c.expense3m;
-  const expenseRatio = c.income3m > 0 ? (c.expense3m / c.income3m) * 100 : null;
-
-  // 1) Cách cải thiện điểm
-  if (has(t, ["cai thien", "tang diem", "nang diem", "lam sao", "cach nao", "improve"])) {
-    if (!c.factors.length) return "Bạn chưa có điểm tín dụng. Hãy vào trang Điểm tín dụng và tải dữ liệu giao dịch (CSV) để hệ thống tính điểm — chỉ mất vài giây.";
-    const tips = weakest.map((f, i) => `${i + 1}. ${f.label.charAt(0).toUpperCase() + f.label.slice(1)} (${Math.round(f.score)}/100): ${FACTOR_ADVICE[f.name] ?? "Cải thiện chỉ số này để tăng điểm."}`).join("\n\n");
-    return `Điểm hiện tại của bạn là ${c.score}/850. Hai yếu tố đang kéo điểm xuống nhiều nhất:\n\n${tips}\n\nGợi ý: vào mục "Học Fintech" — hệ thống đã tự xếp sẵn bài học đúng 2 điểm yếu này cho bạn.`;
-  }
-
-  // 2) Điểm tín dụng
-  if (has(t, ["diem tin dung", "diem cua toi", "credit", "score", "diem so", "hang tin dung", "vi sao diem"])) {
-    if (c.score == null) return "Bạn chưa có điểm tín dụng. Vào trang Điểm tín dụng → tải dữ liệu giao dịch (CSV) → hệ thống tính điểm trong vài giây kèm phân tích từng yếu tố.";
-    const grade = c.score >= 750 ? "A (Xuất sắc)" : c.score >= 650 ? "B (Tốt)" : c.score >= 550 ? "C (Trung bình)" : "D (Cần cải thiện)";
-    const weak = weakest.length ? `\n\nĐiểm yếu lớn nhất: ${weakest.map((f) => `${f.label} (${Math.round(f.score)}/100)`).join(" và ")}.` : "";
-    return `Điểm tín dụng của bạn là ${c.score}/850 — hạng ${grade}. Xác suất vỡ nợ ước tính ${((c.pd ?? 0) * 100).toFixed(1)}%, hạn mức khả dụng ${fmtVND(c.creditLimit ?? 0)}.${weak}\n\nBạn muốn biết cách cải thiện? Hỏi mình "làm sao để tăng điểm".`;
-  }
-
-  // 3) Hóa đơn / công nợ
-  if (has(t, ["hoa don", "cong no", "qua han", "invoice", "khach no", "thu tien"])) {
-    if (c.overdueCount === 0 && c.pendingCount === 0) return "Hiện bạn không có hóa đơn quá hạn hay chờ thu. Rất tốt — giữ nguyên kỷ luật này giúp điểm tín dụng tăng đều.";
-    const parts: string[] = [];
-    if (c.overdueCount) parts.push(`${c.overdueCount} hóa đơn QUÁ HẠN, tổng ${fmtVND(c.overdueTotal)}`);
-    if (c.pendingCount) parts.push(`${c.pendingCount} hóa đơn chưa tới hạn, tổng ${fmtVND(c.pendingTotal)}`);
-    const advance = c.overdueTotal + c.pendingTotal > 0 ? `\n\nNếu cần tiền gấp, bạn có thể ứng vốn ~80% giá trị hóa đơn ngay trong mục Hóa đơn thay vì chờ khách thanh toán.` : "";
-    return `Tình trạng hóa đơn: ${parts.join("; ")}.${c.overdueCount ? "\n\nƯu tiên xử lý nhóm quá hạn trước — vừa giải phóng dòng tiền, vừa cải thiện chỉ số đúng hạn (đang ảnh hưởng trực tiếp tới điểm tín dụng)." : ""}${advance}`;
-  }
-
-  // 4) Vay / hạn mức
-  if (has(t, ["vay", "han muc", "loan", "no ", "du no", "co nen vay"])) {
-    const limit = c.creditLimit != null ? `Hạn mức khả dụng hiện tại: ${fmtVND(c.creditLimit)}.` : "Bạn chưa có điểm tín dụng nên chưa có hạn mức — hãy tính điểm trước.";
-    const debt = c.loanCount ? `\n\nBạn đang có ${c.loanCount} khoản vay với dư nợ ${fmtVND(c.loanOutstanding)}.` : "\n\nHiện bạn chưa có khoản vay nào đang hoạt động.";
-    const advice = net3m < 0
-      ? "\n\nLưu ý: dòng tiền ròng 3 tháng gần đây đang ÂM, nên cân nhắc kỹ khả năng trả nợ trước khi vay thêm."
-      : "\n\nDòng tiền ròng 3 tháng gần đây dương — bạn có dư địa trả nợ, nhưng chỉ nên vay trong khả năng dòng tiền.";
-    return `${limit}${debt}${advice}`;
-  }
-
-  // 5) Chi phí
-  if (has(t, ["chi phi", "tiet kiem", "cat giam", "cost", "ty le chi"])) {
-    const ratio = expenseRatio != null ? `Tỷ lệ chi phí/doanh thu 3 tháng gần đây của bạn là ${expenseRatio.toFixed(1)}%.` : "Chưa đủ dữ liệu để tính tỷ lệ chi phí.";
-    const verdict = expenseRatio == null ? "" : expenseRatio > 60
-      ? " Con số này đang cao hơn ngưỡng lành mạnh (~60%), là dư địa cải thiện điểm rõ nhất."
-      : " Con số này nằm trong vùng lành mạnh — hãy duy trì.";
-    return `${ratio}${verdict}\n\n${FACTOR_ADVICE.expenseToIncomeRatio}`;
-  }
-
-  // 6) Dòng tiền
-  if (has(t, ["dong tien", "cash", "thu chi", "doanh thu", "revenue", "thang nay"])) {
-    const trend = net3m >= 0 ? "dương" : "âm";
-    const warn = net3m < 0 ? "\n\nDòng tiền ròng đang âm — ưu tiên thu hồi công nợ và giãn các khoản chi chưa cấp thiết." : "";
-    return `Dòng tiền 3 tháng gần nhất của ${c.companyName}:\n• Thu: ${fmtVND(c.income3m)}\n• Chi: ${fmtVND(c.expense3m)}\n• Ròng: ${fmtVND(net3m)} (${trend})${warn}`;
-  }
-
-  // 7) Chào hỏi / mặc định
-  const scoreLine = c.score != null ? `điểm tín dụng ${c.score}/850` : "chưa có điểm tín dụng";
-  return `Chào bạn! Mình đang đọc được dữ liệu của ${c.companyName}: ${scoreLine}, dòng tiền ròng 3 tháng ${fmtVND(net3m)}, ${c.overdueCount} hóa đơn quá hạn.\n\nBạn có thể hỏi mình:\n• "Vì sao điểm tín dụng của tôi như vậy?"\n• "Làm sao để tăng điểm nhanh nhất?"\n• "Dòng tiền tháng này thế nào?"\n• "Tôi có nên vay thêm không?"`;
-}
-
-/**
- * Tìm đoạn luật cho câu hỏi pháp lý, trong kho Công báo đã nạp (`tim_phap_luat`).
- *
- * Hỏng thì trả mảng rỗng chứ không ném lỗi: không tra được luật thì lời dặn
- * vẫn bảo mô hình nói "kho chưa có", tốt hơn là trợ lý im lặng.
- */
-async function traLuat(cauHoi: string): Promise<DoanLuat[]> {
-  if (!canTraLuat(cauHoi)) return [];
-  try {
-    const url = Deno.env.get("SUPABASE_URL");
-    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !key) return [];
-    // Tự huỷ sau 6 giây: kho từng hết giờ ở 8 giây (57014) và kéo cả câu trả lời
-    // treo theo. Chậm thì trả lời không có nguồn, còn hơn không trả lời.
-    const { data, error } = await createClient(url, key)
-      .rpc("tim_phap_luat", { cau_hoi: cauHoi.slice(0, 500), so_ket_qua: 12 })
-      .abortSignal(AbortSignal.timeout(6000));
-    if (error) {
-      console.error("tim_phap_luat:", error.message);
-      return [];
-    }
-    return chonNguon((data ?? []) as DoanLuat[]);
-  } catch (e) {
-    console.error("tra luat:", e);
-    return [];
-  }
-}
-
-/** Khi không có mô hình: trả nguyên văn đoạn luật tìm được, kèm nguồn — không diễn giải. */
-function traLoiLuatNoiBo(nguon: DoanLuat[]): string {
-  if (nguon.length === 0) {
-    return "Kho văn bản của MIMI chưa có đoạn nói về việc này. Bạn nên hỏi kế toán hoặc cơ quan thuế quản lý trực tiếp.";
-  }
-  const khoi = nguon.map((d, i) => {
-    const trich = d.noi_dung.length > 500 ? `${d.noi_dung.slice(0, 500)}…` : d.noi_dung;
-    return `[${i + 1}] ${tenNguon(d)}${d.ngay_ban_hanh ? ` · ban hành ${d.ngay_ban_hanh.split("-").reverse().join("/")}` : ""}\n${d.url}\n${trich}`;
-  });
-  return `Mình tìm thấy các đoạn luật liên quan trong Công báo:\n\n${khoi.join("\n\n")}\n\nĐây là trích nguyên văn, chưa phải lời tư vấn. Kho chưa theo dõi tình trạng hiệu lực — văn bản cũ có thể đã bị sửa hoặc thay thế.`;
-}
-
-/** Streams plain text back in the OpenAI SSE delta shape the widget already parses. */
-function streamText(text: string): Response {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      // Chunk by ~3 words to preserve the typing effect on the client.
-      const parts = text.match(/\S+\s*/g) ?? [text];
-      let buf = "";
-      for (let i = 0; i < parts.length; i++) {
-        buf += parts[i];
-        if ((i + 1) % 3 === 0 || i === parts.length - 1) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: buf } }] })}\n\n`));
-          buf = "";
-          await new Promise((r) => setTimeout(r, 18));
-        }
-      }
-      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      controller.close();
-    },
-  });
-  return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
-}
-
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return new Response(null, { status: 405, headers: corsHeaders });
+
+  const auth = req.headers.get("Authorization");
+  if (!auth) return traSse("Cần đăng nhập để MIMI đọc dữ liệu công ty.", 401);
+
+  let tin: TinNhan[] = [];
+  try {
+    const body = await req.json();
+    tin = Array.isArray(body?.messages) ? body.messages : [];
+  } catch {
+    return traSse("Yêu cầu không hợp lệ.", 400);
+  }
+  const iCuoi = tin.map((m) => m.role).lastIndexOf("user");
+  const cau = iCuoi >= 0 && typeof tin[iCuoi].content === "string" ? String(tin[iCuoi].content).trim() : "";
+  if (!cau) return traSse("Bạn chưa nhập câu hỏi.", 400);
 
   try {
-    const { messages } = await req.json();
-    const lastUser = [...(messages ?? [])].reverse().find((m: { role: string }) => m.role === "user")?.content ?? "";
-    const laCauHoiLuat = canTraLuat(lastUser);
-    const [context, nguonLuat] = await Promise.all([
-      buildContext(req.headers.get("Authorization")),
-      traLuat(lastUser),
-    ]);
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-
-    // No external key configured → answer internally from the user's own data,
-    // or from the legal corpus verbatim when the question is about the law.
-    if (!LOVABLE_API_KEY) {
-      return streamText(laCauHoiLuat ? traLoiLuatNoiBo(nguonLuat) : answerInternally(lastUser, context));
-    }
-
-    // Key present → richer LLM answers, still grounded in the same context.
-    // Câu giới thiệu từng là "nền tảng tín dụng số" — định vị đã bỏ từ 17/08/2026.
-    const systemPrompt = `Bạn là trợ lý của MIMI WALLET — lớp kiểm soát tài chính cho doanh nghiệp và hộ kinh doanh Việt Nam: chứng từ chi phí, thuế, và kiểm soát chi của agent AI.
-Trả lời bằng tiếng Việt, ngắn gọn, thực tế, thân thiện nhưng chuyên nghiệp. Ưu tiên câu trả lời hành động được.
-Khi có số liệu doanh nghiệp bên dưới, HÃY dùng đúng các con số đó và cá nhân hóa lời khuyên; đừng bịa số.
-${context ? `\n=== DỮ LIỆU DOANH NGHIỆP HIỆN TẠI ===\n${contextToPrompt(context)}\n=== HẾT DỮ LIỆU ===` : "\n(Chưa truy cập được dữ liệu cụ thể — hãy tư vấn tổng quát.)"}
-${laCauHoiLuat ? `\n${nguonThanhLoiDan(nguonLuat)}` : ""}`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/tro-ly`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-        stream: true,
-      }),
+      headers: {
+        Authorization: auth,
+        apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ hanh_dong: "hoi", cau: cau.slice(0, 1000), pham_vi: null, lich_su: doiLichSu(tin.slice(0, iCuoi)) }),
+      signal: AbortSignal.timeout(25_000),
     });
-
-    // Any upstream problem → fall back to the internal assistant instead of erroring out.
-    if (!response.ok || !response.body) {
-      console.error("AI gateway error:", response.status, await response.text().catch(() => ""));
-      return streamText(answerInternally(lastUser, context));
+    const kq = await res.json().catch(() => ({}));
+    if (!res.ok || typeof kq?.cau !== "string") {
+      return traSse(typeof kq?.error === "string" ? kq.error : "MIMI chưa trả lời được. Thử lại sau ít phút.", res.ok ? 502 : res.status);
     }
-
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
+    return traSse(kq.cau);
   } catch (e) {
-    console.error("chat error:", e);
-    return streamText("Xin lỗi, mình gặp sự cố khi xử lý yêu cầu. Bạn thử hỏi lại giúp mình nhé.");
+    console.error("chat -> tro-ly:", e instanceof Error ? e.message : e);
+    return traSse("MIMI chưa trả lời được. Thử lại sau ít phút.", 502);
   }
 });

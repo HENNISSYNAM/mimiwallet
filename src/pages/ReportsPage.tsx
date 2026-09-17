@@ -16,7 +16,10 @@ import {
 } from '@/lib/bcTaiChinh';
 
 /**
- * Báo cáo tài chính — đọc số thật của công ty đang đăng nhập.
+ * Tổng hợp dòng tiền ngân hàng — đọc số thật của công ty đang đăng nhập.
+ *
+ * P0-004 (17/09/2026): trang này từng tên "Báo cáo tài chính" và gọi tiền vào là "doanh thu",
+ * chênh lệch là "lợi nhuận". Số chỉ từ sao kê nên giờ gọi đúng tên theo `TU_DIEN_CHI_SO`.
  *
  * BẢN TRƯỚC VẼ BA BIỂU ĐỒ TỪ `mockData`. Doanh thu 12 tỷ, lợi nhuận âm 2,7 tỷ,
  * tuổi hoá đơn, phân bổ chi phí — tất cả là số bịa, hiện cho mọi người dùng như
@@ -61,6 +64,32 @@ const ChartTooltip = ({ active, payload, label }: any) => {
   );
 };
 
+/** Trần đọc giao dịch của trang; vượt thì trang cảnh báo chứ không vẽ như đủ. */
+const TOI_DA_DONG = 50_000;
+const TRANG_DOC = 1000;
+
+type DongGiaoDich = { amount: number; type: string; transaction_date: string; category: string | null; is_synthetic: boolean | null };
+
+/** Đọc giao dịch theo trang, kèm tổng số dòng — P0-002: không tổng hợp trên tập bị cắt âm thầm. */
+async function docGiaoDichDu(companyId: string): Promise<{ dong: DongGiaoDich[]; tong: number | null; loi: string | null }> {
+  const dong: DongGiaoDich[] = [];
+  let tong: number | null = null;
+  for (let tu = 0; tu < TOI_DA_DONG; tu += TRANG_DOC) {
+    const { data, error, count } = await supabase
+      .from('transactions')
+      .select('amount, type, transaction_date, category, is_synthetic', tu === 0 ? { count: 'exact' } : undefined)
+      .eq('company_id', companyId)
+      .order('transaction_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(tu, tu + TRANG_DOC - 1);
+    if (error) return { dong, tong, loi: error.message };
+    if (tu === 0) tong = typeof count === 'number' ? count : null;
+    dong.push(...((data ?? []) as DongGiaoDich[]));
+    if ((data ?? []).length < TRANG_DOC || (tong !== null && dong.length >= tong)) break;
+  }
+  return { dong, tong, loi: null };
+}
+
 function Trong({ cau }: { cau: string }) {
   return (
     <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
@@ -78,6 +107,8 @@ export default function ReportsPage() {
   const [tuoi, setTuoi] = useState<ReturnType<typeof tuoiHoaDon>>([]);
   const [chiPhi, setChiPhi] = useState<ReturnType<typeof phanBoChiPhi>>([]);
   const [soDongThu, setSoDongThu] = useState(0);
+  // P0-002: đọc được bao nhiêu / có bao nhiêu. Thiếu thì cảnh báo cạnh con số, không vẽ như đủ.
+  const [doDay, setDoDay] = useState<{ daDoc: number; tong: number | null } | null>(null);
   const [dangTai, setDangTai] = useState(true);
 
   const tai = useCallback(async () => {
@@ -95,23 +126,21 @@ export default function ReportsPage() {
       if (!cty) return;
 
       const [gd, hd] = await Promise.all([
-        supabase
-          .from('transactions')
-          .select('amount, type, transaction_date, category, is_synthetic')
-          .eq('company_id', cty.id)
-          .order('transaction_date', { ascending: true }),
+        docGiaoDichDu(cty.id),
         supabase
           .from('invoices')
           .select('total, amount, status, due_date')
-          .eq('company_id', cty.id),
+          .eq('company_id', cty.id)
+          .limit(TOI_DA_DONG),
       ]);
 
       // Không nuốt lỗi: truy vấn hỏng trông y hệt không có dữ liệu.
-      if (gd.error) toast.error(`Không đọc được giao dịch: ${gd.error.message}`);
+      if (gd.loi) toast.error(`Không đọc được giao dịch: ${gd.loi}`);
       if (hd.error) toast.error(`Không đọc được hoá đơn: ${hd.error.message}`);
+      setDoDay({ daDoc: gd.dong.length, tong: gd.tong });
 
       // Bỏ dòng sandbox — cùng quy ước với Tổng quan và tax-summary.
-      const tatCa = gd.data ?? [];
+      const tatCa = gd.dong;
       const that = tatCa.filter((x) => !x.is_synthetic) as unknown as GiaoDich[];
       setSoDongThu(tatCa.length - that.length);
 
@@ -124,6 +153,8 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => { void tai(); }, [tai]);
+
+  const catNgan = !!doDay && doDay.tong !== null && doDay.tong > doDay.daDoc;
 
   const tongTuoi = useMemo(() => tuoi.reduce((s, x) => s + x.tien, 0), [tuoi]);
   const tongChiPhi = useMemo(() => chiPhi.reduce((s, x) => s + x.tien, 0), [chiPhi]);
@@ -139,16 +170,18 @@ export default function ReportsPage() {
       toast('Chưa có dữ liệu để xuất.');
       return;
     }
-    const dong = [['thang', 'doanh_thu', 'chi_phi', 'loi_nhuan'].join(',')].concat(
-      thang.map((r) => [r.khoa, r.doanhThu, r.chiPhi, r.loiNhuan].join(',')),
+    // Tên cột theo từ điển chỉ số: tệp rời ứng dụng rồi thì không còn ngữ cảnh nào giải thích.
+    const dong = [['thang', 'tien_vao_ngan_hang', 'tien_ra_ngan_hang', 'chenh_lech_dong_tien'].join(',')].concat(
+      thang.map((r) => [r.khoa, r.tienVao, r.tienRa, r.chenhLech].join(',')),
     );
+    if (catNgan) dong.push(`# CHUA DU DU LIEU: moi doc ${doDay?.daDoc} / ${doDay?.tong} giao dich`);
     const url = URL.createObjectURL(new Blob([dong.join('\n')], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bao-cao-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `dong-tien-ngan-hang-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [thang]);
+  }, [thang, catNgan, doDay]);
 
   if (dangTai) {
     return (
@@ -166,9 +199,14 @@ export default function ReportsPage() {
             {t('fin.reports.title')}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Số liệu đọc từ giao dịch và hoá đơn của bạn
+            {t('fin.reports.subtitle')}
             {soDongThu > 0 && ` · đã bỏ ${soDongThu} dòng dữ liệu thử`}
           </p>
+          {catNgan && doDay && (
+            <p role="alert" className="mt-2 rounded-lg bg-mimi-amber/10 px-3 py-2 text-sm text-foreground">
+              Mới đọc {doDay.daDoc.toLocaleString('vi-VN')}/{(doDay.tong ?? 0).toLocaleString('vi-VN')} giao dịch — các tổng dưới đây CHƯA đủ.
+            </p>
+          )}
         </div>
         <button
           onClick={xuatCsv}
@@ -179,7 +217,7 @@ export default function ReportsPage() {
         </button>
       </motion.div>
 
-      {/* ── Doanh thu và chi phí theo tháng ────────────────────────────── */}
+      {/* ── Tiền vào, tiền ra theo tháng ───────────────────────────────── */}
       <motion.div
         variants={fadeUp}
         className="rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm"
@@ -197,9 +235,9 @@ export default function ReportsPage() {
                 <XAxis dataKey="thang" tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: 'hsl(var(--text-secondary))', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => formatVNDShort(v)} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="doanhThu" name={t('fin.reports.revenueExpense.revenue')} fill="hsl(var(--blue-500))" radius={[6, 6, 0, 0]} barSize={18} />
-                <Bar dataKey="chiPhi" name={t('fin.reports.revenueExpense.expense')} fill="hsl(var(--bg-card-hover))" radius={[6, 6, 0, 0]} barSize={18} />
-                <Line type="monotone" dataKey="loiNhuan" name={t('fin.reports.revenueExpense.profit')} stroke="hsl(var(--green-500))" strokeWidth={2} dot={{ fill: 'hsl(var(--green-500))', r: 3 }} />
+                <Bar dataKey="tienVao" name={t('fin.reports.revenueExpense.revenue')} fill="hsl(var(--blue-500))" radius={[6, 6, 0, 0]} barSize={18} />
+                <Bar dataKey="tienRa" name={t('fin.reports.revenueExpense.expense')} fill="hsl(var(--bg-card-hover))" radius={[6, 6, 0, 0]} barSize={18} />
+                <Line type="monotone" dataKey="chenhLech" name={t('fin.reports.revenueExpense.profit')} stroke="hsl(var(--green-500))" strokeWidth={2} dot={{ fill: 'hsl(var(--green-500))', r: 3 }} />
               </ComposedChart>
             </ResponsiveContainer>
           )}

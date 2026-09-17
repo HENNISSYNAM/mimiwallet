@@ -64,6 +64,7 @@ const BOI_CANH: BoiCanh = {
 const TRA_LOI: TraLoi = {
   cau: 'Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.',
   che_do: 'co_dinh',
+  do_day: 'complete',
   buoc: [
     { ten: 'hieu', cau: 'Hiểu là bạn hỏi về trợ lý & agent.' },
     { ten: 'du_lieu', cau: 'Đã đọc: Yêu cầu chi.' },
@@ -207,6 +208,29 @@ describe('MIMI Assistant — hỏi đáp', () => {
     await waitFor(() => expect(gia.tacTu).toHaveBeenCalledWith('duyet', { yeu_cau_id: 'y1' }));
     expect(await screen.findByText(/Đã duyệt/)).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Từ chối' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('P0-002: nguồn bị cắt thì hiện cảnh báo và nhãn "Chưa đủ" kèm số dòng, kỳ, lúc đồng bộ', async () => {
+    const doDay = {
+      nguon: 'giao_dich', ten: 'Giao dịch ngân hàng', row_count: 10_000, total_available: 10_001, truncated: true,
+      period_from: '2026-03-20', period_to: '2026-09-16', last_synced_at: '2026-09-16T02:00:00Z', coverage_status: 'partial' as const,
+    };
+    const canhBao = 'Lưu ý độ đầy đủ — Giao dịch ngân hàng: mới đọc 10.000/10.001 dòng, các tổng dưới đây CHƯA phải tổng đầy đủ.';
+    gia.troLy.mockImplementation(async (hanhDong: string) => (hanhDong === 'boi_canh' ? BOI_CANH : {
+      ...TRA_LOI,
+      cau: `${canhBao}\n\nTổng chi 1.000.000.000 ₫.`,
+      do_day: 'partial',
+      ket_qua: [{ ...TRA_LOI.ket_qua[0], the: [{ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: canhBao }, ...TRA_LOI.ket_qua[0].the], do_day: [doDay] }],
+    }));
+    dung();
+    hoiBangTay('dòng tiền');
+    const nhan = await screen.findByText('Chưa đủ');
+    const dong = nhan.closest('li') as HTMLElement;
+    expect(dong.textContent).toContain('Giao dịch ngân hàng: 10.000 dòng');
+    expect(dong.textContent).toContain('từ 20/03/2026 đến 16/09/2026');
+    expect(dong.textContent).toContain('đồng bộ 16/09/2026');
+    // Cảnh báo đứng trước con số, ở cả lời trả lời lẫn thẻ đầu kết quả.
+    expect(screen.getAllByText((_, el) => !!el?.textContent?.startsWith('Lưu ý độ đầy đủ') && el.children.length === 0).length).toBeGreaterThanOrEqual(1);
   });
 
   it('máy chủ lỗi: nói lỗi bằng lời, cho hỏi lại; cuộc hỏi mới về lại màn đầu', async () => {

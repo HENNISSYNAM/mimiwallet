@@ -5,6 +5,9 @@
  * cổng mô hình lỗi), `cau` ghép từ các câu tóm tắt tính bằng dữ liệu thật.
  */
 import type { BuocXuLy, DeXuat, KetQuaNangLuc, NhomNangLuc, TraLoi } from './kieu.ts';
+import { cauCanhBao, trangThaiChung } from './do-day.ts';
+import { boDau } from './y-dinh.ts';
+import { hoiChiSoKeToan } from '../chi-so/tu-dien.ts';
 
 export const TEN_NHOM: Record<NhomNangLuc, string> = {
   tro_ly: 'Trợ lý & agent',
@@ -21,7 +24,13 @@ export const CAU_CHUA_HIEU =
 
 export const SO_DE_XUAT_TOI_DA = 10;
 
-export function dungTraLoi(o: { ketQua: KetQuaNangLuc[]; cheDo: TraLoi['che_do']; cauMoHinh?: string }): TraLoi {
+/** Năng lực chỉ đọc tiền ngân hàng — hỏi lợi nhuận mà ra những năng lực này thì phải nói rõ. */
+const NANG_LUC_DONG_TIEN = new Set(['bao_cao_tai_chinh', 'dong_tien', 'chi_phi_thang']);
+
+export const CAU_CHUA_CO_SO_KE_TOAN =
+  'MIMI chưa tính được lợi nhuận, lãi lỗ hay báo cáo tài chính vì chưa có sổ kế toán của bạn. Dưới đây là dòng tiền ngân hàng — chưa phải các chỉ số đó.';
+
+export function dungTraLoi(o: { ketQua: KetQuaNangLuc[]; cheDo: TraLoi['che_do']; cauMoHinh?: string; cauHoi?: string }): TraLoi {
   const { ketQua } = o;
   if (!ketQua.length) {
     return {
@@ -29,6 +38,7 @@ export function dungTraLoi(o: { ketQua: KetQuaNangLuc[]; cheDo: TraLoi['che_do']
       buoc: [{ ten: 'hieu', cau: o.cauMoHinh ? 'Câu hỏi không cần đọc số liệu của công ty.' : 'Chưa nhận ra câu hỏi thuộc việc nào.' }],
       ket_qua: [],
       che_do: o.cheDo,
+      do_day: 'complete',
     };
   }
 
@@ -54,10 +64,25 @@ export function dungTraLoi(o: { ketQua: KetQuaNangLuc[]; cheDo: TraLoi['che_do']
     { ten: 'de_xuat', cau: daCo.size ? `${daCo.size} việc bạn có thể làm ngay — bấm để xem lại rồi xác nhận.` : 'Không có việc nào cần bạn xác nhận.' },
   ];
 
+  // P0-002: nguồn thiếu thì câu trả lời mở đầu bằng cảnh báo — kể cả khi mô hình viết lời,
+  // vì mô hình có thể dùng số trong tóm tắt mà bỏ qua câu cảnh báo đứng trước nó.
+  const doDay = [...new Map(gonLai.flatMap((r) => r.do_day ?? []).map((d) => [d.nguon, d])).values()];
+  const canhBao = cauCanhBao(doDay);
+  const cauMoHinh = o.cauMoHinh?.trim();
+  if (canhBao) buoc[1] = { ten: 'du_lieu', cau: `${buoc[1].cau} ${canhBao}` };
+
+  // P0-004: hỏi lợi nhuận/BCTC mà chỉ có dòng tiền ngân hàng → nói thẳng trước mọi con số.
+  const thuatNgu = o.cauHoi && hoiChiSoKeToan(boDau(o.cauHoi)) && gonLai.some((r) => NANG_LUC_DONG_TIEN.has(r.nang_luc))
+    ? CAU_CHUA_CO_SO_KE_TOAN
+    : null;
+  // Không có mô hình: tóm tắt từng năng lực đã tự mang cảnh báo độ đầy đủ (apDoDay), không chèn lần hai.
+  const than = cauMoHinh ? (canhBao ? `${canhBao}\n\n${cauMoHinh}` : cauMoHinh) : gonLai.map((r) => r.tom_tat).join('\n\n');
+
   return {
-    cau: o.cauMoHinh?.trim() || gonLai.map((r) => r.tom_tat).join('\n\n'),
+    cau: thuatNgu ? `${thuatNgu}\n\n${than}` : than,
     buoc,
     ket_qua: gonLai,
     che_do: o.cheDo,
+    do_day: trangThaiChung(doDay),
   };
 }

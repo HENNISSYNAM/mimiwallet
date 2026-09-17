@@ -6,6 +6,7 @@
  * nhận ra thì trả mảng rỗng để màn hình nói thật là chưa hiểu, thay vì đoán sai.
  */
 import type { NhomNangLuc } from './kieu.ts';
+import { canTraLuat } from '../luat/nguon-luat.ts';
 
 export const boDau = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
@@ -63,6 +64,15 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   // "Hoá đơn" không kèm chữ nào khác: cả hai phía đều có thể là điều người dùng hỏi.
   if (khop.length === 0 && /\bhoa don\b/.test(s)) khop.push('hoa_don_qua_han', 'thieu_chung_tu');
 
+  // Hỏi thuế có chữ "doanh thu" ("doanh thu bao nhiêu thì phải nộp thuế") là hỏi ngưỡng thuế,
+  // không phải xin báo cáo dòng tiền.
+  if (khop.includes('nghia_vu_thue')) {
+    const i = khop.indexOf('bao_cao_tai_chinh');
+    if (i >= 0) khop.splice(i, 1);
+  }
+  // Câu pháp lý chung không thuộc việc nào của công ty: tra kho văn bản (trước cả nhóm đang chọn,
+  // vì trả số liệu cho một câu hỏi luật là trả lời sai câu hỏi).
+  if (khop.length === 0 && canTraLuat(cau)) khop.push('tra_cuu_luat');
   if (khop.length === 0 && phamVi) khop.push(MAC_DINH_THEO_NHOM[phamVi]);
   return khop.slice(0, SO_NANG_LUC_TOI_DA);
 }

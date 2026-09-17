@@ -19,9 +19,11 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveCompany } from "../_shared/company.ts";
-import type { NhomNangLuc } from "../_shared/tro-ly/kieu.ts";
+import type { DoDayNguon, NhomNangLuc } from "../_shared/tro-ly/kieu.ts";
+import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
 import { NHOM_NANG_LUC } from "../_shared/tro-ly/kieu.ts";
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
+import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
 import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
 import {
@@ -94,25 +96,71 @@ function kiem<T>(r: { data: T; error: { message: string } | null }, ten: string)
   return r.data;
 }
 
-async function docGiaoDich(db: Db, companyId: string, tu: string) {
-  const ds: Row[] = [];
-  for (let tuDong = 0; tuDong < TOI_DA_GIAO_DICH; tuDong += 1000) {
-    const trang = kiem(
-      await db.from("transactions")
-        .select("id, amount, type, transaction_date, merchant_name, category, counter_account_name, payment_reference")
-        .eq("company_id", companyId)
-        // Không bao giờ để dữ liệu thử vào lời trợ lý.
-        .eq("is_synthetic", false)
-        .gte("transaction_date", tu)
-        .order("transaction_date", { ascending: true })
-        .order("id", { ascending: true })
-        .range(tuDong, tuDong + 999),
-      "giao dịch",
-    ) as Row[];
-    ds.push(...trang);
-    if (trang.length < 1000) break;
+const TRANG = 1000;
+
+/**
+ * Đọc hết theo trang tới `gioiHan`, kèm tổng số dòng khớp điều kiện (count exact, chỉ trang đầu).
+ * MIMI-P0-002: tổng này là cách duy nhất biết truy vấn có bị cắt hay không — kể cả khi máy chủ
+ * API tự giới hạn số dòng mỗi lần trả, thấp hơn con số ta xin.
+ */
+async function docTrang(
+  taoTruyVan: (tu: number, den: number, dem: boolean) => PromiseLike<Row>,
+  ten: string,
+  gioiHan: number,
+): Promise<{ dong: Row[]; tong: number | null }> {
+  const dong: Row[] = [];
+  let tong: number | null = null;
+  for (let tu = 0; tu < gioiHan; tu += TRANG) {
+    const den = Math.min(tu + TRANG, gioiHan) - 1;
+    const r = await taoTruyVan(tu, den, tu === 0);
+    const trang = kiem(r as { data: Row[]; error: { message: string } | null }, ten) as Row[];
+    if (tu === 0) tong = typeof r.count === "number" ? r.count : null;
+    dong.push(...trang);
+    if (trang.length < den - tu + 1) break;
+    if (tong !== null && dong.length >= tong) break;
   }
-  return ds.map((t) => ({ ...t, amount: Number(t.amount) }));
+  return { dong, tong };
+}
+
+const dem = (co: boolean) => (co ? { count: "exact" as const } : undefined);
+
+async function docGiaoDich(db: Db, companyId: string, tu: string) {
+  const { dong, tong } = await docTrang(
+    (a, b, c) => db.from("transactions")
+      .select("id, amount, type, transaction_date, merchant_name, category, counter_account_name, payment_reference", dem(c))
+      .eq("company_id", companyId)
+      // Không bao giờ để dữ liệu thử vào lời trợ lý.
+      .eq("is_synthetic", false)
+      .gte("transaction_date", tu)
+      .order("transaction_date", { ascending: true })
+      .order("id", { ascending: true })
+      .range(a, b),
+    "giao dịch",
+    TOI_DA_GIAO_DICH,
+  );
+  return { dong: dong.map((t): Row => ({ ...t, amount: Number(t.amount) })), tong };
+}
+
+/**
+ * Tìm đoạn luật cho câu hỏi trong kho Công báo (`tim_phap_luat`). Chuyển từ function `chat`.
+ * Lỗi hoặc quá 6 giây → null ("chưa tra được"), không phải [] ("kho không có"): hai điều khác nhau
+ * với người hỏi luật.
+ */
+async function traKhoLuat(db: Db, cauHoi: string): Promise<DoanLuat[] | null> {
+  if (!cauHoi.trim()) return [];
+  try {
+    const { data, error } = await db
+      .rpc("tim_phap_luat", { cau_hoi: cauHoi.slice(0, 500), so_ket_qua: 12 })
+      .abortSignal(AbortSignal.timeout(6000));
+    if (error) {
+      console.error("tim_phap_luat:", error.message);
+      return null;
+    }
+    return chonNguon((data ?? []) as DoanLuat[]);
+  } catch (e) {
+    console.error("tra kho luat:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 /** Đọc đúng những nguồn các năng lực cần. Một lần hỏi đọc mỗi nguồn nhiều nhất một lần. */
@@ -121,7 +169,7 @@ async function docDuLieu(
   companyId: string,
   can: Set<NguonCan>,
   moc: ReturnType<typeof mocThoiGian>,
-  tuyChon: { soThangAi?: number } = {},
+  tuyChon: { soThangAi?: number; cauHoi?: string } = {},
 ): Promise<DuLieu> {
   const d = duLieuTrong(moc.homNay, moc.ky);
   const tuLichSu = [congNgay(moc.homNay, -NGAY_LICH_SU), moc.ky.tu].sort()[0];
@@ -130,76 +178,146 @@ async function docDuLieu(
     congNgay(moc.homNay, -31),
     `${thangLui(moc.homNay, Math.max(1, (tuyChon.soThangAi ?? 2) - 1))}-01`,
   ].sort()[0];
+  const tu62 = congNgay(moc.homNay, -62);
   const viec: Promise<void>[] = [];
 
-  if (can.has("giao_dich")) viec.push(docGiaoDich(db, companyId, tuLichSu).then((r) => { d.giaoDich = r as DuLieu["giaoDich"]; }));
+  if (can.has("giao_dich")) {
+    viec.push(Promise.all([
+      docGiaoDich(db, companyId, tuLichSu),
+      // Lần đồng bộ gần nhất của các tài khoản đọc sao kê: nguồn độ tươi của giao dịch.
+      db.from("bank_connections").select("last_synced_at, scopes")
+        .eq("company_id", companyId).eq("status", "connected").is("revoked_at", null),
+    ]).then(([gd, kn]) => {
+      d.giaoDich = gd.dong as DuLieu["giaoDich"];
+      const ketNoi = (kiem(kn, "kết nối ngân hàng") as Row[]).filter((k) => (k.scopes ?? "transaction") === "transaction");
+      d.doDay.giao_dich = danhGiaDoDay({
+        nguon: "giao_dich", ten: "Giao dịch ngân hàng", daDoc: gd.dong.length, tong: gd.tong, gioiHan: TOI_DA_GIAO_DICH,
+        tu: tuLichSu, den: moc.homNay,
+        dongBoLuc: ketNoi.map((k) => k.last_synced_at).filter(Boolean).sort().at(-1) ?? null,
+        canKetNoi: true, coKetNoi: ketNoi.length > 0,
+      });
+    }));
+  }
   if (can.has("hoa_don_vao")) {
-    viec.push(db.from("gdt_invoices")
-      .select("id, total_amount, issued_at, invoice_number, counterparty_name, counterparty_tax_code")
-      .eq("company_id", companyId).eq("direction", "received").gte("issued_at", tuLichSu).limit(5000)
-      .then((r: Row) => { d.hoaDonVao = (kiem(r, "hoá đơn đầu vào") as Row[]).map((h) => ({ ...h, total_amount: Number(h.total_amount) })) as DuLieu["hoaDonVao"]; }));
+    viec.push(docTrang(
+      (a, b, c) => db.from("gdt_invoices")
+        .select("id, total_amount, issued_at, invoice_number, counterparty_name, counterparty_tax_code", dem(c))
+        .eq("company_id", companyId).eq("direction", "received").gte("issued_at", tuLichSu)
+        .order("issued_at", { ascending: true }).order("id", { ascending: true }).range(a, b),
+      "hoá đơn đầu vào", 5000,
+    ).then(({ dong, tong }) => {
+      d.hoaDonVao = dong.map((h) => ({ ...h, total_amount: Number(h.total_amount) })) as DuLieu["hoaDonVao"];
+      d.doDay.hoa_don_vao = danhGiaDoDay({ nguon: "hoa_don_vao", ten: "Hoá đơn đầu vào", daDoc: dong.length, tong, gioiHan: 5000, tu: tuLichSu, den: moc.homNay });
+    }));
   }
   if (can.has("hoa_don_ban")) {
-    viec.push(db.from("invoices")
-      .select("id, invoice_number, client_name, total, issued_date, due_date, status")
-      .eq("company_id", companyId).order("due_date", { ascending: true }).limit(5000)
-      .then((r: Row) => { d.hoaDonBan = (kiem(r, "hoá đơn bán ra") as Row[]).map((h) => ({ ...h, total: Number(h.total) })) as DuLieu["hoaDonBan"]; }));
+    viec.push(docTrang(
+      (a, b, c) => db.from("invoices")
+        .select("id, invoice_number, client_name, total, issued_date, due_date, status", dem(c))
+        .eq("company_id", companyId).order("due_date", { ascending: true }).order("id", { ascending: true }).range(a, b),
+      "hoá đơn bán ra", 5000,
+    ).then(({ dong, tong }) => {
+      d.hoaDonBan = dong.map((h) => ({ ...h, total: Number(h.total) })) as DuLieu["hoaDonBan"];
+      d.doDay.hoa_don_ban = danhGiaDoDay({ nguon: "hoa_don_ban", ten: "Hoá đơn bán ra", daDoc: dong.length, tong, gioiHan: 5000 });
+    }));
   }
   if (can.has("yeu_cau")) {
+    const COT_YC = "id, tac_tu_id, so_tien, ten_nguoi_nhan, muc_dich, trang_thai, created_at, so_tien_thuc_chi, ly_do";
     viec.push(Promise.all([
-      db.from("yeu_cau_chi")
-        .select("id, tac_tu_id, so_tien, ten_nguoi_nhan, muc_dich, trang_thai, created_at, so_tien_thuc_chi, ly_do")
-        .eq("company_id", companyId).gte("created_at", `${congNgay(moc.homNay, -62)}T00:00:00Z`).limit(5000),
+      docTrang(
+        (a, b, c) => db.from("yeu_cau_chi").select(COT_YC, dem(c))
+          .eq("company_id", companyId).gte("created_at", `${tu62}T00:00:00Z`)
+          .order("created_at", { ascending: true }).order("id", { ascending: true }).range(a, b),
+        "yêu cầu chi", 5000,
+      ),
       // Khoản chờ duyệt cũ hơn 62 ngày vẫn phải hiện.
-      db.from("yeu_cau_chi")
-        .select("id, tac_tu_id, so_tien, ten_nguoi_nhan, muc_dich, trang_thai, created_at, so_tien_thuc_chi, ly_do")
-        .eq("company_id", companyId).eq("trang_thai", "cho_duyet").limit(1000),
+      docTrang(
+        (a, b, c) => db.from("yeu_cau_chi").select(COT_YC, dem(c))
+          .eq("company_id", companyId).eq("trang_thai", "cho_duyet")
+          .order("created_at", { ascending: true }).order("id", { ascending: true }).range(a, b),
+        "yêu cầu chờ duyệt", 1000,
+      ),
       db.from("tac_tu").select("id, ten, trang_thai").eq("company_id", companyId),
       db.from("chinh_sach_chi").select("tac_tu_id, han_muc_thang").eq("company_id", companyId),
     ]).then(([yc, cho, tt, cs]) => {
       const m = new Map<string, Row>();
-      for (const y of [...(kiem(yc, "yêu cầu chi") as Row[]), ...(kiem(cho, "yêu cầu chờ duyệt") as Row[])]) m.set(y.id, y);
+      for (const y of [...yc.dong, ...cho.dong]) m.set(y.id, y);
       d.yeuCau = [...m.values()].map((y) => ({ ...y, so_tien: Number(y.so_tien), so_tien_thuc_chi: y.so_tien_thuc_chi == null ? null : Number(y.so_tien_thuc_chi) })) as DuLieu["yeuCau"];
       d.tacTu = kiem(tt, "agent") as DuLieu["tacTu"];
       d.chinhSach = (kiem(cs, "chính sách chi") as Row[]).map((c) => ({ ...c, han_muc_thang: Number(c.han_muc_thang) })) as DuLieu["chinhSach"];
+      // Hai truy vấn gộp lại: bị cắt khi một trong hai bị cắt.
+      const catNgan = (yc.tong ?? 0) > yc.dong.length || (cho.tong ?? 0) > cho.dong.length
+        || (yc.tong === null && yc.dong.length >= 5000) || (cho.tong === null && cho.dong.length >= 1000);
+      const daDoc = yc.dong.length + cho.dong.length;
+      d.doDay.yeu_cau = danhGiaDoDay({
+        nguon: "yeu_cau", ten: "Yêu cầu chi", daDoc,
+        tong: catNgan ? Math.max(daDoc + 1, (yc.tong ?? 0) + (cho.tong ?? 0)) : daDoc,
+        tu: tu62, den: moc.homNay,
+      });
     }));
   }
   if (can.has("ket_noi_ngan_hang")) {
     viec.push(db.from("bank_connections")
-      .select("id, bank_name, account_number, status, scopes, provider, last_synced_at")
+      .select("id, bank_name, account_number, status, scopes, provider, last_synced_at", { count: "exact" })
       .eq("company_id", companyId).neq("status", "disconnected").is("revoked_at", null)
-      .then((r: Row) => { d.ketNoiNganHang = kiem(r, "kết nối ngân hàng") as DuLieu["ketNoiNganHang"]; }));
+      .then((r: Row) => {
+        d.ketNoiNganHang = kiem(r as { data: DuLieu["ketNoiNganHang"]; error: { message: string } | null }, "kết nối ngân hàng");
+        d.doDay.ket_noi_ngan_hang = danhGiaDoDay({
+          nguon: "ket_noi_ngan_hang", ten: "Kết nối ngân hàng", daDoc: d.ketNoiNganHang.length,
+          tong: typeof r.count === "number" ? r.count : null,
+        });
+      }));
   }
   if (can.has("chi_phi_ai")) {
     viec.push(Promise.all([
-      db.from("chi_phi_ai").select("nha_cung_cap, ngay, hang_muc, so_tien_usd, nguon").eq("company_id", companyId).gte("ngay", tuAi).limit(20000),
+      docTrang(
+        (a, b, c) => db.from("chi_phi_ai").select("id, nha_cung_cap, ngay, hang_muc, so_tien_usd, nguon", dem(c))
+          .eq("company_id", companyId).gte("ngay", tuAi)
+          .order("ngay", { ascending: true }).order("id", { ascending: true }).range(a, b),
+        "chi phí AI", 20000,
+      ),
       db.from("ngan_sach_chi_phi_ai").select("han_muc_thang_usd, canh_bao_phan_tram").eq("company_id", companyId).maybeSingle(),
       db.from("ket_noi_chi_phi_ai").select("nha_cung_cap, trang_thai, dong_bo_luc, loi_cuoi").eq("company_id", companyId).neq("trang_thai", "da_go"),
       db.from("lo_nhap_chi_phi_ai").select("nha_cung_cap").eq("company_id", companyId).limit(500),
     ]).then(([cp, ns, kn, lo]) => {
-      d.chiPhiAi = (kiem(cp, "chi phí AI") as Row[]).map((r) => ({ ...r, so_tien_usd: Number(r.so_tien_usd) })) as DuLieu["chiPhiAi"];
+      d.chiPhiAi = cp.dong.map((r) => ({ ...r, so_tien_usd: Number(r.so_tien_usd) })) as DuLieu["chiPhiAi"];
       const n = kiem(ns, "ngân sách AI") as Row | null;
       d.nganSachAi = n ? { han_muc_thang_usd: Number(n.han_muc_thang_usd), canh_bao_phan_tram: Number(n.canh_bao_phan_tram) } : null;
       d.ketNoiAi = kiem(kn, "kết nối AI") as DuLieu["ketNoiAi"];
       d.nhapFileAi = [...new Set((kiem(lo, "lần nhập file AI") as Row[]).map((r) => String(r.nha_cung_cap)))];
+      // File nhập tay không có lần đồng bộ; độ tươi chỉ lấy từ kết nối API đang chạy.
+      const dongBo = d.ketNoiAi.filter((k) => k.trang_thai !== "loi").map((k) => k.dong_bo_luc).filter(Boolean).sort().at(-1) ?? null;
+      d.doDay.chi_phi_ai = danhGiaDoDay({
+        nguon: "chi_phi_ai", ten: "Chi phí AI", daDoc: cp.dong.length, tong: cp.tong, gioiHan: 20000,
+        tu: tuAi, den: moc.homNay, dongBoLuc: dongBo,
+        canKetNoi: true, coKetNoi: d.ketNoiAi.length > 0 || d.nhapFileAi.length > 0,
+      });
     }));
   }
   if (can.has("token_ai")) {
-    viec.push(db.from("token_ai").select("nha_cung_cap, ngay, model, token_vao, token_vao_cache, token_ra, so_lan_goi")
-      .eq("company_id", companyId).gte("ngay", congNgay(moc.homNay, -31)).limit(20000)
-      .then((r: Row) => {
-        d.tokenAi = (kiem(r, "token AI") as Row[]).map((t) => ({
-          ...t, token_vao: Number(t.token_vao), token_vao_cache: Number(t.token_vao_cache), token_ra: Number(t.token_ra), so_lan_goi: Number(t.so_lan_goi),
-        })) as DuLieu["tokenAi"];
-      }));
+    const tu31 = congNgay(moc.homNay, -31);
+    viec.push(docTrang(
+      (a, b, c) => db.from("token_ai").select("id, nha_cung_cap, ngay, model, token_vao, token_vao_cache, token_ra, so_lan_goi", dem(c))
+        .eq("company_id", companyId).gte("ngay", tu31)
+        .order("ngay", { ascending: true }).order("id", { ascending: true }).range(a, b),
+      "token AI", 20000,
+    ).then(({ dong, tong }) => {
+      d.tokenAi = dong.map((t) => ({
+        ...t, token_vao: Number(t.token_vao), token_vao_cache: Number(t.token_vao_cache), token_ra: Number(t.token_ra), so_lan_goi: Number(t.so_lan_goi),
+      })) as DuLieu["tokenAi"];
+      d.doDay.token_ai = danhGiaDoDay({ nguon: "token_ai", ten: "Token AI", daDoc: dong.length, tong, gioiHan: 20000, tu: tu31, den: moc.homNay });
+    }));
   }
   if (can.has("bang_gia")) {
-    viec.push(db.from("bang_gia_model").select("model_id, ten, gia_vao_usd_moi_trieu, gia_ra_usd_moi_trieu, lay_luc").limit(5000)
-      .then((r: Row) => {
-        const ds = kiem(r, "bảng giá model") as Row[];
-        d.bangGia = ds.map((g) => ({ model_id: g.model_id, ten: g.ten, gia_vao_usd_moi_trieu: Number(g.gia_vao_usd_moi_trieu), gia_ra_usd_moi_trieu: Number(g.gia_ra_usd_moi_trieu) }));
-        d.bangGiaLuc = ds.map((g) => String(g.lay_luc)).sort().at(-1) ?? null;
-      }));
+    viec.push(docTrang(
+      (a, b, c) => db.from("bang_gia_model").select("model_id, ten, gia_vao_usd_moi_trieu, gia_ra_usd_moi_trieu, lay_luc", dem(c))
+        .order("model_id", { ascending: true }).range(a, b),
+      "bảng giá model", 5000,
+    ).then(({ dong, tong }) => {
+      d.bangGia = dong.map((g) => ({ model_id: g.model_id, ten: g.ten, gia_vao_usd_moi_trieu: Number(g.gia_vao_usd_moi_trieu), gia_ra_usd_moi_trieu: Number(g.gia_ra_usd_moi_trieu) }));
+      d.bangGiaLuc = dong.map((g) => String(g.lay_luc)).sort().at(-1) ?? null;
+      d.doDay.bang_gia = danhGiaDoDay({ nguon: "bang_gia", ten: "Bảng giá model", daDoc: dong.length, tong, gioiHan: 5000 });
+    }));
   }
   if (can.has("thue")) {
     viec.push((async () => {
@@ -217,9 +335,18 @@ async function docDuLieu(
       };
     })());
   }
+  if (can.has("kho_luat")) {
+    viec.push(traKhoLuat(db, tuyChon.cauHoi ?? "").then((r) => { d.khoLuat = r; }));
+  }
   if (can.has("chung_tu_quet")) {
-    viec.push(db.from("chung_tu_quet").select("id, tong_tien, ngay, giao_dich_id").eq("company_id", companyId).limit(5000)
-      .then((r: Row) => { d.chungTuQuet = (kiem(r, "chứng từ quét") as Row[]).map((c) => ({ ...c, tong_tien: Number(c.tong_tien) })) as DuLieu["chungTuQuet"]; }));
+    viec.push(docTrang(
+      (a, b, c) => db.from("chung_tu_quet").select("id, tong_tien, ngay, giao_dich_id", dem(c))
+        .eq("company_id", companyId).order("id", { ascending: true }).range(a, b),
+      "chứng từ quét", 5000,
+    ).then(({ dong, tong }) => {
+      d.chungTuQuet = dong.map((c) => ({ ...c, tong_tien: Number(c.tong_tien) })) as DuLieu["chungTuQuet"];
+      d.doDay.chung_tu_quet = danhGiaDoDay({ nguon: "chung_tu_quet", ten: "Chứng từ đã quét", daDoc: dong.length, tong, gioiHan: 5000 });
+    }));
   }
   await Promise.all(viec);
   return d;
@@ -288,6 +415,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         phan_tich: phanTichNhanh(d),
         thue,
         co_mo_hinh: !!khoaMoHinh,
+        // P0-002: màn đầu cũng nói nguồn nào thiếu hoặc cũ.
+        do_day: Object.values(d.doDay),
+        do_day_chung: trangThaiChung(Object.values(d.doDay) as DoDayNguon[]),
       });
     }
 
@@ -307,9 +437,11 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         if (thieu.length) {
           // Đọc lại đủ các nguồn đã cần từ trước cộng nguồn mới: gọn hơn ghép hai lần đọc.
           thieu.forEach((n) => nguonDaDoc.add(n));
-          dl = docDuLieu(db, company.id, new Set(nguonDaDoc), moc);
+          dl = docDuLieu(db, company.id, new Set(nguonDaDoc), moc, { cauHoi: cau });
         }
-        return nl.chay(await (dl as Promise<DuLieu>));
+        const d = await (dl as Promise<DuLieu>);
+        // P0-002: mỗi kết quả mang độ đầy đủ của đúng các nguồn nó đã dùng.
+        return apDoDay(nl.chay(d), nl.can.map((n) => d.doDay[n]).filter((x): x is DoDayNguon => !!x));
       };
 
       if (khoaMoHinh) {
@@ -324,7 +456,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             homNay: moc.homNay,
             goiY: yDinh,
           });
-          return json(dungTraLoi({ ketQua: r.ket_qua, cheDo: "mo_hinh", cauMoHinh: r.cau }));
+          return json(dungTraLoi({ ketQua: r.ket_qua, cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau }));
         } catch (e) {
           // Cổng lỗi không làm người dùng mất câu trả lời: chạy tiếp bằng bộ luật cố định.
           if (!(e instanceof LoiMoHinh)) throw e;
@@ -334,7 +466,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
       const ketQua = [];
       for (const id of yDinh) ketQua.push(await chay(id));
-      return json(dungTraLoi({ ketQua, cheDo: "co_dinh" }));
+      return json(dungTraLoi({ ketQua, cheDo: "co_dinh", cauHoi: cau }));
     }
 
     case "quet_chung_tu": {
@@ -355,7 +487,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       let goiY: Row | null = null;
       if (ketQua.tong_tien) {
         const moc90 = congNgay(moc.homNay, -90);
-        const gd = await docGiaoDich(db, company.id, ketQua.ngay ? [congNgay(ketQua.ngay, -7), moc90].sort()[1] : moc90);
+        const { dong: gd } = await docGiaoDich(db, company.id, ketQua.ngay ? [congNgay(ketQua.ngay, -7), moc90].sort()[1] : moc90);
         const khop = gd.filter((t) =>
           chieuTien(t) === "ra" &&
           Math.abs(doLonTien(t) - (ketQua.tong_tien as number)) <= LECH_TIEN &&

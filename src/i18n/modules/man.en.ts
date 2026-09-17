@@ -76,6 +76,15 @@ const m = {
       mimiDaLamGi: 'What MIMI did',
       viecBanCoTheLam: 'Things you can do',
       nguon: 'Source:',
+      doDay: {
+        dong: '{{ten}}: {{so}} rows',
+        ky: 'from {{tu}} to {{den}}',
+        dongBo: 'synced {{luc}}',
+        complete: 'Complete',
+        partial: 'Incomplete',
+        stale: 'May be outdated',
+        unavailable: 'Not connected',
+      },
       conDongNua: '{{so}} more rows on the detail page.',
       trangThai: {
         dangChay: 'Running',
