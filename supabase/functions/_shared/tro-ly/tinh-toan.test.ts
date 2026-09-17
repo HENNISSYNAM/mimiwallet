@@ -79,6 +79,18 @@ describe('nghĩa vụ thuế', () => {
     expect(ghi).toContain('chưa đối chiếu được');
   });
 
+  it('P0-003: căn cứ thuộc văn bản đã hết hiệu lực thì nói "chưa chắc" ngay đầu', () => {
+    const r = NANG_LUC.nghia_vu_thue.chay(moi({ thue: { suKien, canhBao: [], canCuDaKiem: {}, canCuHetHieuLuc: { nd68_d3_k1: 'Hết hiệu lực từ 01/12/2026 (bãi bỏ bởi 999/2026/NĐ-CP)' } } }));
+    expect(r.the[0]).toMatchObject({ loai: 'ghi_chu', muc_do: 'can_chu_y' });
+    expect(r.the[0].loai === 'ghi_chu' && r.the[0].cau).toContain('Chưa chắc: 68/2026/NĐ-CP — Hết hiệu lực từ 01/12/2026');
+  });
+
+  it('P0-003: không kiểm được hiệu lực thì nói ra', () => {
+    const r = NANG_LUC.nghia_vu_thue.chay(moi({ thue: { suKien, canhBao: [], canCuDaKiem: {}, chuaKiemHieuLuc: true } }));
+    const ghi = r.the.filter((t) => t.loai === 'ghi_chu').map((t) => (t.loai === 'ghi_chu' ? t.cau : '')).join(' ');
+    expect(ghi).toContain('Chưa kiểm được tình trạng hiệu lực');
+  });
+
   it('chưa có hồ sơ thuế thì mời bổ sung, không đoán', () => {
     const r = NANG_LUC.nghia_vu_thue.chay(moi());
     expect(r.tom_tat).toContain('Chưa đọc được hồ sơ thuế');

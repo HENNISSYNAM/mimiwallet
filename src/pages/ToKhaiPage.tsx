@@ -124,6 +124,7 @@ function GiayToKhai({ tk, canCu }: { tk: ToKhai; canCu: CanCuDaKiem[] }) {
           {canCu.filter((c) => tk.can_cu.includes(c.id)).map((c) => (
             <li key={c.id}>
               {c.van_ban} · {c.vi_tri} — {c.y}{c.da_doi_chieu ? '' : ' (chưa đối chiếu được với kho)'}
+              {c.hieu_luc?.trang_thai !== 'chua_ghi_nhan_bai_bo' && <strong> — {c.nhan_hieu_luc}</strong>}
             </li>
           ))}
         </ul>

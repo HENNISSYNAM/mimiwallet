@@ -52,6 +52,8 @@ function ketQua(sk: SuKienThue): KetQuaPhanTich {
       id, van_ban: CAN_CU[id].van_ban, ten_van_ban: `Văn bản ${CAN_CU[id].van_ban}`, vi_tri: CAN_CU[id].vi_tri,
       y: CAN_CU[id].y, trich: CAN_CU[id].trich, url: 'https://congbao.chinhphu.vn/x', ngay_ban_hanh: '2026-03-05',
       da_doi_chieu: true,
+      hieu_luc: { so_hieu: CAN_CU[id].van_ban, trang_thai: 'chua_ghi_nhan_bai_bo' as const, tu: null, boi: null, trich: null, co_ngoai_le: false },
+      nhan_hieu_luc: 'Kho chưa ghi nhận văn bản bãi bỏ',
     })),
     chua_doi_chieu: [],
   };

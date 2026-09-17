@@ -13,12 +13,13 @@ const KHO = {
     { ma_cong_bao: 'a', thu_tu: 3, nhan: 'Điều 3', noi_dung: `Điều 3. Thuế giá trị gia tăng\n1. ${CAN_CU.nd68_d3_k1.trich.replace('có mức doanh thu', 'có mức\ndoanh thu')}` },
     { ma_cong_bao: 'b', thu_tu: 1, nhan: 'Điều 1', noi_dung: 'Điều 1. Sửa đổi cụm từ “500 triệu đồng” thành “02 tỷ đồng” tại Điều 3' },
   ],
+  quan_he: [] as Record<string, unknown>[],
 };
 
 // deno-lint-ignore no-explicit-any
 const dbGia = (loi?: string): any => ({
   from(bang: string) {
-    const tra = bang === 'van_ban_phap_luat' ? KHO.van_ban : KHO.doan;
+    const tra = bang === 'van_ban_phap_luat' ? KHO.van_ban : bang === 'quan_he_hieu_luc' ? KHO.quan_he : KHO.doan;
     const p: Record<string, unknown> = {};
     const ket = loi ? { data: null, error: { message: loi } } : { data: tra, error: null };
     const chuoi = () => p;
@@ -64,6 +65,34 @@ describe('đối chiếu căn cứ', () => {
     const r = await kiemCanCu(dbGia('kho sập'), ['nd68_d3_k1']);
     expect(r).toHaveLength(1);
     expect(r[0].da_doi_chieu).toBe(false);
+  });
+
+  it('P0-003: văn bản không có quan hệ bãi bỏ → nói "kho chưa ghi nhận", không nói "còn hiệu lực"', async () => {
+    const [c] = await kiemCanCu(dbGia(), ['nd68_d3_k1'], '2026-09-17');
+    expect(c.hieu_luc?.trang_thai).toBe('chua_ghi_nhan_bai_bo');
+    expect(c.nhan_hieu_luc).toBe('Kho chưa ghi nhận văn bản bãi bỏ');
+  });
+
+  it('P0-003: căn cứ thuộc văn bản đã bị bãi bỏ thì mang nhãn hết hiệu lực, theo đúng ngày kiểm', async () => {
+    KHO.quan_he = [{
+      so_hieu_nguon: '999/2026/NĐ-CP', so_hieu_dich: '68/2026/NĐ-CP', loai: 'bai_bo', hieu_luc_tu: '2026-12-01',
+      do_tin_cay: 'chac_chan', co_ngoai_le: false, trich: 'Nghị định số 68/2026/NĐ-CP hết hiệu lực kể từ ngày 01 tháng 12 năm 2026.',
+    }];
+    try {
+      const [truoc] = await kiemCanCu(dbGia(), ['nd68_d3_k1'], '2026-09-17');
+      expect(truoc.hieu_luc?.trang_thai).toBe('chua_ghi_nhan_bai_bo');
+      const [sau] = await kiemCanCu(dbGia(), ['nd68_d3_k1'], '2026-12-02');
+      expect(sau.hieu_luc?.trang_thai).toBe('het_hieu_luc');
+      expect(sau.nhan_hieu_luc).toBe('Hết hiệu lực từ 01/12/2026 (bãi bỏ bởi 999/2026/NĐ-CP)');
+    } finally {
+      KHO.quan_he = [];
+    }
+  });
+
+  it('P0-003: bảng quan hệ lỗi → "chưa kiểm được", không coi là còn hiệu lực', async () => {
+    const [c] = await kiemCanCu(dbGia('kho sập'), ['nd68_d3_k1']);
+    expect(c.hieu_luc).toBeNull();
+    expect(c.nhan_hieu_luc).toBe('Chưa kiểm được tình trạng hiệu lực');
   });
 
   it('id lạ bị bỏ qua', async () => {

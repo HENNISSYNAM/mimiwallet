@@ -14,7 +14,7 @@ import type { DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, Nho
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
-import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, suyLuan as suyLuanThue, type SuKienThue } from '../luat/he-luat.ts';
+import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, type SuKienThue } from '../luat/he-luat.ts';
 import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 
@@ -108,11 +108,23 @@ export interface DuLieu {
    * từng câu trích với kho Công báo (`luat/doc-can-cu.ts`) — năng lực chỉ nói "đã đối chiếu"
    * khi kho xác nhận.
    */
-  thue: { suKien: SuKienThue; canhBao: string[]; canCuDaKiem: Record<string, boolean> } | null;
+  thue: {
+    suKien: SuKienThue;
+    canhBao: string[];
+    canCuDaKiem: Record<string, boolean>;
+    /** MIMI-P0-003: căn cứ thuộc văn bản kho ghi nhận đã hết hiệu lực → nhãn hiệu lực. */
+    canCuHetHieuLuc?: Record<string, string>;
+    /** Không đọc được bảng hiệu lực. */
+    chuaKiemHieuLuc?: boolean;
+  } | null;
   /** MIMI-P0-002: độ đầy đủ của từng nguồn đã đọc (edge function điền; test để trống). */
   doDay: Partial<Record<NguonCan, DoDayNguon>>;
   /** Đoạn luật kho tìm được cho câu hỏi. null = chưa tra được (lỗi), khác với [] = không có. */
   khoLuat: DoanLuat[] | null;
+  /** MIMI-P0-003: văn bản kho tìm thấy nhưng đã hết hiệu lực tại ngày hỏi — đã bị loại khỏi `khoLuat`. */
+  khoLuatDaLoai: { van_ban: string; nhan: string }[];
+  /** Không đọc được bảng hiệu lực: nhãn từng đoạn là "chưa kiểm được". */
+  khoLuatChuaKiemHieuLuc: boolean;
 }
 
 export type NguonCan =
@@ -127,6 +139,8 @@ export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuL
     thue: null,
     doDay: {},
     khoLuat: [],
+    khoLuatDaLoai: [],
+    khoLuatChuaKiemHieuLuc: false,
   };
 }
 
@@ -223,7 +237,7 @@ export function yeuCauChoDuyet(d: DuLieu): KetQuaNangLuc {
   }
   const tong = cho.reduce((s, y) => s + y.so_tien, 0);
   const nguoi = (y: YeuCauTL) => y.ten_nguoi_nhan || 'người nhận chưa rõ tên';
-  const de_xuat: DeXuat[] = cho.slice(0, 5).flatMap((y) => {
+  const de_xuat: DeXuat[] = cho.slice(0, 5).flatMap((y): DeXuat[] => {
     const lyDo = (y.ly_do ?? []).map((l) => l.cau).filter(Boolean).slice(0, 2).join(' ');
     return [
       {
@@ -1101,7 +1115,7 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
       nguon: [N.khoLuat], trang: [T.toKhai],
     });
   }
-  const { suKien, canhBao, canCuDaKiem } = d.thue;
+  const { suKien, canhBao, canCuDaKiem, canCuHetHieuLuc = {}, chuaKiemHieuLuc = false } = d.thue;
   const sl = suyLuanThue(suKien);
   const chinh = sl.ket_luan.filter((k) => k.loai === 'mien' || k.loai === 'nghia_vu' || k.loai === 'chua_ho_tro');
   const giaiThich = sl.ket_luan.find((k) => k.id === 'giai_thich_hai_thue');
@@ -1150,11 +1164,23 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
     });
   }
   if (giaiThich) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: giaiThich.cau });
+  // P0-003: căn cứ thuộc văn bản đã hết hiệu lực thì kết luận dựa vào nó chưa chắc — nói ra.
+  const hetHL = [...new Set(sl.ket_luan.flatMap((k) => k.can_cu))].filter((c) => canCuHetHieuLuc[c]);
+  if (hetHL.length) {
+    the.unshift({
+      loai: 'ghi_chu', muc_do: 'can_chu_y',
+      cau: `Chưa chắc: ${hetHL.map((c) => `${CAN_CU[c]?.van_ban ?? c} — ${canCuHetHieuLuc[c]}`).join('; ')}. Kết luận dựa trên căn cứ này cần kế toán kiểm lại.`,
+    });
+  }
+  if (chuaKiemHieuLuc) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Chưa kiểm được tình trạng hiệu lực của các văn bản căn cứ lúc này.' });
   for (const c of canhBao.slice(0, 2)) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: c });
   for (const t of sl.thieu.slice(0, 3)) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: t.cau });
   if (chuaKiem.length) {
     the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `${chuaKiem.length} căn cứ chưa đối chiếu được với kho văn bản — mở Tờ khai thuế để đọc bản gốc.` });
   }
+
+  // P0-003: kết luận nào cũng nói nó dựa trên phiên bản quy tắc nào, ở ngày nào.
+  the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Kết luận theo bộ quy tắc thuế MIMI phiên bản ${PHIEN_BAN_HE_LUAT}, tình trạng hiệu lực tính tại ngày ${ngayVN(d.homNay)}.` });
 
   const tomTat = chinh.length
     ? `${chinh.map((k) => k.cau).join(' ')}${sl.doanh_thu_nam !== null ? ` Doanh thu năm ${suKien.nam}${sl.tam_tinh ? ' tới nay' : ''}: ${vnd(sl.doanh_thu_nam)}.` : ''}`
@@ -1202,7 +1228,19 @@ export function traCuuLuat(d: DuLieu): KetQuaNangLuc {
       nguon: [N.khoLuat],
     });
   }
+  const bangDaLoai = (): The => ({
+    loai: 'bang', tieu_de: 'Văn bản tìm thấy nhưng đã hết hiệu lực (không dùng làm căn cứ)',
+    cot: [{ nhan: 'Văn bản', don_vi: 'chu' }, { nhan: 'Tình trạng', don_vi: 'chu' }],
+    dong: d.khoLuatDaLoai.map((v) => [v.van_ban, v.nhan]),
+  });
   if (!d.khoLuat.length) {
+    // P0-003: chỉ còn văn bản hết hiệu lực → chưa đủ căn cứ, không suy đoán từ văn bản cũ.
+    if (d.khoLuatDaLoai.length) {
+      return kq('tra_cuu_luat', 'chung_tu', `Chưa đủ căn cứ: kho chỉ tìm thấy ${d.khoLuatDaLoai.length} văn bản đã hết hiệu lực cho câu hỏi này, không có văn bản đang áp dụng. MIMI không trả lời từ văn bản cũ — hỏi kế toán hoặc cơ quan thuế quản lý trực tiếp.`, {
+        the: [bangDaLoai()],
+        nguon: [N.khoLuat],
+      });
+    }
     return kq('tra_cuu_luat', 'chung_tu', 'Kho văn bản của MIMI chưa có đoạn nói về việc này. Bạn nên hỏi kế toán hoặc cơ quan thuế quản lý trực tiếp.', {
       nguon: [N.khoLuat],
     });
@@ -1210,11 +1248,15 @@ export function traCuuLuat(d: DuLieu): KetQuaNangLuc {
   const cu = d.khoLuat.filter((v) => v.ngay_ban_hanh && Number(v.ngay_ban_hanh.slice(0, 4)) < NAM_LUAT_CAN_CANH_BAO);
   const the: The[] = [{
     loai: 'bang', tieu_de: 'Đoạn văn bản tìm thấy (trích nguyên văn)',
-    cot: [{ nhan: 'Văn bản', don_vi: 'chu' }, { nhan: 'Ban hành', don_vi: 'ngay' }, { nhan: 'Hiệu lực', don_vi: 'ngay' }, { nhan: 'Trích', don_vi: 'chu' }, { nhan: 'Bản gốc', don_vi: 'chu' }],
+    cot: [
+      { nhan: 'Văn bản', don_vi: 'chu' }, { nhan: 'Ban hành', don_vi: 'ngay' }, { nhan: 'Có hiệu lực từ', don_vi: 'ngay' },
+      { nhan: 'Tình trạng', don_vi: 'chu' }, { nhan: 'Trích', don_vi: 'chu' }, { nhan: 'Bản gốc', don_vi: 'chu' },
+    ],
     dong: d.khoLuat.map((v) => [
       [[v.loai, v.so_hieu].filter(Boolean).join(' ') || v.ten, v.nhan].filter(Boolean).join(' · '),
       v.ngay_ban_hanh,
       v.ngay_hieu_luc,
+      v.hieu_luc ?? 'Chưa kiểm được tình trạng hiệu lực',
       `“${v.noi_dung.length > 400 ? `${v.noi_dung.slice(0, 400)}…` : v.noi_dung}”`,
       v.url,
     ]),
@@ -1223,9 +1265,13 @@ export function traCuuLuat(d: DuLieu): KetQuaNangLuc {
     loai: 'ghi_chu', muc_do: 'can_chu_y',
     cau: 'Đây là trích dẫn để tham khảo, chưa phải tư vấn: kho chưa theo dõi đầy đủ tình trạng hiệu lực. Đối chiếu bản gốc và hỏi kế toán hoặc cơ quan thuế trước khi nộp hồ sơ.',
   });
-  if (cu.length) {
-    the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `${cu.length} văn bản ban hành trước ${NAM_LUAT_CAN_CANH_BAO} — có thể đã bị sửa đổi hoặc thay thế.` });
+  if (d.khoLuatChuaKiemHieuLuc) {
+    the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Chưa kiểm được tình trạng hiệu lực lúc này — đừng dựa vào các đoạn trên khi chưa đối chiếu bản gốc.' });
   }
+  if (cu.length) {
+    the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `${cu.length} văn bản ban hành trước ${NAM_LUAT_CAN_CANH_BAO}: kho chưa ghi nhận văn bản bãi bỏ, nhưng vẫn có thể đã bị sửa đổi.` });
+  }
+  if (d.khoLuatDaLoai.length) the.push(bangDaLoai());
   return kq('tra_cuu_luat', 'chung_tu', `MIMI tìm thấy ${d.khoLuat.length} đoạn văn bản liên quan trong Công báo. Dưới đây là trích nguyên văn kèm ngày ban hành và hiệu lực — chỉ để tham khảo.`, {
     the,
     nguon: [N.khoLuat],

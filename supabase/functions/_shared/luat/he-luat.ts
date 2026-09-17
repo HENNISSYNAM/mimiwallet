@@ -193,6 +193,12 @@ export interface SuKienThue {
 
 // ── Ngưỡng và tỷ lệ (mỗi con số trỏ về căn cứ) ──────────────────────────────────
 
+/**
+ * MIMI-P0-003: phiên bản bộ quy tắc thuế. Đổi mỗi khi đổi ngưỡng, tỷ lệ, câu trích hay quy tắc
+ * suy luận — bản nháp tờ khai lưu kèm phiên bản này, để sau đối chiếu được "hôm đó MIMI dùng luật nào".
+ */
+export const PHIEN_BAN_HE_LUAT = '2026-09-17.1';
+
 export const NAM_AP_DUNG = 2026;
 /** NĐ 68/2026 Điều 3, 4 — sửa bởi NĐ 141/2026 Điều 1 khoản 1. "Trở xuống": đúng bằng vẫn dưới ngưỡng. */
 export const NGUONG_DOANH_THU = 1_000_000_000;

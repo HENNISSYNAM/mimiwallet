@@ -11,6 +11,7 @@
  * So chữ sau khi gộp khoảng trắng (đoạn trong kho ngắt dòng giữa câu) và chuẩn hoá Unicode NFC.
  */
 import { CAN_CU, VAN_BAN } from './he-luat.ts';
+import { hieuLucTaiNgay, nhanHieuLuc, type HieuLucTaiNgay, type QuanHeHieuLuc } from './hieu-luc.ts';
 
 export interface CanCuDaKiem {
   id: string;
@@ -23,6 +24,13 @@ export interface CanCuDaKiem {
   ngay_ban_hanh: string | null;
   /** Câu trích tìm thấy nguyên văn trong kho. */
   da_doi_chieu: boolean;
+  /**
+   * MIMI-P0-003: tình trạng hiệu lực của văn bản tại ngày kiểm, theo quan hệ kho đã ghi nhận.
+   * null = chưa kiểm được (đọc bảng quan hệ lỗi) — không có nghĩa là còn hiệu lực.
+   */
+  hieu_luc: HieuLucTaiNgay | null;
+  /** Nhãn hiệu lực cho người đọc. */
+  nhan_hieu_luc: string;
 }
 
 export function chuanHoaChu(s: string): string {
@@ -44,12 +52,37 @@ type Db = any;
 type Row = Record<string, any>;
 
 /**
+ * MIMI-P0-003: tình trạng hiệu lực của các văn bản tại một ngày, từ bảng `quan_he_hieu_luc`.
+ * Lỗi đọc → null ("chưa kiểm được"), để nơi gọi không coi văn bản là còn hiệu lực.
+ */
+export async function docHieuLuc(db: Db, soHieu: string[], ngay: string): Promise<Map<string, HieuLucTaiNgay> | null> {
+  const ds = [...new Set(soHieu.filter(Boolean))];
+  const ra = new Map<string, HieuLucTaiNgay>();
+  if (!ds.length) return ra;
+  try {
+    const r = await db.from('quan_he_hieu_luc')
+      .select('so_hieu_nguon, so_hieu_dich, loai, hieu_luc_tu, do_tin_cay, co_ngoai_le, trich')
+      .in('so_hieu_dich', ds)
+      .limit(2000);
+    if (r.error) throw new Error(r.error.message);
+    const quanHe = (r.data ?? []) as QuanHeHieuLuc[];
+    for (const sh of ds) ra.set(sh, hieuLucTaiNgay(sh, quanHe, ngay));
+    return ra;
+  } catch (e) {
+    console.error('doc hieu luc:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+export const NHAN_CHUA_KIEM_HIEU_LUC = 'Chưa kiểm được tình trạng hiệu lực';
+
+/**
  * Lấy căn cứ theo id, kèm đường dẫn Công báo và kết quả đối chiếu.
  *
  * Không ném lỗi khi kho hỏng: trả `da_doi_chieu: false` để màn hình nói thật là chưa đối chiếu
  * được, thay vì mất cả câu trả lời.
  */
-export async function kiemCanCu(db: Db, ids: string[]): Promise<CanCuDaKiem[]> {
+export async function kiemCanCu(db: Db, ids: string[], ngay: string = new Date().toISOString().slice(0, 10)): Promise<CanCuDaKiem[]> {
   const canCu = [...new Set(ids)].filter((id) => CAN_CU[id]).map((id) => ({ id, ...CAN_CU[id] }));
   if (!canCu.length) return [];
 
@@ -85,8 +118,11 @@ export async function kiemCanCu(db: Db, ids: string[]): Promise<CanCuDaKiem[]> {
     console.error('kiem can cu:', e instanceof Error ? e.message : e);
   }
 
+  const hieuLuc = await docHieuLuc(db, soHieu, ngay);
+
   return canCu.map((c) => {
     const vb = vanBan.get(c.van_ban);
+    const hl = hieuLuc ? hieuLuc.get(c.van_ban) ?? null : null;
     const doan = noiDung.get(`${c.van_ban}|${c.dieu}`);
     return {
       id: c.id,
@@ -98,9 +134,14 @@ export async function kiemCanCu(db: Db, ids: string[]): Promise<CanCuDaKiem[]> {
       url: vb?.url ?? null,
       ngay_ban_hanh: vb?.ngay_ban_hanh ?? VAN_BAN[c.van_ban]?.ngay_ban_hanh ?? null,
       da_doi_chieu: !!doan && coTrich(doan, c.trich),
+      hieu_luc: hl,
+      nhan_hieu_luc: hl ? nhanHieuLuc(hl) : NHAN_CHUA_KIEM_HIEU_LUC,
     };
   });
 }
+
+/** Căn cứ có văn bản kho ghi nhận đã hết hiệu lực (toàn bộ) tại ngày kiểm. */
+export const hetHieuLuc = (ds: CanCuDaKiem[]): CanCuDaKiem[] => ds.filter((c) => c.hieu_luc?.trang_thai === 'het_hieu_luc');
 
 /** Căn cứ nào chưa đối chiếu được — để màn hình nói rõ chỗ nào chưa chắc. */
 export const chuaDoiChieu = (ds: CanCuDaKiem[]): CanCuDaKiem[] => ds.filter((c) => !c.da_doi_chieu);

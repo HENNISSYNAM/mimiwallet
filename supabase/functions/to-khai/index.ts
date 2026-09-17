@@ -16,7 +16,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveCompany } from "../_shared/company.ts";
 import { lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
-import { canCuDung, docHoSoThue, NAM_AP_DUNG, suyLuan } from "../_shared/luat/he-luat.ts";
+import { canCuDung, docHoSoThue, NAM_AP_DUNG, PHIEN_BAN_HE_LUAT, suyLuan } from "../_shared/luat/he-luat.ts";
 import { kyGoiY, soanToKhai, type KyToKhai } from "../_shared/luat/to-khai.ts";
 import { kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
@@ -104,10 +104,11 @@ async function phanTich(db: Db, companyId: string, body: Row) {
   const ky = k.ky ?? kyGoiY(dung.su_kien, sl);
   const soan = soanToKhai(dung.su_kien, sl, { ten: cong_ty.ten, mst: cong_ty.mst }, ky);
 
+  // P0-003: kiểm hiệu lực căn cứ theo đúng ngày hôm nay (giờ Việt Nam).
   const canCu = await kiemCanCu(db, [
     ...canCuDung(sl.ket_luan),
     ...(soan.ok ? soan.to_khai.can_cu : soan.can_cu),
-  ]);
+  ], homNay);
 
   return {
     ket_qua: {
@@ -132,6 +133,8 @@ async function phanTich(db: Db, companyId: string, body: Row) {
       canh_bao: dung.canh_bao,
       can_cu: canCu,
       chua_doi_chieu: canCu.filter((c) => !c.da_doi_chieu).map((c) => c.id),
+      het_hieu_luc: canCu.filter((c) => c.hieu_luc?.trang_thai === "het_hieu_luc").map((c) => c.id),
+      phien_ban_he_luat: PHIEN_BAN_HE_LUAT,
     },
     soan,
     ky,
@@ -179,7 +182,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (!r.soan || !r.soan.ok) return loi("CHUA_SOAN_DUOC", r.soan?.ly_do ?? "Chưa soạn được tờ khai.", 409);
       const tk = r.soan.to_khai;
       const ky = r.ky as KyToKhai;
-      const noiDung = JSON.stringify({ to_khai: tk, can_cu: r.ket_qua.can_cu });
+      // Ảnh chụp pháp lý (P0-003): căn cứ kèm tình trạng hiệu lực lúc soạn + phiên bản bộ quy tắc, cùng vào mã băm.
+      const noiDung = JSON.stringify({ to_khai: tk, can_cu: r.ket_qua.can_cu, phien_ban_he_luat: PHIEN_BAN_HE_LUAT });
       const bam = Array.from(
         new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(noiDung))),
         (x) => x.toString(16).padStart(2, "0"),
@@ -191,7 +195,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         ky_loai: ky.loai,
         quy: ky.loai === "quy" ? ky.quy : null,
         han_nop: tk.han_nop,
-        du_lieu: tk,
+        du_lieu: { ...tk, phien_ban_he_luat: PHIEN_BAN_HE_LUAT },
         can_cu: r.ket_qua.can_cu,
         ma_bam: bam,
         user_id: userId,

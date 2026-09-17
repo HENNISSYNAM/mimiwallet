@@ -40,7 +40,8 @@ import {
 } from "../_shared/tro-ly/tinh-toan.ts";
 import { khoangNgayKyKeKhai, kyKeKhaiKeTiep, lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
 import { CAN_CU, suyLuan } from "../_shared/luat/he-luat.ts";
-import { kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
+import { docHieuLuc, kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
+import { nhanHieuLuc } from "../_shared/luat/hieu-luc.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
@@ -146,20 +147,44 @@ async function docGiaoDich(db: Db, companyId: string, tu: string) {
  * Lỗi hoặc quá 6 giây → null ("chưa tra được"), không phải [] ("kho không có"): hai điều khác nhau
  * với người hỏi luật.
  */
-async function traKhoLuat(db: Db, cauHoi: string): Promise<DoanLuat[] | null> {
-  if (!cauHoi.trim()) return [];
+async function traKhoLuat(db: Db, cauHoi: string, homNay: string): Promise<{
+  doan: DoanLuat[] | null;
+  daLoai: { van_ban: string; nhan: string }[];
+  chuaKiem: boolean;
+}> {
+  if (!cauHoi.trim()) return { doan: [], daLoai: [], chuaKiem: false };
   try {
     const { data, error } = await db
       .rpc("tim_phap_luat", { cau_hoi: cauHoi.slice(0, 500), so_ket_qua: 12 })
       .abortSignal(AbortSignal.timeout(6000));
     if (error) {
       console.error("tim_phap_luat:", error.message);
-      return null;
+      return { doan: null, daLoai: [], chuaKiem: false };
     }
-    return chonNguon((data ?? []) as DoanLuat[]);
+    const tho = (data ?? []) as DoanLuat[];
+    // P0-003: bỏ văn bản kho ghi nhận chắc chắn đã hết hiệu lực TRƯỚC khi chọn nguồn, để chỗ
+    // trống được nhường cho văn bản đang áp dụng.
+    const hl = await docHieuLuc(db, tho.map((d) => d.so_hieu ?? "").filter(Boolean), homNay);
+    const daLoai = new Map<string, string>();
+    const conDung = tho.filter((d) => {
+      const h = d.so_hieu && hl ? hl.get(d.so_hieu) : undefined;
+      if (h?.trang_thai === "het_hieu_luc") {
+        daLoai.set(d.so_hieu as string, nhanHieuLuc(h));
+        return false;
+      }
+      return true;
+    }).map((d) => {
+      const h = d.so_hieu && hl ? hl.get(d.so_hieu) : undefined;
+      return { ...d, hieu_luc: h ? nhanHieuLuc(h) : undefined };
+    });
+    return {
+      doan: chonNguon(conDung),
+      daLoai: [...daLoai].map(([van_ban, nhan]) => ({ van_ban, nhan })),
+      chuaKiem: hl === null,
+    };
   } catch (e) {
     console.error("tra kho luat:", e instanceof Error ? e.message : e);
-    return null;
+    return { doan: null, daLoai: [], chuaKiem: false };
   }
 }
 
@@ -327,16 +352,22 @@ async function docDuLieu(
       ]);
       const dung = dungSuKien({ nam: Number(moc.homNay.slice(0, 4)), homNay: moc.homNay, congTy: hs.cong_ty, hoSo: hs.ho_so, doanhThu: dt });
       // Đối chiếu trước cả bộ căn cứ: năng lực là hàm thuần, không gọi được CSDL.
-      const kiem = await kiemCanCu(db, Object.keys(CAN_CU));
+      const kiem = await kiemCanCu(db, Object.keys(CAN_CU), moc.homNay);
       d.thue = {
         suKien: dung.su_kien,
         canhBao: dung.canh_bao,
         canCuDaKiem: Object.fromEntries(kiem.map((c) => [c.id, c.da_doi_chieu])),
+        canCuHetHieuLuc: Object.fromEntries(kiem.filter((c) => c.hieu_luc?.trang_thai === "het_hieu_luc").map((c) => [c.id, c.nhan_hieu_luc])),
+        chuaKiemHieuLuc: kiem.some((c) => c.hieu_luc === null),
       };
     })());
   }
   if (can.has("kho_luat")) {
-    viec.push(traKhoLuat(db, tuyChon.cauHoi ?? "").then((r) => { d.khoLuat = r; }));
+    viec.push(traKhoLuat(db, tuyChon.cauHoi ?? "", moc.homNay).then((r) => {
+      d.khoLuat = r.doan;
+      d.khoLuatDaLoai = r.daLoai;
+      d.khoLuatChuaKiemHieuLuc = r.chuaKiem;
+    }));
   }
   if (can.has("chung_tu_quet")) {
     viec.push(docTrang(
@@ -550,7 +581,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             canhBao = "Đã lưu chứng từ nhưng chưa lưu được ảnh. Chụp lại sau nếu cần ảnh.";
           } else {
             // Mã băm ảnh vào nội dung chuẩn hoá → sổ cái ghi cả ảnh: đổi ảnh gốc là lộ.
-            const bamAnh = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", anh.bytes)), (x) => x.toString(16).padStart(2, "0")).join("");
+            const bamAnh = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(anh.bytes))), (x) => x.toString(16).padStart(2, "0")).join("");
             const { error: loiCapNhat } = await db.from("chung_tu_quet").update({ anh_path: duongDan, anh_sha256: bamAnh }).eq("id", data.id);
             if (loiCapNhat) throw loiCapNhat;
             anhPath = duongDan;

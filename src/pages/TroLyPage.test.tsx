@@ -109,7 +109,7 @@ describe('MIMI Assistant — màn đầu', () => {
     expect(screen.getByRole('button', { name: /Nhóm việc/ }).closest('form')).toBeTruthy();
     expect(screen.queryByRole('group', { name: 'Chọn nhóm việc' })).toBeNull();
     // Kết nối gọn một nút; bấm mới mở danh sách.
-    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
+    await screen.findByRole('region', { name: 'Chi phí AI tháng này' }, { timeout: 8000 });
     expect(screen.queryByRole('list', { name: 'Các kết nối' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Kết nối/ }));
     const ketNoi = await screen.findByRole('list', { name: 'Các kết nối' });
@@ -119,7 +119,8 @@ describe('MIMI Assistant — màn đầu', () => {
     expect(screen.getByTestId('nen').getAttribute('aria-hidden')).toBe('true');
     // Chưa có mô hình thì nói thật cách MIMI đang hiểu câu hỏi.
     expect(document.body.textContent).toContain('theo các mẫu có sẵn');
-  });
+    // Ca đầu tiên của tệp gánh cả thời gian nạp module: chạy cả bộ test song song thì vượt 5 giây mặc định.
+  }, 20_000);
 
   it('ba thẻ phân tích lấy số từ máy chủ; tháng chưa có số không vẽ thành 0', async () => {
     dung();

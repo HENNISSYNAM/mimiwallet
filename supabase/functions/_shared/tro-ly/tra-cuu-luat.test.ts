@@ -29,21 +29,42 @@ describe('tra_cuu_luat', () => {
     expect(r.tom_tat).toContain('chưa có đoạn');
   });
 
-  it('có đoạn: trích nguyên văn, kèm ngày ban hành, hiệu lực, bản gốc và cảnh báo tham khảo', () => {
-    const r = traCuuLuat({ ...duLieuTrong('2026-09-16', KY), khoLuat: [doan({})] });
+  it('có đoạn: trích nguyên văn, kèm ngày ban hành, hiệu lực, tình trạng, bản gốc và cảnh báo tham khảo', () => {
+    const r = traCuuLuat({ ...duLieuTrong('2026-09-16', KY), khoLuat: [doan({ hieu_luc: 'Kho chưa ghi nhận văn bản bãi bỏ' })] });
     const bang = r.the.find((t) => t.loai === 'bang');
     expect(bang && bang.loai === 'bang' && bang.dong[0]).toEqual([
-      'Luật 108/2025/QH15 · Điều 12', '2025-12-10', '2026-07-01', '“Nội dung trích.”', 'https://congbao.chinhphu.vn/x',
+      'Luật 108/2025/QH15 · Điều 12', '2025-12-10', '2026-07-01', 'Kho chưa ghi nhận văn bản bãi bỏ', '“Nội dung trích.”', 'https://congbao.chinhphu.vn/x',
     ]);
     const ghi = r.the.filter((t) => t.loai === 'ghi_chu').map((t) => (t.loai === 'ghi_chu' ? t.cau : '')).join(' ');
     expect(ghi).toContain('tham khảo');
     expect(ghi).not.toContain('trước 2024');
   });
 
+  it('P0-003: chỉ còn văn bản đã hết hiệu lực → chưa đủ căn cứ, liệt kê văn bản bị loại', () => {
+    const r = traCuuLuat({
+      ...duLieuTrong('2026-09-17', KY),
+      khoLuat: [],
+      khoLuatDaLoai: [{ van_ban: '38/2019/QH14', nhan: 'Hết hiệu lực từ 01/07/2026 (bãi bỏ bởi 108/2025/QH15, có ngoại lệ)' }],
+    });
+    expect(r.tom_tat).toContain('Chưa đủ căn cứ');
+    expect(r.tom_tat).not.toContain('chưa có đoạn');
+    const bang = r.the.find((t) => t.loai === 'bang');
+    expect(bang && bang.loai === 'bang' && bang.dong).toEqual([['38/2019/QH14', 'Hết hiệu lực từ 01/07/2026 (bãi bỏ bởi 108/2025/QH15, có ngoại lệ)']]);
+  });
+
+  it('P0-003: không kiểm được hiệu lực thì mỗi đoạn ghi rõ và có cảnh báo', () => {
+    const r = traCuuLuat({ ...duLieuTrong('2026-09-17', KY), khoLuat: [doan({})], khoLuatChuaKiemHieuLuc: true });
+    const bang = r.the.find((t) => t.loai === 'bang');
+    expect(bang && bang.loai === 'bang' && bang.dong[0][3]).toBe('Chưa kiểm được tình trạng hiệu lực');
+    const ghi = r.the.filter((t) => t.loai === 'ghi_chu').map((t) => (t.loai === 'ghi_chu' ? t.cau : '')).join(' ');
+    expect(ghi).toContain('Chưa kiểm được tình trạng hiệu lực');
+  });
+
   it('văn bản ban hành trước 2024 bị cảnh báo có thể đã sửa đổi/thay thế', () => {
     const r = traCuuLuat({ ...duLieuTrong('2026-09-16', KY), khoLuat: [doan({ so_hieu: '38/2019/QH14', ngay_ban_hanh: '2019-06-13' })] });
     const ghi = r.the.filter((t) => t.loai === 'ghi_chu').map((t) => (t.loai === 'ghi_chu' ? t.cau : '')).join(' ');
     expect(ghi).toContain('1 văn bản ban hành trước 2024');
+    expect(ghi).toContain('vẫn có thể đã bị sửa đổi');
   });
 });
 

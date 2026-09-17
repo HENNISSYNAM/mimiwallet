@@ -22,6 +22,8 @@ export interface DoanLuat {
   noi_dung: string;
   du_moi_tu: boolean;
   diem: number;
+  /** MIMI-P0-003: nhãn tình trạng hiệu lực tại ngày hỏi (điền sau khi tra `quan_he_hieu_luc`). */
+  hieu_luc?: string;
 }
 
 /** Tối đa bao nhiêu đoạn đưa cho mô hình. */
