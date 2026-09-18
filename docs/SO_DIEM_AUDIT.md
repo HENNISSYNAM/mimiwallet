@@ -22,9 +22,10 @@
 | MIMI-P1-001 | Citation tới từng bằng chứng | lên production |
 | MIMI-P1-002 | Conversation và decision audit trail | lên production 18/09/2026 |
 | MIMI-P1-003 | RBAC cho doanh nghiệp nhiều người | lên production (RLS đọc theo thành viên) |
+| MIMI-P1-004 | AI evaluation harness | **một phần**: harness + CI đã lên; bộ ca 45/300 |
 
-Còn mở: MIMI-P1-004 (eval harness), P1-005 (đối soát), P1-006 (chi phí AI theo
-workflow), P2-001, P2-002.
+Còn mở: P1-004 phần bộ ca (45/300 và chưa có bộ chấm cho phần diễn đạt của mô hình),
+P1-005 (đối soát), P1-006 (chi phí AI theo workflow), P2-001, P2-002.
 
 Không còn P0 mở → cổng `open_P0` (chặn phát hành, trần 6.9) không còn áp.
 
@@ -39,6 +40,17 @@ Không còn P0 mở → cổng `open_P0` (chặn phát hành, trần 6.9) không
   SELECT đọc theo `public.la_thanh_vien`, mỗi bảng đúng một policy đọc,
   `la_thanh_vien` là SECURITY DEFINER + STABLE.
 - Hai bảng mới đang **0 dòng**: chưa có lượt dùng thật nào sau khi deploy.
+- Bộ chấm trợ lý (MIMI-P1-004, `npm run eval`) trên 45 ca / 5 phân khúc, chạy offline không
+  gọi mô hình: intent 45/45, số liệu 4/4, citation 101/101, hành động không an toàn 0/45,
+  nói chắc về pháp luật 0/45, từ chối đúng 9/9, hoàn tất hành động 4/4.
+- Chính bộ chấm đó bắt được ba lỗi thật, đã sửa ở bộ não (commit cac7cbc): ô "Chưa có hoá đơn
+  điện tử" mất bằng chứng khi khoản thiếu hoá đơn đã có ảnh quét; bảng "Khoản đang chờ bạn
+  duyệt" và bảng "Token theo model" không ghi bằng chứng; `nhanYDinh` không hiểu bốn cách hỏi
+  thường gặp.
+- CI: kho trước đây không có workflow nào; giờ mỗi push và PR chạy tsc, `npm test` (gồm bộ
+  chấm), `vite build` và `deno check` — cổng "CI chặn merge khi metric an toàn giảm" của đặc
+  tả mới thực sự có hiệu lực.
+- Cả bộ test sau các thay đổi: **1056/1056 đạt, 99 tệp**; tsc, vite build, deno check sạch.
 
 ## Đề nghị điểm
 
@@ -50,7 +62,7 @@ Không còn P0 mở → cổng `open_P0` (chặn phát hành, trần 6.9) không
 | auditability_evidence_graph | 0.08 | 5.3 | 5.8 | +0.5 | 7.0 (chưa có telemetry) | P1-001 bằng chứng tới từng bản ghi kèm mã băm; P1-002 nhật ký quyết định chỉ-thêm, ghi trước khi chạy |
 | functional_completeness | 0.08 | 5.8 | 5.9 | +0.1 | 7.0 | Khu "Mở tài khoản" không còn là đường cụt; báo cáo bỏ khối số bịa |
 | financial_control_safety | 0.11 | 7.0 | 7.0 | 0 | 7.0 — đã ở trần | P1-002 có làm chắc thêm, nhưng trần chặn ở đây cho tới khi có telemetry |
-| test_ai_evaluation | 0.08 | 5.9 | 5.9 | 0 | — | Thêm test đơn vị không thay thế eval harness; P1-004 chưa làm |
+| test_ai_evaluation | 0.08 | 5.9 | 6.4 | +0.5 | 7.0 (chưa có telemetry) | P1-004 một phần: harness 7 chỉ số + cổng CI, đã bắt được 3 lỗi thật; bộ ca còn 45/300 nên không xin thêm |
 | reliability_observability | 0.08 | 5.8 | 5.8 | 0 | — | Chỉ sửa một lỗi console; chưa thêm quan trắc nào |
 | mobile_ux_activation | 0.06 | 6.3 | 6.3 | 0 | — | Chưa có bằng chứng activation (chống điểm hình thức) |
 | market_differentiation | 0.06 | 5.7 | 5.7 | 0 | — | Không có dữ liệu mới |
@@ -63,14 +75,15 @@ score_change_request:
   measured_at: 2026-09-18
   weighted_product_readiness:
     frozen: 5.77
-    proposed: 5.95
-    delta: 0.18
+    proposed: 5.99
+    delta: 0.22
   separate_scores:
     commercial_readiness: 4.2        # không đổi, chưa có khách trả tiền
     assistant_commercial_readiness: 5.6
   ceiling_checks:
     automated_tests_present: true
     integration_tests_present: true
+    ai_eval_harness_present: true      # 45/300 ca, offline, có cổng CI
     cross_tenant_negative_test_present: false
     production_telemetry_present: false
     paying_customer_evidence: false
@@ -86,8 +99,12 @@ score_change_request:
    `co_token boolean GENERATED ALWAYS AS (access_token_enc IS NOT NULL) STORED`, đổi
    `src/components/fintech/PaymentMethods.tsx:128` sang lọc theo cột đó, rồi
    `REVOKE SELECT (access_token_enc) ON bank_connections FROM authenticated`.
-   Đây là thay đổi RLS/quyền → `require_human_review_if` của đặc tả, cần người đồng ý
-   trước khi đẩy.
+   **Đã viết và commit (0cf6cb4)** — migration `20260918160000`, cột sinh `co_token`,
+   `PaymentMethods` lọc theo cột đó, và một test chặn mã giao diện chạm lại vào cột token.
+   **Chưa đẩy lên CSDL và chưa đẩy commit lên `main`**: `supabase db push` cho migration này
+   bị bộ phân loại an toàn của Claude Code chặn (đây là thay đổi GRANT/REVOKE), và bản vá
+   giao diện chỉ đúng sau khi cột `co_token` tồn tại — đẩy lệch thứ tự sẽ làm thẻ QR báo
+   "chưa liên kết ngân hàng".
 2. **Quyết định có thể mắc ở `cho_chay` vĩnh viễn.** Nếu trình duyệt tắt sau khi
    `xac_nhan` mà trước khi `ket_qua_quyet_dinh`, dòng nhật ký nằm lại không kết quả và
    không có gì đối soát lại. Thuộc phạm vi P1-005.
@@ -95,7 +112,9 @@ score_change_request:
    trong comment của bảng. Phần "ai xác nhận việc gì" là do máy chủ ghi và chỉ-thêm;
    phần "việc chạy ra sao" thì chưa được kiểm chứng độc lập.
 4. **Chưa có cross-tenant negative test chạy trên CSDL thật** (người của công ty A đọc
-   dữ liệu công ty B phải trả về rỗng). Đây là điều kiện để trục bảo mật vượt 6.9.
+   dữ liệu công ty B phải trả về rỗng). Đây là điều kiện để trục bảo mật vượt 6.9. Tôi dựng
+   được phép thử chỉ-đọc (mô phỏng vai trò trong một giao dịch rồi ROLLBACK), nhưng cả việc
+   đọc danh sách công ty trên production cũng đang bị chặn ở phiên này, nên chưa chạy được.
 5. **Đường email đăng nhập vẫn chưa thông**: dự án đang dùng email tích hợp của
    Supabase (giới hạn thấp, hay bị chặn với tên miền công ty). Cần cấu hình SMTP riêng
    trong Authentication. Tôi không đọc được cấu hình đó vì CLI trên máy này không có
