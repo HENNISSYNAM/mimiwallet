@@ -76,6 +76,15 @@ const m = {
       mimiDaLamGi: 'MIMI 做了什么',
       viecBanCoTheLam: '你可以做的事',
       nguon: '来源：',
+      bangChung: {
+        nut: '{{so}} 条记录',
+        tieuDe: '该数字背后的记录',
+        dangTai: '正在打开记录…',
+        loi: '无法打开记录。',
+        khongThay: '您的公司没有该记录。',
+        catNgan: '显示 {{tong}} 条中的 {{hien}} 条。',
+        maBam: '回答时的哈希：',
+      },
       doDay: {
         dong: '{{ten}}：{{so}} 行',
         ky: '从 {{tu}} 到 {{den}}',

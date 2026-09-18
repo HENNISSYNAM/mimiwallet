@@ -76,6 +76,15 @@ const m = {
       mimiDaLamGi: 'What MIMI did',
       viecBanCoTheLam: 'Things you can do',
       nguon: 'Source:',
+      bangChung: {
+        nut: '{{so}} records',
+        tieuDe: 'Records behind this number',
+        dangTai: 'Opening records…',
+        loi: 'Could not open the records.',
+        khongThay: 'No such record in your company.',
+        catNgan: 'Showing {{hien}} of {{tong}} records.',
+        maBam: 'Hash at answer time:',
+      },
       doDay: {
         dong: '{{ten}}: {{so}} rows',
         ky: 'from {{tu}} to {{den}}',

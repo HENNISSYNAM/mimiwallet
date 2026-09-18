@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { DauKetNoi } from '@/components/tro-ly/DauKetNoi';
+import { NutBangChung } from '@/components/tro-ly/NutBangChung';
 import { dongBoSaoKe, goiTroLy } from '@/lib/goiTroLy';
 import { goiTacTu } from '@/lib/goiTacTu';
 import { goiChiPhiAi } from '@/lib/goiChiPhiAi';
@@ -897,6 +898,8 @@ function TheKetQua({ the }: { the: The }) {
                 {dinhDang(m.gia_tri, m.don_vi)}
               </dd>
               {m.ghi_chu && <dd className="text-xs text-muted-foreground">{m.ghi_chu}</dd>}
+              {/* P1-001: mở đúng những bản ghi đã cộng vào con số này. */}
+              {!!m.bang_chung?.length && <dd><NutBangChung bangChung={m.bang_chung} /></dd>}
             </div>
           ))}
         </dl>

@@ -87,6 +87,15 @@ const m = {
       mimiDaLamGi: 'MIMI đã làm gì',
       viecBanCoTheLam: 'Việc bạn có thể làm',
       nguon: 'Nguồn:',
+      bangChung: {
+        nut: '{{so}} bản ghi',
+        tieuDe: 'Bản ghi đứng sau con số này',
+        dangTai: 'Đang mở bản ghi…',
+        loi: 'Chưa mở được bản ghi.',
+        khongThay: 'Không còn bản ghi nào trong công ty của bạn.',
+        catNgan: 'Hiện {{hien}} trong {{tong}} bản ghi.',
+        maBam: 'Mã băm lúc trả lời:',
+      },
       doDay: {
         dong: '{{ten}}: {{so}} dòng',
         ky: 'từ {{tu}} đến {{den}}',

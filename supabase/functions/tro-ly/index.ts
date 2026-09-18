@@ -21,6 +21,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { locDeXuat, locPhanTich } from "../_shared/quyen/loc-de-xuat.ts";
+import type { BangChung, KetQuaNangLuc, LoaiBangChung } from "../_shared/tro-ly/kieu.ts";
 import { danhSachCongTy } from "../_shared/company.ts";
 import type { DoDayNguon, NhomNangLuc } from "../_shared/tro-ly/kieu.ts";
 import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
@@ -77,10 +78,68 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   luu_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
   xoa_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
   boi_canh: { cuaSoGiay: 60, toiDa: 60 },
+  bang_chung: { cuaSoGiay: 60, toiDa: 60 },
   trang_thai: { cuaSoGiay: 60, toiDa: 120 },
 };
 
 const NGAY_LICH_SU = 180;
+
+/**
+ * MIMI-P1-001 — bảng nào giữ bản ghi của loại bằng chứng nào, và cột nào đủ để người đọc nhận ra
+ * bản ghi đó. Mọi truy vấn đều lọc `company_id`: id của công ty khác không bao giờ trả về gì.
+ */
+const BANG_BANG_CHUNG: Record<Exclude<LoaiBangChung, "van_ban_luat">, { bang: string; cot: string }> = {
+  giao_dich: { bang: "transactions", cot: "id, transaction_date, amount, type, merchant_name, counter_account_name, payment_reference, category" },
+  hoa_don_vao: { bang: "gdt_invoices", cot: "id, invoice_number, issued_at, total_amount, counterparty_name, counterparty_tax_code" },
+  hoa_don_ban: { bang: "invoices", cot: "id, invoice_number, client_name, issued_date, due_date, total, status" },
+  yeu_cau_chi: { bang: "yeu_cau_chi", cot: "id, created_at, so_tien, ten_nguoi_nhan, muc_dich, trang_thai" },
+  chung_tu_quet: { bang: "chung_tu_quet", cot: "id, ngay, tong_tien, ben_ban, so_hoa_don, giao_dich_id" },
+  chi_phi_ai: { bang: "chi_phi_ai", cot: "id, ngay, nha_cung_cap, hang_muc, so_tien_usd, nguon" },
+  token_ai: { bang: "token_ai", cot: "id, ngay, nha_cung_cap, model, token_vao, token_ra, so_lan_goi" },
+};
+
+const SO_BANG_CHUNG_MOI_LAN = 200;
+
+/** Chuỗi chuẩn hoá của một bản ghi: khoá sắp xếp để cùng dữ liệu luôn ra cùng mã băm. */
+function chuanHoaBanGhi(r: Row): string {
+  return JSON.stringify(Object.keys(r).sort().map((k) => [k, r[k] ?? null]));
+}
+
+async function bamChuoi(chu: string): Promise<string> {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chu));
+  return Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Gắn mã băm cho từng khối bằng chứng, tính trên chính các dòng đã dùng để ra con số.
+ * Đổi dữ liệu sau khi trả lời → mã băm tính lại sẽ khác, nên câu trả lời cũ kiểm được.
+ */
+async function themMaBam(r: KetQuaNangLuc, d: DuLieu): Promise<KetQuaNangLuc> {
+  const nguon: Record<string, readonly Row[]> = {
+    giao_dich: d.giaoDich as unknown as Row[],
+    hoa_don_vao: d.hoaDonVao as unknown as Row[],
+    hoa_don_ban: d.hoaDonBan as unknown as Row[],
+    yeu_cau_chi: d.yeuCau as unknown as Row[],
+    chung_tu_quet: d.chungTuQuet as unknown as Row[],
+    chi_phi_ai: d.chiPhiAi as unknown as Row[],
+    token_ai: d.tokenAi as unknown as Row[],
+  };
+  const bam = async (bc: BangChung): Promise<BangChung> => {
+    const ds = nguon[bc.loai];
+    if (!ds) return bc;
+    const theoId = new Map(ds.map((x) => [String(x.id), x]));
+    const chu = bc.id.map((id) => theoId.get(id)).filter(Boolean).map((x) => chuanHoaBanGhi(x as Row)).join("\n");
+    return chu ? { ...bc, ma_bam: await bamChuoi(chu) } : bc;
+  };
+  const the = await Promise.all(r.the.map(async (t) => {
+    if (t.loai === "so_lieu") {
+      return { ...t, muc: await Promise.all(t.muc.map(async (m) => (m.bang_chung?.length ? { ...m, bang_chung: await Promise.all(m.bang_chung.map(bam)) } : m))) };
+    }
+    if (t.loai === "bang" && t.bang_chung?.length) return { ...t, bang_chung: await Promise.all(t.bang_chung.map(bam)) };
+    return t;
+  }));
+  return { ...r, the };
+}
 const TOI_DA_GIAO_DICH = 10_000;
 const DO_DAI_CAU_HOI = 1000;
 
@@ -488,7 +547,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         }
         const d = await (dl as Promise<DuLieu>);
         // P0-002: mỗi kết quả mang độ đầy đủ của đúng các nguồn nó đã dùng.
-        return apDoDay(nl.chay(d), nl.can.map((n) => d.doDay[n]).filter((x): x is DoDayNguon => !!x));
+        // P1-001: và mã băm của chính các bản ghi đứng sau từng con số.
+        return await themMaBam(apDoDay(nl.chay(d), nl.can.map((n) => d.doDay[n]).filter((x): x is DoDayNguon => !!x)), d);
       };
 
       if (khoaMoHinh) {
@@ -605,6 +665,29 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         }
       }
       return json({ id: data.id, anh_path: anhPath, canh_bao: canhBao });
+    }
+
+    case "bang_chung": {
+      // P1-001: mở đúng những bản ghi đứng sau một con số, trong phạm vi công ty đang dùng.
+      const loai = String(body.loai ?? "") as LoaiBangChung;
+      const ids = Array.isArray(body.id) ? body.id.map((x: unknown) => String(x)).slice(0, SO_BANG_CHUNG_MOI_LAN) : [];
+      if (!ids.length) return loi("THAM_SO", "Thiếu danh sách bản ghi cần xem.", 400);
+
+      if (loai === "van_ban_luat") {
+        const ds = ids.filter((id) => CAN_CU[id]).map((id) => ({ id, ...CAN_CU[id] }));
+        if (!ds.length) return loi("KHONG_THAY", "Không có căn cứ này.", 404);
+        return json({ loai, ban_ghi: ds });
+      }
+
+      const bang = BANG_BANG_CHUNG[loai as Exclude<LoaiBangChung, "van_ban_luat">];
+      if (!bang) return loi("THAM_SO", "Loại bằng chứng không hợp lệ.", 400);
+      const { data, error } = await db.from(bang.bang).select(bang.cot)
+        .eq("company_id", company.id).in("id", ids).limit(SO_BANG_CHUNG_MOI_LAN);
+      if (error) throw error;
+      const ds = (data ?? []) as Row[];
+      // Id của công ty khác: không có dòng nào → 404, và KHÔNG nói id nào tồn tại ở đâu.
+      if (!ds.length) return loi("KHONG_THAY", "Không có bản ghi này trong công ty của bạn.", 404);
+      return json({ loai, ban_ghi: ds, thieu: ids.length - ds.length });
     }
 
     case "trang_thai": {

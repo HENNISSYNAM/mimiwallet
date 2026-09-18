@@ -10,11 +10,11 @@
  *  2. Đề xuất chỉ nhắm vào thứ có thật trong dữ liệu (mã yêu cầu, agent) và chỉ gồm việc
  *     đã có backend. Việc chạm tiền luôn qua hộp xác nhận ở giao diện.
  */
-import type { DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
+import type { BangChung, DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, LoaiBangChung, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
-import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, type SuKienThue } from '../luat/he-luat.ts';
+import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, type SuKienThue } from '../luat/he-luat.ts';
 import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 
@@ -69,9 +69,10 @@ export interface KetNoiNganHangTL {
   provider: string | null;
   last_synced_at: string | null;
 }
-export interface ChiPhiAiTL { nha_cung_cap: string; ngay: string; hang_muc: string; so_tien_usd: number; nguon: string }
+export interface ChiPhiAiTL { id: string; nha_cung_cap: string; ngay: string; hang_muc: string; so_tien_usd: number; nguon: string }
 export interface KetNoiAiTL { nha_cung_cap: string; trang_thai: string; dong_bo_luc: string | null; loi_cuoi: string | null }
 export interface TokenAiTL {
+  id: string;
   nha_cung_cap: string;
   ngay: string;
   model: string;
@@ -219,6 +220,22 @@ function kq(
   return { nang_luc, nhom, tom_tat, the: p.the ?? [], de_xuat: p.de_xuat ?? [], nguon: p.nguon ?? [], trang: p.trang ?? [] };
 }
 
+/**
+ * MIMI-P1-001 — bằng chứng cho một con số: id của đúng những bản ghi đã cộng vào nó.
+ *
+ * Danh sách id bị cắt ở `SO_ID_BANG_CHUNG` cho khỏi phình câu trả lời, nhưng `so_ban_ghi` luôn là
+ * số thật, nên người đọc biết mình đang xem một phần. Mã băm do edge function gắn sau (`themMaBam`).
+ */
+export const SO_ID_BANG_CHUNG = 200;
+
+export function bangChung(loai: LoaiBangChung, ds: readonly { id: string }[]): BangChung[] {
+  if (!ds.length) return [];
+  return [{ loai, id: ds.slice(0, SO_ID_BANG_CHUNG).map((x) => String(x.id)), so_ban_ghi: ds.length }];
+}
+
+/** Gộp nhiều nguồn bằng chứng cho một con số (ví dụ: khoản chi + hoá đơn đã khớp). */
+export const gopBangChung = (...ds: BangChung[][]): BangChung[] => ds.flat().filter((b) => b.id.length);
+
 const CHUA_CO_SAO_KE =
   'Chưa có giao dịch ngân hàng nào. Liên kết ngân hàng để MIMI đọc sao kê — không cần nhập tay.';
 
@@ -365,9 +382,10 @@ export function chiPhiThang(d: DuLieu): KetQuaNangLuc {
         loai: 'so_lieu',
         tieu_de: `Chi phí tháng ${d.homNay.slice(5, 7)}/${d.homNay.slice(0, 4)}`,
         muc: [
-          { nhan: `Đã chi tới ${ngayVN(d.homNay)}`, gia_tri: tongNay, don_vi: 'vnd' },
-          { nhan: 'Cùng kỳ tháng trước', gia_tri: tongTruoc, don_vi: 'vnd' },
-          { nhan: 'Thay đổi', gia_tri: chenh, don_vi: 'phan_tram', can_chu_y: chenh !== null && chenh >= 20 },
+          { nhan: `Đã chi tới ${ngayVN(d.homNay)}`, gia_tri: tongNay, don_vi: 'vnd', bang_chung: bangChung('giao_dich', nay) },
+          { nhan: 'Cùng kỳ tháng trước', gia_tri: tongTruoc, don_vi: 'vnd', bang_chung: bangChung('giao_dich', truoc) },
+          // Tỷ lệ suy từ hai con số ngay trên: bằng chứng là bằng chứng của cả hai.
+          { nhan: 'Thay đổi', gia_tri: chenh, don_vi: 'phan_tram', can_chu_y: chenh !== null && chenh >= 20, bang_chung: gopBangChung(bangChung('giao_dich', nay), bangChung('giao_dich', truoc)) },
         ],
       },
       ...(top.length ? [{
@@ -376,6 +394,7 @@ export function chiPhiThang(d: DuLieu): KetQuaNangLuc {
         cot: [{ nhan: 'Người nhận', don_vi: 'chu' as const }, { nhan: 'Số khoản', don_vi: 'so' as const }, { nhan: 'Tổng', don_vi: 'vnd' as const }],
         dong: top.slice(0, 6).map(([ten, v]) => [ten, v.so, v.tien] as O[]),
         con_lai: Math.max(0, top.length - 6),
+        bang_chung: bangChung('giao_dich', nay),
       }] : []),
     ],
     nguon: [N.giaoDich],
@@ -441,13 +460,14 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
         loai: 'so_lieu',
         tieu_de: `Chứng từ ${nhan}`,
         muc: [
-          { nhan: 'Đã chi', gia_tri: g.tongDaChi, don_vi: 'vnd' },
-          { nhan: 'Hoá đơn điện tử đầu vào', gia_tri: g.tongCoGiay, don_vi: 'vnd' },
+          { nhan: 'Đã chi', gia_tri: g.tongDaChi, don_vi: 'vnd', bang_chung: bangChung('giao_dich', chi) },
+          { nhan: 'Hoá đơn điện tử đầu vào', gia_tri: g.tongCoGiay, don_vi: 'vnd', bang_chung: bangChung('hoa_don_vao', hoaDon) },
           {
             nhan: 'Chưa có hoá đơn điện tử', gia_tri: g.tongChuaCoGiay, don_vi: 'vnd', can_chu_y: g.tongChuaCoGiay > 0,
             ghi_chu: coQuet.size ? `${coQuet.size} khoản đã có chứng từ quét` : undefined,
+            bang_chung: bangChung('giao_dich', conThieu),
           },
-          { nhan: 'Cần bạn chọn hoá đơn', gia_tri: g.canXem.length, don_vi: 'so' },
+          { nhan: 'Cần bạn chọn hoá đơn', gia_tri: g.canXem.length, don_vi: 'so', bang_chung: bangChung('giao_dich', g.canXem.map((x) => ({ id: x.khoanChiId }))) },
         ],
       },
       ...(conThieu.length ? [{
@@ -455,6 +475,7 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
         tieu_de: 'Khoản chi lớn nhất chưa có giấy tờ',
         cot: [{ nhan: 'Ngày', don_vi: 'ngay' as const }, { nhan: 'Người nhận', don_vi: 'chu' as const }, { nhan: 'Số tiền', don_vi: 'vnd' as const }],
         dong: conThieu.slice(0, 8).map((c) => [c.ngay, tenChi.get(c.id) ?? 'Không rõ người nhận', c.soTien] as O[]),
+        bang_chung: bangChung('giao_dich', conThieu),
         con_lai: Math.max(0, conThieu.length - 8),
       }] : []),
     ],
@@ -492,8 +513,8 @@ export function hoaDonQuaHan(d: DuLieu): KetQuaNangLuc {
       the: [
         {
           loai: 'so_lieu', tieu_de: 'Công nợ phải thu', muc: [
-            { nhan: 'Quá hạn', gia_tri: tong, don_vi: 'vnd', can_chu_y: true, ghi_chu: `${qua.length} hoá đơn` },
-            { nhan: 'Chưa tới hạn', gia_tri: tongCho, don_vi: 'vnd', ghi_chu: `${choThu.length} hoá đơn` },
+            { nhan: 'Quá hạn', gia_tri: tong, don_vi: 'vnd', can_chu_y: true, ghi_chu: `${qua.length} hoá đơn`, bang_chung: bangChung('hoa_don_ban', qua.map((x) => x.h)) },
+            { nhan: 'Chưa tới hạn', gia_tri: tongCho, don_vi: 'vnd', ghi_chu: `${choThu.length} hoá đơn`, bang_chung: bangChung('hoa_don_ban', choThu) },
           ],
         },
         {
@@ -504,6 +525,7 @@ export function hoaDonQuaHan(d: DuLieu): KetQuaNangLuc {
           ],
           dong: qua.slice(0, 8).map((x) => [x.h.client_name, x.h.invoice_number, x.h.due_date, x.tre, Number(x.h.total)]),
           con_lai: Math.max(0, qua.length - 8),
+          bang_chung: bangChung('hoa_don_ban', qua.map((x) => x.h)),
         },
       ],
       nguon: [N.hoaDonBan],
@@ -545,6 +567,7 @@ export function dongTien(d: DuLieu): KetQuaNangLuc {
       loai: 'bang', tieu_de: 'Dòng tiền theo tháng',
       cot: [{ nhan: 'Tháng', don_vi: 'chu' }, { nhan: 'Tiền vào', don_vi: 'vnd' }, { nhan: 'Tiền ra', don_vi: 'vnd' }, { nhan: 'Chênh lệch', don_vi: 'vnd' }],
       dong: thang.map((t) => [t.nhan, t.vao, t.ra, t.rong]),
+      bang_chung: bangChung('giao_dich', d.giaoDich),
     }],
     nguon: [N.giaoDich],
     trang: [T.giaoDich],
@@ -569,9 +592,9 @@ export function doiSoat(d: DuLieu): KetQuaNangLuc {
 
   const the: The[] = [{
     loai: 'so_lieu', tieu_de: '30 ngày gần nhất', muc: [
-      { nhan: 'Tiền về', gia_tri: tongVao, don_vi: 'vnd', ghi_chu: `${vao.length} khoản` },
-      { nhan: 'Có thể là tiền của hoá đơn', gia_tri: chac.length, don_vi: 'so' },
-      { nhan: 'Hoá đơn còn chờ thu', gia_tri: tongCho, don_vi: 'vnd', ghi_chu: `${cho.length} hoá đơn` },
+      { nhan: 'Tiền về', gia_tri: tongVao, don_vi: 'vnd', ghi_chu: `${vao.length} khoản`, bang_chung: bangChung('giao_dich', vao) },
+      { nhan: 'Có thể là tiền của hoá đơn', gia_tri: chac.length, don_vi: 'so', bang_chung: gopBangChung(bangChung('giao_dich', chac.map((u) => u.t)), bangChung('hoa_don_ban', chac.map((u) => u.khop[0]))) },
+      { nhan: 'Hoá đơn còn chờ thu', gia_tri: tongCho, don_vi: 'vnd', ghi_chu: `${cho.length} hoá đơn`, bang_chung: bangChung('hoa_don_ban', cho) },
     ],
   }];
   if (chac.length) {
@@ -580,6 +603,7 @@ export function doiSoat(d: DuLieu): KetQuaNangLuc {
       cot: [{ nhan: 'Ngày tiền về', don_vi: 'ngay' }, { nhan: 'Người chuyển', don_vi: 'chu' }, { nhan: 'Số tiền', don_vi: 'vnd' }, { nhan: 'Có thể là hoá đơn', don_vi: 'chu' }],
       dong: chac.slice(0, 8).map((u) => [u.t.transaction_date, tenNguoiNhan(u.t), doLonTien(u.t), `${u.khop[0].invoice_number} · ${u.khop[0].client_name}`]),
       con_lai: Math.max(0, chac.length - 8),
+      bang_chung: gopBangChung(bangChung('giao_dich', chac.map((u) => u.t)), bangChung('hoa_don_ban', chac.map((u) => u.khop[0]))),
     });
     the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Đây là gợi ý theo số tiền và ngày, chưa phải xác nhận. Hỏi lại khách hoặc xem nội dung chuyển khoản trước khi coi hoá đơn là đã thu.' });
   }
@@ -682,10 +706,10 @@ export function chiPhiAi(d: DuLieu): KetQuaNangLuc {
 
   const the: The[] = [{
     loai: 'so_lieu', tieu_de: `Chi phí AI tháng ${d.homNay.slice(5, 7)}/${d.homNay.slice(0, 4)}`, muc: [
-      { nhan: 'Đã chi', gia_tri: c.tong, don_vi: 'usd' },
+      { nhan: 'Đã chi', gia_tri: c.tong, don_vi: 'usd', bang_chung: bangChung('chi_phi_ai', c.nay) },
       c.ns ? { nhan: 'Ngân sách tháng', gia_tri: c.ns.han_muc_thang_usd, don_vi: 'usd' } : { nhan: 'Ngân sách tháng', gia_tri: 'Chưa đặt', don_vi: 'chu' },
-      { nhan: 'Đã dùng ngân sách', gia_tri: c.pct, don_vi: 'phan_tram', can_chu_y: c.canhBao },
-      { nhan: 'Dự kiến cuối tháng', gia_tri: Math.round(c.duKien * 100) / 100, don_vi: 'usd', can_chu_y: !!c.ns && c.duKien > c.ns.han_muc_thang_usd, ghi_chu: 'nếu giữ nhịp chi hiện tại' },
+      { nhan: 'Đã dùng ngân sách', gia_tri: c.pct, don_vi: 'phan_tram', can_chu_y: c.canhBao, bang_chung: bangChung('chi_phi_ai', c.nay) },
+      { nhan: 'Dự kiến cuối tháng', gia_tri: Math.round(c.duKien * 100) / 100, don_vi: 'usd', can_chu_y: !!c.ns && c.duKien > c.ns.han_muc_thang_usd, ghi_chu: 'nếu giữ nhịp chi hiện tại', bang_chung: bangChung('chi_phi_ai', c.nay) },
     ],
   }];
   if (top.length) {
@@ -694,6 +718,7 @@ export function chiPhiAi(d: DuLieu): KetQuaNangLuc {
       cot: [{ nhan: 'Model / dịch vụ', don_vi: 'chu' }, { nhan: 'Nhà cung cấp', don_vi: 'chu' }, { nhan: 'Chi phí', don_vi: 'usd' }, { nhan: 'Tỷ trọng', don_vi: 'phan_tram' }],
       dong: top.slice(0, 6).map((m) => [m.ten, TEN_NCC_AI[m.ncc] ?? m.ncc, Math.round(m.tien * 100) / 100, phanTram(m.tien, c.tong)]),
       con_lai: Math.max(0, top.length - 6),
+      bang_chung: bangChung('chi_phi_ai', c.nay),
     });
   }
   if (!c.ns) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Chưa đặt ngân sách AI tháng. Đặt ở trang Chi phí AI để MIMI cảnh báo trước khi vượt.' });
@@ -826,6 +851,7 @@ export function baoCaoTaiChinh(d: DuLieu): KetQuaNangLuc {
           { nhan: 'Chênh lệch / tiền vào', don_vi: 'phan_tram' },
         ],
         dong: thang.map((t) => [t.nhan, t.vao, t.ra, t.rong, phanTram(t.rong, t.vao)]),
+        bang_chung: bangChung('giao_dich', d.giaoDich),
       },
       {
         loai: 'ghi_chu', muc_do: 'thong_tin',
@@ -879,9 +905,9 @@ export function phanTichTietKiem(d: DuLieu): KetQuaNangLuc {
 
   const the: The[] = [{
     loai: 'so_lieu', tieu_de: 'Chỗ có thể tiết kiệm', muc: [
-      { nhan: 'Khoản có thể bị trả trùng', gia_tri: cap.length, don_vi: 'so', can_chu_y: cap.length > 0 },
-      { nhan: 'Tiền liên quan', gia_tri: tongTrung, don_vi: 'vnd' },
-      { nhan: 'Bớt được nếu đổi model AI', gia_tri: ai ? Math.round(tietAi * 100) / 100 : null, don_vi: 'usd', ghi_chu: 'ước tính 30 ngày' },
+      { nhan: 'Khoản có thể bị trả trùng', gia_tri: cap.length, don_vi: 'so', can_chu_y: cap.length > 0, bang_chung: bangChung('giao_dich', cap.flatMap((c) => [c.a, c.b])) },
+      { nhan: 'Tiền liên quan', gia_tri: tongTrung, don_vi: 'vnd', bang_chung: bangChung('giao_dich', cap.flatMap((c) => [c.a, c.b])) },
+      { nhan: 'Bớt được nếu đổi model AI', gia_tri: ai ? Math.round(tietAi * 100) / 100 : null, don_vi: 'usd', ghi_chu: 'ước tính 30 ngày', bang_chung: bangChung('token_ai', d.tokenAi) },
     ],
   }];
   if (cap.length) {
@@ -890,6 +916,7 @@ export function phanTichTietKiem(d: DuLieu): KetQuaNangLuc {
       cot: [{ nhan: 'Người nhận', don_vi: 'chu' }, { nhan: 'Số tiền', don_vi: 'vnd' }, { nhan: 'Lần 1', don_vi: 'ngay' }, { nhan: 'Lần 2', don_vi: 'ngay' }],
       dong: cap.slice(0, 8).map((c) => [tenNguoiNhan(c.b), doLonTien(c.b), c.a.transaction_date, c.b.transaction_date]),
       con_lai: Math.max(0, cap.length - 8),
+      bang_chung: bangChung('giao_dich', cap.flatMap((c) => [c.a, c.b])),
     });
     the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Đây mới là nghi vấn: có thể là hai đơn hàng thật. Đối chiếu với hoá đơn hoặc hỏi người nhận trước khi đòi lại.' });
   }
@@ -1125,8 +1152,9 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
   if (sl.doanh_thu_nam !== null) {
     the.push({
       loai: 'so_lieu', tieu_de: `Doanh thu năm ${suKien.nam}`, muc: [
-        { nhan: sl.tam_tinh ? 'Lũy kế tới nay' : 'Cả năm', gia_tri: sl.doanh_thu_nam, don_vi: 'vnd' },
-        { nhan: 'Ngưỡng phải nộp thuế', gia_tri: NGUONG_THUE, don_vi: 'vnd', ghi_chu: 'NĐ 68/2026 sửa bởi NĐ 141/2026' },
+        { nhan: sl.tam_tinh ? 'Lũy kế tới nay' : 'Cả năm', gia_tri: sl.doanh_thu_nam, don_vi: 'vnd', ghi_chu: `Nguồn: ${TEN_NGUON_DOANH_THU[suKien.nguonDoanhThu ?? 'tu_khai']}` },
+        // Ngưỡng là con số của pháp luật: bằng chứng là chính điều khoản, không phải bản ghi của công ty.
+        { nhan: 'Ngưỡng phải nộp thuế', gia_tri: NGUONG_THUE, don_vi: 'vnd', ghi_chu: 'NĐ 68/2026 sửa bởi NĐ 141/2026', bang_chung: [{ loai: 'van_ban_luat', id: ['nd68_d3_k1', 'nd141_d1_k1'], so_ban_ghi: 2 }] },
         {
           nhan: sl.doanh_thu_nam > NGUONG_THUE ? 'Đã vượt' : 'Còn cách ngưỡng',
           gia_tri: Math.abs(NGUONG_THUE - sl.doanh_thu_nam),

@@ -19,18 +19,36 @@ export type DonVi = 'vnd' | 'usd' | 'token' | 'phan_tram' | 'so' | 'ngay' | 'chu
 
 export type O = number | string | null;
 
+/**
+ * MIMI-P1-001 — bằng chứng đứng sau một con số: đúng những bản ghi đã cộng vào nó.
+ * `id` có thể bị cắt (xem `so_ban_ghi`); `ma_bam` chụp nội dung tập bản ghi lúc trả lời, để sau
+ * này dữ liệu đổi thì biết câu trả lời cũ không còn khớp.
+ */
+export type LoaiBangChung =
+  | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau_chi' | 'chung_tu_quet'
+  | 'chi_phi_ai' | 'token_ai' | 'van_ban_luat';
+
+export interface BangChung {
+  loai: LoaiBangChung;
+  id: string[];
+  so_ban_ghi: number;
+  ma_bam?: string;
+}
+
 export interface MucSoLieu {
   nhan: string;
   gia_tri: O;
   don_vi: DonVi;
   ghi_chu?: string;
   can_chu_y?: boolean;
+  /** MIMI-P1-001: bản ghi đứng sau con số này. Thiếu = con số suy ra từ số khác hoặc từ luật. */
+  bang_chung?: BangChung[];
 }
 
 export type The =
   | { loai: 'so_lieu'; tieu_de: string; muc: MucSoLieu[] }
   /** `con_lai`: số dòng không hiện (bảng chỉ gửi vài dòng đầu). */
-  | { loai: 'bang'; tieu_de: string; cot: { nhan: string; don_vi: DonVi }[]; dong: O[][]; con_lai?: number }
+  | { loai: 'bang'; tieu_de: string; cot: { nhan: string; don_vi: DonVi }[]; dong: O[][]; con_lai?: number; bang_chung?: BangChung[] }
   | { loai: 'ghi_chu'; muc_do: 'can_chu_y' | 'thong_tin'; cau: string };
 
 /**

@@ -76,6 +76,15 @@ const m = {
       mimiDaLamGi: 'MIMI가 한 일',
       viecBanCoTheLam: '할 수 있는 일',
       nguon: '출처:',
+      bangChung: {
+        nut: '{{so}}건',
+        tieuDe: '이 숫자의 근거 기록',
+        dangTai: '기록을 여는 중…',
+        loi: '기록을 열 수 없습니다.',
+        khongThay: '회사에 해당 기록이 없습니다.',
+        catNgan: '{{tong}}건 중 {{hien}}건 표시.',
+        maBam: '응답 시점 해시:',
+      },
       doDay: {
         dong: '{{ten}}: {{so}}행',
         ky: '{{tu}}부터 {{den}}까지',

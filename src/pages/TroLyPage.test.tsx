@@ -234,6 +234,54 @@ describe('MIMI Assistant — hỏi đáp', () => {
     expect(screen.getAllByText((_, el) => !!el?.textContent?.startsWith('Lưu ý độ đầy đủ') && el.children.length === 0).length).toBeGreaterThanOrEqual(1);
   });
 
+  it('P1-001: con số có nút mở bản ghi; bấm thì gọi đúng bằng chứng và hiện từng dòng', async () => {
+    const bangChung = [{ loai: 'giao_dich' as const, id: ['t1', 't2'], so_ban_ghi: 5, ma_bam: 'a'.repeat(64) }];
+    gia.troLy.mockImplementation(async (hanhDong: string, du?: Record<string, unknown>) => {
+      if (hanhDong === 'boi_canh') return BOI_CANH;
+      if (hanhDong === 'bang_chung') {
+        expect(du).toEqual({ loai: 'giao_dich', id: ['t1', 't2'] });
+        return { loai: 'giao_dich', ban_ghi: [
+          { id: 't1', transaction_date: '2026-09-06', amount: -10_000_000, counter_account_name: 'CONG TY A' },
+          { id: 't2', transaction_date: '2026-09-07', amount: -2_000_000, merchant_name: 'Đối tác B' },
+        ] };
+      }
+      return {
+        ...TRA_LOI,
+        ket_qua: [{
+          ...TRA_LOI.ket_qua[0],
+          the: [{ loai: 'so_lieu', tieu_de: 'Chi phí tháng 9/2026', muc: [{ nhan: 'Đã chi', gia_tri: 12_000_000, don_vi: 'vnd', bang_chung: bangChung }] }],
+        }],
+      };
+    });
+    dung();
+    hoiBangTay('chi phí tháng này');
+    fireEvent.click(await screen.findByRole('button', { name: /5 bản ghi/ }));
+    expect(await screen.findByText('CONG TY A')).toBeTruthy();
+    expect(screen.getByText('Đối tác B')).toBeTruthy();
+    // Nói thật là đang hiện 2 trong 5 dòng, và có mã băm để đối chiếu về sau.
+    expect(document.body.textContent).toContain('Hiện 2 trong 5 bản ghi');
+    expect(document.body.textContent).toContain('Mã băm lúc trả lời');
+  });
+
+  it('P1-001: bản ghi của công ty khác thì chỉ nhận lỗi, không rò thông tin', async () => {
+    gia.troLy.mockImplementation(async (hanhDong: string) => {
+      if (hanhDong === 'boi_canh') return BOI_CANH;
+      if (hanhDong === 'bang_chung') throw new Error('Không có bản ghi này trong công ty của bạn.');
+      return {
+        ...TRA_LOI,
+        ket_qua: [{
+          ...TRA_LOI.ket_qua[0],
+          the: [{ loai: 'so_lieu', tieu_de: 'Chi phí', muc: [{ nhan: 'Đã chi', gia_tri: 1, don_vi: 'vnd', bang_chung: [{ loai: 'giao_dich' as const, id: ['cua-cong-ty-khac'], so_ban_ghi: 1 }] }] }],
+        }],
+      };
+    });
+    dung();
+    hoiBangTay('chi phí tháng này');
+    fireEvent.click(await screen.findByRole('button', { name: /1 bản ghi/ }));
+    expect(await screen.findByText('Không có bản ghi này trong công ty của bạn.')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('cua-cong-ty-khac');
+  });
+
   it('máy chủ lỗi: nói lỗi bằng lời, cho hỏi lại; cuộc hỏi mới về lại màn đầu', async () => {
     let lan = 0;
     gia.troLy.mockImplementation(async (hanhDong: string) => {
