@@ -5,6 +5,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TrustSection from '@/components/landing/TrustSection';
 import DaiLogo from '@/components/landing/DaiLogo';
+import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
@@ -519,9 +520,6 @@ export default function Landing() {
   const [annual, setAnnual] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const { signInAsDemo, demoAvailable } = useAuthStore();
-  const [ctaEmail, setCtaEmail] = useState('');
-  const [ctaCompany, setCtaCompany] = useState('');
-  const [ctaSubmitted, setCtaSubmitted] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
@@ -1214,42 +1212,7 @@ export default function Landing() {
             <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mb-4">Mở tài khoản</h2>
             <p className="text-muted-foreground text-lg mb-10">Miễn phí, không cần thẻ. Nối ngân hàng xong là dùng được.</p>
           </motion.div>
-          {ctaSubmitted ? (
-            <motion.div {...fadeUp(0)} className="bg-card border border-mimi-green/30 rounded-2xl p-8">
-              <CheckCircle size={48} className="text-mimi-green mx-auto mb-4" />
-              <p className="text-foreground font-display font-bold text-lg">Cảm ơn bạn!</p>
-              <p className="text-muted-foreground text-sm mt-1">Chúng tôi sẽ liên hệ trong 24 giờ.</p>
-            </motion.div>
-          ) : (
-            <motion.div {...fadeUp(0.1)} className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <input value={ctaEmail} onChange={e => setCtaEmail(e.target.value)} placeholder="Email doanh nghiệp" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-5 py-3.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all" />
-              <input value={ctaCompany} onChange={e => setCtaCompany(e.target.value)} placeholder="Tên công ty" className="w-full sm:w-auto flex-1 bg-card border border-border rounded-xl px-5 py-3.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all" />
-              <motion.button
-                onClick={async () => {
-                  if (!ctaEmail || !ctaCompany) return;
-                  try {
-                    const params = new URLSearchParams(window.location.search);
-                    await supabase.from('waitlist').insert({
-                      email: ctaEmail,
-                      company_name: ctaCompany,
-                      utm_source: params.get('utm_source'),
-                      utm_medium: params.get('utm_medium'),
-                      utm_campaign: params.get('utm_campaign'),
-                    });
-                    setCtaSubmitted(true);
-                    toast.success('Đã đăng ký thành công!');
-                  } catch {
-                    toast.error('Có lỗi xảy ra, vui lòng thử lại.');
-                  }
-                }}
-                className="w-full sm:w-auto bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-display font-bold text-sm shadow-[0_8px_30px_hsla(225,100%,57%,0.25)] hover:shadow-[0_12px_40px_hsla(225,100%,57%,0.35)] transition-all flex items-center justify-center gap-2"
-                whileHover={{ y: -2, scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Bắt đầu ngay <ArrowRight size={14} />
-              </motion.button>
-            </motion.div>
-          )}
+          <MoTaiKhoan />
         </div>
       </section>
 

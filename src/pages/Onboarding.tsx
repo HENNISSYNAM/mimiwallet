@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Loader2, Mail } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import MimiCat from '@/components/brand/MimiCat';
@@ -36,7 +36,9 @@ export default function Onboarding() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const signInWithEmailLink = useAuthStore((s) => s.signInWithEmailLink);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
-  const [email, setEmail] = useState('');
+  // Từ khu "Mở tài khoản" ở trang chủ: /register?email=…&cong_ty=…
+  const [thamSo] = useSearchParams();
+  const [email, setEmail] = useState(() => (thamSo.get('email') ?? '').slice(0, 320));
   const [dangGui, setDangGui] = useState(false);
   const [daGuiToi, setDaGuiToi] = useState<string | null>(null);
   const [choGuiLai, setChoGuiLai] = useState(0);
@@ -99,6 +101,28 @@ export default function Onboarding() {
               </button>
               <button type="button" onClick={() => { setDaGuiToi(null); setLoi(null); }} className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
                 Dùng email khác
+              </button>
+            </div>
+
+            {/*
+              Lối vào thứ hai, đặt ngay tại đây vì thư tự động HAY BỊ chặn: nhiều hệ thống email
+              công ty giữ lại thư có link đăng nhập. Người dùng không nhận được thư thì vẫn vào
+              làm việc được bằng Google, không phải chờ.
+            */}
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="text-sm text-muted-foreground">
+                Chờ 2 phút vẫn chưa thấy thư? Email công ty có thể đã chặn thư tự động — vào bằng Google, hoặc thử một email khác.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  ghiDichSauDangNhap('/dashboard/tro-ly');
+                  const { error } = await signInWithGoogle();
+                  if (error) setLoi(dichLoi(error));
+                }}
+                className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-accent"
+              >
+                Tiếp tục với Google
               </button>
             </div>
           </section>

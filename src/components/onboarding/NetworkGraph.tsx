@@ -49,6 +49,10 @@ export default function NetworkGraph({ labels = ['Ngân hàng', 'Hóa đơn', 'D
           <motion.circle
             key={`p-${i}`}
             r="1"
+            /* Toạ độ đầu: không có thì khung render đầu tiên ra cx/cy = undefined, và trình duyệt
+               báo lỗi 'Expected length, "undefined"' cho mỗi hạt, mỗi lần vẽ. */
+            cx={nodes[from].x}
+            cy={nodes[from].y}
             fill="hsl(var(--blue-500))"
             opacity={0.8}
             animate={{

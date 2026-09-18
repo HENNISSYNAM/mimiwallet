@@ -15,7 +15,7 @@ vi.mock('@/store/useAuthStore', () => ({
 }));
 vi.mock('@/components/brand/MimiCat', () => ({ default: () => <span /> }));
 
-const dung = () => render(<MemoryRouter><Onboarding /></MemoryRouter>);
+const dung = (duongDan = '/register') => render(<MemoryRouter initialEntries={[duongDan]}><Onboarding /></MemoryRouter>);
 const oEmail = () => screen.getByLabelText('Email công ty');
 
 beforeEach(() => {
@@ -65,5 +65,31 @@ describe('đăng ký chỉ bằng email', () => {
     fireEvent.change(oEmail(), { target: { value: 'nam@thinhphat.vn' } });
     fireEvent.click(screen.getByRole('button', { name: /Gửi link vào email/ }));
     expect((await screen.findByRole('alert')).textContent).toBe('Bạn vừa yêu cầu link. Đợi khoảng một phút rồi gửi lại.');
+  });
+});
+
+describe('nhận email từ khu "Mở tài khoản" ở trang chủ', () => {
+  it('điền sẵn email lấy từ đường dẫn, bấm là gửi link ngay', async () => {
+    dung('/register?email=ketoan%40thinhphat.vn&cong_ty=Th%E1%BB%8Bnh%20Ph%C3%A1t');
+    expect((oEmail() as HTMLInputElement).value).toBe('ketoan@thinhphat.vn');
+    fireEvent.click(screen.getByRole('button', { name: /Gửi link vào email/ }));
+    await waitFor(() => expect(gia.state.signInWithEmailLink).toHaveBeenCalledWith('ketoan@thinhphat.vn'));
+  });
+
+  it('không có tham số thì ô email vẫn trống', () => {
+    dung();
+    expect((oEmail() as HTMLInputElement).value).toBe('');
+  });
+});
+
+describe('thư không tới thì vẫn có đường vào', () => {
+  it('sau khi gửi link: nói rõ email công ty có thể chặn, và cho vào bằng Google', async () => {
+    dung();
+    fireEvent.change(oEmail(), { target: { value: 'ketoan@thinhphat.vn' } });
+    fireEvent.click(screen.getByRole('button', { name: /Gửi link vào email/ }));
+    expect(await screen.findByRole('heading', { name: 'Kiểm tra hộp thư' })).toBeTruthy();
+    expect(document.body.textContent).toContain('Email công ty có thể đã chặn thư tự động');
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    await waitFor(() => expect(gia.state.signInWithGoogle).toHaveBeenCalled());
   });
 });
