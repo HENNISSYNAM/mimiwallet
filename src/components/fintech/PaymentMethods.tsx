@@ -115,6 +115,10 @@ export default function PaymentMethods() {
          * Đây là phép thử cuối cùng mà `create-qr` làm SAU câu truy vấn:
          *   if (!conn?.access_token_enc) return "Chưa có tài khoản...";
          *
+         * Trình duyệt KHÔNG được đọc `access_token_enc` nữa (quyền SELECT cấp
+         * theo cột, xem migration 20260918160000), nên chỗ này lọc cột sinh
+         * `co_token` — cùng một phép thử, không cần chạm vào token.
+         *
          * Lần trước tôi đồng bộ năm điều kiện lọc rồi tưởng xong, nhưng bỏ sót
          * đúng phép thử này — nên thẻ vẫn khoe "Đang chạy" cho một dòng đã mất
          * token, và bấm Tạo mã QR vẫn báo chưa liên kết. Sửa hai lần mới hết,
@@ -123,7 +127,7 @@ export default function PaymentMethods() {
          * Dòng còn trong bảng, còn `connected`, nhưng không có token thì không
          * gọi Cas được — với người dùng, nó không phải một liên kết đang chạy.
          */
-        .not('access_token_enc', 'is', null)
+        .eq('co_token', true)
         .limit(1);
 
       const { data: sub } = await supabase

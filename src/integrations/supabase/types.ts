@@ -47,6 +47,7 @@ export type Database = {
           accounts: Json | null
           bank_code: string
           bank_name: string
+          co_token: boolean | null
           company_id: string
           consent_expires_at: string | null
           consent_granted: boolean | null
