@@ -14,7 +14,8 @@
  * Chỉ mã băm 32 byte rời MIMI. Không tên, không số tiền, không mã số thuế.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 import {
   cacTangMerkle, chieuCaoBitcoin, docDauThoiGian, LoiOts, noi, opTuLaLenGoc, sangHex, tachPhanCho, tepOts, tuHex,
 } from "../_shared/dau-thoi-gian/ots.ts";
@@ -259,8 +260,11 @@ Deno.serve(async (req) => {
     if (!authHeader) return loi("CHUA_DANG_NHAP", "Cần đăng nhập.", 401);
     const { data: { user }, error: authError } = await db.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
-    const company = await resolveCompany<{ id: string }>(db, user.id);
-    if (!company) return loi("KHONG_CO_CONG_TY", "Chưa có công ty.", 404);
+    const ctVai = await resolveCompanyVaiTro<{ id: string }>(db, user.id);
+    if (!ctVai) return loi("KHONG_CO_CONG_TY", "Chưa có công ty.", 404);
+    const company = ctVai.cong_ty;
+    // MIMI-P1-003: neo sổ cái lên Bitcoin ghi dấu thời gian cho dữ liệu công ty.
+    kiemQuyen(ctVai.vai_tro, "dong_bo_du_lieu", cauTuChoi(ctVai.vai_tro, "dong_bo_du_lieu"));
 
     const { data: duoc, error: loiDem } = await db.rpc("tang_luot_goi", {
       p_user: user.id, p_hanh_dong: `dtg_${hanhDong}`.slice(0, 40), p_cua_so_giay: 60, p_toi_da: 60,
@@ -270,6 +274,7 @@ Deno.serve(async (req) => {
 
     return await xuLyNguoiDung(db, company.id, hanhDong, body);
   } catch (e) {
+    if (e instanceof LoiQuyen) return loi("KHONG_DU_QUYEN", e.message, 403);
     console.error("dau-thoi-gian:", e instanceof Error ? e.message : e);
     return loi("LOI_HE_THONG", "Lỗi hệ thống khi đọc dấu thời gian.", 500);
   }

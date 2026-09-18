@@ -18,7 +18,10 @@
  * Chỉ chủ doanh nghiệp (JWT). Đọc bằng service role, luôn lọc theo công ty đang dùng.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
+import { locDeXuat, locPhanTich } from "../_shared/quyen/loc-de-xuat.ts";
+import { danhSachCongTy } from "../_shared/company.ts";
 import type { DoDayNguon, NhomNangLuc } from "../_shared/tro-ly/kieu.ts";
 import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
 import { NHOM_NANG_LUC } from "../_shared/tro-ly/kieu.ts";
@@ -425,8 +428,17 @@ function docLichSu(v: unknown): TinNhanCu[] {
     .map((m) => ({ vai: m.vai, noi_dung: String(m.noi_dung).slice(0, DO_DAI_CAU_HOI) }));
 }
 
-async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, hanhDong: string, body: Row): Promise<Response> {
+/** MIMI-P1-003: hành động ghi của trợ lý cần quyền; hỏi và xem thì mọi thành viên đều được. */
+const QUYEN_HANH_DONG: Record<string, HanhDong> = {
+  luu_chung_tu: "ghi_chung_tu",
+  xoa_chung_tu: "ghi_chung_tu",
+  quet_chung_tu: "ghi_chung_tu",
+};
+
+async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
   const khoaMoHinh = Deno.env.get("LOVABLE_API_KEY") ?? "";
+  const can = QUYEN_HANH_DONG[hanhDong];
+  if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));
   const moc = mocThoiGian();
 
   switch (hanhDong) {
@@ -441,9 +453,13 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       ]);
       return json({
         cong_ty: company.name,
+        cong_ty_id: company.id,
+        // MIMI-P1-003: vai trò quyết định nút nào hiện; giao diện đổi công ty bằng `company_id`.
+        vai_tro: vaiTro,
+        cong_ty_cua_toi: await danhSachCongTy(db, userId),
         viec: viecHomNay(d),
         ket_noi: danhSachKetNoi(d),
-        phan_tich: phanTichNhanh(d),
+        phan_tich: locPhanTich(phanTichNhanh(d), vaiTro),
         thue,
         co_mo_hinh: !!khoaMoHinh,
         // P0-002: màn đầu cũng nói nguồn nào thiếu hoặc cũ.
@@ -487,7 +503,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             homNay: moc.homNay,
             goiY: yDinh,
           });
-          return json(dungTraLoi({ ketQua: r.ket_qua, cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau }));
+          return json(dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau }));
         } catch (e) {
           // Cổng lỗi không làm người dùng mất câu trả lời: chạy tiếp bằng bộ luật cố định.
           if (!(e instanceof LoiMoHinh)) throw e;
@@ -497,7 +513,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
       const ketQua = [];
       for (const id of yDinh) ketQua.push(await chay(id));
-      return json(dungTraLoi({ ketQua, cheDo: "co_dinh", cauHoi: cau }));
+      return json(dungTraLoi({ ketQua: locDeXuat(ketQua, vaiTro), cheDo: "co_dinh", cauHoi: cau }));
     }
 
     case "quet_chung_tu": {
@@ -635,8 +651,10 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await db.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
-    const company = await resolveCompany<{ id: string; name: string | null }>(db, user.id, "id, name");
-    if (!company) return loi("KHONG_CO_CONG_TY", "Chưa có công ty.", 404);
+    const chon = typeof body.company_id === "string" ? body.company_id : null;
+    const ct = await resolveCompanyVaiTro<{ id: string; name: string | null }>(db, user.id, "id, name", chon);
+    if (!ct) return loi("KHONG_CO_CONG_TY", chon ? "Bạn không thuộc công ty này." : "Chưa có công ty.", chon ? 403 : 404);
+    const company = ct.cong_ty;
 
     const hanhDong = String(body.hanh_dong ?? "");
     const gioiHan = GIOI_HAN[hanhDong];
@@ -649,8 +667,9 @@ Deno.serve(async (req) => {
       else if (duoc === false) return loi("QUA_NHIEU", "Bạn thao tác hơi nhanh. Đợi khoảng một phút rồi thử lại.", 429);
     }
 
-    return await xuLy(db, user.id, company, hanhDong, body);
+    return await xuLy(db, user.id, company, ct.vai_tro, hanhDong, body);
   } catch (e) {
+    if (e instanceof LoiQuyen) return loi("KHONG_DU_QUYEN", e.message, 403);
     // Không in thân yêu cầu: có thể chứa ảnh chứng từ hoặc câu hỏi về tiền của khách.
     console.error("tro-ly:", e instanceof Error ? e.message : e);
     return loi("LOI_HE_THONG", "MIMI gặp lỗi khi đọc dữ liệu. Thử lại sau ít phút.", 500);

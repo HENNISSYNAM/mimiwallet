@@ -14,7 +14,8 @@
  * Chỉ chủ doanh nghiệp (JWT). Đọc bằng service role, luôn lọc theo công ty đang dùng.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
 import { canCuDung, docHoSoThue, NAM_AP_DUNG, PHIEN_BAN_HE_LUAT, suyLuan } from "../_shared/luat/he-luat.ts";
 import { kyGoiY, soanToKhai, type KyToKhai } from "../_shared/luat/to-khai.ts";
@@ -141,7 +142,16 @@ async function phanTich(db: Db, companyId: string, body: Row) {
   };
 }
 
-async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, hanhDong: string, body: Row): Promise<Response> {
+/** MIMI-P1-003: sửa hồ sơ thuế và lưu bản nháp tờ khai là việc của kế toán trở lên. */
+const QUYEN_HANH_DONG: Record<string, HanhDong> = {
+  luu_ho_so: "sua_ho_so_thue",
+  luu_nhap: "soan_to_khai",
+  xoa_nhap: "soan_to_khai",
+};
+
+async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
+  const can = QUYEN_HANH_DONG[hanhDong];
+  if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));
   switch (hanhDong) {
     case "ho_so": {
       const { cong_ty, ho_so } = await docHoSo(db, company.id);
@@ -244,8 +254,10 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await db.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
-    const company = await resolveCompany<{ id: string; name: string | null }>(db, user.id, "id, name");
-    if (!company) return loi("KHONG_CO_CONG_TY", "Chưa có công ty.", 404);
+    const chon = typeof body.company_id === "string" ? body.company_id : null;
+    const ct = await resolveCompanyVaiTro<{ id: string; name: string | null }>(db, user.id, "id, name", chon);
+    const company = ct?.cong_ty ?? null;
+    if (!ct || !company) return loi("KHONG_CO_CONG_TY", chon ? "Bạn không thuộc công ty này." : "Chưa có công ty.", chon ? 403 : 404);
 
     const hanhDong = String(body.hanh_dong ?? "");
     const gioiHan = GIOI_HAN[hanhDong];
@@ -257,8 +269,9 @@ Deno.serve(async (req) => {
       else if (duoc === false) return loi("QUA_NHIEU", "Bạn thao tác hơi nhanh. Đợi khoảng một phút rồi thử lại.", 429);
     }
 
-    return await xuLy(db, user.id, company, hanhDong, body);
+    return await xuLy(db, user.id, company, ct.vai_tro, hanhDong, body);
   } catch (e) {
+    if (e instanceof LoiQuyen) return loi("KHONG_DU_QUYEN", e.message, 403);
     // Không in thân yêu cầu: có thể chứa doanh thu, mã số thuế của khách.
     console.error("to-khai:", e instanceof Error ? e.message : e);
     return loi("LOI_HE_THONG", "MIMI gặp lỗi khi soạn tờ khai. Thử lại sau ít phút.", 500);

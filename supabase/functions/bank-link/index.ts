@@ -30,7 +30,8 @@ import {
   xuLyLoiGrant,
 } from "../_shared/bank/kiem-grant-qr.ts";
 import { tomTatDinhDanh } from "../_shared/bank/dinh-danh-mot-lan.ts";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi, type HanhDong } from "../_shared/quyen/vai-tro.ts";
 import { encryptField, decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
 /**
@@ -94,15 +95,32 @@ Deno.serve(async (req) => {
     // the demo account has four, three of them abandoned test entries. The
     // rule for picking one lives in _shared/company.ts so every function
     // resolves the same company for the same user.
-    const company = await resolveCompany<{ id: string; name: string }>(
-      supabase,
-      user.id,
-      "id, name",
-    );
-    if (!company) return json({ error: "No company found" }, 404);
+    const body = await req.json().catch(() => ({}));
+    const chonCty = typeof body?.company_id === "string" ? body.company_id : null;
+    const ctVai = await resolveCompanyVaiTro<{ id: string; name: string }>(supabase, user.id, "id, name", chonCty);
+    if (!ctVai) return json({ error: chonCty ? "Bạn không thuộc công ty này." : "No company found" }, chonCty ? 403 : 404);
+    const company = ctVai.cong_ty;
 
     const action = new URL(req.url).searchParams.get("action");
-    const body = await req.json().catch(() => ({}));
+
+    /**
+     * MIMI-P1-003: nối/ngắt ngân hàng, tạo mã QR nhận tiền, đăng ký SePay là việc chạm tiền và
+     * chạm kết nối — chỉ chủ doanh nghiệp và quản trị. Đồng bộ sao kê thì kế toán cũng được.
+     */
+    const QUYEN_ACTION: Record<string, HanhDong> = {
+      "create-token": "noi_ngan_hang",
+      exchange: "noi_ngan_hang",
+      "update-token": "noi_ngan_hang",
+      "dang-ky-sepay": "noi_ngan_hang",
+      "thu-hoi-grant-cu": "noi_ngan_hang",
+      disconnect: "noi_ngan_hang",
+      "create-qr": "noi_ngan_hang",
+      "sandbox-reset-login": "noi_ngan_hang",
+      sync: "dong_bo_du_lieu",
+      "gdt-sync": "dong_bo_du_lieu",
+    };
+    const canQuyen = action ? QUYEN_ACTION[action] : undefined;
+    if (canQuyen) kiemQuyen(ctVai.vai_tro, canQuyen, cauTuChoi(ctVai.vai_tro, canQuyen));
 
     // ── Two gates that must clear before any real bank account is touched ────
     const { data: profile } = await supabase
@@ -1735,6 +1753,7 @@ Deno.serve(async (req) => {
         return json({ error: "unknown action" }, 400);
     }
   } catch (e) {
+    if (e instanceof LoiQuyen) return json({ error: e.message, ma: "KHONG_DU_QUYEN" }, 403);
     if (e instanceof BankhubError) {
       console.error(`Cas error ${e.errorCode} (${e.requestId ?? "no request id"}): ${e.message}`);
       return json({ error: e.message, errorCode: e.errorCode, requestId: e.requestId }, 502);

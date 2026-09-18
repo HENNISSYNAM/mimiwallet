@@ -18,7 +18,8 @@
  * Tiền là USD — đơn vị nhà cung cấp tính. Không quy đổi, không ước tính tiền từ token.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { decryptField, encryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 import {
   gopDong,
@@ -421,11 +422,27 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await db.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
-    const company = await resolveCompany<{ id: string }>(db, user.id);
-    if (!company) return loi("KHONG_CO_CONG_TY", "Chưa có công ty.", 404);
+    const chon = typeof body?.company_id === "string" ? body.company_id : null;
+    const ct = await resolveCompanyVaiTro<{ id: string }>(db, user.id, "id", chon);
+    if (!ct) return loi("KHONG_CO_CONG_TY", chon ? "Bạn không thuộc công ty này." : "Chưa có công ty.", chon ? 403 : 404);
 
-    return await xuLy(db, user.id, company.id, String(body.hanh_dong ?? ""), body);
+    // MIMI-P1-003: nối API nhà cung cấp AI là việc quản trị; nhập file và đặt ngân sách cho kế toán.
+    const QUYEN_HANH_DONG: Record<string, HanhDong> = {
+      ket_noi: "noi_ngan_hang",
+      go_ket_noi: "noi_ngan_hang",
+      dong_bo: "dong_bo_du_lieu",
+      cap_nhat_bang_gia: "dong_bo_du_lieu",
+      nhap_file: "dong_bo_du_lieu",
+      xoa_lo_nhap: "dong_bo_du_lieu",
+      dat_ngan_sach: "quan_ly_agent",
+    };
+    const hanhDong = String(body.hanh_dong ?? "");
+    const can = QUYEN_HANH_DONG[hanhDong];
+    if (can) kiemQuyen(ct.vai_tro as VaiTro, can, cauTuChoi(ct.vai_tro, can));
+
+    return await xuLy(db, user.id, ct.cong_ty.id, hanhDong, body);
   } catch (e) {
+    if (e instanceof LoiQuyen) return loi("KHONG_DU_QUYEN", e.message, 403);
     // Không in thân yêu cầu: nó có thể chứa khoá quản trị.
     console.error("chi-phi-ai:", e instanceof Error ? e.message : e);
     return loi("LOI_HE_THONG", "Lỗi hệ thống khi xử lý chi phí AI.", 500);

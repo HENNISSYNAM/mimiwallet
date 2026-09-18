@@ -9,6 +9,8 @@
  * mã yêu cầu chi hay một con số vào đây.
  */
 
+import type { VaiTro } from '../quyen/vai-tro.ts';
+
 export type NhomNangLuc = 'tro_ly' | 'chi_phi' | 'chung_tu' | 'ngan_hang' | 'ai_token' | 'bao_cao' | 'ket_noi';
 
 export const NHOM_NANG_LUC: readonly NhomNangLuc[] = ['tro_ly', 'chi_phi', 'chung_tu', 'ngan_hang', 'ai_token', 'bao_cao', 'ket_noi'];
@@ -190,6 +192,11 @@ export interface BoiCanh {
   thue: ThueManDau | null;
   /** Có mô hình hiểu câu tự do và đọc ảnh chứng từ hay không. */
   co_mo_hinh: boolean;
+  /** MIMI-P1-003: vai trò của người đang đăng nhập trong công ty này (bản máy chủ cũ không gửi). */
+  vai_tro?: VaiTro;
+  cong_ty_id?: string;
+  /** Các công ty người dùng thuộc về, để đổi công ty đang làm việc. */
+  cong_ty_cua_toi?: { id: string; ten: string | null; vai_tro: VaiTro }[];
   /** MIMI-P0-002: độ đầy đủ của các nguồn màn đầu đã đọc. Bản máy chủ cũ không gửi. */
   do_day?: DoDayNguon[];
   do_day_chung?: TrangThaiDoDay;

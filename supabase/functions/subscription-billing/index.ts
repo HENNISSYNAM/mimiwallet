@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 import {
   taoMaThamChieu,
   doiSoatThueBao,
@@ -238,8 +239,12 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return json({ error: "Invalid token" }, 401);
 
-    const company = await resolveCompany<{ id: string }>(supabase, user.id);
-    if (!company) return json({ error: "No company found" }, 404);
+    const chonCty = typeof body?.company_id === "string" ? body.company_id : null;
+    const ctVai = await resolveCompanyVaiTro<{ id: string }>(supabase, user.id, "id", chonCty);
+    if (!ctVai) return json({ error: chonCty ? "Bạn không thuộc công ty này." : "No company found" }, chonCty ? 403 : 404);
+    const company = ctVai.cong_ty;
+    // MIMI-P1-003: mua/đổi gói là việc chạm tiền của công ty.
+    kiemQuyen(ctVai.vai_tro, "thanh_toan_goi", cauTuChoi(ctVai.vai_tro, "thanh_toan_goi"));
 
     const goi = GOI[body?.plan];
     if (!goi) return json({ error: "Gói không hợp lệ" }, 400);
@@ -304,6 +309,7 @@ Deno.serve(async (req) => {
         "Hệ thống đối soát tự động; thuê bao kích hoạt trong vòng vài phút sau khi tiền vào.",
     });
   } catch (e) {
+    if (e instanceof LoiQuyen) return json({ error: e.message, ma: "KHONG_DU_QUYEN" }, 403);
     console.error("subscription-billing lỗi", e);
     return json({ error: (e as Error)?.message ?? "Lỗi không xác định" }, 500);
   }

@@ -19,7 +19,8 @@
  * theo Nghị định 52/2024/NĐ-CP.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { DANH_SACH_NGAN_HANG } from "../_shared/bank/ngan-hang.ts";
 import { NHOM_CHI } from "../_shared/tac-tu/chinh-sach.ts";
 import { bamKhoa, HEADER_KHOA, hienKhoa, sinhKhoa } from "../_shared/tac-tu/khoa.ts";
@@ -58,9 +59,29 @@ async function layTacTu(db: Db, companyId: string, id: unknown) {
   return data;
 }
 
-async function xuLyChu(db: Db, userId: string, companyId: string, hanhDong: string, body: Row): Promise<Response> {
+/**
+ * MIMI-P1-003: hành động nào cần quyền nào. Không có trong bảng = chỉ cần là thành viên.
+ * Đây là nơi chặn thật (backend), không phải nút bị ẩn trên giao diện.
+ */
+const QUYEN_HANH_DONG: Record<string, HanhDong> = {
+  tao_tac_tu: "quan_ly_agent",
+  xoay_khoa: "cap_khoa_agent",
+  doi_trang_thai: "quan_ly_agent",
+  luu_chinh_sach: "quan_ly_agent",
+  them_nguoi_nhan: "quan_ly_nguoi_nhan",
+  xoa_nguoi_nhan: "quan_ly_nguoi_nhan",
+  tao_yeu_cau: "tao_yeu_cau_chi",
+  duyet: "duyet_chi",
+  tu_choi: "duyet_chi",
+  huy: "huy_yeu_cau",
+};
+
+async function xuLyChu(db: Db, userId: string, companyId: string, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
   const bayGio = () => new Date().toISOString();
   const nk = (dong: Row) => ghiNhatKy(db, { company_id: companyId, nguoi: "nguoi_dung", user_id: userId, ...dong });
+
+  const can = QUYEN_HANH_DONG[hanhDong];
+  if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));
 
   switch (hanhDong) {
     case "tao_tac_tu": {
@@ -315,11 +336,17 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await db.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
-    const company = await resolveCompany<{ id: string }>(db, user.id);
-    if (!company) return loi("KHONG_CO_CONG_TY", "Chưa có công ty.", 404);
+    // Công ty đang làm việc: giao diện gửi `company_id` khi người dùng thuộc nhiều công ty.
+    const chon = typeof body?.company_id === "string" ? body.company_id : null;
+    const ct = await resolveCompanyVaiTro<{ id: string }>(db, user.id, "id", chon);
+    if (!ct) return loi("KHONG_CO_CONG_TY", chon ? "Bạn không thuộc công ty này." : "Chưa có công ty.", chon ? 403 : 404);
 
-    return await xuLyChu(db, user.id, company.id, hanhDong, body);
+    return await xuLyChu(db, user.id, ct.cong_ty.id, ct.vai_tro, hanhDong, body);
   } catch (e) {
+    if (e instanceof LoiQuyen) {
+      console.error("tac-tu quyen:", e.hanh_dong, e.vai_tro);
+      return loi("KHONG_DU_QUYEN", e.message, 403);
+    }
     console.error("tac-tu:", e);
     return loi("LOI_HE_THONG", e instanceof Error ? e.message : "Lỗi không rõ.", 500);
   }

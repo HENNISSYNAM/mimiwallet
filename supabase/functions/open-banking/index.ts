@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCompany } from "../_shared/company.ts";
+import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,7 +112,10 @@ Deno.serve(async (req) => {
     const body = req.method === "POST" ? await req.json() : {};
 
     // Shared resolution rule — see _shared/company.ts for why not `.single()`.
-    const company = await resolveCompany(supabase, user.id);
+    const ctVai = await resolveCompanyVaiTro<{ id: string }>(supabase, user.id);
+    const company = ctVai?.cong_ty ?? null;
+    // MIMI-P1-003: mọi thao tác ở đây đều đụng kết nối ngân hàng.
+    if (ctVai) kiemQuyen(ctVai.vai_tro, "noi_ngan_hang", cauTuChoi(ctVai.vai_tro, "noi_ngan_hang"));
 
     if (!company) {
       return new Response(JSON.stringify({ error: "No company found" }), {
@@ -286,6 +290,12 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (error instanceof LoiQuyen) {
+      return new Response(JSON.stringify({ error: error.message, ma: "KHONG_DU_QUYEN" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("Open Banking error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Internal error" }),
