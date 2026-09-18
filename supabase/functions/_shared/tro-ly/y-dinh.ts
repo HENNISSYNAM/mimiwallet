@@ -25,19 +25,19 @@ export const MAC_DINH_THEO_NHOM: Record<NhomNangLuc, string> = {
 const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   [/\b(cho (toi |minh )?duyet|can duyet|phe duyet|duyet|yeu cau chi)\b/, 'yeu_cau_cho_duyet'],
   [/\b(agent|agents|tac tu|bot)\b/, 'tinh_hinh_agent'],
-  [/\btoken\b/, 'token_ai'],
+  [/\b(token|cache)\b/, 'token_ai'],
   [/\b(chi phi ai|chi ai|ngan sach ai|dich vu ai|tien ai|openai|gpt|chatgpt|claude|anthropic|gemini|openrouter|llm|ngan sach)\b/, 'chi_phi_ai'],
   [/\b(re hon|model re|mo hinh re|doi model|doi mo hinh|thay model|toi uu model|toi uu mo hinh)\b/, 'model_re_hon'],
   [/\b(to khai|khai thue|nop thue|nghia vu thue|mien thue|thue gtgt|thue tncn|thue thu nhap|thong bao doanh thu|nguong doanh thu|ty le thue|quyet toan)\b/, 'nghia_vu_thue'],
   [/\b(chung tu|thieu hoa don|chua co hoa don|hoa don dau vao|hoa don mua vao)\b/, 'thieu_chung_tu'],
-  [/\b(qua han|cong no|phai thu|khach no|hoa don ban)\b/, 'hoa_don_qua_han'],
+  [/\b(qua han|cong no|phai thu|khach no|no tien|chua thu|hoa don ban)\b/, 'hoa_don_qua_han'],
   [/\b(doi soat|khop tien|tien ve|da thu|chua khop)\b/, 'doi_soat'],
   [/\b(dong tien|thu chi|tien vao|tien ra)\b/, 'dong_tien'],
   [/\b(ngan hang|sao ke|casso|sepay|dong bo)\b/, 'ket_noi_ngan_hang'],
   [/\b(bao cao|loi nhuan|doanh thu|lai lo)\b/, 'bao_cao_tai_chinh'],
   [/\b(tiet kiem|cat giam|giam chi|bi trung|tra trung|tru hai lan|trung lap)\b/, 'phan_tich_tiet_kiem'],
   [/\b(ket noi|tich hop|plugin|tong cuc thue|co quan thue)\b/, 'tat_ca_ket_noi'],
-  [/\b(chi phi|khoan chi|chi tieu)\b/, 'chi_phi_thang'],
+  [/\b(chi phi|khoan chi|chi tieu|chi bao nhieu|chi het bao nhieu|tieu bao nhieu)\b/, 'chi_phi_thang'],
 ];
 
 export const SO_NANG_LUC_TOI_DA = 3;

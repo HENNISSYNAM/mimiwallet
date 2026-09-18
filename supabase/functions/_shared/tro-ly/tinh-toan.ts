@@ -288,6 +288,7 @@ export function yeuCauChoDuyet(d: DuLieu): KetQuaNangLuc {
         ],
         dong: cho.slice(0, 8).map((y) => [ten(y.tac_tu_id), nguoi(y), y.muc_dich, y.so_tien, y.created_at.slice(0, 10)]),
         con_lai: Math.max(0, cho.length - 8),
+        bang_chung: bangChung('yeu_cau_chi', cho),
       }],
       de_xuat,
       nguon: [N.yeuCau],
@@ -465,7 +466,13 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
           {
             nhan: 'Chưa có hoá đơn điện tử', gia_tri: g.tongChuaCoGiay, don_vi: 'vnd', can_chu_y: g.tongChuaCoGiay > 0,
             ghi_chu: coQuet.size ? `${coQuet.size} khoản đã có chứng từ quét` : undefined,
-            bang_chung: bangChung('giao_dich', conThieu),
+            /*
+             * Bằng chứng phải là ĐÚNG những khoản đã cộng vào con số này, tức `g.chuaCoGiay`.
+             * Trước đây nó trỏ vào `conThieu` — tập đã trừ đi khoản có chứng từ quét. Khi mọi
+             * khoản thiếu hoá đơn đều có ảnh quét, `conThieu` rỗng, và một con số khác 0 đứng
+             * đó không còn bản ghi nào để mở ra xem. Bộ chấm P1-004 bắt được ca này.
+             */
+            bang_chung: bangChung('giao_dich', g.chuaCoGiay),
           },
           { nhan: 'Cần bạn chọn hoá đơn', gia_tri: g.canXem.length, don_vi: 'so', bang_chung: bangChung('giao_dich', g.canXem.map((x) => ({ id: x.khoanChiId }))) },
         ],
@@ -776,6 +783,8 @@ export function tokenAi(d: DuLieu): KetQuaNangLuc {
       ],
       dong: hang.slice(0, 8).map((h) => [h.model, h.vao, phanTram(h.cache, h.vao), h.ra, h.goi || null, h.chiPhi, h.moiTrieu]),
       con_lai: Math.max(0, hang.length - 8),
+      // Bảng gộp theo model, nhưng số nào cũng cộng từ các dòng token 30 ngày — mở ra được.
+      bang_chung: bangChung('token_ai', ds),
     }],
     nguon: [N.tokenAi, N.chiPhiAi],
     trang: [T.chiPhiAi],

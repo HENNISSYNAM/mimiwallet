@@ -1,0 +1,44 @@
+# Cổng kiểm của MIMI.
+#
+# MIMI-P1-004 của đặc tả audit yêu cầu: "CI chặn merge nếu metric an toàn hoặc numeric accuracy
+# giảm." Trước đây kho này không có CI nào — mọi thứ chỉ chạy trên máy người viết code, nên một
+# lần quên chạy test là đủ để bộ chấm an toàn mất tác dụng.
+#
+# Bộ chấm trợ lý (`supabase/functions/_shared/eval`) nằm trong `npm test`, và nó tự đỏ khi
+# numeric accuracy giảm, khi có câu nhận vơ đã chuyển tiền, hoặc khi có câu nói chắc về hiệu
+# lực pháp luật. Vì vậy chỉ cần chạy đủ ba bước dưới đây là cổng có hiệu lực.
+
+name: Kiểm
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  kiem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Cài phụ thuộc
+        run: npm ci
+
+      - name: Kiểm kiểu (giao diện)
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Chạy test — gồm bộ chấm trợ lý MIMI-P1-004
+        run: npm test
+
+      - name: Dựng bản production
+        run: npx vite build
+
+      # Edge function chạy bằng Deno, không nằm trong tsc ở trên.
+      - name: Kiểm kiểu edge function
+        run: npx --yes deno check supabase/functions/tro-ly/index.ts supabase/functions/to-khai/index.ts supabase/functions/chat/index.ts
