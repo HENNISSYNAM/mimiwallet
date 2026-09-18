@@ -154,18 +154,29 @@ export default function TroLyPage() {
     }
     const k = `${luotId}:${dx.khoa}`;
     setViec((m) => ({ ...m, [k]: { trangThai: 'dang', cau: '' } }));
+    let quyetDinhId: number | null = null;
     try {
-      const cau = await thucHienDeXuat(dx, { goiTacTu, goiChiPhiAi, goiTroLy, dongBoSaoKe });
+      /**
+       * MIMI-P1-002: ghi quyết định trước khi chạy. Máy chủ tra lại đề xuất theo khoá và trả bản
+       * chính thức — giao diện chạy theo bản đó, nên tham số ở trình duyệt không quyết định việc gì.
+       */
+      const hoiThoaiId = luot.find((l) => l.id === luotId)?.traLoi?.hoi_thoai_id ?? null;
+      const xn = await goiTroLy('xac_nhan', { de_xuat_khoa: dx.khoa, hoi_thoai_id: hoiThoaiId });
+      quyetDinhId = typeof xn.quyet_dinh_id === 'number' ? xn.quyet_dinh_id : null;
+      const dxThat = (xn.de_xuat ?? dx) as DeXuat;
+      const cau = await thucHienDeXuat(dxThat, { goiTacTu, goiChiPhiAi, goiTroLy, dongBoSaoKe });
       setViec((m) => ({ ...m, [k]: { trangThai: 'xong', cau } }));
+      if (quyetDinhId) void goiTroLy('ket_qua_quyet_dinh', { quyet_dinh_id: quyetDinhId, ok: true, cau }).catch(() => {});
       // Thẻ ở màn đầu sẽ tải lại và khoản vừa làm biến khỏi thẻ — nên báo kết quả bằng toast.
       if (luotId === LUOT_MAN_DAU) toast.success(cau);
       void taiBoiCanh();
     } catch (e) {
       const cau = e instanceof Error ? e.message : t('man.troLy.loi.viec');
       setViec((m) => ({ ...m, [k]: { trangThai: 'loi', cau } }));
+      if (quyetDinhId) void goiTroLy('ket_qua_quyet_dinh', { quyet_dinh_id: quyetDinhId, ok: false, cau }).catch(() => {});
       if (luotId === LUOT_MAN_DAU) toast.error(cau);
     }
-  }, [navigate, taiBoiCanh]);
+  }, [navigate, taiBoiCanh, luot]);
 
   const viecKhac = (boiCanh?.viec ?? []).filter((v) => !VIEC_DA_CO_THE.has(v.khoa));
   const ketNoi = boiCanh?.ket_noi ?? [];

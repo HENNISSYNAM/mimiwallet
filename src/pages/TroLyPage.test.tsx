@@ -196,6 +196,67 @@ describe('MIMI Assistant — hỏi đáp', () => {
     expect(screen.getByRole('link', { name: 'Mở danh sách yêu cầu chi' }).getAttribute('href')).toBe('/dashboard/tac-tu?tab=yeu-cau');
   });
 
+  it('P1-002: xác nhận ghi nhật ký trước khi chạy, chạy theo bản đề xuất máy chủ trả, rồi ghi kết quả', async () => {
+    gia.tacTu.mockResolvedValue({ yeu_cau: {} });
+    const goi: { hanh_dong: string; du?: Record<string, unknown> }[] = [];
+    gia.troLy.mockImplementation(async (hanhDong: string, du?: Record<string, unknown>) => {
+      goi.push({ hanh_dong: hanhDong, du });
+      if (hanhDong === 'boi_canh') return BOI_CANH;
+      if (hanhDong === 'hoi') return { ...TRA_LOI, hoi_thoai_id: 'ht-1' };
+      if (hanhDong === 'xac_nhan') {
+        // Máy chủ trả bản chính thức: tham số khác bản giao diện đang giữ.
+        return { quyet_dinh_id: 77, de_xuat: { ...DUYET_Y1, tham_so: { yeu_cau_id: 'y1-that' } } };
+      }
+      if (hanhDong === 'ket_qua_quyet_dinh') return { ok: true };
+      return TRA_LOI;
+    });
+    dung();
+    hoiBangTay('Khoản nào đang chờ tôi duyệt?');
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt 2.000.000 ₫' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Xác nhận duyệt' }));
+    await waitFor(() => expect(gia.tacTu).toHaveBeenCalledWith('duyet', { yeu_cau_id: 'y1-that' }));
+
+    const xn = goi.find((g) => g.hanh_dong === 'xac_nhan');
+    expect(xn?.du).toEqual({ de_xuat_khoa: 'duyet:y1', hoi_thoai_id: 'ht-1' });
+    // Ghi nhật ký đứng TRƯỚC khi gọi backend duyệt.
+    expect(goi.findIndex((g) => g.hanh_dong === 'xac_nhan')).toBeLessThan(goi.findIndex((g) => g.hanh_dong === 'ket_qua_quyet_dinh'));
+    await waitFor(() => expect(goi.some((g) => g.hanh_dong === 'ket_qua_quyet_dinh' && g.du?.quyet_dinh_id === 77 && g.du?.ok === true)).toBe(true));
+  });
+
+  it('P1-002: backend lỗi thì nhật ký nhận kết quả lỗi, không im lặng', async () => {
+    gia.tacTu.mockRejectedValue(new Error('Khoản này đã được duyệt trước đó.'));
+    const goi: { hanh_dong: string; du?: Record<string, unknown> }[] = [];
+    gia.troLy.mockImplementation(async (hanhDong: string, du?: Record<string, unknown>) => {
+      goi.push({ hanh_dong: hanhDong, du });
+      if (hanhDong === 'boi_canh') return BOI_CANH;
+      if (hanhDong === 'xac_nhan') return { quyet_dinh_id: 78, de_xuat: DUYET_Y1 };
+      if (hanhDong === 'hoi') return { ...TRA_LOI, hoi_thoai_id: 'ht-2' };
+      return { ok: true };
+    });
+    dung();
+    hoiBangTay('Khoản nào đang chờ tôi duyệt?');
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt 2.000.000 ₫' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Xác nhận duyệt' }));
+    expect(await screen.findByText('Khoản này đã được duyệt trước đó.')).toBeTruthy();
+    await waitFor(() => expect(goi.some((g) => g.hanh_dong === 'ket_qua_quyet_dinh' && g.du?.ok === false)).toBe(true));
+  });
+
+  it('P1-002: không ghi được quyết định thì không chạy việc chạm tiền', async () => {
+    gia.tacTu.mockResolvedValue({ yeu_cau: {} });
+    gia.troLy.mockImplementation(async (hanhDong: string) => {
+      if (hanhDong === 'boi_canh') return BOI_CANH;
+      if (hanhDong === 'hoi') return { ...TRA_LOI, hoi_thoai_id: null };
+      if (hanhDong === 'xac_nhan') throw new Error('Việc này không còn trong câu trả lời của MIMI. Hỏi lại rồi xác nhận.');
+      return TRA_LOI;
+    });
+    dung();
+    hoiBangTay('Khoản nào đang chờ tôi duyệt?');
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt 2.000.000 ₫' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Xác nhận duyệt' }));
+    expect(await screen.findByText(/Việc này không còn trong câu trả lời/)).toBeTruthy();
+    expect(gia.tacTu).not.toHaveBeenCalled();
+  });
+
   it('duyệt trong câu trả lời: phải xác nhận; duyệt xong thì nút từ chối khoá', async () => {
     gia.tacTu.mockResolvedValue({ yeu_cau: {} });
     dung();

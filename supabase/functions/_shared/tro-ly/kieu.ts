@@ -134,6 +134,11 @@ export interface TraLoi {
   che_do: 'mo_hinh' | 'co_dinh';
   /** Trạng thái xấu nhất trong mọi nguồn đã đọc cho câu trả lời này. */
   do_day: TrangThaiDoDay;
+  /**
+   * MIMI-P1-002: dòng hội thoại máy chủ đã lưu cho câu trả lời này. null = chưa ghi được nhật ký,
+   * và khi đó việc cần xác nhận sẽ bị chặn (không có dấu vết thì không cho chạy).
+   */
+  hoi_thoai_id?: string | null;
 }
 
 export interface ViecHomNay {

@@ -18,18 +18,16 @@
  * Chỉ chủ doanh nghiệp (JWT). Đọc bằng service role, luôn lọc theo công ty đang dùng.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
+import { danhSachCongTy, kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
-import { locDeXuat, locPhanTich } from "../_shared/quyen/loc-de-xuat.ts";
-import type { BangChung, KetQuaNangLuc, LoaiBangChung } from "../_shared/tro-ly/kieu.ts";
-import { danhSachCongTy } from "../_shared/company.ts";
-import type { DoDayNguon, NhomNangLuc } from "../_shared/tro-ly/kieu.ts";
-import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
+import { deXuatDuocPhep, locDeXuat, locPhanTich } from "../_shared/quyen/loc-de-xuat.ts";
 import { NHOM_NANG_LUC } from "../_shared/tro-ly/kieu.ts";
+import type { BangChung, DeXuat, DoDayNguon, KetQuaNangLuc, LoaiBangChung, NhomNangLuc, TraLoi } from "../_shared/tro-ly/kieu.ts";
+import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
-import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
+import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, MO_HINH, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
 import {
   congNgay,
   danhSachKetNoi,
@@ -79,6 +77,8 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   xoa_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
   boi_canh: { cuaSoGiay: 60, toiDa: 60 },
   bang_chung: { cuaSoGiay: 60, toiDa: 60 },
+  xac_nhan: { cuaSoGiay: 60, toiDa: 30 },
+  ket_qua_quyet_dinh: { cuaSoGiay: 60, toiDa: 60 },
   trang_thai: { cuaSoGiay: 60, toiDa: 120 },
 };
 
@@ -99,6 +99,65 @@ const BANG_BANG_CHUNG: Record<Exclude<LoaiBangChung, "van_ban_luat">, { bang: st
 };
 
 const SO_BANG_CHUNG_MOI_LAN = 200;
+
+/**
+ * MIMI-P1-002 — lưu vết hội thoại.
+ *
+ * Ghi nội dung câu hỏi, câu trả lời, năng lực đã chạy, nguồn và độ đầy đủ, cùng danh sách đề xuất.
+ * Danh sách đề xuất là bản chính thức: khi người dùng xác nhận, máy chủ tra lại đúng dòng này thay
+ * vì tin tham số trình duyệt gửi lên.
+ *
+ * Hỏng thì không làm mất câu trả lời — nhưng hành động cần xác nhận sẽ không có nhật ký, và
+ * `xac_nhan` chặn lại ở đó.
+ */
+async function ghiHoiThoai(db: Db, companyId: string, userId: string, cau: string, tl: TraLoi, moHinh: string | null): Promise<string | null> {
+  try {
+    const { data, error } = await db.from("hoi_thoai_tro_ly").insert({
+      company_id: companyId,
+      user_id: userId,
+      cau_hoi: cau.slice(0, 1000),
+      cau_tra_loi: tl.cau.slice(0, 20_000),
+      che_do: tl.che_do,
+      mo_hinh: moHinh,
+      nang_luc: tl.ket_qua.map((r) => r.nang_luc),
+      nguon: {
+        nguon: [...new Set(tl.ket_qua.flatMap((r) => r.nguon.map((n) => n.ten)))],
+        do_day: tl.ket_qua.flatMap((r) => r.do_day ?? []),
+      },
+      do_day: tl.do_day,
+      de_xuat: tl.ket_qua.flatMap((r) => r.de_xuat),
+    }).select("id").single();
+    if (error) throw new Error(error.message);
+    return String(data.id);
+  } catch (e) {
+    console.error("ghi hoi thoai:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+/** Đề xuất chính thức theo khoá: lấy từ hội thoại đã lưu, hoặc dựng lại từ dữ liệu cho màn đầu. */
+async function deXuatChinhThuc(
+  db: Db,
+  companyId: string,
+  userId: string,
+  khoa: string,
+  hoiThoaiId: string | null,
+  moc: ReturnType<typeof mocThoiGian>,
+): Promise<{ dx: DeXuat; cauHoi: string } | null> {
+  if (hoiThoaiId) {
+    const { data, error } = await db.from("hoi_thoai_tro_ly")
+      .select("cau_hoi, de_xuat").eq("id", hoiThoaiId).eq("company_id", companyId).eq("user_id", userId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    const dx = (Array.isArray(data.de_xuat) ? data.de_xuat : []).find((x: DeXuat) => x?.khoa === khoa);
+    return dx ? { dx, cauHoi: String(data.cau_hoi ?? "") } : null;
+  }
+  // Màn đầu: không có hội thoại. Dựng lại đề xuất từ dữ liệu thật rồi tìm theo khoá — không nhận
+  // tham số do trình duyệt gửi.
+  const d = await docDuLieu(db, companyId, new Set<NguonCan>(["yeu_cau"]), moc);
+  const dx = phanTichNhanh(d).can_xac_nhan.muc.map((m) => m.duyet).find((x): x is DeXuat => !!x && x.khoa === khoa);
+  return dx ? { dx, cauHoi: "(việc trên màn đầu)" } : null;
+}
 
 /** Chuỗi chuẩn hoá của một bản ghi: khoá sắp xếp để cùng dữ liệu luôn ra cùng mã băm. */
 function chuanHoaBanGhi(r: Row): string {
@@ -563,7 +622,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             homNay: moc.homNay,
             goiY: yDinh,
           });
-          return json(dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau }));
+          const tl = dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau });
+          const id = await ghiHoiThoai(db, company.id, userId, cau, tl, MO_HINH);
+          return json({ ...tl, hoi_thoai_id: id });
         } catch (e) {
           // Cổng lỗi không làm người dùng mất câu trả lời: chạy tiếp bằng bộ luật cố định.
           if (!(e instanceof LoiMoHinh)) throw e;
@@ -573,7 +634,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
       const ketQua = [];
       for (const id of yDinh) ketQua.push(await chay(id));
-      return json(dungTraLoi({ ketQua: locDeXuat(ketQua, vaiTro), cheDo: "co_dinh", cauHoi: cau }));
+      const tl = dungTraLoi({ ketQua: locDeXuat(ketQua, vaiTro), cheDo: "co_dinh", cauHoi: cau });
+      const idHt = await ghiHoiThoai(db, company.id, userId, cau, tl, null);
+      return json({ ...tl, hoi_thoai_id: idHt });
     }
 
     case "quet_chung_tu": {
@@ -667,6 +730,50 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       return json({ id: data.id, anh_path: anhPath, canh_bao: canhBao });
     }
 
+    case "xac_nhan": {
+      // MIMI-P1-002: ghi quyết định TRƯỚC khi chạy, với đề xuất chính thức của máy chủ.
+      const khoa = String(body.de_xuat_khoa ?? "");
+      if (!khoa) return loi("THAM_SO", "Thiếu khoá đề xuất.", 400);
+      const hoiThoaiId = typeof body.hoi_thoai_id === "string" ? body.hoi_thoai_id : null;
+      const ct = await deXuatChinhThuc(db, company.id, userId, khoa, hoiThoaiId, moc);
+      if (!ct) return loi("KHONG_THAY", "Việc này không còn trong câu trả lời của MIMI. Hỏi lại rồi xác nhận.", 404);
+      if (!deXuatDuocPhep(ct.dx, vaiTro)) return loi("KHONG_DU_QUYEN", cauTuChoi(vaiTro, "duyet_chi"), 403);
+
+      const { data, error } = await db.from("nhat_ky_quyet_dinh").insert({
+        company_id: company.id,
+        user_id: userId,
+        vai_tro: vaiTro,
+        hoi_thoai_id: hoiThoaiId,
+        cau_hoi_luc_do: ct.cauHoi.slice(0, 1000),
+        de_xuat_khoa: ct.dx.khoa,
+        loai: ct.dx.loai,
+        tham_so: ct.dx.tham_so,
+        mo_ta_da_xac_nhan: ct.dx.mo_ta.slice(0, 2000),
+        ket_qua: "cho_chay",
+      }).select("id").single();
+      if (error) throw error;
+      // Trả đúng đề xuất máy chủ đã ghi: giao diện chạy theo bản này, không theo bản nó đang giữ.
+      return json({ quyet_dinh_id: Number(data.id), de_xuat: ct.dx });
+    }
+
+    case "ket_qua_quyet_dinh": {
+      const id = Number(body.quyet_dinh_id);
+      if (!Number.isInteger(id) || id <= 0) return loi("THAM_SO", "Thiếu mã quyết định.", 400);
+      const ok = body.ok === true;
+      const { data, error } = await db.from("nhat_ky_quyet_dinh")
+        .update({
+          ket_qua: ok ? "thanh_cong" : "loi",
+          ket_qua_cau: String(body.cau ?? "").slice(0, 2000),
+          ma_loi: ok ? null : String(body.ma_loi ?? "").slice(0, 100) || null,
+          xong_luc: new Date().toISOString(),
+        })
+        .eq("id", id).eq("company_id", company.id).eq("user_id", userId).eq("ket_qua", "cho_chay")
+        .select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return loi("KHONG_THAY", "Không có quyết định đang chờ kết quả với mã này.", 404);
+      return json({ ok: true });
+    }
+
     case "bang_chung": {
       // P1-001: mở đúng những bản ghi đứng sau một con số, trong phạm vi công ty đang dùng.
       const loai = String(body.loai ?? "") as LoaiBangChung;
@@ -681,8 +788,10 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
       const bang = BANG_BANG_CHUNG[loai as Exclude<LoaiBangChung, "van_ban_luat">];
       if (!bang) return loi("THAM_SO", "Loại bằng chứng không hợp lệ.", 400);
-      const { data, error } = await db.from(bang.bang).select(bang.cot)
-        .eq("company_id", company.id).in("id", ids).limit(SO_BANG_CHUNG_MOI_LAN);
+      let q = db.from(bang.bang).select(bang.cot).eq("company_id", company.id).in("id", ids);
+      // Giao dịch: chỉ mở dòng thật, đúng như các năng lực đã cộng (bỏ is_synthetic).
+      if (loai === "giao_dich") q = q.eq("is_synthetic", false);
+      const { data, error } = await q.limit(SO_BANG_CHUNG_MOI_LAN);
       if (error) throw error;
       const ds = (data ?? []) as Row[];
       // Id của công ty khác: không có dòng nào → 404, và KHÔNG nói id nào tồn tại ở đâu.
