@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import TrustSection from '@/components/landing/TrustSection';
 import DaiLogo from '@/components/landing/DaiLogo';
 import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
+import VideoBaoMat from '@/components/landing/VideoBaoMat';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
@@ -671,6 +672,9 @@ export default function Landing() {
 
       {/* ═══ KHUNG DEMO TỰ CHẠY ═══ */}
       <DemoTuChay />
+
+      {/* ═══ BẢO MẬT: DỪNG KHOẢN ĐÁNG NGỜ + MÃ HOÁ KHÁNG LƯỢNG TỬ ═══ */}
+      <VideoBaoMat />
 
       {/* ═══ NHẬT KÝ AGENT + SOẠN LUẬT (ĐANG XÂY) ═══ */}
       <NhatKyAgent />
