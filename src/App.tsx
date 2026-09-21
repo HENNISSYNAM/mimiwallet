@@ -34,6 +34,9 @@ function Page({
 
 const Landing = lazy(() => import("./pages/Landing"));
 const About = lazy(() => import("./pages/About"));
+const TaiNguyenDanhSach = lazy(() => import("./pages/TaiNguyenDanhSach"));
+const TaiNguyenBai = lazy(() => import("./pages/TaiNguyenBai"));
+const TuyenDung = lazy(() => import("./pages/TuyenDung"));
 const TrangNoiDungPage = lazy(() => import("./pages/TrangNoiDungPage"));
 const KhachHang = lazy(() => import("./pages/KhachHang"));
 const TriTueNhanTaoPage = lazy(() => import("./pages/TriTueNhanTaoPage"));
@@ -116,6 +119,10 @@ const App = () => (
                   Privacy Policy URL truy cập được mà không cần tài khoản. */}
               {/* Bộ nhận diện — công khai, không nằm sau đăng nhập: người thiết kế
                   và người viết nội dung phải mở được mà không cần tài khoản. */}
+              <Route path="/tai-nguyen/:loai" element={<Page path="/tai-nguyen" title="Tài nguyên — MIMI WALLET" description="Sự kiện, blog, góc nhìn, báo cáo và tin tức từ đội MIMI Wallet."><TaiNguyenDanhSach /></Page>} />
+              <Route path="/tai-nguyen/:loai/:slug" element={<Page path="/tai-nguyen" title="Tài nguyên — MIMI WALLET" description="Bài viết từ đội MIMI Wallet."><TaiNguyenBai /></Page>} />
+              <Route path="/tuyen-dung" element={<Page path="/tuyen-dung" title="Tuyển dụng — MIMI WALLET" description="Vị trí đang mở ở MIMI Wallet. Mục tiêu: trở thành kỳ lân tiếp theo của châu Á."><TuyenDung /></Page>} />
+              <Route path="/tuyen-dung/:slug" element={<Page path="/tuyen-dung" title="Tuyển dụng — MIMI WALLET" description="Vị trí đang mở ở MIMI Wallet."><TaiNguyenBai loaiCoDinh="tuyen_dung" /></Page>} />
               <Route path="/thuong-hieu" element={<Page path="/thuong-hieu" title="Bộ nhận diện — MIMI WALLET" description="Màu, chữ, và quy tắc viết tiếng Việt của MIMI Wallet. Trang đọc thẳng token đang chạy nên không lệch khỏi sản phẩm."><ThuongHieu /></Page>} />
               {/* Trang Sản phẩm và Giải pháp — công khai; nội dung ở content/trangNoiDung.ts,
                   tiêu đề SEO đặt ngay trong trang vì mỗi đường dẫn một tiêu đề. */}

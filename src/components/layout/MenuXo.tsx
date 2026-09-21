@@ -182,6 +182,17 @@ const MENU_TAI_NGUYEN: CauHinhMenu = {
       ],
     }],
     [{
+      tieuDe: { vi: 'Đọc thêm', en: 'Read' },
+      muc: [
+        { ten: { vi: 'Sự kiện & Webinar', en: 'Events & webinars' }, href: '/tai-nguyen/su-kien' },
+        { ten: { vi: 'Blog', en: 'Blog' }, href: '/tai-nguyen/blog' },
+        { ten: { vi: 'Góc nhìn', en: 'Insights' }, href: '/tai-nguyen/goc-nhin' },
+        { ten: { vi: 'Báo cáo', en: 'Reports' }, href: '/tai-nguyen/bao-cao' },
+        { ten: { vi: 'Tin tức', en: 'News' }, href: '/tai-nguyen/tin-tuc' },
+        { ten: { vi: 'Tuyển dụng', en: 'Careers' }, href: '/tuyen-dung' },
+      ],
+    }],
+    [{
       tieuDe: { vi: 'Kết nối', en: 'Connect' },
       muc: [
         { ten: { vi: 'Về chúng tôi', en: 'About us' }, href: '/about' },
