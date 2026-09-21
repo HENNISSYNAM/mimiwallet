@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, FileWarning, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { ghepChungTu, type HoaDonVao, type KhoanChi } from '@/lib/khopChungTu';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
@@ -56,14 +57,9 @@ export default function ChungTuPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: cty } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (!cty) return;
+      const id = await idCongTyDangDung();
+      if (!id) return;
+      const cty = { id };
 
       // Quý đang tới hạn: ba tháng kết thúc trước ngày hạn.
       const cuoiKy = new Date(ky.han.getFullYear(), ky.han.getMonth(), 0);

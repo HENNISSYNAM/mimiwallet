@@ -8,7 +8,7 @@ import GiayToPage from './GiayToPage';
  */
 
 const gia = vi.hoisted(() => ({
-  congTy: { name: 'Hộ kinh doanh Thịnh Phát', tax_id: '0312345678', province: 'TP. Hồ Chí Minh' } as Record<string, unknown> | null,
+  congTy: { id: 'cty-1', name: 'Hộ kinh doanh Thịnh Phát', tax_id: '0312345678', province: 'TP. Hồ Chí Minh' } as Record<string, unknown> | null,
   giaoDich: null as Record<string, unknown> | null,
   hoi: [] as { bang: string; loc: Record<string, unknown> }[],
 }));
@@ -41,7 +41,7 @@ const giay = () => screen.getByRole('article', { name: 'Bản nháp' });
 beforeEach(() => {
   gia.hoi = [];
   gia.giaoDich = null;
-  gia.congTy = { name: 'Hộ kinh doanh Thịnh Phát', tax_id: '0312345678', province: 'TP. Hồ Chí Minh' };
+  gia.congTy = { id: 'cty-1', name: 'Hộ kinh doanh Thịnh Phát', tax_id: '0312345678', province: 'TP. Hồ Chí Minh' };
 });
 
 describe('Soạn giấy tờ', () => {

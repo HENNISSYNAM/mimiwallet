@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { toast } from 'sonner';
 import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
 
@@ -57,12 +58,12 @@ export function ThongTinDoanhNghiep() {
   const tai = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setDangTai(false); return; }
+    const id = await idCongTyDangDung();
+    if (!id) { setDangTai(false); return; }
     const { data } = await supabase
       .from('companies')
       .select('id, name, tax_id, industry, province')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-      .limit(1)
+      .eq('id', id)
       .maybeSingle();
     setDn((data as DoanhNghiep | null) ?? null);
     setMst(data?.tax_id ?? '');

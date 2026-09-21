@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import type { Database } from '@/integrations/supabase/types';
 import { NHOM_CHI, TEN_NHOM_CHI } from '@/lib/tacTu';
 import { docSoTienBangChu } from '@/lib/soTienBangChu';
@@ -99,10 +100,9 @@ export default function ChinhSachChiPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: cty } = await supabase
-        .from('companies').select('id').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle();
-      if (!cty) return;
+      const id = await idCongTyDangDung();
+      if (!id) return;
+      const cty = { id };
       const [tt, cs, nn] = await Promise.all([
         supabase.from('tac_tu').select('*').eq('company_id', cty.id).neq('trang_thai', 'thu_hoi').order('created_at', { ascending: true }),
         supabase.from('chinh_sach_chi').select('*').eq('company_id', cty.id),

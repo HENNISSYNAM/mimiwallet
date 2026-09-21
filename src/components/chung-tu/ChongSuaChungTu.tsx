@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, FolderOpen, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { goiDauThoiGian } from '@/lib/goiDauThoiGian';
 import { giaiMaSaoLuu, maHoaSaoLuu, MAT_KHAU_TOI_THIEU } from '@/lib/saoLuuMaHoa';
 import { bamHex, noiDungChuanChungTu, noiDungChuanHoaDon, type ChungTuGoc, type HoaDonGoc } from '@/lib/chuanHoaChungTu';
@@ -150,9 +151,10 @@ function HopSaoLuu({ che, onDong }: { che: 'tai' | 'mo' | null; onDong: () => vo
       setDang('Đang đọc chứng từ…');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Phiên đăng nhập đã hết.');
-      const { data: cty, error } = await supabase.from('companies').select('id, name').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle();
-      if (error || !cty) throw new Error('Không đọc được công ty.');
+      // Công ty đang dùng (thành viên được mời cũng sao lưu được), không chỉ công ty mình tạo.
+      const dang = await congTyDangDung();
+      if (!dang) throw new Error('Không đọc được công ty.');
+      const cty = { id: dang.id, name: dang.ten };
       const [hd, ct, sc, neo] = await Promise.all([
         docHet('gdt_invoices', 'id, company_id, gdt_id, direction, invoice_serial, invoice_number, invoice_form_code, counterparty_tax_code, counterparty_name, currency, subtotal_amount, tax_amount, total_amount, tax_rate_breakdown, issued_at, issuance_period, invoice_lookup_code, invoice_status', cty.id, 'issued_at'),
         docHet('chung_tu_quet', 'id, company_id, loai, so_hoa_don, ky_hieu, ngay, ben_ban, ma_so_thue_ben_ban, tien_truoc_thue, tien_thue, tong_tien, giao_dich_id, anh_path, anh_sha256, created_at', cty.id, 'created_at'),

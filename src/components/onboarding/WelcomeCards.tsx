@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
 import mimiWatch from '@/assets/mimi/watch.png';
 
@@ -98,14 +99,14 @@ export default function WelcomeCards() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Câu hỏi về hồ sơ công ty chỉ dành cho chủ sở hữu: người được mời (kế toán, người xem)
+      // không có quyền sửa công ty, nên hỏi họ là hỏi một câu mà câu trả lời không lưu được.
+      const ct = await congTyDangDung();
+      if (!ct || ct.vai_tro !== 'chu_so_huu') return;
       const { data } = await supabase
         .from('companies')
         .select('id, name, tax_id, onboarding_done_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1)
+        .eq('id', ct.id)
         .maybeSingle();
       // Never shown again once answered or skipped.
       if (cancelled || !data || data.onboarding_done_at) return;

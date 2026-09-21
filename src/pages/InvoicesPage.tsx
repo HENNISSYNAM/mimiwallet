@@ -3,6 +3,7 @@ import { moTaQr } from '@/lib/moTaQr';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { QrPayDialog } from '@/components/fintech/QrPayDialog';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatVND, formatDateShort } from '@/lib/formatters';
@@ -71,8 +72,7 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
       return;
     }
     setSaving(true);
-    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).order('created_at', { ascending: true }).limit(1);
-    const companyId = companies?.[0]?.id;
+    const companyId = await idCongTyDangDung();
     if (!companyId) {
       toast.error(t('fin.invoices.toast.companyNotFound'));
       setSaving(false);
@@ -189,8 +189,7 @@ export default function InvoicesPage() {
   const loadInvoices = async () => {
     if (!session) return;
     setLoading(true);
-    const { data: companies } = await supabase.from('companies').select('id').eq('user_id', session.user.id).order('created_at', { ascending: true }).limit(1);
-    const cId = companies?.[0]?.id ?? null;
+    const cId = await idCongTyDangDung();
     setCompanyId(cId);
     if (cId) {
       const { data } = await supabase.from('invoices').select('*').eq('company_id', cId).order('issued_date', { ascending: false });

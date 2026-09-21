@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
@@ -168,10 +169,9 @@ export default function DashboardOverview() {
       // Oldest company wins, matching resolveCompany on the server. A user can
       // own several rows and an unordered limit(1) would let the dashboard and
       // the edge functions disagree about whose numbers these are.
-      const { data: company } = await supabase
-        .from('companies').select('id, name').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle();
-      if (!company) { if (!cancelled) setLoading(false); return; }
+      const dang = await congTyDangDung();
+      if (!dang) { if (!cancelled) setLoading(false); return; }
+      const company = { id: dang.id, name: dang.ten };
 
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
       const [txRes, invRes, snapRes, bankRes] = await Promise.all([

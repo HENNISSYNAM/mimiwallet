@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import type { Database } from '@/integrations/supabase/types';
 import { SUPABASE_URL } from '@/lib/env';
 import { DIEM_GOI_TAC_TU as DIEM_GOI, goiTacTu as goi } from '@/lib/goiTacTu';
@@ -198,10 +199,9 @@ export default function TacTuPage() {
       if (!user) return;
       setEmailChu(user.email ?? null);
       setUserId(user.id);
-      const { data: cty } = await supabase
-        .from('companies').select('id').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle();
-      if (!cty) return;
+      const id = await idCongTyDangDung();
+      if (!id) return;
+      const cty = { id };
 
       const [tt, cs, nn, yc, giu, nk, tao] = await Promise.all([
         supabase.from('tac_tu').select('*').eq('company_id', cty.id).order('created_at', { ascending: true }),

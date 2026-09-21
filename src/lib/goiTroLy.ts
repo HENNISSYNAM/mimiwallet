@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
+import { kemCongTy } from '@/lib/congTyDangDung';
 
 async function phien() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -14,7 +15,7 @@ export async function goiTroLy(hanhDong: string, du: Record<string, unknown> = {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/tro-ly`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ hanh_dong: hanhDong, ...du }),
+    body: JSON.stringify({ hanh_dong: hanhDong, ...(await kemCongTy(du)) }),
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok || body?.error) {

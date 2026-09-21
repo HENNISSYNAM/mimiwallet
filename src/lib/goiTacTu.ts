@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { kemCongTy } from '@/lib/congTyDangDung';
 
 /**
  * Gọi edge function `tac-tu` bằng phiên của chủ doanh nghiệp.
@@ -33,7 +34,7 @@ export async function goiTacTu(hanhDong: string, du: Record<string, unknown> = {
       apikey: SUPABASE_PUBLISHABLE_KEY,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ hanh_dong: hanhDong, ...du }),
+    body: JSON.stringify({ hanh_dong: hanhDong, ...(await kemCongTy(du)) }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body?.error) {

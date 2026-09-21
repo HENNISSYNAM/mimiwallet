@@ -4,12 +4,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown, X } from 'lucide-react';
+import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown, X, UsersRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
 import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
+import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
 
 type NotificationPrefs = { invoice_due: boolean; disbursement: boolean; cashflow: boolean };
 const DEFAULT_PREFS: NotificationPrefs = { invoice_due: true, disbursement: true, cashflow: false };
@@ -333,6 +334,11 @@ export default function SettingsPage() {
           khong co that — trinh bay nhu ho so cua chinh ho. */}
       <SettingsSection icon={Building} title={t('settings.business')}>
         <ThongTinDoanhNghiep />
+      </SettingsSection>
+
+      {/* MIMI-P1-003: ai trong công ty, vai trò gì; mời, đổi vai trò, gỡ, đổi công ty đang làm. */}
+      <SettingsSection icon={UsersRound} title="Thành viên">
+        <ThanhVienCongTy />
       </SettingsSection>
 
       <SettingsSection icon={CreditCard} title={t('settings.subscription')}>

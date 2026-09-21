@@ -4,6 +4,7 @@ import { kyKeKhaiKeTiep, mucKhan } from '@/lib/hanKeKhai';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Check, ArrowRight, Lock, X } from 'lucide-react';
 import { dungCacBuoc, soBuocXong, xongHet, type Buoc } from '@/lib/batDau';
@@ -45,13 +46,7 @@ export default function BatDauTuDau() {
     let huy = false;
 
     (async () => {
-      const { data: companies } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      const companyId = companies?.[0]?.id;
+      const companyId = await idCongTyDangDung();
       if (!companyId) return;
 
       /*

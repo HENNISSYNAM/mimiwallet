@@ -22,6 +22,7 @@ import { useScrolled } from '@/hooks/useScrolled';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { layDichSauDangNhap } from '@/lib/sauDangNhap';
 
 /**
@@ -168,12 +169,10 @@ export default function DashboardLayout() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
-        .from('companies').select('name').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle();
+      const ct = await congTyDangDung().catch(() => null);
       if (cancelled) return;
       // Company name first, then the email local part — never an invented one.
-      setInitials(initialsOf(data?.name ?? user.email?.split('@')[0] ?? null));
+      setInitials(initialsOf(ct?.ten ?? user.email?.split('@')[0] ?? null));
 
       // Google puts the photo here. Both keys are read because Supabase passes
       // the provider claims through largely untouched, and which one is present

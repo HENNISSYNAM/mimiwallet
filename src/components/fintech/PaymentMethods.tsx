@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, CreditCard, QrCode } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { QrPayDialog } from '@/components/fintech/QrPayDialog';
 import { MO_TA_TOI_DA, kiemMoTa } from '@/lib/moTaQr';
 import logoVnpay from '@/assets/logos/pay-vnpay.webp';
@@ -81,10 +82,7 @@ export default function PaymentMethods() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return setTt((p) => ({ ...p, dangTai: false }));
 
-      const { data: cty } = await supabase
-        .from('companies').select('id').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1);
-      const cid = cty?.[0]?.id;
+      const cid = await idCongTyDangDung();
       if (!cid) return setTt((p) => ({ ...p, dangTai: false }));
 
       /*

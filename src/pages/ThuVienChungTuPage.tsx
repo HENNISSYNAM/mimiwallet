@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, Camera, Check, Download, FileText, ImageOff, Loader2, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { dinhDang } from '@/lib/troLy';
 import {
@@ -51,10 +52,9 @@ export default function ThuVienChungTuPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: cty, error: loiCty } = await supabase.from('companies').select('id')
-        .eq('user_id', user.id).order('created_at', { ascending: true }).limit(1).maybeSingle();
-      if (loiCty) throw loiCty;
-      if (!cty) { setDs([]); return; }
+      const id = await idCongTyDangDung();
+      if (!id) { setDs([]); return; }
+      const cty = { id };
       const tho = supabase as unknown as BangTho;
       const [q, h] = await Promise.all([
         tho.from('chung_tu_quet')

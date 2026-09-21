@@ -1654,6 +1654,41 @@ export type Database = {
         }
         Relationships: []
       }
+      thanh_vien_cong_ty: {
+        Row: {
+          company_id: string
+          moi_boi: string | null
+          sua_luc: string
+          tao_luc: string
+          user_id: string
+          vai_tro: string
+        }
+        Insert: {
+          company_id: string
+          moi_boi?: string | null
+          sua_luc?: string
+          tao_luc?: string
+          user_id: string
+          vai_tro: string
+        }
+        Update: {
+          company_id?: string
+          moi_boi?: string | null
+          sua_luc?: string
+          tao_luc?: string
+          user_id?: string
+          vai_tro?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thanh_vien_cong_ty_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       van_ban_phap_luat: {
         Row: {
           co_quan: string | null

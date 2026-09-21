@@ -9,6 +9,7 @@ import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { formatVNDShort } from '@/lib/formatters';
 import {
   phanBoChiPhi, theoThang, tuoiHoaDon,
@@ -116,14 +117,9 @@ export default function ReportsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: cty } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (!cty) return;
+      const id = await idCongTyDangDung();
+      if (!id) return;
+      const cty = { id };
 
       const [gd, hd] = await Promise.all([
         docGiaoDichDu(cty.id),

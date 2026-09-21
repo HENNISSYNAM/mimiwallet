@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ArrowUpRight, TrendingDown, TrendingUp, Lightbulb, BookMarked } from 'lucide-react';
 import mimiCat from '@/assets/mimi-cat.png';
@@ -81,10 +82,7 @@ export function DailyBriefCard() {
     let huy = false;
     (async () => {
       if (!session) { setLoading(false); return; }
-      const { data: companies } = await supabase
-        .from('companies').select('id').eq('user_id', session.user.id)
-        .order('created_at', { ascending: true }).limit(1);
-      const companyId = companies?.[0]?.id ?? session.user.id;
+      const companyId = (await idCongTyDangDung()) ?? session.user.id;
 
       /*
        * Lấy tin gần đây rồi để `chonBanTin` lọc, thay vì lọc sẵn bằng SQL: quy

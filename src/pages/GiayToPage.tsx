@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Copy, Printer, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import {
   LOAI_GIAY_TO, LY_DO_HUY, MO_TA_GIAY_TO, soanCongVanGiaiTrinh, soanCongVanHuyToKhai, soanDonTraSoat, vanBanThanhChu,
   type GiaoDichTraSoat, type LoaiGiayTo, type LyDoHuy, type LyDoTraSoat, type ThongTinDonVi, type VanBan,
@@ -61,8 +62,9 @@ export default function GiayToPage() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase.from('companies').select('name, tax_id, province').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle();
+      const id = await idCongTyDangDung();
+      if (!id) return;
+      const { data } = await supabase.from('companies').select('name, tax_id, province').eq('id', id).maybeSingle();
       if (huy || !data) return;
       setDonVi((d) => ({ ...d, ten: data.name ?? '', ma_so_thue: data.tax_id ?? '', dia_danh: data.province ?? '' }));
     })().catch(() => {});

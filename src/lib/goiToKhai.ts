@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
+import { kemCongTy } from '@/lib/congTyDangDung';
 import type { CanCuDaKiem, HoSoThue, KyToKhai, SuKienThue, SuyLuan, ToKhai } from '@/lib/heLuat';
 
 /** Đường dẫn Cổng dịch vụ công của cơ quan thuế, nơi người dùng tự nộp tờ khai. */
@@ -50,7 +51,7 @@ export async function goiToKhai(hanhDong: string, du: Record<string, unknown> = 
   const res = await fetch(`${SUPABASE_URL}/functions/v1/to-khai`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ hanh_dong: hanhDong, ...du }),
+    body: JSON.stringify({ hanh_dong: hanhDong, ...(await kemCongTy(du)) }),
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok || body?.error) {

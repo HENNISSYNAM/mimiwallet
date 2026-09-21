@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatDateShort } from '@/lib/formatters';
 import { Search, Loader2, Building2, Store, GitBranch, ShieldCheck, ShieldAlert, ShieldQuestion, Mail, Phone, MapPin } from 'lucide-react';
@@ -90,10 +91,7 @@ export default function ClientsPage() {
   const load = async () => {
     if (!session) return;
     setLoading(true);
-    const { data: companies } = await supabase
-      .from('companies').select('id').eq('user_id', session.user.id)
-      .order('created_at', { ascending: true }).limit(1);
-    const companyId = companies?.[0]?.id;
+    const companyId = await idCongTyDangDung();
     if (!companyId) { setClients([]); setLoading(false); return; }
     const { data, error } = await supabase
       .from('clients').select('*').eq('company_id', companyId).order('name');
