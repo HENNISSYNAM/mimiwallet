@@ -116,7 +116,7 @@ export default function PaymentMethods() {
          *   if (!conn?.access_token_enc) return "Chưa có tài khoản...";
          *
          * Trình duyệt KHÔNG được đọc `access_token_enc` nữa (quyền SELECT cấp
-         * theo cột, xem migration 20260918160000), nên chỗ này lọc cột sinh
+         * theo cột, xem migration 20260921110000), nên chỗ này lọc cột sinh
          * `co_token` — cùng một phép thử, không cần chạm vào token.
          *
          * Lần trước tôi đồng bộ năm điều kiện lọc rồi tưởng xong, nhưng bỏ sót

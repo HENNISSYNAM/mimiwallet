@@ -10,7 +10,7 @@ import { join, relative, sep } from 'node:path';
  * `access_token_enc`. Token có mã hoá, nhưng người chỉ được xem không có việc gì với nó.
  *
  * Quyền SELECT của `authenticated` giờ cấp theo từng cột và KHÔNG có cột đó
- * (20260918160000). Nếu mã giao diện lại chạm vào nó — select, lọc, sắp xếp đều tính —
+ * (20260921110000). Nếu mã giao diện lại chạm vào nó — select, lọc, sắp xếp đều tính —
  * PostgREST trả lỗi quyền cho CẢ truy vấn, `data` thành null, và màn hình sẽ nói
  * "chưa liên kết ngân hàng" thay vì nói có lỗi. Đúng loại lỗi im lặng mà
  * `cot-co-that.test.ts` được viết ra để chặn, nên chặn luôn ở đây.
