@@ -19,6 +19,7 @@ import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '../giay-to/loai.ts';
+import { ghepTienVe, type Cap } from '../doi-soat/cham-diem.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -596,33 +597,44 @@ export function doiSoat(d: DuLieu): KetQuaNangLuc {
   const tu = congNgay(d.homNay, -30);
   const vao = d.giaoDich.filter((t) => chieuTien(t) === 'vao' && t.transaction_date >= tu);
   const cho = d.hoaDonBan.filter((h) => h.status === 'pending' || h.status === 'overdue');
-  const ungVien = vao.map((t) => ({
-    t,
-    khop: cho.filter((h) => Math.abs(Number(h.total) - doLonTien(t)) <= LECH_TIEN && h.issued_date <= t.transaction_date),
-  }));
-  // Một-một mới gợi ý: một hoá đơn khớp hai khoản tiền về thì không chọn hộ.
-  const demHoaDon = new Map<string, number>();
-  for (const u of ungVien) if (u.khop.length === 1) demHoaDon.set(u.khop[0].id, (demHoaDon.get(u.khop[0].id) ?? 0) + 1);
-  const chac = ungVien.filter((u) => u.khop.length === 1 && demHoaDon.get(u.khop[0].id) === 1);
+  /*
+   * MIMI-P1-005: ghép bằng điểm (`doi-soat/cham-diem.ts`), không bằng "cùng số tiền". Chỉ "khớp
+   * chắc" khi nội dung chuyển khoản ghi số hoá đơn; cùng số tiền hay cùng tên thì là "cần xem".
+   */
+  const ghep = ghepTienVe(
+    vao.map((t) => ({ id: t.id, so_tien: doLonTien(t), ngay: t.transaction_date, ten_nguoi_chuyen: tenNguoiNhan(t), noi_dung: t.payment_reference })),
+    cho.map((h) => ({ id: h.id, so_hoa_don: h.invoice_number, ten_khach: h.client_name, tong: Number(h.total), ngay_lap: h.issued_date })),
+  );
+  const gdTheoId = new Map(vao.map((t) => [t.id, t]));
+  const hdTheoId = new Map(cho.map((h) => [h.id, h]));
+  const bcCap = (ds: Cap[]) => gopBangChung(
+    bangChung('giao_dich', ds.map((c) => gdTheoId.get(c.tien.id)!).filter(Boolean)),
+    bangChung('hoa_don_ban', ds.map((c) => hdTheoId.get(c.hoa_don.id)!).filter(Boolean)),
+  );
+  const chac = ghep.chac;
+  const canXem = ghep.can_xem;
   const tongVao = vao.reduce((s, t) => s + doLonTien(t), 0);
   const tongCho = cho.reduce((s, h) => s + Number(h.total), 0);
 
   const the: The[] = [{
     loai: 'so_lieu', tieu_de: '30 ngày gần nhất', muc: [
       { nhan: 'Tiền về', gia_tri: tongVao, don_vi: 'vnd', ghi_chu: `${vao.length} khoản`, bang_chung: bangChung('giao_dich', vao) },
-      { nhan: 'Có thể là tiền của hoá đơn', gia_tri: chac.length, don_vi: 'so', bang_chung: gopBangChung(bangChung('giao_dich', chac.map((u) => u.t)), bangChung('hoa_don_ban', chac.map((u) => u.khop[0]))) },
+      { nhan: 'Khớp chắc với hoá đơn', gia_tri: chac.length, don_vi: 'so', ghi_chu: 'nội dung chuyển khoản ghi số hoá đơn', bang_chung: bcCap(chac) },
+      { nhan: 'Cần bạn xem', gia_tri: canXem.length, don_vi: 'so', ghi_chu: 'chỉ khớp số tiền hoặc tên', bang_chung: bcCap(canXem) },
       { nhan: 'Hoá đơn còn chờ thu', gia_tri: tongCho, don_vi: 'vnd', ghi_chu: `${cho.length} hoá đơn`, bang_chung: bangChung('hoa_don_ban', cho) },
     ],
   }];
-  if (chac.length) {
-    the.push({
-      loai: 'bang', tieu_de: 'Tiền về có thể khớp hoá đơn',
-      cot: [{ nhan: 'Ngày tiền về', don_vi: 'ngay' }, { nhan: 'Người chuyển', don_vi: 'chu' }, { nhan: 'Số tiền', don_vi: 'vnd' }, { nhan: 'Có thể là hoá đơn', don_vi: 'chu' }],
-      dong: chac.slice(0, 8).map((u) => [u.t.transaction_date, tenNguoiNhan(u.t), doLonTien(u.t), `${u.khop[0].invoice_number} · ${u.khop[0].client_name}`]),
-      con_lai: Math.max(0, chac.length - 8),
-      bang_chung: gopBangChung(bangChung('giao_dich', chac.map((u) => u.t)), bangChung('hoa_don_ban', chac.map((u) => u.khop[0]))),
-    });
-    the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Đây là gợi ý theo số tiền và ngày, chưa phải xác nhận. Hỏi lại khách hoặc xem nội dung chuyển khoản trước khi coi hoá đơn là đã thu.' });
+  const bangCap = (tieuDe: string, ds: Cap[]): The => ({
+    loai: 'bang', tieu_de: tieuDe,
+    cot: [{ nhan: 'Ngày tiền về', don_vi: 'ngay' }, { nhan: 'Người chuyển', don_vi: 'chu' }, { nhan: 'Số tiền', don_vi: 'vnd' }, { nhan: 'Hoá đơn', don_vi: 'chu' }, { nhan: 'Vì sao', don_vi: 'chu' }],
+    dong: ds.slice(0, 8).map((c) => [c.tien.ngay, c.tien.ten_nguoi_chuyen ?? 'Không rõ', c.tien.so_tien, `${c.hoa_don.so_hoa_don} · ${c.hoa_don.ten_khach}`, c.ly_do.join('; ')] as O[]),
+    con_lai: Math.max(0, ds.length - 8),
+    bang_chung: bcCap(ds),
+  });
+  if (chac.length) the.push(bangCap('Tiền về khớp chắc với hoá đơn', chac));
+  if (canXem.length) {
+    the.push(bangCap('Tiền về cần bạn xem', canXem));
+    the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: '"Cần bạn xem" chỉ khớp số tiền hoặc tên người chuyển — hai khách trả cùng số tiền là chuyện thường. Xem nội dung chuyển khoản hoặc hỏi khách trước khi coi hoá đơn là đã thu.' });
   }
   const docGanNhat = d.ketNoiNganHang
     .filter((k) => (k.scopes ?? 'transaction') === 'transaction' && k.last_synced_at)
@@ -630,7 +642,7 @@ export function doiSoat(d: DuLieu): KetQuaNangLuc {
   if (docGanNhat && soNgayGiua(docGanNhat, d.homNay) >= 2) {
     the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `Sao kê đồng bộ gần nhất ngày ${ngayVN(docGanNhat)} — tiền về sau ngày đó chưa có ở đây.` });
   }
-  const cau = `30 ngày qua có ${vao.length} khoản tiền về, tổng ${vnd(tongVao)}. ${chac.length ? `${chac.length} khoản có thể là tiền của hoá đơn đang chờ thu.` : 'Chưa khoản nào khớp rõ với hoá đơn đang chờ thu.'}${cho.length ? ` Còn ${cho.length} hoá đơn chờ thu, tổng ${vnd(tongCho)}.` : ''}`;
+  const cau = `30 ngày qua có ${vao.length} khoản tiền về, tổng ${vnd(tongVao)}. ${chac.length ? `${chac.length} khoản khớp chắc với hoá đơn (nội dung ghi số hoá đơn).` : 'Chưa khoản nào khớp chắc với hoá đơn đang chờ thu.'}${canXem.length ? ` ${canXem.length} khoản cần bạn xem.` : ''}${cho.length ? ` Còn ${cho.length} hoá đơn chờ thu, tổng ${vnd(tongCho)}.` : ''}`;
   return kq('doi_soat', 'ngan_hang', cau, { the, nguon: [N.giaoDich, N.hoaDonBan], trang: [T.hoaDon, T.giaoDich] });
 }
 
@@ -676,10 +688,17 @@ export function ketNoiNganHang(d: DuLieu): KetQuaNangLuc {
 
 const TEN_NCC_AI: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic', gemini: 'Google Gemini', openrouter: 'OpenRouter', khac: 'Khác' };
 
-/** Cùng nhà cung cấp, cùng ngày: số từ API thắng số từ file (file có thể là bản xuất cũ). */
+/**
+ * Cùng nhà cung cấp, cùng ngày, CÙNG MODEL: số từ API thắng số từ file (file có thể là bản xuất cũ).
+ *
+ * MIMI-P1-005: trước đây khoá chỉ là nhà cung cấp + ngày, nên hễ API có một dòng của ngày đó là
+ * mọi dòng file của ngày đó bị bỏ — kể cả model API không trả về. Chống trùng không được làm mất
+ * khoản hợp lệ; giờ chỉ bỏ dòng file khi API đã có đúng model đó trong ngày đó.
+ */
 export function locTrungNguon(ds: ChiPhiAiTL[]): ChiPhiAiTL[] {
-  const coApi = new Set(ds.filter((r) => r.nguon === 'api').map((r) => `${r.nha_cung_cap} ${r.ngay}`));
-  return ds.filter((r) => r.nguon === 'api' || !coApi.has(`${r.nha_cung_cap} ${r.ngay}`));
+  const khoa = (r: ChiPhiAiTL) => `${r.nha_cung_cap} ${r.ngay} ${chuanHoaTenModel(r.hang_muc)}`;
+  const coApi = new Set(ds.filter((r) => r.nguon === 'api').map(khoa));
+  return ds.filter((r) => r.nguon === 'api' || !coApi.has(khoa(r)));
 }
 
 export function tinhChiPhiAiThang(d: DuLieu) {
@@ -887,6 +906,25 @@ export const NGAY_NGHI_TRUNG = 3;
 /** Khoản nhỏ hơn thế (phí, cước) lặp lại là bình thường — không đem ra nghi trả trùng. */
 export const TIEN_TOI_THIEU_NGHI_TRUNG = 50_000;
 
+/**
+ * Mã trong nội dung chuyển khoản: cụm có chữ số, dài từ 3 ký tự (HD201, 0000123, PO-778).
+ * Bỏ cụm toàn số ≤ 31 hay dạng ngày — "thang 9", "15/09" không phải mã hoá đơn.
+ */
+function maTrongNoiDung(noiDung: string | null): Set<string> {
+  const cum = (noiDung ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/[^a-z0-9]+/);
+  return new Set(cum.filter((c) => /\d/.test(c) && c.length >= 3 && !/^\d{1,2}$/.test(c) && !/^(19|20)\d{2}$/.test(c)));
+}
+
+/**
+ * MIMI-P1-005: hai khoản cùng người nhận, cùng số tiền nhưng nội dung ghi HAI MÃ KHÁC NHAU (HD201 và
+ * HD202) là hai lần trả hợp lệ — trả hai hoá đơn cùng giá — không phải trả trùng.
+ */
+export function khacMa(a: string | null, b: string | null): boolean {
+  const ma = maTrongNoiDung(a);
+  const mb = maTrongNoiDung(b);
+  return ma.size > 0 && mb.size > 0 && ![...ma].some((x) => mb.has(x));
+}
+
 export function nghiTraTrung(d: DuLieu) {
   const tu = congNgay(d.homNay, -60);
   const ra = d.giaoDich
@@ -902,7 +940,8 @@ export function nghiTraTrung(d: DuLieu) {
   const cap: { a: GiaoDichTL; b: GiaoDichTL }[] = [];
   for (const ds of nhom.values()) {
     for (let i = 1; i < ds.length; i++) {
-      if (soNgayGiua(ds[i - 1].transaction_date, ds[i].transaction_date) <= NGAY_NGHI_TRUNG) cap.push({ a: ds[i - 1], b: ds[i] });
+      if (soNgayGiua(ds[i - 1].transaction_date, ds[i].transaction_date) <= NGAY_NGHI_TRUNG
+        && !khacMa(ds[i - 1].payment_reference, ds[i].payment_reference)) cap.push({ a: ds[i - 1], b: ds[i] });
     }
   }
   return cap;

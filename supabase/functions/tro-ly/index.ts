@@ -26,6 +26,7 @@ import type { BangChung, DeXuat, DoDayNguon, KetQuaNangLuc, LoaiBangChung, NhomN
 import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
 import { docLichSu as docLichSuChi, quetCongTy, TRAN_DONG as TRAN_DONG_BAT_THUONG } from "../_shared/bat-thuong/doc-db.ts";
 import { chuanSoTaiKhoan, dauHieuHoanCanh, kiemKhoan, mucDoChung } from "../_shared/bat-thuong/phat-hien.ts";
+import { coBangChungMayChu, doiChieuQuyetDinh, PHUT_TREO } from "../_shared/doi-soat/quyet-dinh.ts";
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
@@ -104,6 +105,35 @@ const BANG_BANG_CHUNG: Record<Exclude<LoaiBangChung, "van_ban_luat">, { bang: st
 };
 
 const SO_BANG_CHUNG_MOI_LAN = 200;
+
+/** Trạng thái hiện tại của yêu cầu chi mà một quyết định nhắm tới; null nếu không đọc được. */
+async function trangThaiYeuCau(db: Db, companyId: string, loai: string, thamSo: Row | null): Promise<string | null> {
+  if (!coBangChungMayChu(loai)) return null;
+  const id = String(thamSo?.yeu_cau_id ?? "");
+  if (!id) return null;
+  const { data } = await db.from("yeu_cau_chi").select("trang_thai").eq("id", id).eq("company_id", companyId).maybeSingle();
+  return data?.trang_thai ?? null;
+}
+
+/**
+ * MIMI-P1-005: chốt các quyết định treo ở `cho_chay` quá PHUT_TREO phút (trình duyệt tắt giữa
+ * chừng). Chạy khi mở màn đầu; mỗi lần tối đa 20 dòng. Hỏng thì bỏ qua — không làm hỏng màn đầu.
+ */
+async function donQuyetDinhTreo(db: Db, companyId: string): Promise<void> {
+  try {
+    const han = new Date(Date.now() - PHUT_TREO * 60_000).toISOString();
+    const { data } = await db.from("nhat_ky_quyet_dinh").select("id, loai, tham_so")
+      .eq("company_id", companyId).eq("ket_qua", "cho_chay").lt("xac_nhan_luc", han).limit(20);
+    for (const q of (data ?? []) as Row[]) {
+      const kl = doiChieuQuyetDinh({ loai: q.loai, baoOk: null, trangThai: await trangThaiYeuCau(db, companyId, q.loai, q.tham_so) });
+      await db.from("nhat_ky_quyet_dinh")
+        .update({ ket_qua: kl.ket_qua, ket_qua_cau: kl.cau, ma_loi: kl.ma_loi, xong_luc: new Date().toISOString() })
+        .eq("id", q.id).eq("ket_qua", "cho_chay");
+    }
+  } catch (e) {
+    console.error("don quyet dinh treo:", e instanceof Error ? e.message : e);
+  }
+}
 
 /**
  * MIMI-P1-002 — lưu vết hội thoại.
@@ -580,6 +610,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
   switch (hanhDong) {
     case "boi_canh": {
+      await donQuyetDinhTreo(db, company.id);
       const [d, thue] = await Promise.all([
         docDuLieu(db, company.id, new Set(TAT_CA_NGUON), moc, { soThangAi: SO_THANG_BIEU_DO_AI }),
         // Hỏng hồ sơ thuế không được làm mất cả màn đầu.
@@ -779,18 +810,27 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const id = Number(body.quyet_dinh_id);
       if (!Number.isInteger(id) || id <= 0) return loi("THAM_SO", "Thiếu mã quyết định.", 400);
       const ok = body.ok === true;
+      const { data: qd, error: loiDoc } = await db.from("nhat_ky_quyet_dinh").select("id, loai, tham_so")
+        .eq("id", id).eq("company_id", company.id).eq("user_id", userId).eq("ket_qua", "cho_chay").maybeSingle();
+      if (loiDoc) throw loiDoc;
+      if (!qd) return loi("KHONG_THAY", "Không có quyết định đang chờ kết quả với mã này.", 404);
+      // MIMI-P1-005: việc chạm tiền thì máy chủ đối chiếu trạng thái thật, không chỉ tin lời giao diện.
+      const kl = doiChieuQuyetDinh({
+        loai: qd.loai, baoOk: ok, baoCau: String(body.cau ?? "").slice(0, 1500),
+        trangThai: await trangThaiYeuCau(db, company.id, qd.loai, qd.tham_so),
+      });
       const { data, error } = await db.from("nhat_ky_quyet_dinh")
         .update({
-          ket_qua: ok ? "thanh_cong" : "loi",
-          ket_qua_cau: String(body.cau ?? "").slice(0, 2000),
-          ma_loi: ok ? null : String(body.ma_loi ?? "").slice(0, 100) || null,
+          ket_qua: kl.ket_qua,
+          ket_qua_cau: kl.cau.slice(0, 2000),
+          ma_loi: kl.ma_loi ?? (ok ? null : String(body.ma_loi ?? "").slice(0, 100) || null),
           xong_luc: new Date().toISOString(),
         })
-        .eq("id", id).eq("company_id", company.id).eq("user_id", userId).eq("ket_qua", "cho_chay")
+        .eq("id", id).eq("ket_qua", "cho_chay")
         .select("id").maybeSingle();
       if (error) throw error;
       if (!data) return loi("KHONG_THAY", "Không có quyết định đang chờ kết quả với mã này.", 404);
-      return json({ ok: true });
+      return json({ ok: true, ket_qua: kl.ket_qua });
     }
 
     case "bat_thuong": {

@@ -22,10 +22,11 @@
 | MIMI-P1-001 | Citation tới từng bằng chứng | lên production |
 | MIMI-P1-002 | Conversation và decision audit trail | lên production 18/09/2026 |
 | MIMI-P1-003 | RBAC cho doanh nghiệp nhiều người | lên production (RLS đọc theo thành viên) |
-| MIMI-P1-004 | AI evaluation harness | **một phần**: harness + CI đã lên; bộ ca 45/300 |
+| MIMI-P1-004 | AI evaluation harness | **một phần**: harness + CI đã lên; bộ ca 54/300 |
+| MIMI-P1-005 | Sửa đối soát và chống trùng nguồn | lên production 21/09/2026: ghép theo điểm, fixture precision/recall, chống trùng không bỏ khoản hợp lệ, máy chủ chốt kết quả quyết định |
 
-Còn mở: P1-004 phần bộ ca (45/300 và chưa có bộ chấm cho phần diễn đạt của mô hình),
-P1-005 (đối soát), P1-006 (chi phí AI theo workflow), P2-001, P2-002.
+Còn mở: P1-004 phần bộ ca (54/300 và chưa có bộ chấm cho phần diễn đạt của mô hình),
+P1-006 (chi phí AI theo workflow), P2-001, P2-002.
 
 Không còn P0 mở → cổng `open_P0` (chặn phát hành, trần 6.9) không còn áp.
 
@@ -115,10 +116,10 @@ score_change_request:
    bị bộ phân loại an toàn của Claude Code chặn (đây là thay đổi GRANT/REVOKE), và bản vá
    giao diện chỉ đúng sau khi cột `co_token` tồn tại — đẩy lệch thứ tự sẽ làm thẻ QR báo
    "chưa liên kết ngân hàng".
-2. **Quyết định có thể mắc ở `cho_chay` vĩnh viễn.** Nếu trình duyệt tắt sau khi
+2. **[ĐÃ SỬA 21/09/2026 — P1-005]** Quyết định treo quá 15 phút được máy chủ tự chốt khi mở màn đầu, theo trạng thái thật của yêu cầu chi. **Quyết định có thể mắc ở `cho_chay` vĩnh viễn.** Nếu trình duyệt tắt sau khi
    `xac_nhan` mà trước khi `ket_qua_quyet_dinh`, dòng nhật ký nằm lại không kết quả và
    không có gì đối soát lại. Thuộc phạm vi P1-005.
-3. **`ket_qua`/`ket_qua_cau` do giao diện báo lại, máy chủ không tự kiểm.** Đã ghi rõ
+3. **[ĐÃ SỬA cho việc chạm tiền 21/09/2026 — P1-005]** Duyệt/từ chối yêu cầu chi: máy chủ đối chiếu trạng thái thật, lệch thì ghi LECH_KET_QUA. Việc khác vẫn dựa lời giao diện, có ghi rõ nguồn. **`ket_qua`/`ket_qua_cau` do giao diện báo lại, máy chủ không tự kiểm.** Đã ghi rõ
    trong comment của bảng. Phần "ai xác nhận việc gì" là do máy chủ ghi và chỉ-thêm;
    phần "việc chạy ra sao" thì chưa được kiểm chứng độc lập.
 4. **[ĐÃ LÀM 21/09/2026 — xem mục trên]** **Chưa có cross-tenant negative test chạy trên CSDL thật** (người của công ty A đọc
