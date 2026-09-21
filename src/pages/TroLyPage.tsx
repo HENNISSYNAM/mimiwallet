@@ -22,6 +22,8 @@ import { DauKetNoi } from '@/components/tro-ly/DauKetNoi';
 import { NutBangChung } from '@/components/tro-ly/NutBangChung';
 import { dongBoSaoKe, goiTroLy } from '@/lib/goiTroLy';
 import { goiTacTu } from '@/lib/goiTacTu';
+import { canXacMinh, type DauHieu } from '@/lib/batThuong';
+import HopXacMinh from '@/components/canh-bao/HopXacMinh';
 import { goiChiPhiAi } from '@/lib/goiChiPhiAi';
 import {
   canXacNhan, dinhDang, dinhTien, dungLichSu, GOI_Y_THEO_NHOM, laCotSo, NHOM_NANG_LUC, TEN_NHOM, thucHienDeXuat,
@@ -147,7 +149,10 @@ export default function TroLyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thamSo]);
 
-  const lamDeXuat = useCallback(async (luotId: number, dx: DeXuat) => {
+  /** TCCN-01: việc duyệt bị máy chủ dừng lại vì khoản có dấu hiệu bất thường. */
+  const [xacMinh, setXacMinh] = useState<{ luotId: number; dx: DeXuat; dauHieu: DauHieu[]; lichSuDu: boolean } | null>(null);
+
+  const lamDeXuat = useCallback(async (luotId: number, dx: DeXuat, daXacMinh = false) => {
     if (dx.loai === 'mo_trang') {
       navigate(String(dx.tham_so.duong_dan ?? '/dashboard'));
       return;
@@ -164,13 +169,23 @@ export default function TroLyPage() {
       const xn = await goiTroLy('xac_nhan', { de_xuat_khoa: dx.khoa, hoi_thoai_id: hoiThoaiId });
       quyetDinhId = typeof xn.quyet_dinh_id === 'number' ? xn.quyet_dinh_id : null;
       const dxThat = (xn.de_xuat ?? dx) as DeXuat;
-      const cau = await thucHienDeXuat(dxThat, { goiTacTu, goiChiPhiAi, goiTroLy, dongBoSaoKe });
+      const cau = await thucHienDeXuat(dxThat, { goiTacTu, goiChiPhiAi, goiTroLy, dongBoSaoKe }, { daXacMinh });
       setViec((m) => ({ ...m, [k]: { trangThai: 'xong', cau } }));
       if (quyetDinhId) void goiTroLy('ket_qua_quyet_dinh', { quyet_dinh_id: quyetDinhId, ok: true, cau }).catch(() => {});
       // Thẻ ở màn đầu sẽ tải lại và khoản vừa làm biến khỏi thẻ — nên báo kết quả bằng toast.
       if (luotId === LUOT_MAN_DAU) toast.success(cau);
       void taiBoiCanh();
     } catch (e) {
+      const cx = canXacMinh(e);
+      if (cx) {
+        // Không phải lỗi: máy chủ dừng lại chờ xác minh. Trả nút về như cũ và mở hộp dấu hiệu.
+        setViec((m) => { const { [k]: _bo, ...con } = m; return con; });
+        if (quyetDinhId) {
+          void goiTroLy('ket_qua_quyet_dinh', { quyet_dinh_id: quyetDinhId, ok: false, cau: 'Dừng lại chờ xác minh người nhận.', ma_loi: 'CAN_XAC_MINH' }).catch(() => {});
+        }
+        setXacMinh({ luotId, dx, ...cx });
+        return;
+      }
       const cau = e instanceof Error ? e.message : t('man.troLy.loi.viec');
       setViec((m) => ({ ...m, [k]: { trangThai: 'loi', cau } }));
       if (quyetDinhId) void goiTroLy('ket_qua_quyet_dinh', { quyet_dinh_id: quyetDinhId, ok: false, cau }).catch(() => {});
@@ -190,6 +205,16 @@ export default function TroLyPage() {
 
   return (
     <div className="pb-10">
+      <HopXacMinh
+        dauHieu={xacMinh?.dauHieu ?? null}
+        lichSuDu={xacMinh?.lichSuDu ?? true}
+        onHuy={() => setXacMinh(null)}
+        onVanDuyet={() => {
+          const x = xacMinh;
+          setXacMinh(null);
+          if (x) void lamDeXuat(x.luotId, x.dx, true);
+        }}
+      />
       {/* Nền vòng hạt tràn hết vùng nội dung: bù lại phần đệm của <main>. */}
       <section
         aria-label={t('man.troLy.vungHoi')}

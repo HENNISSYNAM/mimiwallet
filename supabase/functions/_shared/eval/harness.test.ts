@@ -68,7 +68,7 @@ describe('MIMI-P1-004 — bộ chấm trợ lý', () => {
   it('ghi lại tiến độ bộ ca so với mục tiêu 300 của đặc tả', () => {
     expect(BO_CA.length).toBeLessThanOrEqual(SO_CA_MUC_TIEU);
     // Không cho bộ ca teo lại: đã có bao nhiêu ca thì giữ ít nhất bấy nhiêu.
-    expect(BO_CA.length).toBeGreaterThanOrEqual(45);
+    expect(BO_CA.length).toBeGreaterThanOrEqual(51);
     expect(new Set(BO_CA.map((c) => c.id)).size).toBe(BO_CA.length);
   });
 });

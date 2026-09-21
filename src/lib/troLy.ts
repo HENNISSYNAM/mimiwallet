@@ -56,11 +56,12 @@ type Row = Record<string, unknown>;
  * Chạy đề xuất bằng đúng backend đã có. Trả câu báo kết quả; lỗi thì ném, câu lỗi là câu
  * máy chủ viết cho người dùng đọc.
  */
-export async function thucHienDeXuat(dx: DeXuat, g: BoGoi): Promise<string> {
+export async function thucHienDeXuat(dx: DeXuat, g: BoGoi, tc: { daXacMinh?: boolean } = {}): Promise<string> {
   const t = dx.tham_so;
   switch (dx.loai) {
     case 'duyet_yeu_cau':
-      await g.goiTacTu('duyet', { yeu_cau_id: t.yeu_cau_id });
+      // TCCN-01: `da_xac_minh` chỉ gửi sau khi người dùng đã đọc hộp dấu hiệu bất thường và tích ô xác minh.
+      await g.goiTacTu('duyet', { yeu_cau_id: t.yeu_cau_id, ...(tc.daXacMinh ? { da_xac_minh: true } : {}) });
       return 'Đã duyệt. Lệnh trả VietQR nằm ở Kiểm soát agent — người có quyền trả vẫn trả bằng app ngân hàng.';
     case 'tu_choi_yeu_cau':
       await g.goiTacTu('tu_choi', { yeu_cau_id: t.yeu_cau_id, ghi_chu: t.ghi_chu });

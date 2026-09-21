@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { SUPABASE_URL } from '@/lib/env';
 import { DIEM_GOI_TAC_TU as DIEM_GOI, goiTacTu as goi } from '@/lib/goiTacTu';
+import { canXacMinh, type DauHieu } from '@/lib/batThuong';
+import HopXacMinh from '@/components/canh-bao/HopXacMinh';
 import { docSoTienBangChu } from '@/lib/soTienBangChu';
 import { taoChuoiVietQr } from '@/lib/vietqr';
 import { DANH_SACH_NGAN_HANG } from '@/lib/nganHang';
@@ -173,6 +175,8 @@ export default function TacTuPage() {
   const [yeuCauMo, setYeuCauMo] = useState<string | null>(null);
   const [tuChoiMo, setTuChoiMo] = useState<YeuCau | null>(null);
   const [xacNhan, setXacNhan] = useState<XacNhan | null>(null);
+  /** TCCN-01: máy chủ dừng việc duyệt vì khoản có dấu hiệu bất thường. */
+  const [xacMinh, setXacMinh] = useState<{ y: YeuCau; themNguoiNhan: boolean; dauHieu: DauHieu[]; lichSuDu: boolean } | null>(null);
   const [moTao, setMoTao] = useState(false);
   const [locTrangThai, setLocTrangThai] = useState<TrangThaiHienThi | 'tat_ca'>('tat_ca');
   const [tim, setTim] = useState('');
@@ -284,8 +288,23 @@ export default function TacTuPage() {
   const chuSoHuu = emailChu ?? 'Chủ doanh nghiệp';
 
   /* ── Hành động (cùng API như trước) ─────────────────────────────── */
-  const duyet = (y: YeuCau, themNguoiNhan: boolean) =>
-    lam(y.id, 'duyet', { yeu_cau_id: y.id, them_nguoi_nhan: themNguoiNhan }, 'Đã duyệt. Mã QR để trả nằm trong khung chi tiết.');
+  const duyet = async (y: YeuCau, themNguoiNhan: boolean, daXacMinh = false) => {
+    setDangLam(y.id);
+    try {
+      const kq = await goi('duyet', { yeu_cau_id: y.id, them_nguoi_nhan: themNguoiNhan, ...(daXacMinh ? { da_xac_minh: true } : {}) });
+      toast.success('Đã duyệt. Mã QR để trả nằm trong khung chi tiết.');
+      await tai();
+      return kq;
+    } catch (e) {
+      // Khoản có dấu hiệu bất thường: không báo lỗi, mở hộp xác minh.
+      const cx = canXacMinh(e);
+      if (cx) setXacMinh({ y, themNguoiNhan, ...cx });
+      else toast.error(e instanceof Error ? e.message : 'Không thực hiện được');
+      return null;
+    } finally {
+      setDangLam(null);
+    }
+  };
   const tuChoi = (y: YeuCau, ghiChu: string) =>
     lam(y.id, 'tu_choi', { yeu_cau_id: y.id, ghi_chu: ghiChu }, 'Đã từ chối.');
   const huy = (y: YeuCau) =>
@@ -698,6 +717,16 @@ export default function TacTuPage() {
         }}
       />
 
+      <HopXacMinh
+        dauHieu={xacMinh?.dauHieu ?? null}
+        lichSuDu={xacMinh?.lichSuDu ?? true}
+        onHuy={() => setXacMinh(null)}
+        onVanDuyet={() => {
+          const x = xacMinh;
+          setXacMinh(null);
+          if (x) void duyet(x.y, x.themNguoiNhan, true);
+        }}
+      />
       <AlertDialog open={xacNhan !== null} onOpenChange={(m) => { if (!m) setXacNhan(null); }}>
         <AlertDialogContent className="rounded-lg">
           <AlertDialogHeader>

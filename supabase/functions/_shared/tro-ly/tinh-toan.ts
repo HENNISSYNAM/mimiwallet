@@ -17,6 +17,7 @@ import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai
 import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, type SuKienThue } from '../luat/he-luat.ts';
 import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
+import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -126,11 +127,17 @@ export interface DuLieu {
   khoLuatDaLoai: { van_ban: string; nhan: string }[];
   /** Không đọc được bảng hiệu lực: nhãn từng đoạn là "chưa kiểm được". */
   khoLuatChuaKiemHieuLuc: boolean;
+  /**
+   * TCCN-01: kết quả quét dấu hiệu bất thường 30 ngày, do edge function tính bằng CHÍNH hàm mà
+   * màn Tổng quan dùng (`bat-thuong/doc-db.ts`) — để trợ lý và Tổng quan không bao giờ báo hai
+   * con số khác nhau. null = chưa đọc.
+   */
+  batThuong: { canh_bao: CanhBao[]; lich_su_du: boolean; so_khoan_da_xet: number } | null;
 }
 
 export type NguonCan =
   | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau' | 'ket_noi_ngan_hang'
-  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat';
+  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong';
 
 export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuLieu {
   return {
@@ -142,6 +149,7 @@ export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuL
     khoLuat: [],
     khoLuatDaLoai: [],
     khoLuatChuaKiemHieuLuc: false,
+    batThuong: null,
   };
 }
 
@@ -191,6 +199,7 @@ const N = {
   tokenAi: { ten: 'Số token AI', mo_ta: 'Từ báo cáo sử dụng của Anthropic, OpenAI hoặc OpenRouter.' },
   chungTuQuet: { ten: 'Chứng từ đã quét', mo_ta: 'Chứng từ bạn chụp và xác nhận trong MIMI Assistant.' },
   khoLuat: { ten: 'Kho văn bản Công báo', mo_ta: 'Luật, Nghị định, Thông tư về thuế MIMI đã nạp từ congbao.chinhphu.vn, đối chiếu nguyên văn từng câu trích.' },
+  batThuong: { ten: 'Luật cảnh báo bất thường', mo_ta: 'So từng khoản chi 30 ngày qua với lịch sử chi 180 ngày và danh sách người nhận được phép của công ty. Luật cố định, không phải mô hình học máy.' },
 } satisfies Record<string, NguonDuLieu>;
 
 const bangGiaNguon = (luc: string | null): NguonDuLieu => ({
@@ -1315,6 +1324,78 @@ export function traCuuLuat(d: DuLieu): KetQuaNangLuc {
   });
 }
 
+// ── TCCN-01: giao dịch bất thường ────────────────────────────────────────────
+
+export const TEN_DAU_HIEU: Record<MaDauHieu, string> = {
+  doi_so_tai_khoan: 'Người nhận đổi số tài khoản',
+  nguoi_nhan_moi_so_lon: 'Người nhận mới, số tiền lớn',
+  vuot_muc_quen: 'Vượt xa mức thường trả',
+  tach_nho: 'Nhiều khoản trong một ngày',
+  noi_dung_lua_dao: 'Nội dung giống kịch bản lừa đảo',
+};
+
+/** Id trỏ về giao dịch sao kê; khoản đã duyệt trong MIMI (`yc:`) không phải giao dịch. */
+const laIdGiaoDich = (id: string) => !id.startsWith('yc:');
+
+export function giaoDichBatThuong(d: DuLieu): KetQuaNangLuc {
+  const bt = d.batThuong;
+  const nguon = [N.giaoDich, N.batThuong];
+  if (!bt) return kq('giao_dich_bat_thuong', 'ngan_hang', 'Chưa đọc được lịch sử chi để kiểm dấu hiệu bất thường. Thử lại sau ít phút.', { nguon });
+  if (!bt.so_khoan_da_xet) return kq('giao_dich_bat_thuong', 'ngan_hang', CHUA_CO_SAO_KE, { nguon, trang: [T.ketNoi] });
+
+  const gioiHan: The = {
+    loai: 'ghi_chu', muc_do: 'thong_tin',
+    cau: 'MIMI kiểm bằng luật cố định và nói rõ từng lý do; đây là dấu hiệu, chưa phải kết luận. MIMI không chặn được lệnh chuyển trong app ngân hàng — khoản chi xin qua MIMI thì bị dừng lại ngay lúc bấm Duyệt nếu có dấu hiệu mức cao. Sao kê chỉ mới bằng lần đồng bộ gần nhất.',
+  };
+  const thieuLichSu: The[] = bt.lich_su_du ? [] : [{
+    loai: 'ghi_chu', muc_do: 'can_chu_y',
+    cau: 'MIMI chỉ đọc được một phần lịch sử chi 180 ngày, nên có thể báo "người nhận mới" cho người bạn đã từng trả.',
+  }];
+
+  if (!bt.canh_bao.length) {
+    return kq('giao_dich_bat_thuong', 'ngan_hang', `Không thấy dấu hiệu bất thường trong các khoản chi 30 ngày qua (đã so với ${bt.so_khoan_da_xet} khoản chi trong 180 ngày).`, {
+      the: [...thieuLichSu, gioiHan], nguon,
+    });
+  }
+
+  const cao = bt.canh_bao.filter((c) => c.muc_do === 'cao');
+  const vua = bt.canh_bao.filter((c) => c.muc_do === 'trung_binh');
+  const idCua = (ds: CanhBao[]) => ds.map((c) => c.khoan).filter((k) => laIdGiaoDich(k.id));
+  const dau = bt.canh_bao[0];
+  return kq(
+    'giao_dich_bat_thuong', 'ngan_hang',
+    `${bt.canh_bao.length} khoản chi 30 ngày qua có dấu hiệu bất thường${cao.length ? `, ${cao.length} khoản mức cao` : ''}. Đáng xem nhất: ${vnd(dau.khoan.so_tien)} cho ${dau.khoan.ten_nguoi_nhan ?? 'người nhận chưa rõ tên'} ngày ${ngayVN(dau.khoan.ngay)} — ${dau.dau_hieu[0].cau}`,
+    {
+      the: [
+        {
+          loai: 'so_lieu', tieu_de: 'Dấu hiệu 30 ngày qua', muc: [
+            { nhan: 'Khoản mức cao', gia_tri: cao.length, don_vi: 'so', can_chu_y: cao.length > 0, bang_chung: bangChung('giao_dich', idCua(cao)) },
+            { nhan: 'Khoản cần để ý', gia_tri: vua.length, don_vi: 'so', bang_chung: bangChung('giao_dich', idCua(vua)) },
+          ],
+        },
+        {
+          loai: 'bang', tieu_de: 'Khoản có dấu hiệu',
+          cot: [
+            { nhan: 'Ngày', don_vi: 'ngay' }, { nhan: 'Người nhận', don_vi: 'chu' }, { nhan: 'Số tiền', don_vi: 'vnd' },
+            { nhan: 'Mức', don_vi: 'chu' }, { nhan: 'Dấu hiệu', don_vi: 'chu' },
+          ],
+          dong: bt.canh_bao.slice(0, 8).map((c) => [
+            c.khoan.ngay, c.khoan.ten_nguoi_nhan ?? 'Không rõ người nhận', c.khoan.so_tien,
+            c.muc_do === 'cao' ? 'Cao' : 'Cần để ý', c.dau_hieu.map((x) => TEN_DAU_HIEU[x.ma]).join('; '),
+          ] as O[]),
+          con_lai: Math.max(0, bt.canh_bao.length - 8),
+          bang_chung: bangChung('giao_dich', idCua(bt.canh_bao)),
+        },
+        ...bt.canh_bao.slice(0, 3).map((c): The => ({ loai: 'ghi_chu', muc_do: c.muc_do === 'cao' ? 'can_chu_y' : 'thong_tin', cau: `${ngayVN(c.khoan.ngay)} · ${vnd(c.khoan.so_tien)}: ${c.dau_hieu.map((x) => x.cau).join(' ')}` })),
+        ...thieuLichSu,
+        gioiHan,
+      ],
+      nguon,
+      trang: [T.giaoDich, T.yeuCau],
+    },
+  );
+}
+
 export const NANG_LUC: Record<string, NangLuc> = {
   yeu_cau_cho_duyet: { nhom: 'tro_ly', can: ['yeu_cau'], chay: yeuCauChoDuyet, mo_ta: 'Các khoản chi agent hoặc người dùng xin, đang chờ chủ doanh nghiệp duyệt; kèm đề xuất duyệt/từ chối.' },
   tinh_hinh_agent: { nhom: 'tro_ly', can: ['yeu_cau'], chay: tinhHinhAgent, mo_ta: 'Các agent AI được phép xin chi: trạng thái, đã dùng bao nhiêu hạn mức tháng, agent bị từ chối nhiều.' },
@@ -1331,5 +1412,6 @@ export const NANG_LUC: Record<string, NangLuc> = {
   phan_tich_tiet_kiem: { nhom: 'bao_cao', can: ['giao_dich', 'token_ai', 'bang_gia'], chay: phanTichTietKiem, mo_ta: 'Chỗ có thể tiết kiệm: khoản chi nghi trả trùng, tiền bớt được nếu đổi model AI.' },
   nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },
   tra_cuu_luat: { nhom: 'chung_tu', can: ['kho_luat'], chay: traCuuLuat, mo_ta: 'Tìm và trích nguyên văn đoạn Luật, Nghị định, Thông tư trong kho Công báo cho một câu hỏi pháp lý chung (không phải nghĩa vụ thuế của chính công ty). Chỉ tham khảo, kèm ngày ban hành và hiệu lực.' },
+  giao_dich_bat_thuong: { nhom: 'ngan_hang', can: ['bat_thuong'], chay: giaoDichBatThuong, mo_ta: 'Khoản chi 30 ngày qua có dấu hiệu bất thường hoặc giống kịch bản lừa đảo: người nhận đổi số tài khoản, người nhận mới với số tiền lớn, vượt xa mức thường trả, nhiều khoản trong một ngày, nội dung giả danh cơ quan nhà nước.' },
   tat_ca_ket_noi: { nhom: 'ket_noi', can: ['ket_noi_ngan_hang', 'chi_phi_ai'], chay: tatCaKetNoi, mo_ta: 'Trạng thái mọi kết nối: ngân hàng, Casso, Tổng cục Thuế, OpenAI, Anthropic, Google AI, OpenRouter.' },
 };

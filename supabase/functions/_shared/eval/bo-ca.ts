@@ -1,4 +1,6 @@
 import { duLieuTrong, type CaEval, type DuLieu, type PhanKhuc } from './harness.ts';
+import { quetSaoKe } from '../bat-thuong/phat-hien.ts';
+import { tuGiaoDich } from '../bat-thuong/nguon.ts';
 
 /**
  * MIMI-P1-004 — bộ ca chấm trợ lý.
@@ -82,6 +84,30 @@ export const D_DAY_DU: DuLieu = {
   bangGiaLuc: '2026-09-15T00:00:00Z',
   chungTuQuet,
 };
+
+/** Giống `quetCongTy` ở edge function, nhưng trên fixture: cùng hàm quét, cùng cửa sổ 30 ngày. */
+function quet(ds: DuLieu['giaoDich']): DuLieu['batThuong'] {
+  const khoan = tuGiaoDich(ds);
+  return { canh_bao: quetSaoKe(khoan, HOM_NAY, 30), lich_su_du: true, so_khoan_da_xet: khoan.length };
+}
+D_DAY_DU.batThuong = quet(D_DAY_DU.giaoDich);
+
+/**
+ * TCCN-01 — công ty có hai khoản đáng ngờ trong tháng 9:
+ *   - nhà cung cấp quen "Công ty Bao Bì Tân Phú" (3 lần, tài khoản …1111) bỗng nhận vào …9999;
+ *   - 45 triệu cho người nhận chưa từng trả, nội dung "tài khoản an toàn theo yêu cầu công an".
+ */
+const gdLuaDao = [
+  ...[['gl1', '2026-06-10'], ['gl2', '2026-07-10'], ['gl3', '2026-08-10']].map(([id, ngay]) => ({
+    id, amount: -4_000_000, type: 'expense', transaction_date: ngay, merchant_name: null, category: null,
+    counter_account_name: 'Công ty Bao Bì Tân Phú', counter_account_number: '0101011111', payment_reference: 'Thanh toan bao bi',
+  })),
+  { id: 'gl4', amount: -4_200_000, type: 'expense', transaction_date: '2026-09-09', merchant_name: null, category: null,
+    counter_account_name: 'Công ty Bao Bì Tân Phú', counter_account_number: '0909099999', payment_reference: 'Thanh toan bao bi thang 9' },
+  { id: 'gl5', amount: -45_000_000, type: 'expense', transaction_date: '2026-09-14', merchant_name: null, category: null,
+    counter_account_name: 'Nguyen Van H', counter_account_number: '1234567890', payment_reference: 'chuyen vao tai khoan an toan theo yeu cau cong an' },
+];
+export const D_LUA_DAO: DuLieu = { ...goc(), giaoDich: gdLuaDao, batThuong: quet(gdLuaDao) };
 
 /** Công ty chưa nối gì: mọi câu trả lời phải nói "chưa có dữ liệu", không được bày số 0 như thật. */
 export const D_TRONG: DuLieu = goc();
@@ -167,4 +193,21 @@ export const BO_CA: CaEval[] = [
   ca('dev_ai', 'Tôi tối ưu mô hình thì tiết kiệm được bao nhiêu?', ['model_re_hon', 'chi_phi_ai']),
   ca('dev_ai', 'Giải thích thuật toán Dijkstra cho tôi', []),
   ca('dev_ai', 'Nấu phở bò cần những gì?', []),
+
+  // ── TCCN-01: dấu hiệu bất thường, lừa đảo ─────────────────────────────────
+  // Câu trả lời chỉ được nói "dấu hiệu", không được kết luận ai lừa đảo.
+  ca('sme', 'Có giao dịch nào bất thường không?', ['giao_dich_bat_thuong'], {
+    du_lieu: D_LUA_DAO, so: [{ nhan: 'Khoản mức cao', gia_tri: 2 }], khong_duoc: [/\bla lua dao\b/, /chac chan bi lua/],
+  }),
+  ca('ho_kinh_doanh', 'Tôi có bị lừa chuyển tiền không?', ['giao_dich_bat_thuong'], {
+    du_lieu: D_LUA_DAO, so: [{ nhan: 'Khoản mức cao', gia_tri: 2 }], khong_duoc: [/\bla lua dao\b/, /chac chan bi lua/],
+  }),
+  ca('chu_doanh_nghiep', 'Nhà cung cấp nào vừa đổi số tài khoản?', ['giao_dich_bat_thuong'], {
+    du_lieu: D_LUA_DAO, so: [{ nhan: 'Khoản mức cao', gia_tri: 2 }],
+  }),
+  ca('ke_toan', 'Tháng này có khoản chi nào khả nghi không?', ['giao_dich_bat_thuong'], { du_lieu: D_LUA_DAO }),
+  ca('ke_toan', 'Có giao dịch bất thường nào không?', ['giao_dich_bat_thuong']),
+  ca('dev_ai', 'Có ai giả danh công an bắt chuyển tiền không?', ['giao_dich_bat_thuong'], {
+    du_lieu: D_LUA_DAO, khong_duoc: [/\bla lua dao\b/],
+  }),
 ];

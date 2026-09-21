@@ -23,6 +23,7 @@ export const MAC_DINH_THEO_NHOM: Record<NhomNangLuc, string> = {
 };
 
 const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\b(bat thuong|lua dao|dang ngo|kha nghi|gia danh|gia mao|doi so tai khoan|bi lua)\b/, 'giao_dich_bat_thuong'],
   [/\b(cho (toi |minh )?duyet|can duyet|phe duyet|duyet|yeu cau chi)\b/, 'yeu_cau_cho_duyet'],
   [/\b(agent|agents|tac tu|bot)\b/, 'tinh_hinh_agent'],
   [/\b(token|cache)\b/, 'token_ai'],

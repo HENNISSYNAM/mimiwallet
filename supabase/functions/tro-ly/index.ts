@@ -24,6 +24,7 @@ import { deXuatDuocPhep, locDeXuat, locPhanTich } from "../_shared/quyen/loc-de-
 import { NHOM_NANG_LUC } from "../_shared/tro-ly/kieu.ts";
 import type { BangChung, DeXuat, DoDayNguon, KetQuaNangLuc, LoaiBangChung, NhomNangLuc, TraLoi } from "../_shared/tro-ly/kieu.ts";
 import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
+import { quetCongTy, TRAN_DONG as TRAN_DONG_BAT_THUONG } from "../_shared/bat-thuong/doc-db.ts";
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
@@ -80,6 +81,7 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   xac_nhan: { cuaSoGiay: 60, toiDa: 30 },
   ket_qua_quyet_dinh: { cuaSoGiay: 60, toiDa: 60 },
   trang_thai: { cuaSoGiay: 60, toiDa: 120 },
+  bat_thuong: { cuaSoGiay: 60, toiDa: 30 },
 };
 
 const NGAY_LICH_SU = 180;
@@ -341,6 +343,18 @@ async function docDuLieu(
         tu: tuLichSu, den: moc.homNay,
         dongBoLuc: ketNoi.map((k) => k.last_synced_at).filter(Boolean).sort().at(-1) ?? null,
         canKetNoi: true, coKetNoi: ketNoi.length > 0,
+      });
+    }));
+  }
+  if (can.has("bat_thuong")) {
+    // TCCN-01: cùng một hàm với màn Tổng quan (action `bat_thuong`), để hai nơi báo cùng một kết quả.
+    viec.push(quetCongTy(db, companyId, moc.homNay).then((bt) => {
+      d.batThuong = bt;
+      d.doDay.bat_thuong = danhGiaDoDay({
+        nguon: "bat_thuong", ten: "Lịch sử chi 180 ngày",
+        daDoc: bt.lich_su_du ? bt.so_khoan_da_xet : TRAN_DONG_BAT_THUONG,
+        tong: bt.lich_su_du ? bt.so_khoan_da_xet : null,
+        gioiHan: TRAN_DONG_BAT_THUONG,
       });
     }));
   }
@@ -772,6 +786,19 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (error) throw error;
       if (!data) return loi("KHONG_THAY", "Không có quyết định đang chờ kết quả với mã này.", 404);
       return json({ ok: true });
+    }
+
+    case "bat_thuong": {
+      // TCCN-01 — thẻ cảnh báo trên màn Tổng quan. Chỉ đọc; mọi thành viên công ty đều xem được.
+      const bt = await quetCongTy(db, company.id, moc.homNay);
+      return json({
+        tong: bt.canh_bao.length,
+        so_cao: bt.canh_bao.filter((c) => c.muc_do === "cao").length,
+        canh_bao: bt.canh_bao.slice(0, 10),
+        lich_su_du: bt.lich_su_du,
+        so_khoan_da_xet: bt.so_khoan_da_xet,
+        tinh_den: moc.homNay,
+      });
     }
 
     case "bang_chung": {

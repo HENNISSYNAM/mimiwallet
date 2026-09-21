@@ -24,6 +24,7 @@ import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.
 import { DANH_SACH_NGAN_HANG } from "../_shared/bank/ngan-hang.ts";
 import { NHOM_CHI } from "../_shared/tac-tu/chinh-sach.ts";
 import { bamKhoa, HEADER_KHOA, hienKhoa, sinhKhoa } from "../_shared/tac-tu/khoa.ts";
+import { kiemYeuCau } from "../_shared/bat-thuong/doc-db.ts";
 import {
   docChinhSach,
   ghiNhatKy,
@@ -232,6 +233,40 @@ async function xuLyChu(db: Db, userId: string, companyId: string, vaiTro: VaiTro
     }
 
     case "duyet": {
+      /*
+       * TCCN-01 — dừng lại ở đúng lúc bấm Duyệt.
+       *
+       * MIMI không chặn được lệnh chuyển trong app ngân hàng; điểm xác nhận MIMI giữ được là
+       * nút Duyệt này. Nếu khoản chi có dấu hiệu mức cao (người nhận đổi số tài khoản, người
+       * nhận mới với số tiền lớn, nội dung giống kịch bản lừa đảo) thì trả 409 CAN_XAC_MINH
+       * kèm từng dấu hiệu, và chỉ cho duyệt khi người duyệt gửi lại `da_xac_minh: true` —
+       * tức là đã đọc cảnh báo và tự xác minh người nhận. Cả hai lần đều vào nhật ký.
+       */
+      const yeuCauId = String(body.yeu_cau_id ?? "");
+      const { data: cho, error: loiDoc } = await db.from("yeu_cau_chi")
+        .select("id, tac_tu_id, so_tien, ten_nguoi_nhan, so_tai_khoan, muc_dich, created_at, quyet_luc")
+        .eq("id", yeuCauId).eq("company_id", companyId).eq("trang_thai", "cho_duyet")
+        .maybeSingle();
+      if (loiDoc) throw loiDoc;
+      if (!cho) return loi("KHONG_CON_CHO", "Yêu cầu không còn ở trạng thái chờ duyệt.", 409);
+
+      const homNay = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+      const kt = await kiemYeuCau(db, companyId, cho, homNay);
+      const dauHieuCao = kt.dau_hieu.filter((d) => d.muc_do === "cao");
+      const daXacMinh = body.da_xac_minh === true;
+      if (dauHieuCao.length && !daXacMinh) {
+        await nk({
+          tac_tu_id: cho.tac_tu_id, yeu_cau_id: cho.id, su_kien: "tam_dung_bat_thuong",
+          chi_tiet: { so_tien: cho.so_tien, dau_hieu: kt.dau_hieu.map((d) => d.ma), lich_su_du: kt.lich_su_du },
+        });
+        return json({
+          error: "Khoản này có dấu hiệu bất thường. Xác minh người nhận rồi mới duyệt.",
+          ma: "CAN_XAC_MINH",
+          dau_hieu: kt.dau_hieu,
+          lich_su_du: kt.lich_su_du,
+        }, 409);
+      }
+
       const { data: y, error } = await db.from("yeu_cau_chi")
         .update({
           trang_thai: "da_duyet",
@@ -260,7 +295,15 @@ async function xuLyChu(db: Db, userId: string, companyId: string, vaiTro: VaiTro
           { onConflict: "company_id,ngan_hang_bin,so_tai_khoan", ignoreDuplicates: true },
         );
       }
-      await nk({ tac_tu_id: y.tac_tu_id, yeu_cau_id: y.id, su_kien: "duyet", chi_tiet: { so_tien: y.so_tien, them_nguoi_nhan: body.them_nguoi_nhan === true } });
+      await nk({
+        tac_tu_id: y.tac_tu_id, yeu_cau_id: y.id, su_kien: "duyet",
+        chi_tiet: {
+          so_tien: y.so_tien,
+          them_nguoi_nhan: body.them_nguoi_nhan === true,
+          // Dấu hiệu người duyệt đã được cảnh báo và vẫn cho qua — để sau này truy lại được.
+          ...(kt.dau_hieu.length ? { dau_hieu: kt.dau_hieu.map((d) => d.ma), da_xac_minh: daXacMinh } : {}),
+        },
+      });
       return json({ yeu_cau: raApi(y) });
     }
 

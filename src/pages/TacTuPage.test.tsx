@@ -133,6 +133,38 @@ describe('màn Kiểm soát chi', () => {
     await waitFor(() => expect(gia.goi).toHaveBeenCalledWith('duyet', { yeu_cau_id: 'A', them_nguoi_nhan: false }));
   });
 
+  it('TCCN-01: máy chủ dừng việc duyệt vì dấu hiệu bất thường → hộp xác minh → chỉ gửi lại khi đã tích xác minh', async () => {
+    const dauHieu = [{ ma: 'noi_dung_lua_dao', muc_do: 'cao', cau: 'Nội dung nhắc tới công an, viện kiểm sát hoặc toà án.', can_cu: [] }];
+    gia.goi
+      .mockRejectedValueOnce(Object.assign(new Error('Khoản này có dấu hiệu bất thường.'), { ma: 'CAN_XAC_MINH', duLieu: { dau_hieu: dauHieu, lich_su_du: true } }))
+      .mockResolvedValue({ ok: true });
+    const { container } = dung();
+    await choTai();
+    fireEvent.click(container.querySelector('[data-mimi="tac-tu.duyet"]')!);
+
+    const hop = await screen.findByRole('alertdialog');
+    expect(hop.textContent).toContain('Dừng lại trước khi duyệt');
+    expect(hop.textContent).toContain('công an');
+    expect(gia.goi).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(within(hop).getByRole('checkbox', { name: 'Tôi đã xác minh người nhận' }));
+    fireEvent.click(within(hop).getByRole('button', { name: 'Đã xác minh, vẫn duyệt' }));
+    await waitFor(() => expect(gia.goi).toHaveBeenLastCalledWith('duyet', { yeu_cau_id: 'A', them_nguoi_nhan: false, da_xac_minh: true }));
+  });
+
+  it('TCCN-01: bấm "Chưa duyệt" thì không gửi lại gì', async () => {
+    gia.goi.mockRejectedValueOnce(Object.assign(new Error('x'), {
+      ma: 'CAN_XAC_MINH', duLieu: { dau_hieu: [{ ma: 'doi_so_tai_khoan', muc_do: 'cao', cau: 'Đổi số tài khoản.', can_cu: [] }], lich_su_du: true },
+    }));
+    const { container } = dung();
+    await choTai();
+    fireEvent.click(container.querySelector('[data-mimi="tac-tu.duyet"]')!);
+    const hop = await screen.findByRole('alertdialog');
+    fireEvent.click(within(hop).getByRole('button', { name: 'Chưa duyệt' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(gia.goi.mock.calls.filter((c) => c[0] === 'duyet')).toHaveLength(1);
+  });
+
   it('khoản bị luật từ chối: khung chi tiết nói lý do và không có nút duyệt', async () => {
     const { container } = dung();
     await choTai();

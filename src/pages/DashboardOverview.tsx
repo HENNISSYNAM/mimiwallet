@@ -6,6 +6,7 @@ import NewsAndLawPanel from '@/components/NewsAndLawPanel';
 import { DailyBriefCard } from '@/components/DailyBriefCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
 import BatDauTuDau from '@/components/onboarding/BatDauTuDau';
+import TheBatThuong from '@/components/canh-bao/TheBatThuong';
 import { formatVNDShort } from '@/lib/formatters';
 import { chieuTien } from '@/lib/chieuTien';
 import { useNavigate } from 'react-router-dom';
@@ -362,6 +363,10 @@ export default function DashboardOverview() {
           </div>
         </motion.div>
       )}
+
+      {/* TCCN-01: dấu hiệu bất thường đứng trên mọi thứ khác — tiền đã đi thì mỗi giờ đều đáng giá.
+          Tự ẩn khi chưa có sao kê; khi sạch thì chỉ còn một dòng xác nhận đã kiểm. */}
+      <motion.div variants={fadeUp}><TheBatThuong /></motion.div>
 
       {/* Viec can lam, dat TREN cau hoi ve nguoi dung: ai vua vao lan dau can
           biet phai lam gi truoc khi duoc hoi ho la ai. Tu an khi xong het. */}
