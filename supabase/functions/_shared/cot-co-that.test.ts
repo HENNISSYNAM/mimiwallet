@@ -43,7 +43,12 @@ const TOAN_TU_CO_TEN_COT = ['order', 'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'is'
 
 /** Đọc `types.ts` ra map bảng → tập tên cột. */
 function docLuocDo(): Map<string, Set<string>> {
-  const src = readFileSync(join(goc, 'src', 'integrations', 'supabase', 'types.ts'), 'utf8');
+  /*
+   * Bỏ CR trước khi đọc. Trên Windows, git có thể lấy tệp ra với xuống dòng CRLF; khi đó
+   * biểu thức dưới (viết cho LF) không khớp bảng nào, lược đồ rỗng, và test "mọi cột đều có
+   * thật" xanh mà không kiểm gì. Chuyện này đã xảy ra ngày 21/09/2026 sau một lần `git reset`.
+   */
+  const src = readFileSync(join(goc, 'src', 'integrations', 'supabase', 'types.ts'), 'utf8').split(String.fromCharCode(13)).join('');
   const bang = new Map<string, Set<string>>();
 
   // Mỗi bảng là `ten: { Row: { cot: kieu ... } ... }`. Chỉ đọc khối Row —
