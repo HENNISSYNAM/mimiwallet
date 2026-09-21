@@ -6,6 +6,7 @@ import { DUONG_DAN_NOP_TO_KHAI } from '@/lib/goiToKhai';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { cacKyKeTiep, khoangNgayKyKeKhai, kyKeKhaiKeTiep, mucKhan, type MucKhan } from '@/lib/hanKeKhai';
 import { dinhDang } from '@/lib/troLy';
+import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '@/lib/giayTo';
 
 /**
  * Nhắc thuế — như "Scheduled" của ChatGPT, nhưng là các mốc nghĩa vụ thuế (15/09/2026).
@@ -169,6 +170,19 @@ export default function NhacThuePage() {
             <p className="mt-4 text-xs text-muted-foreground">{thue.disclaimer}</p>
           </>
         )}
+      </section>
+
+      {/* Giấy tờ hay cần quanh kỳ kê khai. Bản nháp soạn ở trang Soạn giấy tờ; không trích điều luật. */}
+      <section aria-labelledby="giay-to-thue" className="rounded-2xl border border-border bg-card p-5">
+        <h2 id="giay-to-thue" className="text-base font-semibold text-foreground">Giấy tờ có thể cần</h2>
+        <ul className="mt-3 space-y-3">
+          {(['cong_van_giai_trinh', 'cong_van_huy_to_khai'] as LoaiGiayTo[]).map((l) => (
+            <li key={l} className="text-sm">
+              <Link to={duongDanGiayTo(l)} className="font-medium text-primary hover:underline">{MO_TA_GIAY_TO[l].ten}</Link>
+              <p className="mt-0.5 text-muted-foreground">{MO_TA_GIAY_TO[l].khi_nao}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <p className="text-xs text-muted-foreground">MIMI nhắc trong ứng dụng. Chưa gửi nhắc qua email hay Zalo.</p>

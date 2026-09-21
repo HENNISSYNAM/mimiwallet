@@ -18,6 +18,7 @@ import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as 
 import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
+import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '../giay-to/loai.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -1397,6 +1398,26 @@ export function giaoDichBatThuong(d: DuLieu): KetQuaNangLuc {
   );
 }
 
+// ── Giấy tờ hành chính (TCCN-12, công văn thuế) ──────────────────────────────
+
+/**
+ * Gợi ý giấy tờ phù hợp với câu hỏi và mở trang soạn. Không đọc dữ liệu: bản nháp được điền ở
+ * trang Soạn giấy tờ, từ hồ sơ công ty và giao dịch người dùng chọn. Không trích điều luật —
+ * kho đã đối chiếu chưa có văn bản cho các việc này (xem `giay-to/loai.ts`).
+ */
+function goiYGiayTo(nangLuc: string, loai: LoaiGiayTo) {
+  return (): KetQuaNangLuc => {
+    const mt = MO_TA_GIAY_TO[loai];
+    return kq(nangLuc, 'chung_tu', `MIMI soạn được bản nháp "${mt.ten}" gửi ${mt.gui_toi.toLowerCase()}. Dùng khi: ${mt.khi_nao} MIMI điền sẵn tên, mã số thuế${loai === 'don_tra_soat' ? ' và thông tin giao dịch' : ''}; bạn đọc lại, ký và tự gửi.`, {
+      the: [{ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: mt.luu_y }],
+      de_xuat: [{
+        khoa: `giay_to:${loai}`, loai: 'mo_trang', nhan: `Soạn ${mt.ten.toLowerCase()}`,
+        mo_ta: `Mở trang Soạn giấy tờ với mẫu ${mt.ten.toLowerCase()}.`, tham_so: { duong_dan: duongDanGiayTo(loai) },
+      }],
+    });
+  };
+}
+
 export const NANG_LUC: Record<string, NangLuc> = {
   yeu_cau_cho_duyet: { nhom: 'tro_ly', can: ['yeu_cau'], chay: yeuCauChoDuyet, mo_ta: 'Các khoản chi agent hoặc người dùng xin, đang chờ chủ doanh nghiệp duyệt; kèm đề xuất duyệt/từ chối.' },
   tinh_hinh_agent: { nhom: 'tro_ly', can: ['yeu_cau'], chay: tinhHinhAgent, mo_ta: 'Các agent AI được phép xin chi: trạng thái, đã dùng bao nhiêu hạn mức tháng, agent bị từ chối nhiều.' },
@@ -1414,5 +1435,8 @@ export const NANG_LUC: Record<string, NangLuc> = {
   nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },
   tra_cuu_luat: { nhom: 'chung_tu', can: ['kho_luat'], chay: traCuuLuat, mo_ta: 'Tìm và trích nguyên văn đoạn Luật, Nghị định, Thông tư trong kho Công báo cho một câu hỏi pháp lý chung (không phải nghĩa vụ thuế của chính công ty). Chỉ tham khảo, kèm ngày ban hành và hiệu lực.' },
   giao_dich_bat_thuong: { nhom: 'ngan_hang', can: ['bat_thuong'], chay: giaoDichBatThuong, mo_ta: 'Khoản chi 30 ngày qua có dấu hiệu bất thường hoặc giống kịch bản lừa đảo: người nhận đổi số tài khoản, người nhận mới với số tiền lớn, vượt xa mức thường trả, nhiều khoản trong một ngày, nội dung giả danh cơ quan nhà nước.' },
+  giay_to_tra_soat: { nhom: 'chung_tu', can: [], chay: goiYGiayTo('giay_to_tra_soat', 'don_tra_soat'), mo_ta: 'Soạn đơn đề nghị tra soát gửi ngân hàng khi chuyển nhầm tiền hoặc nghi bị lừa chuyển tiền.' },
+  giay_to_giai_trinh: { nhom: 'chung_tu', can: [], chay: goiYGiayTo('giay_to_giai_trinh', 'cong_van_giai_trinh'), mo_ta: 'Soạn công văn giải trình gửi cơ quan thuế khi có thông báo đề nghị giải trình.' },
+  giay_to_huy_to_khai: { nhom: 'chung_tu', can: [], chay: goiYGiayTo('giay_to_huy_to_khai', 'cong_van_huy_to_khai'), mo_ta: 'Soạn công văn đề nghị huỷ tờ khai nộp nhầm mẫu, nhầm kỳ hoặc nộp trùng.' },
   tat_ca_ket_noi: { nhom: 'ket_noi', can: ['ket_noi_ngan_hang', 'chi_phi_ai'], chay: tatCaKetNoi, mo_ta: 'Trạng thái mọi kết nối: ngân hàng, Casso, Tổng cục Thuế, OpenAI, Anthropic, Google AI, OpenRouter.' },
 };

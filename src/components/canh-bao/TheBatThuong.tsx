@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { goiTroLy } from '@/lib/goiTroLy';
 import type { CanhBao } from '@/lib/batThuong';
+import { duongDanGiayTo } from '@/lib/giayTo';
 
 /**
  * TCCN-01 — thẻ "Dấu hiệu bất thường" trên màn Tổng quan.
@@ -80,6 +81,13 @@ export default function TheBatThuong() {
                   {c.muc_do === 'cao' ? 'Mức cao' : 'Cần để ý'}
                 </span>
                 <p className="mt-0.5 text-muted-foreground">{c.dau_hieu[0]?.cau}</p>
+                {/* TCCN-12: tiền đã đi rồi thì việc còn làm được là tra soát — càng sớm càng tốt. */}
+                <button
+                  onClick={() => navigate(duongDanGiayTo('don_tra_soat', c.khoan.id))}
+                  className="mt-1 text-xs font-medium text-primary hover:underline"
+                >
+                  Soạn đơn tra soát khoản này
+                </button>
               </li>
             ))}
           </ul>

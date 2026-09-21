@@ -23,6 +23,9 @@ export const MAC_DINH_THEO_NHOM: Record<NhomNangLuc, string> = {
 };
 
 const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\b(tra soat|chuyen nham|chuyen sai|chuyen trung)\b/, 'giay_to_tra_soat'],
+  [/\b(giai trinh|cong van giai trinh)\b/, 'giay_to_giai_trinh'],
+  [/\b(huy to khai|nop nham|nop trung|to khai nop nham|khai nham)\b/, 'giay_to_huy_to_khai'],
   [/\b(bat thuong|lua dao|dang ngo|kha nghi|gia danh|gia mao|doi so tai khoan|bi lua)\b/, 'giao_dich_bat_thuong'],
   [/\b(cho (toi |minh )?duyet|can duyet|phe duyet|duyet|yeu cau chi)\b/, 'yeu_cau_cho_duyet'],
   [/\b(agent|agents|tac tu|bot)\b/, 'tinh_hinh_agent'],
@@ -65,6 +68,12 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   // "Hoá đơn" không kèm chữ nào khác: cả hai phía đều có thể là điều người dùng hỏi.
   if (khop.length === 0 && /\bhoa don\b/.test(s)) khop.push('hoa_don_qua_han', 'thieu_chung_tu');
 
+  // Hỏi soạn giấy tờ về tờ khai ("huỷ tờ khai nộp nhầm", "giải trình tờ khai") không phải hỏi
+  // nghĩa vụ thuế: chữ "tờ khai" trong đó kéo năng lực nghĩa vụ thuế vào nếu không chặn.
+  if (khop.includes('giay_to_huy_to_khai') || khop.includes('giay_to_giai_trinh')) {
+    const i = khop.indexOf('nghia_vu_thue');
+    if (i >= 0) khop.splice(i, 1);
+  }
   // Hỏi thuế có chữ "doanh thu" ("doanh thu bao nhiêu thì phải nộp thuế") là hỏi ngưỡng thuế,
   // không phải xin báo cáo dòng tiền.
   if (khop.includes('nghia_vu_thue')) {

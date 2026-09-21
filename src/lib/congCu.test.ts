@@ -35,7 +35,8 @@ describe('danh mục công cụ', () => {
 
   it('tìm không dấu, nhiều từ, theo cả từ khoá', () => {
     expect(timCongCu('hoá đơn').map((c) => c.khoa)).toContain('thieu_chung_tu');
-    expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['soan_to_khai']);
+    // "Soạn giấy tờ" có mẫu công văn huỷ tờ khai nên cũng đúng là kết quả của "tờ khai".
+    expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['soan_to_khai', 'soan_giay_to']);
     expect(timCongCu('claude').map((c) => c.khoa)).toEqual(['chi_phi_ai']);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
     expect(timCongCu('  ')).toHaveLength(DANH_MUC_CONG_CU.length);

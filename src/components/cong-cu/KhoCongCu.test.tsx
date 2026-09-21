@@ -48,7 +48,8 @@ describe('Kho công cụ', () => {
     render(<KhoCongCu mo onDong={() => {}} />);
     await screen.findByRole('button', { name: 'Bỏ ghim Báo cáo thu chi' });
     fireEvent.change(screen.getByLabelText('Tìm công cụ'), { target: { value: 'to khai' } });
-    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByText('Soạn tờ khai thuế')).toBeTruthy();
+    expect(screen.getByText('Soạn giấy tờ')).toBeTruthy();
   });
 });

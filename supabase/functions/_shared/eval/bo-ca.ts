@@ -207,6 +207,11 @@ export const BO_CA: CaEval[] = [
   }),
   ca('ke_toan', 'Tháng này có khoản chi nào khả nghi không?', ['giao_dich_bat_thuong'], { du_lieu: D_LUA_DAO }),
   ca('ke_toan', 'Có giao dịch bất thường nào không?', ['giao_dich_bat_thuong']),
+  // ── Giấy tờ hành chính: gợi ý đúng mẫu và có nút mở trang soạn; không trích luật ──
+  ca('ho_kinh_doanh', 'Tôi chuyển nhầm tiền cho người lạ thì làm sao?', ['giay_to_tra_soat'], { de_xuat: ['mo_trang'] }),
+  ca('ke_toan', 'Chi cục thuế yêu cầu giải trình doanh thu quý 2, soạn giúp công văn', ['giay_to_giai_trinh'], { de_xuat: ['mo_trang'] }),
+  ca('ke_toan', 'Tôi nộp nhầm tờ khai quý 2, muốn huỷ tờ khai', ['giay_to_huy_to_khai'], { de_xuat: ['mo_trang'] }),
+
   ca('dev_ai', 'Có ai giả danh công an bắt chuyển tiền không?', ['giao_dich_bat_thuong'], {
     du_lieu: D_LUA_DAO, khong_duoc: [/\bla lua dao\b/],
   }),
