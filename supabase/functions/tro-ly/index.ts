@@ -84,6 +84,7 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   trang_thai: { cuaSoGiay: 60, toiDa: 120 },
   bat_thuong: { cuaSoGiay: 60, toiDa: 30 },
   kiem_truoc_khi_chuyen: { cuaSoGiay: 60, toiDa: 20 },
+  gan_nhan_chi: { cuaSoGiay: 60, toiDa: 120 },
 };
 
 const NGAY_LICH_SU = 180;
@@ -567,6 +568,8 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   luu_chung_tu: "ghi_chung_tu",
   xoa_chung_tu: "ghi_chung_tu",
   quet_chung_tu: "ghi_chung_tu",
+  // TCCN-08: gắn "kinh doanh / cá nhân" cho khoản chi là việc sổ sách — cùng quyền ghi chứng từ.
+  gan_nhan_chi: "ghi_chung_tu",
 };
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
@@ -801,6 +804,32 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         so_khoan_da_xet: bt.so_khoan_da_xet,
         tinh_den: moc.homNay,
       });
+    }
+
+    case "gan_nhan_chi": {
+      /*
+       * TCCN-08 — người dùng chọn một khoản chi là của hộ kinh doanh hay chi tiêu cá nhân.
+       * Nhãn người chọn (`source = 'human'`) thì máy không bao giờ ghi đè (xem migration tạo
+       * `transaction_labels`). Chỉ gắn cho giao dịch thật, tiền ra, của đúng công ty này.
+       */
+      const gdId = String(body.giao_dich_id ?? "");
+      if (typeof body.ca_nhan !== "boolean" || !gdId) return loi("THAM_SO", "Thiếu giao dịch hoặc lựa chọn.", 400);
+      const { data: gd, error: loiGd } = await db.from("transactions")
+        .select("id, amount, type").eq("id", gdId).eq("company_id", company.id).eq("is_synthetic", false).maybeSingle();
+      if (loiGd) throw loiGd;
+      if (!gd) return loi("KHONG_THAY", "Không có giao dịch này.", 404);
+      if (chieuTien(gd) !== "ra") return loi("THAM_SO", "Chỉ phân loại được khoản tiền ra.", 400);
+      const { error } = await db.from("transaction_labels").upsert({
+        company_id: company.id,
+        transaction_id: gdId,
+        is_personal: body.ca_nhan,
+        source: "human",
+        needs_review: false,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: userId,
+      }, { onConflict: "transaction_id" });
+      if (error) throw error;
+      return json({ ok: true, giao_dich_id: gdId, ca_nhan: body.ca_nhan });
     }
 
     case "kiem_truoc_khi_chuyen": {
