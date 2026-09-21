@@ -1,15 +1,25 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { congCuGoiY, CONG_CU_MAC_DINH, CONG_CU_THEO_KHOA, DANH_MUC_CONG_CU, duongDanCongCu, SO_CONG_CU_TOI_DA, timCongCu } from './congCu';
 import { nhanYDinh } from '../../supabase/functions/_shared/tro-ly/y-dinh';
 
+/**
+ * Trang có thật = route con của `/dashboard` khai trong `App.tsx`. Đọc thẳng từ router thay
+ * vì chép tay: danh sách chép tay đỏ mỗi lần thêm trang thật, và xanh mãi nếu ai đó xoá route
+ * mà quên sửa danh sách.
+ */
+const APP = readFileSync(join(__dirname, '..', 'App.tsx'), 'utf8');
 const TRANG_CO_THAT = new Set([
-  '/dashboard', '/dashboard/thu-vien', '/dashboard/chung-tu', '/dashboard/nhac-thue', '/dashboard/reports', '/dashboard/fintech',
-  '/dashboard/tac-tu', '/dashboard/chinh-sach', '/dashboard/chi-phi-ai', '/dashboard/invoices', '/dashboard/clients',
-  '/dashboard/to-khai',
+  '/dashboard',
+  ...[...APP.matchAll(/<Route path="([a-z0-9-]+)"/g)].map((m) => `/dashboard/${m[1]}`),
 ]);
 
 describe('danh mục công cụ', () => {
   it('không có công cụ giả: trang phải có thật, câu hỏi phải được trợ lý hiểu', () => {
+    // Chốt bộ đọc route: đọc hỏng thì mọi công cụ "trang" đều đỏ, không xanh giả.
+    expect(TRANG_CO_THAT.has('/dashboard/tac-tu')).toBe(true);
+    expect(TRANG_CO_THAT.has('/dashboard/khong-co-that')).toBe(false);
     for (const c of DANH_MUC_CONG_CU) {
       expect(c.khoa).toMatch(/^[a-z0-9_]{2,40}$/);
       if (c.loai === 'trang') expect(TRANG_CO_THAT.has(c.dich), c.khoa).toBe(true);

@@ -24,7 +24,8 @@ import { deXuatDuocPhep, locDeXuat, locPhanTich } from "../_shared/quyen/loc-de-
 import { NHOM_NANG_LUC } from "../_shared/tro-ly/kieu.ts";
 import type { BangChung, DeXuat, DoDayNguon, KetQuaNangLuc, LoaiBangChung, NhomNangLuc, TraLoi } from "../_shared/tro-ly/kieu.ts";
 import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
-import { quetCongTy, TRAN_DONG as TRAN_DONG_BAT_THUONG } from "../_shared/bat-thuong/doc-db.ts";
+import { docLichSu as docLichSuChi, quetCongTy, TRAN_DONG as TRAN_DONG_BAT_THUONG } from "../_shared/bat-thuong/doc-db.ts";
+import { chuanSoTaiKhoan, dauHieuHoanCanh, kiemKhoan, mucDoChung } from "../_shared/bat-thuong/phat-hien.ts";
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
@@ -82,6 +83,7 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   ket_qua_quyet_dinh: { cuaSoGiay: 60, toiDa: 60 },
   trang_thai: { cuaSoGiay: 60, toiDa: 120 },
   bat_thuong: { cuaSoGiay: 60, toiDa: 30 },
+  kiem_truoc_khi_chuyen: { cuaSoGiay: 60, toiDa: 20 },
 };
 
 const NGAY_LICH_SU = 180;
@@ -798,6 +800,37 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         lich_su_du: bt.lich_su_du,
         so_khoan_da_xet: bt.so_khoan_da_xet,
         tinh_den: moc.homNay,
+      });
+    }
+
+    case "kiem_truoc_khi_chuyen": {
+      /*
+       * TCCN-02 — kiểm một khoản SẮP chuyển, kể cả khoản không đi qua MIMI (ai đó gọi điện giục
+       * chuyển tiền). Chỉ đọc: không ghi gì, không lưu số tài khoản người dùng nhập vào đâu.
+       * Cùng bộ luật với nút Duyệt, cộng thêm hoàn cảnh do người dùng tự khai.
+       */
+      const stk = chuanSoTaiKhoan(String(body.so_tai_khoan ?? "").slice(0, 40));
+      const ten = String(body.ten_nguoi_nhan ?? "").trim().slice(0, 120) || null;
+      const soTien = Number(body.so_tien);
+      const noiDung = String(body.noi_dung ?? "").trim().slice(0, 210) || null;
+      const hoanCanh = Array.isArray(body.hoan_canh) ? body.hoan_canh.map((x: unknown) => String(x)).slice(0, 10) : [];
+      if (!stk || stk.length < 6) return loi("THAM_SO", "Số tài khoản cần ít nhất 6 chữ số.", 400);
+      if (!Number.isFinite(soTien) || soTien <= 0 || soTien > 100_000_000_000) return loi("THAM_SO", "Số tiền chưa đúng.", 400);
+
+      const ls = await docLichSuChi(db, company.id, moc.homNay);
+      const dauHieu = [
+        ...dauHieuHoanCanh(hoanCanh),
+        ...kiemKhoan({ id: "kiem", so_tien: soTien, ngay: moc.homNay, ten_nguoi_nhan: ten, so_tai_khoan: stk, noi_dung: noiDung }, ls.khoan, { daTinCay: ls.tinCay }),
+      ];
+      const cungTk = ls.khoan.filter((k) => chuanSoTaiKhoan(k.so_tai_khoan) === stk);
+      return json({
+        muc_do: mucDoChung(dauHieu),
+        dau_hieu: dauHieu,
+        lich_su_du: ls.du,
+        trong_danh_sach_tin_cay: ls.tinCay.has(stk),
+        lan_tra_truoc: cungTk.length,
+        lan_cuoi: cungTk.map((k) => k.ngay).sort().at(-1) ?? null,
+        lon_nhat_da_tra: cungTk.length ? Math.max(...cungTk.map((k) => k.so_tien)) : null,
       });
     }
 

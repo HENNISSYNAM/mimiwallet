@@ -1332,6 +1332,7 @@ export const TEN_DAU_HIEU: Record<MaDauHieu, string> = {
   vuot_muc_quen: 'Vượt xa mức thường trả',
   tach_nho: 'Nhiều khoản trong một ngày',
   noi_dung_lua_dao: 'Nội dung giống kịch bản lừa đảo',
+  bi_ep_buoc: 'Hoàn cảnh giống kịch bản lừa đảo',
 };
 
 /** Id trỏ về giao dịch sao kê; khoản đã duyệt trong MIMI (`yc:`) không phải giao dịch. */

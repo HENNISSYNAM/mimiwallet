@@ -58,6 +58,7 @@ const ChiPhiAiPage = lazy(() => import("./pages/ChiPhiAiPage"));
 const TroLyPage = lazy(() => import("./pages/TroLyPage"));
 const ThuVienChungTuPage = lazy(() => import("./pages/ThuVienChungTuPage"));
 const NhacThuePage = lazy(() => import("./pages/NhacThuePage"));
+const KiemChuyenTienPage = lazy(() => import("./pages/KiemChuyenTienPage"));
 const ToKhaiPage = lazy(() => import("./pages/ToKhaiPage"));
 const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -144,6 +145,7 @@ const App = () => (
                 <Route index element={<Page noIndex path="/dashboard" title="Tổng quan dòng tiền — MIMI WALLET" description="Theo dõi dòng tiền, số dư ngân hàng và dự báo 90 ngày của doanh nghiệp bạn trong một màn hình duy nhất."><DashboardOverview /></Page>} />
                 <Route path="tro-ly" element={<Page noIndex path="/dashboard/tro-ly" title="MIMI Assistant — MIMI WALLET" description="Hỏi MIMI về tiền, chứng từ, chi phí AI và kết nối của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
                 <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Hoá đơn điện tử và chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
+                <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Kiểm tra trước khi chuyển tiền — MIMI WALLET" description="Nhập khoản sắp chuyển, MIMI so với lịch sử chi của công ty để tìm dấu hiệu đổi tài khoản, người nhận lạ hoặc kịch bản lừa đảo."><KiemChuyenTienPage /></Page>} />
                 <Route path="nhac-thue" element={<Page noIndex path="/dashboard/nhac-thue" title="Nhắc thuế — MIMI WALLET" description="Hạn nộp tờ khai theo quý và ngưỡng doanh thu năm, tính từ lịch kê khai và doanh thu thật."><NhacThuePage /></Page>} />
                 <Route path="to-khai" element={<Page noIndex path="/dashboard/to-khai" title="Tờ khai thuế — MIMI WALLET" description="MIMI đọc hoá đơn điện tử, sao kê và hồ sơ thuế của bạn, áp quy định trong kho văn bản Công báo rồi điền đúng mẫu tờ khai để bạn tự nộp."><ToKhaiPage /></Page>} />
                 <Route path="ket-noi" element={<Page noIndex path="/dashboard/ket-noi" title="Kết nối — MIMI WALLET" description="Nối ngân hàng, Casso, Tổng cục Thuế và nhà cung cấp AI để MIMI đọc số liệu thật."><KetNoiPage /></Page>} />

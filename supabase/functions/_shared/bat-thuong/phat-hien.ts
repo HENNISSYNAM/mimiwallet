@@ -21,7 +21,8 @@ export type MaDauHieu =
   | 'nguoi_nhan_moi_so_lon'
   | 'vuot_muc_quen'
   | 'tach_nho'
-  | 'noi_dung_lua_dao';
+  | 'noi_dung_lua_dao'
+  | 'bi_ep_buoc';
 
 export type MucDo = 'cao' | 'trung_binh';
 
@@ -198,6 +199,37 @@ export function kiemKhoan(k: KhoanRa, lichSu: readonly KhoanRa[], tc: TuyChon = 
   }
 
   return ra;
+}
+
+/**
+ * TCCN-02 — hoàn cảnh của lệnh chuyển, do chính người sắp chuyển khai.
+ *
+ * Luật trên sao kê không thấy được cuộc gọi đang giục bạn. Nhưng các kịch bản lừa đảo lặp lại
+ * rất đều: giục gấp, dặn giữ bí mật, tự xưng công an/thuế/ngân hàng, chỉ liên lạc qua tin
+ * nhắn. Người dùng tích vào tình huống của mình; mỗi tình huống là một dấu hiệu mức cao.
+ */
+export const HOAN_CANH = {
+  giuc_gap: 'Người yêu cầu giục chuyển ngay, doạ hậu quả nếu chậm',
+  giu_bi_mat: 'Người yêu cầu dặn giữ bí mật, không nói với ai',
+  tu_xung_co_quan: 'Người yêu cầu tự xưng công an, cơ quan thuế, toà án hoặc ngân hàng',
+  chi_qua_tin_nhan: 'Chỉ nhận yêu cầu qua tin nhắn, email hoặc cuộc gọi — chưa gặp, chưa gọi lại được qua số có từ trước',
+  doi_tai_khoan: 'Người nhận vừa báo đổi số tài khoản',
+  doi_ma_otp: 'Có người hỏi mã OTP hoặc bảo cài ứng dụng lạ',
+} as const;
+
+export type MaHoanCanh = keyof typeof HOAN_CANH;
+
+export function dauHieuHoanCanh(ma: readonly string[]): DauHieu[] {
+  // `in` nhìn cả chuỗi prototype: '__proto__', 'toString'… đều lọt. Chỉ nhận khoá của chính bảng.
+  const hop = [...new Set(ma)].filter((m): m is MaHoanCanh => Object.prototype.hasOwnProperty.call(HOAN_CANH, m));
+  if (!hop.length) return [];
+  const otp = hop.includes('doi_ma_otp');
+  return [{
+    ma: 'bi_ep_buoc',
+    muc_do: 'cao',
+    cau: `Bạn đang gặp ${hop.length === 1 ? 'một tình huống' : `${hop.length} tình huống`} hay gặp trong lừa đảo: ${hop.map((m) => HOAN_CANH[m].toLowerCase()).join('; ')}. Dừng lại, gọi lại người yêu cầu qua số bạn đã có từ trước${otp ? ', và không đưa mã OTP cho bất kỳ ai — ngân hàng không bao giờ hỏi mã này' : ''}.`,
+    can_cu: [],
+  }];
 }
 
 export const mucDoChung = (ds: readonly DauHieu[]): MucDo | null =>

@@ -2,7 +2,8 @@
  * TCCN-01 phía giao diện: dùng lại đúng kiểu dữ liệu của bộ phát hiện ở edge function, để
  * trình duyệt và máy chủ không bao giờ hiểu một dấu hiệu theo hai cách.
  */
-export type { CanhBao, DauHieu, KhoanRa, MaDauHieu, MucDo } from '../../supabase/functions/_shared/bat-thuong/phat-hien.ts';
+export type { CanhBao, DauHieu, KhoanRa, MaDauHieu, MaHoanCanh, MucDo } from '../../supabase/functions/_shared/bat-thuong/phat-hien.ts';
+export { HOAN_CANH } from '../../supabase/functions/_shared/bat-thuong/phat-hien.ts';
 import type { DauHieu } from '../../supabase/functions/_shared/bat-thuong/phat-hien.ts';
 
 /**

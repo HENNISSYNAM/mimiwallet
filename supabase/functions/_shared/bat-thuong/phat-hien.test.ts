@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kiemKhoan, mucDoChung, quetSaoKe, type KhoanRa } from './phat-hien';
+import { dauHieuHoanCanh, HOAN_CANH, kiemKhoan, mucDoChung, quetSaoKe, type KhoanRa } from './phat-hien';
 
 let n = 0;
 const k = (o: Partial<KhoanRa>): KhoanRa => ({
@@ -119,5 +119,28 @@ describe('quetSaoKe', () => {
     ];
     const cb = quetSaoKe(ds, '2026-09-16');
     expect(cb.map((c) => c.muc_do)).toEqual(['cao', 'trung_binh']);
+  });
+});
+
+describe('dauHieuHoanCanh (TCCN-02)', () => {
+  it('không tích tình huống nào → không có dấu hiệu', () => {
+    expect(dauHieuHoanCanh([])).toEqual([]);
+  });
+
+  it('gộp mọi tình huống thành MỘT dấu hiệu mức cao, nêu đủ từng tình huống', () => {
+    const ds = dauHieuHoanCanh(['giuc_gap', 'tu_xung_co_quan', 'giuc_gap']);
+    expect(ds).toHaveLength(1);
+    expect(ds[0].muc_do).toBe('cao');
+    expect(ds[0].cau).toContain('2 tình huống');
+    expect(ds[0].cau).toContain(HOAN_CANH.giuc_gap.toLowerCase());
+    expect(ds[0].cau).toContain(HOAN_CANH.tu_xung_co_quan.toLowerCase());
+  });
+
+  it('bị hỏi OTP thì nhắc thẳng: ngân hàng không bao giờ hỏi mã này', () => {
+    expect(dauHieuHoanCanh(['doi_ma_otp'])[0].cau).toContain('không đưa mã OTP');
+  });
+
+  it('bỏ qua mã lạ do trình duyệt gửi lên', () => {
+    expect(dauHieuHoanCanh(['khong_co_that', '__proto__'])).toEqual([]);
   });
 });

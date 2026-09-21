@@ -1,6 +1,6 @@
 import {
   ArrowLeftRight, Bot, CircleDollarSign, FileSearch, FileText, Images, Landmark, Receipt,
-  ScrollText, SlidersHorizontal, Sparkles, TrendingUp, Users,
+  ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TrendingUp, Users,
 } from 'lucide-react';
 
 const ICON: Record<string, typeof Images> = {
@@ -10,6 +10,7 @@ const ICON: Record<string, typeof Images> = {
   dong_tien: ArrowLeftRight,
   lien_ket_ngan_hang: Landmark,
   tra_trung: Receipt,
+  kiem_truoc_khi_chuyen: ShieldAlert,
   kiem_soat_agent: Bot,
   chinh_sach_chi: SlidersHorizontal,
   chi_phi_ai: CircleDollarSign,
