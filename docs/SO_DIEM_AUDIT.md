@@ -57,10 +57,10 @@ Không còn P0 mở → cổng `open_P0` (chặn phát hành, trần 6.9) không
 | Trục | Trọng số | Đang đóng băng | Đề nghị | Delta | Trần đang áp | Căn cứ |
 |---|---:|---:|---:|---:|---:|---|
 | data_truth_completeness | 0.13 | 6.1 | 6.6 | +0.5 | 7.0 (chưa có telemetry) | P0-002 cảnh báo độ đầy đủ đứng trước mọi con số; P0-004 tên gọi; phân trang thay cho truy vấn bị cắt |
-| security_tenant_isolation | 0.13 | 6.5 | 6.6 | +0.1 | 6.9 (chưa có cross-tenant negative test) | P1-003 RBAC 5 vai trò + RLS theo thành viên; bị hãm bởi phát hiện #1 dưới đây |
+| security_tenant_isolation | 0.13 | 6.5 | 7.0 | +0.5 | 7.0 (chưa có telemetry) | P1-003 RBAC + RLS theo thành viên; **cross-tenant negative test đạt trên CSDL thật** (10 bảng, có đối chứng dương); cột token ngân hàng đã khoá theo cột |
 | tax_legal_correctness | 0.10 | 4.9 | 5.4 | +0.5 | 5.9 (kho luật chưa version đầy đủ) | P0-003: loại văn bản hết hiệu lực khỏi kho trả lời, ghi `PHIEN_BAN_HE_LUAT`, không bao giờ nói "còn hiệu lực" |
 | auditability_evidence_graph | 0.08 | 5.3 | 5.8 | +0.5 | 7.0 (chưa có telemetry) | P1-001 bằng chứng tới từng bản ghi kèm mã băm; P1-002 nhật ký quyết định chỉ-thêm, ghi trước khi chạy |
-| functional_completeness | 0.08 | 5.8 | 5.9 | +0.1 | 7.0 | Khu "Mở tài khoản" không còn là đường cụt; báo cáo bỏ khối số bịa |
+| functional_completeness | 0.08 | 5.8 | 6.3 | +0.5 | 7.0 | Khu "Mở tài khoản" hết đường cụt; TCCN-01/02/08/12 (cảnh báo bất thường, kiểm trước khi chuyển, tách chi cá nhân, soạn giấy tờ); thành viên công ty dùng được thật; CMS tài nguyên |
 | financial_control_safety | 0.11 | 7.0 | 7.0 | 0 | 7.0 — đã ở trần | P1-002 có làm chắc thêm, nhưng trần chặn ở đây cho tới khi có telemetry |
 | test_ai_evaluation | 0.08 | 5.9 | 6.4 | +0.5 | 7.0 (chưa có telemetry) | P1-004 một phần: harness 7 chỉ số + cổng CI, đã bắt được 3 lỗi thật; bộ ca còn 45/300 nên không xin thêm |
 | reliability_observability | 0.08 | 5.8 | 5.8 | 0 | — | Chỉ sửa một lỗi console; chưa thêm quan trắc nào |
@@ -75,8 +75,8 @@ score_change_request:
   measured_at: 2026-09-18
   weighted_product_readiness:
     frozen: 5.77
-    proposed: 5.99
-    delta: 0.22
+    proposed: 6.07
+    delta: 0.30
   separate_scores:
     commercial_readiness: 4.2        # không đổi, chưa có khách trả tiền
     assistant_commercial_readiness: 5.6
@@ -84,15 +84,25 @@ score_change_request:
     automated_tests_present: true
     integration_tests_present: true
     ai_eval_harness_present: true      # 45/300 ca, offline, có cổng CI
-    cross_tenant_negative_test_present: false
+    cross_tenant_negative_test_present: true   # supabase/kiem/rls-cheo-cong-ty.sql, 21/09/2026
     production_telemetry_present: false
     paying_customer_evidence: false
   decision: pending_human_review
 ```
 
-## Phát hiện khi duyệt — chưa sửa
+## Kiểm trên CSDL thật — 21/09/2026
 
-1. **`bank_connections.access_token_enc` giờ đọc được bởi mọi thành viên công ty,
+- **Cross-tenant negative test** (`supabase/kiem/rls-cheo-cong-ty.sql`, chỉ đọc): mô phỏng phiên
+  của người dùng A, đếm dữ liệu công ty B mà A không thuộc về. Đối chứng dương: A đọc được 228
+  giao dịch của chính công ty mình. Công ty B: 0 dòng ở cả 10 bảng (giao dịch, hoá đơn bán, hoá
+  đơn điện tử, yêu cầu chi, kết nối ngân hàng, nhãn giao dịch, nhật ký quyết định, hội thoại,
+  thành viên, công ty). Mới chạy một cặp A–B; chưa tự động trong CI.
+- **Khoá cột token** (migration `20260921110000`): vai trò authenticated đọc `access_token_enc`
+  → `permission denied`; đọc `co_token` được; anon bị từ chối cả bảng.
+
+## Phát hiện khi duyệt
+
+1. **[ĐÃ SỬA 21/09/2026]** **`bank_connections.access_token_enc` đọc được bởi mọi thành viên công ty,
    kể cả vai trò `nguoi_xem`.** Migration `20260918140000` mở quyền đọc theo dòng cho
    cả bảng này; trước đó chỉ chủ công ty đọc được. Token đã mã hoá, nhưng vai trò chỉ
    xem không có lý do gì chạm tới nó. Đề nghị: thêm cột sinh
@@ -111,7 +121,7 @@ score_change_request:
 3. **`ket_qua`/`ket_qua_cau` do giao diện báo lại, máy chủ không tự kiểm.** Đã ghi rõ
    trong comment của bảng. Phần "ai xác nhận việc gì" là do máy chủ ghi và chỉ-thêm;
    phần "việc chạy ra sao" thì chưa được kiểm chứng độc lập.
-4. **Chưa có cross-tenant negative test chạy trên CSDL thật** (người của công ty A đọc
+4. **[ĐÃ LÀM 21/09/2026 — xem mục trên]** **Chưa có cross-tenant negative test chạy trên CSDL thật** (người của công ty A đọc
    dữ liệu công ty B phải trả về rỗng). Đây là điều kiện để trục bảo mật vượt 6.9. Tôi dựng
    được phép thử chỉ-đọc (mô phỏng vai trò trong một giao dịch rồi ROLLBACK), nhưng cả việc
    đọc danh sách công ty trên production cũng đang bị chặn ở phiên này, nên chưa chạy được.
