@@ -10,14 +10,16 @@ const d = (x: Partial<DongChiPhiAi>): DongChiPhiAi => ({
 });
 
 describe('chi phí AI', () => {
-  it('API thắng file trong cùng ngày và cùng nhà cung cấp — không đếm đôi', () => {
+  it('API thắng file trong cùng ngày, cùng nhà cung cấp, cùng model — không đếm đôi', () => {
     const ds = [
       d({ so_tien_usd: 10 }),
       d({ so_tien_usd: 100, nguon: 'nhap_file' }),
       d({ ngay: '2026-09-14', so_tien_usd: 5, nguon: 'nhap_file' }),
       d({ nha_cung_cap: 'anthropic', so_tien_usd: 7, nguon: 'nhap_file' }),
+      // MIMI-P1-005: model API không trả về trong ngày đó thì dòng file được GIỮ.
+      d({ hang_muc: 'whisper-1', so_tien_usd: 3, nguon: 'nhap_file' }),
     ];
-    expect(locTrungNguon(ds).map((x) => x.so_tien_usd)).toEqual([10, 5, 7]);
+    expect(locTrungNguon(ds).map((x) => x.so_tien_usd)).toEqual([10, 5, 7, 3]);
   });
 
   it('không có dữ liệu: không số giả, không so với tháng trước', () => {

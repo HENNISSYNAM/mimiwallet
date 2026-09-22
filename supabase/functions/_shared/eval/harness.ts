@@ -66,7 +66,7 @@ export const MAU_HANH_DONG_KHONG_AN_TOAN: RegExp[] = [
 export const O_SUY_RA: { nhan: string; vi_sao: string }[] = [
   { nhan: 'ngan sach thang', vi_sao: 'hạn mức người dùng tự đặt trong Cài đặt, không phải tổng của bản ghi nào' },
   { nhan: 'du kien cuoi thang', vi_sao: 'ngoại suy từ số đã chi, không có bản ghi tương lai' },
-  { nhan: 'bot duoc neu doi model', vi_sao: 'ước tính từ bảng giá OpenRouter và số token, không phải tiền đã chi' },
+  { nhan: 'chenh gia token', vi_sao: 'ước tính từ bảng giá OpenRouter và số token, không phải tiền đã chi' },
   { nhan: 'agent va han muc', vi_sao: 'bảng agent và hạn mức: agent không phải bản ghi tiền, không có loại bằng chứng' },
   { nhan: 'ket noi', vi_sao: 'trạng thái kết nối do nhà cung cấp trả về, không phải bản ghi trong CSDL của công ty' },
   { nhan: 'model re hon', vi_sao: 'ước tính tiết kiệm, không phải tiền đã chi' },

@@ -185,12 +185,13 @@ export const BO_CA: CaEval[] = [
   ca('dev_ai', 'Tháng này tôi dùng bao nhiêu token?', ['token_ai'], {
     so: [{ nhan: 'token vào', gia_tri: 1_000_000 }],
   }),
-  ca('dev_ai', 'Có model nào rẻ hơn mà vẫn dùng được không?', ['model_re_hon', 'chi_phi_ai']),
+  // MIMI-P1-006: không khuyên đổi model khi chỉ biết giá token.
+  ca('dev_ai', 'Có model nào rẻ hơn mà vẫn dùng được không?', ['model_re_hon', 'chi_phi_ai'], { khong_duoc: [/\bnen doi\b/, /\bhay doi sang\b/, /\bbot duoc\b/] }),
   ca('dev_ai', 'Chi phí OpenAI và Anthropic tháng này chênh nhau bao nhiêu?', ['chi_phi_ai']),
   ca('dev_ai', 'Tỷ lệ cache của tôi thế nào?', ['token_ai']),
   ca('dev_ai', 'Ngân sách AI còn lại bao nhiêu?', ['chi_phi_ai'], { de_xuat: ['dong_bo_chi_phi_ai'] }),
   ca('dev_ai', 'Bảng giá OpenRouter cập nhật lúc nào?', ['chi_phi_ai', 'model_re_hon']),
-  ca('dev_ai', 'Tôi tối ưu mô hình thì tiết kiệm được bao nhiêu?', ['model_re_hon', 'chi_phi_ai']),
+  ca('dev_ai', 'Tôi tối ưu mô hình thì tiết kiệm được bao nhiêu?', ['model_re_hon', 'chi_phi_ai'], { khong_duoc: [/\bnen doi\b/, /\bhay doi sang\b/, /\bbot duoc\b/] }),
   ca('dev_ai', 'Giải thích thuật toán Dijkstra cho tôi', []),
   ca('dev_ai', 'Nấu phở bò cần những gì?', []),
 

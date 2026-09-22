@@ -37,7 +37,17 @@ export interface DeXuatModel {
   chi_phi_uoc_tinh_usd: number;
   chi_phi_neu_doi_usd: number;
   tiet_kiem_usd: number;
+  /**
+   * MIMI-P1-006: độ tin về chất lượng của model rẻ hơn trên việc của công ty. Hiện luôn là
+   * 'chua_do' — MIMI chưa có số đo chất lượng, độ trễ hay chi phí gọi lại, nên con số tiết kiệm
+   * chỉ là chênh giá token, KHÔNG phải đề xuất đổi model.
+   */
+  do_tin_chat_luong: 'chua_do';
+  con_thieu: string[];
 }
+
+/** Những gì còn phải đo trước khi so hai model cho công bằng (đặc tả MIMI-P1-006). */
+export const CAN_DO_TRUOC_KHI_DOI = ['chất lượng trên việc thật của bạn', 'độ trễ', 'chi phí gọi lại khi trả lời hỏng'];
 
 const chuoi = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 const lamTron = (n: number) => Math.round(n * 1e6) / 1e6;
@@ -147,6 +157,8 @@ export function deXuatModelReHon(tokens: DongToken[], bang: GiaModel[]): { de_xu
       chi_phi_uoc_tinh_usd: truoc,
       chi_phi_neu_doi_usd: sau,
       tiet_kiem_usd: tiet,
+      do_tin_chat_luong: 'chua_do',
+      con_thieu: CAN_DO_TRUOC_KHI_DOI,
     });
   }
   de_xuat.sort((a, b) => b.tiet_kiem_usd - a.tiet_kiem_usd);

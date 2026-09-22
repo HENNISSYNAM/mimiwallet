@@ -24,9 +24,10 @@
 | MIMI-P1-003 | RBAC cho doanh nghiệp nhiều người | lên production (RLS đọc theo thành viên) |
 | MIMI-P1-004 | AI evaluation harness | **một phần**: harness + CI đã lên; bộ ca 54/300 |
 | MIMI-P1-005 | Sửa đối soát và chống trùng nguồn | lên production 21/09/2026: ghép theo điểm, fixture precision/recall, chống trùng không bỏ khoản hợp lệ, máy chủ chốt kết quả quyết định |
+| MIMI-P1-006 | Chi phí AI theo workflow | lên production 22/09/2026: gán project vào quy trình, chi phí mỗi việc thành công; không còn đề xuất đổi model chỉ theo giá token (độ tin chất lượng hiện "chưa đo") |
 
 Còn mở: P1-004 phần bộ ca (54/300 và chưa có bộ chấm cho phần diễn đạt của mô hình),
-P1-006 (chi phí AI theo workflow), P2-001, P2-002.
+P2-001, P2-002. P1-006 còn thiếu: nguồn số việc tự động (agent báo qua API) và so chất lượng hai model trên cùng quy trình.
 
 Không còn P0 mở → cổng `open_P0` (chặn phát hành, trần 6.9) không còn áp.
 

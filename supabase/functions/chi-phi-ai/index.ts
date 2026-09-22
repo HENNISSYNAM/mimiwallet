@@ -21,6 +21,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { decryptField, encryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
+import { duAnDaGan, laKy, type QuyTrinh } from "../_shared/chi-phi-ai/quy-trinh.ts";
 import {
   gopDong,
   hienKhoa,
@@ -187,7 +188,7 @@ async function xuLy(db: Db, userId: string, companyId: string, hanhDong: string,
     case "doc": {
       const bayGio = new Date();
       const tuNgay = ngay(new Date(Date.UTC(bayGio.getUTCFullYear(), bayGio.getUTCMonth() - 1, 1)));
-      const [chiPhi, token, kn, lo, ns] = await Promise.all([
+      const [chiPhi, token, kn, lo, ns, qt, kq] = await Promise.all([
         docTheoTrang(db, "chi_phi_ai", "nha_cung_cap, ngay, hang_muc, du_an, so_tien_usd, nguon", companyId, tuNgay),
         docTheoTrang(db, "token_ai", "nha_cung_cap, ngay, model, token_vao, token_vao_cache, token_ra, so_lan_goi", companyId, tuNgay),
         db.from("ket_noi_chi_phi_ai")
@@ -197,8 +198,11 @@ async function xuLy(db: Db, userId: string, companyId: string, hanhDong: string,
           .select("id, nha_cung_cap, ten_file, so_dong, tu_ngay, den_ngay, tong_usd, created_at")
           .eq("company_id", companyId).order("created_at", { ascending: false }).limit(50),
         db.from("ngan_sach_chi_phi_ai").select("han_muc_thang_usd, canh_bao_phan_tram").eq("company_id", companyId).maybeSingle(),
+        // MIMI-P1-006: quy trình và số việc làm xong, để tính chi phí mỗi việc thành công.
+        db.from("quy_trinh_ai").select("id, ten, don_vi_ket_qua, khop_du_an").eq("company_id", companyId).order("tao_luc", { ascending: true }).limit(100),
+        db.from("ket_qua_quy_trinh").select("quy_trinh_id, ky, so_thanh_cong, so_that_bai").eq("company_id", companyId).order("ky", { ascending: false }).limit(1200),
       ]);
-      const loiDoc = [kn, lo, ns].find((r) => r.error)?.error;
+      const loiDoc = [kn, lo, ns, qt, kq].find((r) => r.error)?.error;
       if (loiDoc) throw loiDoc;
       return json({
         tu_ngay: tuNgay,
@@ -211,7 +215,60 @@ async function xuLy(db: Db, userId: string, companyId: string, hanhDong: string,
         ngan_sach: ns.data
           ? { han_muc_thang_usd: Number(ns.data.han_muc_thang_usd), canh_bao_phan_tram: ns.data.canh_bao_phan_tram }
           : null,
+        quy_trinh: qt.data ?? [],
+        ket_qua_quy_trinh: kq.data ?? [],
       });
+    }
+
+    case "quy_trinh_luu": {
+      // MIMI-P1-006: tạo hoặc sửa một quy trình AI và các project thuộc về nó.
+      const id = typeof body.id === "string" && body.id ? body.id : null;
+      const ten = String(body.ten ?? "").trim().slice(0, 120);
+      const donVi = String(body.don_vi_ket_qua ?? "việc").trim().slice(0, 60) || "việc";
+      const khop = Array.isArray(body.khop_du_an)
+        ? [...new Set(body.khop_du_an.map((x: unknown) => String(x).trim().slice(0, 200)).filter(Boolean))].slice(0, 50) as string[]
+        : [];
+      if (ten.length < 2) return loi("THAM_SO", "Tên quy trình cần ít nhất 2 ký tự.", 400);
+      const { data: khac, error: loiKhac } = await db.from("quy_trinh_ai").select("id, ten, don_vi_ket_qua, khop_du_an").eq("company_id", companyId);
+      if (loiKhac) throw loiKhac;
+      const trung = duAnDaGan(khop, ((khac ?? []) as QuyTrinh[]).filter((q) => q.id !== id));
+      if (trung.length) return loi("DA_GAN", `Project đã thuộc quy trình khác: ${trung.join(", ")}. Mỗi project chỉ thuộc một quy trình, để chi phí không bị tính hai lần.`, 409);
+      const ban = { ten, don_vi_ket_qua: donVi, khop_du_an: khop, sua_luc: new Date().toISOString() };
+      const q = id
+        ? db.from("quy_trinh_ai").update(ban).eq("id", id).eq("company_id", companyId)
+        : db.from("quy_trinh_ai").insert({ ...ban, company_id: companyId, tao_boi: userId });
+      const { data, error } = await q.select("id, ten, don_vi_ket_qua, khop_du_an").maybeSingle();
+      if (error?.code === "23505") return loi("TRUNG_TEN", "Đã có quy trình cùng tên.", 409);
+      if (error) throw error;
+      if (!data) return loi("KHONG_THAY", "Không có quy trình này.", 404);
+      return json({ quy_trinh: data });
+    }
+
+    case "quy_trinh_xoa": {
+      const { data, error } = await db.from("quy_trinh_ai").delete()
+        .eq("id", String(body.id ?? "")).eq("company_id", companyId).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return loi("KHONG_THAY", "Không có quy trình này.", 404);
+      return json({ ok: true });
+    }
+
+    case "ket_qua_luu": {
+      // Số việc quy trình làm xong trong một tháng — người dùng nhập, ghi đè số cũ của tháng đó.
+      const quyTrinhId = String(body.quy_trinh_id ?? "");
+      const ky = String(body.ky ?? "");
+      const tc = Number(body.so_thanh_cong);
+      const tb = Number(body.so_that_bai ?? 0);
+      if (!laKy(ky)) return loi("THAM_SO", "Tháng phải có dạng YYYY-MM.", 400);
+      const soHopLe = (n: number) => Number.isInteger(n) && n >= 0 && n <= 100_000_000;
+      if (!soHopLe(tc) || !soHopLe(tb)) return loi("THAM_SO", "Số việc phải là số nguyên không âm.", 400);
+      const { data: qtCo } = await db.from("quy_trinh_ai").select("id").eq("id", quyTrinhId).eq("company_id", companyId).maybeSingle();
+      if (!qtCo) return loi("KHONG_THAY", "Không có quy trình này.", 404);
+      const { error } = await db.from("ket_qua_quy_trinh").upsert({
+        company_id: companyId, quy_trinh_id: quyTrinhId, ky, so_thanh_cong: tc, so_that_bai: tb,
+        nguon: "nhap_tay", ghi_boi: userId, sua_luc: new Date().toISOString(),
+      }, { onConflict: "quy_trinh_id,ky" });
+      if (error) throw error;
+      return json({ ok: true });
     }
 
     case "ket_noi": {
@@ -435,6 +492,10 @@ Deno.serve(async (req) => {
       nhap_file: "dong_bo_du_lieu",
       xoa_lo_nhap: "dong_bo_du_lieu",
       dat_ngan_sach: "quan_ly_agent",
+      // MIMI-P1-006: định nghĩa quy trình là việc quản trị; nhập số việc làm xong là việc sổ sách.
+      quy_trinh_luu: "quan_ly_agent",
+      quy_trinh_xoa: "quan_ly_agent",
+      ket_qua_luu: "dong_bo_du_lieu",
     };
     const hanhDong = String(body.hanh_dong ?? "");
     const can = QUYEN_HANH_DONG[hanhDong];

@@ -1,3 +1,4 @@
+import { chuanHoaTenModel } from '../../supabase/functions/_shared/chi-phi-ai/bang-gia.ts';
 /**
  * Số liệu màn Chi phí AI, suy ra từ dòng chi phí thật đã lưu.
  *
@@ -42,9 +43,18 @@ export const usd = (n: number) => DINH_DANG_USD.format(n);
 export const ngayUTC = (d: Date) => d.toISOString().slice(0, 10);
 const cong = (ds: DongChiPhiAi[]) => ds.reduce((s, d) => s + d.so_tien_usd, 0);
 
+/**
+ * Cùng nhà cung cấp, cùng ngày, CÙNG MODEL: số từ API thắng số từ file.
+ *
+ * Phải giữ ĐÚNG cùng khoá với `locTrungNguon` của MIMI Assistant (`_shared/tro-ly/tinh-toan.ts`)
+ * — khoá khác nhau là trang này và trợ lý báo hai tổng khác nhau cho cùng một tháng. MIMI-P1-005
+ * đổi khoá từ (nhà cung cấp, ngày) sang (nhà cung cấp, ngày, model) để không bỏ mất dòng file của
+ * model mà API không trả về.
+ */
 export function locTrungNguon(ds: DongChiPhiAi[]): DongChiPhiAi[] {
-  const coApi = new Set(ds.filter((d) => d.nguon === 'api').map((d) => `${d.nha_cung_cap}|${d.ngay}`));
-  return ds.filter((d) => d.nguon === 'api' || !coApi.has(`${d.nha_cung_cap}|${d.ngay}`));
+  const khoa = (d: DongChiPhiAi) => `${d.nha_cung_cap}|${d.ngay}|${chuanHoaTenModel(d.hang_muc)}`;
+  const coApi = new Set(ds.filter((d) => d.nguon === 'api').map(khoa));
+  return ds.filter((d) => d.nguon === 'api' || !coApi.has(khoa(d)));
 }
 
 export interface TongQuanAi {

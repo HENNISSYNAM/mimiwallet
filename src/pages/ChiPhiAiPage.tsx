@@ -20,6 +20,8 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { LoiTroLy, type ViecTroLy } from '@/components/tro-ly/LoiTroLy';
+import ChiPhiTheoQuyTrinh from '@/components/chi-phi-ai/ChiPhiTheoQuyTrinh';
+import type { KetQuaQt, QuyTrinh } from '../../supabase/functions/_shared/chi-phi-ai/quy-trinh.ts';
 
 /**
  * Chi phí AI — chi phí THẬT của OpenAI, Anthropic, Gemini, theo ngày, bằng USD.
@@ -60,6 +62,8 @@ interface DuLieu {
   ket_noi: KetNoi[];
   lo_nhap: LoNhap[];
   ngan_sach: NganSachAi | null;
+  quy_trinh: QuyTrinh[];
+  ket_qua_quy_trinh: KetQuaQt[];
 }
 
 interface XacNhan {
@@ -118,6 +122,8 @@ export default function ChiPhiAiPage() {
         ket_noi: (kq.ket_noi ?? []) as KetNoi[],
         lo_nhap: (kq.lo_nhap ?? []) as LoNhap[],
         ngan_sach: (kq.ngan_sach ?? null) as NganSachAi | null,
+        quy_trinh: (kq.quy_trinh ?? []) as QuyTrinh[],
+        ket_qua_quy_trinh: (kq.ket_qua_quy_trinh ?? []) as KetQuaQt[],
       });
       setLoiTai(null);
     } catch (e) {
@@ -311,6 +317,15 @@ export default function ChiPhiAiPage() {
               </div>
               <BangHangMuc ds={top} />
             </section>
+
+            {/* MIMI-P1-006: chi phí theo quy trình và chi phí cho mỗi việc thành công. */}
+            <ChiPhiTheoQuyTrinh
+              chiPhi={duLieu.chi_phi}
+              quyTrinh={duLieu.quy_trinh}
+              ketQua={duLieu.ket_qua_quy_trinh}
+              goi={lam}
+              dangLam={dangLam}
+            />
           </div>
 
           <aside className="space-y-5" aria-label="Nguồn dữ liệu">

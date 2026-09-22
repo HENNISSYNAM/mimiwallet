@@ -42,7 +42,7 @@ export const DANH_MUC_CONG_CU: CongCu[] = [
   { khoa: 'kiem_soat_agent', ten: 'Kiểm soát agent', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/tac-tu', mo_ta: 'Agent AI được phép xin chi, hạn mức, người nhận.', tu_khoa: ['agent', 'bot', 'han muc'] },
   { khoa: 'chinh_sach_chi', ten: 'Chính sách chi', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/chinh-sach', mo_ta: 'Ngưỡng duyệt, hạn mức, nhóm chi cho từng agent.', tu_khoa: ['quy dinh', 'nguong duyet'] },
   { khoa: 'chi_phi_ai', ten: 'Chi phí AI', nhom: 'ai', loai: 'trang', dich: '/dashboard/chi-phi-ai', mo_ta: 'Chi phí OpenAI, Anthropic, Gemini, OpenRouter so với ngân sách.', tu_khoa: ['openai', 'claude', 'gemini', 'ngan sach'] },
-  { khoa: 'model_re_hon', ten: 'Model AI rẻ hơn', nhom: 'ai', loai: 'hoi', dich: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.', mo_ta: 'Ước tính tiết kiệm khi đổi sang model rẻ hơn cùng hãng.', tu_khoa: ['token', 'toi uu', 'tiet kiem'] },
+  { khoa: 'model_re_hon', ten: 'Model AI rẻ hơn', nhom: 'ai', loai: 'hoi', dich: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.', mo_ta: 'So giá token với model rẻ hơn cùng hãng — chưa đo chất lượng.', tu_khoa: ['token', 'toi uu', 'tiet kiem'] },
   { khoa: 'hoa_don_ban', ten: 'Hoá đơn bán ra', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/invoices', mo_ta: 'Lập hoá đơn cho khách và theo dõi khoản chưa thu.', tu_khoa: ['xuat hoa don', 'phai thu'] },
   { khoa: 'khach_hang', ten: 'Khách hàng', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/clients', mo_ta: 'Danh sách khách, mã số thuế, tình trạng tiếp cận.', tu_khoa: ['doi tac', 'ma so thue', 'crm'] },
 ];

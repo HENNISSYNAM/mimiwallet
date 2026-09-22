@@ -13,7 +13,7 @@
 import type { BangChung, DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, LoaiBangChung, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
-import { chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
+import { CAN_DO_TRUOC_KHI_DOI, chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
 import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, type SuKienThue } from '../luat/he-luat.ts';
 import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
@@ -840,25 +840,30 @@ export function modelReHon(d: DuLieu): KetQuaNangLuc {
   const the: The[] = [];
   let cau: string;
   if (!r.de_xuat.length) {
-    cau = 'Chưa thấy model nào có bậc rẻ hơn cùng hãng đáng đổi, theo số token 30 ngày qua.';
+    cau = 'Chưa thấy model nào cùng hãng có giá token thấp hơn đáng kể, theo số token 30 ngày qua.';
   } else {
     const dau = r.de_xuat[0];
     const tongTiet = r.de_xuat.reduce((s, x) => s + x.tiet_kiem_usd, 0);
-    cau = `Nếu đổi ${dau.model} sang ${dau.thay_bang.ten}, 30 ngày qua sẽ tốn khoảng ${usd(dau.chi_phi_neu_doi_usd)} thay vì ${usd(dau.chi_phi_uoc_tinh_usd)} — bớt ${usd(dau.tiet_kiem_usd)}.`;
-    if (r.de_xuat.length > 1) cau += ` Tính cả ${r.de_xuat.length} model, có thể bớt khoảng ${usd(tongTiet)} mỗi 30 ngày.`;
+    /*
+     * MIMI-P1-006: "không đề xuất đổi model chỉ dựa trên giá token". Đây là chênh giá token, kèm độ
+     * tin chất lượng — hiện luôn "chưa đo" vì MIMI chưa có số đo chất lượng, độ trễ, chi phí gọi lại.
+     */
+    cau = `Chỉ tính giá token, ${dau.model} sang ${dau.thay_bang.ten} 30 ngày qua sẽ tốn khoảng ${usd(dau.chi_phi_neu_doi_usd)} thay vì ${usd(dau.chi_phi_uoc_tinh_usd)} — chênh ${usd(dau.tiet_kiem_usd)}.`;
+    if (r.de_xuat.length > 1) cau += ` Tính cả ${r.de_xuat.length} model, chênh khoảng ${usd(tongTiet)} mỗi 30 ngày.`;
+    cau += ` Đây chưa phải đề xuất đổi: MIMI chưa đo ${CAN_DO_TRUOC_KHI_DOI.join(', ')} của model rẻ hơn — độ tin chất lượng: chưa đo.`;
     the.push({
-      loai: 'bang', tieu_de: 'Model rẻ hơn cùng hãng (ước tính 30 ngày)',
+      loai: 'bang', tieu_de: 'Chênh giá token nếu đổi model cùng hãng (30 ngày, chưa tính chất lượng)',
       cot: [
-        { nhan: 'Đang dùng', don_vi: 'chu' }, { nhan: 'Có thể đổi sang', don_vi: 'chu' }, { nhan: 'Chi phí hiện tại', don_vi: 'usd' },
-        { nhan: 'Nếu đổi', don_vi: 'usd' }, { nhan: 'Bớt được', don_vi: 'usd' },
+        { nhan: 'Đang dùng', don_vi: 'chu' }, { nhan: 'Model giá thấp hơn', don_vi: 'chu' }, { nhan: 'Chi phí hiện tại', don_vi: 'usd' },
+        { nhan: 'Theo giá model kia', don_vi: 'usd' }, { nhan: 'Chênh', don_vi: 'usd' }, { nhan: 'Độ tin chất lượng', don_vi: 'chu' },
       ],
-      dong: r.de_xuat.slice(0, 6).map((x) => [x.model, x.thay_bang.ten, x.chi_phi_uoc_tinh_usd, x.chi_phi_neu_doi_usd, x.tiet_kiem_usd]),
+      dong: r.de_xuat.slice(0, 6).map((x) => [x.model, x.thay_bang.ten, x.chi_phi_uoc_tinh_usd, x.chi_phi_neu_doi_usd, x.tiet_kiem_usd, 'Chưa đo']),
       con_lai: Math.max(0, r.de_xuat.length - 6),
     });
   }
   the.push({
     loai: 'ghi_chu', muc_do: 'can_chu_y',
-    cau: `Ước tính = số token 30 ngày × giá niêm yết của OpenRouter${d.bangGiaLuc ? ` (lấy ngày ${ngayVN(d.bangGiaLuc)})` : ''}, chưa trừ giảm giá cache hay batch. Model rẻ hơn có thể làm kém hơn ở việc khó — thử trên một phần việc thật trước khi đổi hẳn.`,
+    cau: `Ước tính = số token 30 ngày × giá niêm yết của OpenRouter${d.bangGiaLuc ? ` (lấy ngày ${ngayVN(d.bangGiaLuc)})` : ''}, chưa trừ giảm giá cache hay batch. Model giá thấp hơn có thể làm kém hơn, chậm hơn, hoặc phải gọi lại nhiều lần — cái giá thật có thể cao hơn giá token. Thử trên một phần việc thật, đo tỷ lệ thành công ở mục "Chi phí theo quy trình" rồi mới quyết.`,
   });
   if (r.khong_khop.length) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Chưa khớp được bảng giá cho: ${r.khong_khop.slice(0, 5).join(', ')}.` });
   return kq('model_re_hon', 'ai_token', cau, {
@@ -958,14 +963,14 @@ export function phanTichTietKiem(d: DuLieu): KetQuaNangLuc {
   if (!d.giaoDich.length) cau.push(CHUA_CO_SAO_KE);
   else if (cap.length) cau.push(`${cap.length} cặp khoản chi 60 ngày qua có thể bị trả trùng, tổng ${vnd(tongTrung)} — cùng người nhận, cùng số tiền, cách nhau không quá ${NGAY_NGHI_TRUNG} ngày.`);
   else cau.push('60 ngày qua không thấy khoản chi nào có dấu hiệu trả trùng.');
-  if (ai && ai.de_xuat.length) cau.push(`Đổi sang model rẻ hơn cùng hãng có thể bớt khoảng ${usd(tietAi)} mỗi 30 ngày (ước tính).`);
+  if (ai && ai.de_xuat.length) cau.push(`Chỉ tính giá token, dùng model giá thấp hơn cùng hãng chênh khoảng ${usd(tietAi)} mỗi 30 ngày — chưa đo chất lượng nên chưa phải đề xuất đổi.`);
   else if (!ds.length) cau.push('Chưa có số token nên chưa ước tính được tiết kiệm từ AI.');
 
   const the: The[] = [{
     loai: 'so_lieu', tieu_de: 'Chỗ có thể tiết kiệm', muc: [
       { nhan: 'Khoản có thể bị trả trùng', gia_tri: cap.length, don_vi: 'so', can_chu_y: cap.length > 0, bang_chung: bangChung('giao_dich', cap.flatMap((c) => [c.a, c.b])) },
       { nhan: 'Tiền liên quan', gia_tri: tongTrung, don_vi: 'vnd', bang_chung: bangChung('giao_dich', cap.flatMap((c) => [c.a, c.b])) },
-      { nhan: 'Bớt được nếu đổi model AI', gia_tri: ai ? Math.round(tietAi * 100) / 100 : null, don_vi: 'usd', ghi_chu: 'ước tính 30 ngày', bang_chung: bangChung('token_ai', d.tokenAi) },
+      { nhan: 'Chênh giá token nếu đổi model', gia_tri: ai ? Math.round(tietAi * 100) / 100 : null, don_vi: 'usd', ghi_chu: 'ước tính 30 ngày · độ tin chất lượng: chưa đo', bang_chung: bangChung('token_ai', d.tokenAi) },
     ],
   }];
   if (cap.length) {
@@ -1468,7 +1473,7 @@ export const NANG_LUC: Record<string, NangLuc> = {
   ket_noi_ngan_hang: { nhom: 'ngan_hang', can: ['ket_noi_ngan_hang'], chay: ketNoiNganHang, mo_ta: 'Các kết nối ngân hàng, tài khoản nào cần đăng nhập lại; đề xuất đồng bộ sao kê.' },
   chi_phi_ai: { nhom: 'ai_token', can: ['chi_phi_ai'], chay: chiPhiAi, mo_ta: 'Chi phí OpenAI, Anthropic, Gemini, OpenRouter tháng này so với ngân sách AI, dự kiến cuối tháng, model tốn nhất.' },
   token_ai: { nhom: 'ai_token', can: ['token_ai', 'chi_phi_ai'], chay: tokenAi, mo_ta: 'Số token theo model 30 ngày, tỷ lệ cache, chi phí mỗi triệu token.' },
-  model_re_hon: { nhom: 'ai_token', can: ['token_ai', 'bang_gia'], chay: modelReHon, mo_ta: 'Ước tính tiết kiệm nếu đổi sang model rẻ hơn cùng hãng, theo số token thật và bảng giá OpenRouter.' },
+  model_re_hon: { nhom: 'ai_token', can: ['token_ai', 'bang_gia'], chay: modelReHon, mo_ta: 'Chênh giá token nếu dùng model giá thấp hơn cùng hãng, theo số token thật và bảng giá OpenRouter. Chỉ là chênh giá — chưa đo chất lượng, độ trễ, chi phí gọi lại, nên không phải đề xuất đổi.' },
   bao_cao_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich'], chay: baoCaoTaiChinh, mo_ta: 'Tổng hợp dòng tiền ngân hàng theo tháng: tiền vào, tiền ra, chênh lệch. Không phải doanh thu, lợi nhuận hay báo cáo tài chính — MIMI chưa có sổ kế toán.' },
   phan_tich_tiet_kiem: { nhom: 'bao_cao', can: ['giao_dich', 'token_ai', 'bang_gia'], chay: phanTichTietKiem, mo_ta: 'Chỗ có thể tiết kiệm: khoản chi nghi trả trùng, tiền bớt được nếu đổi model AI.' },
   nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },
