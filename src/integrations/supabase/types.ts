@@ -683,6 +683,7 @@ export type Database = {
           due_date: string
           id: string
           invoice_number: string
+          is_synthetic: boolean
           issued_date: string
           status: string
           total: number
@@ -700,6 +701,7 @@ export type Database = {
           due_date: string
           id?: string
           invoice_number: string
+          is_synthetic?: boolean
           issued_date: string
           status?: string
           total: number
@@ -717,6 +719,7 @@ export type Database = {
           due_date?: string
           id?: string
           invoice_number?: string
+          is_synthetic?: boolean
           issued_date?: string
           status?: string
           total?: number

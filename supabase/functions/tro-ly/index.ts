@@ -407,6 +407,9 @@ async function docDuLieu(
     viec.push(docTrang(
       (a, b, c) => db.from("invoices")
         .select("id, invoice_number, client_name, total, issued_date, due_date, status", dem(c))
+        // Trợ lý khuyên việc dựa trên đây, nên hoá đơn demo phải ở ngoài:
+        // "2 hoá đơn quá hạn 235 triệu" tính từ dòng seed là một lời khuyên sai.
+        .eq("is_synthetic", false)
         .eq("company_id", companyId).order("due_date", { ascending: true }).order("id", { ascending: true }).range(a, b),
       "hoá đơn bán ra", 5000,
     ).then(({ dong, tong }) => {

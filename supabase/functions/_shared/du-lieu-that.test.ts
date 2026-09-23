@@ -46,6 +46,25 @@ const MIEN_TRU: Array<{ file: string; vi: string }> = [
   },
 ];
 
+/**
+ * Cùng quy ước, cho bảng `invoices`.
+ *
+ * Thêm ngày 23/09/2026. `invoices` không hề có cột `is_synthetic` cho tới hôm
+ * đó, nên chín dòng seed ngày 20/07 không tách được khỏi hoá đơn thật — và
+ * trang Tổng quan cùng lúc nói "chưa có giao dịch trong khoảng thời gian này"
+ * và "Hoá đơn chờ thanh toán 165,5 tỷ". Trợ lý thì khuyên "2 hoá đơn quá hạn,
+ * tổng 235.000.000 ₫" — đúng bằng tổng của các dòng seed.
+ *
+ * Test cho `transactions` đã tồn tại và đã bắt được lỗi thật một lần. Bảng hoá
+ * đơn không có nó, nên lỗi y hệt sống được thêm hai tháng.
+ */
+const MIEN_TRU_HOA_DON: Array<{ file: string; vi: string }> = [
+  {
+    file: 'supabase/functions/_shared/ledger/qr-reconciler.ts',
+    vi: 'Chỉ đổi trạng thái hoá đơn đã khớp theo id lấy từ mã QR, không đọc danh sách và không cộng tiền. Hoá đơn demo không dựng được mã QR (bank-link chặn), nên không tới được đây.',
+  },
+];
+
 function cacFile(dir: string, ra: string[] = []): string[] {
   for (const ten of readdirSync(dir)) {
     const p = join(dir, ten);
@@ -59,11 +78,11 @@ function boChuThich(s: string): string {
   return s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 }
 
-/** Các câu lệnh có `.from("transactions")` kèm `.select(`, trả về nguyên đoạn. */
-export function doanDocGiaoDich(src: string): string[] {
+/** Các câu lệnh có `.from("<bang>")` kèm `.select(`, trả về nguyên đoạn. */
+export function doanDocBang(src: string, bang: string): string[] {
   const sach = boChuThich(src);
   const ra: string[] = [];
-  const re = /\.from\(\s*["']transactions["']\s*\)/g;
+  const re = new RegExp(`\\.from\\(\\s*["']${bang}["']\\s*\\)`, 'g');
   let m: RegExpExecArray | null;
 
   while ((m = re.exec(sach))) {
@@ -74,6 +93,9 @@ export function doanDocGiaoDich(src: string): string[] {
   }
   return ra;
 }
+
+export const doanDocGiaoDich = (src: string) => doanDocBang(src, 'transactions');
+export const doanDocHoaDon = (src: string) => doanDocBang(src, 'invoices');
 
 describe('bộ dò câu lệnh đọc giao dịch', () => {
   it('bắt câu có select, bỏ qua câu chỉ ghi', () => {
@@ -125,7 +147,39 @@ describe('cờ dữ liệu thử', () => {
     expect(src).toMatch(/filter\([\s\S]{0,60}!\s*\w+\.is_synthetic/);
   });
 
+  it('mọi nơi đọc invoices để hiện số đều nhắc tới is_synthetic', () => {
+    const sai: string[] = [];
+
+    for (const f of THU_MUC.flatMap((d) => cacFile(d))) {
+      const ten = relative(goc, f).split(sep).join('/');
+      if (MIEN_TRU_HOA_DON.some((x) => ten.endsWith(x.file.replace('supabase/', '')) || ten === x.file)) {
+        continue;
+      }
+      for (const doan of doanDocHoaDon(readFileSync(f, 'utf8'))) {
+        if (!doan.includes('is_synthetic')) {
+          sai.push(`${ten}: đọc invoices mà không nhắc tới is_synthetic`);
+        }
+      }
+    }
+
+    expect(sai).toEqual([]);
+  });
+
+  it('Tổng quan và Báo cáo lọc BỎ hoá đơn demo, không chỉ đọc ra', () => {
+    for (const trang of ['DashboardOverview.tsx', 'ReportsPage.tsx']) {
+      const src = boChuThich(readFileSync(join(goc, 'src', 'pages', trang), 'utf8'));
+      const doan = doanDocHoaDon(src);
+      expect(doan.length).toBeGreaterThan(0);
+      for (const d of doan) expect(d).toMatch(/is_synthetic['"]?\s*,\s*false/);
+    }
+  });
+
+  it('không dựng mã thu tiền cho hoá đơn demo', () => {
+    const src = boChuThich(readFileSync(join(goc, 'supabase', 'functions', 'bank-link', 'index.ts'), 'utf8'));
+    for (const d of doanDocHoaDon(src)) expect(d).toMatch(/is_synthetic["']?\s*,\s*false/);
+  });
+
   it('danh sách miễn trừ nào cũng phải có lý do viết ra', () => {
-    for (const x of MIEN_TRU) expect(x.vi.trim().length).toBeGreaterThan(30);
+    for (const x of [...MIEN_TRU, ...MIEN_TRU_HOA_DON]) expect(x.vi.trim().length).toBeGreaterThan(30);
   });
 });

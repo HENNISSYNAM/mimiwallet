@@ -181,6 +181,11 @@ export default function DashboardOverview() {
           .order('transaction_date', { ascending: false }),
         supabase.from('invoices')
           .select('id, total, status, due_date, client_name, invoice_number')
+          // Cùng quy ước với `transactions` ngay trên: màn hình này trình bày
+          // tiền của công ty, nên hoá đơn demo không được góp vào con số nào.
+          // Thiếu dòng này thì thẻ "Hoá đơn chờ thanh toán" đếm cả dòng seed
+          // trong khi thẻ dòng tiền đã lọc — hai thẻ cạnh nhau nói ngược nhau.
+          .eq('is_synthetic', false)
           .eq('company_id', company.id),
         supabase.from('credit_score_snapshots')
           .select('score, credit_limit, computed_at')

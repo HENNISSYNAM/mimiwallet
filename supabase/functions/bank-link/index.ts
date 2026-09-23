@@ -698,6 +698,9 @@ Deno.serve(async (req) => {
             .from("invoices")
             .select("id")
             .eq("id", invoiceId)
+            // Không dựng mã thu tiền thật cho một hoá đơn demo. Tiền vào sẽ là
+            // tiền thật, còn khoản phải thu thì không tồn tại.
+            .eq("is_synthetic", false)
             .eq("company_id", company.id)
             .maybeSingle();
           if (!inv) return json({ error: "Không tìm thấy hoá đơn này. Tải lại trang rồi thử lại." }, 404);

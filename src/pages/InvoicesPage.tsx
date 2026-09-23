@@ -30,6 +30,8 @@ interface Invoice {
   due_date: string;
   status: string;
   advanced_amount: number | null;
+  /** true = hoá đơn demo. Không góp vào con số tổng nào; xem migration 20260923140000. */
+  is_synthetic?: boolean | null;
 }
 
 const statusDotBg: Record<string, { dot: string; bg: string }> = {
@@ -192,7 +194,12 @@ export default function InvoicesPage() {
     const cId = await idCongTyDangDung();
     setCompanyId(cId);
     if (cId) {
-      const { data } = await supabase.from('invoices').select('*').eq('company_id', cId).order('issued_date', { ascending: false });
+      // Liệt kê cột thay cho `*`: trang này cố ý hiện CẢ hoá đơn demo (có gắn
+      // nhãn), nên `is_synthetic` phải xuất hiện rõ trong câu lệnh — đọc mã là
+      // thấy ngay trang nào đã nghĩ tới cờ đó, trang nào quên.
+      const { data } = await supabase.from('invoices')
+        .select('id, invoice_number, client_name, amount, vat_rate, total, issued_date, due_date, status, advanced_amount, is_synthetic')
+        .eq('company_id', cId).order('issued_date', { ascending: false });
       setInvoiceList((data as Invoice[]) ?? []);
     }
     setLoading(false);
@@ -351,7 +358,18 @@ export default function InvoicesPage() {
                   className="border-b border-border/30 last:border-0 hover:bg-accent/30 transition-colors cursor-pointer group"
                   onClick={() => setSelectedInvoice(inv)}
                 >
-                  <td className="px-5 py-4 font-mono text-foreground font-medium">{inv.invoice_number}</td>
+                  <td className="px-5 py-4 font-mono text-foreground font-medium">
+                    {inv.invoice_number}
+                    {/* Hiện ở nơi người ta đọc, không chỉ loại khỏi phép tính.
+                        Một dòng vô hình trong tổng nhưng trông y hệt dòng thật
+                        thì vẫn đang đánh lừa. Cùng cách làm với giao dịch ở
+                        trang Tổng quan. */}
+                    {inv.is_synthetic && (
+                      <span className="ml-2 align-middle text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent text-muted-foreground">
+                        demo
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center text-xs font-bold text-foreground shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">

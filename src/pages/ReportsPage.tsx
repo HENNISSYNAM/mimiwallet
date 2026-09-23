@@ -126,6 +126,8 @@ export default function ReportsPage() {
         supabase
           .from('invoices')
           .select('total, amount, status, due_date')
+          // Bỏ hoá đơn demo, cùng quy ước với giao dịch ngay bên dưới.
+          .eq('is_synthetic', false)
           .eq('company_id', cty.id)
           .limit(TOI_DA_DONG),
       ]);
