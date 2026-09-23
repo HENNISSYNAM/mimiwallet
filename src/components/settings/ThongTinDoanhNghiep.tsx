@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { toast } from 'sonner';
 import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
@@ -56,7 +57,7 @@ export function ThongTinDoanhNghiep() {
   const [dangLuu, setDangLuu] = useState(false);
 
   const tai = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await nguoiDungHienTai();
     if (!user) { setDangTai(false); return; }
     const id = await idCongTyDangDung();
     if (!id) { setDangTai(false); return; }

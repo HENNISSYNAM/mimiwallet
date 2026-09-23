@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, lamMoiCongTy } from '@/lib/congTyDangDung';
 
 /**
@@ -16,7 +17,7 @@ const SU_KIEN = 'mimi:cong-ty-doi';
 let boNho: CongTy | null = null;
 
 async function docCongTy(): Promise<CongTy | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await nguoiDungHienTai();
   if (!user) return null;
   // Công ty đang dùng theo bảng thành viên — người được mời cũng thấy đúng công ty mình.
   const ct = await congTyDangDung();

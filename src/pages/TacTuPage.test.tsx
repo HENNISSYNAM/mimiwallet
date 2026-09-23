@@ -23,7 +23,11 @@ vi.mock('@/lib/goiTacTu', () => ({ DIEM_GOI_TAC_TU: 'https://vi-du.supabase.co/f
 vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() }) }));
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u-1', email: 'chu@congty.vn' } } }) },
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: { id: 'u-1', email: 'chu@congty.vn' } } }),
+      // Mã nay đọc người dùng từ phiên có sẵn (src/lib/nguoiDung.ts), không đi mạng.
+      getSession: () => Promise.resolve({ data: { session: { user: { id: 'u-1', email: 'chu@congty.vn' } } }, error: null }),
+    },
     from: (ten: string) => {
       const loc: Array<(r: Record<string, unknown>) => boolean> = [];
       const lay = () => {

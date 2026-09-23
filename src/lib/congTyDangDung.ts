@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import type { VaiTro } from '../../supabase/functions/_shared/quyen/vai-tro.ts';
 
 /**
@@ -45,7 +46,7 @@ export function lamMoiCongTy() {
 let boNho: Promise<{ ds: CongTyCuaToi[]; dangDung: CongTyCuaToi | null }> | null = null;
 
 async function tai(): Promise<{ ds: CongTyCuaToi[]; dangDung: CongTyCuaToi | null }> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await nguoiDungHienTai();
   if (!user) return { ds: [], dangDung: null };
 
   const { data, error } = await supabase

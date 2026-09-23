@@ -13,7 +13,7 @@ const gia = vi.hoisted(() => ({
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u-ke-toan' } } }) },
+    auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u-ke-toan' } } }), getSession: async () => ({ data: { session: { user: { id: 'u-ke-toan' } } }, error: null }) },
     from: (bang: string) => {
       gia.hoi.push(bang);
       const q: Record<string, unknown> = {};

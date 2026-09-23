@@ -16,7 +16,7 @@ const gia = vi.hoisted(() => ({
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u-1' } } }) },
+    auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u-1' } } }), getSession: async () => ({ data: { session: { user: { id: 'u-1' } } }, error: null }) },
     from: (bang: string) => {
       const loc: Record<string, unknown> = {};
       const q: Record<string, unknown> = {};

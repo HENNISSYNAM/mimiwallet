@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, CreditCard, QrCode } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { QrPayDialog } from '@/components/fintech/QrPayDialog';
 import { MO_TA_TOI_DA, kiemMoTa } from '@/lib/moTaQr';
@@ -79,7 +80,7 @@ export default function PaymentMethods() {
 
   useEffect(() => {
     void (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) return setTt((p) => ({ ...p, dangTai: false }));
 
       const cid = await idCongTyDangDung();

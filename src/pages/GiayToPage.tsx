@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Copy, Printer, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import {
   LOAI_GIAY_TO, LY_DO_HUY, MO_TA_GIAY_TO, soanCongVanGiaiTrinh, soanCongVanHuyToKhai, soanDonTraSoat, vanBanThanhChu,
@@ -60,7 +61,7 @@ export default function GiayToPage() {
   useEffect(() => {
     let huy = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) return;
       const id = await idCongTyDangDung();
       if (!id) return;

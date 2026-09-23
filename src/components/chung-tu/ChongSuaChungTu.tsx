@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, FolderOpen, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { goiDauThoiGian } from '@/lib/goiDauThoiGian';
 import { giaiMaSaoLuu, maHoaSaoLuu, MAT_KHAU_TOI_THIEU } from '@/lib/saoLuuMaHoa';
@@ -149,7 +150,7 @@ function HopSaoLuu({ che, onDong }: { che: 'tai' | 'mo' | null; onDong: () => vo
     if (matKhau !== nhapLai) { setLoi('Hai lần nhập mật khẩu không khớp.'); return; }
     try {
       setDang('Đang đọc chứng từ…');
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) throw new Error('Phiên đăng nhập đã hết.');
       // Công ty đang dùng (thành viên được mời cũng sao lưu được), không chỉ công ty mình tạo.
       const dang = await congTyDangDung();

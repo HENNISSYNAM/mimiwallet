@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode, X,
@@ -618,7 +619,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       // stored alongside so a later change to the wording does not silently
       // rewrite what people were shown when they agreed.
       const { supabase } = await import('@/integrations/supabase/client');
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) {
         setLinking(false);
         toast.error('Vui lòng đăng nhập');

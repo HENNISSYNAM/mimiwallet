@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import type { Database } from '@/integrations/supabase/types';
 import { SUPABASE_URL } from '@/lib/env';
@@ -195,7 +196,7 @@ export default function TacTuPage() {
 
   const tai = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) return;
       setEmailChu(user.email ?? null);
       setUserId(user.id);

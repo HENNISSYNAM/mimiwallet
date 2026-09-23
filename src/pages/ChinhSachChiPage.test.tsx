@@ -27,7 +27,11 @@ vi.mock('@/integrations/supabase/client', () => {
   };
   return {
     supabase: {
-      auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u-1' } } }) },
+      auth: {
+        getUser: () => Promise.resolve({ data: { user: { id: 'u-1' } } }),
+        // Mã nay đọc người dùng từ phiên có sẵn (src/lib/nguoiDung.ts), không đi mạng.
+        getSession: () => Promise.resolve({ data: { session: { user: { id: 'u-1' } } }, error: null }),
+      },
       from: bang,
     },
   };

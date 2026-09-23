@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import type { Database } from '@/integrations/supabase/types';
 import { NHOM_CHI, TEN_NHOM_CHI } from '@/lib/tacTu';
@@ -98,7 +99,7 @@ export default function ChinhSachChiPage() {
 
   const tai = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) return;
       const id = await idCongTyDangDung();
       if (!id) return;

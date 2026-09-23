@@ -22,7 +22,7 @@ vi.mock('@/integrations/supabase/client', () => {
   };
   return {
     supabase: {
-      auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
+      auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }), getSession: async () => ({ data: { session: { user: { id: 'u1' } } }, error: null }) },
       from: (bang: string) => chuoi(gia.bang[bang]),
       storage: { from: () => ({ createSignedUrls: async (ds: string[]) => ({ data: ds.map((p) => ({ path: p, signedUrl: `https://ky/${p}` })) }) }) },
     },

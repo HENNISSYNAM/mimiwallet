@@ -22,6 +22,7 @@ import { useScrolled } from '@/hooks/useScrolled';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { layDichSauDangNhap } from '@/lib/sauDangNhap';
 
@@ -167,7 +168,7 @@ export default function DashboardLayout() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) return;
       const ct = await congTyDangDung().catch(() => null);
       if (cancelled) return;

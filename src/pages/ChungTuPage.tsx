@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, FileWarning, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { ghepChungTu, type HoaDonVao, type KhoanChi } from '@/lib/khopChungTu';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
@@ -54,7 +55,7 @@ export default function ChungTuPage() {
   const tai = useCallback(async () => {
     setDangTai(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) return;
 
       const id = await idCongTyDangDung();

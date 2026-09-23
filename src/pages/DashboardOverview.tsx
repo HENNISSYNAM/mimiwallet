@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
@@ -163,7 +164,7 @@ export default function DashboardOverview() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) { if (!cancelled) setLoading(false); return; }
 
       // Oldest company wins, matching resolveCompany on the server. A user can

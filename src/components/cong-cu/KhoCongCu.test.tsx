@@ -14,7 +14,7 @@ vi.mock('@/integrations/supabase/client', () => {
   };
   return {
     supabase: {
-      auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
+      auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }), getSession: async () => ({ data: { session: { user: { id: 'u1' } } }, error: null }) },
       from: () => ({
         select: doc,
         delete: () => ({ eq: async (...a: unknown[]) => { gia.xoa(...a); return { error: null }; } }),

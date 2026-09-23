@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { idNguoiDung } from './nguoiDung';
 
 /**
  * Record that something happened, so launch produces evidence instead of
@@ -40,8 +41,7 @@ export type EventName =
 export function track(name: EventName, props: Record<string, string | number | boolean> = {}) {
   void (async () => {
     try {
-      const { data } = await supabase.auth.getUser();
-      const userId = data.user?.id;
+      const userId = await idNguoiDung();
       // Anonymous events would be unattributable anyway, and the RLS policy
       // requires user_id = auth.uid(), so a signed-out call cannot be stored.
       if (!userId) return;

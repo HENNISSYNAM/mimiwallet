@@ -9,6 +9,7 @@ import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { formatVNDShort } from '@/lib/formatters';
 import {
@@ -115,7 +116,7 @@ export default function ReportsPage() {
   const tai = useCallback(async () => {
     setDangTai(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await nguoiDungHienTai();
       if (!user) return;
       const id = await idCongTyDangDung();
       if (!id) return;
