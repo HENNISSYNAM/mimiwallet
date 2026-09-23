@@ -264,6 +264,9 @@ Deno.serve(async (req) => {
           grantToken: grant.grantToken,
           expiresAt: grant.expiredAt ?? grant.expiration ?? null,
           redirectUri,
+          // Nền của màn Cas Link. SDK của họ luôn mở sandbox dù grant là thật,
+          // nên trình duyệt lấy nền từ đây — xem src/lib/casLink.ts.
+          linkBaseUrl: cfg.linkBaseUrl,
           scopes: forIdentity ? "identity" : forGdt ? "gdt" : forQrPay ? "qrpay" : "transaction",
         });
       }
@@ -1090,6 +1093,7 @@ Deno.serve(async (req) => {
             grantToken: grant.grantToken,
             expiresAt: grant.expiredAt ?? grant.expiration ?? null,
             redirectUri,
+            linkBaseUrl: cfg.linkBaseUrl,
             scopes: conn.scopes ?? "transaction",
           });
         } catch (e) {
@@ -1718,6 +1722,7 @@ Deno.serve(async (req) => {
                 // browser needs it to open the OTP screen and must never be
                 // allowed to supply its own.
                 redirectUri,
+                linkBaseUrl: cfg.linkBaseUrl,
                 connection_id: connectionId,
                 thuHoi,
                 message:

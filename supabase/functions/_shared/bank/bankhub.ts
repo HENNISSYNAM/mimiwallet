@@ -24,6 +24,14 @@ export interface BankhubConfig {
   secretKey: string;
   /** Sandbox unless explicitly switched; see `bankhubConfigFromEnv`. */
   baseUrl: string;
+  /**
+   * Where Cas Link itself is served — not the API host.
+   *
+   * It has to be decided here because the browser SDK cannot decide it: its
+   * `open()` always builds `https://dev.link.bankhub.dev` and never touches the
+   * PROD constant it declares one line above. See `src/lib/casLink.ts`.
+   */
+  linkBaseUrl: string;
 }
 
 /**
@@ -71,7 +79,9 @@ export function bankhubConfigFromEnv(): BankhubConfig {
   const env = (Deno.env.get('BANKHUB_ENV') ?? 'sandbox').toLowerCase();
   const baseUrl =
     env === 'production' ? 'https://production.bankhub.dev' : 'https://sandbox.bankhub.dev';
-  return { clientId, secretKey, baseUrl };
+  const linkBaseUrl =
+    env === 'production' ? 'https://link.bankhub.dev' : 'https://dev.link.bankhub.dev';
+  return { clientId, secretKey, baseUrl, linkBaseUrl };
 }
 
 function headers(cfg: BankhubConfig, accessToken?: string): HeadersInit {

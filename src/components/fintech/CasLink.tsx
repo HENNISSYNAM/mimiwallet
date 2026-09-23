@@ -18,6 +18,7 @@ import {
 } from '@/lib/lienKetNganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
+import { dongKhungCasLink, moKhungCasLink, urlCasLink } from '@/lib/casLink';
 
 /**
  * Linking a real bank account through Cas (BankHub).
@@ -30,7 +31,6 @@ import { track } from '@/lib/track';
  * random number generator.
  */
 
-const LINK_SCRIPT = 'https://cdn.bankhub.dev/link/v1/link-initialize.js';
 
 /**
  * Bump this whenever the wording of the consent list below changes materially.
@@ -101,44 +101,6 @@ export function consumeLinkState(received: string | null | undefined): boolean {
   return !!expected && !!received && expected === received;
 }
 
-interface CasLinkConfig {
-  redirectUri: string;
-  iframe: boolean;
-  grantToken: string;
-  /**
-   * Lowercase. Cas's docs table lists ENTERPRISE / PERSONAL / ALL, but the SDK
-   * compares against {enterprise, personal, all} — and the guard that should
-   * have rejected the mismatch is `if (n && !valid.includes(n) && valid.join(", "))`,
-   * a comma expression with no throw. So "ALL" sailed through validation and
-   * reached their page as an fiServiceType it does not recognise.
-   */
-  fiServiceType?: 'enterprise' | 'personal' | 'all';
-  /**
-   * Which product the link is for: 'qrpay' or 'kyc'.
-   *
-   * Leaving it out is what produced FI_SERVICE_NOT_FOUND on every attempt to
-   * raise a QR. Cas Link opened in its default mode, the customer picked from
-   * the full list of banks, and the one they picked does not sell QR Pay —
-   * which nothing could reveal until the first /qr-pay call failed, long after
-   * the linking screen had closed.
-   *
-   * Deliberately not set on the ordinary "link my bank" path: filtering to QR
-   * Pay banks there would hide banks that are perfectly good for reading
-   * statements, which is the product's main job.
-   */
-  feature?: 'kyc' | 'qrpay';
-  /** Random per-attempt, returned intact on onSuccess and on the redirect. */
-  state?: string;
-  onSuccess?: (publicToken: string, state: string) => void;
-  onExit?: () => void;
-}
-
-declare global {
-  interface Window {
-    BankHub?: { useBankHubLink: (config: CasLinkConfig) => { open: () => void } };
-  }
-}
-
 export interface CasConnection {
   id: string;
   bank_name: string;
@@ -154,28 +116,6 @@ export interface CasConnection {
   scopes: string | null;
   last_synced_at: string | null;
   direction_convention: string | null;
-}
-
-/** Loads the Cas SDK once and resolves when `window.BankHub` is usable. */
-function loadLinkScript(): Promise<void> {
-  if (window.BankHub) return Promise.resolve();
-  const existing = document.querySelector<HTMLScriptElement>(`script[src="${LINK_SCRIPT}"]`);
-  if (existing) {
-    return new Promise((resolve, reject) => {
-      existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('Không tải được Cas Link')));
-    });
-  }
-  return new Promise((resolve, reject) => {
-    const el = document.createElement('script');
-    // Cas require this be fetched from their CDN rather than bundled: the SDK
-    // is unversioned and they ship fixes to it directly.
-    el.src = LINK_SCRIPT;
-    el.async = true;
-    el.onload = () => resolve();
-    el.onerror = () => reject(new Error('Không tải được Cas Link'));
-    document.head.appendChild(el);
-  });
 }
 
 /** Show only the last four digits; the full number is not needed on screen. */
@@ -516,6 +456,15 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   /** Exchange → store → first sync. Shared by the SDK callback and our listener. */
   // Set when a link attempt starts, read when its token comes back.
   const pendingFeature = useRef<'qrpay' | 'gdt' | 'identity' | undefined>(undefined);
+  /**
+   * Cas Link được mở để làm gì lần này.
+   *
+   * `null` nghĩa là đang liên kết: publicToken trả về phải đem đi đổi. Khi mở
+   * Cas Link để xác thực OTP lúc NGẮT kết nối thì ngược lại — đổi token ở đó sẽ
+   * tạo ra đúng cái liên kết người dùng vừa xin gỡ. Trước đây hai việc dùng
+   * chung một đường vì bộ nghe bên dưới không phân biệt được.
+   */
+  const viecDangCho = useRef<{ khiXong: () => void; khiThoat: () => void } | null>(null);
 
   const completeLink = useCallback(
     /**
@@ -629,15 +578,27 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
       const token = payload.data?.publicToken;
       if (payload.type === 'credential' && token) {
-        // Close it ourselves: the SDK only does so on the path it did not take.
-        document.getElementById('bankhub-iframe')?.remove();
+        dongKhungCasLink();
+        const viec = viecDangCho.current;
+        if (viec) {
+          // Không phải liên kết: bỏ qua publicToken, xem chú thích ở `viecDangCho`.
+          viecDangCho.current = null;
+          viec.khiXong();
+          return;
+        }
         // `payload.data?.state` is read defensively — whether Cas's postMessage
         // carries it back is undocumented. completeLink only enforces a match
         // when a value is actually present; see its own comment for why this
         // path does not need to fail closed when it is absent.
         void completeLink(token, payload.data?.state);
       } else if (payload.type === 'status') {
-        document.getElementById('bankhub-iframe')?.remove();
+        dongKhungCasLink();
+        const viec = viecDangCho.current;
+        if (viec) {
+          viecDangCho.current = null;
+          viec.khiThoat();
+          return;
+        }
         setLinking(false);
       }
     };
@@ -678,7 +639,6 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         return;
       }
 
-      await loadLinkScript();
       track('bank_link_started', { feature });
       pendingFeature.current = feature === 'bank' ? undefined : feature;
       rememberLinkFeature(feature);
@@ -692,27 +652,24 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         setLinking(false);
         return;
       }
-      if (!window.BankHub) throw new Error('Cas Link chưa sẵn sàng');
-
-      const { open } = window.BankHub.useBankHubLink({
-        grantToken: grant.grantToken,
-        // Only when the customer asked to link for receiving QR payments.
-        ...(feature === 'qrpay' ? { feature: 'qrpay' as const } : {}),
-        // Comes from the server so it always matches the value the grant was
-        // created with and the value registered in the Cas console.
-        redirectUri: grant.redirectUri,
-        iframe: true,
-        fiServiceType: 'all',
-        // Minted fresh for this attempt; BankCallback.tsx and completeLink
-        // both check it comes back unchanged before exchanging anything.
-        state: newLinkState(),
-        // Kept for the path where the SDK's own origin check does pass. Both
-        // this and the message listener call completeLink; it de-duplicates by
-        // token so the loser of the race does nothing.
-        onSuccess: (publicToken: string, state: string) => { void completeLink(publicToken, state); },
-        onExit: () => setLinking(false),
-      });
-      open();
+      moKhungCasLink(
+        urlCasLink({
+          grantToken: grant.grantToken,
+          // Only when the customer asked to link for receiving QR payments.
+          ...(feature === 'qrpay' ? { feature: 'qrpay' as const } : {}),
+          // Comes from the server so it always matches the value the grant was
+          // created with and the value registered in the Cas console.
+          redirectUri: grant.redirectUri,
+          // Cũng từ máy chủ: SDK của Cas luôn mở sandbox, kể cả khi grant là
+          // production — xem src/lib/casLink.ts.
+          linkBaseUrl: grant.linkBaseUrl,
+          iframe: true,
+          fiServiceType: 'all',
+          // Minted fresh for this attempt; BankCallback.tsx and completeLink
+          // both check it comes back unchanged before exchanging anything.
+          state: newLinkState(),
+        }),
+      );
     } catch (e) {
       setLinking(false);
       const msg = (e as Error)?.message ?? 'Lỗi không xác định';
@@ -734,7 +691,6 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     async (connectionId: string) => {
       setLinking(true);
       try {
-        await loadLinkScript();
         const grant = await call('update-token', { connection_id: connectionId });
         if (!grant) { setLinking(false); return; }
 
@@ -775,20 +731,18 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           return;
         }
         if (!grant.grantToken) { setLinking(false); return; }
-        if (!window.BankHub) throw new Error('Cas Link chưa sẵn sàng');
-
         pendingFeature.current =
           grant.scopes === 'qrpay' || grant.scopes === 'gdt' ? grant.scopes : undefined;
-        const { open } = window.BankHub.useBankHubLink({
-          grantToken: grant.grantToken,
-          redirectUri: grant.redirectUri,
-          iframe: true,
-          ...(grant.scopes === 'qrpay' ? { feature: 'qrpay' as const } : {}),
-          state: newLinkState(),
-          onSuccess: (publicToken: string, state: string) => { void completeLink(publicToken, state); },
-          onExit: () => setLinking(false),
-        });
-        open();
+        moKhungCasLink(
+          urlCasLink({
+            grantToken: grant.grantToken,
+            redirectUri: grant.redirectUri,
+            linkBaseUrl: grant.linkBaseUrl,
+            iframe: true,
+            ...(grant.scopes === 'qrpay' ? { feature: 'qrpay' as const } : {}),
+            state: newLinkState(),
+          }),
+        );
       } catch (e) {
         setLinking(false);
         const msg = (e as Error)?.message ?? 'Lỗi không xác định';
@@ -871,18 +825,12 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
       if (result.otp_required && result.grant_token) {
         try {
-          await loadLinkScript();
-          if (!window.BankHub) throw new Error('Cas Link chưa sẵn sàng');
           toast.info(
             `${result.message ?? 'Ngân hàng yêu cầu xác thực OTP để ngắt kết nối.'}${maYeuCau(result)}`,
             { duration: 30000 },
           );
-          const { open } = window.BankHub.useBankHubLink({
-            grantToken: result.grant_token,
-            redirectUri: result.redirectUri,
-            iframe: true,
-            state: newLinkState(),
-            onSuccess: () => {
+          viecDangCho.current = {
+            khiXong: () => {
               // Confirmed at the bank. Ask again — this time Cas should let go.
               void call('disconnect', { connection_id: connectionId }).then(async (second) => {
                 if (second?.disconnected) {
@@ -891,15 +839,24 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 await loadConnections();
               });
             },
-            onExit: () => {
+            khiThoat: () => {
               // Abandoned mid-OTP: the grant is still live and the row still
               // says connected, which is the truth.
               toast.message('Chưa ngắt kết nối — bạn chưa hoàn tất xác thực OTP.');
               void loadConnections();
             },
-          });
-          open();
+          };
+          moKhungCasLink(
+            urlCasLink({
+              grantToken: result.grant_token,
+              redirectUri: result.redirectUri,
+              linkBaseUrl: result.linkBaseUrl,
+              iframe: true,
+              state: newLinkState(),
+            }),
+          );
         } catch (e) {
+          viecDangCho.current = null;
           toast.error((e as Error)?.message ?? 'Không mở được bước xác thực OTP');
         }
         return;
