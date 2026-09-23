@@ -30,6 +30,15 @@ describe('danh mục công cụ', () => {
   it('khoá không trùng; bộ mặc định đều có trong danh mục và không quá giới hạn', () => {
     expect(new Set(DANH_MUC_CONG_CU.map((c) => c.khoa)).size).toBe(DANH_MUC_CONG_CU.length);
     expect(CONG_CU_MAC_DINH.every((k) => CONG_CU_THEO_KHOA[k])).toBe(true);
+    /*
+     * Kiểm tra trước khi chuyển tiền phải được ghim sẵn, và đứng đầu.
+     *
+     * 23/09/2026: agent đóng vai một người 67 tuổi đang bị hối chuyển 180 triệu
+     * đi hết mọi menu mà không tìm ra trang này — nó có thật, có backend, có
+     * test, nhưng không ai vào được vì phải tự ghim. Các công cụ khác chậm vài
+     * phút thì phiền; công cụ này chậm vài phút thì mất tiền.
+     */
+    expect(CONG_CU_MAC_DINH[0]).toBe('kiem_truoc_khi_chuyen');
     expect(CONG_CU_MAC_DINH.length).toBeLessThanOrEqual(SO_CONG_CU_TOI_DA);
   });
 

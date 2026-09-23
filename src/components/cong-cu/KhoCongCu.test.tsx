@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CONG_CU_MAC_DINH } from '@/lib/congCu';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { KhoCongCu } from './KhoCongCu';
 
@@ -38,9 +39,12 @@ describe('Kho công cụ', () => {
     await waitFor(() => expect(gia.chen).toHaveBeenCalled());
     expect(gia.xoa).toHaveBeenCalledWith('user_id', 'u1');
     const rows = gia.chen.mock.calls[0][0] as { khoa: string; thu_tu: number; user_id: string }[];
-    expect(rows.map((r) => r.khoa)).toEqual(['soan_to_khai', 'thieu_chung_tu', 'chi_phi_ai', 'bao_cao']);
+    // Suy từ CONG_CU_MAC_DINH thay vì chép cứng: phép kiểm ở đây là "bộ mặc định
+    // giữ nguyên thứ tự rồi nối cái vừa ghim vào cuối", không phải danh sách cụ
+    // thể — chép cứng thì mỗi lần đổi bộ mặc định lại đỏ một cách vô nghĩa.
+    expect(rows.map((r) => r.khoa)).toEqual([...CONG_CU_MAC_DINH, 'bao_cao']);
     expect(rows.every((r) => r.user_id === 'u1')).toBe(true);
-    expect(rows.at(-1)?.thu_tu).toBe(3);
+    expect(rows.at(-1)?.thu_tu).toBe(CONG_CU_MAC_DINH.length);
   });
 
   it('tìm không dấu thu hẹp danh mục', async () => {

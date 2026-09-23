@@ -61,7 +61,23 @@ export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH
  * Bỏ tiếp (16/09/2026): "Dòng tiền 6 tháng" và "Tìm khoản trả trùng" — trang Tổng quan đã có
  * đủ hai thứ này, người dùng báo trùng.
  */
-export const CONG_CU_MAC_DINH = ['soan_to_khai', 'thieu_chung_tu', 'chi_phi_ai'];
+/**
+ * Công cụ ghim sẵn cho người chưa chọn gì.
+ *
+ * `kiem_truoc_khi_chuyen` thêm ngày 23/09/2026 sau khi thử app bằng agent đóng
+ * vai ông Dũng, 67 tuổi, đang bị gọi điện giả danh công an hối chuyển 180 triệu.
+ * Ông đi hết thanh dưới, kho công cụ, trang Kết nối, Fintech Hub và kết luận:
+ * "không có bất kỳ nút, trang hay tính năng nào tên kiểm tra chuyển khoản".
+ *
+ * Trang /dashboard/kiem-truoc-khi-chuyen đã có đủ cả backend lẫn test từ trước.
+ * Nó chỉ không nằm trong danh sách này, nên người dùng mới phải tự vào "Thêm
+ * công cụ" rồi tự ghim. Một người đang bị hối chuyển tiền trong vài phút sẽ
+ * không đi lục kho công cụ.
+ *
+ * Đây là công cụ duy nhất trong danh mục mà việc tìm thấy nó CHẬM vài phút có
+ * thể khiến người dùng mất tiền, nên nó đứng đầu.
+ */
+export const CONG_CU_MAC_DINH = ['kiem_truoc_khi_chuyen', 'soan_to_khai', 'thieu_chung_tu', 'chi_phi_ai'];
 
 export const SO_CONG_CU_TOI_DA = 12;
 

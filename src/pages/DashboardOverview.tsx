@@ -207,10 +207,13 @@ export default function DashboardOverview() {
     return () => { cancelled = true; };
   }, []);
 
+  /** Chỉ tiền thật — mọi con số VÀ danh sách trên màn này đều dựa vào đây. */
+  const giaoDichThat = useMemo(() => txs.filter((x) => !x.is_synthetic), [txs]);
+  const soDongThu = txs.length - giaoDichThat.length;
+
   const m = useMemo(() => {
     // Every figure below describes the business, so generated rows are excluded
-    // before any of it is computed. They stay in `txs` only so the recent list
-    // can still show them, labelled.
+    // before any of it is computed.
     const real = txs.filter((x) => !x.is_synthetic);
     const days = RANGES[rangeIdx].days;
     const from = new Date(); from.setDate(from.getDate() - days);
@@ -533,17 +536,42 @@ export default function DashboardOverview() {
         <motion.div variants={fadeUp} className="lg:col-span-3 bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.recentTx')}</h3>
-            {txs.length > 0 && (
+            {giaoDichThat.length > 0 && (
               <button onClick={() => navigate('/dashboard/reports')} className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
                 {t('dashboard.viewAll')} <ArrowRight size={10} />
               </button>
             )}
           </div>
-          {txs.length === 0 ? (
-            <Empty text="Chưa có giao dịch nào." cta="Liên kết ngân hàng" onCta={() => navigate('/dashboard/fintech')} />
+          {soDongThu > 0 && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              Đã bỏ {soDongThu} giao dịch là dữ liệu thử — không tính vào con số nào trên trang này.
+            </p>
+          )}
+          {giaoDichThat.length === 0 ? (
+            <Empty
+              /*
+               * Dòng thử KHÔNG hiện ở đây nữa.
+               *
+               * Bản trước hiện chúng kèm nhãn "demo", nghĩ rằng gắn nhãn là đủ.
+               * Chị Thu (chủ 3 quán, thử ngày 23/09/2026) đọc màn này và hỏi:
+               * "Số 0 mà bên dưới có tiền ra tiền vào, cái nào đúng đây?" — thẻ
+               * tổng nói 0 ₫ trong khi ngay dưới là 8 dòng tiền tỷ. Người dùng
+               * không kết luận "à, dòng dưới là dữ liệu thử"; họ kết luận app
+               * đang tự mâu thuẫn về tiền của họ.
+               *
+               * Một cái nhãn nhỏ không thắng nổi một danh sách to. Nên danh sách
+               * đi theo đúng con số: cả hai chỉ nói về tiền thật, và số dòng thử
+               * bị loại được nói thẳng ra bên dưới.
+               */
+              text={soDongThu > 0
+                ? 'Chưa có giao dịch thật nào.'
+                : 'Chưa có giao dịch nào.'}
+              cta="Liên kết ngân hàng"
+              onCta={() => navigate('/dashboard/fintech')}
+            />
           ) : (
             <div className="space-y-1">
-              {txs.slice(0, 8).map((tx, i) => (
+              {giaoDichThat.slice(0, 8).map((tx, i) => (
                 <motion.div key={tx.id}
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.04 }}
                   className="flex items-center gap-4 py-3 px-3 -mx-3 rounded-xl hover:bg-accent/40 transition-colors group">
