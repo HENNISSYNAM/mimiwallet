@@ -72,8 +72,28 @@ export const CONTACT = {
   facebook: 'https://www.facebook.com/profile.php?id=61593186898315',
 } as const;
 
-/** Đã điền đủ kênh liên hệ chưa — dùng để ẩn/hiện phần liên hệ. */
+/** Đã điền đủ kênh liên hệ chưa — dùng để ẩn/hiện phần liên hệ ở chân trang. */
 export const hasContact = (): boolean => Boolean(CONTACT.email || CONTACT.website || CONTACT.facebook);
+
+/**
+ * Có kênh nhận yêu cầu về dữ liệu cá nhân bằng văn bản chưa.
+ *
+ * KHÁC `hasContact` MỘT CÁCH CÓ CHỦ Ý. Chân trang hiện được cả Facebook, nên
+ * `hasContact()` trả true chỉ nhờ có trang Facebook. Trang Chính sách bảo mật
+ * dùng chung phép kiểm đó nhưng lại chỉ in `email` và `website` — hai trường
+ * đang rỗng — nên câu ở mục Liên hệ ra thành:
+ *
+ *     "Mọi câu hỏi hoặc yêu cầu liên quan tới dữ liệu cá nhân, xin gửi tới ."
+ *
+ * Một câu cụt, không có địa chỉ nào. Agent đóng vai một khách hàng ở Berlin
+ * phát hiện ngày 23/09/2026: "The sentence just... stops."
+ *
+ * Yêu cầu về dữ liệu cá nhân cần một kênh có địa chỉ và lưu vết được — email
+ * hoặc trang liên hệ. Một trang Facebook không phải chỗ để gửi yêu cầu xoá dữ
+ * liệu, nên nó không tính ở đây; khi chưa có kênh nào thì trang lùi về trụ sở
+ * đăng ký, vốn luôn có thật.
+ */
+export const coKenhLienHeVanBan = (): boolean => Boolean(CONTACT.email || CONTACT.website);
 
 /** Ngày ban hành/cập nhật gần nhất của bộ văn bản pháp lý trong ứng dụng. */
 export const LEGAL_UPDATED_ON = '19/08/2026';

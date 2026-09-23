@@ -1,4 +1,4 @@
-import { COMPANY, CONTACT, hasContact, LEGAL_UPDATED_ON } from '@/config/company';
+import { COMPANY, CONTACT, coKenhLienHeVanBan, LEGAL_UPDATED_ON } from '@/config/company';
 import Footer from '@/components/layout/Footer';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -167,7 +167,7 @@ export default function Privacy() {
         </Muc>
 
         <Muc so={10} tieuDe="Liên hệ">
-          {hasContact() ? (
+          {coKenhLienHeVanBan() ? (
             <p>
               Mọi câu hỏi hoặc yêu cầu liên quan tới dữ liệu cá nhân, xin gửi tới{' '}
               {CONTACT.email && <a className="text-primary hover:underline" href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>}
