@@ -64,6 +64,13 @@ interface Summary {
   transactionsCounted: number;
   hasBankConnection: boolean;
   disclaimer: string;
+  /* Từ 24/09/2026 — cùng nguồn với tờ khai nháp (`_shared/doanh-thu/so-lieu.ts`). Tuỳ chọn để bản
+     máy chủ cũ vẫn hiện được. */
+  unclassifiedAmount?: number;
+  unclassifiedCount?: number;
+  excludedByPerson?: number;
+  coverage?: number | null;
+  notCovered?: string;
 }
 
 /** What each milestone means, and the document that says so. */
@@ -184,6 +191,42 @@ function MilestoneBar({ m }: { m: Milestone }) {
         >
           <Scale size={10} /> Xem chi tiết ở mục Luật &amp; Thuế
         </button>
+      )}
+    </div>
+  );
+}
+
+/** Dòng giải thích dưới con số ước tính từ ngân hàng. Xuất ra để kiểm riêng. */
+export function GiaiThichUocTinh({ data }: { data: Pick<Summary, 'unclassifiedAmount' | 'unclassifiedCount' | 'excludedByPerson' | 'coverage'> }) {
+  const chuaRo = data.unclassifiedAmount ?? 0;
+  const daTru = data.excludedByPerson ?? 0;
+  const phanTram = typeof data.coverage === 'number' ? Math.floor(data.coverage * 100) : null;
+  if (!chuaRo && !daTru && phanTram === null) return null;
+  return (
+    <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+      {phanTram !== null && (
+        <p className="flex items-start gap-1.5">
+          <Info size={12} className="mt-0.5 shrink-0" />
+          <span>Đã giải thích {phanTram}% giá trị tiền vào.</span>
+        </p>
+      )}
+      {chuaRo > 0 && (
+        <p className="flex items-start gap-1.5">
+          <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500" />
+          <span>
+            {short(chuaRo)} ({data.unclassifiedCount ?? 0} khoản) chưa ai xác nhận là tiền bán hàng —
+            MIMI đang tạm tính là doanh thu, không tự trừ.{' '}
+            <a href="#tien-vao" className="font-medium text-foreground underline underline-offset-2">
+              Xác nhận
+            </a>
+          </span>
+        </p>
+      )}
+      {daTru > 0 && (
+        <p className="flex items-start gap-1.5">
+          <Check size={12} className="mt-0.5 shrink-0" />
+          <span>Đã trừ {short(daTru)} bạn xác nhận không phải doanh thu (tiền vay, tiền người nhà…).</span>
+        </p>
       )}
     </div>
   );
@@ -321,8 +364,13 @@ export function ThresholdClock() {
         </p>
       )}
 
+      {/* Con số ước tính phải nói nó ước tính tới đâu: phần nào đã có người xác nhận, phần nào máy
+          đang tạm tính là doanh thu. Không tự trừ gì — chỉ mời người xác nhận. */}
+      {data.basis === 'bank' && <GiaiThichUocTinh data={data} />}
+
       <p className="mt-4 text-[11px] text-muted-foreground border-t border-border/50 pt-2">
         {data.disclaimer}
+        {data.notCovered && <> {data.notCovered}</>}
       </p>
 
       {/*

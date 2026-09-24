@@ -1,14 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveCompany } from "../_shared/company.ts";
-import { congTyLaDemo, duocHien } from "../_shared/minh-hoa.ts";
-import { taiKhoanCuaToi } from "../_shared/ledger/tai-khoan.ts";
-import {
-  findInternalTransfers,
-  revenueExcludingInternal,
-  thresholdStatus,
-  type LedgerTx,
-} from "../_shared/ledger/internal-transfer.ts";
-import { revenueFromInvoices, type GdtInvoiceRow } from "../_shared/tax/gdt-invoice-map.ts";
+import { congTyLaDemo } from "../_shared/minh-hoa.ts";
+import { thresholdStatus } from "../_shared/ledger/internal-transfer.ts";
+import { CHUA_GOM, docSoLieuDoanhThu } from "../_shared/doanh-thu/so-lieu.ts";
 
 /**
  * "How much have I sold this year, and which obligations have I reached?"
@@ -29,7 +23,10 @@ import { revenueFromInvoices, type GdtInvoiceRow } from "../_shared/tax/gdt-invo
  * blended into one confident figure:
  *
  *   bank  — income that actually landed, minus transfers between the owner's
- *           own accounts, minus anything generated for a demo. An estimate.
+ *           own accounts, minus what a PERSON confirmed is not revenue (a loan,
+ *           money from family), minus anything generated for a demo. An
+ *           estimate. Inflows nobody has explained yet stay counted: a machine
+ *           never lowers declared revenue on its own.
  *   gdt   — the total of e-invoices this company issued, as held by the tax
  *           authority. Not an estimate.
  *
@@ -78,65 +75,61 @@ Deno.serve(async (req) => {
 
     // The tax year, not a rolling 12 months. The threshold is assessed per
     // calendar year, so a rolling window would answer a different question.
-    const year = Number(new URL(req.url).searchParams.get("year")) || new Date().getFullYear();
-    const from = `${year}-01-01`;
-    const to = `${year}-12-31`;
+    const now = new Date().getFullYear();
+    const asked = new URL(req.url).searchParams.get("year");
+    const year = asked === null ? now : Number(asked);
+    if (!Number.isInteger(year) || year < 2020 || year > now + 1) {
+      return json({ error: "Năm không hợp lệ." }, 400);
+    }
 
-    const { data: txs } = await supabase
-      .from("transactions")
-      .select("id, amount, type, transaction_date, account_number, counter_account_number, is_synthetic")
-      .eq("company_id", company.id)
-      .gte("transaction_date", from)
-      .lte("transaction_date", to);
-
-    // Demo and sandbox rows are excluded before anything is counted. They are
-    // invented money, and this is the number that decides whether somebody
-    // owes tax. The one exception is the demo company, whose whole ledger is
-    // illustrative — see _shared/minh-hoa.ts.
+    // One reading shared with the draft declaration (`docDoanhThuQuy`), so the
+    // two screens cannot disagree — see _shared/doanh-thu/so-lieu.ts. Demo and
+    // sandbox rows are excluded there, except in the demo company, whose whole
+    // ledger is illustrative (_shared/minh-hoa.ts).
     const laDemo = await congTyLaDemo(supabase, company.id);
-    const real = ((txs ?? []) as Array<LedgerTx & { is_synthetic?: boolean }>).filter(duocHien(laDemo));
-
-    // Tài khoản đã liên kết và tài khoản khai khi tải sao kê — xem `ledger/tai-khoan.ts`.
-    const ownAccounts = await taiKhoanCuaToi(supabase, company.id);
-
-    const internal = findInternalTransfers(real, { ownAccounts });
-    const bankRevenue = revenueExcludingInternal(real, internal.internalIds, { from, to });
-
-    const { data: gdtRows } = await supabase
-      .from("gdt_invoices")
-      .select("direction, total_amount, invoice_status, issuance_period")
-      .eq("company_id", company.id)
-      .gte("issuance_period", year * 100 + 1)
-      .lte("issuance_period", year * 100 + 12);
-    const gdtRevenue = gdtRows?.length
-      ? revenueFromInvoices(gdtRows as unknown as GdtInvoiceRow[])
-      : null;
+    const s = await docSoLieuDoanhThu(supabase, company.id, year, laDemo);
 
     // Measured on the strongest evidence available. An e-invoice total is the
     // tax authority's own record; bank income is a reading of what arrived.
-    const basis = gdtRevenue !== null ? "gdt" : "bank";
-    const status = thresholdStatus(gdtRevenue ?? bankRevenue);
+    const basis = s.hoa_don !== null ? "gdt" : "bank";
+    const status = thresholdStatus(s.hoa_don ?? s.uoc_tinh);
 
     return json({
       year,
       company: { id: company.id, name: company.name },
       basis,
-      bankRevenue,
-      gdtRevenue,
+      // Kept for older clients: the bank estimate.
+      bankRevenue: s.uoc_tinh,
+      // Four figures, never blended into one confident number.
+      bankGrossInflow: s.tien_vao,
+      bankEstimatedRevenue: s.uoc_tinh,
+      bankConfirmedRevenue: s.da_xac_nhan,
+      gdtRevenue: s.hoa_don,
+      // Inflows nobody has confirmed yet — counted as revenue until someone does.
+      unclassifiedAmount: s.chua_ro,
+      unclassifiedCount: s.so_chua_ro,
+      excludedByPerson: s.khong_phai_doanh_thu,
+      internalTransferAmount: s.noi_bo,
+      // Share of inflow value that has an explanation. Null with no inflow.
+      coverage: s.ty_le_da_giai_thich,
+      // A bank-based figure is always an estimate; say so on the number itself.
+      isEstimate: basis === "bank",
       // Both present and disagreeing is worth surfacing rather than hiding.
-      gap: gdtRevenue !== null ? gdtRevenue - bankRevenue : null,
+      gap: s.hoa_don !== null ? s.hoa_don - s.uoc_tinh : null,
       ...status,
-      internalTransfersExcluded: internal.internalIds.size,
+      internalTransfersExcluded: s.so_giao_dich_noi_bo,
       // Pairs inferred rather than proved. They reduce revenue, so anyone
       // relying on this figure deserves to know how many were guesses.
-      needsReview: internal.needsReview.length,
-      transactionsCounted: real.length,
-      hasBankConnection: ownAccounts.length > 0,
+      needsReview: s.can_xem_lai,
+      transactionsCounted: s.so_giao_dich,
+      hasBankConnection: s.co_ket_noi_ngan_hang,
+      notCovered: CHUA_GOM,
       disclaimer:
         "Số liệu tham khảo, tính từ dữ liệu đã kết nối. Không phải kết luận về nghĩa vụ thuế.",
     });
   } catch (e) {
-    console.error("tax-summary failed:", e);
-    return json({ error: (e as Error).message }, 500);
+    // The message can name tables and columns; it stays in the log.
+    console.error("tax-summary failed:", e instanceof Error ? e.message : e);
+    return json({ error: "MIMI chưa tính được doanh thu lúc này. Thử lại sau ít phút." }, 500);
   }
 });

@@ -28,9 +28,9 @@ import {
   anhHuong, docXacNhan, goiYPhanLoai, keHoachHoanTac, lapBangTienVao, TEN_PHAN_LOAI,
   type LoaiPhanLoai, type XacNhanPhanLoai,
 } from "../_shared/doanh-thu/phan-loai.ts";
-import { findInternalTransfers, type LedgerTx } from "../_shared/ledger/internal-transfer.ts";
 import { chieuTien } from "../_shared/tien/chieu-tien.ts";
-import { taiKhoanCuaToi } from "../_shared/ledger/tai-khoan.ts";
+import { docNguonTienVao } from "../_shared/doanh-thu/so-lieu.ts";
+import { docHet } from "../_shared/doc-het.ts";
 import { ghiNhieuSuKien } from "../_shared/do-luong/su-kien.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
@@ -141,12 +141,14 @@ async function phanTich(db: Db, companyId: string, body: Row) {
    */
   let phuLuc: Row[] = [];
   if (dung.nguon === "ngan_hang") {
-    const { data: pl } = await db.from("revenue_classifications")
-      .select("confirmed_type, ghi_chu, confirmed_role, confirmed_at, transactions!inner(transaction_date, amount, merchant_name, counter_account_name)")
+    // Đọc HẾT: doanh thu đã trừ mọi khoản này, nên phụ lục phải kê đủ mọi khoản — thiếu một dòng là
+    // có khoản bị trừ mà không có lời giải trình.
+    const pl = await docHet((a, b) => db.from("revenue_classifications")
+      .select("transaction_id, confirmed_type, ghi_chu, confirmed_role, confirmed_at, transactions!inner(transaction_date, amount, merchant_name, counter_account_name)")
       .eq("company_id", companyId).eq("revenue_effect", "exclude")
       .gte("transactions.transaction_date", `${n.nam}-01-01`).lte("transactions.transaction_date", `${n.nam}-12-31`)
-      .limit(500);
-    phuLuc = ((pl ?? []) as Row[]).map((r) => {
+      .order("transaction_id", { ascending: true }).range(a, b), "phụ lục giải trình");
+    phuLuc = pl.map((r) => {
       const t = Array.isArray(r.transactions) ? r.transactions[0] : r.transactions;
       return {
         ngay: String(t?.transaction_date ?? "").slice(0, 10),
@@ -208,20 +210,10 @@ async function docBangTienVao(db: Db, companyId: string, body: Row) {
   const n = docNam(body.nam, homNay);
   if (!n.ok) return { loi: n.cau };
   const laDemo = await congTyLaDemo(db, companyId);
-  const [gd, kn, pl] = await Promise.all([
-    locMinhHoa(db.from("transactions")
-      .select("id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, account_number, counter_account_number, is_synthetic")
-      .eq("company_id", companyId), laDemo)
-      .gte("transaction_date", `${n.nam}-01-01`).lte("transaction_date", `${n.nam}-12-31`).limit(20000),
-    taiKhoanCuaToi(db, companyId),
-    db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect, ghi_chu, confirmed_role, confirmed_at").eq("company_id", companyId),
-  ]);
-  if (gd.error) throw gd.error;
-  if (pl.error) throw pl.error;
-  const rows = ((gd.data ?? []) as Row[]).map((t) => ({ ...t, amount: Number(t.amount) }));
-  const noiBo = findInternalTransfers(rows as LedgerTx[], { ownAccounts: kn });
+  // Cùng nguồn đọc với doanh thu tờ khai và mốc 1 tỷ — xem `_shared/doanh-thu/so-lieu.ts`.
+  const nguon = await docNguonTienVao(db, companyId, n.nam, laDemo, ", merchant_name, counter_account_name, payment_reference");
   return {
-    ...lapBangTienVao(n.nam, rows.filter((t) => chieuTien(t) === "vao") as never, (pl.data ?? []) as XacNhanPhanLoai[], noiBo.internalIds),
+    ...lapBangTienVao(n.nam, nguon.giao_dich.filter((t) => chieuTien(t) === "vao") as never, nguon.xac_nhan as XacNhanPhanLoai[], nguon.noi_bo.internalIds),
     la_demo: laDemo,
   };
 }

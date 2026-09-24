@@ -6,18 +6,9 @@ Cơ sở: nhánh `main` tới commit `7d279f1`, cộng phần việc đang dở 
 
 ---
 
-## 0. Việc đang dở (chưa commit, chưa deploy)
+## 0. Việc đang dở
 
-Làm trước khi nhận bản chỉ đạo, theo yêu cầu "lọc ngầm + thông báo". Đã xanh 1334/1334 test, `deno check` sạch. **Chưa đưa lên** — chờ anh quyết giữ, sửa hay bỏ theo bản chỉ đạo:
-
-| Phần | Khớp với bản chỉ đạo | Lệch với bản chỉ đạo |
-|---|---|---|
-| `giai_trinh_tien_vao` (người xác nhận khoản tiền vào không phải doanh thu; chỉ máy chủ ghi; có nhật ký) | Là mầm của `revenue_classifications` (mục I) | Chỉ hai trạng thái (doanh thu / không); thiếu "Tôi chưa chắc", thu hộ, chuyển nội bộ do người xác nhận; không có lịch sử để hoàn tác |
-| `docDoanhThuQuy` trừ khoản đã xác nhận khỏi doanh thu từ sao kê | Đúng nguyên tắc "máy gợi ý, người quyết" | Chỉ trang Tờ khai và trợ lý trừ; Tổng quan, Nhắc thuế, `tax-summary` không trừ → **các màn hình sẽ lệch số** (mục E) |
-| Hệ thống thông báo: `thong_bao`, Web Push, cron quét mỗi giờ, chuông, bật trong Nhắc thuế | Là kênh cho case và lịch nghĩa vụ (mục 13–14) | Thông báo đang là "cảnh báo rời", chưa gắn vào case có bước giải quyết |
-| Phụ lục giải trình in kèm tờ khai | Evidence pack thu nhỏ | Chưa có bản xuất theo năm (MIMI Rescue) |
-
-Khuyến nghị: **giữ và đổi hướng** — `giai_trinh_tien_vao` đổi thành `revenue_classifications` ngay trong Sprint 1, thông báo đổi thành lớp giao nhận của case và lịch nghĩa vụ ở Sprint 2. Không deploy nguyên trạng. **Bỏ điều kiện gói Growth ở bước xác nhận** (xem P-4): xác nhận phải miễn phí.
+Không còn. Phần làm trước bản chỉ đạo đã được đổi hướng đúng như khuyến nghị cũ: `giai_trinh_tien_vao` thành `revenue_classifications` (đủ 11 trạng thái, có lịch sử, hoàn tác), xác nhận miễn phí, và chỗ lệch số giữa các màn hình (mục E) đã hết — xem dòng "Một hàm doanh thu duy nhất" ở bảng dưới.
 
 ---
 
@@ -28,10 +19,11 @@ Khuyến nghị: **giữ và đổi hướng** — `giai_trinh_tien_vao` đổi 
 | Gỡ `open-banking`, 3 hàm Stripe, link Stripe chế độ thử, thẻ "Thẻ quốc tế (Stripe)" | Đã lên production (`b186bec`), gọi lại trả 404 | 95 |
 | P-4 Xác nhận miễn phí; `revenue_classifications` + lịch sử + hoàn tác + hàng loạt | Đã lên production | 90 |
 | Lọc ngầm + thông báo (web push, chuông, bật trong Nhắc thuế) | Đã lên production; lượt quét đầu tạo đúng 1 thông báo cho công ty demo | 93 |
-| Hàng đợi tiền vào trên Tổng quan (4 nút, nhóm, hoàn tác); "Tiền vào tháng này" thay "Doanh thu tháng này"; thẻ điểm tín dụng → kỳ khai kế tiếp | Xong, chờ đưa lên cùng đợt 2 | 90 |
+| Hàng đợi tiền vào trên Tổng quan (4 nút, nhóm, hoàn tác); "Tiền vào tháng này" thay "Doanh thu tháng này"; thẻ điểm tín dụng → kỳ khai kế tiếp | Đã lên production (`aaa3ca8`, Vercel đã chạy bản mới) | 90 |
 | P-1 Nhập sao kê Excel/CSV (`sao-ke`, `sao_ke_nhap`, chống trùng); gỡ INSERT/DELETE của trình duyệt trên `transactions`; `transactions.source` | Đã lên production (đợt 2); đã kiểm: `transactions` chỉ còn chính sách SELECT | 100 |
-| Một hàm doanh thu duy nhất (4 con số + độ phủ + tiền mặt), `tax-summary` đủ trường | Chưa làm | — |
-| Đo lường: mở rộng `product_events` có sẵn (thêm `company_id`, sự kiện "lần đầu" một lần mỗi công ty), view `chi_so_pilot` (% giá trị tiền vào đã giải thích) | Xong, đưa lên đợt 3 | 90 |
+| Một hàm doanh thu duy nhất `_shared/doanh-thu/so-lieu.ts` (tiền vào / ước tính / đã xác nhận / hoá đơn + tỷ lệ đã giải thích); `tax-summary`, tờ khai nháp, trợ lý, hàng đợi tiền vào cùng đọc từ đây. Sửa lệch: `tax-summary` trước không trừ khoản người đã xác nhận không phải doanh thu. Sửa đọc thiếu: mọi chỗ cộng tiền đọc từng trang (`_shared/doc-het.ts`) thay vì một lần tối đa 1000 dòng; phụ lục giải trình kê đủ thay vì dừng ở 500. Thẻ doanh thu năm nói phần nào đang tạm tính | Đã lên production. Đo trên dữ liệu thật: chưa công ty nào có khoản bị loại hay quá 1000 giao dịch/năm, nên không con số nào đang hiện bị đổi | 92 |
+| Tiền mặt (P-2) | Mới **nói rõ** "chưa gồm tiền bán thu bằng tiền mặt" dưới con số. Câu hỏi "Bạn có thu tiền mặt không, khoảng bao nhiêu mỗi tháng?" **chưa làm** | — |
+| Đo lường: mở rộng `product_events` có sẵn (thêm `company_id`, sự kiện "lần đầu" một lần mỗi công ty), view `chi_so_pilot` (% giá trị tiền vào đã giải thích) | Đã lên production; đã kiểm `anon`/`authenticated` không đọc được view | 90 |
 
 Việc còn chờ phía chủ dự án: SePay canh tài khoản nhận tiền của MIMI (chưa có sự kiện nào); lỗ hổng cũ trong gói npm (react-router, lodash, postcss… mức cao) — có từ trước, chưa nâng cấp vì phạm vi rộng.
 

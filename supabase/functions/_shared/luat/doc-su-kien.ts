@@ -11,14 +11,12 @@
  * Dòng dữ liệu thử (`is_synthetic`) không bao giờ được vào đây — trừ công ty demo, nơi cả sổ là
  * minh hoạ (`_shared/minh-hoa.ts`).
  */
-import { findInternalTransfers, revenueExcludingInternal, type LedgerTx } from '../ledger/internal-transfer.ts';
+import { docSoLieuDoanhThu } from '../doanh-thu/so-lieu.ts';
 import {
   chonDoanhThu, HO_SO_TRONG, loaiTuTaiKhoan,
   type DoanhThuDaDoc, type HoSoThue, type LoaiNguoiNop, type NguonDoanhThu, type SuKienThue,
 } from './he-luat.ts';
 import { dangHoatDong } from '../mst/tra-cuu.ts';
-import { locMinhHoa } from '../minh-hoa.ts';
-import { taiKhoanCuaToi } from '../ledger/tai-khoan.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -34,74 +32,21 @@ export interface DoanhThuTheoQuy extends DoanhThuDaDoc {
   da_giai_trinh?: { so: number; tong: number };
 }
 
-const bon = (): [number, number, number, number] => [0, 0, 0, 0];
-const quyCuaThang = (thang: number) => Math.max(1, Math.min(4, Math.ceil(thang / 3)));
-
-/** Doanh thu từng quý của một năm, từ hoá đơn điện tử và từ sao kê. */
-/** `laDemo`: công ty demo thì đọc cả dòng minh hoạ — cả sổ của nó là minh hoạ. Xem `_shared/minh-hoa.ts`. */
+/**
+ * Doanh thu từng quý của một năm, từ hoá đơn điện tử và từ sao kê. Cùng một nguồn với mốc 1 tỷ trên
+ * Tổng quan (`tax-summary`) — xem `_shared/doanh-thu/so-lieu.ts`.
+ * `laDemo`: công ty demo thì đọc cả dòng minh hoạ — cả sổ của nó là minh hoạ. Xem `_shared/minh-hoa.ts`.
+ */
 export async function docDoanhThuQuy(db: Db, companyId: string, nam: number, laDemo = false): Promise<DoanhThuTheoQuy> {
-  const hd = await db.from('gdt_invoices')
-    .select('direction, total_amount, invoice_status, issuance_period')
-    .eq('company_id', companyId)
-    .gte('issuance_period', nam * 100 + 1)
-    .lte('issuance_period', nam * 100 + 12)
-    .limit(20000);
-  if (hd.error) throw new Error(`Không đọc được hoá đơn điện tử: ${hd.error.message}`);
-  const hoaDonRows = ((hd.data ?? []) as Row[]).filter(
-    (r) => r.direction === 'issued' && (r.invoice_status === null || r.invoice_status === undefined || Number(r.invoice_status) === 1),
-  );
-  let hoaDon: [number, number, number, number] | null = null;
-  if (hoaDonRows.length) {
-    hoaDon = bon();
-    for (const r of hoaDonRows) {
-      const thang = Number(r.issuance_period ?? 0) % 100;
-      hoaDon[quyCuaThang(thang) - 1] += Number(r.total_amount ?? 0);
-    }
-  }
-
-  // Tiền giả của sandbox không được nằm trong con số quyết định nghĩa vụ thuế của công ty thật.
-  const gd = await locMinhHoa(db.from('transactions')
-    .select('id, amount, type, transaction_date, account_number, counter_account_number, is_synthetic')
-    .eq('company_id', companyId), laDemo)
-    .gte('transaction_date', `${nam}-01-01`)
-    .lte('transaction_date', `${nam}-12-31`)
-    .limit(20000);
-  if (gd.error) throw new Error(`Không đọc được sao kê: ${gd.error.message}`);
-  // Tài khoản đã liên kết và tài khoản khai khi tải sao kê — xem `ledger/tai-khoan.ts`.
-  const taiKhoan = await taiKhoanCuaToi(db, companyId);
-  const rows = ((gd.data ?? []) as Row[]).map((t) => ({ ...t, amount: Number(t.amount) })) as LedgerTx[];
-  const noiBo = findInternalTransfers(rows, { ownAccounts: taiKhoan });
-
-  /*
-   * Bảng giải trình: khoản tiền vào mà NGƯỜI (không phải máy) đã xác nhận là tiền vay, tiền người
-   * nhà, góp vốn… thì không cộng vào doanh thu. Gợi ý của máy không bao giờ trừ gì ở đây — trừ
-   * nhầm một khoản bán hàng là khai thiếu doanh thu.
-   */
-  const gt = await db.from('revenue_classifications').select('transaction_id').eq('company_id', companyId).eq('revenue_effect', 'exclude');
-  if (gt.error) throw new Error(`Không đọc được phân loại tiền vào: ${gt.error.message}`);
-  const khongPhaiDoanhThu = new Set(((gt.data ?? []) as Row[]).map((r) => String(r.transaction_id)));
-  const daGiaiTrinh = rows.filter((t) => khongPhaiDoanhThu.has(String(t.id)) && !noiBo.internalIds.has(String(t.id)));
-  const loaiTru = new Set([...noiBo.internalIds, ...khongPhaiDoanhThu]);
-
-  let nganHang: [number, number, number, number] | null = null;
-  if (rows.length) {
-    nganHang = bon();
-    for (let q = 1; q <= 4; q++) {
-      const tu = `${nam}-${String((q - 1) * 3 + 1).padStart(2, '0')}-01`;
-      const den = q === 4 ? `${nam}-12-31` : `${nam}-${String(q * 3 + 1).padStart(2, '0')}-01`;
-      const tong = revenueExcludingInternal(rows, loaiTru, { from: tu, to: den });
-      // Khoảng của quý 1–3 lấy tới hết ngày cuối quý: trừ đi phần thuộc ngày đầu quý sau.
-      nganHang[q - 1] = q === 4 ? tong : tong - revenueExcludingInternal(rows, loaiTru, { from: den, to: den });
-    }
-  }
-
+  const s = await docSoLieuDoanhThu(db, companyId, nam, laDemo);
   return {
-    hoa_don: hoaDon,
-    ngan_hang: nganHang,
-    so_hoa_don: hoaDonRows.length,
-    co_ket_noi_ngan_hang: taiKhoan.length > 0,
-    can_xem_lai: noiBo.needsReview.length,
-    da_giai_trinh: { so: daGiaiTrinh.length, tong: daGiaiTrinh.reduce((s, t) => s + Math.abs(Number(t.amount)), 0) },
+    hoa_don: s.hoa_don_theo_quy,
+    // Khoản NGƯỜI đã xác nhận là tiền vay, tiền người nhà… đã bị trừ; gợi ý của máy không bao giờ trừ gì.
+    ngan_hang: s.so_giao_dich ? s.uoc_tinh_theo_quy : null,
+    so_hoa_don: s.so_hoa_don,
+    co_ket_noi_ngan_hang: s.co_ket_noi_ngan_hang,
+    can_xem_lai: s.can_xem_lai,
+    da_giai_trinh: { so: s.so_khong_phai_doanh_thu, tong: s.khong_phai_doanh_thu },
   };
 }
 

@@ -22,6 +22,7 @@ import {
 } from "../_shared/thong-bao/sinh.ts";
 import { dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
 import { chieuTien } from "../_shared/tien/chieu-tien.ts";
+import { docHet } from "../_shared/doc-het.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,12 +76,15 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
     locMinhHoa(db.from("transactions")
       .select("id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, is_synthetic")
       .eq("company_id", companyId), laDemo)
-      .gte("transaction_date", tu30).limit(3000),
-    db.from("revenue_classifications").select("transaction_id").eq("company_id", companyId),
+      // Mới nhất trước: PostgREST trả tối đa 1000 dòng, nên nếu phải bỏ bớt thì bỏ khoản cũ.
+      .gte("transaction_date", tu30).order("transaction_date", { ascending: false }).limit(1000),
+    // Đọc HẾT khoản đã quyết: sót một dòng là hỏi lại người dùng về khoản họ đã trả lời.
+    docHet((a, b) => db.from("revenue_classifications").select("transaction_id").eq("company_id", companyId)
+      .order("transaction_id", { ascending: true }).range(a, b), "phân loại tiền vào"),
     db.from("subscriptions").select("plan, current_period_end").eq("company_id", companyId).maybeSingle(),
   ]);
   const vao = ((gd.data ?? []) as (TienVaoGanDay & { type: string })[]).filter((t) => chieuTien(t) === "vao");
-  const daQuyet = new Set(((gt.data ?? []) as { transaction_id: string }[]).map((r) => r.transaction_id));
+  const daQuyet = new Set(gt.map((r) => String(r.transaction_id)));
 
   const nhap: BanNhapThongBao[] = [
     // Hạn thuế chỉ báo từ 7 giờ sáng: không ai cần biết "còn 7 ngày" lúc 0 giờ 7 phút.
