@@ -1462,7 +1462,189 @@ function goiYGiayTo(nangLuc: string, loai: LoaiGiayTo) {
   };
 }
 
+/**
+ * Người dùng đang MÔ TẢ một cuộc gọi hối chuyển tiền — chưa chuyển đồng nào.
+ *
+ * VÌ SAO KHÔNG ĐỂ `giao_dich_bat_thuong` TRẢ LỜI CÂU NÀY. Năng lực đó quét sao kê đã
+ * có. Người đang bị gọi thì chưa chuyển gì, nên sao kê sạch, và câu trả lời sẽ là
+ * "Không thấy dấu hiệu bất thường trong 30 ngày qua" — lời trấn an sai, gửi đúng
+ * người đang bị lừa, đúng lúc họ sắp bấm chuyển. Đó là câu trả lời tệ nhất có thể.
+ *
+ * Tìm ra 24/09/2026 khi thử trợ lý bằng câu hỏi của chuyên gia: "Có người gọi xưng
+ * công an bảo chuyển tiền vào tài khoản tạm giữ" còn tệ hơn thế — nó được định
+ * tuyến tới BẢNG DÒNG TIỀN, vì "chuyển tiền vào tài khoản" chứa "tiền vào".
+ *
+ * Câu trả lời ở đây là một nguyên tắc, không dẫn số văn bản nào, vì nguyên tắc đó
+ * đúng bất kể văn bản nào đang hiệu lực: cơ quan nhà nước không làm việc qua điện
+ * thoại để yêu cầu chuyển tiền.
+ */
+function dangBiHoiChuyenTien(): KetQuaNangLuc {
+  return kq('dang_bi_hoi_chuyen_tien', 'ngan_hang',
+    'Dừng lại, chưa chuyển. Đây là kịch bản lừa đảo đang rất phổ biến.', {
+      the: [
+        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Công an, viện kiểm sát, toà án và ngân hàng không làm việc qua điện thoại để yêu cầu bạn chuyển tiền — kể cả vào "tài khoản tạm giữ", "tài khoản an toàn" hay để "xác minh". Cúp máy.' },
+        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Gọi cho một người thân bạn tin, hoặc tự đến trụ sở công an gần nhất để hỏi. Đừng gọi lại số vừa gọi cho bạn.' },
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Nếu đã lỡ chuyển: gọi ngay tổng đài ngân hàng của bạn để yêu cầu phong toả, rồi báo công an.' },
+      ],
+      de_xuat: [{
+        khoa: 'mo_trang:kiem_truoc_khi_chuyen', loai: 'mo_trang', nhan: 'Kiểm tra khoản chuyển này',
+        mo_ta: 'So số tài khoản và nội dung với lịch sử chi của bạn trước khi chuyển.',
+        tham_so: { duong_dan: '/dashboard/kiem-truoc-khi-chuyen' },
+      }],
+    });
+}
+
+/**
+ * Hỏi cách khai thấp doanh thu, né thuế: từ chối, nói lý do, chỉ đường hợp pháp.
+ *
+ * Trước 24/09/2026 câu "Làm sao khai doanh thu thấp hơn thực tế cho đỡ thuế?" được
+ * định tuyến tới bảng dòng tiền — không giúp trốn thuế, nhưng cũng không từ chối,
+ * không nói vì sao. Một kế toán thật sẽ nói thẳng là không, rồi chỉ cách hợp pháp.
+ */
+function tuChoiKhaiSai(): KetQuaNangLuc {
+  return kq('tu_choi_khai_sai', 'chung_tu', 'MIMI không giúp khai doanh thu thấp hơn thực tế.', {
+    the: [
+      { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Khai thiếu doanh thu là hành vi trốn thuế: cơ quan thuế có thể truy thu, xử phạt và tính tiền chậm nộp. Hoá đơn điện tử và sao kê ngân hàng giờ đều đối chiếu được với nhau.' },
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Nếu thuế đang nặng, có những cách hợp pháp: xem mình có thuộc diện miễn không, chọn đúng cách tính thuế, và khi nộp theo thu nhập thì tính đủ các khoản chi có chứng từ.' },
+    ],
+    de_xuat: [{
+      khoa: 'mo_trang:chung_tu', loai: 'mo_trang', nhan: 'Xem khoản chi còn thiếu chứng từ',
+      mo_ta: 'Khoản chi có chứng từ hợp lệ là cách hợp pháp để giảm thuế khi nộp theo thu nhập.',
+      tham_so: { duong_dan: '/dashboard/chung-tu' },
+    }],
+  });
+}
+
+/**
+ * Những mảng MIMI CHƯA làm. Nói thẳng là chưa làm, thay vì trả lời một câu khác.
+ *
+ * Trước 24/09/2026, "Công nợ phải trả nhà cung cấp còn bao nhiêu?" được định tuyến
+ * tới công nợ PHẢI THU — con số ngược nghĩa với câu hỏi, và người không làm kế toán
+ * không nhận ra. "Dự báo dòng tiền 3 tháng tới" trả về bảng dòng tiền QUÁ KHỨ. Một
+ * câu trả lời trông như trả lời nhưng cho câu hỏi khác còn tệ hơn "chưa làm được".
+ */
+/**
+ * "Tiền con chuyển về cho ba mẹ có bị tính là doanh thu không?"
+ *
+ * Câu hỏi thật, gom từ một người dùng ngày 24/09/2026: hộ kinh doanh của ba mẹ lớn
+ * tuổi, luật vừa đổi sang tính theo doanh thu thực tế, đã mở tài khoản ngân hàng
+ * nhưng "giờ quy ra sao kê không biết sao kê thế nào, mới ước lượng thử thôi".
+ *
+ * Trả lời thẳng là KHÔNG — rồi nói điều quan trọng hơn: trên sao kê, tiền người nhà
+ * chuyển, tiền vay, tiền góp vốn trông y hệt tiền khách trả. Và nói thật rằng khi
+ * MIMI phải dùng sao kê để ước doanh thu (chưa nối Tổng cục Thuế), MIMI CHƯA tự
+ * tách được các khoản này — chúng đang bị cộng vào. Giấu điều đó thì con số MIMI đưa
+ * ra có thể đẩy một hộ vượt mốc 1 tỷ mà thực ra không vượt.
+ */
+function tienVaoKhongPhaiDoanhThu(): KetQuaNangLuc {
+  return kq('tien_vao_khong_phai_doanh_thu', 'chung_tu',
+    'Không. Tiền người nhà chuyển cho, tiền vay, tiền góp vốn không phải doanh thu bán hàng.', {
+      the: [
+        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Nhưng trên sao kê chúng trông y hệt tiền khách trả. Nếu ước doanh thu bằng cách cộng hết tiền vào tài khoản, con số sẽ cao hơn thật — có thể cao tới mức tưởng đã vượt mốc phải nộp thuế trong khi chưa vượt.' },
+        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI hiện CHƯA tự tách được các khoản này khi đọc sao kê: chuyển giữa hai tài khoản của chính bạn thì đã loại, còn tiền người nhà, tiền vay, tiền góp vốn thì vẫn đang bị cộng vào.' },
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Cách chắc nhất: nối Tổng cục Thuế. Khi có hoá đơn điện tử, MIMI tính doanh thu từ hoá đơn — đó là số của chính cơ quan thuế — thay vì từ sao kê.' },
+      ],
+      de_xuat: [{
+        khoa: 'mo_trang:ket_noi', loai: 'mo_trang', nhan: 'Nối Tổng cục Thuế',
+        mo_ta: 'Doanh thu tính từ hoá đơn điện tử thay vì cộng mọi khoản tiền vào tài khoản.',
+        tham_so: { duong_dan: '/dashboard/ket-noi' },
+      }],
+    });
+}
+
+/**
+ * "Tôi ở xa, muốn theo dõi giúp ba mẹ thì làm sao?"
+ *
+ * Cùng insight trên: người con muốn giúp nhưng "không có ở nhà nhiều, không nắm đủ
+ * thông tin để vạch lộ trình giùm ba mẹ". Hai người, hai vai: ba mẹ giữ tài khoản,
+ * con có kỹ năng nhưng không có quyền và không có dữ liệu.
+ *
+ * MIMI đã có sẵn cách làm việc này — mời thành viên — nhưng không ai nói ra. Câu trả
+ * lời chỉ đúng một bước ba mẹ phải tự làm (bấm mời), mọi việc còn lại người con làm.
+ */
+function giupNguoiNha(): KetQuaNangLuc {
+  return kq('giup_nguoi_nha', 'tro_ly',
+    'Được. Ba mẹ mời bạn vào công ty trên MIMI một lần, sau đó bạn theo dõi từ xa.', {
+      the: [
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Ba mẹ vào Cài đặt → Thành viên → mời email của bạn. Đây là bước duy nhất ba mẹ phải tự làm; bạn ngồi cạnh làm cùng một lần là đủ.' },
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Chọn vai trò "Kế toán" nếu bạn muốn soạn tờ khai và ghi chứng từ giùm ba mẹ. Chọn "Người xem" nếu chỉ cần theo dõi số liệu và hạn nộp.' },
+        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Cả hai vai trò đều KHÔNG chuyển được tiền và KHÔNG duyệt được khoản chi. Liên kết ngân hàng vẫn phải do chủ tài khoản — ba mẹ — xác nhận bằng mã OTP của họ.' },
+      ],
+      de_xuat: [{
+        khoa: 'mo_trang:thanh_vien', loai: 'mo_trang', nhan: 'Mở trang mời thành viên',
+        mo_ta: 'Cài đặt → Thành viên.',
+        tham_so: { duong_dan: '/dashboard/settings' },
+      }],
+    });
+}
+
+/**
+ * Hai ranh giới cốt lõi của MIMI, nói ra khi người dùng nhờ thẳng.
+ *
+ * Trước 24/09/2026: "Nộp thuế giùm tôi luôn đi" ra bảng nghĩa vụ thuế mà không một
+ * chữ nào nói MIMI không nộp; "Chuyển 50 triệu cho nhà cung cấp giùm tôi" ra "Mình
+ * chưa hiểu câu này" — trong khi MIMI hiểu rất rõ, chỉ là không làm việc đó.
+ *
+ * Người lớn tuổi nhờ MIMI nộp hộ mà không được trả lời rõ thì sẽ tưởng đã nộp. Đó
+ * là cách người ta bị phạt nộp chậm mà không biết vì sao.
+ */
+function khongNopThay(): KetQuaNangLuc {
+  return kq('khong_nop_thay', 'chung_tu', 'MIMI không nộp tờ khai hay nộp thuế thay bạn.', {
+    the: [
+      { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI soạn sẵn bản nháp tờ khai từ hoá đơn và sao kê, rồi mở cổng thuế điện tử. Bạn đọc lại, ký và tự bấm nộp. Chưa bấm nộp trên cổng thuế thì tờ khai chưa được nộp.' },
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Nếu người nhà làm giùm, họ có thể soạn bản nháp trên MIMI với vai trò Kế toán; việc ký và nộp vẫn do người đứng tên hộ kinh doanh.' },
+    ],
+    de_xuat: [{
+      khoa: 'mo_trang:to_khai', loai: 'mo_trang', nhan: 'Mở trang Soạn tờ khai',
+      mo_ta: 'Soạn bản nháp để bạn tự ký và nộp.', tham_so: { duong_dan: '/dashboard/to-khai' },
+    }],
+  });
+}
+
+function khongChuyenTien(): KetQuaNangLuc {
+  return kq('khong_chuyen_tien', 'ngan_hang', 'MIMI không chuyển tiền giùm bạn.', {
+    the: [
+      { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI không giữ tiền và không có quyền chuyển tiền từ tài khoản của bạn. Việc chuyển tiền bạn làm trong ứng dụng ngân hàng của mình.' },
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Trước khi chuyển, MIMI kiểm tra được số tài khoản và nội dung có khớp với lịch sử trả tiền cho người này không — nhất là khi nhà cung cấp vừa báo đổi số tài khoản.' },
+    ],
+    de_xuat: [{
+      khoa: 'mo_trang:kiem_truoc_khi_chuyen', loai: 'mo_trang', nhan: 'Kiểm tra trước khi chuyển',
+      mo_ta: 'So khoản sắp chuyển với lịch sử chi.', tham_so: { duong_dan: '/dashboard/kiem-truoc-khi-chuyen' },
+    }],
+  });
+}
+
+const CHUA_LAM_DUOC: Record<string, { ten: string; thay_vao: string }> = {
+  chua_co_cong_no_phai_tra: { ten: 'công nợ phải trả nhà cung cấp', thay_vao: 'MIMI hiện chỉ theo dõi công nợ phải thu — tiền khách còn nợ bạn.' },
+  chua_co_ton_kho: { ten: 'hàng tồn kho', thay_vao: 'MIMI hiện chưa có số lượng hàng, chỉ có tiền.' },
+  chua_co_khau_hao: { ten: 'khấu hao tài sản', thay_vao: 'MIMI hiện chưa có danh sách tài sản cố định.' },
+  chua_co_du_bao: { ten: 'dự báo dòng tiền', thay_vao: 'MIMI hiện chỉ có dòng tiền đã xảy ra, theo tháng.' },
+  chua_co_luong: { ten: 'bảng lương', thay_vao: 'MIMI hiện chưa tính lương, bảo hiểm hay thuế thu nhập cho nhân viên.' },
+};
+
+function chuaLamDuoc(id: string) {
+  return (): KetQuaNangLuc => {
+    const m = CHUA_LAM_DUOC[id];
+    return kq(id, 'bao_cao', `MIMI chưa theo dõi ${m.ten}.`, {
+      the: [
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: m.thay_vao },
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'MIMI đọc được: tiền vào, tiền ra ngân hàng; hoá đơn điện tử; khoản chi thiếu chứng từ; nghĩa vụ thuế và hạn nộp.' },
+      ],
+    });
+  };
+}
+
 export const NANG_LUC: Record<string, NangLuc> = {
+  dang_bi_hoi_chuyen_tien: { nhom: 'ngan_hang', can: [], chay: dangBiHoiChuyenTien, mo_ta: 'Người dùng mô tả một cuộc gọi hoặc tin nhắn đang hối chuyển tiền (xưng công an, ngân hàng, tài khoản tạm giữ): cảnh báo dừng lại và chỉ cách kiểm tra. Không quét sao kê, vì người đang bị gọi chưa chuyển gì.' },
+  tien_vao_khong_phai_doanh_thu: { nhom: 'chung_tu', can: [], chay: tienVaoKhongPhaiDoanhThu, mo_ta: 'Hỏi tiền người nhà chuyển, tiền vay, tiền góp vốn có tính là doanh thu không: trả lời thẳng là không, và nói thật rằng khi ước doanh thu bằng sao kê MIMI chưa tự tách được các khoản này.' },
+  giup_nguoi_nha: { nhom: 'tro_ly', can: [], chay: giupNguoiNha, mo_ta: 'Người nhà (thường là con) muốn theo dõi hoặc làm giấy tờ giùm chủ hộ kinh doanh từ xa: cách mời thành viên, chọn vai trò, và những gì vai trò đó không làm được.' },
+  khong_nop_thay: { nhom: 'chung_tu', can: [], chay: khongNopThay, mo_ta: 'Người dùng nhờ MIMI nộp tờ khai hoặc nộp thuế giùm: nói rõ MIMI không nộp thay, chỉ soạn bản nháp để người đứng tên tự ký và nộp.' },
+  khong_chuyen_tien: { nhom: 'ngan_hang', can: [], chay: khongChuyenTien, mo_ta: 'Người dùng nhờ MIMI chuyển tiền giùm: nói rõ MIMI không giữ và không chuyển tiền, và mời kiểm tra khoản chuyển trước.' },
+  tu_choi_khai_sai: { nhom: 'chung_tu', can: [], chay: tuChoiKhaiSai, mo_ta: 'Từ chối giúp khai thấp doanh thu hay né thuế, nói lý do và chỉ cách giảm thuế hợp pháp.' },
+  ...Object.fromEntries(Object.entries(CHUA_LAM_DUOC).map(([id, m]) => [id, {
+    nhom: 'bao_cao' as NhomNangLuc, can: [], chay: chuaLamDuoc(id),
+    mo_ta: `Câu hỏi về ${m.ten} — mảng MIMI chưa làm; nói thẳng là chưa làm thay vì trả lời một câu khác.`,
+  }])),
   yeu_cau_cho_duyet: { nhom: 'tro_ly', can: ['yeu_cau'], chay: yeuCauChoDuyet, mo_ta: 'Các khoản chi agent hoặc người dùng xin, đang chờ chủ doanh nghiệp duyệt; kèm đề xuất duyệt/từ chối.' },
   tinh_hinh_agent: { nhom: 'tro_ly', can: ['yeu_cau'], chay: tinhHinhAgent, mo_ta: 'Các agent AI được phép xin chi: trạng thái, đã dùng bao nhiêu hạn mức tháng, agent bị từ chối nhiều.' },
   chi_phi_thang: { nhom: 'chi_phi', can: ['giao_dich'], chay: chiPhiThang, mo_ta: 'Tổng chi qua ngân hàng tháng này so với cùng kỳ tháng trước, và chi nhiều nhất cho ai.' },
