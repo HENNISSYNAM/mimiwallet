@@ -47,6 +47,7 @@ const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const XoaTaiKhoan = lazy(() => import("./pages/XoaTaiKhoan"));
 const Terms = lazy(() => import("./pages/Terms"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -130,6 +131,10 @@ const App = () => (
               <Route path="/giai-phap/:slug" element={<TrangNoiDungPage />} />
               <Route path="/tri-tue-nhan-tao" element={<Page path="/tri-tue-nhan-tao" title="Trí tuệ nhân tạo — MIMI WALLET" description="Agent của bạn xin chi, MIMI xét bằng luật bạn đọc được: tự duyệt khi an toàn, hỏi bạn khi không, chặn đổi số tài khoản. Ghi rõ phần nào đang chạy, phần nào đang xây."><TriTueNhanTaoPage /></Page>} />
               <Route path="/privacy" element={<Page path="/privacy" title="Chính sách bảo mật — MIMI WALLET" description="Cách MIMI Wallet thu thập, lưu trữ và bảo vệ dữ liệu tài chính của doanh nghiệp bạn, cùng quyền của bạn với dữ liệu đó."><Privacy /></Page>} />
+              {/* Google Play yêu cầu một đường xoá tài khoản mở được mà KHÔNG cần cài app
+                  và không cần đăng nhập, cho người đã gỡ ứng dụng. Đường trong app đã có ở
+                  Cài đặt; đây là đường thứ hai. Cố ý không đặt nút xoá trên trang công khai. */}
+              <Route path="/xoa-tai-khoan" element={<Page path="/xoa-tai-khoan" title="Xoá tài khoản — MIMI WALLET" description="Cách xoá tài khoản MIMI Wallet và toàn bộ dữ liệu: giao dịch, hoá đơn, chứng từ, liên kết ngân hàng và hồ sơ doanh nghiệp."><XoaTaiKhoan /></Page>} />
               <Route path="/terms" element={<Page path="/terms" title="Điều khoản sử dụng — MIMI WALLET" description="Điều khoản và điều kiện khi sử dụng dịch vụ MIMI Wallet: quyền, nghĩa vụ và giới hạn trách nhiệm của các bên."><Terms /></Page>} />
               <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, khoản vay và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
               {/* Khôi phục mật khẩu. Trước đây KHÔNG có đường nào: chỉ có "Đổi

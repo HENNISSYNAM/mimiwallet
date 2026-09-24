@@ -49,8 +49,23 @@ export default function NetworkGraph({ labels = ['Ngân hàng', 'Hóa đơn', 'D
           <motion.circle
             key={`p-${i}`}
             r="1"
-            /* Toạ độ đầu: không có thì khung render đầu tiên ra cx/cy = undefined, và trình duyệt
-               báo lỗi 'Expected length, "undefined"' cho mỗi hạt, mỗi lần vẽ. */
+            /*
+             * Toạ độ đầu phải nằm trong `initial`, không chỉ ở thuộc tính JSX.
+             *
+             * Bản trước đặt `cx={nodes[from].x}` và tưởng thế là đủ. Không đủ:
+             * khi `animate` có `cx`, framer-motion tiếp quản thuộc tính đó và
+             * dựng giá trị động của riêng nó. Chưa có `initial` thì giá trị động
+             * ấy là `undefined` ở khung đầu, và trình duyệt kêu:
+             *
+             *     <circle> attribute cx: Expected length, "undefined".
+             *
+             * Lỗi lặp liên tục vì `repeat: Infinity` — bốn hạt, mỗi vòng một
+             * cặp lỗi. Đo được trên production ngày 24/09/2026 và một agent đóng
+             * vai người duyệt Google Play cũng nhặt được độc lập; console đỏ
+             * liên tục là thứ đầu tiên người duyệt và lập trình viên nhìn thấy,
+             * và với WebView trên điện thoại thì nó còn tốn pin.
+             */
+            initial={{ cx: nodes[from].x, cy: nodes[from].y }}
             cx={nodes[from].x}
             cy={nodes[from].y}
             fill="hsl(var(--blue-500))"

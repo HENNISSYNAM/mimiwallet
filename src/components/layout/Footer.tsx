@@ -46,6 +46,9 @@ export default function Footer() {
   const phapLy: NavItem[] = [
     { label: 'Chính sách bảo mật', to: '/privacy' },
     { label: 'Điều khoản sử dụng', to: '/terms' },
+    // Google Play đòi đường xoá tài khoản mở được không cần cài app; để ở chân
+    // trang là chỗ người duyệt và người dùng đều tìm tới đầu tiên.
+    { label: 'Xoá tài khoản', to: '/xoa-tai-khoan' },
     { label: 'Về chúng tôi', to: '/about' },
   ];
 

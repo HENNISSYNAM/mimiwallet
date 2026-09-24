@@ -29,7 +29,20 @@ export const useCountUp = (target: number, duration = 1500, start = false) => {
     if (!start || giamChuyenDong()) { setValue(target); return; }
     setValue(0);
     const startTime = performance.now();
-    const animate = (now: number) => {
+    /*
+     * Bỏ qua mốc thời gian requestAnimationFrame truyền vào, tự đọc lại
+     * `performance.now()`.
+     *
+     * Hai mốc đó không bảo đảm cùng gốc. Bản vá trước chặn `progress` ở [0,1] để
+     * hết số âm mười ba tỷ — nhưng nếu mốc luôn lệch âm thì `progress` kẹt ở 0
+     * mãi mãi, và vì `progress < 1` vẫn đúng nên vòng lặp chạy vô tận mà con số
+     * không bao giờ nhúc nhích. Đổi một lỗi ồn ào lấy một lỗi im lặng.
+     *
+     * Đọc lại cùng một đồng hồ đã dùng cho `startTime` thì hiệu số luôn đúng,
+     * không cần giả định gì về gốc thời gian.
+     */
+    const animate = () => {
+      const now = performance.now();
       /*
        * Chặn hai đầu, không chỉ đầu trên.
        *
