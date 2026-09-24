@@ -29,6 +29,8 @@ export interface DoanhThuTheoQuy extends DoanhThuDaDoc {
   co_ket_noi_ngan_hang: boolean;
   /** Cặp chuyển khoản nội bộ suy ra (không chắc chắn) đã bị loại khỏi doanh thu. */
   can_xem_lai: number;
+  /** Khoản tiền vào NGƯỜI DÙNG đã xác nhận không phải doanh thu (Bảng giải trình), đã trừ. */
+  da_giai_trinh?: { so: number; tong: number };
 }
 
 const bon = (): [number, number, number, number] => [0, 0, 0, 0];
@@ -73,15 +75,26 @@ export async function docDoanhThuQuy(db: Db, companyId: string, nam: number, laD
   const rows = ((gd.data ?? []) as Row[]).map((t) => ({ ...t, amount: Number(t.amount) })) as LedgerTx[];
   const noiBo = findInternalTransfers(rows, { ownAccounts: taiKhoan });
 
+  /*
+   * Bảng giải trình: khoản tiền vào mà NGƯỜI (không phải máy) đã xác nhận là tiền vay, tiền người
+   * nhà, góp vốn… thì không cộng vào doanh thu. Gợi ý của máy không bao giờ trừ gì ở đây — trừ
+   * nhầm một khoản bán hàng là khai thiếu doanh thu.
+   */
+  const gt = await db.from('revenue_classifications').select('transaction_id').eq('company_id', companyId).eq('revenue_effect', 'exclude');
+  if (gt.error) throw new Error(`Không đọc được phân loại tiền vào: ${gt.error.message}`);
+  const khongPhaiDoanhThu = new Set(((gt.data ?? []) as Row[]).map((r) => String(r.transaction_id)));
+  const daGiaiTrinh = rows.filter((t) => khongPhaiDoanhThu.has(String(t.id)) && !noiBo.internalIds.has(String(t.id)));
+  const loaiTru = new Set([...noiBo.internalIds, ...khongPhaiDoanhThu]);
+
   let nganHang: [number, number, number, number] | null = null;
   if (rows.length) {
     nganHang = bon();
     for (let q = 1; q <= 4; q++) {
       const tu = `${nam}-${String((q - 1) * 3 + 1).padStart(2, '0')}-01`;
       const den = q === 4 ? `${nam}-12-31` : `${nam}-${String(q * 3 + 1).padStart(2, '0')}-01`;
-      const tong = revenueExcludingInternal(rows, noiBo.internalIds, { from: tu, to: den });
+      const tong = revenueExcludingInternal(rows, loaiTru, { from: tu, to: den });
       // Khoảng của quý 1–3 lấy tới hết ngày cuối quý: trừ đi phần thuộc ngày đầu quý sau.
-      nganHang[q - 1] = q === 4 ? tong : tong - revenueExcludingInternal(rows, noiBo.internalIds, { from: den, to: den });
+      nganHang[q - 1] = q === 4 ? tong : tong - revenueExcludingInternal(rows, loaiTru, { from: den, to: den });
     }
   }
 
@@ -91,6 +104,7 @@ export async function docDoanhThuQuy(db: Db, companyId: string, nam: number, laD
     so_hoa_don: hoaDonRows.length,
     co_ket_noi_ngan_hang: taiKhoan.length > 0,
     can_xem_lai: noiBo.needsReview.length,
+    da_giai_trinh: { so: daGiaiTrinh.length, tong: daGiaiTrinh.reduce((s, t) => s + Math.abs(Number(t.amount)), 0) },
   };
 }
 
@@ -195,6 +209,9 @@ export function dungSuKien(o: {
   const canhBao = [...chon.canh_bao];
   if (chon.nguon === 'ngan_hang' && !o.doanhThu.co_ket_noi_ngan_hang) {
     canhBao.push('Chưa liên kết ngân hàng hay Tổng cục Thuế: doanh thu chỉ dựa trên dữ liệu đã nhập, chưa đủ để dựa vào khi khai thuế.');
+  }
+  if (chon.nguon === 'ngan_hang' && o.doanhThu.da_giai_trinh?.so) {
+    canhBao.push(`Đã trừ ${o.doanhThu.da_giai_trinh.so} khoản bạn xác nhận không phải doanh thu (tiền vay, tiền người nhà…), tổng ${o.doanhThu.da_giai_trinh.tong.toLocaleString('vi-VN')} đồng — xem Bảng giải trình sao kê.`);
   }
   if (o.doanhThu.can_xem_lai > 0) {
     canhBao.push(`${o.doanhThu.can_xem_lai} cặp giao dịch bị coi là chuyển khoản nội bộ theo suy đoán (cùng số tiền, sát ngày) và đã trừ khỏi doanh thu. Xem lại nếu thực ra là tiền bán hàng.`);

@@ -305,7 +305,7 @@ describe('tiền vào không phải doanh thu — đọc sao kê thật', () => 
   it('nói rõ là chỉ ra, không tự trừ, và chỉ đường sửa số trên Tờ khai', () => {
     const r = chay([vao('GOP VON KINH DOANH', 50_000_000)]);
     expect(JSON.stringify(r.the)).toContain('không tự trừ');
-    expect(r.de_xuat.map((x) => x.tham_so.duong_dan)).toContain('/dashboard/to-khai');
+    expect(r.de_xuat.map((x) => x.tham_so.duong_dan)).toContain('/dashboard/nhac-thue');
   });
 
   it('không đụng tiền ra và tiền năm trước', () => {

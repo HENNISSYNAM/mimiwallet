@@ -12,6 +12,8 @@
  * 'pending'`, `hoa_don_id` duy nhất) — webhook và cron chạy trùng nhau cũng không cộng hai lần.
  */
 import { doiSoatThueBao, ketThucKy, type SubscriptionInvoice } from './subscription.ts';
+import { ghiThongBao } from '../thong-bao/gui.ts';
+import { thongBaoThanhToan } from '../thong-bao/sinh.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -88,6 +90,12 @@ export async function doiSoatTienVeMimi(db: Db, bayGio: Date = new Date()): Prom
     await db.from('tien_ve_mimi').update({ hoa_don_id: h.id }).eq('id', m.transaction_id).is('hoa_don_id', null);
     await apDung(db, h, bayGio);
     daKichHoat += 1;
+    // Báo trong app (và lên điện thoại ở lần quét kế tiếp). Lỗi ở đây không được làm hỏng việc thu tiền.
+    try {
+      await ghiThongBao(db, h.company_id, [thongBaoThanhToan({ id: h.id, amount: Number(h.amount), so_luot: h.so_luot ?? null, plan: h.plan })]);
+    } catch (e) {
+      console.error('thông báo thanh toán:', e instanceof Error ? e.message : e);
+    }
   }
 
   // Sai số tiền: ghi lại để người xem và liên hệ khách — KHÔNG kích hoạt.

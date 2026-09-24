@@ -1620,14 +1620,14 @@ function tienVaoKhongPhaiDoanhThu(d: DuLieu): KetQuaNangLuc {
           con_lai: Math.max(0, nghi.length - SO_DONG),
           bang_chung: bangChung('giao_dich', ds),
         },
-        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI chỉ chỉ ra, không tự trừ: doanh thu ước từ sao kê vẫn đang cộng các khoản này. "Hoàn tiền" có thể là khách trả nốt, "đặt cọc" có thể là tiền bán hàng trả trước — trừ nhầm một khoản bán hàng là khai thiếu. Khoản nào bạn chắc không phải doanh thu thì trừ khi sửa doanh thu từng quý trên trang Tờ khai.' },
+        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI chỉ chỉ ra, không tự trừ: doanh thu ước từ sao kê vẫn đang cộng các khoản này cho tới khi bạn xác nhận. "Hoàn tiền" có thể là khách trả nốt, "đặt cọc" có thể là tiền bán hàng trả trước — trừ nhầm một khoản bán hàng là khai thiếu. MIMI báo từng khoản trong thông báo để bạn xác nhận một chạm; khoản đã xác nhận được trừ khỏi doanh thu trên tờ khai.' },
         NOI_TC,
       ],
       de_xuat: [
         {
-          khoa: 'mo_trang:to_khai', loai: 'mo_trang', nhan: 'Sửa doanh thu trên Tờ khai',
-          mo_ta: 'Trừ những khoản bạn chắc không phải tiền bán hàng khỏi doanh thu từng quý.',
-          tham_so: { duong_dan: '/dashboard/to-khai' },
+          khoa: 'mo_trang:nhac_thue', loai: 'mo_trang', nhan: 'Xem thông báo cần xác nhận',
+          mo_ta: 'Mỗi khoản MIMI thấy đáng ngờ có một thông báo; xác nhận một chạm, MIMI trừ khỏi doanh thu trên tờ khai.',
+          tham_so: { duong_dan: '/dashboard/nhac-thue' },
         },
         DX_TC,
       ],

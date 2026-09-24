@@ -18,7 +18,7 @@
  * Đổi `PHIEN_BAN` mỗi lần đổi danh sách VO — service worker cũ sẽ tự dọn.
  */
 
-const PHIEN_BAN = 'mimi-v1';
+const PHIEN_BAN = 'mimi-v2';
 const VO = [
   '/',
   '/manifest.webmanifest',
@@ -91,4 +91,38 @@ self.addEventListener('fetch', (e) => {
       return cache ?? mang;
     }),
   );
+});
+
+/*
+ * THÔNG BÁO ĐẨY (24/09/2026). Máy chủ (`thong-bao`) gửi JSON { tieu_de, noi_dung, duong_dan, the }.
+ * Nội dung chỉ là câu nhắc — không có số dư, không có sao kê — vì màn hình khoá ai cũng đọc được.
+ * `tag` gom theo loại: nhắc hạn mới thay nhắc hạn cũ, không chồng chất.
+ */
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { tieu_de: 'MIMI', noi_dung: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.tieu_de || 'MIMI', {
+    body: d.noi_dung || '',
+    icon: '/mimi-cat-192.png',
+    badge: '/mimi-cat-192.png',
+    tag: d.the || 'mimi',
+    renotify: true,
+    data: { duong_dan: typeof d.duong_dan === 'string' && d.duong_dan.startsWith('/dashboard') ? d.duong_dan : '/dashboard/nhac-thue' },
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const dich = (e.notification.data && e.notification.data.duong_dan) || '/dashboard/nhac-thue';
+  e.waitUntil((async () => {
+    const ds = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of ds) {
+      if (new URL(c.url).origin === self.location.origin) {
+        await c.focus();
+        if ('navigate' in c) await c.navigate(dich);
+        return;
+      }
+    }
+    await self.clients.openWindow(dich);
+  })());
 });

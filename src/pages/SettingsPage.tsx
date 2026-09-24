@@ -139,7 +139,9 @@ function SubscriptionSection() {
                 */}
                 {(key === 'starter'
                   ? ['Xuất tờ khai không giới hạn (thay vì 10.000đ mỗi tờ)', 'Sửa số, xuất lại bao nhiêu lần cũng được']
-                  : ['Tất cả Starter', 'Sắp mở: bảng giải trình sao kê — tách tiền vay, tiền người nhà khỏi doanh thu, xác nhận từng khoản']
+                  // Xác nhận tiền vào là MIỄN PHÍ cho mọi người (docs/KIEM_TOAN_RA_MAT.md, P-4) — không
+                  // bán nó trong gói. Growth chờ tới khi có thứ riêng thật sự.
+                  : ['Tất cả Starter', 'Sắp có: theo dõi liên tục, xuất bộ đối chiếu cả năm']
                 ).map(f => (
                   <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Check size={12} className="text-primary shrink-0" /> {f}

@@ -237,3 +237,25 @@ describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
     expect(await screen.findByRole('button', { name: /gói còn hạn/ })).toBeTruthy();
   });
 });
+
+describe('Tờ khai thuế — phụ lục giải trình in kèm', () => {
+  it('có khoản đã xác nhận không phải doanh thu: in phụ lục với nguyên văn nội dung và tổng', async () => {
+    gia.goi.mockImplementation(async (h: string) => (h === 'phan_tich'
+      ? { ...ketQua(suKien()), phu_luc_giai_trinh: [
+        { ngay: '2026-03-08', so_tien: 200_000_000, noi_dung: 'NGAN HANG TMCP (MINH HOA) — GIAI NGAN HDTD 0126', loai: 'Tiền vay', ghi_chu: null, vai_tro: 'chu_so_huu', xac_nhan_luc: '2026-09-24T08:00:00Z' },
+        { ngay: '2026-08-20', so_tien: 3_000_000, noi_dung: 'CON GUI BA ME TIEU THANG 08/2026', loai: 'Người nhà chuyển', ghi_chu: null, vai_tro: 'ke_toan', xac_nhan_luc: '2026-09-24T08:00:00Z' },
+      ] } as unknown as Record<string, unknown>
+      : { ok: true }));
+    dung();
+    expect(await screen.findByText(/Phụ lục: các khoản tiền vào tài khoản không phải doanh thu/)).toBeTruthy();
+    expect(screen.getByText('NGAN HANG TMCP (MINH HOA) — GIAI NGAN HDTD 0126')).toBeTruthy();
+    expect(screen.getByText('203.000.000')).toBeTruthy();
+  });
+
+  it('không có khoản nào: không in phụ lục', async () => {
+    gia.goi.mockImplementation(async (h: string) => (h === 'phan_tich' ? ketQua(suKien()) as unknown as Record<string, unknown> : { ok: true }));
+    dung();
+    await screen.findByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM');
+    expect(screen.queryByText(/Phụ lục: các khoản tiền vào/)).toBeNull();
+  });
+});

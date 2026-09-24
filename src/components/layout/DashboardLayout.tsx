@@ -1,9 +1,10 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
-import { Bell, ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, Users, X } from 'lucide-react';
+import { ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, Users, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
 import { NhanMinhHoa } from './NhanMinhHoa';
+import { ChuongThongBao } from '@/components/thong-bao/ChuongThongBao';
 import { useCongTy } from '@/hooks/useCongTy';
 import { TRANG_CHI_TIET } from '@/lib/trangChiTiet';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -254,13 +255,7 @@ export default function DashboardLayout() {
             >
               <Search size={19} />
             </button>
-            <button
-              onClick={() => toast(t('man.chung.chuaCoThongBao'))}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
-              aria-label="Thông báo"
-            >
-              <Bell size={19} />
-            </button>
+            <ChuongThongBao />
             {/* The gradient stays as the backing layer, so it shows through
                 while the photo is still loading and remains the whole avatar
                 when there is no photo — no empty circle, no layout shift. */}

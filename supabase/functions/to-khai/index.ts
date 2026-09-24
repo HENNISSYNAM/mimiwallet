@@ -23,7 +23,13 @@ import { kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien, type HoSoCongTy } from "../_shared/luat/doc-su-kien.ts";
 import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
 import { docQuyenLoi, khoaKy } from "../_shared/billing/thu-tien.ts";
-import { congTyLaDemo } from "../_shared/minh-hoa.ts";
+import { congTyLaDemo, locMinhHoa } from "../_shared/minh-hoa.ts";
+import {
+  anhHuong, docXacNhan, goiYPhanLoai, keHoachHoanTac, lapBangTienVao, TEN_PHAN_LOAI,
+  type LoaiPhanLoai, type XacNhanPhanLoai,
+} from "../_shared/doanh-thu/phan-loai.ts";
+import { findInternalTransfers, type LedgerTx } from "../_shared/ledger/internal-transfer.ts";
+import { chieuTien } from "../_shared/tien/chieu-tien.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
 const congTyChoGiaoDien = (c: HoSoCongTy) => ({
@@ -56,6 +62,9 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   phan_tich: { cuaSoGiay: 60, toiDa: 30 },
   luu_nhap: { cuaSoGiay: 60, toiDa: 20 },
   xuat: { cuaSoGiay: 60, toiDa: 20 },
+  tien_vao: { cuaSoGiay: 60, toiDa: 30 },
+  xac_nhan_tien_vao: { cuaSoGiay: 60, toiDa: 120 },
+  hoan_tac_tien_vao: { cuaSoGiay: 60, toiDa: 60 },
   ds_nhap: { cuaSoGiay: 60, toiDa: 60 },
   xoa_nhap: { cuaSoGiay: 60, toiDa: 30 },
 };
@@ -124,6 +133,31 @@ async function phanTich(db: Db, companyId: string, body: Row) {
     ? await db.from("luot_to_khai").select("id").eq("company_id", companyId).eq("ly_do", "xuat").eq("ky_khoa", khoa).limit(1)
     : { data: [] };
 
+  /*
+   * Phụ lục giải trình in kèm tờ khai: chỉ khi doanh thu tính từ sao kê, và chỉ những khoản NGƯỜI
+   * đã xác nhận không phải doanh thu. Đây là chỗ bảng giải trình được in — không có trang riêng.
+   */
+  let phuLuc: Row[] = [];
+  if (dung.nguon === "ngan_hang") {
+    const { data: pl } = await db.from("revenue_classifications")
+      .select("confirmed_type, ghi_chu, confirmed_role, confirmed_at, transactions!inner(transaction_date, amount, merchant_name, counter_account_name)")
+      .eq("company_id", companyId).eq("revenue_effect", "exclude")
+      .gte("transactions.transaction_date", `${n.nam}-01-01`).lte("transactions.transaction_date", `${n.nam}-12-31`)
+      .limit(500);
+    phuLuc = ((pl ?? []) as Row[]).map((r) => {
+      const t = Array.isArray(r.transactions) ? r.transactions[0] : r.transactions;
+      return {
+        ngay: String(t?.transaction_date ?? "").slice(0, 10),
+        so_tien: Math.abs(Number(t?.amount ?? 0)),
+        noi_dung: [t?.counter_account_name, t?.merchant_name].filter(Boolean).join(" — "),
+        loai: TEN_PHAN_LOAI[r.confirmed_type as LoaiPhanLoai] ?? r.confirmed_type,
+        ghi_chu: r.ghi_chu ?? null,
+        vai_tro: r.confirmed_role,
+        xac_nhan_luc: r.confirmed_at,
+      };
+    }).sort((a, b) => a.ngay.localeCompare(b.ngay));
+  }
+
   // P0-003: kiểm hiệu lực căn cứ theo đúng ngày hôm nay (giờ Việt Nam).
   const canCu = await kiemCanCu(db, [
     ...canCuDung(sl.ket_luan),
@@ -156,9 +190,38 @@ async function phanTich(db: Db, companyId: string, body: Row) {
       het_hieu_luc: canCu.filter((c) => c.hieu_luc?.trang_thai === "het_hieu_luc").map((c) => c.id),
       phien_ban_he_luat: PHIEN_BAN_HE_LUAT,
       thanh_toan: { ...quyenLoi, da_tra_ky_nay: !!daTra?.length },
+      phu_luc_giai_trinh: phuLuc,
     },
     soan,
     ky,
+  };
+}
+
+/**
+ * Tiền vào của năm + phân loại người đã xác nhận → bảng tiền vào (tiền vào / đã xác nhận / không
+ * phải doanh thu / chưa rõ) kèm nhóm để xác nhận hàng loạt. Xem miễn phí, xác nhận miễn phí.
+ */
+async function docBangTienVao(db: Db, companyId: string, body: Row) {
+  const homNay = iso(lucGioVietNam());
+  const n = docNam(body.nam, homNay);
+  if (!n.ok) return { loi: n.cau };
+  const laDemo = await congTyLaDemo(db, companyId);
+  const [gd, kn, pl] = await Promise.all([
+    locMinhHoa(db.from("transactions")
+      .select("id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, account_number, counter_account_number, is_synthetic")
+      .eq("company_id", companyId), laDemo)
+      .gte("transaction_date", `${n.nam}-01-01`).lte("transaction_date", `${n.nam}-12-31`).limit(20000),
+    db.from("bank_connections").select("account_number").eq("company_id", companyId).is("revoked_at", null),
+    db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect, ghi_chu, confirmed_role, confirmed_at").eq("company_id", companyId),
+  ]);
+  if (gd.error) throw gd.error;
+  if (pl.error) throw pl.error;
+  const rows = ((gd.data ?? []) as Row[]).map((t) => ({ ...t, amount: Number(t.amount) }));
+  const taiKhoan = ((kn.data ?? []) as Row[]).map((c) => c.account_number).filter((a): a is string => typeof a === "string" && !!a && !a.startsWith("grant:"));
+  const noiBo = findInternalTransfers(rows as LedgerTx[], { ownAccounts: taiKhoan });
+  return {
+    ...lapBangTienVao(n.nam, rows.filter((t) => chieuTien(t) === "vao") as never, (pl.data ?? []) as XacNhanPhanLoai[], noiBo.internalIds),
+    la_demo: laDemo,
   };
 }
 
@@ -168,6 +231,9 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   luu_nhap: "soan_to_khai",
   xuat: "soan_to_khai",
   xoa_nhap: "soan_to_khai",
+  // Xác nhận làm GIẢM doanh thu khai thuế: cùng mức quyền với sửa hồ sơ thuế.
+  xac_nhan_tien_vao: "sua_ho_so_thue",
+  hoan_tac_tien_vao: "sua_ho_so_thue",
 };
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
@@ -302,6 +368,96 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         cach_tra: cachTra,
         con_luot: cachTra === "luot" ? tt.con_luot - 1 : tt.con_luot,
       });
+    }
+
+    /*
+     * TIỀN VÀO — khoản nào là tiền bán hàng, khoản nào không. MIỄN PHÍ (docs/KIEM_TOAN_RA_MAT.md,
+     * mục P-4): xác nhận là bước kích hoạt, không phải chỗ thu tiền. Máy gợi ý, người quyết; mỗi
+     * lần đổi ghi một dòng vào `revenue_classification_events` và hoàn tác được.
+     */
+    case "tien_vao": {
+      const bang = await docBangTienVao(db, company.id, body);
+      if ("loi" in bang && bang.loi) return loi("THAM_SO", bang.loi, 400);
+      return json(bang);
+    }
+
+    case "xac_nhan_tien_vao": {
+      const x = docXacNhan(body);
+      if (!x.ok) return loi("THAM_SO", x.cau, 400);
+      const laDemo = await congTyLaDemo(db, company.id);
+      const { data: gds, error: loiGd } = await locMinhHoa(db.from("transactions")
+        .select("id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, is_synthetic")
+        .eq("company_id", company.id).in("id", x.transaction_ids), laDemo);
+      if (loiGd) throw loiGd;
+      const vao = ((gds ?? []) as Row[]).filter((g) => chieuTien(g) === "vao");
+      if (vao.length !== x.transaction_ids.length) return loi("KHONG_THAY", "Có khoản không thuộc công ty này, hoặc không phải tiền vào.", 404);
+
+      const { data: cu } = await db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect").in("transaction_id", x.transaction_ids);
+      const cuTheoGd = new Map(((cu ?? []) as Row[]).map((r) => [r.transaction_id, r]));
+      const bayGio = new Date().toISOString();
+      const nhom = x.transaction_ids.length > 1 ? crypto.randomUUID() : null;
+      const hieuLuc = anhHuong(x.loai);
+
+      const { error: loiGhi } = await db.from("revenue_classifications").upsert(vao.map((g) => {
+        const goiY = goiYPhanLoai(g as { merchant_name: string | null; counter_account_name: string | null; payment_reference: string | null });
+        return {
+          company_id: company.id, transaction_id: g.id,
+          suggested_type: goiY?.loai ?? null, suggestion_source: goiY ? "pattern" : "human",
+          reason_text: goiY?.ly_do ?? null,
+          confirmed_type: x.loai, revenue_effect: hieuLuc, requires_review: x.loai === "unknown",
+          ghi_chu: x.ghi_chu, confirmed_by: userId, confirmed_role: vaiTro, confirmed_at: bayGio, updated_at: bayGio,
+        };
+      }), { onConflict: "transaction_id" });
+      if (loiGhi) throw loiGhi;
+
+      const { error: loiLs } = await db.from("revenue_classification_events").insert(vao.map((g) => ({
+        company_id: company.id, transaction_id: g.id,
+        from_type: cuTheoGd.get(g.id)?.confirmed_type ?? null, from_effect: cuTheoGd.get(g.id)?.revenue_effect ?? null,
+        to_type: x.loai, to_effect: hieuLuc, bulk_group_id: nhom, actor: userId, actor_role: vaiTro, at: bayGio,
+      })));
+      if (loiLs) throw loiLs;
+
+      const tong = vao.reduce((s, g) => s + Math.abs(Number(g.amount)), 0);
+      const moTa = `${vao.length} khoản, tổng ${tong.toLocaleString("vi-VN")}đ: ${TEN_PHAN_LOAI[x.loai]}${hieuLuc === "exclude" ? " — không cộng vào doanh thu" : hieuLuc === "include" ? " — cộng vào doanh thu" : " — để chưa rõ"}.`;
+      await db.from("nhat_ky_quyet_dinh").insert({
+        company_id: company.id, user_id: userId, vai_tro: vaiTro,
+        de_xuat_khoa: `phan_loai:${nhom ?? vao[0].id}`, loai: "phan_loai_tien_vao",
+        tham_so: { transaction_ids: x.transaction_ids, loai: x.loai, bulk_group_id: nhom },
+        mo_ta_da_xac_nhan: moTa.slice(0, 2000), ket_qua: "thanh_cong", ket_qua_cau: moTa.slice(0, 2000), xong_luc: bayGio,
+      });
+      return json({ ok: true, so: vao.length, bulk_group_id: nhom });
+    }
+
+    case "hoan_tac_tien_vao": {
+      const nhom = typeof body.bulk_group_id === "string" ? body.bulk_group_id : null;
+      const gdId = typeof body.transaction_id === "string" ? body.transaction_id : null;
+      if (!nhom && !gdId) return loi("THAM_SO", "Thiếu lần xác nhận cần hoàn tác.", 400);
+      let q = db.from("revenue_classification_events").select("transaction_id, from_type, from_effect, at")
+        .eq("company_id", company.id).eq("la_hoan_tac", false);
+      q = nhom ? q.eq("bulk_group_id", nhom) : q.eq("transaction_id", gdId);
+      const { data: ls, error: loiLs } = await q.order("at", { ascending: false }).limit(nhom ? 500 : 1);
+      if (loiLs) throw loiLs;
+      if (!ls?.length) return loi("KHONG_THAY", "Không có gì để hoàn tác.", 404);
+
+      const { data: hienTai } = await db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect")
+        .in("transaction_id", ls.map((s: Row) => s.transaction_id));
+      const htTheoGd = new Map(((hienTai ?? []) as Row[]).map((r) => [r.transaction_id, r]));
+      const bayGio = new Date().toISOString();
+      for (const k of keHoachHoanTac(ls as never)) {
+        if (k.ve) {
+          await db.from("revenue_classifications").update({ confirmed_type: k.ve.loai, revenue_effect: k.ve.anh_huong, confirmed_by: userId, confirmed_role: vaiTro, confirmed_at: bayGio, updated_at: bayGio })
+            .eq("transaction_id", k.transaction_id).eq("company_id", company.id);
+        } else {
+          await db.from("revenue_classifications").delete().eq("transaction_id", k.transaction_id).eq("company_id", company.id);
+        }
+        await db.from("revenue_classification_events").insert({
+          company_id: company.id, transaction_id: k.transaction_id,
+          from_type: htTheoGd.get(k.transaction_id)?.confirmed_type ?? null, from_effect: htTheoGd.get(k.transaction_id)?.revenue_effect ?? null,
+          to_type: k.ve?.loai ?? null, to_effect: k.ve?.anh_huong ?? null,
+          bulk_group_id: nhom, la_hoan_tac: true, actor: userId, actor_role: vaiTro, at: bayGio,
+        });
+      }
+      return json({ ok: true, so: ls.length });
     }
 
     case "ds_nhap": {

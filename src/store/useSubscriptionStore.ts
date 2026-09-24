@@ -3,7 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 
 /*
- * CẢNH BÁO — đường thanh toán này KHÔNG thu được tiền ở Việt Nam.
+ * GỠ STRIPE 24/09/2026: `create-checkout`, `check-subscription`, `customer-portal` đã gỡ khỏi máy
+ * chủ. Trạng thái gói đọc từ `subscriptions`; trả tiền bằng chuyển khoản (`SubscriptionPayment`).
+ * `price_id` / `product_id` dưới đây chỉ còn là khoá nhận diện gói, không gọi Stripe nữa.
+ *
+ * Ghi chú cũ — đường thanh toán này KHÔNG thu được tiền ở Việt Nam.
  *
  * Stripe không nhận merchant Việt Nam. Muốn dùng phải lập pháp nhân nước ngoài,
  * và kể cả thế thì khách của MIMI — hộ kinh doanh — cũng không trả bằng thẻ
@@ -42,8 +46,6 @@ interface SubscriptionState {
   subscriptionEnd: string | null;
   loading: boolean;
   checkSubscription: () => Promise<void>;
-  createCheckout: (priceId: string) => Promise<void>;
-  openPortal: () => Promise<void>;
 }
 
 export const useSubscriptionStore = create<SubscriptionState>((set) => ({
@@ -85,19 +87,5 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     } finally {
       set({ loading: false });
     }
-  },
-
-  createCheckout: async (priceId: string) => {
-    const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { priceId },
-    });
-    if (error) throw error;
-    if (data?.url) window.open(data.url, '_blank');
-  },
-
-  openPortal: async () => {
-    const { data, error } = await supabase.functions.invoke('customer-portal');
-    if (error) throw error;
-    if (data?.url) window.open(data.url, '_blank');
   },
 }));

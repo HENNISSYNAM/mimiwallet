@@ -7,6 +7,7 @@ import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { cacKyKeTiep, khoangNgayKyKeKhai, kyKeKhaiKeTiep, mucKhan, type MucKhan } from '@/lib/hanKeKhai';
 import { dinhDang } from '@/lib/troLy';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '@/lib/giayTo';
+import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
 
 /**
  * Nhắc thuế — như "Scheduled" của ChatGPT, nhưng là các mốc nghĩa vụ thuế (15/09/2026).
@@ -119,6 +120,9 @@ export default function NhacThuePage() {
         </div>
         <p className="mt-2 text-xs text-muted-foreground">MIMI soạn bản nháp và mở cổng nộp; bạn ký và nộp — MIMI không nộp thay.</p>
       </section>
+
+      {/* Bật thông báo ở đây: người dùng tới trang này để không lỡ hạn. */}
+      <CaiDatThongBao />
 
       <section aria-labelledby="lich-ke-khai" className="rounded-2xl border border-border bg-card">
         <h2 id="lich-ke-khai" className="border-b border-border px-5 py-3 text-sm font-semibold text-foreground">Lịch kê khai</h2>

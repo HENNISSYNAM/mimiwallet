@@ -117,6 +117,24 @@ export type Database = {
           },
         ]
       }
+      cai_dat_thong_bao: {
+        Row: {
+          cap_nhat_luc: string
+          loai_tat: string[]
+          user_id: string
+        }
+        Insert: {
+          cap_nhat_luc?: string
+          loai_tat?: string[]
+          user_id: string
+        }
+        Update: {
+          cap_nhat_luc?: string
+          loai_tat?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       carbon_snapshots: {
         Row: {
           by_category: Json
@@ -409,6 +427,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dang_ky_day: {
+        Row: {
+          auth: string
+          day_luc: string | null
+          endpoint: string
+          id: string
+          p256dh: string
+          tao_luc: string
+          thiet_bi: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          day_luc?: string | null
+          endpoint: string
+          id?: string
+          p256dh: string
+          tao_luc?: string
+          thiet_bi?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          day_luc?: string | null
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          tao_luc?: string
+          thiet_bi?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       danh_muc_dau_tu: {
         Row: {
@@ -1634,6 +1685,57 @@ export type Database = {
         }
         Relationships: []
       }
+      thong_bao: {
+        Row: {
+          company_id: string
+          da_day_luc: string | null
+          da_doc_luc: string | null
+          da_xu_ly_luc: string | null
+          duong_dan: string | null
+          hanh_dong: Json
+          id: string
+          khoa: string
+          loai: string
+          muc_do: string
+          noi_dung: string
+          tao_luc: string
+          tieu_de: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          da_day_luc?: string | null
+          da_doc_luc?: string | null
+          da_xu_ly_luc?: string | null
+          duong_dan?: string | null
+          hanh_dong?: Json
+          id?: string
+          khoa: string
+          loai: string
+          muc_do?: string
+          noi_dung: string
+          tao_luc?: string
+          tieu_de: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          da_day_luc?: string | null
+          da_doc_luc?: string | null
+          da_xu_ly_luc?: string | null
+          duong_dan?: string | null
+          hanh_dong?: Json
+          id?: string
+          khoa?: string
+          loai?: string
+          muc_do?: string
+          noi_dung?: string
+          tao_luc?: string
+          tieu_de?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       yeu_cau_chi: {
         Row: {
           cach_quyet: string | null
@@ -2030,6 +2132,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      danh_dau_thong_bao: {
+        Args: { p_da_xu_ly?: boolean; p_ids: string[] }
+        Returns: number
+      }
       chay_doi_soat_thue_bao: { Args: never; Returns: undefined }
       current_role: { Args: never; Returns: string }
       user_company_ids: { Args: { uid: string }; Returns: string[] }

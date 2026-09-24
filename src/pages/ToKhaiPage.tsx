@@ -4,7 +4,8 @@ import { AlertTriangle, ExternalLink, FileDown, Info, Loader2, Save, ScrollText 
 
 import { toast } from 'sonner';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
-import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type KetQuaPhanTich, type ThanhToanToKhai } from '@/lib/goiToKhai';
+import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type DongPhuLucGiaiTrinh, type KetQuaPhanTich, type ThanhToanToKhai } from '@/lib/goiToKhai';
+import { TEN_VAI_TRO } from '../../supabase/functions/_shared/quyen/vai-tro.ts';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import {
@@ -35,6 +36,49 @@ const so = (n: number | null | undefined) => (n === null || n === undefined ? ''
 const ngay = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
 const nhanKy = (ky: KyToKhai) => (ky.loai === 'quy' ? `Quý ${ky.quy}/${ky.nam}` : ky.loai === '6_thang_dau' ? `6 tháng đầu ${ky.nam}` : `Năm ${ky.nam}`);
 const cungKy = (a: KyToKhai, b: KyToKhai) => a.loai === b.loai && a.nam === b.nam && (a.loai !== 'quy' || b.loai !== 'quy' || a.quy === b.quy);
+
+/**
+ * Phụ lục giải trình — in cùng tờ khai. Các khoản tiền vào người nộp thuế đã xác nhận không phải
+ * doanh thu (qua thông báo của MIMI), kèm nguyên văn nội dung chuyển khoản và ai xác nhận, lúc nào.
+ */
+function PhuLucGiaiTrinh({ ds, nam }: { ds: DongPhuLucGiaiTrinh[]; nam: number }) {
+  const tong = ds.reduce((s, d) => s + d.so_tien, 0);
+  return (
+    <div className="to-khai-giay rounded-2xl border border-border bg-white p-5 text-[12px] text-slate-900 shadow-sm sm:p-8">
+      <p className="text-center text-sm font-bold uppercase">Phụ lục: các khoản tiền vào tài khoản không phải doanh thu — năm {nam}</p>
+      <p className="mx-auto mt-1 max-w-2xl text-center text-[11px] italic text-slate-600">
+        Doanh thu trên tờ khai tính từ sao kê ngân hàng, đã trừ các khoản dưới đây theo xác nhận của người nộp thuế.
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full min-w-[640px] border-collapse">
+          <thead>
+            <tr className="bg-slate-50">
+              {['STT', 'Ngày', 'Số tiền (đồng)', 'Nội dung chuyển khoản', 'Loại', 'Xác nhận'].map((c) => <th key={c} scope="col" className="border border-slate-300 px-2 py-1 text-left">{c}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {ds.map((d, i) => (
+              <tr key={`${d.ngay}-${i}`}>
+                <td className="border border-slate-300 px-2 py-1">{i + 1}</td>
+                <td className="border border-slate-300 px-2 py-1">{ngay(d.ngay)}</td>
+                <td className="border border-slate-300 px-2 py-1 text-right tabular-nums">{so(d.so_tien)}</td>
+                <td className="border border-slate-300 px-2 py-1 font-mono">{d.noi_dung}{d.ghi_chu ? ` (${d.ghi_chu})` : ''}</td>
+                <td className="border border-slate-300 px-2 py-1">{d.loai}</td>
+                <td className="border border-slate-300 px-2 py-1">{TEN_VAI_TRO[d.vai_tro as keyof typeof TEN_VAI_TRO] ?? d.vai_tro}, {ngay(d.xac_nhan_luc)}</td>
+              </tr>
+            ))}
+            <tr className="font-semibold">
+              <td colSpan={2} className="border border-slate-300 px-2 py-1">Tổng cộng</td>
+              <td className="border border-slate-300 px-2 py-1 text-right tabular-nums">{so(tong)}</td>
+              <td colSpan={3} className="border border-slate-300 px-2 py-1" />
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] italic text-slate-600">Giữ chứng từ gốc của từng khoản (hợp đồng vay, giấy tờ góp vốn…). Phụ lục do MIMI lập, không thay các chứng từ đó.</p>
+    </div>
+  );
+}
 
 /** Nói trước giá trên chính cái nút — không để người dùng bấm rồi mới biết mất tiền. */
 function nhanNutXuat(t: ThanhToanToKhai): string {
@@ -527,6 +571,7 @@ export default function ToKhaiPage() {
               ? (
                 <>
                   <GiayToKhai tk={kq.to_khai} canCu={kq.can_cu} xemTruoc={!daXuat} />
+                  {!!kq.phu_luc_giai_trinh?.length && <PhuLucGiaiTrinh ds={kq.phu_luc_giai_trinh} nam={kq.nam} />}
                   <div className="no-print rounded-2xl border border-border bg-card p-5">
                     <h3 className="text-sm font-semibold text-foreground">MIMI tính từng số thế nào</h3>
                     <ul className="mt-2 space-y-1.5">

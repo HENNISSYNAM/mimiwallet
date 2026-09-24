@@ -33,8 +33,11 @@ import logoMomo from '@/assets/logos/bank-momo.png';
  *
  *   QR Pay qua Cas — `bank-link?action=create-qr`, `QrPayDialog.tsx`. Trạng
  *                    thái đọc từ `bank_connections` chứ không viết cứng.
- *   Stripe         — `create-checkout` dùng SDK Stripe thật với
- *                    `STRIPE_SECRET_KEY`. Trạng thái đọc từ `subscriptions`.
+ *   Phí MIMI       — chuyển khoản kèm mã tham chiếu, tự kích hoạt khi tiền về
+ *                    (`bank-webhook` → `tien_ve_mimi`). Trạng thái đọc từ `subscriptions`.
+ *
+ * Thẻ "Thẻ quốc tế (Stripe)" ở đây gỡ ngày 24/09/2026: Stripe không nhận merchant Việt Nam,
+ * link đang dùng là link chế độ thử, và cả ba hàm Stripe đã gỡ khỏi máy chủ.
  *
  * Ba cái còn lại giữ lại làm lộ trình, có logo thật, và nói thẳng là chưa tích
  * hợp. Giữ chúng hữu ích hơn xoá: đó là kế hoạch có thật. Nhưng nhãn phải đúng.
@@ -186,8 +189,8 @@ export default function PaymentMethods() {
 
         <ThePhuongThuc
           bieuTuong={<CreditCard size={20} className="text-primary" />}
-          ten="Thẻ quốc tế (Stripe)"
-          mo="Dùng để bạn trả phí thuê bao MIMI. Visa, Mastercard."
+          ten="Trả phí MIMI bằng chuyển khoản"
+          mo="Quét mã hoặc chuyển khoản kèm mã thanh toán; tiền về là gói tự chạy. Làm trong Cài đặt."
           sanSang={!!tt.goi}
           dangTai={tt.dangTai}
           chuThich={
