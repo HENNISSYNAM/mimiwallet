@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
   const { error: writeError } = await supabase
     .from("transactions")
     .upsert(
-      { ...row, company_id: conn.company_id },
+      { ...row, company_id: conn.company_id, source: "sepay" },
       { onConflict: "company_id,reference_id", ignoreDuplicates: true },
     );
 

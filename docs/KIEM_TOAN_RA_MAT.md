@@ -21,6 +21,22 @@ Khuyến nghị: **giữ và đổi hướng** — `giai_trinh_tien_vao` đổi 
 
 ---
 
+## Tiến độ (cập nhật 24/09/2026, tự quyết theo `THANG_DIEM_QUYET_DINH.md`)
+
+| Việc | Trạng thái | Điểm |
+|---|---|---|
+| Gỡ `open-banking`, 3 hàm Stripe, link Stripe chế độ thử, thẻ "Thẻ quốc tế (Stripe)" | Đã lên production (`b186bec`), gọi lại trả 404 | 95 |
+| P-4 Xác nhận miễn phí; `revenue_classifications` + lịch sử + hoàn tác + hàng loạt | Đã lên production | 90 |
+| Lọc ngầm + thông báo (web push, chuông, bật trong Nhắc thuế) | Đã lên production; lượt quét đầu tạo đúng 1 thông báo cho công ty demo | 93 |
+| Hàng đợi tiền vào trên Tổng quan (4 nút, nhóm, hoàn tác); "Tiền vào tháng này" thay "Doanh thu tháng này"; thẻ điểm tín dụng → kỳ khai kế tiếp | Xong, chờ đưa lên cùng đợt 2 | 90 |
+| P-1 Nhập sao kê Excel/CSV (`sao-ke`, `sao_ke_nhap`, chống trùng); gỡ INSERT/DELETE của trình duyệt trên `transactions`; `transactions.source` | Đã lên production (đợt 2); đã kiểm: `transactions` chỉ còn chính sách SELECT | 100 |
+| Một hàm doanh thu duy nhất (4 con số + độ phủ + tiền mặt), `tax-summary` đủ trường | Chưa làm | — |
+| Đo lường: mở rộng `product_events` có sẵn (thêm `company_id`, sự kiện "lần đầu" một lần mỗi công ty), view `chi_so_pilot` (% giá trị tiền vào đã giải thích) | Xong, đưa lên đợt 3 | 90 |
+
+Việc còn chờ phía chủ dự án: SePay canh tài khoản nhận tiền của MIMI (chưa có sự kiện nào); lỗ hổng cũ trong gói npm (react-router, lodash, postcss… mức cao) — có từ trước, chưa nâng cấp vì phạm vi rộng.
+
+---
+
 ## P. Phản biện bản chỉ đạo (đọc trước các mục còn lại)
 
 Bản chỉ đạo đúng ở điều cốt lõi: **tiền vào ≠ doanh thu**, máy gợi ý và người quyết, con số nào cũng truy được về bằng chứng, không làm thêm tính năng trình diễn. Nhưng đặt cạnh mã và dữ liệu thật thì có chín chỗ cần sửa trước khi làm:
@@ -162,7 +178,7 @@ Cột "Hiện trạng" cho biết điều đang có thật hôm nay.
 7. **Lịch nghĩa vụ cá nhân hoá** (vì sao là tôi, dựa trên gì, thiếu gì).
 8. **Case** có bước giải quyết.
 9. **Gói hồ sơ cho kế toán** + ghi quyết định.
-10. **Đo lường sự kiện sản phẩm** — hiện không có sự kiện nào.
+10. **Đo lường theo công ty cho hành trình kích hoạt.** *(Đính chính 24/09: MIMI đã có `product_events` + `track()` từ 13/08, ghi theo người dùng — bản đầu của tài liệu này nói nhầm là không có. Thiếu là: gắn công ty, các sự kiện kích hoạt, chỉ số % tiền vào đã giải thích.)*
 11. **Dữ liệu sàn TMĐT** — chưa có (để Sprint sau; bắt đầu bằng nhập tệp đối soát của sàn).
 
 ---

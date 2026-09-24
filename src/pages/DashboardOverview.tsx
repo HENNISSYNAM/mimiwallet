@@ -15,6 +15,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { duocHien } from '../../supabase/functions/_shared/minh-hoa.ts';
+import { HangDoiTienVao } from '@/components/tien-vao/HangDoiTienVao';
+import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
@@ -59,7 +61,6 @@ interface Tx {
   transaction_date: string;
 }
 interface Invoice { id: string; total: number; status: string; due_date: string; client_name: string; invoice_number: string; }
-interface Snapshot { score: number; credit_limit: number; computed_at: string; }
 
 /** Windows offered by the range selector, in days. 12T is a year. */
 const RANGES = [
@@ -116,27 +117,6 @@ function KPICard({ icon: Icon, label, value, sub, subColor = 'text-mimi-green', 
   );
 }
 
-function CreditScoreRing({ score }: { score: number }) {
-  const circumference = 2 * Math.PI * 38;
-  const filled = (Math.max(0, Math.min(850, score)) / 850) * circumference;
-  return (
-    <svg viewBox="0 0 100 100" className="w-16 h-16">
-      <circle cx="50" cy="50" r="38" fill="none" stroke="hsl(var(--border))" strokeWidth="5" />
-      <circle cx="50" cy="50" r="38" fill="none" stroke="url(#scoreGrad)" strokeWidth="5" strokeLinecap="round"
-        strokeDasharray={circumference} strokeDashoffset={circumference - filled}
-        transform="rotate(-90 50 50)" className="transition-all duration-1000 ease-out" />
-      <defs>
-        <linearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--blue-500))" />
-          <stop offset="100%" stopColor="hsl(var(--green-500))" />
-        </linearGradient>
-      </defs>
-      <text x="50" y="48" textAnchor="middle" dominantBaseline="central" fill="hsl(var(--text-primary))" fontFamily="Inter, sans-serif" fontWeight="800" fontSize="15">{score}</text>
-      <text x="50" y="62" textAnchor="middle" fill="hsl(var(--text-secondary))" fontFamily="Inter, sans-serif" fontSize="7">/ 850</text>
-    </svg>
-  );
-}
-
 /** Shown wherever a panel has nothing truthful to put in it. */
 function Empty({ text, cta, onCta }: { text: string; cta?: string; onCta?: () => void }) {
   return (
@@ -161,7 +141,6 @@ export default function DashboardOverview() {
   /** Công ty minh hoạ: hiện dữ liệu `is_synthetic` (kèm nhãn trang) thay vì lọc bỏ. */
   const [laDemo, setLaDemo] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [hasBank, setHasBank] = useState(false);
 
   useEffect(() => {
@@ -179,7 +158,7 @@ export default function DashboardOverview() {
       const demo = dang.la_demo === true;
 
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
-      const [txRes, invRes, snapRes, bankRes] = await Promise.all([
+      const [txRes, invRes, bankRes] = await Promise.all([
         supabase.from('transactions')
           .select('id, amount, type, category, merchant_name, transaction_date, is_synthetic')
           .eq('company_id', company.id).gte('transaction_date', iso(yearAgo))
@@ -192,10 +171,6 @@ export default function DashboardOverview() {
           // Thiếu dòng này thì thẻ "Hoá đơn chờ thanh toán" đếm cả dòng seed
           // trong khi thẻ dòng tiền đã lọc — hai thẻ cạnh nhau nói ngược nhau.
           .eq('company_id', company.id),
-        supabase.from('credit_score_snapshots')
-          .select('score, credit_limit, computed_at')
-          .eq('company_id', company.id)
-          .order('computed_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('bank_connections')
           .select('id').eq('company_id', company.id).eq('status', 'connected').limit(1),
       ]);
@@ -205,7 +180,6 @@ export default function DashboardOverview() {
       setLaDemo(demo);
       setTxs((txRes.data as Tx[]) ?? []);
       setInvoices(((invRes.data ?? []) as (Invoice & { is_synthetic?: boolean })[]).filter(duocHien(demo)));
-      setSnapshot((snapRes.data as Snapshot) ?? null);
       setHasBank(!!bankRes.data?.length);
       setLoading(false);
     })();
@@ -390,6 +364,9 @@ export default function DashboardOverview() {
           of them. Renders nothing once answered or skipped. */}
       <motion.div variants={fadeUp}><WelcomeCards /></motion.div>
 
+      {/* Việc số một của màn này (bản chỉ đạo ra mắt): tiền vào nào chưa rõ là gì. */}
+      <motion.div variants={fadeUp}><HangDoiTienVao /></motion.div>
+
       {/* The one number this screen exists to answer, on its own row.
           Net cash flow, not "balance": no table here stores a bank balance, so
           a balance tile could only ever have been invented. */}
@@ -505,26 +482,21 @@ export default function DashboardOverview() {
           dựa vào là giao dịch. Không có giao dịch thật thì không có gì để chấm,
           và một con số không có gì đứng sau thì thà đừng hiện.
         */}
-        <KPICard icon={ShieldCheck} label={t('dashboard.creditScoreLabel')} value="" muted={!snapshot || giaoDichThat.length === 0}>
-          {snapshot && giaoDichThat.length > 0 ? (
-            <div className="flex items-center gap-4 -mt-1">
-              <CreditScoreRing score={snapshot.score} />
-              <div>
-                <p className="font-mono text-lg font-bold text-foreground">{snapshot.score}</p>
-                <p className="text-xs text-muted-foreground">
-                  Tính ngày {new Date(snapshot.computed_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-          ) : (
-            /* Trang chấm điểm đã gỡ 10/09: một điểm số tự chấm không bên cho
-               vay nào công nhận thì không mở được khoản vay nào. Việc thay thế
-               nó là dựng hồ sơ bốn quý — bắt đầu từ chứng từ chi phí. */
-            <button onClick={() => navigate('/dashboard/chung-tu')} className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1">
-              Dựng hồ sơ từ chứng từ chi phí <ArrowRight size={10} />
-            </button>
-          )}
-        </KPICard>
+        {/*
+          Thay thẻ "Điểm tín dụng MIMI" (24/09/2026): MIMI không cho vay, và một điểm tự chấm không
+          bên nào công nhận. Ô này giờ là việc có hạn thật: kỳ khai thuế kế tiếp.
+        */}
+        {(() => {
+          const ky = kyKeKhaiKeTiep();
+          return (
+            <KPICard icon={ShieldCheck} label="Kỳ khai thuế kế tiếp" value={`Quý ${ky.quy}/${ky.nam}`}
+              sub={ky.conLai <= 0 ? 'Hôm nay là hạn' : `Còn ${ky.conLai} ngày`} subColor={ky.conLai <= 7 ? 'text-mimi-amber' : 'text-muted-foreground'}>
+              <button onClick={() => navigate('/dashboard/nhac-thue')} className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1">
+                Xem việc cần chuẩn bị <ArrowRight size={10} />
+              </button>
+            </KPICard>
+          );
+        })()}
       </motion.div>
 
       {/* Above the charts on purpose. For a household under 1 tỷ this is the

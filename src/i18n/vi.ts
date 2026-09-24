@@ -265,7 +265,7 @@ const vi = {
     greeting: 'Xin chào, Anh Minh',
     lastUpdate: 'Cập nhật lần cuối: 14:32',
     totalBalance: 'Tổng số dư',
-    monthlyRevenue: 'Doanh thu tháng này',
+    monthlyRevenue: 'Tiền vào tháng này',
     pendingInvoices: 'Hóa đơn chờ thanh toán',
     creditScoreLabel: 'Điểm tín dụng MIMI',
     progress: 'Tiến độ',

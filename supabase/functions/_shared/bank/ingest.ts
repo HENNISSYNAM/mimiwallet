@@ -227,7 +227,7 @@ export async function ingestConnection(
     const { error: writeError } = await supabase
       .from("transactions")
       .upsert(
-        rows.map((r) => ({ ...r, company_id: conn.company_id, is_synthetic: synthetic })),
+        rows.map((r) => ({ ...r, company_id: conn.company_id, is_synthetic: synthetic, source: "cas" })),
         { onConflict: "company_id,reference_id", ignoreDuplicates: true },
       );
     if (writeError) {

@@ -41,6 +41,10 @@ const MIEN_TRU: Array<{ file: string; vi: string }> = [
     vi: 'Đối soát mã QR khớp theo mã tham chiếu và tài khoản định danh, không cộng tiền. Dòng thử không có hai thứ đó nên không lọt vào.',
   },
   {
+    file: 'supabase/functions/sao-ke/index.ts',
+    vi: 'Chỉ GHI dòng từ tệp sao kê người dùng tải (luôn is_synthetic = false; công ty demo thì trigger tự gắn cờ) rồi đếm id vừa ghi được. Không đọc số tiền nào để hiện.',
+  },
+  {
     file: 'supabase/functions/_shared/bank/ingest.ts',
     vi: 'Chỉ đếm tổng số dòng trước và sau khi nạp, để biết nạp thêm được bao nhiêu. Đây là số đo kỹ thuật, không hiện cho người dùng và không cộng thành tiền.',
   },

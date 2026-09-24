@@ -14,6 +14,7 @@
 import { doiSoatThueBao, ketThucKy, type SubscriptionInvoice } from './subscription.ts';
 import { ghiThongBao } from '../thong-bao/gui.ts';
 import { thongBaoThanhToan } from '../thong-bao/sinh.ts';
+import { ghiSuKien } from '../do-luong/su-kien.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -90,6 +91,7 @@ export async function doiSoatTienVeMimi(db: Db, bayGio: Date = new Date()): Prom
     await db.from('tien_ve_mimi').update({ hoa_don_id: h.id }).eq('id', m.transaction_id).is('hoa_don_id', null);
     await apDung(db, h, bayGio);
     daKichHoat += 1;
+    await ghiSuKien(db, h.company_id, null, 'first_paid_action', { loai: h.so_luot ? 'luot_to_khai' : 'goi' });
     // Báo trong app (và lên điện thoại ở lần quét kế tiếp). Lỗi ở đây không được làm hỏng việc thu tiền.
     try {
       await ghiThongBao(db, h.company_id, [thongBaoThanhToan({ id: h.id, amount: Number(h.amount), so_luot: h.so_luot ?? null, plan: h.plan })]);

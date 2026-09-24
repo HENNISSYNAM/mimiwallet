@@ -226,7 +226,7 @@ const en = {
     greeting: 'Hello, Anh Minh',
     lastUpdate: 'Last updated: 14:32',
     totalBalance: 'Total balance',
-    monthlyRevenue: 'Revenue this month',
+    monthlyRevenue: 'Money in this month',
     pendingInvoices: 'Pending invoices',
     creditScoreLabel: 'MIMI Credit Score',
     progress: 'Progress',

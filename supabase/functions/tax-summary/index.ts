@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveCompany } from "../_shared/company.ts";
 import { congTyLaDemo, duocHien } from "../_shared/minh-hoa.ts";
+import { taiKhoanCuaToi } from "../_shared/ledger/tai-khoan.ts";
 import {
   findInternalTransfers,
   revenueExcludingInternal,
@@ -95,14 +96,8 @@ Deno.serve(async (req) => {
     const laDemo = await congTyLaDemo(supabase, company.id);
     const real = ((txs ?? []) as Array<LedgerTx & { is_synthetic?: boolean }>).filter(duocHien(laDemo));
 
-    const { data: conns } = await supabase
-      .from("bank_connections")
-      .select("account_number")
-      .eq("company_id", company.id)
-      .is("revoked_at", null);
-    const ownAccounts = (conns ?? [])
-      .map((c) => c.account_number as string | null)
-      .filter((a): a is string => !!a && !a.startsWith("grant:"));
+    // Tài khoản đã liên kết và tài khoản khai khi tải sao kê — xem `ledger/tai-khoan.ts`.
+    const ownAccounts = await taiKhoanCuaToi(supabase, company.id);
 
     const internal = findInternalTransfers(real, { ownAccounts });
     const bankRevenue = revenueExcludingInternal(real, internal.internalIds, { from, to });

@@ -209,7 +209,7 @@ const ko = {
     greeting: '안녕하세요',
     lastUpdate: '마지막 업데이트: 14:32',
     totalBalance: '총 잔액',
-    monthlyRevenue: '이번 달 매출',
+    monthlyRevenue: '이번 달 입금',
     pendingInvoices: '미수금 세금계산서',
     creditScoreLabel: 'MIMI 신용점수',
     progress: '진행률',

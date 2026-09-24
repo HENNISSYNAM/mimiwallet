@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { NhapSaoKe } from '@/components/sao-ke/NhapSaoKe';
 import { ArrowRight, Loader2, RefreshCw } from 'lucide-react';
 import { goiTroLy } from '@/lib/goiTroLy';
 import type { KetNoiHienThi } from '@/lib/troLy';
@@ -57,6 +58,9 @@ export default function KetNoiPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Kết nối</h1>
         <p className="mt-1 text-sm text-muted-foreground">Nối các công cụ công ty đang dùng để MIMI đọc số liệu thật. MIMI không chuyển tiền của bạn.</p>
       </header>
+
+      {/* Đường vào dữ liệu không cần liên kết ngân hàng — đứng đầu vì đa số người mới bắt đầu từ đây. */}
+      <NhapSaoKe />
 
       {loi && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">

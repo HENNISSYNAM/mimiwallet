@@ -30,6 +30,8 @@ import {
 } from "../_shared/doanh-thu/phan-loai.ts";
 import { findInternalTransfers, type LedgerTx } from "../_shared/ledger/internal-transfer.ts";
 import { chieuTien } from "../_shared/tien/chieu-tien.ts";
+import { taiKhoanCuaToi } from "../_shared/ledger/tai-khoan.ts";
+import { ghiNhieuSuKien } from "../_shared/do-luong/su-kien.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
 const congTyChoGiaoDien = (c: HoSoCongTy) => ({
@@ -211,14 +213,13 @@ async function docBangTienVao(db: Db, companyId: string, body: Row) {
       .select("id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, account_number, counter_account_number, is_synthetic")
       .eq("company_id", companyId), laDemo)
       .gte("transaction_date", `${n.nam}-01-01`).lte("transaction_date", `${n.nam}-12-31`).limit(20000),
-    db.from("bank_connections").select("account_number").eq("company_id", companyId).is("revoked_at", null),
+    taiKhoanCuaToi(db, companyId),
     db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect, ghi_chu, confirmed_role, confirmed_at").eq("company_id", companyId),
   ]);
   if (gd.error) throw gd.error;
   if (pl.error) throw pl.error;
   const rows = ((gd.data ?? []) as Row[]).map((t) => ({ ...t, amount: Number(t.amount) }));
-  const taiKhoan = ((kn.data ?? []) as Row[]).map((c) => c.account_number).filter((a): a is string => typeof a === "string" && !!a && !a.startsWith("grant:"));
-  const noiBo = findInternalTransfers(rows as LedgerTx[], { ownAccounts: taiKhoan });
+  const noiBo = findInternalTransfers(rows as LedgerTx[], { ownAccounts: kn });
   return {
     ...lapBangTienVao(n.nam, rows.filter((t) => chieuTien(t) === "vao") as never, (pl.data ?? []) as XacNhanPhanLoai[], noiBo.internalIds),
     la_demo: laDemo,
@@ -378,6 +379,16 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
     case "tien_vao": {
       const bang = await docBangTienVao(db, company.id, body);
       if ("loi" in bang && bang.loi) return loi("THAM_SO", bang.loi, 400);
+      // Đo kích hoạt: lần quét đầu, lần đầu MIMI thấy điều người dùng chưa biết.
+      if (!("loi" in bang) || !bang.loi) {
+        const b = bang as { so_giao_dich: number; can_xem: { so: number } };
+        if (b.so_giao_dich > 0) {
+          await ghiNhieuSuKien(db, company.id, userId, [
+            ["first_scan_completed", { so_giao_dich: b.so_giao_dich }],
+            ...(b.can_xem.so > 0 ? [["first_exception_detected", { so: b.can_xem.so }] as ["first_exception_detected", Record<string, unknown>]] : []),
+          ]);
+        }
+      }
       return json(bang);
     }
 
@@ -425,6 +436,10 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         tham_so: { transaction_ids: x.transaction_ids, loai: x.loai, bulk_group_id: nhom },
         mo_ta_da_xac_nhan: moTa.slice(0, 2000), ket_qua: "thanh_cong", ket_qua_cau: moTa.slice(0, 2000), xong_luc: bayGio,
       });
+      await ghiNhieuSuKien(db, company.id, userId, [
+        ["first_classification_confirmed", { loai: x.loai }],
+        ["classification_confirmed", { loai: x.loai, so: vao.length, hang_loat: !!nhom }],
+      ]);
       return json({ ok: true, so: vao.length, bulk_group_id: nhom });
     }
 

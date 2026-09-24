@@ -17,6 +17,8 @@
  * như trước — chậm hơn một câu, chứ không sai.
  */
 
+import { ghiSuKien } from '../do-luong/su-kien.ts';
+
 export const XINVOICE_URL = 'https://api.xinvoice.vn/gdt-api/tax-payer-records';
 
 export interface BanGhiThue {
@@ -161,6 +163,7 @@ export async function dongBoMstCongTy(
       ...(!ct.province && tinh ? { province: tinh } : {}),
       ...(!ct.account_type && loai ? { account_type: LOAI_TAI_KHOAN[loai] } : {}),
     }).eq('id', companyId).eq('tax_id', ct.tax_id);
+    await ghiSuKien(db, companyId, null, 'business_identified', { loai: loai ?? 'chua_ro' });
   } catch (e) {
     console.error('tra mst:', e instanceof Error ? e.message : e);
   }

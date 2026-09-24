@@ -18,6 +18,7 @@ import {
 } from './he-luat.ts';
 import { dangHoatDong } from '../mst/tra-cuu.ts';
 import { locMinhHoa } from '../minh-hoa.ts';
+import { taiKhoanCuaToi } from '../ledger/tai-khoan.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -66,12 +67,8 @@ export async function docDoanhThuQuy(db: Db, companyId: string, nam: number, laD
     .lte('transaction_date', `${nam}-12-31`)
     .limit(20000);
   if (gd.error) throw new Error(`Không đọc được sao kê: ${gd.error.message}`);
-  const kn = await db.from('bank_connections').select('account_number').eq('company_id', companyId).is('revoked_at', null);
-  if (kn.error) throw new Error(`Không đọc được kết nối ngân hàng: ${kn.error.message}`);
-
-  const taiKhoan = ((kn.data ?? []) as Row[])
-    .map((c) => (typeof c.account_number === 'string' ? c.account_number : null))
-    .filter((a): a is string => !!a && !a.startsWith('grant:'));
+  // Tài khoản đã liên kết và tài khoản khai khi tải sao kê — xem `ledger/tai-khoan.ts`.
+  const taiKhoan = await taiKhoanCuaToi(db, companyId);
   const rows = ((gd.data ?? []) as Row[]).map((t) => ({ ...t, amount: Number(t.amount) })) as LedgerTx[];
   const noiBo = findInternalTransfers(rows, { ownAccounts: taiKhoan });
 

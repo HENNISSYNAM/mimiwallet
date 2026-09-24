@@ -207,7 +207,7 @@ const zh = {
     greeting: '你好',
     lastUpdate: '最后更新：14:32',
     totalBalance: '总余额',
-    monthlyRevenue: '本月营业额',
+    monthlyRevenue: '本月入账',
     pendingInvoices: '待收款发票',
     creditScoreLabel: 'MIMI 信用评分',
     progress: '进度',
