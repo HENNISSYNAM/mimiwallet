@@ -23,13 +23,18 @@ export const SUPABASE_PROJECT_ID =
  * miền của môi trường dựng thử. Nghĩa là mọi trang đang khai với Google rằng
  * bản gốc của nó nằm ở một tên miền khác, và mọi link chia sẻ trỏ về đó.
  *
- * Đặt qua biến môi trường để khi đổi sang tên miền riêng thì không phải sửa mã.
- * Không lấy `window.location.origin`: canonical phải là MỘT tên miền cố định,
- * nếu không thì bản trên vercel.app và bản trên tên miền riêng sẽ tự nhận là
- * bản gốc của nhau.
+ * Từ 24/09/2026 là tên miền riêng. Chọn dạng `www` vì đó là dạng đang phục vụ
+ * nội dung; apex `mimiwallet.online` chuyển hướng về đây.
+ *
+ * KHÔNG lấy `window.location.origin`. Cùng một nội dung hiện đang trả 200 ở ba
+ * nơi — `www.mimiwallet.online`, apex, và `mimiwallet.vercel.app`. Nếu mỗi nơi
+ * tự khai mình là bản gốc thì Google phải tự chọn, và nó thường chọn không phải
+ * cái mình muốn. Canonical phải là MỘT tên miền cố định.
+ *
+ * Đặt qua biến môi trường để lần đổi sau không phải sửa mã.
  */
 export const SITE_URL = (
-  import.meta.env.VITE_SITE_URL || "https://mimiwallet.vercel.app"
+  import.meta.env.VITE_SITE_URL || "https://www.mimiwallet.online"
 ).replace(/\/+$/, "");
 
 /**
