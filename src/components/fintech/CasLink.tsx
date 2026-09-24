@@ -24,12 +24,12 @@ import { dongKhungCasLink, moKhungCasLink, urlCasLink } from '@/lib/casLink';
 /**
  * Linking a real bank account through Cas (BankHub).
  *
- * Kept apart from the six-bank grid in OpenBanking on purpose: that grid is the
- * demo path, with generated transactions, and it has to keep working for
- * judges and investors who have no bank account to connect. Mixing a real
- * credential flow into the same tiles would make it impossible to tell at a
- * glance which numbers on the dashboard came from a bank and which came from a
- * random number generator.
+ * This used to sit beside a six-bank "demo" grid whose buttons generated
+ * transactions with Math.random() and wrote them into the real transactions
+ * table. That grid and its edge function were removed on 24/09/2026: a button
+ * that looks exactly like a real bank link but produces invented money cannot
+ * be told apart from the real thing by the person pressing it. This is now the
+ * only way to connect a bank.
  */
 
 
@@ -975,8 +975,9 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           </div>
         ) : connections.length === 0 ? (
           <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40">
-            Chưa có tài khoản nào được liên kết. Điểm tín dụng bên dưới đang tính trên dữ liệu
-            demo.
+            {/* Câu cũ nói "điểm tín dụng bên dưới đang tính trên dữ liệu demo" — không còn
+                điểm tín dụng nào bên dưới, và lưới ngân hàng demo đã gỡ 24/09/2026. */}
+            Chưa có tài khoản nào được liên kết. Bấm Liên kết ở trên để MIMI đọc sao kê thật.
           </p>
         ) : (
           <div className="mt-4 pt-4 border-t border-border/40 space-y-2">
