@@ -72,12 +72,21 @@ describe('Thư viện chứng từ', () => {
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('xoa_chung_tu', { id: 'q2' }));
   });
 
-  it('chưa bật đọc ảnh thì nút chụp nói thật, không mở máy ảnh', async () => {
-    const { toast } = await import('sonner');
+  /*
+   * Đổi 24/09/2026: nói TRƯỚC khi bấm, không phải sau.
+   *
+   * Bản trước để nút sáng rồi mới hiện toast sau cú bấm. Agent đóng vai một
+   * người 19 tuổi bán hàng TikTok Shop chọn đúng nút này thử đầu tiên và bỏ app
+   * ngay tại đó. Máy chủ đã trả lời `co_mo_hinh: false` từ trước khi hiện nút,
+   * nên giấu tới sau cú bấm chỉ tốn của người dùng một lần tin tưởng.
+   */
+  it('chưa bật đọc ảnh thì nút chụp bị khoá và nói rõ lý do ngay trên trang', async () => {
     dung();
     await screen.findByRole('list', { name: 'Chứng từ' });
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('trang_thai'));
-    fireEvent.click(screen.getByRole('button', { name: /Chụp chứng từ/ }));
-    await waitFor(() => expect(toast.info).toHaveBeenCalled());
+
+    const nut = await screen.findByRole('button', { name: /Chụp chứng từ/ });
+    await waitFor(() => expect((nut as HTMLButtonElement).disabled).toBe(true));
+    expect(screen.getByText(/chưa bật đọc ảnh chứng từ/i)).toBeTruthy();
   });
 });

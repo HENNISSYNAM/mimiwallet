@@ -34,6 +34,9 @@ interface Invoice {
   is_synthetic?: boolean | null;
 }
 
+/** Các giá trị `?filter=` được chấp nhận — khớp đúng thanh chọn trên trang. */
+const LOC_HOP_LE = ['all', 'pending', 'overdue', 'paid', 'advanced'];
+
 const statusDotBg: Record<string, { dot: string; bg: string }> = {
   pending: { dot: 'bg-mimi-amber', bg: 'bg-mimi-amber/8 text-mimi-amber' },
   overdue: { dot: 'bg-mimi-red', bg: 'bg-mimi-red/8 text-mimi-red' },
@@ -175,6 +178,11 @@ export default function InvoicesPage() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [invoiceList, setInvoiceList] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  /*
+   * Đọc bộ lọc từ địa chỉ để thẻ "Hoá đơn chờ thanh toán" ở Tổng quan mở thẳng
+   * ra đúng những dòng đã tạo ra con số của nó. Giá trị lạ thì bỏ qua, không
+   * dựng một bộ lọc không có trong thanh chọn rồi hiện bảng trống.
+   */
   const [filter, setFilter] = useState('all');
   /**
    * Seeded from `?q=`, which is how the header search box reaches this page.
@@ -214,6 +222,11 @@ export default function InvoicesPage() {
   useEffect(() => {
     const q = searchParams.get('q');
     if (q) setSearch(q);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const f = searchParams.get('filter');
+    if (f && LOC_HOP_LE.includes(f)) setFilter(f);
   }, [searchParams]);
 
   const filtered = invoiceList.filter((inv) => {

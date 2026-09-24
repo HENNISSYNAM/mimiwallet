@@ -144,14 +144,28 @@ export default function ThuVienChungTuPage() {
     }
   };
 
+  /*
+   * Nút khoá phải nói được vì sao, ngay cạnh nó.
+   *
+   * Đây là hành động chính của trang, nên một tooltip là không đủ — trên điện
+   * thoại không có chỗ rê chuột. Câu giải thích đứng ngay dưới nút, chỉ hiện khi
+   * máy chủ đã xác nhận là chưa bật (`false`, không phải `undefined`).
+   */
   const nutChup = (
-    <NutQuetChungTu
-      coMoHinh={coMoHinh}
-      onDaLuu={() => void tai()}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110"
-    >
-      <Camera size={16} /> Chụp chứng từ
-    </NutQuetChungTu>
+    <div className="flex flex-col items-start gap-1.5">
+      <NutQuetChungTu
+        coMoHinh={coMoHinh}
+        onDaLuu={() => void tai()}
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110"
+      >
+        <Camera size={16} /> Chụp chứng từ
+      </NutQuetChungTu>
+      {coMoHinh === false && (
+        <p className="max-w-xs text-xs text-muted-foreground">
+          MIMI chưa bật đọc ảnh chứng từ. Bạn vẫn đối chiếu chứng từ ở trang Chứng từ chi phí.
+        </p>
+      )}
+    </div>
   );
 
   return (

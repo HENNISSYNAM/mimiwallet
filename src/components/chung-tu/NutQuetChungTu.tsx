@@ -61,11 +61,24 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
   // Điện thoại (màn cảm ứng): bấm là mở thẳng máy ảnh sau. Máy tính: chọn tệp để tải lên.
   const dungMayAnh = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
 
+  /**
+   * Máy chủ đã nói trước là chưa bật, nên nói lại trước khi người ta bấm.
+   *
+   * Bản trước để nút sáng bình thường rồi mới hiện toast sau cú bấm. Agent đóng
+   * vai Minh, 19 tuổi bán hàng TikTok Shop, chọn đúng nút này làm thứ đầu tiên
+   * thử cho vui — và bỏ app ngay tại đó: "bấm nút chính mà nó nói chưa làm được
+   * á? Thôi bỏ."
+   *
+   * `coMoHinh === false` là thông tin máy chủ trả về TRƯỚC khi hiện nút. Giấu nó
+   * tới sau cú bấm không làm nút hữu ích hơn, chỉ làm người dùng mất một lần tin
+   * tưởng. `undefined` nghĩa là chưa biết — vẫn cho bấm, vì chặn một nút dựa trên
+   * điều chưa biết còn tệ hơn.
+   */
+  const chuaBat = coMoHinh === false;
+  const LY_DO = 'MIMI chưa bật đọc ảnh chứng từ. Bạn vẫn đối chiếu chứng từ ở trang Chứng từ chi phí.';
+
   const mo = () => {
-    if (coMoHinh === false) {
-      toast.info('MIMI chưa bật đọc ảnh chứng từ. Bạn vẫn đối chiếu chứng từ ở trang Chứng từ chi phí.');
-      return;
-    }
+    if (chuaBat) return;
     oAnh.current?.click();
   };
 
@@ -86,7 +99,16 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
 
   return (
     <>
-      <button type="button" onClick={mo} aria-label={nhanAn} title={nhanAn} className={className}>
+      <button
+        type="button"
+        onClick={mo}
+        disabled={chuaBat}
+        aria-label={nhanAn}
+        /* Lý do thay cho tên nút khi nút bị khoá: rê chuột hoặc trình đọc màn
+           hình đều nghe được vì sao, không phải đoán. */
+        title={chuaBat ? LY_DO : nhanAn}
+        className={`${className ?? ''} ${chuaBat ? 'opacity-50 cursor-not-allowed' : ''}`.trim()}
+      >
         {children}
       </button>
       <input

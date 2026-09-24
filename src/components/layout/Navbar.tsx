@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChonNgonNgu } from './ChonNgonNgu';
 import ChuyenSangToi from '@/components/ChuyenSangToi';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useScrolled } from '@/hooks/useScrolled';
@@ -78,10 +79,6 @@ export default function Navbar() {
   }, [menuMo]);
 
   useEffect(() => huyHen, []);
-
-  const toggleLang = () => {
-    i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
-  };
 
   const dongDaiThongBao = () => {
     setDongThongBao(true);
@@ -183,14 +180,7 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-3">
             <ChuyenSangToi />
-            <button
-              onClick={toggleLang}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-accent"
-              title={i18n.language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-            >
-              <Globe size={15} />
-              <span className="font-medium">{i18n.language === 'vi' ? 'EN' : 'VI'}</span>
-            </button>
+            <ChonNgonNgu />
             <button
               onClick={() => navigate('/login')}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
@@ -206,12 +196,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex md:hidden items-center gap-2">
-            <button
-              onClick={toggleLang}
-              className="text-muted-foreground hover:text-foreground p-1.5"
-            >
-              <Globe size={20} />
-            </button>
+            <ChonNgonNgu className="text-muted-foreground hover:text-foreground p-1.5 flex items-center gap-1" />
             <button
               className="text-foreground"
               onClick={() => setMobileOpen(true)}

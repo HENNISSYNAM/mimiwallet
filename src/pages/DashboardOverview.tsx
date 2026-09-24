@@ -445,19 +445,59 @@ export default function DashboardOverview() {
           sub={invoices.length === 0 ? undefined : `${m.dueSoonCount} sắp đến hạn`}
           subColor="text-mimi-amber"
         >
-          {invoices.length === 0
-            ? <p className="text-xs text-muted-foreground mt-1">Chưa có hoá đơn</p>
-            : <p className="text-xs text-muted-foreground mt-1">{m.unpaidCount} hoá đơn chưa thu</p>}
+          {invoices.length === 0 ? (
+            <p className="text-xs text-muted-foreground mt-1">Chưa có hoá đơn</p>
+          ) : (
+            /*
+             * Bấm được để xem chính những hoá đơn đã tạo ra con số này.
+             *
+             * Bản trước chỉ in "1 hoá đơn chưa thu" rồi dừng. Agent đóng vai một
+             * kỹ sư về hưu ở Melbourne, người không tin con số nào không truy
+             * được nguồn, đọc "₫165.0 tỷ" rồi bấm vào thẻ và không có gì xảy ra:
+             * "165 billion dong pending for one unpaid invoice — that's absurd
+             * for a flower shop, and I can't even see which invoice."
+             *
+             * Con số đó đúng — nó là một hoá đơn thật gõ nhầm. Nhưng một con số
+             * lớn bất thường mà không mở ra được dòng gốc thì người dùng không
+             * phân biệt được "dữ liệu sai" với "app sai", và họ chọn vế sau.
+             */
+            <button
+              onClick={() => navigate('/dashboard/invoices?filter=pending')}
+              className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              {m.unpaidCount} hoá đơn chưa thu — xem <ArrowRight size={10} />
+            </button>
+          )}
         </KPICard>
 
-        <KPICard icon={ShieldCheck} label={t('dashboard.creditScoreLabel')} value="" muted={!snapshot}>
-          {snapshot ? (
+        {/*
+          ĐIỂM CHỈ HIỆN KHI CÓ GIAO DỊCH THẬT ĐỂ CHẤM.
+
+          Bản trước hiện bất kỳ bản chụp điểm nào tìm thấy trong bảng. Trên tài
+          khoản demo, đó là một dòng cũ chấm trên dữ liệu thử — màn hình hiện
+          "703 / 850" kèm mỗi "28-07", không nói tính từ đâu và bấm vào không mở
+          ra gì. Chính trang Fintech Hub thì ghi rõ: "Chưa có tài khoản nào được
+          liên kết. Điểm tín dụng bên dưới đang tính trên dữ liệu demo." Cảnh báo
+          đứng ở trang khác với con số nó cảnh báo.
+
+          Hai agent đóng vai khách hàng bắt được cùng lúc ngày 23/09/2026: một
+          chủ ba quán cà phê đang cần vay vốn ("vậy con số 703 kia là giả"), và
+          một kế toán về hưu ở Melbourne ("if I can't click it, how do I know
+          what's behind 703?").
+
+          Điều kiện là SỐ GIAO DỊCH THẬT, không phải "đã liên kết ngân hàng":
+          liên kết demo cũng mang trạng thái `connected`, còn thứ điểm số thật sự
+          dựa vào là giao dịch. Không có giao dịch thật thì không có gì để chấm,
+          và một con số không có gì đứng sau thì thà đừng hiện.
+        */}
+        <KPICard icon={ShieldCheck} label={t('dashboard.creditScoreLabel')} value="" muted={!snapshot || giaoDichThat.length === 0}>
+          {snapshot && giaoDichThat.length > 0 ? (
             <div className="flex items-center gap-4 -mt-1">
               <CreditScoreRing score={snapshot.score} />
               <div>
                 <p className="font-mono text-lg font-bold text-foreground">{snapshot.score}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(snapshot.computed_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                  Tính ngày {new Date(snapshot.computed_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </p>
               </div>
             </div>

@@ -30,8 +30,21 @@ export const useCountUp = (target: number, duration = 1500, start = false) => {
     setValue(0);
     const startTime = performance.now();
     const animate = (now: number) => {
+      /*
+       * Chặn hai đầu, không chỉ đầu trên.
+       *
+       * `now` do requestAnimationFrame truyền vào, `startTime` do
+       * performance.now() — hai mốc này KHÔNG bảo đảm cùng gốc thời gian. Trong
+       * jsdom chúng lệch nhau, `elapsed` ra âm, và phép làm mượt bậc ba bên dưới
+       * thổi số âm nhỏ thành số âm khổng lồ: đo được `-13.872.929.618` thay vì
+       * `52`. Vì `progress < 1` vẫn đúng, vòng lặp chạy mãi mà không bao giờ tới
+       * đích — bộ đếm đứng ở một con số vô nghĩa thay vì dừng ở số thật.
+       *
+       * Lỗi có sẵn từ trước, chỉ chưa ai thấy vì chưa có phép kiểm nào chạy hết
+       * một vòng đếm.
+       */
       const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+      const progress = Math.min(Math.max(elapsed / duration, 0), 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.floor(target * eased));
       if (progress < 1) rafRef.current = requestAnimationFrame(animate);
