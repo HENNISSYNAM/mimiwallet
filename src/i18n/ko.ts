@@ -250,7 +250,6 @@ const ko = {
     subscription: '요금제',
     notifications: '알림',
     notifInvoiceDue: '세금계산서 기한 도래 시 이메일',
-    notifDisbursement: '집행 완료 시 SMS',
     notifCashflow: '현금흐름 경고 이메일',
     securityTitle: '보안',
     changePassword: '비밀번호 변경',

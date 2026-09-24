@@ -248,7 +248,6 @@ const zh = {
     subscription: '套餐',
     notifications: '通知',
     notifInvoiceDue: '发票到期时发邮件',
-    notifDisbursement: '放款成功时发短信',
     notifCashflow: '现金流预警邮件',
     securityTitle: '安全',
     changePassword: '修改密码',

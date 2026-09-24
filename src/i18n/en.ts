@@ -269,7 +269,6 @@ const en = {
     subscription: 'Subscription',
     notifications: 'Notifications',
     notifInvoiceDue: 'Email when invoice is due',
-    notifDisbursement: 'SMS on successful disbursement',
     notifCashflow: 'Cash flow alerts via email',
     securityTitle: 'Security',
     changePassword: 'Change password',

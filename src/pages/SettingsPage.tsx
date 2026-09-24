@@ -12,8 +12,25 @@ import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
 
-type NotificationPrefs = { invoice_due: boolean; disbursement: boolean; cashflow: boolean };
-const DEFAULT_PREFS: NotificationPrefs = { invoice_due: true, disbursement: true, cashflow: false };
+/*
+ * `disbursement` đã rời khỏi đây 24/09/2026.
+ *
+ * Mục "SMS khi giải ngân thành công" hứa một việc MIMI không làm được: không có
+ * giấy phép tín dụng, không có đối tác giải ngân, không có đồng nào để giải. Mục
+ * "Vay vốn" trên thanh điều hướng đã bị gỡ vì đúng lý do đó — chú thích ở
+ * DashboardLayout.tsx ghi rõ "the slot advertised something that does not
+ * exist" — nhưng cái công tắc thông báo cho cùng tính năng đó thì sống sót.
+ *
+ * Agent đóng vai chị Thu, chủ ba quán cà phê đang cần vay vốn, đọc thấy dòng này
+ * và hiểu là MIMI có cho vay. Một công tắc bật được cho một việc không tồn tại
+ * còn hứa hẹn hơn cả một mục menu.
+ *
+ * Cột `notification_prefs` trong CSDL giữ nguyên: dòng cũ có thể còn khoá
+ * `disbursement`, và phép hợp `{ ...DEFAULT_PREFS, ...data }` bên dưới bỏ qua
+ * khoá lạ. Không cần migration để gỡ một thứ chưa bao giờ có tác dụng.
+ */
+type NotificationPrefs = { invoice_due: boolean; cashflow: boolean };
+const DEFAULT_PREFS: NotificationPrefs = { invoice_due: true, cashflow: false };
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -281,7 +298,6 @@ function NotificationToggles() {
   const { t } = useTranslation();
   const items: { key: keyof NotificationPrefs; label: string }[] = [
     { key: 'invoice_due', label: t('settings.notifInvoiceDue') },
-    { key: 'disbursement', label: t('settings.notifDisbursement') },
     { key: 'cashflow', label: t('settings.notifCashflow') },
   ];
 

@@ -308,7 +308,6 @@ const vi = {
     subscription: 'Gói dịch vụ',
     notifications: 'Thông báo',
     notifInvoiceDue: 'Email khi hóa đơn đến hạn',
-    notifDisbursement: 'SMS khi giải ngân thành công',
     notifCashflow: 'Cảnh báo dòng tiền qua email',
     securityTitle: 'Bảo mật',
     changePassword: 'Đổi mật khẩu',

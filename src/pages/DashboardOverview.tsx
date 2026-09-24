@@ -385,12 +385,6 @@ export default function DashboardOverview() {
           of them. Renders nothing once answered or skipped. */}
       <motion.div variants={fadeUp}><WelcomeCards /></motion.div>
 
-      {/* Một thẻ mỗi ngày: tin kinh tế thật kèm đường về bài gốc, hoặc một mẹo
-          do MIMI viết. Đặt trên các con số vì nó là thứ đọc một lần rồi thôi,
-          trong khi dòng tiền phía dưới là thứ người ta quay lại xem mỗi ngày.
-          Tự ẩn hẳn khi không có gì đáng nói. */}
-      <motion.div variants={fadeUp}><DailyBriefCard /></motion.div>
-
       {/* The one number this screen exists to answer, on its own row.
           Net cash flow, not "balance": no table here stores a bank balance, so
           a balance tile could only ever have been invented. */}
@@ -419,6 +413,22 @@ export default function DashboardOverview() {
           </div>
         )}
       </KPICard>
+
+      {/*
+        Một thẻ mỗi ngày: tin kinh tế thật kèm đường về bài gốc, hoặc một mẹo do
+        MIMI viết. Tự ẩn hẳn khi không có gì đáng nói.
+
+        ĐÃ CHUYỂN XUỐNG DƯỚI CON SỐ CHÍNH (24/09/2026). Trước đây nó đứng trên,
+        với lý do "đọc một lần rồi thôi, còn dòng tiền là thứ quay lại xem mỗi
+        ngày". Lý do đó đúng trên màn máy tính, nơi tin và tiền cùng nhìn thấy
+        một lúc. Trên điện thoại thì không có chữ "cùng lúc": đo ở khổ 375px,
+        màn hình đầu tiên chỉ có lời chào, thẻ bất thường và một bài báo tỷ giá —
+        KHÔNG một con số nào của người dùng trước khi phải cuộn.
+
+        Hai agent đóng vai khách hàng đọc ra cùng điều đó. Nay tin đứng sau đúng
+        một thẻ: con số mà màn hình này sinh ra để trả lời.
+      */}
+      <motion.div variants={fadeUp}><DailyBriefCard /></motion.div>
 
       <motion.div variants={stagger} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Compared against last month, which is measurable. The old tile
