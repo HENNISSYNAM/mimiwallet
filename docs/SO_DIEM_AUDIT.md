@@ -131,3 +131,101 @@ score_change_request:
    Supabase (giới hạn thấp, hay bị chặn với tên miền công ty). Cần cấu hình SMTP riêng
    trong Authentication. Tôi không đọc được cấu hình đó vì CLI trên máy này không có
    access token.
+
+---
+
+# Đo lại 24/09/2026 — đề nghị mới, vẫn chờ người duyệt
+
+> Snapshot đóng băng vẫn là `MIMI-2026-09-16-AUDIT-01` (5.77). Đề nghị 6.07 ngày
+> 18/09 **chưa được duyệt**, nên hai con số dưới đây cùng so với 5.77.
+> `decision: pending_human_review`.
+
+## Một điều phải nói trước khi xin thêm điểm
+
+Đợt thử ngày 23/09 tìm ra chuyện này: **192 dòng giao dịch seed mang nhãn
+`is_synthetic = false`**, tức tự nhận là tiền thật. Từ đó trang Tổng quan kết luận
+"Doanh thu năm 2026: 8,60 tỷ · đã vượt trần 3 tỷ · chỉ còn cách tính theo thu
+nhập, thuế suất 17%" và dựng sẵn nút Soạn tờ khai.
+
+`tax-summary` **không tính sai** — nó lọc `is_synthetic` và có chú thích giải
+thích vì sao. Sai nằm ở cái nhãn. Một bộ lọc đúng đặt trên một cái nhãn nói dối
+thì vẫn ra số sai, và ở đây số sai đó là số quyết định người ta có phải nộp thuế
+hay không.
+
+Test canh gác `du-lieu-that.test.ts` đã tồn tại và **đang xanh** suốt thời gian
+đó — vì nó soi `transactions` có *nhắc tới* cờ hay không, chứ không soi cờ có
+*đúng* hay không; và bảng `invoices` thì không có cột đó để mà soi.
+
+Nghĩa là điểm `data_truth_completeness` 6.6 đề nghị ngày 18/09 **đo nhầm thứ**.
+Nó đo "mã có nhắc tới cờ dữ liệu thử", trong khi thứ cần đo là "con số hiện ra
+cho người dùng có đến từ tiền thật". Ghi lại ở đây để lần đóng băng sau không lặp.
+
+## Việc đã làm 23–24/09
+
+| Việc | Bằng chứng |
+|---|---|
+| Sửa nhãn 192 dòng seed, thêm `is_synthetic` cho `invoices` | migration `20260923140000`, `20260923150000`; phán quyết thuế 8,6 tỷ biến mất |
+| Mở rộng test canh gác sang `invoices` | `du-lieu-that.test.ts` nhận tên bảng làm tham số |
+| Cas Link mở đúng nền production | SDK của Cas luôn ghép `f.DEV`; tự dựng địa chỉ, 0 lần gọi `cdn.bankhub.dev` trong gói production |
+| Thẻ `<head>` hiện ở lần tải đầu | trang sau đăng nhập lần đầu tiên thực sự có `noindex` |
+| Trang Trợ lý 25–30s → 3s | 18 lời gọi mạng còn 4; `/auth/v1/user` 9 lần còn 0 |
+| Ghim sẵn "Kiểm tra trước khi chuyển tiền" | tính năng có backend + test nhưng không vào được từ menu nào |
+| Bộ đếm trả số âm 13,8 tỷ | lỗi có sẵn trong phép làm mượt, test mới bắt được |
+| Bộ chọn ngôn ngữ đủ 4 thứ tiếng ở trang công khai | trước đó cứng hoá `vi ⇄ en` |
+| Tên miền riêng, canonical đúng | `www.mimiwallet.online`, đã đối chiếu trên production |
+| 15 chân dung khách hàng đi qua app thật | `docs/THU_APP_BANG_AGENT.md` |
+| Test 1044 → **1226** | `npx vitest run`, 122 tệp, máy rảnh 32–69 giây |
+
+## Đề nghị điểm
+
+| Trục | Trọng số | Đóng băng | 18/09 | **24/09** | Trần | Căn cứ cho phần tăng |
+|---|---:|---:|---:|---:|---:|---|
+| data_truth_completeness | 0.13 | 6.1 | 6.6 | **6.8** | 7.0 | Sửa nhãn 192 dòng; `invoices` có cờ; canh gác soi hai bảng. Không xin cao hơn vì chính lỗi này lọt qua được vòng trước |
+| security_tenant_isolation | 0.13 | 6.5 | 7.0 | 7.0 | 7.0 | Đã ở trần. `noindex` thực sự tới được trình thu thập là sửa phơi nhiễm thật, nhưng trần chặn ở đây tới khi có telemetry |
+| tax_legal_correctness | 0.10 | 4.9 | 5.4 | 5.4 | 5.9 | Gỡ một phán quyết thuế sai là **khôi phục** điều đã tuyên, không phải thêm năng lực. Không xin thêm |
+| auditability_evidence_graph | 0.08 | 5.3 | 5.8 | 5.8 | 7.0 | Không đổi |
+| functional_completeness | 0.08 | 5.8 | 6.3 | **6.6** | 7.0 | Chống lừa đảo vào được từ menu; nút chụp chứng từ hết ngõ cụt; thẻ hoá đơn mở ra dòng gốc; 4 ngôn ngữ tới được từ trang công khai |
+| financial_control_safety | 0.11 | 7.0 | 7.0 | 7.0 | 7.0 | Đã ở trần |
+| test_ai_evaluation | 0.08 | 5.9 | 6.4 | **6.7** | 7.0 | 1044 → 1226 ca; canh gác mới cho `invoices`, `getUser`, thẻ head, bộ đếm, câu liên hệ. Một test bắt được lỗi thật có sẵn. Bộ ca eval vẫn 54/300 nên không xin cao hơn |
+| reliability_observability | 0.08 | 5.8 | 5.8 | **6.2** | — | 25–30s → 3s và 18 → 4 lời gọi, đều đo được. Quan trắc vẫn chưa có, nên chỉ +0.4 |
+| mobile_ux_activation | 0.06 | 6.3 | 6.3 | 6.3 | — | **Cố ý không tăng.** Màn hình đầu trên điện thoại nay có tiền của người dùng (đo y=665/812), nhưng quy tắc "chống điểm hình thức" đòi bằng chứng activation, và chưa có |
+| market_differentiation | 0.06 | 5.7 | 5.7 | 5.7 | — | Tài liệu chiến lược là suy nghĩ, không phải bằng chứng |
+| pmf_evidence | 0.05 | 4.6 | 4.6 | 4.6 | 4.9 | Tiền thật trong CSDL: 3 giao dịch, 6.200 ₫ |
+| multi_country_repeatability | 0.04 | 2.5 | 2.5 | 2.5 | 4.9 | Đo được 1.765 chỗ chữ viết cứng, tên hàm API tiếng Việt, hai bảng tiền lõi không có cột tiền tệ. Đo đạc không phải năng lực |
+
+```yaml
+score_change_request:
+  snapshot_base: MIMI-2026-09-16-AUDIT-01
+  measured_at: 2026-09-24
+  weighted_product_readiness:
+    frozen: 5.77
+    proposed_2026_09_18: 6.07      # chưa duyệt
+    proposed: 6.18
+    delta_vs_frozen: 0.41
+    delta_vs_previous_proposal: 0.11
+  separate_scores:
+    commercial_readiness: 4.2              # không đổi
+    assistant_commercial_readiness: 5.6    # không đổi
+  ceiling_checks:
+    automated_tests_present: true          # 1226 ca, 122 tệp
+    integration_tests_present: true
+    ai_eval_harness_present: true          # 54/300 ca
+    cross_tenant_negative_test_present: true
+    production_telemetry_present: false
+    paying_customer_evidence: false
+  decision: pending_human_review
+```
+
+## Việc mở sau đợt này
+
+- **1.765 chỗ chữ viết cứng** ngoài i18n, 113/225 tệp. Nhắc thuế và Thư viện
+  chứng từ đo được 0% tiếng Hàn.
+- **Tên hàm API tiếng Việt** (`xem_chinh_sach`, `xin_chi`) — hợp đồng công khai,
+  đổi trước khi có người tích hợp thì miễn phí.
+- **Hai bảng tiền lõi không có cột `currency`**, không bảng nào có `quantity`.
+- **Chưa có vỏ Android**: không `android/`, không Capacitor, không TWA, không
+  service worker.
+- **Tài khoản demo là một tài khoản Supabase dùng chung** — nhiều lượt đăng nhập
+  cùng lúc có thể bị chặn tần suất, đúng vào ngày nhiều người bấm nhất.
+- **Gói Supabase FREE đang vượt hạn mức.**
+- Lỗi console trên trang chủ: `<circle> attribute cx: Expected length, "undefined"`.
