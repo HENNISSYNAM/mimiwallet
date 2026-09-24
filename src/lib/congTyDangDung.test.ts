@@ -44,7 +44,7 @@ describe('công ty đang dùng', () => {
   it('kế toán được mời (không tạo công ty nào) vẫn có công ty, đúng vai trò', async () => {
     gia.thanhVien = [{ vai_tro: 'ke_toan', tao_luc: '2026-09-01', companies: { id: 'cty-A', name: 'Thịnh Phát' } }];
     const m = await nap();
-    expect(await m.congTyDangDung()).toEqual({ id: 'cty-A', ten: 'Thịnh Phát', vai_tro: 'ke_toan' });
+    expect(await m.congTyDangDung()).toEqual({ id: 'cty-A', ten: 'Thịnh Phát', vai_tro: 'ke_toan', la_demo: false });
     // Không rơi xuống nhánh "công ty do mình tạo".
     expect(gia.hoi).toEqual(['thanh_vien_cong_ty']);
   });
@@ -76,7 +76,7 @@ describe('công ty đang dùng', () => {
   it('dữ liệu cũ chưa có dòng thành viên: dùng công ty do chính người này tạo, là chủ sở hữu', async () => {
     gia.congTyTao = { id: 'cty-cu', name: 'Cũ' };
     const m = await nap();
-    expect(await m.congTyDangDung()).toEqual({ id: 'cty-cu', ten: 'Cũ', vai_tro: 'chu_so_huu' });
+    expect(await m.congTyDangDung()).toEqual({ id: 'cty-cu', ten: 'Cũ', vai_tro: 'chu_so_huu', la_demo: false });
   });
 
   it('kemCongTy: thêm company_id đang chọn; không ghi đè khi nơi gọi đã tự đặt; không có công ty thì gửi như cũ', async () => {
@@ -87,5 +87,18 @@ describe('công ty đang dùng', () => {
     gia.thanhVien = [];
     m = await nap();
     expect(await m.kemCongTy({ cau: 'x' })).toEqual({ cau: 'x' });
+  });
+});
+
+describe('cờ công ty minh hoạ', () => {
+  it('đọc la_demo từ máy chủ; thiếu cờ thì coi là công ty thật', async () => {
+    vi.resetModules();
+    const m = await import('./congTyDangDung');
+    gia.thanhVien = [{ vai_tro: 'chu_so_huu', tao_luc: '2026-08-01', companies: { id: 'demo', name: 'Minh hoạ', la_demo: true } }];
+    m.lamMoiCongTy();
+    expect((await m.congTyDangDung())?.la_demo).toBe(true);
+    gia.thanhVien = [{ vai_tro: 'chu_so_huu', tao_luc: '2026-08-01', companies: { id: 'that', name: 'Thật' } }];
+    m.lamMoiCongTy();
+    expect((await m.congTyDangDung())?.la_demo).toBe(false);
   });
 });

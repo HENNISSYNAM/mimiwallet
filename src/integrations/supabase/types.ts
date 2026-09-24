@@ -235,6 +235,7 @@ export type Database = {
           employee_count: string | null
           id: string
           industry: string | null
+          la_demo: boolean
           loai_theo_mst: string | null
           monthly_revenue: number | null
           mst_tra_luc: string | null
@@ -260,6 +261,7 @@ export type Database = {
           employee_count?: string | null
           id?: string
           industry?: string | null
+          la_demo?: boolean
           loai_theo_mst?: string | null
           monthly_revenue?: number | null
           mst_tra_luc?: string | null
@@ -285,6 +287,7 @@ export type Database = {
           employee_count?: string | null
           id?: string
           industry?: string | null
+          la_demo?: boolean
           loai_theo_mst?: string | null
           monthly_revenue?: number | null
           mst_tra_luc?: string | null

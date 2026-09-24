@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { locMinhHoa } from "../minh-hoa.ts";
 import { kiemKhoan, quetSaoKe, type CanhBao, type DauHieu, type KhoanRa } from "./phat-hien.ts";
 import { tuGiaoDich, tuYeuCau, type DongGiaoDich, type DongYeuCau } from "./nguon.ts";
 
@@ -25,10 +26,11 @@ export interface LichSu {
   tinCay: Set<string>;
 }
 
-export async function docLichSu(db: Db, companyId: string, homNay: string, boQuaYeuCau?: string): Promise<LichSu> {
+/** `laDemo`: chỉ để HIỆN cảnh báo trong công ty demo. Kiểm yêu cầu chi thật (`kiemYeuCau`) không bao giờ bật. */
+export async function docLichSu(db: Db, companyId: string, homNay: string, boQuaYeuCau?: string, laDemo = false): Promise<LichSu> {
   const [gd, yc, nn] = await Promise.all([
-    db.from("transactions").select(COT_GD, { count: "exact" })
-      .eq("company_id", companyId).eq("is_synthetic", false)
+    locMinhHoa(db.from("transactions").select(`${COT_GD}, is_synthetic`, { count: "exact" })
+      .eq("company_id", companyId), laDemo)
       .gte("transaction_date", lui(homNay, SO_NGAY_LICH_SU))
       // Mới nhất trước: chạm trần thì phần bị bỏ là lịch sử cũ nhất, không phải cửa sổ đang quét.
       .order("transaction_date", { ascending: false })
@@ -64,8 +66,8 @@ export async function kiemYeuCau(db: Db, companyId: string, y: DongYeuCau, homNa
 }
 
 /** Quét sao kê 30 ngày gần nhất cho màn Tổng quan và MIMI Assistant. */
-export async function quetCongTy(db: Db, companyId: string, homNay: string, soNgay = 30): Promise<{ canh_bao: CanhBao[]; lich_su_du: boolean; so_khoan_da_xet: number }> {
-  const ls = await docLichSu(db, companyId, homNay);
+export async function quetCongTy(db: Db, companyId: string, homNay: string, soNgay = 30, laDemo = false): Promise<{ canh_bao: CanhBao[]; lich_su_du: boolean; so_khoan_da_xet: number }> {
+  const ls = await docLichSu(db, companyId, homNay, undefined, laDemo);
   // Chỉ quét giao dịch sao kê: khoản đã duyệt trong MIMI là để làm lịch sử, không để cảnh báo lại.
   const tuSaoKe = ls.khoan.filter((k) => !k.id.startsWith("yc:"));
   const lichSuYc = ls.khoan.filter((k) => k.id.startsWith("yc:"));

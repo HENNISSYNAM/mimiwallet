@@ -49,6 +49,7 @@ import { docHieuLuc, kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { nhanHieuLuc } from "../_shared/luat/hieu-luc.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
 import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
+import { congTyLaDemo, locMinhHoa } from "../_shared/minh-hoa.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
 
@@ -282,13 +283,12 @@ async function docTrang(
 
 const dem = (co: boolean) => (co ? { count: "exact" as const } : undefined);
 
-async function docGiaoDich(db: Db, companyId: string, tu: string) {
+async function docGiaoDich(db: Db, companyId: string, tu: string, laDemo: boolean) {
   const { dong, tong } = await docTrang(
-    (a, b, c) => db.from("transactions")
-      .select("id, amount, type, transaction_date, merchant_name, category, counter_account_name, payment_reference", dem(c))
-      .eq("company_id", companyId)
-      // Không bao giờ để dữ liệu thử vào lời trợ lý.
-      .eq("is_synthetic", false)
+    // Không bao giờ để dữ liệu thử vào lời trợ lý — trừ công ty demo, nơi mọi dòng là minh hoạ.
+    (a, b, c) => locMinhHoa(db.from("transactions")
+      .select("id, amount, type, transaction_date, merchant_name, category, counter_account_name, payment_reference, is_synthetic", dem(c))
+      .eq("company_id", companyId), laDemo)
       .gte("transaction_date", tu)
       .order("transaction_date", { ascending: true })
       .order("id", { ascending: true })
@@ -354,6 +354,7 @@ async function docDuLieu(
   tuyChon: { soThangAi?: number; cauHoi?: string } = {},
 ): Promise<DuLieu> {
   const d = duLieuTrong(moc.homNay, moc.ky);
+  const laDemo = await congTyLaDemo(db, companyId);
   const tuLichSu = [congNgay(moc.homNay, -NGAY_LICH_SU), moc.ky.tu].sort()[0];
   // Mặc định từ đầu tháng trước (so cùng kỳ) hoặc 31 ngày (token); biểu đồ màn đầu cần 5 tháng.
   const tuAi = [
@@ -365,7 +366,7 @@ async function docDuLieu(
 
   if (can.has("giao_dich")) {
     viec.push(Promise.all([
-      docGiaoDich(db, companyId, tuLichSu),
+      docGiaoDich(db, companyId, tuLichSu, laDemo),
       // Lần đồng bộ gần nhất của các tài khoản đọc sao kê: nguồn độ tươi của giao dịch.
       db.from("bank_connections").select("last_synced_at, scopes")
         .eq("company_id", companyId).eq("status", "connected").is("revoked_at", null),
@@ -382,7 +383,7 @@ async function docDuLieu(
   }
   if (can.has("bat_thuong")) {
     // TCCN-01: cùng một hàm với màn Tổng quan (action `bat_thuong`), để hai nơi báo cùng một kết quả.
-    viec.push(quetCongTy(db, companyId, moc.homNay).then((bt) => {
+    viec.push(quetCongTy(db, companyId, moc.homNay, 30, laDemo).then((bt) => {
       d.batThuong = bt;
       d.doDay.bat_thuong = danhGiaDoDay({
         nguon: "bat_thuong", ten: "Lịch sử chi 180 ngày",
@@ -406,12 +407,11 @@ async function docDuLieu(
   }
   if (can.has("hoa_don_ban")) {
     viec.push(docTrang(
-      (a, b, c) => db.from("invoices")
-        .select("id, invoice_number, client_name, total, issued_date, due_date, status", dem(c))
-        // Trợ lý khuyên việc dựa trên đây, nên hoá đơn demo phải ở ngoài:
-        // "2 hoá đơn quá hạn 235 triệu" tính từ dòng seed là một lời khuyên sai.
-        .eq("is_synthetic", false)
-        .eq("company_id", companyId).order("due_date", { ascending: true }).order("id", { ascending: true }).range(a, b),
+      // Trợ lý khuyên việc dựa trên đây, nên hoá đơn demo phải ở ngoài công ty thật:
+      // "2 hoá đơn quá hạn 235 triệu" tính từ dòng seed là một lời khuyên sai.
+      (a, b, c) => locMinhHoa(db.from("invoices")
+        .select("id, invoice_number, client_name, total, issued_date, due_date, status, is_synthetic", dem(c))
+        .eq("company_id", companyId), laDemo).order("due_date", { ascending: true }).order("id", { ascending: true }).range(a, b),
       "hoá đơn bán ra", 5000,
     ).then(({ dong, tong }) => {
       d.hoaDonBan = dong.map((h) => ({ ...h, total: Number(h.total) })) as DuLieu["hoaDonBan"];
@@ -520,7 +520,7 @@ async function docDuLieu(
     viec.push((async () => {
       const [hs, dt] = await Promise.all([
         dongBoMstCongTy(db, companyId, cauHinhXInvoice()).then(() => docHoSo(db, companyId)),
-        docDoanhThuQuy(db, companyId, Number(moc.homNay.slice(0, 4))),
+        docDoanhThuQuy(db, companyId, Number(moc.homNay.slice(0, 4)), laDemo),
       ]);
       const dung = dungSuKien({ nam: Number(moc.homNay.slice(0, 4)), homNay: moc.homNay, congTy: hs.cong_ty, hoSo: hs.ho_so, doanhThu: dt });
       // Đối chiếu trước cả bộ căn cứ: năng lực là hàm thuần, không gọi được CSDL.
@@ -566,7 +566,7 @@ async function docThueManDau(db: Db, companyId: string, homNay: string) {
   const nam = Number(homNay.slice(0, 4));
   const [{ cong_ty, ho_so }, doanhThu] = await Promise.all([
     dongBoMstCongTy(db, companyId, cauHinhXInvoice()).then(() => docHoSo(db, companyId)),
-    docDoanhThuQuy(db, companyId, nam),
+    congTyLaDemo(db, companyId).then((laDemo) => docDoanhThuQuy(db, companyId, nam, laDemo)),
   ]);
   const dung = dungSuKien({ nam, homNay, congTy: cong_ty, hoSo: ho_so, doanhThu });
   const sl = suyLuan(dung.su_kien);
@@ -606,7 +606,7 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   gan_nhan_chi: "ghi_chung_tu",
 };
 
-async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
+async function xuLy(db: Db, userId: string, company: { id: string; name: string | null; la_demo?: boolean | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
   const khoaMoHinh = Deno.env.get("LOVABLE_API_KEY") ?? "";
   const can = QUYEN_HANH_DONG[hanhDong];
   if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));
@@ -711,7 +711,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       let goiY: Row | null = null;
       if (ketQua.tong_tien) {
         const moc90 = congNgay(moc.homNay, -90);
-        const { dong: gd } = await docGiaoDich(db, company.id, ketQua.ngay ? [congNgay(ketQua.ngay, -7), moc90].sort()[1] : moc90);
+        const { dong: gd } = await docGiaoDich(db, company.id, ketQua.ngay ? [congNgay(ketQua.ngay, -7), moc90].sort()[1] : moc90, company.la_demo === true);
         const khop = gd.filter((t) =>
           chieuTien(t) === "ra" &&
           Math.abs(doLonTien(t) - (ketQua.tong_tien as number)) <= LECH_TIEN &&
@@ -734,8 +734,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       let giaoDichId: string | null = null;
       if (typeof body.giao_dich_id === "string" && body.giao_dich_id) {
         const t = kiem(
-          // Chỉ gắn chứng từ vào giao dịch thật: dòng thử của sandbox không cần giấy tờ.
-          await db.from("transactions").select("id").eq("id", body.giao_dich_id).eq("company_id", company.id).eq("is_synthetic", false).maybeSingle(),
+          // Chỉ gắn chứng từ vào giao dịch thật: dòng thử của sandbox không cần giấy tờ (trừ demo).
+          await locMinhHoa(db.from("transactions").select("id, is_synthetic").eq("id", body.giao_dich_id).eq("company_id", company.id), company.la_demo === true).maybeSingle(),
           "giao dịch",
         );
         if (!t) return loi("GIAO_DICH", "Không có khoản chi này trong công ty.", 404);
@@ -839,7 +839,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
     case "bat_thuong": {
       // TCCN-01 — thẻ cảnh báo trên màn Tổng quan. Chỉ đọc; mọi thành viên công ty đều xem được.
-      const bt = await quetCongTy(db, company.id, moc.homNay);
+      const bt = await quetCongTy(db, company.id, moc.homNay, 30, company.la_demo === true);
       return json({
         tong: bt.canh_bao.length,
         so_cao: bt.canh_bao.filter((c) => c.muc_do === "cao").length,
@@ -858,8 +858,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
        */
       const gdId = String(body.giao_dich_id ?? "");
       if (typeof body.ca_nhan !== "boolean" || !gdId) return loi("THAM_SO", "Thiếu giao dịch hoặc lựa chọn.", 400);
-      const { data: gd, error: loiGd } = await db.from("transactions")
-        .select("id, amount, type").eq("id", gdId).eq("company_id", company.id).eq("is_synthetic", false).maybeSingle();
+      const { data: gd, error: loiGd } = await locMinhHoa(db.from("transactions")
+        .select("id, amount, type, is_synthetic").eq("id", gdId).eq("company_id", company.id), company.la_demo === true).maybeSingle();
       if (loiGd) throw loiGd;
       if (!gd) return loi("KHONG_THAY", "Không có giao dịch này.", 404);
       if (chieuTien(gd) !== "ra") return loi("THAM_SO", "Chỉ phân loại được khoản tiền ra.", 400);
@@ -890,7 +890,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (!stk || stk.length < 6) return loi("THAM_SO", "Số tài khoản cần ít nhất 6 chữ số.", 400);
       if (!Number.isFinite(soTien) || soTien <= 0 || soTien > 100_000_000_000) return loi("THAM_SO", "Số tiền chưa đúng.", 400);
 
-      const ls = await docLichSuChi(db, company.id, moc.homNay);
+      const ls = await docLichSuChi(db, company.id, moc.homNay, undefined, company.la_demo === true);
       const dauHieu = [
         ...dauHieuHoanCanh(hoanCanh),
         ...kiemKhoan({ id: "kiem", so_tien: soTien, ngay: moc.homNay, ten_nguoi_nhan: ten, so_tai_khoan: stk, noi_dung: noiDung }, ls.khoan, { daTinCay: ls.tinCay }),
@@ -923,7 +923,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (!bang) return loi("THAM_SO", "Loại bằng chứng không hợp lệ.", 400);
       let q = db.from(bang.bang).select(bang.cot).eq("company_id", company.id).in("id", ids);
       // Giao dịch: chỉ mở dòng thật, đúng như các năng lực đã cộng (bỏ is_synthetic).
-      if (loai === "giao_dich") q = q.eq("is_synthetic", false);
+      if (loai === "giao_dich") q = locMinhHoa(q, company.la_demo === true);
       const { data, error } = await q.limit(SO_BANG_CHUNG_MOI_LAN);
       if (error) throw error;
       const ds = (data ?? []) as Row[];
@@ -977,7 +977,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
     const chon = typeof body.company_id === "string" ? body.company_id : null;
-    const ct = await resolveCompanyVaiTro<{ id: string; name: string | null }>(db, user.id, "id, name", chon);
+    const ct = await resolveCompanyVaiTro<{ id: string; name: string | null; la_demo: boolean | null }>(db, user.id, "id, name, la_demo", chon);
     if (!ct) return loi("KHONG_CO_CONG_TY", chon ? "Bạn không thuộc công ty này." : "Chưa có công ty.", chon ? 403 : 404);
     const company = ct.cong_ty;
 

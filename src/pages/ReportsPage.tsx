@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
-import { idCongTyDangDung } from '@/lib/congTyDangDung';
+import { congTyDangDung } from '@/lib/congTyDangDung';
+import { duocHien } from '../../supabase/functions/_shared/minh-hoa.ts';
 import { formatVNDShort } from '@/lib/formatters';
 import {
   phanBoChiPhi, theoThang, tuoiHoaDon,
@@ -118,17 +119,17 @@ export default function ReportsPage() {
     try {
       const user = await nguoiDungHienTai();
       if (!user) return;
-      const id = await idCongTyDangDung();
-      if (!id) return;
-      const cty = { id };
+      const dang = await congTyDangDung();
+      if (!dang) return;
+      const cty = { id: dang.id };
+      const laDemo = dang.la_demo === true;
 
       const [gd, hd] = await Promise.all([
         docGiaoDichDu(cty.id),
         supabase
           .from('invoices')
-          .select('total, amount, status, due_date')
-          // Bỏ hoá đơn demo, cùng quy ước với giao dịch ngay bên dưới.
-          .eq('is_synthetic', false)
+          .select('total, amount, status, due_date, is_synthetic')
+          // Bỏ hoá đơn demo, cùng quy ước với giao dịch ngay bên dưới (trừ công ty demo).
           .eq('company_id', cty.id)
           .limit(TOI_DA_DONG),
       ]);
@@ -140,12 +141,12 @@ export default function ReportsPage() {
 
       // Bỏ dòng sandbox — cùng quy ước với Tổng quan và tax-summary.
       const tatCa = gd.dong;
-      const that = tatCa.filter((x) => !x.is_synthetic) as unknown as GiaoDich[];
+      const that = tatCa.filter(duocHien(laDemo)) as unknown as GiaoDich[];
       setSoDongThu(tatCa.length - that.length);
 
       setThang(theoThang(that));
       setChiPhi(phanBoChiPhi(that));
-      setTuoi(tuoiHoaDon((hd.data ?? []) as unknown as HoaDon[]));
+      setTuoi(tuoiHoaDon(((hd.data ?? []) as { is_synthetic?: boolean }[]).filter(duocHien(laDemo)) as unknown as HoaDon[]));
     } finally {
       setDangTai(false);
     }

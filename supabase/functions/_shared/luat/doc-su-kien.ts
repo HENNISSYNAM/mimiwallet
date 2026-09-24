@@ -8,7 +8,8 @@
  * `internal-transfer.ts` mà `tax-summary` dùng: một khoản chuyển nội bộ bị tính thành doanh thu
  * đủ để đẩy một hộ từ diện miễn sang diện phải nộp.
  *
- * Dòng dữ liệu thử (`is_synthetic`) không bao giờ được vào đây.
+ * Dòng dữ liệu thử (`is_synthetic`) không bao giờ được vào đây — trừ công ty demo, nơi cả sổ là
+ * minh hoạ (`_shared/minh-hoa.ts`).
  */
 import { findInternalTransfers, revenueExcludingInternal, type LedgerTx } from '../ledger/internal-transfer.ts';
 import {
@@ -16,6 +17,7 @@ import {
   type DoanhThuDaDoc, type HoSoThue, type LoaiNguoiNop, type NguonDoanhThu, type SuKienThue,
 } from './he-luat.ts';
 import { dangHoatDong } from '../mst/tra-cuu.ts';
+import { locMinhHoa } from '../minh-hoa.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -33,7 +35,8 @@ const bon = (): [number, number, number, number] => [0, 0, 0, 0];
 const quyCuaThang = (thang: number) => Math.max(1, Math.min(4, Math.ceil(thang / 3)));
 
 /** Doanh thu từng quý của một năm, từ hoá đơn điện tử và từ sao kê. */
-export async function docDoanhThuQuy(db: Db, companyId: string, nam: number): Promise<DoanhThuTheoQuy> {
+/** `laDemo`: công ty demo thì đọc cả dòng minh hoạ — cả sổ của nó là minh hoạ. Xem `_shared/minh-hoa.ts`. */
+export async function docDoanhThuQuy(db: Db, companyId: string, nam: number, laDemo = false): Promise<DoanhThuTheoQuy> {
   const hd = await db.from('gdt_invoices')
     .select('direction, total_amount, invoice_status, issuance_period')
     .eq('company_id', companyId)
@@ -53,11 +56,10 @@ export async function docDoanhThuQuy(db: Db, companyId: string, nam: number): Pr
     }
   }
 
-  const gd = await db.from('transactions')
+  // Tiền giả của sandbox không được nằm trong con số quyết định nghĩa vụ thuế của công ty thật.
+  const gd = await locMinhHoa(db.from('transactions')
     .select('id, amount, type, transaction_date, account_number, counter_account_number, is_synthetic')
-    .eq('company_id', companyId)
-    // Tiền giả của sandbox không được nằm trong con số quyết định nghĩa vụ thuế.
-    .eq('is_synthetic', false)
+    .eq('company_id', companyId), laDemo)
     .gte('transaction_date', `${nam}-01-01`)
     .lte('transaction_date', `${nam}-12-31`)
     .limit(20000);

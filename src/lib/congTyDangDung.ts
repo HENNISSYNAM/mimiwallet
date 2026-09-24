@@ -22,6 +22,8 @@ export interface CongTyCuaToi {
   id: string;
   ten: string | null;
   vai_tro: VaiTro;
+  /** Công ty minh hoạ của tài khoản demo: dữ liệu `is_synthetic` được hiện (kèm nhãn). */
+  la_demo?: boolean;
 }
 
 const KHOA_LUU = 'mimi:cong-ty-dang-dung';
@@ -51,21 +53,22 @@ async function tai(): Promise<{ ds: CongTyCuaToi[]; dangDung: CongTyCuaToi | nul
 
   const { data, error } = await supabase
     .from('thanh_vien_cong_ty')
-    .select('vai_tro, tao_luc, companies!inner(id, name)')
+    .select('vai_tro, tao_luc, companies!inner(id, name, la_demo)')
     .eq('user_id', user.id)
     .order('tao_luc', { ascending: true })
     .limit(50);
-  let ds: CongTyCuaToi[] = error ? [] : ((data ?? []) as unknown as { vai_tro: VaiTro; companies: { id: string; name: string | null } | { id: string; name: string | null }[] }[])
+  type Cty = { id: string; name: string | null; la_demo?: boolean | null };
+  let ds: CongTyCuaToi[] = error ? [] : ((data ?? []) as unknown as { vai_tro: VaiTro; companies: Cty | Cty[] }[])
     .flatMap((r) => {
       const ct = Array.isArray(r.companies) ? r.companies[0] : r.companies;
-      return ct ? [{ id: ct.id, ten: ct.name ?? null, vai_tro: r.vai_tro }] : [];
+      return ct ? [{ id: ct.id, ten: ct.name ?? null, vai_tro: r.vai_tro, la_demo: ct.la_demo === true }] : [];
     });
 
   if (!ds.length) {
     // Dữ liệu cũ: công ty do chính người này tạo, chưa có dòng thành viên.
-    const { data: ct } = await supabase.from('companies').select('id, name').eq('user_id', user.id)
+    const { data: ct } = await supabase.from('companies').select('id, name, la_demo').eq('user_id', user.id)
       .order('created_at', { ascending: true }).limit(1).maybeSingle();
-    ds = ct ? [{ id: ct.id, ten: ct.name ?? null, vai_tro: 'chu_so_huu' }] : [];
+    ds = ct ? [{ id: ct.id, ten: ct.name ?? null, vai_tro: 'chu_so_huu', la_demo: ct.la_demo === true }] : [];
   }
 
   const chon = docLuaChon();

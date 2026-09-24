@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { idCongTyDangDung } from '@/lib/congTyDangDung';
+import { congTyDangDung } from '@/lib/congTyDangDung';
+import { locMinhHoa } from '../../supabase/functions/_shared/minh-hoa.ts';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { chieuTien, doLonTien } from '@/lib/chieuTien';
 import { goiYCaNhan } from '../../supabase/functions/_shared/phan-loai/ca-nhan.ts';
@@ -48,13 +49,14 @@ export default function TachChiCaNhanPage() {
   const tai = useCallback(async () => {
     setLoi(null);
     try {
-      const id = await idCongTyDangDung();
+      const dang = await congTyDangDung();
+      const id = dang?.id;
       if (!id) { setDs([]); return; }
       const tu = new Date(Date.now() - SO_NGAY * 86_400_000).toISOString().slice(0, 10);
       const [gd, nhan] = await Promise.all([
-        supabase.from('transactions')
-          .select('id, transaction_date, amount, type, merchant_name, counter_account_name, payment_reference', { count: 'exact' })
-          .eq('company_id', id).eq('is_synthetic', false).gte('transaction_date', tu)
+        locMinhHoa(supabase.from('transactions')
+          .select('id, transaction_date, amount, type, merchant_name, counter_account_name, payment_reference, is_synthetic', { count: 'exact' })
+          .eq('company_id', id), dang?.la_demo === true).gte('transaction_date', tu)
           .order('transaction_date', { ascending: false }).limit(TRAN),
         supabase.from('transaction_labels').select('transaction_id, is_personal, source').eq('company_id', id).limit(20_000),
       ]);

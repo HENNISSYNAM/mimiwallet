@@ -23,6 +23,7 @@ import { kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien, type HoSoCongTy } from "../_shared/luat/doc-su-kien.ts";
 import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
 import { docQuyenLoi, khoaKy } from "../_shared/billing/thu-tien.ts";
+import { congTyLaDemo } from "../_shared/minh-hoa.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
 const congTyChoGiaoDien = (c: HoSoCongTy) => ({
@@ -109,7 +110,7 @@ async function phanTich(db: Db, companyId: string, body: Row) {
 
   const [{ cong_ty, ho_so }, doanhThu] = await Promise.all([
     dongBoMstCongTy(db, companyId, cauHinhXInvoice()).then(() => docHoSo(db, companyId)),
-    docDoanhThuQuy(db, companyId, n.nam),
+    congTyLaDemo(db, companyId).then((laDemo) => docDoanhThuQuy(db, companyId, n.nam, laDemo)),
   ]);
   const dung = dungSuKien({ nam: n.nam, homNay, congTy: cong_ty, hoSo: ho_so, doanhThu, tuNhap: tn.quy });
   const sl = suyLuan(dung.su_kien);

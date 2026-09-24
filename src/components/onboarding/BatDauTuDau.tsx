@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
+import { locMinhHoa } from '../../../supabase/functions/_shared/minh-hoa.ts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Check, ArrowRight, Lock, X } from 'lucide-react';
 import { dungCacBuoc, soBuocXong, xongHet, type Buoc } from '@/lib/batDau';
@@ -47,6 +48,7 @@ export default function BatDauTuDau() {
 
     (async () => {
       const companyId = await idCongTyDangDung();
+      const laDemo = (await congTyDangDung())?.la_demo === true;
       if (!companyId) return;
 
       /*
@@ -62,9 +64,8 @@ export default function BatDauTuDau() {
           .eq('company_id', companyId).neq('status', 'disconnected'),
         // Đếm dòng THẬT. Dòng sandbox mà tính vào thì bước "nối ngân hàng" tự
         // đánh dấu xong trong khi người dùng chưa nối gì.
-        supabase.from('transactions').select('id, is_synthetic', { count: 'exact', head: true })
-          .eq('is_synthetic', false)
-          .eq('company_id', companyId),
+        locMinhHoa(supabase.from('transactions').select('id, is_synthetic', { count: 'exact', head: true })
+          .eq('company_id', companyId), laDemo),
         supabase.from('clients').select('id', { count: 'exact', head: true })
           .eq('company_id', companyId),
       ]);

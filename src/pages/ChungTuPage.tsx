@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowRight, FileWarning, Loader2, RefreshCw } from 'luci
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
-import { idCongTyDangDung } from '@/lib/congTyDangDung';
+import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ghepChungTu, type HoaDonVao, type KhoanChi } from '@/lib/khopChungTu';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
@@ -58,7 +58,10 @@ export default function ChungTuPage() {
       const user = await nguoiDungHienTai();
       if (!user) return;
 
-      const id = await idCongTyDangDung();
+      const dang = await congTyDangDung();
+      const id = dang?.id ?? null;
+      // Công ty minh hoạ: cả sổ là dữ liệu mẫu, hiện hết (xem `_shared/minh-hoa.ts`).
+      const laDemo = dang?.la_demo === true;
       if (!id) return;
       const cty = { id };
 
@@ -91,7 +94,6 @@ export default function ChungTuPage() {
           .from('transactions')
           .select('amount, type, is_synthetic')
           .eq('company_id', cty.id)
-          .eq('is_synthetic', false)
           .gte('transaction_date', dauNam)
           .lte('transaction_date', iso(cuoiKy)),
         supabase
@@ -113,7 +115,7 @@ export default function ChungTuPage() {
         (thuNam.data ?? [])
           // Chiều tiền dùng chung (`lib/chieuTien.ts`). Bản cũ coi `amount > 0` là thu, nên
           // mọi khoản chi ngân hàng (ghi số dương) bị cộng vào doanh thu năm — con số so ngưỡng thuế.
-          .filter((t) => !t.is_synthetic && chieuTien(t) === 'vao')
+          .filter((t) => (laDemo || !t.is_synthetic) && chieuTien(t) === 'vao')
           .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
       );
       // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi hoá đơn đầu vào.
@@ -134,7 +136,7 @@ export default function ChungTuPage() {
        * khai thuế, nên hậu quả nặng hơn hẳn.
        */
       const tatCa = gd.data ?? [];
-      const rows = tatCa.filter((t) => !t.is_synthetic);
+      const rows = tatCa.filter((t) => laDemo || !t.is_synthetic);
       setSoDongThu(tatCa.length - rows.length);
 
       setChi(

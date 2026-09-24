@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
+import { duocHien } from '../../supabase/functions/_shared/minh-hoa.ts';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
@@ -157,6 +158,8 @@ export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [txs, setTxs] = useState<Tx[]>([]);
+  /** Công ty minh hoạ: hiện dữ liệu `is_synthetic` (kèm nhãn trang) thay vì lọc bỏ. */
+  const [laDemo, setLaDemo] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [hasBank, setHasBank] = useState(false);
@@ -173,6 +176,7 @@ export default function DashboardOverview() {
       const dang = await congTyDangDung();
       if (!dang) { if (!cancelled) setLoading(false); return; }
       const company = { id: dang.id, name: dang.ten };
+      const demo = dang.la_demo === true;
 
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
       const [txRes, invRes, snapRes, bankRes] = await Promise.all([
@@ -181,12 +185,12 @@ export default function DashboardOverview() {
           .eq('company_id', company.id).gte('transaction_date', iso(yearAgo))
           .order('transaction_date', { ascending: false }),
         supabase.from('invoices')
-          .select('id, total, status, due_date, client_name, invoice_number')
+          .select('id, total, status, due_date, client_name, invoice_number, is_synthetic')
           // Cùng quy ước với `transactions` ngay trên: màn hình này trình bày
-          // tiền của công ty, nên hoá đơn demo không được góp vào con số nào.
+          // tiền của công ty, nên hoá đơn demo không được góp vào con số nào
+          // (trừ công ty demo, nơi cả sổ là minh hoạ — `_shared/minh-hoa.ts`).
           // Thiếu dòng này thì thẻ "Hoá đơn chờ thanh toán" đếm cả dòng seed
           // trong khi thẻ dòng tiền đã lọc — hai thẻ cạnh nhau nói ngược nhau.
-          .eq('is_synthetic', false)
           .eq('company_id', company.id),
         supabase.from('credit_score_snapshots')
           .select('score, credit_limit, computed_at')
@@ -198,8 +202,9 @@ export default function DashboardOverview() {
 
       if (cancelled) return;
       setCompanyName(company.name);
+      setLaDemo(demo);
       setTxs((txRes.data as Tx[]) ?? []);
-      setInvoices((invRes.data as Invoice[]) ?? []);
+      setInvoices(((invRes.data ?? []) as (Invoice & { is_synthetic?: boolean })[]).filter(duocHien(demo)));
       setSnapshot((snapRes.data as Snapshot) ?? null);
       setHasBank(!!bankRes.data?.length);
       setLoading(false);
@@ -208,13 +213,13 @@ export default function DashboardOverview() {
   }, []);
 
   /** Chỉ tiền thật — mọi con số VÀ danh sách trên màn này đều dựa vào đây. */
-  const giaoDichThat = useMemo(() => txs.filter((x) => !x.is_synthetic), [txs]);
+  const giaoDichThat = useMemo(() => txs.filter(duocHien(laDemo)), [txs, laDemo]);
   const soDongThu = txs.length - giaoDichThat.length;
 
   const m = useMemo(() => {
     // Every figure below describes the business, so generated rows are excluded
     // before any of it is computed.
-    const real = txs.filter((x) => !x.is_synthetic);
+    const real = txs.filter(duocHien(laDemo));
     const days = RANGES[rangeIdx].days;
     const from = new Date(); from.setDate(from.getDate() - days);
     const inRange = real.filter((x) => x.transaction_date >= iso(from));
@@ -634,7 +639,7 @@ export default function DashboardOverview() {
                       {/* Labelled where it is read, not only excluded from the
                           maths. A row that is invisible in the totals but looks
                           identical in the list is still misleading. */}
-                      {tx.is_synthetic && (
+                      {tx.is_synthetic && !laDemo && (
                         <span className="ml-2 align-middle text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent text-muted-foreground">
                           demo
                         </span>

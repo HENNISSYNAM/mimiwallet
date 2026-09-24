@@ -4,7 +4,7 @@ import { AlertTriangle, Camera, Check, Download, FileText, ImageOff, Loader2, Re
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
-import { idCongTyDangDung } from '@/lib/congTyDangDung';
+import { congTyDangDung } from '@/lib/congTyDangDung';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { dinhDang } from '@/lib/troLy';
 import {
@@ -53,9 +53,10 @@ export default function ThuVienChungTuPage() {
     try {
       const user = await nguoiDungHienTai();
       if (!user) return;
-      const id = await idCongTyDangDung();
+      const dang = await congTyDangDung();
+      const id = dang?.id ?? null;
       if (!id) { setDs([]); return; }
-      const cty = { id };
+      const cty = { id, la_demo: dang?.la_demo === true };
       const tho = supabase as unknown as BangTho;
       const [q, h] = await Promise.all([
         tho.from('chung_tu_quet')
@@ -76,7 +77,7 @@ export default function ThuVienChungTuPage() {
           .select('id, transaction_date, counter_account_name, merchant_name, amount, is_synthetic')
           .in('id', ids);
         if (r.error) throw r.error;
-        gd = (r.data ?? []).filter((t) => !t.is_synthetic).map((t) => ({
+        gd = (r.data ?? []).filter((t) => cty.la_demo === true || !t.is_synthetic).map((t) => ({
           id: t.id, transaction_date: t.transaction_date, ten: t.counter_account_name || t.merchant_name, so_tien: Math.abs(Number(t.amount)),
         }));
       }

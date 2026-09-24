@@ -3,6 +3,7 @@ import DashboardSidebar from './DashboardSidebar';
 import { Bell, ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, Users, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
+import { NhanMinhHoa } from './NhanMinhHoa';
 import { useCongTy } from '@/hooks/useCongTy';
 import { TRANG_CHI_TIET } from '@/lib/trangChiTiet';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -308,6 +309,7 @@ export default function DashboardLayout() {
 
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6">
+          <NhanMinhHoa />
           <Outlet />
         </main>
 

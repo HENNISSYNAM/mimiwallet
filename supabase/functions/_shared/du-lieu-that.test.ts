@@ -165,12 +165,22 @@ describe('cờ dữ liệu thử', () => {
     expect(sai).toEqual([]);
   });
 
+  /*
+   * Từ 24/09/2026 hai trang này lọc bằng `duocHien(laDemo)` sau khi đọc: công ty demo hiện dòng
+   * minh hoạ, công ty thật bỏ như cũ (quy tắc khoá bằng test ở `_shared/minh-hoa.test.ts`). Nên
+   * chấp nhận hai cách: lọc cứng trong câu truy vấn, hoặc đọc cột `is_synthetic` rồi lọc bằng
+   * `duocHien` — và lần này bắt được đúng lỗi: trang Báo cáo đã bỏ bộ lọc cứng mà quên lọc lại.
+   */
   it('Tổng quan và Báo cáo lọc BỎ hoá đơn demo, không chỉ đọc ra', () => {
     for (const trang of ['DashboardOverview.tsx', 'ReportsPage.tsx']) {
       const src = boChuThich(readFileSync(join(goc, 'src', 'pages', trang), 'utf8'));
       const doan = doanDocHoaDon(src);
       expect(doan.length).toBeGreaterThan(0);
-      for (const d of doan) expect(d).toMatch(/is_synthetic['"]?\s*,\s*false/);
+      for (const d of doan) {
+        const locCung = /is_synthetic['"]?\s*,\s*false/.test(d);
+        const locSau = d.includes('is_synthetic') && /\.filter\(duocHien\(/.test(src);
+        expect(locCung || locSau, `${trang}: đọc hoá đơn mà không lọc dòng minh hoạ`).toBe(true);
+      }
     }
   });
 

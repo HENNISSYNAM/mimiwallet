@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveCompany } from "../_shared/company.ts";
+import { congTyLaDemo, duocHien } from "../_shared/minh-hoa.ts";
 import {
   findInternalTransfers,
   revenueExcludingInternal,
@@ -89,10 +90,10 @@ Deno.serve(async (req) => {
 
     // Demo and sandbox rows are excluded before anything is counted. They are
     // invented money, and this is the number that decides whether somebody
-    // owes tax.
-    const real = ((txs ?? []) as Array<LedgerTx & { is_synthetic?: boolean }>).filter(
-      (t) => !t.is_synthetic,
-    );
+    // owes tax. The one exception is the demo company, whose whole ledger is
+    // illustrative — see _shared/minh-hoa.ts.
+    const laDemo = await congTyLaDemo(supabase, company.id);
+    const real = ((txs ?? []) as Array<LedgerTx & { is_synthetic?: boolean }>).filter(duocHien(laDemo));
 
     const { data: conns } = await supabase
       .from("bank_connections")

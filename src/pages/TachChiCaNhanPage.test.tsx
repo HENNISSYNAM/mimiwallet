@@ -13,7 +13,10 @@ const gia = vi.hoisted(() => ({
   loi: vi.fn(),
 }));
 
-vi.mock('@/lib/congTyDangDung', () => ({ idCongTyDangDung: () => Promise.resolve('cty-1') }));
+vi.mock('@/lib/congTyDangDung', () => ({
+  idCongTyDangDung: () => Promise.resolve('cty-1'),
+  congTyDangDung: () => Promise.resolve({ id: 'cty-1', ten: 'X', vai_tro: 'chu_so_huu', la_demo: false }),
+}));
 vi.mock('@/lib/goiTroLy', () => ({ goiTroLy: gia.goi }));
 vi.mock('sonner', () => ({ toast: { error: gia.loi, success: vi.fn() } }));
 vi.mock('@/integrations/supabase/client', () => ({
