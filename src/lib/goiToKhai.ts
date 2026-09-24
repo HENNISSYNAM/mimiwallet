@@ -2,7 +2,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { kemCongTy } from '@/lib/congTyDangDung';
-import type { CanCuDaKiem, HoSoThue, KyToKhai, SuKienThue, SuyLuan, ToKhai } from '@/lib/heLuat';
+import type { CanCuDaKiem, HoSoThue, KyToKhai, LoaiNguoiNop, SuKienThue, SuyLuan, ToKhai } from '@/lib/heLuat';
+import type { TheoMst } from '../../supabase/functions/_shared/luat/doc-su-kien.ts';
+
+/**
+ * Công ty như máy chủ trả về. `loai_theo_mst` có giá trị thì màn hình KHÔNG hỏi "hộ hay doanh
+ * nghiệp" nữa; `theo_mst` là điều Tổng cục Thuế ghi cho mã này (null khi chưa tra được).
+ */
+export interface CongTyTheoMst {
+  ten: string | null;
+  mst: string | null;
+  loai_theo_mst: LoaiNguoiNop | null;
+  theo_mst: TheoMst | null;
+}
 
 /** Đường dẫn Cổng dịch vụ công của cơ quan thuế, nơi người dùng tự nộp tờ khai. */
 export const DUONG_DAN_NOP_TO_KHAI = 'https://dichvucong.gdt.gov.vn/tthc/homelogin';
@@ -19,7 +31,7 @@ export interface DoanhThuPhanTich {
 export interface KetQuaPhanTich {
   nam: number;
   hom_nay: string;
-  cong_ty: { ten: string | null; mst: string | null };
+  cong_ty: CongTyTheoMst;
   ho_so: HoSoThue;
   su_kien: SuKienThue;
   doanh_thu: DoanhThuPhanTich;

@@ -276,3 +276,49 @@ describe('ba thẻ phân tích ở màn đầu', () => {
     expect(p.can_xac_nhan.muc[0]).toMatchObject({ agent: 'Bot mua hàng', nguoi_nhan: 'Người nhận chưa rõ tên' });
   });
 });
+
+/*
+ * Đọc nội dung chuyển khoản (24/09/2026). Câu thật của một người dùng: ba mẹ bán hàng, "giờ
+ * quy ra sao kê không biết sao kê thế nào". Tiền con gửi, tiền vay trông y hệt tiền khách trả.
+ */
+describe('tiền vào không phải doanh thu — đọc sao kê thật', () => {
+  const chay = (ds: GiaoDichTL[]) => NANG_LUC.tien_vao_khong_phai_doanh_thu.chay(moi({ giaoDich: ds }));
+  const vao = (payment_reference: string, amount: number, ngay = '2026-08-10') =>
+    gd({ type: 'income', amount, transaction_date: ngay, counter_account_name: null, payment_reference });
+
+  it('chỉ ra đúng khoản tiền vay và tiền con gửi, kèm nguyên văn nội dung', () => {
+    const r = chay([
+      vao('GIAI NGAN HDTD 1234/2026', 200_000_000),
+      vao('CON GUI BA ME TIEU', 5_000_000),
+      vao('Thanh toan don hang 1523', 3_000_000),
+    ]);
+    expect(r.tom_tat).toMatch(/^Không\./);
+    expect(r.tom_tat).toContain('2 khoản');
+    expect(r.tom_tat).toContain('205.000.000');
+    const bang = r.the.find((t) => t.loai === 'bang');
+    expect(bang && bang.loai === 'bang' ? bang.dong.map((d) => d[2]) : []).toEqual(['GIAI NGAN HDTD 1234/2026', 'CON GUI BA ME TIEU']);
+    // Con số nào cũng trỏ về đúng hai giao dịch đã cộng.
+    const so = r.the.find((t) => t.loai === 'so_lieu');
+    expect(so && so.loai === 'so_lieu' ? so.muc[0].bang_chung?.[0].so_ban_ghi : null).toBe(2);
+  });
+
+  it('nói rõ là chỉ ra, không tự trừ, và chỉ đường sửa số trên Tờ khai', () => {
+    const r = chay([vao('GOP VON KINH DOANH', 50_000_000)]);
+    expect(JSON.stringify(r.the)).toContain('không tự trừ');
+    expect(r.de_xuat.map((x) => x.tham_so.duong_dan)).toContain('/dashboard/to-khai');
+  });
+
+  it('không đụng tiền ra và tiền năm trước', () => {
+    const r = chay([
+      gd({ type: 'expense', amount: -1_000_000, payment_reference: 'CON GUI BA ME' }),
+      vao('CON GUI BA ME', 1_000_000, '2025-12-30'),
+    ]);
+    expect(r.tom_tat).toContain('chưa thấy khoản nào');
+  });
+
+  it('không nội dung nào ghi rõ thì nói thật là không nhận ra được', () => {
+    const r = chay([vao('chuyen khoan', 1_000_000)]);
+    expect(r.tom_tat).toContain('đã đọc nội dung 1 khoản tiền vào');
+    expect(r.the.some((t) => t.loai === 'bang')).toBe(false);
+  });
+});

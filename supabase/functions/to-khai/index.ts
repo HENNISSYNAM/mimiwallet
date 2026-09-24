@@ -20,7 +20,16 @@ import { lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
 import { canCuDung, docHoSoThue, NAM_AP_DUNG, PHIEN_BAN_HE_LUAT, suyLuan } from "../_shared/luat/he-luat.ts";
 import { kyGoiY, soanToKhai, type KyToKhai } from "../_shared/luat/to-khai.ts";
 import { kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
-import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
+import { docDoanhThuQuy, docHoSo, dungSuKien, type HoSoCongTy } from "../_shared/luat/doc-su-kien.ts";
+import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
+
+/** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
+const congTyChoGiaoDien = (c: HoSoCongTy) => ({
+  ten: c.ten,
+  mst: c.mst,
+  loai_theo_mst: c.loai_theo_mst,
+  theo_mst: c.theo_mst,
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,7 +106,7 @@ async function phanTich(db: Db, companyId: string, body: Row) {
   if (!k.ok) return { loi: k.cau };
 
   const [{ cong_ty, ho_so }, doanhThu] = await Promise.all([
-    docHoSo(db, companyId),
+    dongBoMstCongTy(db, companyId, cauHinhXInvoice()).then(() => docHoSo(db, companyId)),
     docDoanhThuQuy(db, companyId, n.nam),
   ]);
   const dung = dungSuKien({ nam: n.nam, homNay, congTy: cong_ty, hoSo: ho_so, doanhThu, tuNhap: tn.quy });
@@ -115,7 +124,7 @@ async function phanTich(db: Db, companyId: string, body: Row) {
     ket_qua: {
       nam: n.nam,
       hom_nay: homNay,
-      cong_ty: { ten: cong_ty.ten, mst: cong_ty.mst },
+      cong_ty: congTyChoGiaoDien(cong_ty),
       ho_so,
       su_kien: dung.su_kien,
       doanh_thu: {
@@ -154,8 +163,10 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
   if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));
   switch (hanhDong) {
     case "ho_so": {
+      // Cài đặt gọi hành động này ngay sau khi lưu mã số thuế: tra lần đầu ở đây.
+      await dongBoMstCongTy(db, company.id, cauHinhXInvoice());
       const { cong_ty, ho_so } = await docHoSo(db, company.id);
-      return json({ cong_ty: { ten: cong_ty.ten, mst: cong_ty.mst, loai_tai_khoan: cong_ty.account_type }, ho_so });
+      return json({ cong_ty: { ...congTyChoGiaoDien(cong_ty), loai_tai_khoan: cong_ty.account_type }, ho_so });
     }
 
     case "luu_ho_so": {

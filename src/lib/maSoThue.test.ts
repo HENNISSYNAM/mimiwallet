@@ -15,6 +15,13 @@ describe('mã số thuế', () => {
     expect(MST_HOP_LE('0312345678-001')).toBe(true);
   });
 
+  // Hộ kinh doanh: số định danh cá nhân thay mã số thuế từ 01/07/2025.
+  it('nhận 12 chữ số của hộ kinh doanh, cá nhân', () => {
+    expect(MST_HOP_LE('079203012345')).toBe(true);
+    expect(MST_HOP_LE('07920301234')).toBe(false);
+    expect(MST_HOP_LE('0792030123456')).toBe(false);
+  });
+
   it('bỏ qua khoảng trắng người dùng gõ thừa', () => {
     expect(MST_HOP_LE(' 0312345678 ')).toBe(true);
     expect(chuanHoaMst(' 0312345678 ')).toBe('0312345678');

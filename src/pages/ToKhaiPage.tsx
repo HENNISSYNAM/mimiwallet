@@ -4,17 +4,18 @@ import { AlertTriangle, ExternalLink, Info, Loader2, Printer, Save, ScrollText }
 
 import { toast } from 'sonner';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
-import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type KetQuaPhanTich } from '@/lib/goiToKhai';
+import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type KetQuaPhanTich } from '@/lib/goiToKhai';
 import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
-  type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type NhomNganh, type ToKhai,
+  type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
 } from '@/lib/heLuat';
 
 /**
  * Tờ khai thuế — chỗ công nghệ lõi của MIMI hiện ra thành giấy tờ hành chính.
  *
  * Hai lớp, đọc từ trên xuống:
- *   1. Hồ sơ thuế — vài điều chỉ người dùng biết (hộ hay doanh nghiệp, nhóm ngành, bán ở đâu).
+ *   1. Hồ sơ thuế — vài điều chỉ người dùng biết (nhóm ngành, bán ở đâu). Điều mã số thuế đã
+ *      trả lời — tên đăng ký, hộ hay doanh nghiệp, cơ quan thuế — thì chỉ hiện, không hỏi lại.
  *   2. Bản nháp tờ khai — đúng mẫu 01/TKN-CNKD hoặc 01/CNKD kèm Thông tư 50/2026, in được.
  *
  * Chuỗi suy luận kèm căn cứ không bày ở đây nữa: người dùng hỏi MIMI Assistant thì MIMI trả lời
@@ -134,7 +135,34 @@ function GiayToKhai({ tk, canCu }: { tk: ToKhai; canCu: CanCuDaKiem[] }) {
   );
 }
 
-function FormHoSo({ hoSo, onLuu, dangLuu }: { hoSo: HoSoThue; onLuu: (h: HoSoThue) => void; dangLuu: boolean }) {
+const TEN_LOAI: Record<LoaiNguoiNop, string> = { ho_kinh_doanh: 'Hộ kinh doanh', doanh_nghiep: 'Doanh nghiệp' };
+
+/**
+ * Điều Tổng cục Thuế ghi cho mã số thuế — hiện ra để người dùng thấy MIMI đã biết, thay vì hỏi.
+ * Mã không còn hoạt động thì nói thẳng: khai bằng một mã đã đóng là khai cho người không tồn tại.
+ */
+function TheoDangKyThue({ ct }: { ct: CongTyTheoMst }) {
+  const t = ct.theo_mst;
+  if (!ct.mst) return <p className="mt-1 text-sm text-muted-foreground">Chưa có mã số thuế — <Link to="/dashboard/settings" className="font-medium text-primary hover:underline">thêm trong Cài đặt</Link> để MIMI tự điền tên và loại hình.</p>;
+  return (
+    <div className="mt-1 space-y-1 text-sm">
+      <p className="text-muted-foreground">
+        {ct.ten ?? 'Công ty của bạn'} · MST {ct.mst}
+        {ct.loai_theo_mst ? ` · ${TEN_LOAI[ct.loai_theo_mst]}` : ''}
+        {t?.co_quan_thue ? ` · ${t.co_quan_thue}` : ''}
+      </p>
+      {t?.dia_chi && <p className="text-xs text-muted-foreground">{t.dia_chi}</p>}
+      <p className="text-xs text-muted-foreground/80">
+        {t ? 'Theo dữ liệu đăng ký thuế của Tổng cục Thuế.' : ct.loai_theo_mst ? 'Mã 12 số là số định danh cá nhân — dành cho hộ kinh doanh, cá nhân.' : ''}
+      </p>
+      {t && !t.con_hoat_dong && (
+        <p className="flex gap-2 text-sm text-destructive"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden /> Tổng cục Thuế ghi mã này: “{t.trang_thai ?? 'không rõ trạng thái'}”. Kiểm lại mã số thuế trong Cài đặt trước khi khai.</p>
+      )}
+    </div>
+  );
+}
+
+function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu: (h: HoSoThue) => void; dangLuu: boolean; loaiTheoMst: LoaiNguoiNop | null }) {
   const [v, setV] = useState<HoSoThue>(hoSo);
   useEffect(() => setV(hoSo), [hoSo]);
   const doi = (p: Partial<HoSoThue>) => setV((x) => ({ ...x, ...p }));
@@ -146,7 +174,8 @@ function FormHoSo({ hoSo, onLuu, dangLuu }: { hoSo: HoSoThue; onLuu: (h: HoSoThu
       className="space-y-4"
       onSubmit={(e) => { e.preventDefault(); onLuu(v); }}
     >
-      <fieldset>
+      {/* Mã số thuế đã trả lời câu này thì không hỏi lại. */}
+      {!loaiTheoMst && <fieldset>
         <legend className="text-sm font-medium text-foreground">Bạn nộp thuế với tư cách</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {([['ho_kinh_doanh', 'Hộ kinh doanh / cá nhân kinh doanh'], ['doanh_nghiep', 'Doanh nghiệp']] as const).map(([k, ten]) => (
@@ -156,7 +185,7 @@ function FormHoSo({ hoSo, onLuu, dangLuu }: { hoSo: HoSoThue; onLuu: (h: HoSoThu
             </label>
           ))}
         </div>
-      </fieldset>
+      </fieldset>}
 
       {v.loai_nguoi_nop !== 'doanh_nghiep' && (
         <>
@@ -328,9 +357,7 @@ export default function ToKhaiPage() {
         <>
           <section aria-labelledby="ho-so-thue" className="no-print rounded-2xl border border-border bg-card p-5">
             <h2 id="ho-so-thue" className="text-lg font-semibold text-foreground">Hồ sơ thuế</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {kq.cong_ty.ten ?? 'Công ty của bạn'}{kq.cong_ty.mst ? ` · MST ${kq.cong_ty.mst}` : ' · chưa có mã số thuế'}
-            </p>
+            <TheoDangKyThue ct={kq.cong_ty} />
             {!!kq.suy_luan.thieu.length && (
               <ul className="mt-3 space-y-1">
                 {kq.suy_luan.thieu.map((t) => (
@@ -339,7 +366,7 @@ export default function ToKhaiPage() {
               </ul>
             )}
             <div className="mt-4">
-              <FormHoSo hoSo={kq.ho_so} onLuu={luuHoSo} dangLuu={dangLuuHoSo} />
+              <FormHoSo hoSo={kq.ho_so} onLuu={luuHoSo} dangLuu={dangLuuHoSo} loaiTheoMst={kq.cong_ty.loai_theo_mst} />
             </div>
           </section>
 

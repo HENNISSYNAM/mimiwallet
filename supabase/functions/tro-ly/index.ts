@@ -48,6 +48,7 @@ import { CAN_CU, suyLuan } from "../_shared/luat/he-luat.ts";
 import { docHieuLuc, kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { nhanHieuLuc } from "../_shared/luat/hieu-luc.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
+import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
 
@@ -518,7 +519,7 @@ async function docDuLieu(
   if (can.has("thue")) {
     viec.push((async () => {
       const [hs, dt] = await Promise.all([
-        docHoSo(db, companyId),
+        dongBoMstCongTy(db, companyId, cauHinhXInvoice()).then(() => docHoSo(db, companyId)),
         docDoanhThuQuy(db, companyId, Number(moc.homNay.slice(0, 4))),
       ]);
       const dung = dungSuKien({ nam: Number(moc.homNay.slice(0, 4)), homNay: moc.homNay, congTy: hs.cong_ty, hoSo: hs.ho_so, doanhThu: dt });
@@ -564,7 +565,7 @@ async function docDuLieu(
 async function docThueManDau(db: Db, companyId: string, homNay: string) {
   const nam = Number(homNay.slice(0, 4));
   const [{ cong_ty, ho_so }, doanhThu] = await Promise.all([
-    docHoSo(db, companyId),
+    dongBoMstCongTy(db, companyId, cauHinhXInvoice()).then(() => docHoSo(db, companyId)),
     docDoanhThuQuy(db, companyId, nam),
   ]);
   const dung = dungSuKien({ nam, homNay, congTy: cong_ty, hoSo: ho_so, doanhThu });

@@ -102,7 +102,7 @@ const NANG_LUC_SO_LIEU = ['chi_phi_thang', 'bao_cao_tai_chinh', 'thieu_chung_tu'
  * con ở xa). Trước đó câu đầu ra bảng dòng tiền, câu sau "Mình chưa hiểu câu này".
  */
 const TIEN_VAO_KHONG_PHAI_DOANH_THU =
-  /\b((tien|khoan) (con|nguoi nha|gia dinh|ba me|bo me|cha me|vay|gop von|dat coc|hoan)\b.*\bdoanh thu|khoan vay\b.*\bdoanh thu|doanh thu\b.*\b(tien vay|khoan vay|gop von|nguoi nha))\b/;
+  /\b((tien|khoan) (con|nguoi nha|gia dinh|ba me|bo me|cha me|vay|gop von|dat coc|hoan)\b.*\bdoanh thu|khoan vay\b.*\bdoanh thu|doanh thu\b.*\b(tien vay|khoan vay|gop von|nguoi nha)|khong phai (la )?doanh thu|(loc|tach|tim|chi ra)\b.*\b(tien vay|khoan vay|tien nguoi nha|nguoi nha chuyen|tien gop von))\b/;
 const GIUP_NGUOI_NHA =
   /\b((o xa|tu xa)\b.*\b(theo doi|giup|ho tro)|(theo doi|giup|ho tro) (giup |ho )?(ba me|bo me|cha me|nguoi nha|gia dinh))\b/;
 /** "có vượt 1 tỷ không" là hỏi ngưỡng thuế, không phải xin bảng dòng tiền. */

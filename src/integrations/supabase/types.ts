@@ -226,57 +226,75 @@ export type Database = {
       companies: {
         Row: {
           account_type: string | null
+          co_quan_thue: string | null
           connected_banks: Json | null
           created_at: string
           credit_limit: number | null
           credit_score: number | null
+          dia_chi_theo_mst: string | null
           employee_count: string | null
           id: string
           industry: string | null
+          loai_theo_mst: string | null
           monthly_revenue: number | null
+          mst_tra_luc: string | null
           name: string
           onboarding_done_at: string | null
           primary_goal: string | null
           province: string | null
           tax_id: string | null
+          ten_theo_mst: string | null
+          trang_thai_mst: string | null
           updated_at: string
           user_id: string
           years_operating: string | null
         }
         Insert: {
           account_type?: string | null
+          co_quan_thue?: string | null
           connected_banks?: Json | null
           created_at?: string
           credit_limit?: number | null
           credit_score?: number | null
+          dia_chi_theo_mst?: string | null
           employee_count?: string | null
           id?: string
           industry?: string | null
+          loai_theo_mst?: string | null
           monthly_revenue?: number | null
+          mst_tra_luc?: string | null
           name: string
           onboarding_done_at?: string | null
           primary_goal?: string | null
           province?: string | null
           tax_id?: string | null
+          ten_theo_mst?: string | null
+          trang_thai_mst?: string | null
           updated_at?: string
           user_id: string
           years_operating?: string | null
         }
         Update: {
           account_type?: string | null
+          co_quan_thue?: string | null
           connected_banks?: Json | null
           created_at?: string
           credit_limit?: number | null
           credit_score?: number | null
+          dia_chi_theo_mst?: string | null
           employee_count?: string | null
           id?: string
           industry?: string | null
+          loai_theo_mst?: string | null
           monthly_revenue?: number | null
+          mst_tra_luc?: string | null
           name?: string
           onboarding_done_at?: string | null
           primary_goal?: string | null
           province?: string | null
           tax_id?: string | null
+          ten_theo_mst?: string | null
+          trang_thai_mst?: string | null
           updated_at?: string
           user_id?: string
           years_operating?: string | null

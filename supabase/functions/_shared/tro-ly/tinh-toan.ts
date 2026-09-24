@@ -20,6 +20,7 @@ import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '../giay-to/loai.ts';
 import { ghepTienVe, type Cap } from '../doi-soat/cham-diem.ts';
+import { goiYTienVao, TEN_LOAI_TIEN_VAO, type GoiYTienVao, type LoaiTienVao } from '../phan-loai/tien-vao.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -1531,24 +1532,107 @@ function tuChoiKhaiSai(): KetQuaNangLuc {
  * nhưng "giờ quy ra sao kê không biết sao kê thế nào, mới ước lượng thử thôi".
  *
  * Trả lời thẳng là KHÔNG — rồi nói điều quan trọng hơn: trên sao kê, tiền người nhà
- * chuyển, tiền vay, tiền góp vốn trông y hệt tiền khách trả. Và nói thật rằng khi
- * MIMI phải dùng sao kê để ước doanh thu (chưa nối Tổng cục Thuế), MIMI CHƯA tự
- * tách được các khoản này — chúng đang bị cộng vào. Giấu điều đó thì con số MIMI đưa
- * ra có thể đẩy một hộ vượt mốc 1 tỷ mà thực ra không vượt.
+ * chuyển, tiền vay, tiền góp vốn trông y hệt tiền khách trả.
+ *
+ * ĐỌC NỘI DUNG CHUYỂN KHOẢN (24/09/2026). Có sao kê thì MIMI không nói chung chung nữa:
+ * đọc tên người chuyển và nội dung của từng khoản tiền vào năm nay (`phan-loai/tien-vao.ts`)
+ * rồi chỉ ra đúng những dòng giống tiền vay, người nhà, góp vốn, hoàn tiền, đặt cọc — kèm
+ * nguyên văn nội dung để người dùng tự nhận ra.
+ *
+ * CHỈ RA, KHÔNG TỰ TRỪ. "Hoàn tiền" có thể là khách trả nốt, "đặt cọc" có thể là tiền bán hàng
+ * trả trước. Trừ nhầm một khoản bán hàng là khai thiếu doanh thu — trái luật; để sót một khoản
+ * vay chỉ làm con số cao hơn thật. Nên tổng ước từ sao kê vẫn cộng các khoản này, và câu trả lời
+ * nói rõ điều đó cùng đường sửa số trên trang Tờ khai.
  */
-function tienVaoKhongPhaiDoanhThu(): KetQuaNangLuc {
-  return kq('tien_vao_khong_phai_doanh_thu', 'chung_tu',
-    'Không. Tiền người nhà chuyển cho, tiền vay, tiền góp vốn không phải doanh thu bán hàng.', {
+function tienVaoKhongPhaiDoanhThu(d: DuLieu): KetQuaNangLuc {
+  const TRA_LOI = 'Không. Tiền người nhà chuyển cho, tiền vay, tiền góp vốn không phải doanh thu bán hàng.';
+  const NOI_TC = { loai: 'ghi_chu' as const, muc_do: 'thong_tin' as const, cau: 'Cách chắc nhất: nối Tổng cục Thuế. Khi có hoá đơn điện tử, MIMI tính doanh thu từ hoá đơn — đó là số của chính cơ quan thuế — thay vì từ sao kê.' };
+  const DX_TC = {
+    khoa: 'mo_trang:ket_noi', loai: 'mo_trang' as const, nhan: 'Nối Tổng cục Thuế',
+    mo_ta: 'Doanh thu tính từ hoá đơn điện tử thay vì cộng mọi khoản tiền vào tài khoản.',
+    tham_so: { duong_dan: '/dashboard/ket-noi' },
+  };
+
+  if (!d.giaoDich.length) {
+    return kq('tien_vao_khong_phai_doanh_thu', 'chung_tu', TRA_LOI, {
       the: [
         { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'Nhưng trên sao kê chúng trông y hệt tiền khách trả. Nếu ước doanh thu bằng cách cộng hết tiền vào tài khoản, con số sẽ cao hơn thật — có thể cao tới mức tưởng đã vượt mốc phải nộp thuế trong khi chưa vượt.' },
-        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI hiện CHƯA tự tách được các khoản này khi đọc sao kê: chuyển giữa hai tài khoản của chính bạn thì đã loại, còn tiền người nhà, tiền vay, tiền góp vốn thì vẫn đang bị cộng vào.' },
-        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Cách chắc nhất: nối Tổng cục Thuế. Khi có hoá đơn điện tử, MIMI tính doanh thu từ hoá đơn — đó là số của chính cơ quan thuế — thay vì từ sao kê.' },
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Liên kết ngân hàng thì MIMI đọc nội dung từng khoản chuyển khoản và chỉ ra khoản nào giống tiền vay, tiền người nhà, tiền góp vốn.' },
+        NOI_TC,
       ],
-      de_xuat: [{
-        khoa: 'mo_trang:ket_noi', loai: 'mo_trang', nhan: 'Nối Tổng cục Thuế',
-        mo_ta: 'Doanh thu tính từ hoá đơn điện tử thay vì cộng mọi khoản tiền vào tài khoản.',
-        tham_so: { duong_dan: '/dashboard/ket-noi' },
-      }],
+      de_xuat: [DX_TC],
+      nguon: [N.giaoDich],
+    });
+  }
+
+  const dauNam = `${d.homNay.slice(0, 4)}-01-01`;
+  const vao = d.giaoDich.filter((t) => chieuTien(t) === 'vao' && t.transaction_date >= dauNam && t.transaction_date <= d.homNay);
+  const nghi = vao
+    .map((t) => ({ t, g: goiYTienVao(t) }))
+    .filter((x): x is { t: GiaoDichTL; g: GoiYTienVao } => x.g !== null)
+    .sort((a, b) => doLonTien(b.t) - doLonTien(a.t));
+  const tuNgay = vao.reduce((m, t) => (t.transaction_date < m ? t.transaction_date : m), d.homNay);
+  const khoang = `từ ${ngayVN(tuNgay)} tới ${ngayVN(d.homNay)}`;
+
+  if (!nghi.length) {
+    return kq('tien_vao_khong_phai_doanh_thu', 'chung_tu',
+      `${TRA_LOI} MIMI đã đọc nội dung ${vao.length} khoản tiền vào ${khoang}, chưa thấy khoản nào ghi rõ là tiền vay, người nhà chuyển hay góp vốn.`, {
+        the: [
+          { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI chỉ nhận ra được khi nội dung chuyển khoản ghi rõ (ví dụ "giải ngân HĐTD", "con gửi ba mẹ", "góp vốn"). Khoản ghi trống hay chỉ ghi "chuyển khoản" thì vẫn bị cộng vào doanh thu ước từ sao kê — bạn nhớ khoản nào thì sửa số trên trang Tờ khai.' },
+          NOI_TC,
+        ],
+        de_xuat: [DX_TC],
+        nguon: [N.giaoDich],
+        trang: [T.toKhai],
+      });
+  }
+
+  const tong = nghi.reduce((s, x) => s + doLonTien(x.t), 0);
+  const ds = nghi.map((x) => x.t);
+  const theoLoai = new Map<LoaiTienVao, number>();
+  for (const x of nghi) theoLoai.set(x.g.loai, (theoLoai.get(x.g.loai) ?? 0) + 1);
+  const loaiNoi = [...theoLoai.entries()].map(([l, n]) => `${n} khoản ${TEN_LOAI_TIEN_VAO[l].toLowerCase()}`).join(', ');
+  const SO_DONG = 10;
+
+  return kq('tien_vao_khong_phai_doanh_thu', 'chung_tu',
+    `${TRA_LOI} Đọc nội dung chuyển khoản ${khoang}, MIMI thấy ${nghi.length} khoản tiền vào có vẻ không phải tiền bán hàng (${loaiNoi}), cộng lại ${vnd(tong)}.`, {
+      the: [
+        {
+          loai: 'so_lieu',
+          tieu_de: `Tiền vào năm ${d.homNay.slice(0, 4)} có vẻ không phải doanh thu`,
+          muc: [
+            { nhan: 'Có vẻ không phải doanh thu', gia_tri: tong, don_vi: 'vnd', can_chu_y: true, bang_chung: bangChung('giao_dich', ds) },
+            { nhan: 'Số khoản', gia_tri: nghi.length, don_vi: 'so', bang_chung: bangChung('giao_dich', ds) },
+          ],
+        },
+        {
+          loai: 'bang',
+          tieu_de: 'Từng khoản, kèm nguyên văn nội dung',
+          cot: [
+            { nhan: 'Ngày', don_vi: 'ngay' }, { nhan: 'Số tiền', don_vi: 'vnd' },
+            { nhan: 'Nội dung chuyển khoản', don_vi: 'chu' }, { nhan: 'Có vẻ là', don_vi: 'chu' },
+          ],
+          dong: nghi.slice(0, SO_DONG).map((x) => [
+            x.t.transaction_date, doLonTien(x.t),
+            [x.t.counter_account_name, x.t.payment_reference].filter(Boolean).join(' — ') || x.t.merchant_name || '—',
+            TEN_LOAI_TIEN_VAO[x.g.loai],
+          ] as O[]),
+          con_lai: Math.max(0, nghi.length - SO_DONG),
+          bang_chung: bangChung('giao_dich', ds),
+        },
+        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI chỉ chỉ ra, không tự trừ: doanh thu ước từ sao kê vẫn đang cộng các khoản này. "Hoàn tiền" có thể là khách trả nốt, "đặt cọc" có thể là tiền bán hàng trả trước — trừ nhầm một khoản bán hàng là khai thiếu. Khoản nào bạn chắc không phải doanh thu thì trừ khi sửa doanh thu từng quý trên trang Tờ khai.' },
+        NOI_TC,
+      ],
+      de_xuat: [
+        {
+          khoa: 'mo_trang:to_khai', loai: 'mo_trang', nhan: 'Sửa doanh thu trên Tờ khai',
+          mo_ta: 'Trừ những khoản bạn chắc không phải tiền bán hàng khỏi doanh thu từng quý.',
+          tham_so: { duong_dan: '/dashboard/to-khai' },
+        },
+        DX_TC,
+      ],
+      nguon: [N.giaoDich],
+      trang: [T.toKhai],
     });
 }
 
@@ -1636,7 +1720,7 @@ function chuaLamDuoc(id: string) {
 
 export const NANG_LUC: Record<string, NangLuc> = {
   dang_bi_hoi_chuyen_tien: { nhom: 'ngan_hang', can: [], chay: dangBiHoiChuyenTien, mo_ta: 'Người dùng mô tả một cuộc gọi hoặc tin nhắn đang hối chuyển tiền (xưng công an, ngân hàng, tài khoản tạm giữ): cảnh báo dừng lại và chỉ cách kiểm tra. Không quét sao kê, vì người đang bị gọi chưa chuyển gì.' },
-  tien_vao_khong_phai_doanh_thu: { nhom: 'chung_tu', can: [], chay: tienVaoKhongPhaiDoanhThu, mo_ta: 'Hỏi tiền người nhà chuyển, tiền vay, tiền góp vốn có tính là doanh thu không: trả lời thẳng là không, và nói thật rằng khi ước doanh thu bằng sao kê MIMI chưa tự tách được các khoản này.' },
+  tien_vao_khong_phai_doanh_thu: { nhom: 'chung_tu', can: ['giao_dich'], chay: tienVaoKhongPhaiDoanhThu, mo_ta: 'Hỏi tiền người nhà chuyển, tiền vay, tiền góp vốn có tính là doanh thu không, hoặc nhờ lọc các khoản đó trên sao kê: trả lời thẳng là không, rồi đọc nội dung chuyển khoản của các khoản tiền vào năm nay và chỉ ra khoản nào giống tiền vay, người nhà, góp vốn, hoàn tiền, đặt cọc — chỉ ra, không tự trừ khỏi doanh thu.' },
   giup_nguoi_nha: { nhom: 'tro_ly', can: [], chay: giupNguoiNha, mo_ta: 'Người nhà (thường là con) muốn theo dõi hoặc làm giấy tờ giùm chủ hộ kinh doanh từ xa: cách mời thành viên, chọn vai trò, và những gì vai trò đó không làm được.' },
   khong_nop_thay: { nhom: 'chung_tu', can: [], chay: khongNopThay, mo_ta: 'Người dùng nhờ MIMI nộp tờ khai hoặc nộp thuế giùm: nói rõ MIMI không nộp thay, chỉ soạn bản nháp để người đứng tên tự ký và nộp.' },
   khong_chuyen_tien: { nhom: 'ngan_hang', can: [], chay: khongChuyenTien, mo_ta: 'Người dùng nhờ MIMI chuyển tiền giùm: nói rõ MIMI không giữ và không chuyển tiền, và mời kiểm tra khoản chuyển trước.' },

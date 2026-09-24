@@ -58,6 +58,7 @@ export default function GiayToPage() {
   const [loiGd, setLoiGd] = useState<string | null>(null);
 
   // Hồ sơ công ty: tên, mã số thuế, tỉnh — cùng cách đọc với Cài đặt doanh nghiệp.
+  // Giấy tờ gửi cơ quan nhà nước ghi tên đăng ký thuế khi đã tra được, không phải tên quen gọi.
   useEffect(() => {
     let huy = false;
     (async () => {
@@ -65,9 +66,9 @@ export default function GiayToPage() {
       if (!user) return;
       const id = await idCongTyDangDung();
       if (!id) return;
-      const { data } = await supabase.from('companies').select('name, tax_id, province').eq('id', id).maybeSingle();
+      const { data } = await supabase.from('companies').select('name, tax_id, province, ten_theo_mst').eq('id', id).maybeSingle();
       if (huy || !data) return;
-      setDonVi((d) => ({ ...d, ten: data.name ?? '', ma_so_thue: data.tax_id ?? '', dia_danh: data.province ?? '' }));
+      setDonVi((d) => ({ ...d, ten: data.ten_theo_mst ?? data.name ?? '', ma_so_thue: data.tax_id ?? '', dia_danh: data.province ?? '' }));
     })().catch(() => {});
     return () => { huy = true; };
   }, []);

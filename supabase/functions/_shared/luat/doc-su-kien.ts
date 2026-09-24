@@ -13,8 +13,9 @@
 import { findInternalTransfers, revenueExcludingInternal, type LedgerTx } from '../ledger/internal-transfer.ts';
 import {
   chonDoanhThu, HO_SO_TRONG, loaiTuTaiKhoan,
-  type DoanhThuDaDoc, type HoSoThue, type NguonDoanhThu, type SuKienThue,
+  type DoanhThuDaDoc, type HoSoThue, type LoaiNguoiNop, type NguonDoanhThu, type SuKienThue,
 } from './he-luat.ts';
+import { dangHoatDong } from '../mst/tra-cuu.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -91,31 +92,74 @@ export async function docDoanhThuQuy(db: Db, companyId: string, nam: number): Pr
   };
 }
 
+/** Điều Tổng cục Thuế nói về mã số thuế — xem `_shared/mst/tra-cuu.ts`. Máy chủ ghi, người dùng không sửa. */
+export interface TheoMst {
+  ten: string | null;
+  dia_chi: string | null;
+  co_quan_thue: string | null;
+  trang_thai: string | null;
+  con_hoat_dong: boolean;
+  tra_luc: string;
+}
+
 export interface HoSoCongTy {
   id: string;
+  /** Tên đăng ký thuế nếu đã tra được, không thì tên người dùng đặt. Dùng cho tờ khai. */
   ten: string | null;
   mst: string | null;
   account_type: string | null;
+  /**
+   * Hộ kinh doanh hay doanh nghiệp, theo đăng ký thuế — hoặc theo mã 12 số (số định danh cá
+   * nhân, chỉ hộ và cá nhân dùng) khi chưa tra được. Có giá trị thì KHÔNG hỏi người dùng nữa.
+   */
+  loai_theo_mst: LoaiNguoiNop | null;
+  theo_mst: TheoMst | null;
+}
+
+/** Cột `companies` mà `docHoSo` đọc. Tách ra để test dựng dòng giả cho đúng. */
+export const COT_CONG_TY = 'id, name, tax_id, account_type, ten_theo_mst, dia_chi_theo_mst, co_quan_thue, loai_theo_mst, trang_thai_mst, mst_tra_luc';
+
+export function hoSoCongTy(companyId: string, r: Row | null): HoSoCongTy {
+  const mst: string | null = r?.tax_id ?? null;
+  const daTraThay = !!(r?.mst_tra_luc && r?.ten_theo_mst);
+  const loai: LoaiNguoiNop | null = r?.loai_theo_mst === 'ho_kinh_doanh' || r?.loai_theo_mst === 'doanh_nghiep'
+    ? r.loai_theo_mst
+    : mst && /^\d{12}$/.test(mst) ? 'ho_kinh_doanh' : null;
+  return {
+    id: companyId,
+    ten: (daTraThay ? r?.ten_theo_mst : null) ?? r?.name ?? null,
+    mst,
+    account_type: r?.account_type ?? null,
+    loai_theo_mst: loai,
+    theo_mst: daTraThay
+      ? {
+        ten: r?.ten_theo_mst ?? null,
+        dia_chi: r?.dia_chi_theo_mst ?? null,
+        co_quan_thue: r?.co_quan_thue ?? null,
+        trang_thai: r?.trang_thai_mst ?? null,
+        con_hoat_dong: dangHoatDong(r?.trang_thai_mst),
+        tra_luc: String(r?.mst_tra_luc),
+      }
+      : null,
+  };
 }
 
 export async function docHoSo(db: Db, companyId: string): Promise<{ cong_ty: HoSoCongTy; ho_so: HoSoThue }> {
-  const ct = await db.from('companies').select('id, name, tax_id, account_type').eq('id', companyId).maybeSingle();
+  const ct = await db.from('companies').select(COT_CONG_TY).eq('id', companyId).maybeSingle();
   if (ct.error) throw new Error(`Không đọc được thông tin công ty: ${ct.error.message}`);
+  const congTy = hoSoCongTy(companyId, ct.data ?? null);
   const hs = await db.from('ho_so_thue')
     .select('loai_nguoi_nop, nhom_nganh, kenh, phuong_phap_tncn, bat_dau_kinh_doanh, da_nop_thue_trong_nam, nganh_dac_thu, doanh_thu_nam_truoc, co_quan_he_lien_ket')
     .eq('company_id', companyId).maybeSingle();
   if (hs.error) throw new Error(`Không đọc được hồ sơ thuế: ${hs.error.message}`);
   const r = (hs.data ?? null) as Row | null;
   return {
-    cong_ty: {
-      id: companyId,
-      ten: ct.data?.name ?? null,
-      mst: ct.data?.tax_id ?? null,
-      account_type: ct.data?.account_type ?? null,
-    },
+    cong_ty: congTy,
+    // Đăng ký thuế thắng câu trả lời tay: người dùng từng bấm "doanh nghiệp" cho một mã mà cơ
+    // quan thuế ghi là hộ kinh doanh thì tờ khai theo cơ quan thuế — và câu đó thôi không hỏi.
     ho_so: r
       ? {
-        loai_nguoi_nop: r.loai_nguoi_nop ?? null,
+        loai_nguoi_nop: congTy.loai_theo_mst ?? r.loai_nguoi_nop ?? null,
         nhom_nganh: Array.isArray(r.nhom_nganh) ? r.nhom_nganh : [],
         kenh: r.kenh ?? null,
         phuong_phap_tncn: r.phuong_phap_tncn ?? null,
@@ -125,7 +169,7 @@ export async function docHoSo(db: Db, companyId: string): Promise<{ cong_ty: HoS
         doanh_thu_nam_truoc: r.doanh_thu_nam_truoc === null || r.doanh_thu_nam_truoc === undefined ? null : Number(r.doanh_thu_nam_truoc),
         co_quan_he_lien_ket: r.co_quan_he_lien_ket ?? null,
       }
-      : { ...HO_SO_TRONG },
+      : { ...HO_SO_TRONG, loai_nguoi_nop: congTy.loai_theo_mst },
   };
 }
 

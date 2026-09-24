@@ -6,14 +6,15 @@
  * sang là mời hai bản lệch nhau — và lệch ở đây nghĩa là một màn hình nhận
  * chuỗi mà màn hình kia từ chối, cho cùng một người dùng.
  *
- * HÌNH DẠNG, KHÔNG PHẢI TÍNH ĐÚNG ĐẮN. Mã số thuế Việt Nam là 10 chữ số, hoặc
- * 10 chữ số kèm 3 chữ số đơn vị trực thuộc (`0312345678-001`). Hàm này chỉ kiểm
- * hình dạng đó.
+ * HÌNH DẠNG, KHÔNG PHẢI TÍNH ĐÚNG ĐẮN. Mã số thuế doanh nghiệp là 10 chữ số, hoặc
+ * 10 chữ số kèm 3 chữ số đơn vị trực thuộc (`0312345678-001`). Hộ kinh doanh và cá
+ * nhân dùng số định danh cá nhân 12 chữ số làm mã số thuế từ 01/07/2025 — trước
+ * ngày 24/09/2026 hàm này từ chối đúng nhóm khách chính của MIMI, trong khi máy chủ
+ * (`tax-lookup`) lại nhận.
  *
- * MIMI **chưa** đối chiếu mã với cơ quan thuế: `tax-lookup` cần
- * `XINVOICE_CLIENT_ID` và `XINVOICE_API_KEY`, cả hai chưa cấu hình nên hàm đó
- * trả 503. Lưu một mã chưa đối chiếu thì không sao — nhưng không màn hình nào
- * được nói là đã xác thực.
+ * Đối chiếu với cơ quan thuế nằm ở máy chủ (`_shared/mst/tra-cuu.ts`): lưu mã xong,
+ * `to-khai` tra và ghi tên, địa chỉ, loại hình theo đăng ký thuế để MIMI không hỏi
+ * lại những điều đó. Hàm ở đây chỉ chặn chuỗi sai hình trước khi gửi đi.
  */
 
 /** Bỏ khoảng trắng, giữ nguyên dấu gạch của phần chi nhánh. */
@@ -23,5 +24,5 @@ export function chuanHoaMst(v: string): string {
 
 /** Đúng hình dạng mã số thuế chưa. Không nói gì về việc mã có tồn tại thật. */
 export function MST_HOP_LE(v: string): boolean {
-  return /^\d{10}(-\d{3})?$/.test(chuanHoaMst(v));
+  return /^\d{10}(-\d{3})?$|^\d{12}$/.test(chuanHoaMst(v));
 }

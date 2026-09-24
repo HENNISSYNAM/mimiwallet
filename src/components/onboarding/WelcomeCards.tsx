@@ -4,6 +4,8 @@ import { X, ArrowRight, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
+import { traMst, type KetQuaTraMst } from '@/lib/traMst';
+import { goiToKhai } from '@/lib/goiToKhai';
 import mimiWatch from '@/assets/mimi/watch.png';
 
 /**
@@ -22,6 +24,12 @@ import mimiWatch from '@/assets/mimi/watch.png';
  * It is a card on the dashboard, never a gate. Dismissing is a real answer and
  * is recorded as such — the point is to stop asking, not to keep nagging until
  * the shape of the reply suits us.
+ *
+ * MÃ SỐ THUẾ ĐỨNG ĐẦU (24/09/2026). Trước đó thẻ hỏi tên cửa hàng và "hộ hay doanh
+ * nghiệp" trước, rồi mới xin mã số thuế ở thẻ sau — tức là hỏi hai điều mà chính mã
+ * đó trả lời được. Giờ mã đứng đầu: gõ xong, MIMI tra dữ liệu đăng ký thuế, hiện tên
+ * đăng ký và loại hình, và thẻ chỉ còn một nút "Đúng, tiếp tục". Không có mã, hoặc
+ * tra không thấy, thì hỏi như cũ.
  */
 
 type Step = {
@@ -95,6 +103,21 @@ export default function WelcomeCards() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [taxId, setTaxId] = useState('');
+  const [tra, setTra] = useState<KetQuaTraMst | { trang_thai: 'rong' | 'dang_tra' }>({ trang_thai: 'rong' });
+
+  // Gõ đủ mã thì tra. Chờ người dùng ngừng gõ một chút, và bỏ kết quả của mã đã bị sửa.
+  useEffect(() => {
+    if (!TAX_ID_OK(taxId)) { setTra({ trang_thai: 'rong' }); return; }
+    let bo = false;
+    setTra({ trang_thai: 'dang_tra' });
+    const hen = setTimeout(async () => {
+      const kq = await traMst(chuanHoaMst(taxId));
+      if (bo) return;
+      setTra(kq);
+      if (kq.trang_thai === 'thay') setName(kq.ten);
+    }, 450);
+    return () => { bo = true; clearTimeout(hen); };
+  }, [taxId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +161,8 @@ export default function WelcomeCards() {
       .eq('id', companyId);
     setSaving(false);
     setVisible(false);
+    // Máy chủ tra mã và ghi địa chỉ, cơ quan thuế vào hồ sơ — để trang thuế khỏi hỏi lại.
+    if (TAX_ID_OK(taxId)) void goiToKhai('ho_so').catch(() => {});
   };
 
   const choose = (value: string) => {
@@ -149,6 +174,7 @@ export default function WelcomeCards() {
 
   if (!visible) return null;
   const s = STEPS[step];
+  const thay = step === 0 && tra.trang_thai === 'thay' ? tra : null;
 
   return (
     <AnimatePresence>
@@ -175,21 +201,16 @@ export default function WelcomeCards() {
         <div className="flex items-start gap-3 pr-8">
           <img src={mimiWatch} alt="" aria-hidden draggable={false} className="w-10 h-10 shrink-0 no-save" />
           <div className="min-w-0">
-            <p className="text-base sm:text-lg font-display font-bold text-foreground">{s.title}</p>
-            {s.hint && <p className="text-xs text-muted-foreground mt-0.5">{s.hint}</p>}
+            <p className="text-base sm:text-lg font-display font-bold text-foreground">{thay ? 'MIMI đã tìm thấy cửa hàng của bạn' : s.title}</p>
+            {!thay && s.hint && <p className="text-xs text-muted-foreground mt-0.5">{s.hint}</p>}
           </div>
         </div>
 
-        {/* Only on the first card, and pre-filled. The trigger names a new
-            company after the person, which is a guess — right often enough to
-            keep, wrong often enough to offer. It is the one answer that cannot
-            be a tap, so it sits above the taps rather than as its own step. */}
-        {/* Asked only where it is actually used. A personal account files
-            nothing, so a tax code would be a field with no purpose behind it. */}
-        {step === 1 && answers.account_type !== 'personal' && (
+        {/* Mã số thuế trước, vì nó trả lời được câu tên và câu loại hình bên dưới. */}
+        {step === 0 && (
           <div className="mt-4">
             <label className="text-xs text-muted-foreground mb-1.5 block">
-              Mã số thuế <span className="text-muted-foreground/60">(có thể bỏ trống, điền sau)</span>
+              Mã số thuế <span className="text-muted-foreground/60">(nếu có — MIMI tự điền tên và loại hình)</span>
             </label>
             <input
               value={taxId}
@@ -201,12 +222,27 @@ export default function WelcomeCards() {
               }`}
             />
             {taxId && !TAX_ID_OK(taxId) && (
-              <p className="text-xs text-mimi-red mt-1">Mã số thuế gồm 10 chữ số, hoặc 13 dạng 10 chữ số + “-” + 3 chữ số.</p>
+              <p className="text-xs text-mimi-red mt-1">Mã số thuế gồm 10 chữ số (có thể kèm “-” và 3 số chi nhánh), hoặc 12 chữ số với hộ kinh doanh.</p>
             )}
+            {tra.trang_thai === 'dang_tra' && <p className="text-xs text-muted-foreground mt-1">Đang tra dữ liệu đăng ký thuế…</p>}
+            {tra.trang_thai === 'khong_thay' && <p className="text-xs text-muted-foreground mt-1">Chưa thấy mã này trên dữ liệu thuế. Vẫn lưu được — điền tên bên dưới.</p>}
           </div>
         )}
 
-        {step === 0 && (
+        {thay && (
+          <div className="mt-3 rounded-xl border border-mimi-green/40 bg-mimi-green/5 px-3 py-2.5">
+            <p className="text-sm font-medium text-foreground">{thay.ten}</p>
+            <p className="text-xs text-muted-foreground">
+              {thay.loai === 'doanh_nghiep' ? 'Doanh nghiệp' : thay.loai === 'ho_kinh_doanh' ? 'Hộ kinh doanh' : 'Theo đăng ký thuế'} · {thay.trang_thai_nnt}
+            </p>
+            {!thay.con_hoat_dong && <p className="text-xs text-mimi-red mt-1">Mã này không còn hoạt động trên dữ liệu thuế — kiểm lại xem có gõ nhầm.</p>}
+          </div>
+        )}
+
+        {/* Pre-filled. The trigger names a new company after the person, which is
+            a guess — right often enough to keep, wrong often enough to offer.
+            Hidden once the tax code has given the registered name. */}
+        {step === 0 && !thay && (
           <div className="mt-4">
             <label className="text-xs text-muted-foreground mb-1.5 block">Tên cửa hàng / công ty</label>
             <input
@@ -219,7 +255,16 @@ export default function WelcomeCards() {
         )}
 
         <div className="flex flex-wrap gap-2 mt-4">
-          {s.options.map((o) => (
+          {/* Loại hình đã biết theo mã số thuế thì không hỏi — chỉ còn một nút đi tiếp. */}
+          {thay?.loai ? (
+            <button
+              disabled={saving}
+              onClick={() => choose(thay.loai === 'doanh_nghiep' ? 'business' : 'household')}
+              className="px-4 py-2 rounded-xl bg-primary text-sm font-medium text-primary-foreground hover:brightness-110 disabled:opacity-50"
+            >
+              Đúng, tiếp tục
+            </button>
+          ) : s.options.map((o) => (
             <button
               key={o.value}
               disabled={saving}

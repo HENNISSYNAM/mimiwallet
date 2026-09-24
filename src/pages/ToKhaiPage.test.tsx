@@ -35,7 +35,7 @@ function ketQua(sk: SuKienThue): KetQuaPhanTich {
   return {
     nam: sk.nam,
     hom_nay: HOM_NAY,
-    cong_ty: { ten: 'HỘ KINH DOANH NAM ĐINH', mst: '0123456789' },
+    cong_ty: { ten: 'HỘ KINH DOANH NAM ĐINH', mst: '0123456789', loai_theo_mst: null, theo_mst: null },
     ho_so: {
       loai_nguoi_nop: sk.loai, nhom_nganh: sk.nhomNganh, kenh: sk.kenh, phuong_phap_tncn: sk.phuongPhapTncn,
       bat_dau_kinh_doanh: null, da_nop_thue_trong_nam: null, nganh_dac_thu: null, doanh_thu_nam_truoc: null, co_quan_he_lien_ket: null,
@@ -137,5 +137,49 @@ describe('Tờ khai thuế', () => {
     gia.goi.mockRejectedValue(new Error('Chưa đọc được dữ liệu thuế.'));
     dung();
     expect(await screen.findByText('Chưa đọc được dữ liệu thuế.')).toBeTruthy();
+  });
+});
+
+/*
+ * "Mấy thông tin mà mã số thuế đã cung cấp mình không hỏi lại người dùng nữa" (24/09/2026).
+ * Dữ liệu đăng ký thuế là của Vinamilk (0300588569) — công khai, dùng làm dữ liệu test chuẩn.
+ */
+describe('Tờ khai thuế — không hỏi lại điều mã số thuế đã trả lời', () => {
+  const VINAMILK = {
+    ten: 'CÔNG TY CỔ PHẦN SỮA VIỆT NAM', mst: '0300588569', loai_theo_mst: 'doanh_nghiep' as const,
+    theo_mst: {
+      ten: 'CÔNG TY CỔ PHẦN SỮA VIỆT NAM', dia_chi: '10 Tân Trào, Phường Tân Mỹ, TP Hồ Chí Minh',
+      co_quan_thue: 'Chi cục Thuế Doanh nghiệp lớn', trang_thai: 'NNT đang hoạt động', con_hoat_dong: true, tra_luc: '2026-09-24T08:00:00Z',
+    },
+  };
+  const voiCongTy = (cong_ty: KetQuaPhanTich['cong_ty']) => {
+    gia.goi.mockImplementation(async (hanhDong: string) =>
+      hanhDong === 'phan_tich' ? { ...ketQua(suKien({ loai: 'doanh_nghiep' })), cong_ty } as unknown as Record<string, unknown> : { ok: true });
+  };
+
+  it('đã tra được mã: hiện tên đăng ký, cơ quan thuế, và không hỏi "hộ hay doanh nghiệp"', async () => {
+    voiCongTy(VINAMILK);
+    dung();
+    expect(await screen.findByText(/Chi cục Thuế Doanh nghiệp lớn/)).toBeTruthy();
+    expect(screen.getByText(/10 Tân Trào/)).toBeTruthy();
+    expect(screen.queryByText('Bạn nộp thuế với tư cách')).toBeNull();
+  });
+
+  it('mã đã đóng thì cảnh báo trước khi khai', async () => {
+    voiCongTy({ ...VINAMILK, theo_mst: { ...VINAMILK.theo_mst, trang_thai: 'NNT ngừng hoạt động và đã đóng MST', con_hoat_dong: false } });
+    dung();
+    expect(await screen.findByText(/NNT ngừng hoạt động và đã đóng MST/)).toBeTruthy();
+  });
+
+  it('chưa biết loại theo mã số thuế thì vẫn hỏi', async () => {
+    voiCongTy({ ten: 'Tạp hoá', mst: '0123456789', loai_theo_mst: null, theo_mst: null });
+    dung();
+    expect(await screen.findByText('Bạn nộp thuế với tư cách')).toBeTruthy();
+  });
+
+  it('chưa có mã số thuế thì chỉ đường sang Cài đặt', async () => {
+    voiCongTy({ ten: 'Tạp hoá', mst: null, loai_theo_mst: null, theo_mst: null });
+    dung();
+    expect(await screen.findByRole('link', { name: /thêm trong Cài đặt/ })).toBeTruthy();
   });
 });
