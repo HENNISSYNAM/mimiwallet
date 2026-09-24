@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, ExternalLink, Check, Crown, X, UsersRound } from 'lucide-react';
+import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, Check, Crown, X, UsersRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
@@ -62,7 +62,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function SubscriptionSection() {
-  const { subscribed, productId, subscriptionEnd, loading, checkSubscription, openPortal } = useSubscriptionStore();
+  const { subscribed, productId, subscriptionEnd, loading, checkSubscription, conLuot } = useSubscriptionStore();
   const { t } = useTranslation();
   /*
    * Gói khách đang chọn để trả. Không có nghĩa là đã trả — màn hình chuyển
@@ -73,14 +73,6 @@ function SubscriptionSection() {
   useEffect(() => { checkSubscription(); }, [checkSubscription]);
 
   const currentTier = Object.values(TIERS).find(t => t.product_id === productId);
-
-  const handlePortal = async () => {
-    try {
-      await openPortal();
-    } catch {
-      toast.error('Không thể mở cổng quản lý');
-    }
-  };
 
   if (loading) {
     return (
@@ -103,16 +95,16 @@ function SubscriptionSection() {
               </p>
             </div>
           </div>
-          <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handlePortal}
-            className="flex items-center gap-1.5 text-xs bg-accent text-foreground px-4 py-2 rounded-xl font-medium hover:brightness-110 transition-all"
-          >
-            {t('settings.manage')} <ExternalLink size={12} />
-          </motion.button>
+          {/* Không còn nút "Quản lý" mở cổng Stripe: Stripe không nhận merchant Việt Nam, và gói
+              ở đây trả bằng chuyển khoản — gia hạn là trả kỳ tiếp theo bên dưới. */}
         </div>
       )}
+
+      {/* Trả theo lượt: 10.000đ một kỳ khai. Gói tháng thì xuất không giới hạn. */}
+      <p className="text-sm text-muted-foreground">
+        Không dùng gói? Trả theo lượt: <span className="font-medium text-foreground">10.000đ mỗi tờ khai</span>, trả ngay lúc xuất trên trang Tờ khai.
+        {conLuot > 0 && <> Bạn còn <span className="font-medium text-foreground">{conLuot} lượt</span>.</>}
+      </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {Object.entries(TIERS).map(([key, tier]) => {
@@ -140,19 +132,25 @@ function SubscriptionSection() {
                 <span className="text-xs text-muted-foreground font-normal">/tháng</span>
               </p>
               <ul className="mt-3 space-y-1.5">
+                {/*
+                  Chỉ liệt kê điều gói THẬT SỰ cho thêm. Trước 24/09/2026 hai thẻ liệt kê "Phân tích
+                  dòng tiền", "AI Chatbot"… — thứ ai cũng dùng được miễn phí — và "Tự phân loại chi
+                  phí (đang xây)": bán một thứ chưa có.
+                */}
                 {(key === 'starter'
-                  ? ['Phân tích dòng tiền', 'AI Chatbot cơ bản', 'Báo cáo tháng']
-                  // "Ứng vốn hóa đơn" was listed as a paid feature of a product
-                  // that does not lend. Replaced with what this tier will
-                  // actually do more of.
-                  : ['Tất cả Starter', 'Tự phân loại chi phí (đang xây)','So sánh hai cách tính thuế', 'Tin tức thị trường']
+                  ? ['Xuất tờ khai không giới hạn (thay vì 10.000đ mỗi tờ)', 'Sửa số, xuất lại bao nhiêu lần cũng được']
+                  : ['Tất cả Starter', 'Sắp mở: bảng giải trình sao kê — tách tiền vay, tiền người nhà khỏi doanh thu, xác nhận từng khoản']
                 ).map(f => (
                   <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Check size={12} className="text-primary shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
-              {!isActive && (
+              {/* Growth chưa cho thêm gì so với Starter nên chưa bán — bán giá cao hơn cho cùng một thứ là lừa khách. */}
+              {key === 'growth' && !isActive && (
+                <p className="mt-4 w-full rounded-xl bg-muted py-2.5 text-center text-xs text-muted-foreground">Sắp mở</p>
+              )}
+              {!isActive && key !== 'growth' && (
                 <motion.button
                   whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.98 }}

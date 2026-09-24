@@ -80,7 +80,13 @@ export function chuanHoa(s: string): string {
  */
 const BANG_CHU = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-export function taoMaThamChieu(random: () => number = Math.random): string {
+/**
+ * Ngẫu nhiên mật mã, không phải `Math.random`: mã tham chiếu là thứ duy nhất nối một khoản tiền
+ * với một công ty, và `Math.random` đoán trước được khi biết vài giá trị liền trước.
+ */
+const ngauNhienAnToan = (): number => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+
+export function taoMaThamChieu(random: () => number = ngauNhienAnToan): string {
   let ma = '';
   for (let i = 0; i < 6; i++) {
     ma += BANG_CHU[Math.floor(random() * BANG_CHU.length)];

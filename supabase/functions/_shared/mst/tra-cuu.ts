@@ -126,9 +126,16 @@ export async function dongBoMstCongTy(
   if (!cfg) return;
   try {
     const { data: ct, error } = await db.from('companies')
-      .select('tax_id, mst_tra_luc, ten_theo_mst, province, account_type')
+      .select('tax_id, mst_tra_luc, ten_theo_mst, province, account_type, user_id')
       .eq('id', companyId).maybeSingle();
     if (error || !ct?.tax_id || !mstDungHinh(ct.tax_id)) return;
+    /*
+     * KHÔNG TRA CHO TÀI KHOẢN DEMO. Demo dùng chung, ai cũng gõ được mã số thuế vào đó — và mã
+     * trong demo (0312345678, và một mã trông như số điện thoại) có thể là của người thật. Tra
+     * ra thì demo hiện tên, địa chỉ một doanh nghiệp có thật cạnh sổ sách bịa.
+     */
+    const { data: chu } = await db.from('profiles').select('is_demo').eq('user_id', ct.user_id).maybeSingle();
+    if (chu?.is_demo) return;
     const bayGio = o.bayGio ?? new Date();
     if (ct.mst_tra_luc) {
       if (ct.ten_theo_mst) return; // đã tra thấy

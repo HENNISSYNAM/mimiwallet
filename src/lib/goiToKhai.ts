@@ -9,6 +9,13 @@ import type { TheoMst } from '../../supabase/functions/_shared/luat/doc-su-kien.
  * Công ty như máy chủ trả về. `loai_theo_mst` có giá trị thì màn hình KHÔNG hỏi "hộ hay doanh
  * nghiệp" nữa; `theo_mst` là điều Tổng cục Thuế ghi cho mã này (null khi chưa tra được).
  */
+export interface ThanhToanToKhai {
+  goi: { plan: string; het_han: string } | null;
+  con_luot: number;
+  gia_mot_to: number;
+  da_tra_ky_nay: boolean;
+}
+
 export interface CongTyTheoMst {
   ten: string | null;
   mst: string | null;
@@ -32,6 +39,8 @@ export interface KetQuaPhanTich {
   nam: number;
   hom_nay: string;
   cong_ty: CongTyTheoMst;
+  /** Xuất được bằng gì: gói còn hạn, số lượt còn, kỳ đang xem đã trả chưa. */
+  thanh_toan: ThanhToanToKhai;
   ho_so: HoSoThue;
   su_kien: SuKienThue;
   doanh_thu: DoanhThuPhanTich;

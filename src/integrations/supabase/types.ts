@@ -1023,6 +1023,39 @@ export type Database = {
           },
         ]
       }
+      luot_to_khai: {
+        Row: {
+          company_id: string
+          hoa_don_id: string | null
+          id: string
+          ky_khoa: string | null
+          ly_do: string
+          tao_luc: string
+          thay_doi: number
+          to_khai_nhap_id: string | null
+        }
+        Insert: {
+          company_id: string
+          hoa_don_id?: string | null
+          id?: string
+          ky_khoa?: string | null
+          ly_do: string
+          tao_luc?: string
+          thay_doi: number
+          to_khai_nhap_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          hoa_don_id?: string | null
+          id?: string
+          ky_khoa?: string | null
+          ly_do?: string
+          tao_luc?: string
+          thay_doi?: number
+          to_khai_nhap_id?: string | null
+        }
+        Relationships: []
+      }
       macro_news: {
         Row: {
           fetched_at: string

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ExternalLink, Info, Loader2, Printer, Save, ScrollText } from 'lucide-react';
+import { AlertTriangle, ExternalLink, FileDown, Info, Loader2, Save, ScrollText } from 'lucide-react';
 
 import { toast } from 'sonner';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
-import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type KetQuaPhanTich } from '@/lib/goiToKhai';
+import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type KetQuaPhanTich, type ThanhToanToKhai } from '@/lib/goiToKhai';
+import { LoiGoiHam } from '@/lib/loiGoiHam';
+import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
   type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
@@ -22,6 +24,11 @@ import {
  * (năng lực nghia_vu_thue), để trang này chỉ còn việc cần làm.
  *
  * MIMI không nộp thay: nút cuối mở Cổng dịch vụ công của cơ quan thuế để người dùng tự nộp.
+ *
+ * THU TIỀN Ở ĐÂY (24/09/2026): xem trước, sửa số, lưu nháp miễn phí; lấy bản sạch để nộp là
+ * "Xuất tờ khai" — 10.000đ một kỳ, hoặc miễn phí khi gói tháng còn hạn. Bản chưa xuất mang dấu
+ * "BẢN XEM TRƯỚC". Dấu này chặn được người ngay, không chặn được người sửa trang bằng công cụ
+ * lập trình — thứ khách trả tiền là bản sạch, lưu kèm mã băm, và không phải chép tay.
  */
 
 const so = (n: number | null | undefined) => (n === null || n === undefined ? '' : new Intl.NumberFormat('vi-VN').format(n));
@@ -29,10 +36,25 @@ const ngay = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
 const nhanKy = (ky: KyToKhai) => (ky.loai === 'quy' ? `Quý ${ky.quy}/${ky.nam}` : ky.loai === '6_thang_dau' ? `6 tháng đầu ${ky.nam}` : `Năm ${ky.nam}`);
 const cungKy = (a: KyToKhai, b: KyToKhai) => a.loai === b.loai && a.nam === b.nam && (a.loai !== 'quy' || b.loai !== 'quy' || a.quy === b.quy);
 
-function GiayToKhai({ tk, canCu }: { tk: ToKhai; canCu: CanCuDaKiem[] }) {
+/** Nói trước giá trên chính cái nút — không để người dùng bấm rồi mới biết mất tiền. */
+function nhanNutXuat(t: ThanhToanToKhai): string {
+  if (t.goi) return 'Xuất tờ khai · gói còn hạn';
+  if (t.da_tra_ky_nay) return 'Xuất lại · kỳ này đã trả';
+  if (t.con_luot > 0) return `Xuất tờ khai · dùng 1 lượt (còn ${t.con_luot})`;
+  return `Xuất tờ khai · ${t.gia_mot_to.toLocaleString('vi-VN')}đ`;
+}
+
+function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[]; xemTruoc: boolean }) {
   const oCot = (khoa: string) => tk.cot.find((c) => c.khoa === khoa);
   return (
-    <div className="to-khai-giay rounded-2xl border border-border bg-white p-5 text-[13px] text-slate-900 shadow-sm sm:p-8">
+    <div className="to-khai-giay relative overflow-hidden rounded-2xl border border-border bg-white p-5 text-[13px] text-slate-900 shadow-sm sm:p-8">
+      {xemTruoc && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span className="-rotate-[24deg] select-none whitespace-nowrap text-4xl font-bold tracking-widest text-slate-900/[0.07] sm:text-6xl">
+            BẢN XEM TRƯỚC — CHƯA XUẤT
+          </span>
+        </div>
+      )}
       <div className="mb-4 text-right text-[11px] leading-snug text-slate-600">
         <p className="font-semibold text-slate-900">Mẫu số: {tk.mau}</p>
         <p>({tk.kem_theo})</p>
@@ -287,6 +309,10 @@ export default function ToKhaiPage() {
   const [dangLuuHoSo, setDangLuuHoSo] = useState(false);
   const [dangLuuNhap, setDangLuuNhap] = useState(false);
   const [suaDoanhThu, setSuaDoanhThu] = useState<string[] | null>(null);
+  const [dangXuat, setDangXuat] = useState(false);
+  const [daXuat, setDaXuat] = useState(false);
+  const [muaLuot, setMuaLuot] = useState<number | null>(null);
+  const [canMua, setCanMua] = useState(false);
 
   const tai = useCallback(async (du: Record<string, unknown> = {}) => {
     setDangTai(true);
@@ -315,7 +341,37 @@ export default function ToKhaiPage() {
     }
   };
 
-  const doiKy = (ky: KyToKhai) => void tai({ nam: ky.nam, ky, ...(suaDoanhThu ? { doanh_thu_quy: suaDoanhThu.map((x) => Math.max(0, Math.floor(Number(x) || 0))) } : {}) });
+  const doiKy = (ky: KyToKhai) => { setDaXuat(false); setCanMua(false); setMuaLuot(null); void taiKy(ky); };
+  const taiKy = (ky: KyToKhai) => tai({ nam: ky.nam, ky, ...(suaDoanhThu ? { doanh_thu_quy: suaDoanhThu.map((x) => Math.max(0, Math.floor(Number(x) || 0))) } : {}) });
+
+  const thamSoKy = () => kq
+    ? { nam: kq.nam, ky: kq.ky, ...(kq.doanh_thu.nguon === 'tu_khai' && suaDoanhThu ? { doanh_thu_quy: suaDoanhThu.map((x) => Math.max(0, Math.floor(Number(x) || 0))) } : {}) }
+    : {};
+
+  /** Xuất tờ khai: máy chủ tính lại, trừ lượt (hoặc dùng gói), lưu bản có mã băm; rồi mở hộp in. */
+  const xuat = async () => {
+    if (!kq) return;
+    setDangXuat(true);
+    try {
+      const r = await goiToKhai('xuat', thamSoKy());
+      setDaXuat(true);
+      setCanMua(false);
+      setMuaLuot(null);
+      toast.success(
+        r.cach_tra === 'goi' ? 'Đã xuất tờ khai (gói tháng còn hạn).'
+          : r.cach_tra === 'da_tra_ky_nay' ? 'Đã xuất lại — kỳ này bạn đã trả, không tính thêm.'
+            : `Đã xuất tờ khai. Còn ${r.con_luot} lượt.`,
+      );
+      await tai(thamSoKy());
+      // Đợi dấu "bản xem trước" rời khỏi trang rồi mới in.
+      setTimeout(() => window.print(), 300);
+    } catch (e) {
+      if (e instanceof LoiGoiHam && e.status === 402) setCanMua(true);
+      else toast.error(e instanceof Error ? e.message : 'Chưa xuất được tờ khai.');
+    } finally {
+      setDangXuat(false);
+    }
+  };
 
   const luuNhap = async () => {
     if (!kq) return;
@@ -470,7 +526,7 @@ export default function ToKhaiPage() {
             {kq.to_khai
               ? (
                 <>
-                  <GiayToKhai tk={kq.to_khai} canCu={kq.can_cu} />
+                  <GiayToKhai tk={kq.to_khai} canCu={kq.can_cu} xemTruoc={!daXuat} />
                   <div className="no-print rounded-2xl border border-border bg-card p-5">
                     <h3 className="text-sm font-semibold text-foreground">MIMI tính từng số thế nào</h3>
                     <ul className="mt-2 space-y-1.5">
@@ -486,8 +542,8 @@ export default function ToKhaiPage() {
                       </ul>
                     )}
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <button type="button" onClick={() => window.print()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground hover:bg-accent">
-                        <Printer size={15} /> In / lưu PDF
+                      <button type="button" onClick={() => void xuat()} disabled={dangXuat} className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50">
+                        {dangXuat ? <Loader2 size={15} className="animate-spin" /> : <FileDown size={15} />} {nhanNutXuat(kq.thanh_toan)}
                       </button>
                       <button type="button" onClick={() => void luuNhap()} disabled={dangLuuNhap} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50">
                         {dangLuuNhap ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} Lưu bản nháp
@@ -504,6 +560,36 @@ export default function ToKhaiPage() {
                     <p className="mt-2 text-xs text-muted-foreground">
                       Hạn nộp kỳ này: {ngay(kq.to_khai.han_nop)}. MIMI không nộp và không ký thay bạn.
                     </p>
+                    {canMua && (
+                      <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                        <p className="text-sm font-medium text-foreground">Xuất tờ khai này: {kq.thanh_toan.gia_mot_to.toLocaleString('vi-VN')}đ</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Quét mã chuyển khoản. Tiền về là MIMI tự cộng lượt và xuất tờ khai ngay — không phải bấm lại.
+                          Sửa số rồi xuất lại cùng kỳ thì không tính thêm.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {[1, 4].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setMuaLuot(n)}
+                              aria-pressed={muaLuot === n}
+                              className={`h-9 rounded-xl px-3 text-sm ${muaLuot === n ? 'bg-primary text-primary-foreground' : 'border border-border text-foreground hover:bg-accent'}`}
+                            >
+                              {n === 1 ? 'Tờ này' : '4 quý trong năm'} · {(n * kq.thanh_toan.gia_mot_to).toLocaleString('vi-VN')}đ
+                            </button>
+                          ))}
+                          <Link to="/dashboard/settings" className="inline-flex h-9 items-center rounded-xl px-3 text-sm text-primary hover:underline">
+                            Hoặc dùng gói tháng — xuất không giới hạn
+                          </Link>
+                        </div>
+                        {muaLuot && (
+                          <div className="mt-4">
+                            <SubscriptionPayment key={muaLuot} soLuot={muaLuot} onPaid={() => void xuat()} />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </>
               )

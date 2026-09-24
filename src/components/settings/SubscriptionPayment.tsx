@@ -7,6 +7,7 @@ import { formatVND } from '@/lib/formatters';
 import { toast } from 'sonner';
 import { Loader2, Copy, Check, Building2, Landmark, Hash, CreditCard, ExternalLink } from 'lucide-react';
 import { duongDanMuaGoi } from '@/lib/lienKetStripe';
+import { kemCongTy } from '@/lib/congTyDangDung';
 
 /**
  * Màn hình trả phí bằng chuyển khoản.
@@ -70,7 +71,11 @@ function DongChep({ nhan, giaTri, icon: Icon, mono }: {
   );
 }
 
-export function SubscriptionPayment({ plan, onPaid }: { plan: string; onPaid?: () => void }) {
+/**
+ * `plan` để trả gói tháng; `soLuot` để mua lượt xuất tờ khai (10.000đ một lượt). Giá do máy chủ
+ * tính — màn hình chỉ nói mình muốn mua gì.
+ */
+export function SubscriptionPayment({ plan, soLuot, onPaid }: { plan?: string; soLuot?: number; onPaid?: () => void }) {
   const [hoaDon, setHoaDon] = useState<HoaDon | null>(null);
   const [dangTao, setDangTao] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -80,8 +85,9 @@ export function SubscriptionPayment({ plan, onPaid }: { plan: string; onPaid?: (
     setDangTao(true);
     setLoi(null);
     try {
+      // Kèm công ty đang dùng: người có nhiều công ty phải được cộng lượt vào đúng công ty đang xem.
       const { data, error } = await supabase.functions.invoke('subscription-billing', {
-        body: { action: 'create', plan },
+        body: await kemCongTy(soLuot ? { action: 'create', loai: 'luot_to_khai', so_luot: soLuot } : { action: 'create', plan }),
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -91,7 +97,7 @@ export function SubscriptionPayment({ plan, onPaid }: { plan: string; onPaid?: (
     } finally {
       setDangTao(false);
     }
-  }, [plan]);
+  }, [plan, soLuot]);
 
   useEffect(() => { void tao(); }, [tao]);
 
@@ -113,11 +119,10 @@ export function SubscriptionPayment({ plan, onPaid }: { plan: string; onPaid?: (
   }, [hoaDon]);
 
   /*
-   * Hỏi lại trạng thái mỗi 15 giây.
+   * Hỏi lại trạng thái mỗi 5 giây.
    *
-   * Đối soát chạy phía máy chủ theo lịch, nên màn hình không biết lúc nào tiền
-   * vào. Hỏi lại là cách đơn giản nhất và đủ tốt cho một thao tác người dùng
-   * đang ngồi chờ. Dừng ngay khi đã trả, để không hỏi mãi một câu đã có đáp án.
+   * Tiền về tài khoản MIMI là `bank-webhook` duyệt ngay (cron 10 phút chỉ là lưới đỡ), nên
+   * khách ngồi chờ chỉ vài giây. Hỏi một dòng theo id là rẻ. Dừng ngay khi đã có đáp án.
    */
   useEffect(() => {
     if (!hoaDon) return;
@@ -129,7 +134,9 @@ export function SubscriptionPayment({ plan, onPaid }: { plan: string; onPaid?: (
         .maybeSingle();
       if (data?.status === 'paid') {
         clearInterval(t);
-        toast.success('Đã nhận được thanh toán. Thuê bao đã kích hoạt.');
+        toast.success(soLuot
+          ? `Đã nhận tiền. Đã cộng ${soLuot} lượt xuất tờ khai.`
+          : 'Đã nhận được thanh toán. Gói đã kích hoạt.');
         onPaid?.();
       } else if (data?.status === 'underpaid' || data?.status === 'overpaid') {
         clearInterval(t);
@@ -139,9 +146,9 @@ export function SubscriptionPayment({ plan, onPaid }: { plan: string; onPaid?: (
           { duration: 12000 },
         );
       }
-    }, 15_000);
+    }, 5_000);
     return () => clearInterval(t);
-  }, [hoaDon, onPaid]);
+  }, [hoaDon, onPaid, soLuot]);
 
   if (dangTao) {
     return (

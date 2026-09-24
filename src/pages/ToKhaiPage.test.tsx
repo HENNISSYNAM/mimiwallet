@@ -56,6 +56,7 @@ function ketQua(sk: SuKienThue): KetQuaPhanTich {
       nhan_hieu_luc: 'Kho chưa ghi nhận văn bản bãi bỏ',
     })),
     chua_doi_chieu: [],
+    thanh_toan: { goi: null, con_luot: 0, gia_mot_to: 10_000, da_tra_ky_nay: false },
   };
 }
 
@@ -181,5 +182,58 @@ describe('Tờ khai thuế — không hỏi lại điều mã số thuế đã t
     voiCongTy({ ten: 'Tạp hoá', mst: null, loai_theo_mst: null, theo_mst: null });
     dung();
     expect(await screen.findByRole('link', { name: /thêm trong Cài đặt/ })).toBeTruthy();
+  });
+});
+
+/*
+ * Thu tiền (24/09/2026): 10.000đ một kỳ khai, hoặc miễn phí khi gói còn hạn. Xem trước miễn phí.
+ */
+describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
+  const voiThanhToan = (thanh_toan: KetQuaPhanTich['thanh_toan']) => {
+    gia.goi.mockImplementation(async (hanhDong: string) => {
+      if (hanhDong === 'phan_tich') return { ...ketQua(suKien()), thanh_toan } as unknown as Record<string, unknown>;
+      if (hanhDong === 'xuat') return { id: 'x1', ma_bam: 'b'.repeat(64), cach_tra: 'luot', con_luot: thanh_toan.con_luot - 1 };
+      return { ok: true };
+    });
+  };
+
+  it('nói giá ngay trên nút, và bản chưa xuất mang dấu "BẢN XEM TRƯỚC"', async () => {
+    voiThanhToan({ goi: null, con_luot: 0, gia_mot_to: 10_000, da_tra_ky_nay: false });
+    dung();
+    expect(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000đ/ })).toBeTruthy();
+    expect(screen.getByText('BẢN XEM TRƯỚC — CHƯA XUẤT')).toBeTruthy();
+  });
+
+  it('còn lượt: xuất, bỏ dấu xem trước, rồi mở hộp in', async () => {
+    const inRa = vi.spyOn(window, 'print').mockImplementation(() => {});
+    voiThanhToan({ goi: null, con_luot: 2, gia_mot_to: 10_000, da_tra_ky_nay: false });
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: /dùng 1 lượt \(còn 2\)/ }));
+    await waitFor(() => expect(gia.goi).toHaveBeenCalledWith('xuat', expect.objectContaining({ nam: 2026 })));
+    await waitFor(() => expect(screen.queryByText('BẢN XEM TRƯỚC — CHƯA XUẤT')).toBeNull());
+    await waitFor(() => expect(inRa).toHaveBeenCalled(), { timeout: 2000 });
+    inRa.mockRestore();
+  });
+
+  it('hết lượt: máy chủ trả 402 thì hiện chỗ mua lượt, không in', async () => {
+    const { LoiGoiHam } = await import('@/lib/loiGoiHam');
+    const inRa = vi.spyOn(window, 'print').mockImplementation(() => {});
+    gia.goi.mockImplementation(async (hanhDong: string) => {
+      if (hanhDong === 'phan_tich') return ketQua(suKien()) as unknown as Record<string, unknown>;
+      if (hanhDong === 'xuat') throw new LoiGoiHam('Cần 10.000đ', 402, { ma: 'CAN_THANH_TOAN' });
+      return { ok: true };
+    });
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000đ/ }));
+    expect(await screen.findByText(/Tiền về là MIMI tự cộng lượt và xuất tờ khai ngay/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /4 quý trong năm · 40\.000đ/ })).toBeTruthy();
+    expect(inRa).not.toHaveBeenCalled();
+    inRa.mockRestore();
+  });
+
+  it('gói còn hạn: nút nói rõ là miễn phí', async () => {
+    voiThanhToan({ goi: { plan: 'growth', het_han: '2026-10-24' }, con_luot: 0, gia_mot_to: 10_000, da_tra_ky_nay: false });
+    dung();
+    expect(await screen.findByRole('button', { name: /gói còn hạn/ })).toBeTruthy();
   });
 });

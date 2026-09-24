@@ -86,11 +86,11 @@ describe('traCuuMst', () => {
 });
 
 /** CSDL giả: ghi lại lệnh update và các điều kiện lọc kèm theo. */
-function dbGia(dong: Record<string, unknown> | null) {
+function dbGia(dong: Record<string, unknown> | null, laDemo = false) {
   const cap: { update?: Record<string, unknown>; loc: [string, unknown][] } = { loc: [] };
   const db = {
-    from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: dong, error: null }) }) }),
+    from: (bang: string) => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: bang === 'profiles' ? { is_demo: laDemo } : dong, error: null }) }) }),
       update: (u: Record<string, unknown>) => {
         cap.update = u;
         const chuoi = { eq: (k: string, v: unknown) => { cap.loc.push([k, v]); return chuoi; } };
@@ -149,6 +149,14 @@ describe('dongBoMstCongTy', () => {
     await expect(dongBoMstCongTy(db, 'c1', CFG, { bayGio, goi })).resolves.toBeUndefined();
     expect(cap.update).toBeUndefined();
     log.mockRestore();
+  });
+
+  it('công ty của tài khoản demo: không tra, không ghi — demo không được hiện tên doanh nghiệp thật', async () => {
+    const goi = traLoi([VINAMILK]);
+    const { db, cap } = dbGia({ tax_id: '0312345678', mst_tra_luc: null, ten_theo_mst: null, province: null, account_type: null, user_id: 'demo' }, true);
+    await dongBoMstCongTy(db, 'c1', CFG, { bayGio, goi });
+    expect(goi).not.toHaveBeenCalled();
+    expect(cap.update).toBeUndefined();
   });
 
   it('chưa cấu hình XInvoice thì không làm gì', async () => {

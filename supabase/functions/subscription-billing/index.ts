@@ -1,13 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
-import {
-  taoMaThamChieu,
-  doiSoatThueBao,
-  ketThucKy,
-  type SubscriptionInvoice,
-  type IncomingTransfer,
-} from "../_shared/billing/subscription.ts";
+import { taoMaThamChieu } from "../_shared/billing/subscription.ts";
+import { doiSoatTienVeMimi, GIA_MOT_TO_KHAI, GOI, TOI_DA_LUOT_MOT_LAN } from "../_shared/billing/thu-tien.ts";
 
 /**
  * Thu phí MIMI bằng chuyển khoản ngân hàng.
@@ -19,9 +14,11 @@ import {
  *
  * Hai hành động:
  *
- *   `create`    — phát hành hoá đơn, trả về mã tham chiếu để khách ghi vào nội
- *                 dung chuyển khoản
- *   `reconcile` — đọc giao dịch tiền vào, khớp mã, kích hoạt thuê bao
+ *   `create`    — phát hành hoá đơn cho một gói tháng (`plan`), hoặc cho N lượt
+ *                 xuất tờ khai (`so_luot`, 10.000đ một lượt); trả về mã tham chiếu
+ *                 để khách ghi vào nội dung chuyển khoản
+ *   `reconcile` — lưới đỡ của cron: khớp tiền về tài khoản MIMI với hoá đơn đang
+ *                 chờ. Đường chính là `bank-webhook`, chạy ngay khi tiền về.
  *
  * `reconcile` KHÔNG cần đăng nhập của khách và được gọi bởi cron. Nó chạy trên
  * toàn bộ hoá đơn đang chờ của mọi công ty, vì tiền vào tài khoản MIMI không
@@ -40,18 +37,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-/**
- * Bảng giá.
- *
- * Nguồn sự thật nằm ở PHÍA MÁY CHỦ, không phải ở `useSubscriptionStore`. Giá do
- * trình duyệt gửi lên thì khách sửa được thành 1.000đ — và đối soát sẽ vui vẻ
- * coi 1.000đ là "trả đủ" vì nó chỉ so với con số trong hoá đơn.
- */
-const GOI: Record<string, { amount: number; ten: string }> = {
-  // Khoá phải khớp `TIERS` trong src/store/useSubscriptionStore.ts.
-  starter: { amount: 149_000, ten: "Starter" },
-  growth: { amount: 249_000, ten: "Growth" },
-};
+/* Bảng giá nằm ở `_shared/billing/thu-tien.ts` — một chỗ cho cả phát hành lẫn đối soát. */
 
 /**
  * Tài khoản nhận tiền của MIMI.
@@ -71,7 +57,8 @@ function taiKhoanNhan() {
 }
 
 /** Sinh mã chưa từng dùng. Va chạm cực hiếm nhưng hậu quả là kích hoạt nhầm. */
-async function maChuaDung(supabase: ReturnType<typeof createClient>): Promise<string> {
+// deno-lint-ignore no-explicit-any
+async function maChuaDung(supabase: any): Promise<string> {
   for (let i = 0; i < 8; i++) {
     const ma = taoMaThamChieu();
     const { data } = await supabase
@@ -108,126 +95,15 @@ Deno.serve(async (req) => {
         return json({ error: "Unauthorized" }, 401);
       }
 
-      const { data: hoaDon } = await supabase
-        .from("subscription_invoices")
-        .select("id, company_id, reference_code, amount, status, plan")
-        .eq("status", "pending");
-
-      if (!hoaDon?.length) return json({ matched: 0, mismatched: 0, checked: 0 });
-
       /*
-       * Chỉ lấy tiền VÀO trong 60 ngày gần đây. Khách chuyển khoản trước khi
-       * hoá đơn được phát hành là chuyện không xảy ra, còn quét cả lịch sử thì
-       * mỗi lần cron chạy lại nặng thêm mãi.
-       */
-      const tu = new Date();
-      tu.setDate(tu.getDate() - 60);
-      /*
-       * `merchant_name`, KHÔNG PHẢI `description`.
+       * Chỉ đọc `tien_ve_mimi` — tiền về tài khoản nhận của MIMI, do máy chủ ghi.
        *
-       * Bảng `transactions` không có cột `description`. PostgREST từ chối cả
-       * truy vấn, `data` thành null, và vì chỗ này chỉ lấy `data` nên danh sách
-       * luôn rỗng — tức việc đối soát thuê bao CHƯA TỪNG khớp được khoản nào.
-       * Một tính năng thu tiền chết lặng, tìm ra ngày 10/09/2026.
-       *
-       * Nội dung chuyển khoản nằm ở `merchant_name`: `mapSepayWebhook` ghi
-       * `content` của SePay vào đó.
-       *
-       * Lọc `is_synthetic` vì đây là tiền: một dòng sandbox trùng số tiền sẽ
-       * kích hoạt gói trả phí mà không ai trả đồng nào.
+       * Trước 24/09/2026 chỗ này đọc bảng `transactions` của MỌI công ty. Chủ công ty tự chèn
+       * được dòng vào bảng đó, nên tự ghi một khoản 149.000đ mang mã hoá đơn của mình là gói
+       * trả phí kích hoạt — không ai trả đồng nào. Xem migration 20260924140000.
        */
-      const { data: giaoDich, error: loiGiaoDich } = await supabase
-        .from("transactions")
-        .select("id, amount, merchant_name, is_synthetic")
-        .gt("amount", 0)
-        .eq("is_synthetic", false)
-        .gte("transaction_date", tu.toISOString().slice(0, 10));
-      if (loiGiaoDich) {
-        console.error("doi soat thue bao: khong doc duoc giao dich", loiGiaoDich.message);
-      }
-
-      const ketQua = doiSoatThueBao(
-        hoaDon as unknown as SubscriptionInvoice[],
-        (giaoDich ?? []).map((g) => ({
-          id: g.id as string,
-          amount: Number(g.amount),
-          description: (g.merchant_name as string) ?? null,
-        })) as IncomingTransfer[],
-      );
-
-      const hoaDonTheoId = new Map(hoaDon.map((h) => [h.id, h]));
-
-      for (const m of ketQua.matched) {
-        const h = hoaDonTheoId.get(m.invoice_id);
-        if (!h) continue;
-        const batDau = new Date();
-        const ketThuc = ketThucKy(batDau);
-
-        await supabase
-          .from("subscription_invoices")
-          .update({
-            status: "paid",
-            paid_at: new Date().toISOString(),
-            matched_transaction_id: m.transaction_id,
-            received_amount: h.amount,
-            period_start: batDau.toISOString().slice(0, 10),
-            period_end: ketThuc.toISOString().slice(0, 10),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", h.id);
-
-        /*
-         * Gia hạn cộng dồn từ ngày hết hạn CŨ nếu thuê bao còn hiệu lực, không
-         * phải từ hôm nay. Trả sớm mà bị cắt mất những ngày còn lại thì lần sau
-         * khách sẽ đợi tới sát hạn mới trả — tự tạo ra rủi ro gián đoạn.
-         */
-        const { data: dangCo } = await supabase
-          .from("subscriptions")
-          .select("current_period_end")
-          .eq("company_id", h.company_id)
-          .maybeSingle();
-
-        const moc =
-          dangCo?.current_period_end && new Date(dangCo.current_period_end) > batDau
-            ? new Date(dangCo.current_period_end)
-            : batDau;
-
-        await supabase.from("subscriptions").upsert(
-          {
-            company_id: h.company_id,
-            plan: h.plan,
-            current_period_end: ketThucKy(moc).toISOString().slice(0, 10),
-            last_invoice_id: h.id,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "company_id" },
-        );
-      }
-
-      /*
-       * Trả sai số tiền: ghi nhận trạng thái nhưng KHÔNG kích hoạt. Quy tắc này
-       * đã khoá bằng test trong subscription.ts — trả sai gần như luôn là gõ
-       * nhầm, và quyết hộ khách chuyện tiền là việc không nên làm. Ghi lại để
-       * có người nhìn và liên hệ.
-       */
-      for (const m of ketQua.mismatched) {
-        await supabase
-          .from("subscription_invoices")
-          .update({
-            status: m.delta > 0 ? "overpaid" : "underpaid",
-            received_amount: m.amount,
-            matched_transaction_id: m.transaction_id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", m.invoice_id);
-      }
-
-      return json({
-        checked: hoaDon.length,
-        matched: ketQua.matched.length,
-        mismatched: ketQua.mismatched.length,
-        unmatched: ketQua.unmatched.length,
-      });
+      const kq = await doiSoatTienVeMimi(supabase);
+      return json(kq);
     }
 
     // ── create ────────────────────────────────────────────────────────────
@@ -246,8 +122,20 @@ Deno.serve(async (req) => {
     // MIMI-P1-003: mua/đổi gói là việc chạm tiền của công ty.
     kiemQuyen(ctVai.vai_tro, "thanh_toan_goi", cauTuChoi(ctVai.vai_tro, "thanh_toan_goi"));
 
-    const goi = GOI[body?.plan];
+    /*
+     * Hai thứ bán: gói tháng (`plan`), hoặc lượt xuất tờ khai (`so_luot`) — 10.000đ một tờ.
+     * Số tiền luôn tính ở đây, không nhận từ trình duyệt.
+     */
+    const muaLuot = body?.loai === "luot_to_khai";
+    const soLuot = muaLuot ? Number(body?.so_luot) : null;
+    if (muaLuot && (!Number.isInteger(soLuot) || (soLuot as number) < 1 || (soLuot as number) > TOI_DA_LUOT_MOT_LAN)) {
+      return json({ error: `Mua từ 1 đến ${TOI_DA_LUOT_MOT_LAN} lượt một lần.` }, 400);
+    }
+    const goi = muaLuot
+      ? { amount: (soLuot as number) * GIA_MOT_TO_KHAI, ten: `${soLuot} lượt xuất tờ khai` }
+      : GOI[body?.plan];
     if (!goi) return json({ error: "Gói không hợp lệ" }, 400);
+    const khoaGoi = muaLuot ? "luot_to_khai" : String(body.plan);
 
     const bank = taiKhoanNhan();
     if (!bank) {
@@ -269,12 +157,15 @@ Deno.serve(async (req) => {
      * nếu họ ghi mã của lần thứ ba mà đã chuyển theo lần đầu thì không mã nào
      * khớp đúng.
      */
-    const { data: dangCho } = await supabase
+    // Mua lượt: chỉ dùng lại hoá đơn đang chờ khi CÙNG số lượt — khác số lượt là khác số tiền.
+    let timCho = supabase
       .from("subscription_invoices")
       .select("id, reference_code, amount, plan, created_at")
       .eq("company_id", company.id)
       .eq("status", "pending")
-      .eq("plan", body.plan)
+      .eq("plan", khoaGoi);
+    if (muaLuot) timCho = timCho.eq("so_luot", soLuot);
+    const { data: dangCho } = await timCho
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -287,8 +178,9 @@ Deno.serve(async (req) => {
         .insert({
           company_id: company.id,
           reference_code: ma,
-          plan: body.plan,
+          plan: khoaGoi,
           amount: goi.amount,
+          so_luot: soLuot,
         })
         .select("id, reference_code, amount, plan, created_at")
         .single();

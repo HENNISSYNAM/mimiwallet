@@ -3,6 +3,7 @@ import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { mapSepayWebhook } from "../_shared/bank/sepay-map.ts";
 import { timTaiKhoanAoTrongNoiDung } from "../_shared/bank/ma-tai-khoan-ao.ts";
 import { doiSoatChiTacTu } from "../_shared/tac-tu/doi-soat.ts";
+import { doiSoatTienVeMimi, laTaiKhoanMimi } from "../_shared/billing/thu-tien.ts";
 
 /**
  * Public endpoint SePay posts to when a transaction hits a linked bank account.
@@ -168,6 +169,49 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
+
+  /*
+   * TIỀN VỀ TÀI KHOẢN CỦA CHÍNH MIMI — khách trả tiền gói hoặc mua lượt xuất tờ khai.
+   *
+   * Xét TRƯỚC khi tra `bank_connections`, và không bao giờ ghi vào `transactions` của công ty
+   * nào: đó là doanh thu của MIMI, không phải sổ của khách. Nếu để đi đường chung, ai khai số
+   * tài khoản của MIMI vào công ty mình trước sẽ nhận được sao kê tiền về MIMI.
+   *
+   * Ghi vào `tien_ve_mimi` (chỉ máy chủ ghi được) rồi đối soát NGAY: khách vừa chuyển xong,
+   * vài giây sau gói đã chạy. Cron 10 phút vẫn chạy làm lưới đỡ.
+   */
+  if (laTaiKhoanMimi(accountNumber, Deno.env.get("MIMI_BANK_ACCOUNT"))) {
+    if (row.amount <= 0) {
+      await ghiKetQua("ignored", "tiền ra từ tài khoản MIMI — không phải việc của đối soát thu phí");
+      return ack({ ignored: "mimi outgoing" });
+    }
+    const { error: loiGhi } = await supabase.from("tien_ve_mimi").upsert({
+      nguon: "sepay",
+      ma_giao_dich: row.reference_id,
+      so_tien: row.amount,
+      noi_dung: [row.merchant_name, row.payment_reference].filter(Boolean).join(" ") || null,
+      ngay_giao_dich: row.transaction_date,
+    }, { onConflict: "nguon,ma_giao_dich", ignoreDuplicates: true });
+    if (loiGhi) {
+      console.error("ghi tien ve mimi:", loiGhi.message);
+      return new Response(JSON.stringify({ error: "write failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    try {
+      const kq = await doiSoatTienVeMimi(supabase);
+      await ghiKetQua(
+        "verified",
+        `tiền về MIMI ${row.amount}đ · kích hoạt ${kq.da_kich_hoat}, lệch số tiền ${kq.lech_so_tien}, chưa khớp ${kq.chua_khop}`,
+      );
+    } catch (e) {
+      // Tiền đã ghi an toàn; cron 10 phút sẽ đối soát lại. Không bắt SePay gửi lại.
+      console.error("doi soat tien ve mimi:", e instanceof Error ? e.message : e);
+      await ghiKetQua("verified", "tiền về MIMI đã ghi; đối soát lỗi, cron sẽ chạy lại");
+    }
+    return ack();
+  }
 
   const { data: conn, error: connError } = await supabase
     .from("bank_connections")
