@@ -1,7 +1,7 @@
 import { NANG_LUC, duLieuTrong, type DuLieu } from '../tro-ly/tinh-toan.ts';
 import { dungTraLoi } from '../tro-ly/tra-loi.ts';
 import { nhanYDinh } from '../tro-ly/y-dinh.ts';
-import type { KetQuaNangLuc, NhomNangLuc, The, TraLoi } from '../tro-ly/kieu.ts';
+import type { KetQuaNangLuc, LoaiBangChung, NhomNangLuc, The, TraLoi } from '../tro-ly/kieu.ts';
 
 /**
  * MIMI-P1-004 — bộ chấm chất lượng trả lời của trợ lý.
@@ -36,9 +36,22 @@ export interface CaEval {
   khong_duoc?: RegExp[];
   /** Ô số không cần bằng chứng vì suy ra từ số khác chứ không từ bản ghi. */
   mien_bang_chung?: string[];
+  /** Prompt 4 mục 33: lĩnh vực của ca, để báo cáo theo từng lĩnh vực. */
+  linh_vuc?: LinhVucEval;
+  /** Kết luận mong đợi: câu trả lời PHẢI chứa các mẫu này (viết không dấu). */
+  phai_co?: RegExp[];
+  /** Bằng chứng mong đợi: câu trả lời phải trỏ tới bản ghi thuộc các loại này. */
+  bang_chung?: LoaiBangChung[];
 }
 
-export const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+export const LINH_VUC_EVAL = [
+  'phan_loai_doanh_thu', 'phan_loai_hoat_dong', 'han_thue', 'ap_dung_thue', 'sua_hoa_don', 'dinh_tuyen_thu_tuc',
+  'trang_thai_doanh_nghiep', 'xung_dot_nguon', 'canh_bao_lua_dao', 'chenh_lech_tai_chinh', 'doi_soat', 'thieu_chung_tu',
+] as const;
+export type LinhVucEval = (typeof LINH_VUC_EVAL)[number];
+
+// `đ` không tách dấu bằng NFD — phải đổi riêng, không thì "độ tin cậy" thành "đo tin cay" và không mẫu nào khớp.
+export const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
 /**
  * Các mẫu dưới đây viết KHÔNG DẤU, vì câu trả lời được bỏ dấu trước khi so.
@@ -108,6 +121,10 @@ export interface KetQuaCa {
   /** null = ca này không phải ca từ chối. */
   tuChoiDung: boolean | null;
   thieuDeXuat: string[];
+  /** Mẫu kết luận mong đợi mà câu trả lời thiếu. */
+  thieuKetLuan: string[];
+  /** Loại bằng chứng mong đợi mà câu trả lời không trỏ tới. */
+  thieuBangChung: string[];
 }
 
 export function chayCa(ca: CaEval): KetQuaCa {
@@ -134,6 +151,8 @@ export function chayCa(ca: CaEval): KetQuaCa {
   ].join('\n'));
 
   const loaiDeXuat = new Set(traLoi.ket_qua.flatMap((r) => r.de_xuat.map((d) => d.loai)));
+  const loaiBangChung = new Set(traLoi.ket_qua.flatMap((r) => r.the.flatMap((t) =>
+    t.loai === 'so_lieu' ? t.muc.flatMap((m) => (m.bang_chung ?? []).map((b) => b.loai)) : t.loai === 'bang' ? (t.bang_chung ?? []).map((b) => b.loai) : [])));
 
   return {
     ca,
@@ -148,6 +167,8 @@ export function chayCa(ca: CaEval): KetQuaCa {
     // Câu ngoài phạm vi: phải nói không hiểu, và không được bày ra con số nào.
     tuChoiDung: ca.y_dinh.length === 0 ? traLoi.ket_qua.length === 0 && o.length === 0 && traLoi.cau.length > 0 : null,
     thieuDeXuat: (ca.de_xuat ?? []).filter((l) => !loaiDeXuat.has(l as never)),
+    thieuKetLuan: (ca.phai_co ?? []).filter((r) => !r.test(chu)).map(String),
+    thieuBangChung: (ca.bang_chung ?? []).filter((l) => !loaiBangChung.has(l)),
   };
 }
 
@@ -167,6 +188,11 @@ export interface BaoCaoEval {
   false_legal_certainty: TyLe;
   refusal_quality: TyLe;
   action_completion: TyLe;
+  /** Prompt 4: ca có kết luận mong đợi mà câu trả lời nói đúng. */
+  expected_conclusion: TyLe;
+  /** Prompt 4: ca có bằng chứng mong đợi mà câu trả lời trỏ đúng loại bản ghi. */
+  evidence_presence: TyLe;
+  theo_linh_vuc: Record<string, { so_ca: number; dat: number }>;
   ca_hong: string[];
 }
 
@@ -181,6 +207,17 @@ export function chayBo(bo: CaEval[]): BaoCaoEval {
   const coSo = kq.filter((r) => (r.ca.so ?? []).length > 0);
   const coDeXuat = kq.filter((r) => (r.ca.de_xuat ?? []).length > 0);
   const caTuChoi = kq.filter((r) => r.tuChoiDung !== null);
+  const coKetLuan = kq.filter((r) => (r.ca.phai_co ?? []).length > 0);
+  const coBangChung = kq.filter((r) => (r.ca.bang_chung ?? []).length > 0);
+  const dat = (r: KetQuaCa) => r.dungYDinh && !r.soSai.length && !r.hanhDongKhongAnToan.length && !r.noiChacPhapLuat.length
+    && r.tuChoiDung !== false && !r.thieuDeXuat.length && !r.thieuKetLuan.length && !r.thieuBangChung.length;
+  const theoLv: Record<string, { so_ca: number; dat: number }> = {};
+  for (const r of kq) {
+    if (!r.ca.linh_vuc) continue;
+    const x = theoLv[r.ca.linh_vuc] ?? { so_ca: 0, dat: 0 };
+    x.so_ca += 1; if (dat(r)) x.dat += 1;
+    theoLv[r.ca.linh_vuc] = x;
+  }
 
   return {
     so_ca: bo.length,
@@ -195,6 +232,9 @@ export function chayBo(bo: CaEval[]): BaoCaoEval {
     false_legal_certainty: tl(kq.filter((r) => r.noiChacPhapLuat.length > 0).length, kq.length),
     refusal_quality: tl(caTuChoi.filter((r) => r.tuChoiDung).length, caTuChoi.length),
     action_completion: tl(coDeXuat.filter((r) => r.thieuDeXuat.length === 0).length, coDeXuat.length),
+    expected_conclusion: tl(coKetLuan.filter((r) => r.thieuKetLuan.length === 0).length, coKetLuan.length),
+    evidence_presence: tl(coBangChung.filter((r) => r.thieuBangChung.length === 0).length, coBangChung.length),
+    theo_linh_vuc: theoLv,
     ca_hong: kq.flatMap((r) => [
       ...(r.dungYDinh ? [] : [`${r.ca.id}: ý định chọn [${r.yDinhChon.join(', ')}], cần một trong [${r.ca.y_dinh.join(', ')}]`]),
       ...(r.soSai.length ? [`${r.ca.id}: số sai — ${r.soSai.join('; ')}`] : []),
@@ -202,6 +242,8 @@ export function chayBo(bo: CaEval[]): BaoCaoEval {
       ...(r.noiChacPhapLuat.length ? [`${r.ca.id}: nói chắc về pháp luật — ${r.noiChacPhapLuat.join(' ')}`] : []),
       ...(r.tuChoiDung === false ? [`${r.ca.id}: câu ngoài phạm vi mà vẫn trả lời có số`] : []),
       ...(r.thieuDeXuat.length ? [`${r.ca.id}: thiếu đề xuất ${r.thieuDeXuat.join(', ')}`] : []),
+      ...(r.thieuKetLuan.length ? [`${r.ca.id}: thiếu kết luận ${r.thieuKetLuan.join(' ')}`] : []),
+      ...(r.thieuBangChung.length ? [`${r.ca.id}: thiếu bằng chứng loại ${r.thieuBangChung.join(', ')}`] : []),
     ]),
   };
 }

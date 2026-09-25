@@ -6,6 +6,8 @@ const m = {
       troLyNgan: '어시스턴트',
       thuVien: '증빙 보관함',
       thuVienNgan: '증빙',
+      viecCanLam: '할 일',
+      taiLieu: '문서 및 증빙',
       nhacThue: '세무 알림',
       ketNoi: '연동',
       tongQuanGiaoDich: '개요 및 거래',

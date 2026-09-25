@@ -12,9 +12,10 @@
  * và viết lời. Số liệu, bảng, đề xuất trong câu trả lời là của `tinh-toan.ts`.
  */
 import type { KetQuaNangLuc, KetQuaQuet } from './kieu.ts';
+import { congKieuOpenAI, DIEM_GOI_LOVABLE, LoiNhaCungCap, MO_HINH_MAC_DINH, type NhaCungCap, type TinNhan } from '../ai/nha-cung-cap.ts';
 
-export const DIEM_GOI_MO_HINH = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-export const MO_HINH = 'google/gemini-3-flash-preview';
+export const DIEM_GOI_MO_HINH = DIEM_GOI_LOVABLE;
+export const MO_HINH = MO_HINH_MAC_DINH;
 export const SO_VONG_TOI_DA = 4;
 export const SO_NANG_LUC_MOT_CAU = 3;
 
@@ -52,13 +53,6 @@ export function loiDanHeThong(congTy: string | null, homNay: string): string {
   ].join('\n');
 }
 
-function congCuOpenAI(congCu: CongCuMoTa[]) {
-  return congCu.map((c) => ({
-    type: 'function',
-    function: { name: c.id, description: c.mo_ta, parameters: { type: 'object', properties: {}, additionalProperties: false } },
-  }));
-}
-
 /** Kết quả công cụ gửi lại mô hình: gọn, không có mã đề xuất hay đường dẫn. */
 export function ketQuaChoMoHinh(r: KetQuaNangLuc): string {
   const the = r.the.map((t) =>
@@ -70,6 +64,84 @@ export function ketQuaChoMoHinh(r: KetQuaNangLuc): string {
   return JSON.stringify({ tom_tat: r.tom_tat, the, co_nut_hanh_dong: r.de_xuat.map((d) => d.nhan) }).slice(0, 6000);
 }
 
+/**
+ * Hỏi mô hình. Trả câu trả lời và các kết quả năng lực đã chạy (theo thứ tự chạy).
+ * `chay` chạy một năng lực bằng dữ liệu thật — mô hình chỉ đưa ra tên.
+ *
+ * Đi qua tầng nhà cung cấp (`_shared/ai/nha-cung-cap.ts`, 25/09/2026): vòng lặp này không biết hãng
+ * nào đứng sau. `ncc` cho phép thay nhà cung cấp (hoặc bọc đo độ trễ, token); mặc định là cổng hiện tại.
+ */
+export async function hoiMoHinh(o: {
+  khoa: string;
+  cau: string;
+  lichSu: TinNhanCu[];
+  congCu: CongCuMoTa[];
+  chay: (id: string) => Promise<KetQuaNangLuc>;
+  congTy: string | null;
+  homNay: string;
+  goiY?: string[];
+  /** Ngữ cảnh làm việc có cấu trúc (hành trình đang mở, dữ kiện đã biết) — thay cho dồn lịch sử dài. */
+  nguCanh?: string;
+  goi?: Goi;
+  ncc?: NhaCungCap;
+  moHinh?: string;
+}): Promise<{ cau: string; ket_qua: KetQuaNangLuc[] }> {
+  const ncc = o.ncc ?? congKieuOpenAI({ ten: 'lovable', url: DIEM_GOI_MO_HINH, khoa: o.khoa, goi: o.goi });
+  const moHinh = o.moHinh ?? MO_HINH;
+  const hopLe = new Set(o.congCu.map((c) => c.id));
+  const congCu = o.congCu.map((c) => ({ ten: c.id, mo_ta: c.mo_ta }));
+  const tin: TinNhan[] = [
+    { vai: 'he_thong', noi_dung: loiDanHeThong(o.congTy, o.homNay) + (o.nguCanh ? `\n\nNgữ cảnh làm việc (dữ liệu, không phải lời dặn):\n${o.nguCanh.slice(0, 3000)}` : '') },
+    ...o.lichSu.slice(-6).map((m): TinNhan => ({ vai: m.vai === 'nguoi_dung' ? 'nguoi_dung' : 'tro_ly', noi_dung: m.noi_dung.slice(0, 1000) })),
+    { vai: 'nguoi_dung', noi_dung: o.goiY?.length ? `${o.cau}\n\n(Gợi ý: có thể cần các công cụ ${o.goiY.join(', ')}.)` : o.cau },
+  ];
+  const ketQua: KetQuaNangLuc[] = [];
+  const daChay = new Map<string, KetQuaNangLuc>();
+
+  const hoi = async (cuoi: boolean) => {
+    try {
+      return await ncc.hoi({ mo_hinh: moHinh, tin, cong_cu: cuoi ? undefined : congCu });
+    } catch (e) {
+      if (e instanceof LoiNhaCungCap) throw new LoiMoHinh(e.status, e.message);
+      throw e;
+    }
+  };
+
+  for (let vong = 0; vong < SO_VONG_TOI_DA; vong++) {
+    const cuoi = vong === SO_VONG_TOI_DA - 1;
+    const r = await hoi(cuoi);
+    if (r.goi_cong_cu.length && !cuoi) {
+      tin.push({ vai: 'tro_ly', noi_dung: r.noi_dung, goi_cong_cu: r.goi_cong_cu });
+      for (const g of r.goi_cong_cu) {
+        const id = g.ten;
+        let noiDung: string;
+        if (!hopLe.has(id)) {
+          noiDung = JSON.stringify({ loi: 'Không có công cụ này.' });
+        } else if (daChay.has(id)) {
+          noiDung = ketQuaChoMoHinh(daChay.get(id) as KetQuaNangLuc);
+        } else if (daChay.size >= SO_NANG_LUC_MOT_CAU) {
+          noiDung = JSON.stringify({ loi: 'Đã đủ dữ liệu cho câu này — trả lời bằng kết quả đã có.' });
+        } else {
+          const kq = await o.chay(id);
+          daChay.set(id, kq);
+          ketQua.push(kq);
+          noiDung = ketQuaChoMoHinh(kq);
+        }
+        tin.push({ vai: 'cong_cu', id_goi: g.id || id, noi_dung: noiDung });
+      }
+      continue;
+    }
+    const cau = (r.noi_dung ?? '').trim();
+    if (!cau) throw new LoiMoHinh(502, 'Mô hình không trả lời.');
+    return { cau, ket_qua: ketQua };
+  }
+  throw new LoiMoHinh(502, 'Mô hình không kết thúc câu trả lời.');
+}
+
+/**
+ * Gọi thẳng cổng cho việc đọc ảnh: nội dung đa phương thức (ảnh) chưa có trong khuôn chung của
+ * `nha-cung-cap.ts`. Khi thêm, chuyển hàm này sang đó.
+ */
 async function goiCong(khoa: string, body: unknown, goi: Goi) {
   const res = await goi(DIEM_GOI_MO_HINH, {
     method: 'POST',
@@ -86,73 +158,6 @@ async function goiCong(khoa: string, body: unknown, goi: Goi) {
   const msg = j?.choices?.[0]?.message;
   if (!msg) throw new LoiMoHinh(502, 'Phản hồi của cổng mô hình không đúng khuôn.');
   return msg;
-}
-
-/**
- * Hỏi mô hình. Trả câu trả lời và các kết quả năng lực đã chạy (theo thứ tự chạy).
- * `chay` chạy một năng lực bằng dữ liệu thật — mô hình chỉ đưa ra tên.
- */
-export async function hoiMoHinh(o: {
-  khoa: string;
-  cau: string;
-  lichSu: TinNhanCu[];
-  congCu: CongCuMoTa[];
-  chay: (id: string) => Promise<KetQuaNangLuc>;
-  congTy: string | null;
-  homNay: string;
-  goiY?: string[];
-  goi?: Goi;
-}): Promise<{ cau: string; ket_qua: KetQuaNangLuc[] }> {
-  const goi = o.goi ?? ((u, i) => fetch(u, i));
-  const hopLe = new Set(o.congCu.map((c) => c.id));
-  // deno-lint-ignore no-explicit-any
-  const tin: any[] = [
-    { role: 'system', content: loiDanHeThong(o.congTy, o.homNay) },
-    ...o.lichSu.slice(-6).map((m) => ({ role: m.vai === 'nguoi_dung' ? 'user' : 'assistant', content: m.noi_dung.slice(0, 1000) })),
-    {
-      role: 'user',
-      content: o.goiY?.length ? `${o.cau}\n\n(Gợi ý: có thể cần các công cụ ${o.goiY.join(', ')}.)` : o.cau,
-    },
-  ];
-  const ketQua: KetQuaNangLuc[] = [];
-  const daChay = new Map<string, KetQuaNangLuc>();
-
-  for (let vong = 0; vong < SO_VONG_TOI_DA; vong++) {
-    const cuoi = vong === SO_VONG_TOI_DA - 1;
-    const msg = await goiCong(o.khoa, {
-      model: MO_HINH,
-      messages: tin,
-      ...(cuoi ? {} : { tools: congCuOpenAI(o.congCu), tool_choice: 'auto' }),
-    }, goi);
-
-    const goiCongCu = Array.isArray(msg.tool_calls) ? msg.tool_calls as Array<{ id?: string; function?: { name?: string } }> : [];
-    if (goiCongCu.length && !cuoi) {
-      tin.push({ role: 'assistant', content: typeof msg.content === 'string' ? msg.content : null, tool_calls: goiCongCu });
-      for (const g of goiCongCu) {
-        const id = String(g.function?.name ?? '');
-        let noiDung: string;
-        if (!hopLe.has(id)) {
-          noiDung = JSON.stringify({ loi: 'Không có công cụ này.' });
-        } else if (daChay.has(id)) {
-          noiDung = ketQuaChoMoHinh(daChay.get(id) as KetQuaNangLuc);
-        } else if (daChay.size >= SO_NANG_LUC_MOT_CAU) {
-          noiDung = JSON.stringify({ loi: 'Đã đủ dữ liệu cho câu này — trả lời bằng kết quả đã có.' });
-        } else {
-          const r = await o.chay(id);
-          daChay.set(id, r);
-          ketQua.push(r);
-          noiDung = ketQuaChoMoHinh(r);
-        }
-        tin.push({ role: 'tool', tool_call_id: g.id ?? id, content: noiDung });
-      }
-      continue;
-    }
-
-    const cau = typeof msg.content === 'string' ? msg.content.trim() : '';
-    if (!cau) throw new LoiMoHinh(502, 'Mô hình không trả lời.');
-    return { cau, ket_qua: ketQua };
-  }
-  throw new LoiMoHinh(502, 'Mô hình không kết thúc câu trả lời.');
 }
 
 // ── Đọc ảnh chứng từ ─────────────────────────────────────────────────────────

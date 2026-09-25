@@ -64,6 +64,8 @@ export const LOAI_DE_XUAT = [
   'cap_nhat_bang_gia',
   'dong_bo_ngan_hang',
   'luu_chung_tu_quet',
+  // Prompt 4: lưu kết quả thành tài liệu trong thư viện. Máy chủ dựng lại từ dữ liệu mới lúc bấm.
+  'tao_tai_lieu',
   'mo_trang',
 ] as const;
 

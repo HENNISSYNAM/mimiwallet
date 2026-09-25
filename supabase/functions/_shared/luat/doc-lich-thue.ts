@@ -10,6 +10,7 @@ import { doanhThuQuyTuSoLieu, docHoSo, dungSuKien } from './doc-su-kien.ts';
 import { suyLuan } from './he-luat.ts';
 import { lichThue, type MocThue } from './lich-thue.ts';
 import { chuanHoaTrangThai } from '../doanh-nghiep/trang-thai.ts';
+import { sanSangThue, type SanSangThue } from './san-sang-thue.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -20,6 +21,8 @@ export interface LichCongTy {
   /** Tiền vào năm nay chưa ai xác nhận có phải doanh thu — việc cần làm trước khi khai. */
   soChuaRo: number;
   tienChuaRo: number;
+  /** Prompt 4 mục 14: một đối tượng sẵn sàng khai thuế cho mọi màn. */
+  sanSang: SanSangThue;
 }
 
 /** `s`: số liệu doanh thu năm `nam` nếu nơi gọi đã đọc (tránh đọc hai lần). */
@@ -37,5 +40,5 @@ export async function docLichCongTy(
     trangThai: chuanHoaTrangThai(cong_ty.theo_mst?.trang_thai).trang_thai,
     soNguoi: (ctNguoi?.employee_count as string | null) ?? null,
   });
-  return { lich, loaiNguoiNop: dung.su_kien.loai ?? null, soChuaRo: s.so_chua_ro, tienChuaRo: s.chua_ro };
+  return { lich, loaiNguoiNop: dung.su_kien.loai ?? null, soChuaRo: s.so_chua_ro, tienChuaRo: s.chua_ro, sanSang: sanSangThue(lich, s) };
 }

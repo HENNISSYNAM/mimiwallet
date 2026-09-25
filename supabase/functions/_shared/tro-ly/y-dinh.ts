@@ -7,6 +7,7 @@
  */
 import type { NhomNangLuc } from './kieu.ts';
 import { canTraLuat } from '../luat/nguon-luat.ts';
+import { nhanHanhTrinh } from '../hanh-trinh/dong-co.ts';
 
 export const boDau = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
@@ -23,6 +24,9 @@ export const MAC_DINH_THEO_NHOM: Record<NhomNangLuc, string> = {
 };
 
 const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
+  // Prompt 4: soạn báo cáo tháng (phân tích quản trị, không phải BCTC) và giải thích thay đổi.
+  [/\b((soan|lap|lam|tao|viet)\b.*\bbao cao|bao cao (tai chinh )?(ngan|thang nay|thang))\b/, 'bao_cao_thang'],
+  [/\b((vi sao|tai sao|vi gi|ly do|do dau)\b.*\b(doanh thu|dong tien|chi phi|tien mat)|(doanh thu|dong tien|chi phi|tien mat)\b.*\b(vi sao|tai sao|vi gi|do dau|o dau)|(doanh thu|dong tien)\b.*\bkhac hoa don|thay doi vi gi)\b/, 'phan_tich_chenh_lech'],
   [/\b(tra soat|chuyen nham|chuyen sai|chuyen trung)\b/, 'giay_to_tra_soat'],
   [/\b(giai trinh|cong van giai trinh)\b/, 'giay_to_giai_trinh'],
   [/\b(huy to khai|nop nham|nop trung|to khai nop nham|khai nham)\b/, 'giay_to_huy_to_khai'],
@@ -109,11 +113,16 @@ const NANG_LUC_SO_LIEU = ['chi_phi_thang', 'bao_cao_tai_chinh', 'thieu_chung_tu'
  * con ở xa). Trước đó câu đầu ra bảng dòng tiền, câu sau "Mình chưa hiểu câu này".
  */
 const TIEN_VAO_KHONG_PHAI_DOANH_THU =
-  /\b((tien|khoan) (con|nguoi nha|gia dinh|ba me|bo me|cha me|vay|gop von|dat coc|hoan)\b.*\bdoanh thu|khoan vay\b.*\bdoanh thu|doanh thu\b.*\b(tien vay|khoan vay|gop von|nguoi nha)|khong phai (la )?doanh thu|(loc|tach|tim|chi ra)\b.*\b(tien vay|khoan vay|tien nguoi nha|nguoi nha chuyen|tien gop von))\b/;
+  /\b((tien|khoan) (con|me|bo|cha|vo|chong|anh|chi|em|nguoi nha|gia dinh|ba me|bo me|cha me|vay|gop von|dat coc|hoan)\b.*\bdoanh thu|khoan vay\b.*\bdoanh thu|doanh thu\b.*\b(tien vay|khoan vay|gop von|nguoi nha)|khong phai (la )?doanh thu|(loc|tach|tim|chi ra)\b.*\b(tien vay|khoan vay|tien nguoi nha|nguoi nha chuyen|tien gop von))\b/;
 const GIUP_NGUOI_NHA =
   /\b((o xa|tu xa)\b.*\b(theo doi|giup|ho tro)|(theo doi|giup|ho tro) (giup |ho )?(ba me|bo me|cha me|nguoi nha|gia dinh))\b/;
 /** "có vượt 1 tỷ không" là hỏi ngưỡng thuế, không phải xin bảng dòng tiền. */
 const HOI_NGUONG = /\b(vuot (1|mot) ty|qua (1|mot) ty|vuot nguong|cham nguong|toi nguong)\b/;
+
+/** "Văn bản nào quy định…", "căn cứ pháp lý": hỏi NGUỒN LUẬT, không phải xin số liệu (danh từ trong câu hay kéo nhầm). */
+const HOI_VAN_BAN = /\b(van ban nao|luat nao|nghi dinh nao|thong tu nao|quy dinh o dau|can cu phap ly|dieu khoan nao)\b/;
+
+const HOI_THONG_TIN_THU_TUC = /\b(thu tuc gi|the nao|ra sao|lam sao|ho so gom|ho so gi|can ho so|giay to gi|can nhung giay to|can giay to gi|nop o dau|mau nao)\b/;
 
 export const SO_NANG_LUC_TOI_DA = 3;
 
@@ -125,6 +134,20 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   if (NHO_CHUYEN_TIEN.test(s)) return ['khong_chuyen_tien'];
   const khop: string[] = [];
   for (const [re, id] of LUAT) if (re.test(s) && !khop.includes(id)) khop.push(id);
+  // Báo cáo tháng và phân tích thay đổi đã gồm dòng tiền và doanh thu: bỏ bảng chung trùng lặp.
+  if (khop.includes('bao_cao_thang') || khop.includes('phan_tich_chenh_lech')) {
+    for (const g of ['bao_cao_tai_chinh', 'dong_tien', 'chi_phi_thang']) { const i = khop.indexOf(g); if (i >= 0) khop.splice(i, 1); }
+    if (khop.includes('bao_cao_thang')) { const i = khop.indexOf('phan_tich_chenh_lech'); if (i >= 0) khop.splice(i, 1); }
+  }
+  /*
+   * Prompt 4: việc nhiều bước (mở hộ, tạm ngừng, hoá đơn sai, bị yêu cầu giải trình…) mở hành trình.
+   * Câu HỎI THÔNG TIN về thủ tục ("cần làm thủ tục gì", "thế nào", "hồ sơ gồm gì") thì chỉ tra thủ tục:
+   * mở một hồ sơ việc cho người chỉ hỏi cho biết là tạo việc thừa trong danh sách của họ.
+   */
+  if (nhanHanhTrinh(cau) && !HOI_THONG_TIN_THU_TUC.test(s)) {
+    const i = khop.indexOf('viec_uu_tien'); if (i >= 0) khop.splice(i, 1);
+    khop.unshift('hanh_trinh');
+  }
 
   // "Khoản chi" có mặt trong rất nhiều câu cụ thể hơn ("khoản chi AI", "khoản chi chưa có
   // hoá đơn"). Chi phí chung chỉ là câu trả lời khi không có ý nào cụ thể hơn.
@@ -168,6 +191,10 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
     if (!re.test(s)) continue;
     for (const g of go) { const i = khop.indexOf(g); if (i >= 0) khop.splice(i, 1); }
     if (!khop.includes(id)) khop.unshift(id);
+  }
+  if (HOI_VAN_BAN.test(s)) {
+    for (const g of [...NANG_LUC_SO_LIEU, 'hoa_don_qua_han']) { const i = khop.indexOf(g); if (i >= 0) khop.splice(i, 1); }
+    if (!khop.includes('tra_cuu_luat')) khop.unshift('tra_cuu_luat');
   }
   if (THU_TUC_THUE.test(s)) {
     for (const g of NANG_LUC_SO_LIEU) { const i = khop.indexOf(g); if (i >= 0) khop.splice(i, 1); }

@@ -93,7 +93,7 @@ describe('việc ưu tiên', () => {
     const bang = r.the.find((t) => t.loai === 'bang') as { dong: unknown[][] };
     expect(bang.dong).toHaveLength(3);
     expect(String(bang.dong[0][0])).toContain('Nộp tờ khai GTGT tháng 8/2026');
-    expect(r.tom_tat).toBe('3 việc ưu tiên, xếp theo hạn và mức cần xử lý:');
+    expect(r.tom_tat).toBe('3 việc ưu tiên, xếp theo mức (P0 gấp nhất) và hạn:');
     // Hạn còn 35 ngày không phải việc tuần này.
     expect(JSON.stringify(bang)).not.toContain('Tạm nộp thuế TNDN');
   });

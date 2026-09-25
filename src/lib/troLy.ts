@@ -93,6 +93,11 @@ export async function thucHienDeXuat(dx: DeXuat, g: BoGoi, tc: { daXacMinh?: boo
     case 'luu_chung_tu_quet':
       await g.goiTroLy('luu_chung_tu', t);
       return 'Đã lưu chứng từ.';
+    case 'tao_tai_lieu': {
+      const kq = await g.goiTroLy('tao_tai_lieu', t);
+      const tl = kq.tai_lieu as { tieu_de?: string } | undefined;
+      return `Đã lưu "${tl?.tieu_de ?? 'tài liệu'}" vào Tài liệu & Chứng từ.`;
+    }
     case 'mo_trang':
       return '';
   }

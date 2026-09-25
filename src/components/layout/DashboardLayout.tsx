@@ -93,6 +93,8 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/tro-ly': 'man.ten.troLy',
   '/dashboard/thu-vien': 'man.ten.thuVien',
   '/dashboard/nhac-thue': 'man.ten.nhacThue',
+  '/dashboard/viec-can-lam': 'man.ten.viecCanLam',
+  '/dashboard/tai-lieu': 'man.ten.taiLieu',
   '/dashboard/ket-noi': 'man.ten.ketNoi',
   '/dashboard/chinh-sach': 'man.ten.chinhSach',
   '/dashboard/tac-tu': 'man.ten.tacTu',

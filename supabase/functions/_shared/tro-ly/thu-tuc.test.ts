@@ -63,8 +63,13 @@ describe('trợ lý: thủ tục thuế', () => {
     expect(thuTucThue(du(null)).tom_tat).toContain('Chưa tra được');
   });
 
-  it.each(['Tôi muốn tạm ngừng kinh doanh', 'Đóng mã số thuế thế nào', 'Hồ sơ gồm những gì để hoàn thuế', 'gia hạn nộp thuế'])('nhận ra: %s', (c) => {
+  it.each(['Tạm ngừng kinh doanh cần hồ sơ gì', 'Đóng mã số thuế thế nào', 'Hồ sơ gồm những gì để hoàn thuế', 'gia hạn nộp thuế'])('nhận ra: %s', (c) => {
     expect(nhanYDinh(c)[0]).toBe('thu_tuc_thue');
+  });
+
+  // Prompt 4 (25/09/2026): nói Ý MUỐN làm thì mở hành trình trước, thủ tục đi kèm.
+  it('"Tôi muốn tạm ngừng kinh doanh" → hành trình, rồi thủ tục', () => {
+    expect(nhanYDinh('Tôi muốn tạm ngừng kinh doanh').slice(0, 2)).toEqual(['hanh_trinh', 'thu_tuc_thue']);
   });
 
   it('câu hỏi nghĩa vụ thuế vẫn đi đường cũ', () => {

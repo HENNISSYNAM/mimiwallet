@@ -6,6 +6,8 @@ const m = {
       troLyNgan: 'Assistant',
       thuVien: 'Document library',
       thuVienNgan: 'Documents',
+      viecCanLam: 'To-do',
+      taiLieu: 'Documents & records',
       nhacThue: 'Tax reminders',
       ketNoi: 'Connections',
       tongQuanGiaoDich: 'Overview & transactions',

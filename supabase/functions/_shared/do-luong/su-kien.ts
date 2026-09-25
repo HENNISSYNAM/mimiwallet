@@ -15,7 +15,10 @@ export type TenSuKien =
   | 'business_identified' | 'financial_source_connected' | 'first_scan_completed' | 'first_exception_detected'
   | 'first_classification_confirmed' | 'first_reconciliation_completed' | 'calendar_generated'
   | 'first_case_created' | 'first_case_resolved' | 'first_paid_action' | 'week2_return'
-  | 'classification_confirmed' | 'statement_imported';
+  | 'classification_confirmed' | 'statement_imported'
+  // Prompt 4 mục 29 — hành trình, hồ sơ việc, tài liệu, kết quả có thể thu phí.
+  | 'journey_started' | 'first_issue_detected' | 'issue_reviewed' | 'case_created' | 'artifact_generated'
+  | 'artifact_reviewed' | 'case_resolved' | 'paid_outcome_started' | 'paid_outcome_completed';
 
 export async function ghiSuKien(
   db: Db, companyId: string, userId: string | null, ten: TenSuKien, thuocTinh: Record<string, unknown> = {},

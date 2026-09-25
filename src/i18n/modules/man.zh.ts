@@ -6,6 +6,8 @@ const m = {
       troLyNgan: '助手',
       thuVien: '凭证库',
       thuVienNgan: '凭证',
+      viecCanLam: '待办事项',
+      taiLieu: '文件与凭证',
       nhacThue: '税务提醒',
       ketNoi: '连接',
       tongQuanGiaoDich: '总览与交易',

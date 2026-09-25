@@ -19,6 +19,7 @@ export const QUYEN_DE_XUAT: Record<LoaiDeXuat, HanhDong> = {
   cap_nhat_bang_gia: 'dong_bo_du_lieu',
   dong_bo_ngan_hang: 'dong_bo_du_lieu',
   luu_chung_tu_quet: 'ghi_chung_tu',
+  tao_tai_lieu: 'ghi_chung_tu',
   mo_trang: 'xem',
 };
 

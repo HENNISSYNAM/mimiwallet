@@ -17,6 +17,8 @@ const m = {
       troLyNgan: 'Trợ lý',
       thuVien: 'Thư viện chứng từ',
       thuVienNgan: 'Chứng từ',
+      viecCanLam: 'Việc cần làm',
+      taiLieu: 'Tài liệu & Chứng từ',
       nhacThue: 'Nhắc thuế',
       ketNoi: 'Kết nối',
       tongQuanGiaoDich: 'Tổng quan & giao dịch',

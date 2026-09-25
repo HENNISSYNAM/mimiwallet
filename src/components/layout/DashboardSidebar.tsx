@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, Globe, HelpCircle, Images, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Puzzle, Settings, Store } from 'lucide-react';
+import { Clock, Globe, HelpCircle, Images, LayoutDashboard, ListChecks, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Puzzle, Settings, Store } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -56,6 +56,8 @@ export default function DashboardSidebar() {
   const muc: { icon: Icon; label: string; path: string }[] = [
     { icon: IconMeo, label: t('man.ten.troLy'), path: '/dashboard/tro-ly' },
     { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
+    // Prompt 4 mục 31: việc cần làm là nơi chính sau trợ lý.
+    { icon: ListChecks, label: t('man.ten.viecCanLam'), path: '/dashboard/viec-can-lam' },
     { icon: Images, label: t('man.ten.thuVien'), path: '/dashboard/thu-vien' },
     { icon: Clock, label: t('man.ten.nhacThue'), path: '/dashboard/nhac-thue' },
     { icon: Puzzle, label: t('man.ten.ketNoi'), path: '/dashboard/ket-noi' },
