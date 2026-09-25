@@ -120,8 +120,18 @@ Deno.serve(async (req) => {
     });
   }
 
+  /*
+   * HAI KHOÁ TRONG LÚC THAY KHOÁ (thêm 25/09/2026).
+   *
+   * Khoá cũ đã lộ qua ảnh chụp. Đổi secret trước khi đổi URL trên Cas Console thì mọi webhook thật bị
+   * 401 cho tới khi đổi xong — mà INVOICE/TVAN chỉ được Cas gửi lại 3 lần trong 3 phút. Nên trong lúc
+   * chuyển nhận cả hai; thấy sự kiện thật khớp khoá mới thì xoá `CAS_WEBHOOK_KEY_MOI` khỏi vai trò
+   * "mới" bằng cách chép nó sang `CAS_WEBHOOK_KEY` và gỡ biến MOI.
+   * `khoa_khop` ghi "cu"/"moi" — không bao giờ ghi chính khoá.
+   */
   const expected = Deno.env.get("CAS_WEBHOOK_KEY");
-  if (!expected) {
+  const expectedMoi = Deno.env.get("CAS_WEBHOOK_KEY_MOI");
+  if (!expected && !expectedMoi) {
     // Refusing to run is the point. A missing secret must never quietly turn a
     // public endpoint into an unauthenticated one — that is the same shape of
     // bug as the demo-credential defaults that once signed every visitor in.
@@ -131,7 +141,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  if (!safeEqual(presentedKey(new URL(req.url)), expected)) {
+  const presented = presentedKey(new URL(req.url));
+  const khoaKhop = expectedMoi && safeEqual(presented, expectedMoi)
+    ? "moi"
+    : expected && safeEqual(presented, expected)
+      ? "cu"
+      : null;
+  if (!khoaKhop) {
     console.warn("rejected cas webhook: bad or missing key");
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
@@ -172,7 +188,8 @@ Deno.serve(async (req) => {
    * và KHÔNG gửi mã sự kiện nào, nên khoá duy nhất là mã băm của chính nội dung. CSDL từ chối dòng
    * trùng, và lời từ chối đó chính là câu "đã xử lý rồi".
    */
-  const bam = await khoaChongTrung(sach);
+  // Kèm ngày giờ VN: xem vì sao ở `khoaChongTrung`.
+  const bam = await khoaChongTrung(sach, new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10));
   const { data: event, error: loiGhi } = await supabase
     .from("webhook_events")
     .insert({
@@ -184,6 +201,7 @@ Deno.serve(async (req) => {
       subject_type: pb.chuThe?.kieu ?? null,
       subject_id: pb.chuThe?.id ?? null,
       payload_hash: bam,
+      khoa_khop: khoaKhop,
       payload: sach,
       outcome: "received",
     })

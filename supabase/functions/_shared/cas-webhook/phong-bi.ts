@@ -113,8 +113,19 @@ export function jsonChuan(x: unknown): string {
   return JSON.stringify(x ?? null);
 }
 
-export async function khoaChongTrung(payload: unknown): Promise<string> {
-  const b = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(jsonChuan(payload))));
+/**
+ * Khoá chống trùng = băm (NGÀY giờ VN + nội dung).
+ *
+ * VÌ SAO KÈM NGÀY (sửa 25/09/2026, cùng ngày viết): payload Cas không mang thời gian. Băm nội dung
+ * trần thì `GRANT / DEFAULT_UPDATE` cho cùng một grant tuần sau giống hệt tuần này và bị bỏ VĨNH VIỄN
+ * như bản trùng — liên kết đã hỏng không bao giờ được đánh dấu kết nối lại.
+ *
+ * Kèm ngày thì: Cas gửi lại trong cùng ngày → trùng, bỏ (đúng mục đích). Gửi lại vắt qua nửa đêm →
+ * xử lý thêm một lần, vô hại vì GRANT hỏi lại Cas, TRANSACTIONS ghi theo mã tham chiếu. Sự kiện thật
+ * lặp lại ở ngày khác → được xử lý. Xử lý thừa một lần luôn rẻ hơn bỏ sót một lần.
+ */
+export async function khoaChongTrung(payload: unknown, ngay: string): Promise<string> {
+  const b = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ngay}|${jsonChuan(payload)}`)));
   return Array.from(b, (v) => v.toString(16).padStart(2, '0')).join('');
 }
 

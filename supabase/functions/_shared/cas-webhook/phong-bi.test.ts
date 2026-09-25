@@ -87,12 +87,19 @@ describe('khoaChongTrung', () => {
         : x;
     const dao = daoKhoa(MAU.INVOICE);
     expect(jsonChuan(dao)).toBe(jsonChuan(MAU.INVOICE));
-    expect(await khoaChongTrung(dao)).toBe(await khoaChongTrung(MAU.INVOICE));
+    expect(await khoaChongTrung(dao, '2026-09-25')).toBe(await khoaChongTrung(MAU.INVOICE, '2026-09-25'));
   });
 
   it('khác một trường → khác khoá', async () => {
     const khac = { ...MAU.INVOICE, invoice: { ...MAU.INVOICE.invoice, codeOfTaxStatus: 'FAILED' } };
-    expect(await khoaChongTrung(khac)).not.toBe(await khoaChongTrung(MAU.INVOICE));
+    expect(await khoaChongTrung(khac, '2026-09-25')).not.toBe(await khoaChongTrung(MAU.INVOICE, '2026-09-25'));
+  });
+
+  it('cùng sự kiện ở NGÀY KHÁC không bị coi là trùng — payload Cas không có thời gian', async () => {
+    // GRANT DEFAULT_UPDATE cho cùng grant tuần sau giống hệt tuần này. Bỏ nó là liên kết hỏng
+    // không bao giờ được đánh dấu kết nối lại.
+    const suKien = { environment: 'dev', webhookType: 'GRANT', webhookCode: 'DEFAULT_UPDATE', grantId: 'g1', error: null };
+    expect(await khoaChongTrung(suKien, '2026-09-25')).not.toBe(await khoaChongTrung(suKien, '2026-10-02'));
   });
 });
 
