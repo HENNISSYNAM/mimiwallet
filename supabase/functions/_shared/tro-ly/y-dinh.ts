@@ -32,6 +32,8 @@ const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   [/\b(token|cache)\b/, 'token_ai'],
   [/\b(chi phi ai|chi ai|ngan sach ai|dich vu ai|tien ai|openai|gpt|chatgpt|claude|anthropic|gemini|openrouter|llm|ngan sach)\b/, 'chi_phi_ai'],
   [/\b(re hon|model re|mo hinh re|doi model|doi mo hinh|thay model|toi uu model|toi uu mo hinh)\b/, 'model_re_hon'],
+  // Trước "tờ khai": câu hỏi về NHÓM HOẠT ĐỘNG / đủ dữ liệu để khai có chữ "khai" nhưng cần bảng chia nhóm.
+  [/\b(nhom hoat dong|chua phan loai|chua phan nhom|phan nhom|thuoc nhom nao|dong 08|08a|08b|du du lieu de khai|du du lieu khai|san sang khai|la doanh thu gi|doanh thu gi)\b/, 'doanh_thu_theo_hoat_dong'],
   [/\b(to khai|khai thue|nop thue|nghia vu thue|mien thue|thue gtgt|thue tncn|thue thu nhap|thong bao doanh thu|nguong doanh thu|ty le thue|quyet toan|cnkd|mau 01)\b/, 'nghia_vu_thue'],
   [/\b(chung tu|thieu hoa don|chua co hoa don|hoa don dau vao|hoa don mua vao)\b/, 'thieu_chung_tu'],
   [/\b(qua han|cong no|phai thu|khach no|no tien|chua thu|hoa don ban)\b/, 'hoa_don_qua_han'],

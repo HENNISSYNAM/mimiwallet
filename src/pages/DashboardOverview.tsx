@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { duocHien } from '../../supabase/functions/_shared/minh-hoa.ts';
 import { HangDoiTienVao } from '@/components/tien-vao/HangDoiTienVao';
+import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
@@ -129,6 +130,12 @@ function Empty({ text, cta, onCta }: { text: string; cta?: string; onCta?: () =>
       )}
     </div>
   );
+}
+
+/** Chỉ hiện khi còn doanh thu chưa rõ nhóm — trên Tổng quan không cần nhắc điều đã xong. */
+function PhanLoaiHoatDongChuaRo() {
+  const nam = Number(new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 4));
+  return <PhanLoaiHoatDong nam={nam} anKhiXong />;
 }
 
 export default function DashboardOverview() {
@@ -366,6 +373,8 @@ export default function DashboardOverview() {
 
       {/* Việc số một của màn này (bản chỉ đạo ra mắt): tiền vào nào chưa rõ là gì. */}
       <motion.div variants={fadeUp}><HangDoiTienVao /></motion.div>
+      {/* Doanh thu thuộc nhóm hoạt động nào — tự ẩn khi đã xếp hết hoặc không phải hộ kinh doanh. */}
+      <motion.div variants={fadeUp}><PhanLoaiHoatDongChuaRo /></motion.div>
 
       {/* The one number this screen exists to answer, on its own row.
           Net cash flow, not "balance": no table here stores a bank balance, so

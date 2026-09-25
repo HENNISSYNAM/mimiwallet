@@ -4,6 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import ToKhaiPage from './ToKhaiPage';
 import { CAN_CU, kyGoiY, soanToKhai, suyLuan, type SuKienThue } from '@/lib/heLuat';
 import type { KetQuaPhanTich } from '@/lib/goiToKhai';
+import { chiaTheoHoatDong } from '../../supabase/functions/_shared/doanh-thu/theo-hoat-dong';
+
+/** Mỗi quý một khoản; mọi khoản đã được người dùng xếp vào `nhom` (mặc định) — hoặc chưa ai xếp. */
+function chiaDu(quy: [number, number, number, number], nhom: 'dich_vu' | null = 'dich_vu') {
+  const khoan = quy.map((so_tien, i) => ({ nguon: 'hoa_don' as const, id: `q${i + 1}`, so_tien, ngay: `2026-${String(i * 3 + 1).padStart(2, '0')}-15` })).filter((k) => k.so_tien > 0);
+  return chiaTheoHoatDong('hoa_don', khoan, nhom ? khoan.map((k) => ({ nguon: 'hoa_don' as const, nguon_id: k.id, hoat_dong: nhom })) : []);
+}
 
 /**
  * Dữ liệu trả về được dựng bằng chính hệ luật và bộ soạn tờ khai của sản phẩm, nên test này đỏ
@@ -21,7 +28,8 @@ const HOM_NAY = '2026-10-05';
 const suKien = (p: Partial<SuKienThue> = {}): SuKienThue => ({
   nam: 2026, homNay: HOM_NAY, loai: 'ho_kinh_doanh', doanhThuQuy: [200e6, 200e6, 200e6, 0],
   nguonDoanhThu: 'hoa_don_dien_tu', nhomNganh: ['dich_vu'], kenh: 'dia_diem_co_dinh', phuongPhapTncn: null,
-  batDauKinhDoanh: null, daNopThueTrongNam: null, nganhDacThu: null, doanhThuNamTruoc: null, coQuanHeLienKet: null, ...p,
+  batDauKinhDoanh: null, daNopThueTrongNam: null, nganhDacThu: null, doanhThuNamTruoc: null, coQuanHeLienKet: null,
+  hoatDong: chiaDu((p.doanhThuQuy ?? [200e6, 200e6, 200e6, 0]) as [number, number, number, number]), ...p,
 });
 
 function ketQua(sk: SuKienThue): KetQuaPhanTich {
@@ -257,5 +265,21 @@ describe('Tờ khai thuế — phụ lục giải trình in kèm', () => {
     dung();
     await screen.findByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM');
     expect(screen.queryByText(/Phụ lục: các khoản tiền vào/)).toBeNull();
+  });
+});
+
+/*
+ * 25/09/2026: doanh thu chưa rõ nhóm hoạt động thì KHÔNG xuất — nút khoá, lý do hiện ngay trên nút,
+ * và chỗ xếp nhóm hiện tại chỗ.
+ */
+describe('Tờ khai thuế — chặn khi còn doanh thu chưa rõ nhóm', () => {
+  it('nói số chưa rõ, khoá nút xuất', async () => {
+    const sk = suKien({ hoatDong: chiaDu([200e6, 200e6, 200e6, 0], null) });
+    gia.goi.mockImplementation(async (h: string) => (h === 'phan_tich' ? ketQua(sk) as unknown as Record<string, unknown> : { loai: 'ho_kinh_doanh', nguon: null, tong: 0 }));
+    dung();
+    expect(await screen.findByText('Chưa xuất được tờ khai này')).toBeTruthy();
+    expect(screen.getByText(/600\.000\.000 đồng doanh thu chưa xác định nhóm hoạt động|600 triệu|chưa xác định nhóm hoạt động/)).toBeTruthy();
+    const nut = screen.getByRole('button', { name: /Xuất tờ khai/ }) as HTMLButtonElement;
+    expect(nut.disabled).toBe(true);
   });
 });

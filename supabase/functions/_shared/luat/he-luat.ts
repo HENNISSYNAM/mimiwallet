@@ -20,8 +20,9 @@
  * TT 18/2026, TT 50/2026) và vài nghĩa vụ của doanh nghiệp nhỏ (miễn TNDN, GTGT trực tiếp).
  * Không có quy tắc nào không có căn cứ trong kho. Điều chưa có căn cứ thì nói chưa hỗ trợ.
  *
- * File không import gì: trình duyệt (`src/lib/heLuat.ts`) và Deno cùng đọc.
+ * File không import gì ngoài KIỂU (xoá khi build): trình duyệt (`src/lib/heLuat.ts`) và Deno cùng đọc.
  */
+import type { ChiaHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
 
 // ── Văn bản và căn cứ ───────────────────────────────────────────────────────────
 
@@ -189,6 +190,11 @@ export interface SuKienThue {
   /** Doanh nghiệp: tổng doanh thu trên quyết toán TNDN năm trước. */
   doanhThuNamTruoc: number | null;
   coQuanHeLienKet: boolean | null;
+  /**
+   * Doanh thu của nguồn đang khai, chia theo nhóm hoạt động NGƯỜI đã xác nhận. Thiếu/null = chưa ai
+   * chia, mọi đồng là "chưa rõ nhóm". Xem `doanh-thu/theo-hoat-dong.ts`.
+   */
+  hoatDong?: ChiaHoatDong | null;
 }
 
 // ── Ngưỡng và tỷ lệ (mỗi con số trỏ về căn cứ) ──────────────────────────────────

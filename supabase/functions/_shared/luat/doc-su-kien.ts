@@ -12,6 +12,7 @@
  * minh hoạ (`_shared/minh-hoa.ts`).
  */
 import { docSoLieuDoanhThu } from '../doanh-thu/so-lieu.ts';
+import { chiaTheoHoatDong, khoanTuNhap, type ChiaHoatDong, type PhanLoaiHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
 import {
   chonDoanhThu, HO_SO_TRONG, loaiTuTaiKhoan,
   type DoanhThuDaDoc, type HoSoThue, type LoaiNguoiNop, type NguonDoanhThu, type SuKienThue,
@@ -30,6 +31,8 @@ export interface DoanhThuTheoQuy extends DoanhThuDaDoc {
   can_xem_lai: number;
   /** Khoản tiền vào NGƯỜI DÙNG đã xác nhận không phải doanh thu (Bảng giải trình), đã trừ. */
   da_giai_trinh?: { so: number; tong: number };
+  /** Doanh thu theo nhóm hoạt động từng nguồn. Thiếu = bản cũ, coi như mọi khoản chưa rõ nhóm. */
+  hoat_dong?: { ngan_hang: ChiaHoatDong; hoa_don: ChiaHoatDong | null; phan_loai: PhanLoaiHoatDong[] };
 }
 
 /**
@@ -47,6 +50,7 @@ export async function docDoanhThuQuy(db: Db, companyId: string, nam: number, laD
     co_ket_noi_ngan_hang: s.co_ket_noi_ngan_hang,
     can_xem_lai: s.can_xem_lai,
     da_giai_trinh: { so: s.so_khong_phai_doanh_thu, tong: s.khong_phai_doanh_thu },
+    hoat_dong: s.hoat_dong,
   };
 }
 
@@ -165,6 +169,14 @@ export function dungSuKien(o: {
       loai: o.hoSo.loai_nguoi_nop ?? loaiTuTaiKhoan(o.congTy.account_type),
       doanhThuQuy: chon.quy,
       nguonDoanhThu: chon.nguon,
+      // Nhóm hoạt động của ĐÚNG nguồn đang dùng để khai — không lấy nhóm của nguồn khác.
+      hoatDong: chon.nguon === 'hoa_don_dien_tu'
+        ? o.doanhThu.hoat_dong?.hoa_don ?? null
+        : chon.nguon === 'ngan_hang'
+          ? o.doanhThu.hoat_dong?.ngan_hang ?? null
+          : chon.nguon === 'tu_khai' && chon.quy
+            ? chiaTheoHoatDong('tu_nhap', khoanTuNhap(o.nam, chon.quy), o.doanhThu.hoat_dong?.phan_loai ?? [])
+            : null,
       nhomNganh: o.hoSo.nhom_nganh,
       kenh: o.hoSo.kenh,
       phuongPhapTncn: o.hoSo.phuong_phap_tncn,

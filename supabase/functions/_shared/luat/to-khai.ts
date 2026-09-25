@@ -11,7 +11,13 @@
  * chịu thuế, doanh thu 0%, số thuế được miễn) thì để trống — người dùng hoặc kế toán điền, chứ
  * không điền 0 cho đẹp. Mỗi con số điền vào đều có một dòng trong `cach_tinh` nói nó ra từ đâu.
  *
- * MIMI KHÔNG NỘP THAY. Kết quả là bản nháp để in hoặc chép sang eTax/Cổng dịch vụ công.
+ * DÒNG NGÀNH NHẬN ĐÚNG SỐ ĐÃ XÁC NHẬN NHÓM HOẠT ĐỘNG (sửa 25/09/2026). Trước đây: hồ sơ thuế có
+ * đúng một nhóm ngành → đổ TOÀN BỘ doanh thu vào dòng đó (công ty demo: 954 triệu nằm trọn ở [08a]).
+ * Ngành đăng ký chỉ là ngành được phép làm; từng khoản doanh thu thuộc nhóm nào phải có người xác
+ * nhận (`doanh-thu/theo-hoat-dong.ts`). Phần chưa rõ nhóm KHÔNG được chia đều hay dồn vào đâu — nó
+ * đứng riêng, và làm `san_sang` = `bi_chan`: tờ khai vẫn hiện để xem, nhưng không xuất được.
+ *
+ * MIMI KHÔNG TỰ NỘP. Kết quả là bản nháp; nộp (qua TVAN hay trên cổng) luôn do người bấm xác nhận.
  *
  * Hàm thuần, test bằng vitest.
  */
@@ -20,6 +26,8 @@ import {
   tienVN, TY_LE_GTGT, TY_LE_TNCN,
   type NhomNganh, type SuKienThue, type SuyLuan,
 } from './he-luat.ts';
+import { HOAT_DONG, tienTrongKy, type ChiaHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
+import { CHAN_KHAI_THUONG, TEN_TRANG_THAI, type TrangThaiDoanhNghiep } from '../doanh-nghiep/trang-thai.ts';
 
 export type Mau = '01/TKN-CNKD' | '01/CNKD';
 
@@ -44,6 +52,32 @@ export interface DongToKhai {
   cap: 0 | 1;
   o: Record<string, number | null>;
   la_tong?: boolean;
+  /** Con số trên dòng này gồm những khoản nào — bấm vào là thấy. Tối đa 500 mã; `so_khoan` là số thật. */
+  nguon_khoan?: { nguon: string; so_khoan: number; ids: string[] };
+}
+
+/** Tờ khai đã đủ căn cứ để xuất/nộp chưa. */
+export type TrangThaiSanSang = 'san_sang' | 'can_xem' | 'bi_chan';
+
+export interface VuongMac {
+  ma: 'CHUA_RO_HOAT_DONG' | 'THIEU_MST' | 'TRANG_THAI_DOANH_NGHIEP' | 'KY_CHUA_KET_THUC' | 'THIEU_TY_LE' | 'NHIEU_NHOM_TNCN';
+  /** true = chặn xuất; false = chỉ cần người xem lại. */
+  chan: boolean;
+  cau: string;
+  so_tien?: number;
+  so_khoan?: number;
+  /** Việc người dùng làm để gỡ — giao diện dịch thành nút. */
+  hanh_dong?: 'phan_loai_hoat_dong' | 'sua_ho_so' | 'cho_het_ky' | 'hoi_ke_toan';
+  nhom_goi_y?: NhomNganh | null;
+}
+
+export interface SanSang {
+  trang_thai: TrangThaiSanSang;
+  vuong: VuongMac[];
+}
+
+export function ketLuanSanSang(vuong: VuongMac[]): SanSang {
+  return { trang_thai: vuong.some((v) => v.chan) ? 'bi_chan' : vuong.length ? 'can_xem' : 'san_sang', vuong };
 }
 
 export interface ChiTieuDau {
@@ -71,6 +105,7 @@ export interface ToKhai {
   cach_tinh: string[];
   canh_bao: string[];
   can_cu: string[];
+  san_sang: SanSang;
 }
 
 export type KetQuaSoan =
@@ -159,6 +194,43 @@ function timDong(ds: DongToKhai[], mau: Mau, tmdt: boolean, n: NhomNganh): DongT
   return d;
 }
 
+/**
+ * Điền dòng ngành theo nhóm hoạt động người đã xác nhận, cho các quý của kỳ. Trả phần chưa rõ nhóm.
+ * Không bao giờ chia phần chưa rõ vào dòng nào.
+ */
+function dienTheoHoatDong(
+  dong: DongToKhai[], mau: Mau, tmdt: boolean, chia: ChiaHoatDong | null | undefined, quy: number[], tongKy: number,
+): { da_dien: [NhomNganh, number][]; chua_ro: { so_tien: number; so_khoan: number } } {
+  const daDien: [NhomNganh, number][] = [];
+  if (!chia) return { da_dien: daDien, chua_ro: { so_tien: tongKy, so_khoan: 0 } };
+  for (const n of HOAT_DONG) {
+    const o = chia.nhom[n];
+    const tien = tienTrongKy(o, quy);
+    if (tien <= 0) continue;
+    const d = timDong(dong, mau, tmdt, n);
+    d.o.tong_dt = tien;
+    d.nguon_khoan = { nguon: chia.nguon, so_khoan: o.so_khoan, ids: o.ids.slice(0, 500) };
+    daDien.push([n, tien]);
+  }
+  const cr = chia.nhom.chua_ro;
+  // Kỳ lấy từ đúng các quý đã chia; phần lệch (nếu có) cũng là phần chưa ai chia.
+  const daChia = daDien.reduce((s, [, x]) => s + x, 0);
+  return { da_dien: daDien, chua_ro: { so_tien: Math.max(0, tongKy - daChia), so_khoan: cr.so_khoan } };
+}
+
+function vuongChuaRo(chuaRo: { so_tien: number; so_khoan: number }, nganhDangKy: NhomNganh[]): VuongMac {
+  const goiY = nganhDangKy.length === 1 ? nganhDangKy[0] : null;
+  return {
+    ma: 'CHUA_RO_HOAT_DONG',
+    chan: true,
+    cau: `${tienVN(chuaRo.so_tien)} doanh thu chưa xác định nhóm hoạt động${chuaRo.so_khoan ? ` (${chuaRo.so_khoan} khoản)` : ''}. Mỗi nhóm một dòng và một tỷ lệ thuế riêng, nên MIMI không tự xếp.`,
+    so_tien: chuaRo.so_tien,
+    so_khoan: chuaRo.so_khoan,
+    hanh_dong: 'phan_loai_hoat_dong',
+    nhom_goi_y: goiY,
+  };
+}
+
 const chiTieuChung = (ten: string | null, mst: string | null): ChiTieuDau[] => [
   { ma: '[02]', nhan: 'Lần đầu', gia_tri: '✔' },
   { ma: '[03]', nhan: 'Bổ sung lần thứ', gia_tri: null },
@@ -187,6 +259,29 @@ const AP_DUNG_TKN =
   '(Áp dụng đối với hộ kinh doanh, cá nhân kinh doanh có doanh thu năm từ 01 tỷ đồng trở xuống; hộ kinh doanh, cá nhân kinh doanh nộp thuế TNCN theo phương pháp thuế suất nhân với doanh thu tính thuế đề nghị hoàn thuế; cá nhân trực tiếp ký hợp đồng làm đại lý xổ số, bảo hiểm, bán hàng đa cấp, hoạt động kinh doanh khác chưa khấu trừ, nộp thuế trong năm)';
 
 export function soanToKhai(
+  sk: SuKienThue,
+  sl: SuyLuan,
+  hoSo: { ten: string | null; mst: string | null },
+  ky: KyToKhai,
+  boiCanh: { trangThai?: TrangThaiDoanhNghiep | null } = {},
+): KetQuaSoan {
+  const kq = soanToKhaiNoi(sk, sl, hoSo, ky);
+  if (!kq.ok) return kq;
+  const vuong = [...kq.to_khai.san_sang.vuong];
+  if (!hoSo.mst) vuong.push({ ma: 'THIEU_MST', chan: true, cau: 'Hồ sơ chưa có mã số thuế — tờ khai thiếu mã số thuế thì không nộp được.', hanh_dong: 'sua_ho_so' });
+  const tt = boiCanh.trangThai ?? null;
+  if (tt && CHAN_KHAI_THUONG.includes(tt)) {
+    vuong.push({
+      ma: 'TRANG_THAI_DOANH_NGHIEP',
+      chan: true,
+      cau: `Cơ quan thuế ghi trạng thái: ${TEN_TRANG_THAI[tt]}. Tờ khai kỳ thường có thể không đúng thủ tục — kiểm với cơ quan thuế trước.`,
+      hanh_dong: 'hoi_ke_toan',
+    });
+  }
+  return { ok: true, to_khai: { ...kq.to_khai, san_sang: ketLuanSanSang(vuong) } };
+}
+
+function soanToKhaiNoi(
   sk: SuKienThue,
   sl: SuyLuan,
   hoSo: { ten: string | null; mst: string | null },
@@ -244,15 +339,12 @@ function soanTKN(
 
   const tong = dong.find((d) => d.ma === '[11]') as DongToKhai;
   tong.o.tong_dt = dt;
-  if (sk.nhomNganh.length === 1) {
-    const n = sk.nhomNganh[0];
-    timDong(dong, '01/TKN-CNKD', tmdt, n).o.tong_dt = dt;
-    cachTinh.push(`Dòng ${TEN_NHOM_NGANH[n]}: ${tienVN(dt)} — toàn bộ doanh thu của kỳ, vì hồ sơ thuế của bạn chỉ có một nhóm ngành.`);
-  } else if (sk.nhomNganh.length === 0) {
-    canhBao.push('Hồ sơ thuế chưa ghi nhóm ngành, nên MIMI chỉ điền dòng Tổng cộng. Chọn nhóm ngành để MIMI điền đúng dòng.');
-  } else {
-    canhBao.push('Bạn có nhiều nhóm ngành: MIMI không tự chia doanh thu cho từng dòng. Tự tách doanh thu theo ngành rồi điền vào từng dòng; dòng Tổng cộng đã có sẵn.');
+  const vuong: VuongMac[] = [];
+  const chia = dienTheoHoatDong(dong, '01/TKN-CNKD', tmdt, sk.hoatDong, nuaDau ? [1, 2] : [1, 2, 3, 4], dt);
+  for (const [n, tien] of chia.da_dien) {
+    cachTinh.push(`Dòng ${TEN_NHOM_NGANH[n]}: ${tienVN(tien)} — các khoản bạn đã xác nhận thuộc nhóm này.`);
   }
+  if (chia.chua_ro.so_tien > 0) vuong.push(vuongChuaRo(chia.chua_ro, sk.nhomNganh));
   cachTinh.push(
     `[11] Tổng cộng: ${tienVN(dt)} = ${nuaDau ? 'doanh thu quý 1 + quý 2' : 'doanh thu 4 quý'} (${dtQuy.map((x) => tienVN(x)).join(' + ')})${sk.nguonDoanhThu ? `, ${TEN_NGUON_DOANH_THU[sk.nguonDoanhThu]}` : ''}.`,
   );
@@ -296,6 +388,7 @@ function soanTKN(
       cach_tinh: cachTinh,
       canh_bao: canhBao,
       can_cu: [...new Set(canCu)],
+      san_sang: ketLuanSanSang(vuong),
     },
   };
 }
@@ -328,9 +421,6 @@ function soanCNKD(
       can_cu: ['nd68_d8_k1a_vuot', 'nd141_d1_k1'],
     };
   }
-  if (!sk.nhomNganh.length) {
-    return { ok: false, ly_do: 'Chưa biết nhóm ngành: không có nhóm ngành thì không có tỷ lệ thuế để tính. Chọn nhóm ngành trong hồ sơ thuế.', can_cu: ['luat48_d12_k2b1', 'luat109_d7_k3b'] };
-  }
   const pp = sl.phuong_phap;
   if (!pp) {
     return {
@@ -351,59 +441,82 @@ function soanCNKD(
   ];
   if (pp === 'thu_nhap') canCu.push('nd68_d10_k2b', 'tt18_d4_k1c');
 
-  // Tỷ lệ GTGT: nhiều ngành mà không tách được doanh thu thì áp tỷ lệ cao nhất (TT 69/2025 Điều 5 khoản 2).
-  const nhieuNganh = sk.nhomNganh.length > 1;
-  const nganhGtgt = [...sk.nhomNganh].sort((a, b) => (TY_LE_GTGT[b].ty_le ?? -1) - (TY_LE_GTGT[a].ty_le ?? -1))[0];
-  const nganhChinh = nhieuNganh ? nganhGtgt : sk.nhomNganh[0];
-  const tyGtgt = TY_LE_GTGT[nganhChinh];
-  const tyTncn = TY_LE_TNCN[nganhChinh];
-  canCu.push(...tyGtgt.can_cu, ...tyTncn.can_cu);
-  if (nhieuNganh) canCu.push('tt69_d5_k2');
+  const vuong: VuongMac[] = [];
+  const chia = dienTheoHoatDong(dong, '01/CNKD', tmdt, sk.hoatDong, [ky.quy], dt);
+  const coChuaRo = chia.chua_ro.so_tien > 0;
+  if (coChuaRo) vuong.push(vuongChuaRo(chia.chua_ro, sk.nhomNganh));
 
+  // Mức trừ 01 tỷ đồng là của cả năm, chia theo quý (xem cach_tinh [16]).
   const duocTru = Math.max(0, Math.min(dt, NGUONG_DOANH_THU - luyKeTruoc));
   const dtTinhThue = Math.max(0, dt - duocTru);
-  const thueGtgt = tyGtgt.ty_le === null ? null : Math.round(dt * tyGtgt.ty_le);
-  const thueTncn = nhieuNganh ? null : Math.round(dtTinhThue * tyTncn.ty_le);
 
-  const d = timDong(dong, '01/CNKD', tmdt, nganhChinh);
-  d.o.tong_dt = dt;
-  d.o.thue_gtgt = thueGtgt;
-  d.o.dt_chiu_tncn = dt;
-  d.o.dt_duoc_tru = duocTru;
-  d.o.thue_tncn = thueTncn;
+  // GTGT: mỗi dòng nhóm hoạt động nhân tỷ lệ của CHÍNH nhóm đó — không còn áp "tỷ lệ cao nhất cho
+  // tất cả" khi doanh thu đã tách được.
+  let thueGtgt: number | null = 0;
+  for (const [n, tien] of chia.da_dien) {
+    const ty = TY_LE_GTGT[n];
+    canCu.push(...ty.can_cu);
+    const d = timDong(dong, '01/CNKD', tmdt, n);
+    d.o.thue_gtgt = ty.ty_le === null ? null : Math.round(tien * ty.ty_le);
+    d.o.dt_chiu_tncn = tien;
+    if (d.o.thue_gtgt === null) {
+      thueGtgt = null;
+      vuong.push({ ma: 'THIEU_TY_LE', chan: true, cau: `Kho văn bản MIMI đã đối chiếu chưa có tỷ lệ GTGT riêng cho nhóm ${TEN_NHOM_NGANH[n]}.`, hanh_dong: 'hoi_ke_toan' });
+    } else if (thueGtgt !== null) thueGtgt += d.o.thue_gtgt;
+  }
+  // Còn phần chưa rõ nhóm thì tổng thuế chưa biết — để trống, không in một tổng thiếu.
+  if (coChuaRo) thueGtgt = null;
 
+  // TNCN: mức trừ theo năm không có quy tắc chia cho từng nhóm → chỉ tính khi CẢ quý thuộc một nhóm.
+  const motNhom = !coChuaRo && chia.da_dien.length === 1 ? chia.da_dien[0][0] : null;
+  const tyTncn = motNhom ? TY_LE_TNCN[motNhom] : null;
+  if (tyTncn) canCu.push(...tyTncn.can_cu);
+  const thueTncn = tyTncn ? Math.round(dtTinhThue * tyTncn.ty_le) : null;
+  if (motNhom) {
+    const d = timDong(dong, '01/CNKD', tmdt, motNhom);
+    d.o.dt_duoc_tru = duocTru;
+    d.o.thue_tncn = thueTncn;
+  } else if (!coChuaRo && chia.da_dien.length > 1) {
+    vuong.push({ ma: 'NHIEU_NHOM_TNCN', chan: false, cau: 'Doanh thu quý thuộc nhiều nhóm, mỗi nhóm một thuế suất TNCN; văn bản trong kho không nói cách chia mức trừ 01 tỷ cho từng nhóm. MIMI để trống [16], [17] — hỏi kế toán.', hanh_dong: 'hoi_ke_toan' });
+  }
+
+  // Dòng Tổng cộng [18] và Số thuế còn phải nộp [20]: tổng doanh thu là số thật của quý (kể cả phần
+  // chưa rõ nhóm); số thuế chỉ điền khi đã tính đủ.
   const tong = dong.find((x) => x.ma === '[18]') as DongToKhai;
   const conPhaiNop = dong.find((x) => x.ma === '[20]') as DongToKhai;
   tong.o.tong_dt = dt;
   tong.o.thue_gtgt = thueGtgt;
   tong.o.dt_chiu_tncn = dt;
-  tong.o.dt_duoc_tru = duocTru;
+  tong.o.dt_duoc_tru = motNhom ? duocTru : null;
   tong.o.thue_tncn = thueTncn;
   conPhaiNop.o.thue_gtgt = thueGtgt;
   conPhaiNop.o.thue_tncn = thueTncn;
 
   const pct = (x: number) => `${String(Math.round(x * 1000) / 10).replace('.', ',')}%`;
   cachTinh.push(`[11] Tổng doanh thu quý ${ky.quy}: ${tienVN(dt)}${sk.nguonDoanhThu ? ` — ${TEN_NGUON_DOANH_THU[sk.nguonDoanhThu]}` : ''}.`);
+  for (const [n, tien] of chia.da_dien) {
+    const ty = TY_LE_GTGT[n].ty_le;
+    cachTinh.push(ty === null
+      ? `Dòng ${TEN_NHOM_NGANH[n]}: ${tienVN(tien)}; thuế GTGT để trống — chưa có tỷ lệ % cho nhóm này trong kho văn bản.`
+      : `Dòng ${TEN_NHOM_NGANH[n]}: ${tienVN(tien)} × ${pct(ty)} = ${tienVN(Math.round(tien * ty))} thuế GTGT.`);
+  }
   cachTinh.push(
     thueGtgt === null
-      ? `[14] Số thuế GTGT: để trống — kho văn bản MIMI đã đối chiếu chưa có tỷ lệ % riêng cho nhóm ${TEN_NHOM_NGANH[nganhChinh]}. Hỏi cơ quan thuế hoặc kế toán.`
-      : `[14] Số thuế GTGT = ${tienVN(dt)} × ${pct(tyGtgt.ty_le as number)} = ${tienVN(thueGtgt)} (tỷ lệ % theo nhóm ngành ${TEN_NHOM_NGANH[nganhChinh]}).`,
+      ? '[14] Tổng thuế GTGT: để trống — còn doanh thu chưa rõ nhóm hoặc nhóm chưa có tỷ lệ.'
+      : `[14] Tổng thuế GTGT = cộng các dòng nhóm = ${tienVN(thueGtgt)}.`,
   );
   cachTinh.push(
     `[16] Doanh thu được trừ: ${tienVN(duocTru)} — mức trừ 01 tỷ đồng cho cả năm, các quý trước đã dùng ${tienVN(Math.min(luyKeTruoc, NGUONG_DOANH_THU))}. Đây là cách MIMI chia mức trừ theo quý từ quy định mức trừ theo năm; kế toán có thể chia khác, kiểm lại.`,
   );
   cachTinh.push(
-    thueTncn === null
-      ? '[17] Số thuế TNCN: để trống — bạn có nhiều nhóm ngành, mỗi nhóm một thuế suất, MIMI không tự chia doanh thu.'
+    thueTncn === null || !tyTncn
+      ? '[17] Số thuế TNCN: để trống — chỉ tính được khi cả quý thuộc một nhóm hoạt động đã xác nhận.'
       : `[17] Số thuế TNCN = (${tienVN(dt)} − ${tienVN(duocTru)}) × ${pct(tyTncn.ty_le)} = ${tienVN(thueTncn)}.`,
   );
   cachTinh.push('[12], [13], [19] để trống: MIMI không biết phần doanh thu không chịu thuế, doanh thu 0% và số thuế được miễn của bạn.');
 
   if (ky.quy === quyVuot) {
     canhBao.push(`Quý ${ky.quy} là quý doanh thu lũy kế vượt 01 tỷ đồng. Văn bản trong kho nói khai thuế "kể từ quý phát sinh doanh thu trên 01 tỷ" nhưng không nói rõ thuế GTGT có tính trên doanh thu các quý trước đó hay không — hỏi cơ quan thuế trước khi nộp.`);
-  }
-  if (nhieuNganh) {
-    canhBao.push(`Nhiều nhóm ngành: MIMI áp tỷ lệ GTGT cao nhất (${TEN_NHOM_NGANH[nganhChinh]}) cho toàn bộ doanh thu, đúng cách xử lý khi không tách được doanh thu theo từng tỷ lệ. Tách được thì khai theo từng mức tỷ lệ sẽ có lợi hơn.`);
   }
   if (pp === 'thu_nhap') {
     canhBao.push(`Bạn tính TNCN trên thu nhập: số ở [17] là tạm nộp theo tỷ lệ trên doanh thu quý; cuối năm quyết toán trên mẫu 02/CNKD-TNCN-QTT, hạn 31/03/${ky.nam + 1}.`);
@@ -441,6 +554,7 @@ function soanCNKD(
       cach_tinh: cachTinh,
       canh_bao: canhBao,
       can_cu: [...new Set(canCu)],
+      san_sang: ketLuanSanSang(vuong),
     },
   };
 }

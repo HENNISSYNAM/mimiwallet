@@ -25,6 +25,7 @@ import { taiKhoanCuaToi } from '../ledger/tai-khoan.ts';
 import { locMinhHoa } from '../minh-hoa.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { docHet } from '../doc-het.ts';
+import { chiaTheoHoatDong, type ChiaHoatDong, type KhoanDoanhThu, type PhanLoaiHoatDong } from './theo-hoat-dong.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -96,6 +97,29 @@ export function tinhTienVao(nam: number, giaoDich: GiaoDichTinh[], xacNhan: XacN
   return s;
 }
 
+/**
+ * Các khoản tiền vào ĐANG TÍNH là doanh thu (cùng bộ lọc với `tinhTienVao`: bỏ nội bộ, bỏ khoản người
+ * đã xác nhận không phải doanh thu). Đây là thứ được chia theo nhóm hoạt động.
+ */
+export function khoanDoanhThuNganHang(nam: number, giaoDich: GiaoDichTinh[], xacNhan: XacNhanTinh[], noiBoIds: Set<string>): KhoanDoanhThu[] {
+  const loai = new Set(xacNhan.filter((x) => x.revenue_effect === 'exclude').map((x) => String(x.transaction_id)));
+  const tienTo = String(nam);
+  return giaoDich
+    .filter((t) => chieuTien(t) === 'vao' && String(t.transaction_date).startsWith(tienTo))
+    .filter((t) => !noiBoIds.has(String(t.id)) && !loai.has(String(t.id)))
+    .map((t) => ({ nguon: 'giao_dich' as const, id: String(t.id), so_tien: doLonTien(t), ngay: String(t.transaction_date).slice(0, 10) }));
+}
+
+/** Hoá đơn còn hiệu lực, thành từng khoản để chia theo nhóm hoạt động. */
+export function khoanHoaDon(rows: Row[]): KhoanDoanhThu[] {
+  return rows
+    .filter((r) => r.direction === 'issued' && (r.invoice_status === null || r.invoice_status === undefined || Number(r.invoice_status) === 1))
+    .map((r) => {
+      const p = Number(r.issuance_period ?? 0);
+      return { nguon: 'hoa_don' as const, id: String(r.id), so_tien: Number(r.total_amount ?? 0), ngay: `${Math.floor(p / 100)}-${String(p % 100).padStart(2, '0')}-15` };
+    });
+}
+
 /** Hoá đơn đang có hiệu lực mới là doanh thu; hoá đơn huỷ, thay thế, điều chỉnh thì không. */
 export function tinhHoaDon(rows: Row[]): { tong: number; theo_quy: Bon; so: number } | null {
   const hieuLuc = rows.filter(
@@ -148,16 +172,21 @@ export interface SoLieuDoanhThu extends SoLieuTienVao {
   /** Cặp chuyển nội bộ MIMI đoán (không chắc chắn) và đã trừ khỏi doanh thu. */
   can_xem_lai: number;
   co_ket_noi_ngan_hang: boolean;
+  /** Doanh thu theo nhóm hoạt động, từng nguồn — xem `theo-hoat-dong.ts`. */
+  hoat_dong: { ngan_hang: ChiaHoatDong; hoa_don: ChiaHoatDong | null; phan_loai: PhanLoaiHoatDong[] };
 }
 
 export async function docSoLieuDoanhThu(db: Db, companyId: string, nam: number, laDemo = false): Promise<SoLieuDoanhThu> {
-  const [nguon, hoaDon] = await Promise.all([
+  const [nguon, hoaDon, phanLoai] = await Promise.all([
     docNguonTienVao(db, companyId, nam, laDemo),
     docHet((a, b) => db.from('gdt_invoices')
-      .select('direction, total_amount, invoice_status, issuance_period')
+      .select('id, direction, total_amount, invoice_status, issuance_period')
       .eq('company_id', companyId)
       .gte('issuance_period', nam * 100 + 1).lte('issuance_period', nam * 100 + 12)
       .order('id', { ascending: true }).range(a, b), 'hoá đơn điện tử'),
+    docHet((a, b) => db.from('phan_loai_hoat_dong')
+      .select('nguon, nguon_id, hoat_dong')
+      .eq('company_id', companyId).order('id', { ascending: true }).range(a, b), 'nhóm hoạt động'),
   ]);
   const tv = tinhTienVao(nam, nguon.giao_dich as GiaoDichTinh[], nguon.xac_nhan as XacNhanTinh[], nguon.noi_bo.internalIds);
   const hd = tinhHoaDon(hoaDon);
@@ -170,5 +199,12 @@ export async function docSoLieuDoanhThu(db: Db, companyId: string, nam: number, 
     so_giao_dich_noi_bo: nguon.noi_bo.internalIds.size,
     can_xem_lai: nguon.noi_bo.needsReview.length,
     co_ket_noi_ngan_hang: nguon.tai_khoan.length > 0,
+    hoat_dong: {
+      ngan_hang: chiaTheoHoatDong('giao_dich',
+        khoanDoanhThuNganHang(nam, nguon.giao_dich as GiaoDichTinh[], nguon.xac_nhan as XacNhanTinh[], nguon.noi_bo.internalIds),
+        phanLoai as PhanLoaiHoatDong[]),
+      hoa_don: hd ? chiaTheoHoatDong('hoa_don', khoanHoaDon(hoaDon), phanLoai as PhanLoaiHoatDong[]) : null,
+      phan_loai: phanLoai as PhanLoaiHoatDong[],
+    },
   };
 }

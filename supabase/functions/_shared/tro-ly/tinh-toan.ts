@@ -14,7 +14,8 @@ import type { BangChung, DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, LoaiB
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { CAN_DO_TRUOC_KHI_DOI, chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
-import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, type SuKienThue } from '../luat/he-luat.ts';
+import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH, type SuKienThue } from '../luat/he-luat.ts';
+import { HOAT_DONG } from '../doanh-thu/theo-hoat-dong.ts';
 import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
@@ -1292,6 +1293,52 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
   });
 }
 
+/**
+ * "951 triệu này là doanh thu gì? Tôi đủ dữ liệu để khai chưa?" — đọc thẳng bộ chia theo nhóm hoạt
+ * động (`doanh-thu/theo-hoat-dong.ts`), không tính lại. Trả lời theo thứ tự: con số → căn cứ → còn
+ * thiếu gì → việc cần làm. Phần chưa rõ nhóm luôn được gọi tên, không bị gộp vào ngành đăng ký.
+ */
+export function doanhThuTheoHoatDong(d: DuLieu): KetQuaNangLuc {
+  const chia = d.thue?.suKien.hoatDong ?? null;
+  if (!d.thue || !chia || chia.tong <= 0) {
+    return kq('doanh_thu_theo_hoat_dong', 'chung_tu', 'Chưa có doanh thu năm nay để chia theo nhóm hoạt động. Kết nối ngân hàng, Tổng cục Thuế, hoặc nhập doanh thu ở Tờ khai thuế.', {
+      trang: [T.toKhai],
+    });
+  }
+  const sk = d.thue.suKien;
+  const cr = chia.nhom.chua_ro;
+  const da = chia.tong - cr.so_tien;
+  const nguon = TEN_NGUON_DOANH_THU[sk.nguonDoanhThu ?? 'tu_khai'];
+  const dong = HOAT_DONG.filter((n) => chia.nhom[n].so_tien > 0)
+    .map((n) => [TEN_NHOM_NGANH[n], chia.nhom[n].so_tien, chia.nhom[n].so_khoan] as O[]);
+  if (cr.so_tien > 0) dong.push(['Chưa xác định nhóm', cr.so_tien, cr.so_khoan]);
+
+  const the: The[] = [{
+    loai: 'bang', tieu_de: `Doanh thu năm ${sk.nam} theo nhóm hoạt động`,
+    cot: [{ nhan: 'Nhóm', don_vi: 'chu' }, { nhan: 'Số tiền', don_vi: 'vnd' }, { nhan: 'Số khoản', don_vi: 'so' }],
+    dong,
+    con_lai: 0,
+  }];
+  the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Nguồn: ${nguon}. Nhóm của từng khoản do bạn xác nhận; ngành đăng ký trong hồ sơ thuế chỉ dùng làm gợi ý.` });
+
+  const tomTat = cr.so_tien > 0
+    ? `${vnd(chia.tong)} là doanh thu năm ${sk.nam} (${nguon}). ${vnd(da)} đã xác định nhóm hoạt động; ${vnd(cr.so_tien)} (${cr.so_khoan} khoản) chưa xác định. MIMI chưa hoàn thiện được tờ khai vì nhóm hoạt động quyết định dòng và tỷ lệ thuế — MIMI không tự xếp phần chưa rõ vào ngành đăng ký.`
+    : `${vnd(chia.tong)} doanh thu năm ${sk.nam} (${nguon}) đã có nhóm hoạt động đủ cho mọi khoản. Phần nhóm hoạt động không còn chặn tờ khai.`;
+
+  return kq('doanh_thu_theo_hoat_dong', 'chung_tu', tomTat, {
+    the,
+    de_xuat: cr.so_tien > 0 ? [{
+      khoa: 'xep_nhom_hoat_dong',
+      loai: 'mo_trang',
+      nhan: `Xếp nhóm ${cr.so_khoan} khoản`,
+      mo_ta: 'Mở Tờ khai thuế: xếp từng khoản, hoặc một lần cho mọi khoản nếu bạn chỉ làm một việc.',
+      tham_so: { duong_dan: '/dashboard/to-khai' },
+    }] : [],
+    nguon: [N.giaoDich, N.khoLuat],
+    trang: [T.toKhai],
+  });
+}
+
 // ── Danh mục năng lực ────────────────────────────────────────────────────────
 
 export interface NangLuc {
@@ -1742,6 +1789,7 @@ export const NANG_LUC: Record<string, NangLuc> = {
   model_re_hon: { nhom: 'ai_token', can: ['token_ai', 'bang_gia'], chay: modelReHon, mo_ta: 'Chênh giá token nếu dùng model giá thấp hơn cùng hãng, theo số token thật và bảng giá OpenRouter. Chỉ là chênh giá — chưa đo chất lượng, độ trễ, chi phí gọi lại, nên không phải đề xuất đổi.' },
   bao_cao_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich'], chay: baoCaoTaiChinh, mo_ta: 'Tổng hợp dòng tiền ngân hàng theo tháng: tiền vào, tiền ra, chênh lệch. Không phải doanh thu, lợi nhuận hay báo cáo tài chính — MIMI chưa có sổ kế toán.' },
   phan_tich_tiet_kiem: { nhom: 'bao_cao', can: ['giao_dich', 'token_ai', 'bang_gia'], chay: phanTichTietKiem, mo_ta: 'Chỗ có thể tiết kiệm: khoản chi nghi trả trùng, tiền bớt được nếu đổi model AI.' },
+  doanh_thu_theo_hoat_dong: { nhom: 'chung_tu', can: ['thue'], chay: doanhThuTheoHoatDong, mo_ta: 'Doanh thu năm nay chia theo nhóm hoạt động (phân phối hàng hoá, dịch vụ, cho thuê…) mà người dùng đã xác nhận, phần nào chưa rõ nhóm, và vì sao phần chưa rõ chặn tờ khai. Dùng cho câu hỏi "doanh thu này là gì", "sao cho hết vào 08a", "đủ dữ liệu để khai chưa".' },
   nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },
   tra_cuu_luat: { nhom: 'chung_tu', can: ['kho_luat'], chay: traCuuLuat, mo_ta: 'Tìm và trích nguyên văn đoạn Luật, Nghị định, Thông tư trong kho Công báo cho một câu hỏi pháp lý chung (không phải nghĩa vụ thuế của chính công ty). Chỉ tham khảo, kèm ngày ban hành và hiệu lực.' },
   giao_dich_bat_thuong: { nhom: 'ngan_hang', can: ['bat_thuong'], chay: giaoDichBatThuong, mo_ta: 'Khoản chi 30 ngày qua có dấu hiệu bất thường hoặc giống kịch bản lừa đảo: người nhận đổi số tài khoản, người nhận mới với số tiền lớn, vượt xa mức thường trả, nhiều khoản trong một ngày, nội dung giả danh cơ quan nhà nước.' },

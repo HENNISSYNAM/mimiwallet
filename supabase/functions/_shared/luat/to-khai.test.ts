@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { suyLuan, type SuKienThue } from './he-luat';
 import { kyGoiY, soanToKhai, type KyToKhai, type ToKhai } from './to-khai';
+import { chiaTheoHoatDong, type HoatDong, type KhoanDoanhThu, type PhanLoaiHoatDong } from '../doanh-thu/theo-hoat-dong';
+
+/**
+ * Doanh thu đã chia theo nhóm hoạt động, dựng như dữ liệu thật: mỗi quý một khoản cho mỗi nhóm.
+ * `chua_ro` = khoản không ai xác nhận nhóm.
+ */
+function chia(theoNhom: Partial<Record<HoatDong | 'chua_ro', [number, number, number, number]>>) {
+  const khoan: KhoanDoanhThu[] = [];
+  const pl: PhanLoaiHoatDong[] = [];
+  for (const [n, quy] of Object.entries(theoNhom)) {
+    quy!.forEach((tien, i) => {
+      if (!tien) return;
+      const id = `${n}-q${i + 1}`;
+      khoan.push({ nguon: 'hoa_don', id, so_tien: tien, ngay: `2026-${String(i * 3 + 1).padStart(2, '0')}-15` });
+      if (n !== 'chua_ro') pl.push({ nguon: 'hoa_don', nguon_id: id, hoat_dong: n as HoatDong });
+    });
+  }
+  return chiaTheoHoatDong('hoa_don', khoan, pl);
+}
 
 /** Mọi con số dưới đây là đầu vào của test, không đi vào sản phẩm. */
 const HOM_NAY = '2027-01-05';
@@ -31,8 +50,23 @@ describe('mẫu 01/TKN-CNKD — thông báo doanh thu năm', () => {
     expect(tk.danh_dau[0]).toEqual({ nhan: 'Hộ kinh doanh, cá nhân kinh doanh có doanh thu năm từ 01 tỷ đồng trở xuống', chon: true });
   });
 
+  it('ngành đăng ký KHÔNG tự thành nhóm hoạt động: chưa ai xác nhận thì dòng ngành để trống và chặn xuất', () => {
+    // Hồ sơ chỉ có "dịch vụ" — trước 25/09/2026 MIMI đổ cả 800 triệu vào [08b].
+    expect(dong(tk, '[08b]')?.o.tong_dt).toBeNull();
+    expect(dong(tk, '[11]')?.o.tong_dt).toBe(800e6);
+    expect(tk.san_sang.trang_thai).toBe('bi_chan');
+    const v = tk.san_sang.vuong.find((x) => x.ma === 'CHUA_RO_HOAT_DONG');
+    expect(v?.so_tien).toBe(800e6);
+    // Ngành đăng ký chỉ dùng làm GỢI Ý cho nút xác nhận một lần.
+    expect(v?.nhom_goi_y).toBe('dich_vu');
+  });
+
   it('điền doanh thu vào dòng đúng nhóm ngành và dòng tổng cộng', () => {
+    const r2 = soan({ ...s, hoatDong: chia({ dich_vu: [200e6, 200e6, 200e6, 200e6] }) }, { loai: 'nam', nam: 2026 });
+    const tk = (r2 as { ok: true; to_khai: ToKhai }).to_khai;
+    expect(tk.san_sang.trang_thai).toBe('san_sang');
     expect(dong(tk, '[08b]')?.o.tong_dt).toBe(800e6);
+    expect(dong(tk, '[08b]')?.nguon_khoan?.so_khoan).toBe(4);
     expect(dong(tk, '[11]')?.o.tong_dt).toBe(800e6);
     expect(tk.chi_tieu.find((c) => c.ma === '[01a]')?.gia_tri).toBe('2026');
     expect(tk.chi_tieu.find((c) => c.ma === '[05]')?.gia_tri).toBe('0123456789');
@@ -72,7 +106,7 @@ describe('mẫu 01/TKN-CNKD — thông báo doanh thu năm', () => {
 });
 
 describe('mẫu 01/CNKD — tờ khai quý', () => {
-  const s = sk({ doanhThuQuy: [300e6, 400e6, 500e6, 0], phuongPhapTncn: 'doanh_thu' });
+  const s = sk({ doanhThuQuy: [300e6, 400e6, 500e6, 0], phuongPhapTncn: 'doanh_thu', hoatDong: chia({ dich_vu: [300e6, 400e6, 500e6, 0] }) });
   const r = soan(s, { loai: 'quy', nam: 2026, quy: 3 });
   const tk = (r as { ok: true; to_khai: ToKhai }).to_khai;
 
@@ -127,29 +161,36 @@ describe('mẫu 01/CNKD — tờ khai quý', () => {
     }
   });
 
-  it('nhiều nhóm ngành: GTGT theo tỷ lệ cao nhất, TNCN để trống chứ không đoán', () => {
-    const b = soan(sk({ doanhThuQuy: [2e9, 0, 0, 0], nhomNganh: ['phan_phoi_hang_hoa', 'dich_vu'], phuongPhapTncn: 'doanh_thu' }), { loai: 'quy', nam: 2026, quy: 1 });
+  it('nhiều nhóm hoạt động: GTGT theo tỷ lệ của TỪNG nhóm, TNCN để trống chứ không đoán', () => {
+    const b = soan(sk({
+      doanhThuQuy: [2e9, 0, 0, 0], nhomNganh: ['phan_phoi_hang_hoa', 'dich_vu'], phuongPhapTncn: 'doanh_thu',
+      hoatDong: chia({ phan_phoi_hang_hoa: [1e9, 0, 0, 0], dich_vu: [1e9, 0, 0, 0] }),
+    }), { loai: 'quy', nam: 2026, quy: 1 });
     expect(b.ok).toBe(true);
     if (b.ok) {
-      // Dịch vụ 5% cao hơn phân phối hàng hoá 1%.
-      expect(dong(b.to_khai, '(b)')?.o.thue_gtgt).toBe(100e6);
+      // Hàng hoá 1% × 1 tỷ + dịch vụ 5% × 1 tỷ — không còn "5% cho tất cả".
+      expect(dong(b.to_khai, '(a)')?.o.thue_gtgt).toBe(10e6);
+      expect(dong(b.to_khai, '(b)')?.o.thue_gtgt).toBe(50e6);
+      expect(dong(b.to_khai, '[20]')?.o.thue_gtgt).toBe(60e6);
       expect(dong(b.to_khai, '(b)')?.o.thue_tncn).toBeNull();
-      expect(b.to_khai.can_cu).toContain('tt69_d5_k2');
+      expect(b.to_khai.san_sang.trang_thai).toBe('can_xem');
+      expect(b.to_khai.san_sang.vuong.map((v) => v.ma)).toEqual(['NHIEU_NHOM_TNCN']);
     }
   });
 
   it('nhóm nội dung số: kho chưa có tỷ lệ GTGT riêng thì để trống và nói ra', () => {
-    const b = soan(sk({ doanhThuQuy: [2e9, 0, 0, 0], nhomNganh: ['noi_dung_so'], phuongPhapTncn: 'doanh_thu' }), { loai: 'quy', nam: 2026, quy: 1 });
+    const b = soan(sk({ doanhThuQuy: [2e9, 0, 0, 0], nhomNganh: ['noi_dung_so'], phuongPhapTncn: 'doanh_thu', hoatDong: chia({ noi_dung_so: [2e9, 0, 0, 0] }) }), { loai: 'quy', nam: 2026, quy: 1 });
     expect(b.ok).toBe(true);
     if (b.ok) {
       expect(dong(b.to_khai, '(đ)')?.o.thue_gtgt).toBeNull();
       expect(dong(b.to_khai, '(đ)')?.o.thue_tncn).toBe(50e6); // TNCN 5% × (2 tỷ − 1 tỷ)
-      expect(b.to_khai.cach_tinh.join(' ')).toContain('chưa có tỷ lệ % riêng');
+      expect(b.to_khai.cach_tinh.join(' ')).toContain('chưa có tỷ lệ %');
+      expect(b.to_khai.san_sang.vuong.some((v) => v.ma === 'THIEU_TY_LE' && v.chan)).toBe(true);
     }
   });
 
   it('bán trên nền tảng số không thanh toán thì điền vào phần II và đánh dấu đúng ô', () => {
-    const b = soan(sk({ doanhThuQuy: [2e9, 0, 0, 0], kenh: 'tmdt_khong_thanh_toan', phuongPhapTncn: 'doanh_thu' }), { loai: 'quy', nam: 2026, quy: 1 });
+    const b = soan(sk({ doanhThuQuy: [2e9, 0, 0, 0], kenh: 'tmdt_khong_thanh_toan', phuongPhapTncn: 'doanh_thu', hoatDong: chia({ dich_vu: [2e9, 0, 0, 0] }) }), { loai: 'quy', nam: 2026, quy: 1 });
     expect(b.ok).toBe(true);
     if (b.ok) {
       const dongTmdt = b.to_khai.dong.filter((d) => d.stt === '2.2');
@@ -190,5 +231,81 @@ describe('kỳ gợi ý', () => {
     expect(kyGoiY(duoi, suyLuan(duoi))).toEqual({ loai: 'nam', nam: 2026 });
     const tren = sk({ doanhThuQuy: [600e6, 600e6, 0, 0], homNay: '2026-09-16', phuongPhapTncn: 'doanh_thu' });
     expect(kyGoiY(tren, suyLuan(tren))).toEqual({ loai: 'quy', nam: 2026, quy: 2 });
+  });
+});
+
+/*
+ * HỒI QUY cho đúng lỗi thấy trên công ty demo ngày 25/09/2026: hồ sơ một ngành "phân phối hàng hoá",
+ * và TOÀN BỘ doanh thu bị đổ vào [08a]. Test này hỏng với bản cũ.
+ */
+describe('hồi quy: không dồn doanh thu chưa rõ nhóm vào ngành đăng ký', () => {
+  const s = sk({
+    doanhThuQuy: [300e6, 250e6, 250e6, 151_983_000], nhomNganh: ['phan_phoi_hang_hoa'],
+    hoatDong: chia({
+      phan_phoi_hang_hoa: [200e6, 200e6, 200e6, 100e6],   // 700 triệu hàng hoá
+      dich_vu: [50e6, 50e6, 50e6, 0],                     // 150 triệu dịch vụ
+      chua_ro: [50e6, 0, 0, 51_983_000],                  // 101.983.000 chưa ai xác nhận
+    }),
+  });
+  const r = soan(s, { loai: 'nam', nam: 2026 });
+  const tk = (r as { ok: true; to_khai: ToKhai }).to_khai;
+
+  it('mỗi dòng nhận đúng phần đã xác nhận; tổng vẫn là số thật', () => {
+    expect(dong(tk, '[11]')?.o.tong_dt).toBe(951_983_000);
+    expect(dong(tk, '[08a]')?.o.tong_dt).toBe(700e6);
+    expect(dong(tk, '[08b]')?.o.tong_dt).toBe(150e6);
+    // Bản cũ: [08a] = 951.983.000.
+    expect(dong(tk, '[08a]')?.o.tong_dt).not.toBe(951_983_000);
+  });
+
+  it('101.983.000 chưa rõ nhóm chặn xuất, nói rõ số tiền và số khoản', () => {
+    expect(tk.san_sang.trang_thai).toBe('bi_chan');
+    const v = tk.san_sang.vuong.find((x) => x.ma === 'CHUA_RO_HOAT_DONG')!;
+    expect(v.so_tien).toBe(101_983_000);
+    expect(v.so_khoan).toBe(2);
+    expect(v.hanh_dong).toBe('phan_loai_hoat_dong');
+  });
+
+  it('tổng các dòng ngành + phần chưa rõ = tổng cộng — không mất đồng nào', () => {
+    const ngành = tk.dong.filter((d) => d.cap === 1).reduce((a, d) => a + (d.o.tong_dt ?? 0), 0);
+    const v = tk.san_sang.vuong.find((x) => x.ma === 'CHUA_RO_HOAT_DONG')!;
+    expect(ngành + (v.so_tien ?? 0)).toBe(dong(tk, '[11]')?.o.tong_dt);
+  });
+
+  it('tờ khai quý cũng vậy: phần chưa rõ làm tổng thuế để trống, không in tổng thiếu', () => {
+    const q = soan({ ...s, doanhThuQuy: [2e9, 0, 0, 0], phuongPhapTncn: 'doanh_thu', hoatDong: chia({ phan_phoi_hang_hoa: [1.5e9, 0, 0, 0], chua_ro: [0.5e9, 0, 0, 0] }) }, { loai: 'quy', nam: 2026, quy: 1 });
+    expect(q.ok).toBe(true);
+    if (q.ok) {
+      expect(dong(q.to_khai, '(a)')?.o.tong_dt).toBe(1.5e9);
+      expect(dong(q.to_khai, '(a)')?.o.thue_gtgt).toBe(15e6);
+      expect(dong(q.to_khai, '[18]')?.o.tong_dt).toBe(2e9);
+      expect(dong(q.to_khai, '[20]')?.o.thue_gtgt).toBeNull();
+      expect(q.to_khai.san_sang.trang_thai).toBe('bi_chan');
+    }
+  });
+});
+
+describe('sẵn sàng khai: trạng thái doanh nghiệp và hồ sơ', () => {
+  const s = sk({ doanhThuQuy: [200e6, 200e6, 200e6, 200e6], hoatDong: chia({ dich_vu: [200e6, 200e6, 200e6, 200e6] }) });
+
+  it('đủ mọi thứ thì sẵn sàng', () => {
+    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: 'nam', nam: 2026 }, { trangThai: 'dang_hoat_dong' });
+    expect(r.ok && r.to_khai.san_sang.trang_thai).toBe('san_sang');
+  });
+
+  it('cơ quan thuế ghi tạm ngừng → chặn tờ khai kỳ thường', () => {
+    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: 'nam', nam: 2026 }, { trangThai: 'tam_ngung' });
+    expect(r.ok && r.to_khai.san_sang.vuong.map((v) => v.ma)).toEqual(['TRANG_THAI_DOANH_NGHIEP']);
+    expect(r.ok && r.to_khai.san_sang.trang_thai).toBe('bi_chan');
+  });
+
+  it('thiếu mã số thuế → chặn', () => {
+    const r = soanToKhai(s, suyLuan(s), { ten: 'X', mst: null }, { loai: 'nam', nam: 2026 });
+    expect(r.ok && r.to_khai.san_sang.vuong.some((v) => v.ma === 'THIEU_MST' && v.chan)).toBe(true);
+  });
+
+  it('trạng thái chưa rõ KHÔNG chặn — không có dữ liệu khác với có dữ liệu xấu', () => {
+    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: 'nam', nam: 2026 }, { trangThai: 'chua_ro' });
+    expect(r.ok && r.to_khai.san_sang.trang_thai).toBe('san_sang');
   });
 });

@@ -8,6 +8,7 @@ import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type DongPhuLucGi
 import { TEN_VAI_TRO } from '../../supabase/functions/_shared/quyen/vai-tro.ts';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
 import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
   type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
@@ -157,7 +158,14 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
             {tk.dong.map((d, i) => (
               <tr key={`${d.ma ?? 'x'}-${i}`} className={d.la_tong ? 'font-semibold' : ''}>
                 <td className="border border-slate-300 px-2 py-1 align-top">{d.stt}</td>
-                <td className={`border border-slate-300 px-2 py-1 align-top ${d.cap === 1 ? 'pl-4' : ''}`}>{d.nhan}</td>
+                <td className={`border border-slate-300 px-2 py-1 align-top ${d.cap === 1 ? 'pl-4' : ''}`}>
+                  {d.nhan}
+                  {d.nguon_khoan && (
+                    <span className="no-print block text-[10px] text-slate-500">
+                      gồm {d.nguon_khoan.so_khoan} {d.nguon_khoan.nguon === 'hoa_don' ? 'hoá đơn' : d.nguon_khoan.nguon === 'tu_nhap' ? 'quý tự nhập' : 'khoản tiền vào'} bạn đã xếp vào nhóm này
+                    </span>
+                  )}
+                </td>
                 <td className="border border-slate-300 px-2 py-1 align-top whitespace-nowrap">{d.ma ?? ''}</td>
                 {tk.cot.map((c) => (
                   <td key={c.khoa} className="border border-slate-300 px-2 py-1 text-right tabular-nums">{so(d.o[c.khoa])}</td>
@@ -572,6 +580,27 @@ export default function ToKhaiPage() {
                 <>
                   <GiayToKhai tk={kq.to_khai} canCu={kq.can_cu} xemTruoc={!daXuat} />
                   {!!kq.phu_luc_giai_trinh?.length && <PhuLucGiaiTrinh ds={kq.phu_luc_giai_trinh} nam={kq.nam} />}
+                  {kq.to_khai.san_sang.trang_thai !== 'san_sang' && (
+                    <div
+                      role={kq.to_khai.san_sang.trang_thai === 'bi_chan' ? 'alert' : 'status'}
+                      className={`no-print rounded-2xl border p-5 ${kq.to_khai.san_sang.trang_thai === 'bi_chan' ? 'border-mimi-amber/40 bg-mimi-amber/5' : 'border-border bg-card'}`}
+                    >
+                      <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <AlertTriangle size={15} className="text-mimi-amber" aria-hidden />
+                        {kq.to_khai.san_sang.trang_thai === 'bi_chan' ? 'Chưa xuất được tờ khai này' : 'Nên xem lại trước khi xuất'}
+                      </h3>
+                      <ul className="mt-2 space-y-1.5">
+                        {kq.to_khai.san_sang.vuong.map((v) => (
+                          <li key={v.ma} className="text-sm leading-relaxed text-foreground">{v.cau}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {kq.to_khai.san_sang.vuong.some((v) => v.ma === 'CHUA_RO_HOAT_DONG') && (
+                    <div className="no-print">
+                      <PhanLoaiHoatDong nam={kq.nam} onDaDoi={() => void tai(thamSoKy())} />
+                    </div>
+                  )}
                   <div className="no-print rounded-2xl border border-border bg-card p-5">
                     <h3 className="text-sm font-semibold text-foreground">MIMI tính từng số thế nào</h3>
                     <ul className="mt-2 space-y-1.5">
@@ -587,7 +616,13 @@ export default function ToKhaiPage() {
                       </ul>
                     )}
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <button type="button" onClick={() => void xuat()} disabled={dangXuat} className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50">
+                      <button
+                        type="button"
+                        onClick={() => void xuat()}
+                        disabled={dangXuat || kq.to_khai.san_sang.trang_thai === 'bi_chan'}
+                        title={kq.to_khai.san_sang.trang_thai === 'bi_chan' ? 'Gỡ các vướng mắc ở trên trước' : undefined}
+                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
+                      >
                         {dangXuat ? <Loader2 size={15} className="animate-spin" /> : <FileDown size={15} />} {nhanNutXuat(kq.thanh_toan)}
                       </button>
                       <button type="button" onClick={() => void luuNhap()} disabled={dangLuuNhap} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50">
