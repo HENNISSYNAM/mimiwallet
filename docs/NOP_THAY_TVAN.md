@@ -4,6 +4,12 @@ Ngày 25/09/2026. Chủ dự án cho phép nộp thay (xem bộ nhớ `mimi-nop-
 **những gì đã tìm được bằng nguồn thật**, và chỗ nào vẫn còn trống. Không có gì ở đây là suy đoán
 không ghi nguồn.
 
+> **25/09/2026, chiều: chủ dự án quyết KHÔNG hỏi Casso.** Mọi chỗ trống phải lấp bằng nguồn công khai
+> hoặc bằng tệp chính thức của Cục Thuế. Mục "Câu hỏi gửi Casso" bên dưới giữ lại chỉ để tham khảo.
+>
+> **Không bao giờ thử `/tvan/tax-return/send` trên production.** `BANKHUB_ENV` đang là `production`: gửi
+> thử là nộp tờ khai thật lên cơ quan thuế.
+
 ## Tóm tắt
 
 | Chỗ thiếu | Trước khi cào | Sau khi cào |
@@ -33,11 +39,20 @@ cho thấy:
   nhận (theo Thông tư 40/2025/TT-BTC, nguồn: congtyluatacc.vn). **Cần kiểm: MIMI có phải đăng ký là
   phần mềm được chấp nhận không, hay đi qua TVAN của Cas là đủ.**
 
-Ba cách lấy lược đồ, xếp theo độ chắc:
-1. **Hỏi Casso** một tệp XML mẫu hợp lệ cho `/tvan/tax-return/send` — họ dựng API nên phải có.
-2. Một tệp XML thật xuất từ HTKK hoặc eTax cho mẫu 01/CNKD bản Thông tư 50 (không cần số thật —
-   tờ khai trống cũng đủ để thấy cấu trúc thẻ).
-3. Tải bộ cài HTKK từ gdt.gov.vn và lấy tệp XSD ra (không chạy bộ cài). Cần anh cho phép tải.
+**Khung chung của tệp (nguồn: các trang hướng dẫn sửa lỗi nộp tờ khai XML — chỉ là khung, chưa đủ để dựng):**
+`HSoThueDTu` › `HSoKhaiThue` › `TTinChung` (gồm `TTinDVu` thông tin phần mềm, `TTinTKhaiThue` › `TKhaiThue`
+với `maTKhai`, `tenTKhai`, `pbanTKhaiXML`, `loaiTKhai`, `soLan`, `KyKKhaiThue`; `NNT` người nộp) +
+`CTieuTKhaiChinh` (các chỉ tiêu) + `PLuc` (phụ lục); chữ ký nằm ở `CKyDTu`. Lỗi "Không tìm thấy node qua
+path hsothuedtu/hsokhaithue" là khi thiếu nút cha — cổng kiểm đường dẫn nút.
+
+**Hai thứ quyết định nộp được hay không chỉ có trong XSD:** giá trị `maTKhai` của mẫu 01/CNKD bản Thông
+tư 50, và tên thẻ của từng chỉ tiêu ([11]…[17], phụ lục). Không đoán hai thứ này.
+
+**Nguồn chính thức duy nhất: bộ cài HTKK.** Cục Thuế phát hành HTKK 5.7.1 (đáp ứng Thông tư 50, bắt buộc
+từ 09/06/2026), bản mới nhất là **5.7.7 (18/09/2026)**. Trang gdt.gov.vn › Hỗ trợ kê khai › "Phần mềm hỗ trợ
+kê khai" để link tải bản 5.7.7 dạng ZIP, **nhưng link đó trỏ sang fshare.vn** (trang chia sẻ tệp bên
+ngoài, thường bắt đăng nhập hoặc captcha). Máy không tự tải được — **chủ dự án tải ZIP về, để vào một thư
+mục, MIMI lấy tệp XSD ra mà không chạy bộ cài.**
 
 ## 2. Chữ ký số
 
@@ -67,8 +82,22 @@ lưu thô.
   **`handlingInstructions`** (hướng xử lý), `note`.
 
 Webhook TVAN chỉ báo "có cập nhật" kèm `messageId`; nhận webhook rồi gọi API này — đúng nguyên tắc
-"payload là gợi ý, hỏi lại Cas". **Chưa biết:** các giá trị của `status` nghĩa là gì — phải hỏi Casso,
-không được đoán. Không bao giờ nói "đã nộp thành công" trước khi có phản hồi chấp nhận của cơ quan thuế.
+"payload là gợi ý, hỏi lại Cas".
+
+**Không cần biết Cas đánh số `status` thế nào.** Theo Thông tư 19/2021/TT-BTC (giao dịch điện tử trong
+lĩnh vực thuế), sau khi nhận hồ sơ khai thuế điện tử cơ quan thuế gửi lại thông báo chính thức:
+- thông báo **xác nhận đã nộp** — ngày trên thông báo này là **ngày nộp theo luật**, căn cứ tính nộp
+  chậm và tiền phạt;
+- thông báo **chấp nhận / không chấp nhận** hồ sơ (mẫu 01-2/TB-TĐT), kèm lý do nếu không chấp nhận.
+
+`taxAuthorityResponses[].xmlReceive` chính là các thông báo đó. MIMI đọc thẳng văn bản của cơ quan thuế
+thay vì dịch một con số của bên trung gian — đúng nguồn gốc hơn, và không phụ thuộc Cas. Trạng thái MIMI
+dùng: `da_gui` (TVAN nhận) → `da_xac_nhan_nop` (có thông báo xác nhận nộp, ghi ngày nộp) →
+`da_chap_nhan` | `khong_chap_nhan` (+ lý do, `handlingInstructions`).
+
+**Còn thiếu:** mẫu XML của chính các thông báo đó để viết bộ đọc. Có hai cách: lấy từ Thông tư 19/2021
+(phụ lục mẫu thông báo) hoặc từ lần nộp thật đầu tiên. Không bao giờ nói "đã nộp thành công" trước khi
+có thông báo chấp nhận.
 
 ## 4. Thêm: báo cáo đã nộp từ eTax
 
@@ -80,10 +109,10 @@ hộ kinh doanh.
 
 ## Còn chặn
 
-1. Tệp XML mẫu cho mẫu 01/CNKD bản Thông tư 50 (mục 1).
-2. Chọn nhà cung cấp ký số từ xa và ký hợp đồng (mục 2).
-3. Ý nghĩa các giá trị `status` trong `taxAuthorityResponses` (mục 3).
-4. MIMI có cần đăng ký là phần mềm được Cục Thuế chấp nhận không (mục 1).
+1. **Bộ cài HTKK 5.7.7** để lấy XSD (mục 1) — chủ dự án tải từ link fshare trên gdt.gov.vn.
+2. **Chọn nhà cung cấp ký số từ xa** (MySign / SmartCA) và ký hợp đồng (mục 2).
+3. ~~Ý nghĩa `status`~~ → đọc thẳng thông báo của cơ quan thuế (mục 3). Còn thiếu mẫu XML của thông báo.
+4. MIMI có cần đăng ký là phần mềm được Cục Thuế chấp nhận không (mục 1) — chưa tìm được câu trả lời rõ.
 
 ## Câu hỏi gửi Casso (soạn sẵn, anh gửi)
 
@@ -107,3 +136,5 @@ hộ kinh doanh.
 - Mẫu 01/CNKD và lịch nộp: fast.com.vn, misaeshop.vn, thuvienphapluat.vn (đi sau Thông tư 50 — chỉ dùng để tham khảo quy trình)
 - Lỗi XSD: esign.misa.vn, helphkd.misa.vn; Thông tư 40/2025: congtyluatacc.vn
 - Ký số từ xa: viettel-ca.vn
+- HTKK: gdt.gov.vn › Hỗ trợ kê khai (thông báo nâng cấp 5.7.1 → 5.7.7); thuvienphapluat.vn (HTKK 5.7.1 đáp ứng Thông tư 50)
+- Thông báo sau khi nộp: Thông tư 19/2021/TT-BTC (thuvienphapluat.vn, luatvietnam.vn)
