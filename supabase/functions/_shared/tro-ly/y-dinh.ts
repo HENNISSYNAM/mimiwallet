@@ -32,6 +32,8 @@ const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   [/\b(token|cache)\b/, 'token_ai'],
   [/\b(chi phi ai|chi ai|ngan sach ai|dich vu ai|tien ai|openai|gpt|chatgpt|claude|anthropic|gemini|openrouter|llm|ngan sach)\b/, 'chi_phi_ai'],
   [/\b(re hon|model re|mo hinh re|doi model|doi mo hinh|thay model|toi uu model|toi uu mo hinh)\b/, 'model_re_hon'],
+  // Thủ tục hành chính: "tạm ngừng", "đóng mã số thuế", "hồ sơ gồm gì", "nộp ở đâu"… — trước "tờ khai".
+  [/\b(thu tuc|tam ngung|nghi ban|ngung kinh doanh|tiep tuc kinh doanh|dong ma so thue|dong mst|cham dut hieu luc|giai the|gia han nop|hoan thue|hoan nop thua|thay doi thong tin dang ky|ho so gom|can nhung giay to|can giay to gi|nop o dau|ma thu tuc)\b/, 'thu_tuc_thue'],
   // Trước "tờ khai": câu hỏi về NHÓM HOẠT ĐỘNG / đủ dữ liệu để khai có chữ "khai" nhưng cần bảng chia nhóm.
   [/\b(nhom hoat dong|chua phan loai|chua phan nhom|phan nhom|thuoc nhom nao|dong 08|08a|08b|du du lieu de khai|du du lieu khai|san sang khai|la doanh thu gi|doanh thu gi)\b/, 'doanh_thu_theo_hoat_dong'],
   [/\b(to khai|khai thue|nop thue|nghia vu thue|mien thue|thue gtgt|thue tncn|thue thu nhap|thong bao doanh thu|nguong doanh thu|ty le thue|quyet toan|cnkd|mau 01)\b/, 'nghia_vu_thue'],
@@ -171,6 +173,8 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   // Câu pháp lý chung không thuộc việc nào của công ty: tra kho văn bản (trước cả nhóm đang chọn,
   // vì trả số liệu cho một câu hỏi luật là trả lời sai câu hỏi).
   if (khop.length === 0 && canTraLuat(cau)) khop.push('tra_cuu_luat');
+  // Hỏi thủ tục: hồ sơ, nơi nộp (danh mục của cổng) trước; trích luật đi kèm để có căn cứ hiện hành.
+  if (khop[0] === 'thu_tuc_thue' && !khop.includes('tra_cuu_luat') && canTraLuat(cau)) khop.push('tra_cuu_luat');
   if (khop.length === 0 && phamVi) khop.push(MAC_DINH_THEO_NHOM[phamVi]);
   return khop.slice(0, SO_NANG_LUC_TOI_DA);
 }

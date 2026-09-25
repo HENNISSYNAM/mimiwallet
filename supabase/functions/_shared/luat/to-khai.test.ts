@@ -64,7 +64,8 @@ describe('mẫu 01/TKN-CNKD — thông báo doanh thu năm', () => {
   it('điền doanh thu vào dòng đúng nhóm ngành và dòng tổng cộng', () => {
     const r2 = soan({ ...s, hoatDong: chia({ dich_vu: [200e6, 200e6, 200e6, 200e6] }) }, { loai: 'nam', nam: 2026 });
     const tk = (r2 as { ok: true; to_khai: ToKhai }).to_khai;
-    expect(tk.san_sang.trang_thai).toBe('san_sang');
+    // Năm 2026: chỉ còn vướng "mẫu đã được Thông tư 89 thay" — không còn vướng nhóm hoạt động.
+    expect(tk.san_sang.vuong.map((v) => v.ma)).toEqual(['MAU_DA_THAY']);
     expect(dong(tk, '[08b]')?.o.tong_dt).toBe(800e6);
     expect(dong(tk, '[08b]')?.nguon_khoan?.so_khoan).toBe(4);
     expect(dong(tk, '[11]')?.o.tong_dt).toBe(800e6);
@@ -289,23 +290,40 @@ describe('sẵn sàng khai: trạng thái doanh nghiệp và hồ sơ', () => {
   const s = sk({ doanhThuQuy: [200e6, 200e6, 200e6, 200e6], hoatDong: chia({ dich_vu: [200e6, 200e6, 200e6, 200e6] }) });
 
   it('đủ mọi thứ thì sẵn sàng', () => {
-    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: 'nam', nam: 2026 }, { trangThai: 'dang_hoat_dong' });
+    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: '6_thang_dau', nam: 2026 }, { trangThai: 'dang_hoat_dong' });
     expect(r.ok && r.to_khai.san_sang.trang_thai).toBe('san_sang');
   });
 
   it('cơ quan thuế ghi tạm ngừng → chặn tờ khai kỳ thường', () => {
-    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: 'nam', nam: 2026 }, { trangThai: 'tam_ngung' });
+    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: '6_thang_dau', nam: 2026 }, { trangThai: 'tam_ngung' });
     expect(r.ok && r.to_khai.san_sang.vuong.map((v) => v.ma)).toEqual(['TRANG_THAI_DOANH_NGHIEP']);
     expect(r.ok && r.to_khai.san_sang.trang_thai).toBe('bi_chan');
   });
 
   it('thiếu mã số thuế → chặn', () => {
-    const r = soanToKhai(s, suyLuan(s), { ten: 'X', mst: null }, { loai: 'nam', nam: 2026 });
+    const r = soanToKhai(s, suyLuan(s), { ten: 'X', mst: null }, { loai: '6_thang_dau', nam: 2026 });
     expect(r.ok && r.to_khai.san_sang.vuong.some((v) => v.ma === 'THIEU_MST' && v.chan)).toBe(true);
   });
 
   it('trạng thái chưa rõ KHÔNG chặn — không có dữ liệu khác với có dữ liệu xấu', () => {
-    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: 'nam', nam: 2026 }, { trangThai: 'chua_ro' });
+    const r = soanToKhai(s, suyLuan(s), HO_SO, { loai: '6_thang_dau', nam: 2026 }, { trangThai: 'chua_ro' });
     expect(r.ok && r.to_khai.san_sang.trang_thai).toBe('san_sang');
+  });
+});
+
+describe('mẫu đã bị thay: 01/TKN-CNKD theo Thông tư 89/2026 từ 01/07/2026', () => {
+  const s = sk({ doanhThuQuy: [200e6, 200e6, 200e6, 200e6], hoatDong: chia({ dich_vu: [200e6, 200e6, 200e6, 200e6] }) });
+
+  it('tờ khai năm 2026 bị chặn xuất, nói rõ vì sao và số liệu vẫn dùng được', () => {
+    const r = soan(s, { loai: 'nam', nam: 2026 });
+    const v = r.ok ? r.to_khai.san_sang.vuong.find((x) => x.ma === 'MAU_DA_THAY') : undefined;
+    expect(v?.chan).toBe(true);
+    expect(v?.cau).toContain('Thông tư 89/2026/TT-BTC');
+    expect(v?.cau).toContain('01/07/2026');
+  });
+
+  it('6 tháng đầu năm 2026 (kết thúc trước 01/07/2026) vẫn dùng mẫu cũ — không chặn', () => {
+    const r = soan(s, { loai: '6_thang_dau', nam: 2026 });
+    expect(r.ok && r.to_khai.san_sang.vuong.some((x) => x.ma === 'MAU_DA_THAY')).toBe(false);
   });
 });

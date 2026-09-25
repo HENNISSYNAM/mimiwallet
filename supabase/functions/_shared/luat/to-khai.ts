@@ -60,7 +60,7 @@ export interface DongToKhai {
 export type TrangThaiSanSang = 'san_sang' | 'can_xem' | 'bi_chan';
 
 export interface VuongMac {
-  ma: 'CHUA_RO_HOAT_DONG' | 'THIEU_MST' | 'TRANG_THAI_DOANH_NGHIEP' | 'KY_CHUA_KET_THUC' | 'THIEU_TY_LE' | 'NHIEU_NHOM_TNCN';
+  ma: 'CHUA_RO_HOAT_DONG' | 'THIEU_MST' | 'TRANG_THAI_DOANH_NGHIEP' | 'KY_CHUA_KET_THUC' | 'THIEU_TY_LE' | 'NHIEU_NHOM_TNCN' | 'MAU_DA_THAY';
   /** true = chặn xuất; false = chỉ cần người xem lại. */
   chan: boolean;
   cau: string;
@@ -345,6 +345,22 @@ function soanTKN(
     cachTinh.push(`Dòng ${TEN_NHOM_NGANH[n]}: ${tienVN(tien)} — các khoản bạn đã xác nhận thuộc nhóm này.`);
   }
   if (chia.chua_ro.so_tien > 0) vuong.push(vuongChuaRo(chia.chua_ro, sk.nhomNganh));
+  /*
+   * MẪU ĐÃ BỊ THAY (thêm 25/09/2026). Thông tư 89/2026/TT-BTC (ban hành 30/06/2026, hiệu lực
+   * 01/07/2026) Điều 99 thay mẫu 01/TKN-CNKD bằng mẫu tại Phụ lục I của chính Thông tư đó; hồ sơ có
+   * kỳ tính thuế trước 01/07/2026 vẫn dùng mẫu cũ. Danh mục tờ khai trên dichvucong.gdt.gov.vn đã ghi
+   * "01/TKN-CNKD … (TT89/2026)". Kho Công báo của MIMI chưa có Thông tư 89, nên MIMI chưa dựng được
+   * mẫu mới theo văn bản gốc — chặn xuất thay vì in một mẫu đã hết hiệu lực.
+   * Kỳ "6 tháng đầu năm 2026" kết thúc 30/06/2026 → vẫn dùng mẫu cũ, không chặn.
+   */
+  if (!nuaDau && ky.nam >= 2026) {
+    vuong.push({
+      ma: 'MAU_DA_THAY',
+      chan: true,
+      cau: `Từ kỳ tính thuế năm ${ky.nam}, mẫu 01/TKN-CNKD đã được thay bằng mẫu theo Thông tư 89/2026/TT-BTC (hiệu lực 01/07/2026). MIMI chưa có văn bản gốc của mẫu mới nên chưa xuất bản này — số liệu phía trên vẫn dùng được để điền vào mẫu mới trên Cổng dịch vụ công.`,
+      hanh_dong: 'hoi_ke_toan',
+    });
+  }
   cachTinh.push(
     `[11] Tổng cộng: ${tienVN(dt)} = ${nuaDau ? 'doanh thu quý 1 + quý 2' : 'doanh thu 4 quý'} (${dtQuy.map((x) => tienVN(x)).join(' + ')})${sk.nguonDoanhThu ? `, ${TEN_NGUON_DOANH_THU[sk.nguonDoanhThu]}` : ''}.`,
   );

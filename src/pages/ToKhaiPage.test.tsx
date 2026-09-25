@@ -199,7 +199,8 @@ describe('Tờ khai thuế — không hỏi lại điều mã số thuế đã t
 describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
   const voiThanhToan = (thanh_toan: KetQuaPhanTich['thanh_toan']) => {
     gia.goi.mockImplementation(async (hanhDong: string) => {
-      if (hanhDong === 'phan_tich') return { ...ketQua(suKien()), thanh_toan } as unknown as Record<string, unknown>;
+      // Tờ khai quý (mẫu 01/CNKD, Thông tư 50) — tờ khai năm 2026 đã bị chặn vì mẫu được Thông tư 89 thay.
+      if (hanhDong === 'phan_tich') return { ...ketQua(suKien({ doanhThuQuy: [600e6, 600e6, 600e6, 0], phuongPhapTncn: 'doanh_thu' })), thanh_toan } as unknown as Record<string, unknown>;
       if (hanhDong === 'xuat') return { id: 'x1', ma_bam: 'b'.repeat(64), cach_tra: 'luot', con_luot: thanh_toan.con_luot - 1 };
       return { ok: true };
     });
@@ -227,7 +228,7 @@ describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
     const { LoiGoiHam } = await import('@/lib/loiGoiHam');
     const inRa = vi.spyOn(window, 'print').mockImplementation(() => {});
     gia.goi.mockImplementation(async (hanhDong: string) => {
-      if (hanhDong === 'phan_tich') return ketQua(suKien()) as unknown as Record<string, unknown>;
+      if (hanhDong === 'phan_tich') return ketQua(suKien({ doanhThuQuy: [600e6, 600e6, 600e6, 0], phuongPhapTncn: 'doanh_thu' })) as unknown as Record<string, unknown>;
       if (hanhDong === 'xuat') throw new LoiGoiHam('Cần 10.000đ', 402, { ma: 'CAN_THANH_TOAN' });
       return { ok: true };
     });

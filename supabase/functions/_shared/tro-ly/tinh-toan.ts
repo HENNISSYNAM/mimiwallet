@@ -16,6 +16,7 @@ import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-
 import { CAN_DO_TRUOC_KHI_DOI, chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
 import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH, type SuKienThue } from '../luat/he-luat.ts';
 import { HOAT_DONG } from '../doanh-thu/theo-hoat-dong.ts';
+import { cat, type ThuTucThue } from './thu-tuc.ts';
 import type { DoanLuat } from '../luat/nguon-luat.ts';
 import { TU_DIEN_CHI_SO } from '../chi-so/tu-dien.ts';
 import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
@@ -126,6 +127,8 @@ export interface DuLieu {
   /** MIMI-P0-002: độ đầy đủ của từng nguồn đã đọc (edge function điền; test để trống). */
   doDay: Partial<Record<NguonCan, DoDayNguon>>;
   /** Đoạn luật kho tìm được cho câu hỏi. null = chưa tra được (lỗi), khác với [] = không có. */
+  /** Thủ tục hành chính thuế khớp câu hỏi (bảng `thu_tuc_thue`). null = chưa tra được. */
+  thuTuc?: ThuTucThue[] | null;
   khoLuat: DoanLuat[] | null;
   /** MIMI-P0-003: văn bản kho tìm thấy nhưng đã hết hiệu lực tại ngày hỏi — đã bị loại khỏi `khoLuat`. */
   khoLuatDaLoai: { van_ban: string; nhan: string }[];
@@ -141,7 +144,7 @@ export interface DuLieu {
 
 export type NguonCan =
   | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau' | 'ket_noi_ngan_hang'
-  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong';
+  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong' | 'thu_tuc';
 
 export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuLieu {
   return {
@@ -1339,6 +1342,48 @@ export function doanhThuTheoHoatDong(d: DuLieu): KetQuaNangLuc {
   });
 }
 
+/**
+ * "Tạm ngừng kinh doanh cần hồ sơ gì, nộp ở đâu?" — đọc thủ tục hành chính thuế đã cào từ
+ * dichvucong.gdt.gov.vn. Trích đúng điều cổng ghi, kèm đường dẫn gốc và NGÀY LẤY; nói rõ căn cứ pháp
+ * lý trên trang thủ tục có thể chậm hơn văn bản mới — không tự sửa hộ cổng.
+ */
+export function thuTucThue(d: DuLieu): KetQuaNangLuc {
+  if (d.thuTuc === null) {
+    return kq('thu_tuc_thue', 'chung_tu', 'Chưa tra được danh mục thủ tục thuế lúc này. Thử lại sau ít phút.', {});
+  }
+  const ds = d.thuTuc ?? [];
+  if (!ds.length) {
+    return kq('thu_tuc_thue', 'chung_tu', 'MIMI chưa tìm thấy thủ tục thuế khớp câu hỏi này trong danh mục của Cổng dịch vụ công thuế. Bạn thử nói rõ việc muốn làm (ví dụ "tạm ngừng kinh doanh", "hoàn thuế nộp thừa") hoặc tên mẫu tờ khai.', {});
+  }
+  const t = ds[0];
+  const ngay = t.lay_luc ? ngayVN(t.lay_luc.slice(0, 10)) : '';
+  const the: The[] = [{
+    loai: 'bang', tieu_de: t.ten,
+    cot: [{ nhan: 'Mục', don_vi: 'chu' }, { nhan: 'Cổng dịch vụ công ghi', don_vi: 'chu' }],
+    dong: ([
+      ['Mã thủ tục', t.ma],
+      ['Mẫu tờ khai', t.mau_to_khai.length ? t.mau_to_khai.join(', ') : '—'],
+      ['Ai thực hiện', cat(t.doi_tuong, 300)],
+      ['Hồ sơ gồm', cat(t.thanh_phan_ho_so, 1200)],
+      ['Nộp ở đâu, bằng cách nào', cat(t.cach_thuc, 600)],
+      ['Cơ quan giải quyết', cat(t.co_quan, 200)],
+      ['Kết quả', cat(t.ket_qua, 400)],
+      ['Trang gốc', t.nguon],
+    ] as [string, string | null][]).filter(([, v]) => !!v).map(([k, v]) => [k, v as string]),
+  }];
+  the.push({
+    loai: 'ghi_chu', muc_do: 'can_chu_y',
+    cau: `Trích từ Cổng dịch vụ công thuế, lấy ngày ${ngay}. Căn cứ pháp lý trên trang thủ tục có thể chưa cập nhật văn bản mới nhất (ví dụ các thông tư năm 2026) — MIMI đối chiếu văn bản trong kho Công báo khi soạn tờ khai.`,
+  });
+  if (ds.length > 1) {
+    the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Có thể bạn cần: ${ds.slice(1).map((x) => `${x.ten} (${x.ma})`).join('; ')}.` });
+  }
+  return kq('thu_tuc_thue', 'chung_tu', `Thủ tục phù hợp nhất: ${t.ten} (mã ${t.ma}).${t.mau_to_khai.length ? ` Mẫu dùng: ${t.mau_to_khai.join(', ')}.` : ''}`, {
+    the,
+    nguon: [{ ten: 'Cổng dịch vụ công thuế', mo_ta: `Danh mục thủ tục hành chính thuế, dichvucong.gdt.gov.vn, lấy ngày ${ngay}.` }],
+  });
+}
+
 // ── Danh mục năng lực ────────────────────────────────────────────────────────
 
 export interface NangLuc {
@@ -1789,6 +1834,7 @@ export const NANG_LUC: Record<string, NangLuc> = {
   model_re_hon: { nhom: 'ai_token', can: ['token_ai', 'bang_gia'], chay: modelReHon, mo_ta: 'Chênh giá token nếu dùng model giá thấp hơn cùng hãng, theo số token thật và bảng giá OpenRouter. Chỉ là chênh giá — chưa đo chất lượng, độ trễ, chi phí gọi lại, nên không phải đề xuất đổi.' },
   bao_cao_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich'], chay: baoCaoTaiChinh, mo_ta: 'Tổng hợp dòng tiền ngân hàng theo tháng: tiền vào, tiền ra, chênh lệch. Không phải doanh thu, lợi nhuận hay báo cáo tài chính — MIMI chưa có sổ kế toán.' },
   phan_tich_tiet_kiem: { nhom: 'bao_cao', can: ['giao_dich', 'token_ai', 'bang_gia'], chay: phanTichTietKiem, mo_ta: 'Chỗ có thể tiết kiệm: khoản chi nghi trả trùng, tiền bớt được nếu đổi model AI.' },
+  thu_tuc_thue: { nhom: 'chung_tu', can: ['thu_tuc'], chay: thuTucThue, mo_ta: 'Thủ tục hành chính thuế (tạm ngừng kinh doanh, chấm dứt mã số thuế, hoàn thuế, gia hạn, quyết toán, thay đổi đăng ký thuế…): hồ sơ gồm gì, mẫu tờ khai nào, nộp ở đâu, kết quả là gì — theo danh mục trên Cổng dịch vụ công thuế.' },
   doanh_thu_theo_hoat_dong: { nhom: 'chung_tu', can: ['thue'], chay: doanhThuTheoHoatDong, mo_ta: 'Doanh thu năm nay chia theo nhóm hoạt động (phân phối hàng hoá, dịch vụ, cho thuê…) mà người dùng đã xác nhận, phần nào chưa rõ nhóm, và vì sao phần chưa rõ chặn tờ khai. Dùng cho câu hỏi "doanh thu này là gì", "sao cho hết vào 08a", "đủ dữ liệu để khai chưa".' },
   nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },
   tra_cuu_luat: { nhom: 'chung_tu', can: ['kho_luat'], chay: traCuuLuat, mo_ta: 'Tìm và trích nguyên văn đoạn Luật, Nghị định, Thông tư trong kho Công báo cho một câu hỏi pháp lý chung (không phải nghĩa vụ thuế của chính công ty). Chỉ tham khảo, kèm ngày ban hành và hiệu lực.' },

@@ -48,6 +48,7 @@ import { CAN_CU, suyLuan } from "../_shared/luat/he-luat.ts";
 import { docHieuLuc, kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { nhanHieuLuc } from "../_shared/luat/hieu-luc.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
+import { chonThuTuc } from "../_shared/tro-ly/thu-tuc.ts";
 import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
 import { congTyLaDemo, locMinhHoa } from "../_shared/minh-hoa.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
@@ -540,6 +541,28 @@ async function docDuLieu(
       d.khoLuatDaLoai = r.daLoai;
       d.khoLuatChuaKiemHieuLuc = r.chuaKiem;
     }));
+  }
+  if (can.has("thu_tuc")) {
+    // Chọn trên bản nhẹ (mã, tên, mẫu) rồi mới đọc chi tiết đúng những thủ tục được chọn.
+    viec.push((async () => {
+      try {
+        const { data: nhe, error } = await db.from("thu_tuc_thue").select("ma, ten, mau_to_khai").limit(1000);
+        if (error) throw error;
+        const chon = chonThuTuc(tuyChon.cauHoi ?? "", ((nhe ?? []) as Row[]).map((r) => ({
+          ma: r.ma, ten: r.ten, mau_to_khai: r.mau_to_khai ?? [], doi_tuong: null, co_quan: null, cach_thuc: null,
+          thanh_phan_ho_so: null, ket_qua: null, can_cu_phap_ly: null, nguon: "", lay_luc: "",
+        })));
+        if (!chon.length) { d.thuTuc = []; return; }
+        const { data: day, error: loiDay } = await db.from("thu_tuc_thue")
+          .select("ma, ten, doi_tuong, co_quan, cach_thuc, thanh_phan_ho_so, ket_qua, can_cu_phap_ly, mau_to_khai, nguon, lay_luc")
+          .in("ma", chon.map((c) => c.ma));
+        if (loiDay) throw loiDay;
+        d.thuTuc = chon.map((c) => ((day ?? []) as Row[]).find((x) => x.ma === c.ma)).filter(Boolean) as DuLieu["thuTuc"];
+      } catch (e) {
+        console.error("thủ tục thuế:", e instanceof Error ? e.message : e);
+        d.thuTuc = null;
+      }
+    })());
   }
   if (can.has("chung_tu_quet")) {
     viec.push(docTrang(

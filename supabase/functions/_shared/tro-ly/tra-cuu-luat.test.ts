@@ -70,7 +70,11 @@ describe('tra_cuu_luat', () => {
 
 describe('nhận ý định sau khi gộp hai bộ não', () => {
   it('câu pháp lý chung → tra_cuu_luat', () => {
-    expect(nhanYDinh('Tạm ngừng kinh doanh cần làm thủ tục gì?')).toEqual(['tra_cuu_luat']);
+    expect(nhanYDinh('Luật quy định thế nào về hợp đồng lao động?')).toContain('tra_cuu_luat');
+  });
+
+  it('hỏi thủ tục: danh mục thủ tục của cổng trước, trích luật đi kèm (25/09/2026)', () => {
+    expect(nhanYDinh('Tạm ngừng kinh doanh cần làm thủ tục gì?')).toEqual(['thu_tuc_thue', 'tra_cuu_luat']);
   });
 
   it('hỏi ngưỡng thuế có chữ "doanh thu" chỉ ra nghĩa vụ thuế, không kéo báo cáo dòng tiền', () => {
