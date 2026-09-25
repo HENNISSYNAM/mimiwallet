@@ -23,6 +23,8 @@ import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '../giay-to/loai.ts';
 import { ghepTienVe, type Cap } from '../doi-soat/cham-diem.ts';
 import { goiYTienVao, TEN_LOAI_TIEN_VAO, type GoiYTienVao, type LoaiTienVao } from '../phan-loai/tien-vao.ts';
+import { mocKeTiep, TEN_LOAI_MOC, type MocThue } from '../luat/lich-thue.ts';
+import type { LichCongTy } from '../luat/doc-lich-thue.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -140,11 +142,18 @@ export interface DuLieu {
    * con số khác nhau. null = chưa đọc.
    */
   batThuong: { canh_bao: CanhBao[]; lich_su_du: boolean; so_khoan_da_xet: number } | null;
+  /**
+   * Lịch thuế CỦA CÔNG TY NÀY — cùng hàm với Tổng quan, Nhắc thuế và thông báo
+   * (`luat/doc-lich-thue.ts`). undefined = chưa đọc; null = đọc lỗi.
+   */
+  lichThue?: LichCongTy | null;
+  /** Câu hỏi nguyên văn — cho năng lực cần đọc một con số trong câu ("nêu 3 việc"). */
+  cauHoi?: string;
 }
 
 export type NguonCan =
   | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau' | 'ket_noi_ngan_hang'
-  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong' | 'thu_tuc';
+  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong' | 'thu_tuc' | 'lich_thue';
 
 export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuLieu {
   return {
@@ -206,6 +215,7 @@ const N = {
   tokenAi: { ten: 'Số token AI', mo_ta: 'Từ báo cáo sử dụng của Anthropic, OpenAI hoặc OpenRouter.' },
   chungTuQuet: { ten: 'Chứng từ đã quét', mo_ta: 'Chứng từ bạn chụp và xác nhận trong MIMI Assistant.' },
   khoLuat: { ten: 'Kho văn bản Công báo', mo_ta: 'Luật, Nghị định, Thông tư về thuế MIMI đã nạp từ congbao.chinhphu.vn, đối chiếu nguyên văn từng câu trích.' },
+  lichThue: { ten: 'Lịch thuế của công ty', mo_ta: 'Suy từ hồ sơ thuế, trạng thái mã số thuế và doanh thu thật của công ty theo Nghị định 252/2026 — cùng lịch với màn Nhắc thuế.' },
   batThuong: { ten: 'Luật cảnh báo bất thường', mo_ta: 'So từng khoản chi 30 ngày qua với lịch sử chi 180 ngày và danh sách người nhận được phép của công ty. Luật cố định, không phải mô hình học máy.' },
 } satisfies Record<string, NguonDuLieu>;
 
@@ -225,6 +235,7 @@ const T = {
   chiPhiAi: { nhan: 'Mở Chi phí AI', duong_dan: '/dashboard/chi-phi-ai' },
   baoCao: { nhan: 'Mở Báo cáo', duong_dan: '/dashboard/reports' },
   toKhai: { nhan: 'Mở Tờ khai thuế', duong_dan: '/dashboard/to-khai' },
+  nhacThue: { nhan: 'Mở Nhắc thuế', duong_dan: '/dashboard/nhac-thue' },
 } satisfies Record<string, TrangChiTiet>;
 
 function kq(
@@ -1386,6 +1397,106 @@ export function thuTucThue(d: DuLieu): KetQuaNangLuc {
 
 // ── Danh mục năng lực ────────────────────────────────────────────────────────
 
+// ── Hạn thuế kế tiếp và việc ưu tiên (25/09/2026) ────────────────────────────
+/*
+ * Trước ngày này "Kỳ thuế tiếp theo là khi nào?" và "Tôi cần chuẩn bị gì trước hạn thuế?" rơi vào
+ * tra cứu Công báo (trích luật chung, không nói hạn của chính công ty), còn "Nêu 3 việc ưu tiên cần
+ * làm tuần này" thì "chưa hiểu". Hai năng lực dưới đây đọc CÙNG lịch với Nhắc thuế và Tổng quan.
+ */
+
+const cauConLaiMoc = (m: MocThue) =>
+  m.con_lai === null ? 'chưa xác định hạn' : m.con_lai < 0 ? `đã qua hạn ${-m.con_lai} ngày` : m.con_lai === 0 ? 'hôm nay là hạn' : `còn ${m.con_lai} ngày`;
+const TEN_TRANG_THAI_MOC: Record<MocThue['trang_thai'], string> = {
+  phai_lam: 'Phải làm', can_xac_minh: 'Cần xác minh', khong_ap_dung: 'Không áp dụng',
+};
+
+export function chuanBiHanThue(d: DuLieu): KetQuaNangLuc {
+  const l = d.lichThue;
+  if (!l) {
+    return kq('chuan_bi_han_thue', 'chung_tu', 'Chưa đọc được lịch thuế của công ty lúc này. Thử lại sau ít phút, hoặc mở Nhắc thuế.', {
+      nguon: [N.lichThue], trang: [T.nhacThue],
+    });
+  }
+  const moc = mocKeTiep(l.lich);
+  const conHieuLuc = l.lich.filter((m) => m.trang_thai !== 'khong_ap_dung' && (m.con_lai === null || m.con_lai >= 0));
+  const the: The[] = [];
+  if (conHieuLuc.length) {
+    the.push({
+      loai: 'bang', tieu_de: 'Lịch thuế của bạn',
+      cot: [{ nhan: 'Việc', don_vi: 'chu' }, { nhan: 'Loại', don_vi: 'chu' }, { nhan: 'Hạn', don_vi: 'ngay' }, { nhan: 'Trạng thái', don_vi: 'chu' }],
+      dong: conHieuLuc.slice(0, 6).map((m) => [m.ten, TEN_LOAI_MOC[m.loai], m.han, TEN_TRANG_THAI_MOC[m.trang_thai]]),
+      con_lai: Math.max(0, conHieuLuc.length - 6),
+    });
+  }
+  // Chuẩn bị: chỉ những việc suy ra được từ dữ liệu, theo thứ tự làm.
+  const chuanBi: string[] = [];
+  if (moc?.cau_hoi) chuanBi.push(`Trả lời trước: ${moc.cau_hoi} MIMI chưa coi việc này là bắt buộc khi chưa biết.`);
+  if (l.soChuaRo > 0) chuanBi.push(`Xác nhận ${l.soChuaRo} khoản tiền vào (${vnd(l.tienChuaRo)}) chưa rõ có phải doanh thu — khoản chưa rõ đang được tính như doanh thu.`);
+  if (moc && moc.loai !== 'thong_bao') chuanBi.push('Mở Tờ khai thuế, kiểm bản nháp MIMI soạn từ sao kê và hoá đơn. MIMI không tự nộp — bạn xác nhận từng tờ trước khi nộp.');
+  for (const c of chuanBi) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: c });
+  const hoiThem = l.lich.filter((m) => m !== moc && m.trang_thai === 'can_xac_minh' && m.cau_hoi).map((m) => m.cau_hoi as string);
+  for (const c of [...new Set(hoiThem)].slice(0, 2)) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Còn cần biết: ${c}` });
+
+  const tom = moc
+    ? `Việc thuế kế tiếp: ${moc.ten} — hạn ${ngayVN(moc.han as string)} (${cauConLaiMoc(moc)}). ${moc.vi_sao}`
+    : 'MIMI chưa thấy việc thuế nào có hạn chắc chắn cho công ty bạn. Các mục còn thiếu dữ kiện nằm trong bảng bên dưới.';
+  return kq('chuan_bi_han_thue', 'chung_tu', tom, { the, nguon: [N.lichThue], trang: [T.nhacThue, T.toKhai] });
+}
+
+const SO_CHU: Record<string, number> = { mot: 1, hai: 2, ba: 3, bon: 4, tu: 4, nam: 5, sau: 6, bay: 7, tam: 8, chin: 9, muoi: 10 };
+/** "Nêu 3 việc", "ba việc ưu tiên" → 3. Không nói số thì 3. Tối đa 10. */
+export function soViecDuocHoi(cau: string | undefined): number {
+  const s = ` ${(cau ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9]+/g, ' ')} `;
+  const m = s.match(/ (\d{1,2}|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi) (viec|dieu|muc)\b/);
+  const n = m ? (/^\d/.test(m[1]) ? Number(m[1]) : SO_CHU[m[1]]) : 3;
+  return Math.min(10, Math.max(1, n || 3));
+}
+
+export function viecUuTien(d: DuLieu): KetQuaNangLuc {
+  const n = soViecDuocHoi(d.cauHoi);
+  const ung: { cau: string; vi_sao: string; diem: number }[] = [];
+  const l = d.lichThue;
+  if (l) {
+    // Hạn trong 7 ngày tới: tuần này. Hạn đã qua KHÔNG tự coi là quá hạn — MIMI không biết bạn đã nộp chưa.
+    for (const m of l.lich) {
+      if (m.trang_thai === 'khong_ap_dung' || m.con_lai === null || m.con_lai < 0 || m.con_lai > 7) continue;
+      ung.push({
+        cau: m.trang_thai === 'can_xac_minh' ? `Xác minh: ${m.ten}${m.cau_hoi ? ` — ${m.cau_hoi}` : ''}` : m.ten,
+        vi_sao: `Hạn ${ngayVN(m.han as string)}, ${cauConLaiMoc(m)}`,
+        diem: 100 - m.con_lai,
+      });
+    }
+    if (l.soChuaRo > 0) {
+      const hanGan = l.lich.some((m) => m.trang_thai !== 'khong_ap_dung' && m.con_lai !== null && m.con_lai >= 0 && m.con_lai <= 14);
+      ung.push({
+        cau: `Xác nhận ${l.soChuaRo} khoản tiền vào chưa rõ (${vnd(l.tienChuaRo)})`,
+        vi_sao: hanGan ? 'Sắp tới hạn thuế; khoản chưa rõ đang được tính như doanh thu' : 'Khoản chưa rõ đang được tính như doanh thu',
+        diem: hanGan ? 80 : 40,
+      });
+    }
+  }
+  for (const v of viecHomNay(d)) {
+    if (ung.some((x) => x.cau === v.cau)) continue;
+    ung.push({ cau: v.cau, vi_sao: v.muc_do === 'can_chu_y' ? 'Cần xử lý' : 'Nên làm', diem: v.muc_do === 'can_chu_y' ? 60 : 30 });
+  }
+  ung.sort((a, b) => b.diem - a.diem);
+  const chon = ung.slice(0, n);
+  const the: The[] = [];
+  if (chon.length) {
+    the.push({
+      loai: 'bang', tieu_de: `${chon.length} việc ưu tiên`,
+      cot: [{ nhan: 'Việc', don_vi: 'chu' }, { nhan: 'Vì sao', don_vi: 'chu' }],
+      dong: chon.map((v, i) => [`${i + 1}. ${v.cau}`, v.vi_sao]),
+    });
+  }
+  const tom = !chon.length
+    ? 'MIMI không thấy việc nào cần làm gấp trên dữ liệu hiện có.'
+    : chon.length < n
+      ? `MIMI chỉ thấy ${chon.length} việc có căn cứ trên dữ liệu — không thêm việc cho đủ ${n}.`
+      : `${n} việc ưu tiên, xếp theo hạn và mức cần xử lý:`;
+  return kq('viec_uu_tien', 'tro_ly', tom, { the, nguon: [N.lichThue, N.giaoDich, N.yeuCau, N.hoaDonBan, N.ketNoi], trang: [T.nhacThue] });
+}
+
 export interface NangLuc {
   nhom: NhomNangLuc;
   /** Mô tả cho mô hình chọn công cụ — viết như dặn một nhân viên kế toán. */
@@ -1834,6 +1945,8 @@ export const NANG_LUC: Record<string, NangLuc> = {
   model_re_hon: { nhom: 'ai_token', can: ['token_ai', 'bang_gia'], chay: modelReHon, mo_ta: 'Chênh giá token nếu dùng model giá thấp hơn cùng hãng, theo số token thật và bảng giá OpenRouter. Chỉ là chênh giá — chưa đo chất lượng, độ trễ, chi phí gọi lại, nên không phải đề xuất đổi.' },
   bao_cao_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich'], chay: baoCaoTaiChinh, mo_ta: 'Tổng hợp dòng tiền ngân hàng theo tháng: tiền vào, tiền ra, chênh lệch. Không phải doanh thu, lợi nhuận hay báo cáo tài chính — MIMI chưa có sổ kế toán.' },
   phan_tich_tiet_kiem: { nhom: 'bao_cao', can: ['giao_dich', 'token_ai', 'bang_gia'], chay: phanTichTietKiem, mo_ta: 'Chỗ có thể tiết kiệm: khoản chi nghi trả trùng, tiền bớt được nếu đổi model AI.' },
+  chuan_bi_han_thue: { nhom: 'chung_tu', can: ['lich_thue'], chay: chuanBiHanThue, mo_ta: 'Hạn thuế kế tiếp CỦA CHÍNH CÔNG TY (kỳ thuế tiếp theo là khi nào, cần chuẩn bị gì trước hạn): việc gì, loại việc (khai, nộp, tạm nộp, thông báo, quyết toán), hạn ngày nào, còn mấy ngày, việc nào còn cần xác minh và câu hỏi còn thiếu. Ưu tiên hơn tra cứu luật cho mọi câu hỏi về hạn của công ty.' },
+  viec_uu_tien: { nhom: 'tro_ly', can: ['lich_thue', 'yeu_cau', 'chi_phi_ai', 'hoa_don_ban', 'ket_noi_ngan_hang', 'giao_dich', 'hoa_don_vao', 'chung_tu_quet'], chay: viecUuTien, mo_ta: 'Người dùng xin N việc ưu tiên cần làm (tuần này, hôm nay): trả đúng N việc xếp theo hạn thuế và mức cần xử lý; có ít hơn N việc có căn cứ thì nói thật, không thêm cho đủ.' },
   thu_tuc_thue: { nhom: 'chung_tu', can: ['thu_tuc'], chay: thuTucThue, mo_ta: 'Thủ tục hành chính thuế (tạm ngừng kinh doanh, chấm dứt mã số thuế, hoàn thuế, gia hạn, quyết toán, thay đổi đăng ký thuế…): hồ sơ gồm gì, mẫu tờ khai nào, nộp ở đâu, kết quả là gì — theo danh mục trên Cổng dịch vụ công thuế.' },
   doanh_thu_theo_hoat_dong: { nhom: 'chung_tu', can: ['thue'], chay: doanhThuTheoHoatDong, mo_ta: 'Doanh thu năm nay chia theo nhóm hoạt động (phân phối hàng hoá, dịch vụ, cho thuê…) mà người dùng đã xác nhận, phần nào chưa rõ nhóm, và vì sao phần chưa rõ chặn tờ khai. Dùng cho câu hỏi "doanh thu này là gì", "sao cho hết vào 08a", "đủ dữ liệu để khai chưa".' },
   nghia_vu_thue: { nhom: 'chung_tu', can: ['thue'], chay: nghiaVuThue, mo_ta: 'Nghĩa vụ thuế năm nay suy từ doanh thu thật và văn bản pháp luật trong kho: có phải nộp GTGT, TNCN không, dùng mẫu tờ khai nào, hạn nào, kèm trích dẫn.' },

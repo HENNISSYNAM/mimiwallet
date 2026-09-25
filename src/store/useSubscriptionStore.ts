@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
+import { GOI_THANG } from '../../supabase/functions/_shared/billing/bang-gia.ts';
 
 /*
  * GỠ STRIPE 24/09/2026: `create-checkout`, `check-subscription`, `customer-portal` đã gỡ khỏi máy
@@ -25,14 +26,15 @@ export const TIERS = {
   starter: {
     price_id: "price_1T8tgnLass6OCaReGllSME4X",
     product_id: "prod_U77wv2cPzLebdl",
-    name: "Starter",
-    price: 149000,
+    name: GOI_THANG.starter.ten,
+    // Một bảng giá với máy chủ thu tiền và trang chủ — `_shared/billing/bang-gia.ts`.
+    price: GOI_THANG.starter.amount,
   },
   growth: {
     price_id: "price_1T8thHLass6OCaReod0wzAse",
     product_id: "prod_U77xQit3Bcf50H",
-    name: "Growth",
-    price: 249000,
+    name: GOI_THANG.growth.ten,
+    price: GOI_THANG.growth.amount,
   },
 } as const;
 

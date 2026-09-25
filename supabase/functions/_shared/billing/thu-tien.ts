@@ -19,8 +19,9 @@ import { ghiSuKien } from '../do-luong/su-kien.ts';
 // deno-lint-ignore no-explicit-any
 type Db = any;
 
-/** Giá một lượt xuất tờ khai. Người dùng chốt ngày 24/09/2026: "khoảng 10k một tờ". */
-export const GIA_MOT_TO_KHAI = 10_000;
+// Giá đọc từ MỘT bảng giá chung với Cài đặt và trang chủ — xem `bang-gia.ts`.
+import { GIA_MOT_TO_KHAI, GOI_THANG } from './bang-gia.ts';
+export { GIA_MOT_TO_KHAI };
 /** Mua tối đa bao nhiêu lượt một lần — chặn hoá đơn gõ nhầm 1000 lượt. */
 export const TOI_DA_LUOT_MOT_LAN = 20;
 
@@ -28,10 +29,7 @@ export const TOI_DA_LUOT_MOT_LAN = 20;
  * Bảng giá gói tháng. Nguồn sự thật ở MÁY CHỦ — giá do trình duyệt gửi thì sửa được thành 1.000đ.
  * Khoá phải khớp `TIERS` trong `src/store/useSubscriptionStore.ts`.
  */
-export const GOI: Record<string, { amount: number; ten: string }> = {
-  starter: { amount: 149_000, ten: 'Starter' },
-  growth: { amount: 249_000, ten: 'Growth' },
-};
+export const GOI: Record<string, { amount: number; ten: string }> = GOI_THANG;
 
 /** Chỉ giữ chữ số: "0123 456 789" và "0123456789" là một tài khoản. */
 const chuSo = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '');

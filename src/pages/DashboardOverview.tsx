@@ -17,7 +17,7 @@ import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { duocHien } from '../../supabase/functions/_shared/minh-hoa.ts';
 import { HangDoiTienVao } from '@/components/tien-vao/HangDoiTienVao';
 import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
-import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
+import { cauConLai, ngayMoc, useLichThue } from '@/lib/lichThue';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
@@ -140,6 +140,8 @@ function PhanLoaiHoatDongChuaRo() {
 
 export default function DashboardOverview() {
   const navigate = useNavigate();
+  // Hạn thuế CỦA công ty này, không phải lịch chung cả nước — xem `lib/lichThue.ts`.
+  const { du: lichThue } = useLichThue();
   const { t, i18n } = useTranslation();
   const [rangeIdx, setRangeIdx] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -496,10 +498,12 @@ export default function DashboardOverview() {
           bên nào công nhận. Ô này giờ là việc có hạn thật: kỳ khai thuế kế tiếp.
         */}
         {(() => {
-          const ky = kyKeKhaiKeTiep();
+          const moc = lichThue?.mocKeTiep ?? null;
           return (
-            <KPICard icon={ShieldCheck} label="Kỳ khai thuế kế tiếp" value={`Quý ${ky.quy}/${ky.nam}`}
-              sub={ky.conLai <= 0 ? 'Hôm nay là hạn' : `Còn ${ky.conLai} ngày`} subColor={ky.conLai <= 7 ? 'text-mimi-amber' : 'text-muted-foreground'}>
+            <KPICard icon={ShieldCheck} label="Việc thuế kế tiếp"
+              value={moc ? ngayMoc(moc.han) : lichThue ? 'Chưa có hạn đã biết' : 'Đang tính…'}
+              sub={moc ? `${moc.ten} · ${cauConLai(moc)}` : ''}
+              subColor={moc && moc.con_lai !== null && moc.con_lai <= 5 ? 'text-mimi-amber' : 'text-muted-foreground'}>
               <button onClick={() => navigate('/dashboard/nhac-thue')} className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1">
                 Xem việc cần chuẩn bị <ArrowRight size={10} />
               </button>

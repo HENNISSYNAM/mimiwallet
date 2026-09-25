@@ -20,6 +20,7 @@ import {
   thongBaoGoi, thongBaoHanThue, thongBaoLuatMoi, trongGioYenLang, type BanNhapThongBao,
 } from "../_shared/thong-bao/sinh.ts";
 import { dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
+import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
 import { nhapTienVaoGanDay } from "../_shared/thong-bao/quet-tien-vao.ts";
 
 const corsHeaders = {
@@ -75,9 +76,20 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
     db.from("subscriptions").select("plan, current_period_end").eq("company_id", companyId).maybeSingle(),
   ]);
 
+  /*
+   * Hạn thuế theo LỊCH CỦA CÔNG TY NÀY — cùng hàm với màn hình (`tax-summary`), nên thông báo và màn
+   * hình không thể nói khác nhau. Lỗi đọc lịch không được chặn các thông báo khác.
+   */
+  // Mốc nhắc tính theo ngày: tính trong khung 7–9 giờ là đủ (8, 9 giờ là dự phòng khi lượt 7 giờ lỗi).
+  const hanThue = lucVN.getHours() >= 7 && lucVN.getHours() <= 9
+    ? await docLichCongTy(db, companyId, { nam: lucVN.getFullYear(), homNay, laDemo })
+      .then((l) => thongBaoHanThue(l.lich))
+      .catch((e) => { console.error("lịch thuế cho nhắc hạn:", e instanceof Error ? e.message : e); return [] as BanNhapThongBao[]; })
+    : [];
+
   const nhap: BanNhapThongBao[] = [
-    // Hạn thuế chỉ báo từ 7 giờ sáng: không ai cần biết "còn 7 ngày" lúc 0 giờ 7 phút.
-    ...(lucVN.getHours() >= 7 ? thongBaoHanThue(lucVN) : []),
+    // Hạn thuế chỉ báo từ 7 giờ sáng: không ai cần biết "còn 5 ngày" lúc 0 giờ 7 phút.
+    ...hanThue,
     ...luatMoi,
     ...tienVao,
     ...thongBaoGoi(goi.data ?? null, homNay),

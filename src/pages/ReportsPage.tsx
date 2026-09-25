@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { taiCsv } from '@/lib/csv';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -171,16 +172,11 @@ export default function ReportsPage() {
       return;
     }
     // Tên cột theo từ điển chỉ số: tệp rời ứng dụng rồi thì không còn ngữ cảnh nào giải thích.
-    const dong = [['thang', 'tien_vao_ngan_hang', 'tien_ra_ngan_hang', 'chenh_lech_dong_tien'].join(',')].concat(
-      thang.map((r) => [r.khoa, r.tienVao, r.tienRa, r.chenhLech].join(',')),
-    );
-    if (catNgan) dong.push(`# CHUA DU DU LIEU: moi doc ${doDay?.daDoc} / ${doDay?.tong} giao dich`);
-    const url = URL.createObjectURL(new Blob([dong.join('\n')], { type: 'text/csv;charset=utf-8;' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dong-tien-ngan-hang-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const dong: (string | number)[][] = thang.map((r) => [r.khoa, r.tienVao, r.tienRa, r.chenhLech]);
+    if (catNgan) dong.push([`# CHUA DU DU LIEU: moi doc ${doDay?.daDoc} / ${doDay?.tong} giao dich`]);
+    taiCsv(`dong-tien-ngan-hang-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['thang', 'tien_vao_ngan_hang', 'tien_ra_ngan_hang', 'chenh_lech_dong_tien'], dong);
+    toast.success(catNgan ? `Đã xuất ${thang.length} tháng — số liệu CHƯA đủ, tệp có ghi chú.` : `Đã xuất ${thang.length} tháng dòng tiền ra tệp CSV.`);
   }, [thang, catNgan, doDay]);
 
   if (dangTai) {

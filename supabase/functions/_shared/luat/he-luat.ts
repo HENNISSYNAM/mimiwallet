@@ -34,6 +34,7 @@ export const VAN_BAN: Record<string, { ten: string; ngay_ban_hanh: string }> = {
   '48/2024/QH15': { ten: 'Luật Thuế giá trị gia tăng số 48/2024/QH15', ngay_ban_hanh: '2024-11-26' },
   '18/2026/TT-BTC': { ten: 'Thông tư 18/2026/TT-BTC về hồ sơ, thủ tục quản lý thuế đối với hộ kinh doanh, cá nhân kinh doanh', ngay_ban_hanh: '2026-03-05' },
   '50/2026/TT-BTC': { ten: 'Thông tư 50/2026/TT-BTC sửa đổi Thông tư 18/2026/TT-BTC, thay mẫu 01/TKN-CNKD và 01/CNKD', ngay_ban_hanh: '2026-05-13' },
+  '252/2026/NĐ-CP': { ten: 'Nghị định số 252/2026/NĐ-CP quy định chi tiết một số điều và biện pháp để tổ chức, hướng dẫn thi hành Luật Quản lý thuế', ngay_ban_hanh: '2026-06-30' },
   '69/2025/TT-BTC': { ten: 'Thông tư 69/2025/TT-BTC hướng dẫn Luật Thuế GTGT và Nghị định 181/2025/NĐ-CP', ngay_ban_hanh: '2025-07-01' },
 };
 
@@ -52,6 +53,13 @@ export interface CanCu {
 const SUA_1_TY = 'Mức "500 triệu đồng" trong câu trích đã được Nghị định 141/2026/NĐ-CP sửa thành "01 tỷ đồng", áp dụng từ 01/01/2026.';
 
 export const CAN_CU: Record<string, CanCu> = {
+  // Nghị định 252/2026/NĐ-CP (hiệu lực 01/07/2026) — chép từ kho Công báo ngày 25/09/2026.
+  nd252_d10_k2: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 2', trich: 'Đối với loại thuế khai theo tháng, thời hạn nộp hồ sơ khai thuế chậm nhất là ngày thứ 20 của tháng tiếp theo tháng phát sinh nghĩa vụ thuế.', y: 'Khai theo tháng: hạn ngày 20 tháng sau.' },
+  nd252_d10_k3: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 3', trich: 'Đối với loại thuế khai theo quý, thời hạn nộp hồ sơ khai thuế chậm nhất là ngày cuối cùng của tháng đầu của quý tiếp theo quý phát sinh nghĩa vụ thuế.', y: 'Khai theo quý: hạn ngày cuối tháng đầu của quý sau.' },
+  nd252_d10_k5a: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 5 điểm a', trich: 'Chậm nhất là ngày cuối cùng của tháng thứ 03 kể từ ngày kết thúc kỳ quyết toán thuế;', y: 'Quyết toán năm: hạn ngày cuối tháng thứ 3 sau khi kết thúc năm.' },
+  nd252_d10_k5b: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 5 điểm b', trich: 'Chậm nhất là ngày thứ 45 kể từ ngày người nộp thuế có quyết định về việc chấm dứt hoạt động, giải thể, phá sản,', y: 'Giải thể, chấm dứt hoạt động: quyết toán trong 45 ngày kể từ ngày có quyết định.' },
+  nd252_d24_k2: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 24', vi_tri: 'Điều 24 khoản 2', trich: 'Thời hạn tạm nộp quý chậm nhất là ngày cuối cùng của tháng đầu của quý tiếp theo quý phát sinh nghĩa vụ thuế, khoản thu khác.', y: 'Tạm nộp thuế thu nhập doanh nghiệp theo quý: hạn ngày cuối tháng đầu của quý sau.' },
+  nd252_d7_c1: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 7', vi_tri: 'Điều 7, điểm c.1 (quy định về tạm ngừng hoạt động)', trich: 'Người nộp thuế không phải nộp hồ sơ khai thuế, trừ trường hợp người nộp thuế tạm ngừng hoạt động, kinh doanh không trọn tháng, quý, năm dương lịch hoặc năm tài chính thì vẫn phải nộp hồ sơ khai thuế tháng, quý, hồ sơ quyết toán năm;', y: 'Trong thời gian tạm ngừng không phải khai thuế — trừ khi tạm ngừng không trọn tháng, quý, năm.' },
   nd141_d1_k1: { van_ban: '141/2026/NĐ-CP', dieu: 'Điều 1', vi_tri: 'Điều 1 khoản 1', trich: 'Sửa đổi cụm từ “500 triệu đồng” thành “01 tỷ đồng” tại Điều 3, Điều 4, khoản 1 Điều 8, Điều 9, Điều 10', y: 'Ngưỡng doanh thu của hộ kinh doanh nâng từ 500 triệu lên 01 tỷ đồng/năm.' },
   nd141_d1_k2a: { van_ban: '141/2026/NĐ-CP', dieu: 'Điều 1', vi_tri: 'Điều 1 khoản 2 (khoản 5 Điều 8 NĐ 68/2026), điểm a', trich: 'Hộ kinh doanh, cá nhân kinh doanh có doanh thu năm trên 01 tỷ đồng thì phải áp dụng hóa đơn điện tử có mã của cơ quan thuế', y: 'Doanh thu năm trên 01 tỷ phải dùng hoá đơn điện tử có mã của cơ quan thuế.' },
   nd141_d1_k2c: { van_ban: '141/2026/NĐ-CP', dieu: 'Điều 1', vi_tri: 'Điều 1 khoản 2 (khoản 5 Điều 8 NĐ 68/2026), điểm c', trich: 'đăng ký sử dụng hóa đơn điện tử trong thời gian 30 ngày kể từ ngày cuối cùng của kỳ tính thuế có doanh thu lũy kế trên 01 tỷ đồng.', y: 'Đăng ký hoá đơn điện tử trong 30 ngày sau kỳ doanh thu lũy kế vượt 01 tỷ.' },

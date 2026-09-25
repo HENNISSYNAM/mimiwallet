@@ -35,6 +35,8 @@ export async function docThongBao(gioiHan = 30): Promise<ThongBao[]> {
   if (!id) return [];
   const { data, error } = await supabase.from('thong_bao')
     .select('id, company_id, loai, muc_do, tieu_de, noi_dung, duong_dan, hanh_dong, tao_luc, da_doc_luc, da_xu_ly_luc')
+    // Thông báo lỗi thời (trỏ tới khoản không còn tồn tại) được lưu lại, không hiện.
+    .is('loi_thoi_luc', null)
     .eq('company_id', id).order('tao_luc', { ascending: false }).limit(gioiHan);
   if (error) throw error;
   return (data ?? []) as unknown as ThongBao[];

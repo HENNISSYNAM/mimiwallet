@@ -3,6 +3,7 @@
  * định dạng số, câu hỏi gợi ý, và chạy một đề xuất sau khi người dùng xác nhận.
  */
 import type { DeXuat, DonVi, NhomNangLuc, O } from '../../supabase/functions/_shared/tro-ly/kieu.ts';
+import { ngayHienThi } from '../../supabase/functions/_shared/ngay.ts';
 
 export * from '../../supabase/functions/_shared/tro-ly/kieu.ts';
 export { TEN_NHOM } from '../../supabase/functions/_shared/tro-ly/tra-loi.ts';
@@ -10,7 +11,8 @@ export { TEN_NHOM } from '../../supabase/functions/_shared/tro-ly/tra-loi.ts';
 export function dinhDang(v: O | undefined, donVi: DonVi): string {
   if (v === null || v === undefined || v === '') return '—';
   if (typeof v === 'string') {
-    if (donVi === 'ngay' && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10).split('-').reverse().join('/');
+    // Ngày giữ chỗ (01/01/1900), chuỗi rỗng, ngày sai → "Chưa xác định", không in một ngày bịa.
+    if (donVi === 'ngay') return ngayHienThi(v);
     return v;
   }
   switch (donVi) {

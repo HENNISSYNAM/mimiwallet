@@ -48,7 +48,9 @@ import { CAN_CU, suyLuan } from "../_shared/luat/he-luat.ts";
 import { docHieuLuc, kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { nhanHieuLuc } from "../_shared/luat/hieu-luc.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
+import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
 import { chonThuTuc } from "../_shared/tro-ly/thu-tuc.ts";
+import { ngayHopLe } from "../_shared/ngay.ts";
 import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
 import { congTyLaDemo, locMinhHoa } from "../_shared/minh-hoa.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
@@ -333,7 +335,8 @@ async function traKhoLuat(db: Db, cauHoi: string, homNay: string): Promise<{
       return true;
     }).map((d) => {
       const h = d.so_hieu && hl ? hl.get(d.so_hieu) : undefined;
-      return { ...d, hieu_luc: h ? nhanHieuLuc(h) : undefined };
+      // Ngày giữ chỗ của nguồn (1900-01-01) không bao giờ ra màn hình — xem `_shared/ngay.ts`.
+      return { ...d, ngay_ban_hanh: ngayHopLe(d.ngay_ban_hanh), ngay_hieu_luc: ngayHopLe(d.ngay_hieu_luc), hieu_luc: h ? nhanHieuLuc(h) : undefined };
     });
     return {
       doan: chonNguon(conDung),
@@ -355,6 +358,7 @@ async function docDuLieu(
   tuyChon: { soThangAi?: number; cauHoi?: string } = {},
 ): Promise<DuLieu> {
   const d = duLieuTrong(moc.homNay, moc.ky);
+  d.cauHoi = tuyChon.cauHoi;
   const laDemo = await congTyLaDemo(db, companyId);
   const tuLichSu = [congNgay(moc.homNay, -NGAY_LICH_SU), moc.ky.tu].sort()[0];
   // Mặc định từ đầu tháng trước (so cùng kỳ) hoặc 31 ngày (token); biểu đồ màn đầu cần 5 tháng.
@@ -534,6 +538,12 @@ async function docDuLieu(
         chuaKiemHieuLuc: kiem.some((c) => c.hieu_luc === null),
       };
     })());
+  }
+  if (can.has("lich_thue")) {
+    // Cùng hàm với tax-summary và cron nhắc hạn: trợ lý không thể nói hạn khác màn Nhắc thuế.
+    viec.push(docLichCongTy(db, companyId, { nam: Number(moc.homNay.slice(0, 4)), homNay: moc.homNay, laDemo })
+      .then((l) => { d.lichThue = l; })
+      .catch((e) => { console.error("lịch thuế:", e instanceof Error ? e.message : e); d.lichThue = null; }));
   }
   if (can.has("kho_luat")) {
     viec.push(traKhoLuat(db, tuyChon.cauHoi ?? "", moc.homNay).then((r) => {

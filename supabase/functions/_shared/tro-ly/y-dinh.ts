@@ -36,6 +36,9 @@ const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   [/\b(thu tuc|tam ngung|nghi ban|ngung kinh doanh|tiep tuc kinh doanh|dong ma so thue|dong mst|cham dut hieu luc|giai the|gia han nop|hoan thue|hoan nop thua|thay doi thong tin dang ky|ho so gom|can nhung giay to|can giay to gi|nop o dau|ma thu tuc)\b/, 'thu_tuc_thue'],
   // Trước "tờ khai": câu hỏi về NHÓM HOẠT ĐỘNG / đủ dữ liệu để khai có chữ "khai" nhưng cần bảng chia nhóm.
   [/\b(nhom hoat dong|chua phan loai|chua phan nhom|phan nhom|thuoc nhom nao|dong 08|08a|08b|du du lieu de khai|du du lieu khai|san sang khai|la doanh thu gi|doanh thu gi)\b/, 'doanh_thu_theo_hoat_dong'],
+  // Hạn của CHÍNH công ty (25/09/2026): trước đây rơi vào tra cứu Công báo. Đứng trước "tờ khai".
+  [/\b(ky thue|han thue|han nop|han khai|toi han|sap toi han|ky khai|ky ke khai|lich thue|nhac thue|khi nao (phai |thi )?(nop|khai)|chuan bi (gi )?(truoc|cho) (han|ky))\b/, 'chuan_bi_han_thue'],
+  [/\b(viec uu tien|uu tien (gi|nao|lam)|viec can lam|can lam (gi|tuan nay|hom nay)|nen lam gi|lam gi truoc)\b/, 'viec_uu_tien'],
   [/\b(to khai|khai thue|nop thue|nghia vu thue|mien thue|thue gtgt|thue tncn|thue thu nhap|thong bao doanh thu|nguong doanh thu|ty le thue|quyet toan|cnkd|mau 01)\b/, 'nghia_vu_thue'],
   [/\b(chung tu|thieu hoa don|chua co hoa don|hoa don dau vao|hoa don mua vao)\b/, 'thieu_chung_tu'],
   [/\b(qua han|cong no|phai thu|khach no|no tien|chua thu|hoa don ban)\b/, 'hoa_don_qua_han'],

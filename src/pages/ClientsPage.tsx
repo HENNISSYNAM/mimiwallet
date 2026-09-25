@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatDateShort } from '@/lib/formatters';
-import { Search, Loader2, Building2, Store, GitBranch, ShieldCheck, ShieldAlert, ShieldQuestion, Mail, Phone, MapPin } from 'lucide-react';
+import { Plus, Search, Loader2, Building2, Store, GitBranch, ShieldCheck, ShieldAlert, ShieldQuestion, Mail, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { chuanHoaMst, MST_HOP_LE } from '@/lib/maSoThue';
 import { GlassTabs } from '@/components/ui/glass-tabs';
 
 /**
@@ -83,6 +84,15 @@ export default function ClientsPage() {
   const session = useAuthStore((s) => s.session);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  /*
+   * Lỗi tải KHÁC danh bạ trống (25/09/2026). Trước đây lỗi chỉ hiện một toast rồi màn hình nói
+   * "Chưa có khách hàng nào" — người dùng tưởng dữ liệu đã mất.
+   */
+  const [loi, setLoi] = useState<string | null>(null);
+  const [moThem, setMoThem] = useState(false);
+  const [ten, setTen] = useState('');
+  const [mst, setMst] = useState('');
+  const [dangThem, setDangThem] = useState(false);
   const [q, setQ] = useState('');
   const [tab, setTab] = useState('all');
   /** Id các khách đang chờ kết quả tra cứu — dùng để khoá đúng nút đã bấm. */
@@ -95,7 +105,12 @@ export default function ClientsPage() {
     if (!companyId) { setClients([]); setLoading(false); return; }
     const { data, error } = await supabase
       .from('clients').select('*').eq('company_id', companyId).order('name');
-    if (error) toast.error('Không tải được danh bạ: ' + error.message);
+    if (error) {
+      setLoi('Không tải được danh bạ lúc này.');
+      setLoading(false);
+      return;
+    }
+    setLoi(null);
     setClients((data as Client[]) ?? []);
     setLoading(false);
   };
@@ -147,6 +162,35 @@ export default function ClientsPage() {
     setClients((prev) => prev.map((x) => (x.id === c.id ? { ...x, status } : x)));
   };
 
+  /**
+   * Thêm một khách vào danh bạ. Ghi thẳng bằng phiên người dùng: RLS ở máy chủ chỉ cho chủ công ty
+   * thêm vào công ty của mình, và ràng buộc ở bảng chặn tên rỗng hoặc quá dài.
+   */
+  const themKhach = async () => {
+    const tenSach = ten.trim().replace(/\s+/g, ' ');
+    const mstSach = mst.trim() ? chuanHoaMst(mst) : '';
+    if (!tenSach || tenSach.length > 200) { toast.error('Nhập tên khách (tối đa 200 ký tự).'); return; }
+    if (mstSach && !MST_HOP_LE(mstSach)) { toast.error('Mã số thuế gồm 10 hoặc 12 chữ số, có thể kèm -001 cho chi nhánh.'); return; }
+    if (mstSach && clients.some((c) => c.tax_code && chuanHoaMst(c.tax_code) === mstSach)) {
+      toast.error('Mã số thuế này đã có trong danh bạ.'); return;
+    }
+    setDangThem(true);
+    try {
+      const companyId = await idCongTyDangDung();
+      if (!companyId) { toast.error('Chưa chọn công ty.'); return; }
+      const { error } = await supabase.from('clients').insert({ company_id: companyId, name: tenSach, tax_code: mstSach || null });
+      if (error) {
+        toast.error(error.code === '42501' ? 'Chỉ chủ công ty thêm được khách vào danh bạ.' : 'Chưa thêm được khách. Thử lại sau ít phút.');
+        return;
+      }
+      toast.success(`Đã thêm ${tenSach} vào danh bạ.`);
+      setTen(''); setMst(''); setMoThem(false);
+      await load();
+    } finally {
+      setDangThem(false);
+    }
+  };
+
   const dem = useMemo(() => ({
     all: clients.length,
     prospect: clients.filter((c) => c.status === 'prospect').length,
@@ -174,6 +218,13 @@ export default function ClientsPage() {
             {dem.all} đối tác · {dem.prospect} đang tiếp cận · {dem.active} đang giao dịch
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button" onClick={() => setMoThem((v) => !v)}
+          className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110"
+        >
+          <Plus className="w-4 h-4" /> Thêm khách
+        </button>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -182,7 +233,31 @@ export default function ClientsPage() {
             className="pl-9 pr-3 h-10 w-72 rounded-xl bg-muted/50 border border-border text-sm outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
+        </div>
       </motion.div>
+
+      {moThem && (
+        <form
+          onSubmit={(e) => { e.preventDefault(); void themKhach(); }}
+          className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-end"
+          aria-label="Thêm khách vào danh bạ"
+        >
+          <label className="flex-1 text-sm">
+            <span className="mb-1 block text-muted-foreground">Tên khách</span>
+            <input value={ten} onChange={(e) => setTen(e.target.value)} maxLength={200} required autoFocus
+              className="h-10 w-full rounded-xl border border-border bg-muted/50 px-3 outline-none focus:ring-2 focus:ring-primary/30" />
+          </label>
+          <label className="text-sm sm:w-56">
+            <span className="mb-1 block text-muted-foreground">Mã số thuế (không bắt buộc)</span>
+            <input value={mst} onChange={(e) => setMst(e.target.value)} inputMode="numeric" maxLength={20}
+              className="h-10 w-full rounded-xl border border-border bg-muted/50 px-3 outline-none focus:ring-2 focus:ring-primary/30" />
+          </label>
+          <button type="submit" disabled={dangThem}
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50">
+            {dangThem && <Loader2 className="w-4 h-4 animate-spin" />} Lưu
+          </button>
+        </form>
+      )}
 
       <motion.div variants={fadeUp}>
         <GlassTabs
@@ -200,9 +275,24 @@ export default function ClientsPage() {
         <div className="flex items-center gap-2 text-muted-foreground py-16 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" /> Đang tải danh bạ…
         </div>
+      ) : loi ? (
+        <div role="alert" className="flex flex-col items-center gap-3 py-16 text-center">
+          <p className="text-sm text-destructive">{loi} Danh bạ của bạn vẫn còn — chỉ là chưa đọc được.</p>
+          <button type="button" onClick={() => void load()} className="h-10 rounded-xl border border-border px-4 text-sm hover:bg-accent">Thử lại</button>
+        </div>
       ) : hienThi.length === 0 ? (
-        <motion.div variants={fadeUp} className="text-center py-16 text-muted-foreground">
-          {clients.length === 0 ? 'Chưa có khách hàng nào trong danh bạ.' : 'Không có khách nào khớp bộ lọc.'}
+        <motion.div variants={fadeUp} className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
+          {clients.length === 0 ? (
+            <>
+              <p>Chưa có khách hàng nào trong danh bạ.</p>
+              <p className="max-w-md text-sm">Thêm khách kèm mã số thuế để MIMI tra trạng thái người nộp thuế và khớp tiền về theo tên khách.</p>
+              {!moThem && (
+                <button type="button" onClick={() => setMoThem(true)} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground">
+                  <Plus className="w-4 h-4" /> Thêm khách đầu tiên
+                </button>
+              )}
+            </>
+          ) : 'Không có khách nào khớp bộ lọc.'}
         </motion.div>
       ) : (
         <motion.div variants={stagger} className="grid gap-3">

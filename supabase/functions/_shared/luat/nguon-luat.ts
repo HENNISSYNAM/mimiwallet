@@ -10,6 +10,8 @@
  * HÀM THUẦN, để test được mà không cần database hay mô hình.
  */
 
+import { ngayHopLe } from '../ngay.ts';
+
 export interface DoanLuat {
   ma_cong_bao: string;
   so_hieu: string | null;
@@ -76,7 +78,7 @@ export function chonNguon(ds: DoanLuat[], toiDa = SO_NGUON_TOI_DA): DoanLuat[] {
   return ra;
 }
 
-const ngayVN = (iso: string | null) => (iso ? iso.slice(0, 10).split("-").reverse().join("/") : "không rõ");
+const ngayVN = (iso: string | null) => { const n = ngayHopLe(iso); return n ? n.split("-").reverse().join("/") : "không rõ"; };
 
 export function tenNguon(d: DoanLuat): string {
   const van = [d.loai, d.so_hieu].filter(Boolean).join(" ") || d.ten;

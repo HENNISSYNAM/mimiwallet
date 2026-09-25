@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarClock } from 'lucide-react';
-import { kyKeKhaiKeTiep, mucKhan } from '@/lib/hanKeKhai';
+import { mucKhan } from '@/lib/hanKeKhai';
+import { cauConLai, ngayMoc, useLichThue } from '@/lib/lichThue';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,8 +98,10 @@ export default function BatDauTuDau() {
    * khác làm hôm nay hay tuần sau cũng thế, riêng cái này trễ là bị phạt.
    * Tính một lần cho mỗi lần vẽ — không cần bộ đếm, vì đơn vị là ngày.
    */
-  const ky = kyKeKhaiKeTiep();
-  const khan = mucKhan(ky.conLai);
+  // Hạn của CHÍNH công ty này (không phải lịch chung) — xem `lib/lichThue.ts`.
+  const { du: lichThue } = useLichThue();
+  const moc = lichThue?.mocKeTiep ?? null;
+  const khan = mucKhan(moc?.con_lai ?? 999);
 
   return (
     <motion.div
@@ -126,15 +129,15 @@ export default function BatDauTuDau() {
         <p className="text-sm text-muted-foreground mt-0.5">
           Nối tài khoản ngân hàng, MIMI đọc sao kê và dựng sẵn bộ chi phí cho kỳ kê khai.
         </p>
-        <p className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${
+        {moc && <p className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${
           khan === 'gap'
             ? 'bg-destructive/10 text-destructive'
             : khan === 'sap_toi'
               ? 'bg-mimi-amber/12 text-mimi-amber'
               : 'bg-muted text-muted-foreground'
         }`}>
-          <CalendarClock size={13} /> {ky.cau}
-        </p>
+          <CalendarClock size={13} /> {moc.ten}: hạn {ngayMoc(moc.han)} ({cauConLai(moc)})
+        </p>}
         <p className="text-sm text-muted-foreground mt-2">
           {xong}/{buocs.length} bước — các bước tự đánh dấu khi bạn làm xong, không cần bấm.
         </p>

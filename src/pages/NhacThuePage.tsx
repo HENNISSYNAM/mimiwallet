@@ -4,7 +4,9 @@ import { CalendarClock, ExternalLink, FileCheck2, Loader2, ScrollText } from 'lu
 import { supabase } from '@/integrations/supabase/client';
 import { DUONG_DAN_NOP_TO_KHAI } from '@/lib/goiToKhai';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
-import { cacKyKeTiep, khoangNgayKyKeKhai, kyKeKhaiKeTiep, mucKhan, type MucKhan } from '@/lib/hanKeKhai';
+import { mucKhan, type MucKhan } from '@/lib/hanKeKhai';
+import { cauConLai, ngayMoc, TEN_LOAI_MOC, useLichThue, type MocThue } from '@/lib/lichThue';
+import { kemCongTy } from '@/lib/congTyDangDung';
 import { dinhDang } from '@/lib/troLy';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '@/lib/giayTo';
 import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
@@ -60,15 +62,19 @@ const ngay = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.ge
 const conLaiChu = (n: number) => (n <= 0 ? 'Hôm nay là hạn' : `Còn ${n} ngày`);
 
 export default function NhacThuePage() {
-  const ky = useMemo(() => kyKeKhaiKeTiep(), []);
-  const lich = useMemo(() => cacKyKeTiep(new Date(), 4), []);
-  const khoang = khoangNgayKyKeKhai(ky);
+  /*
+   * Lịch CỦA công ty này (25/09/2026). Trước đây phần đầu trang đọc lịch chung cả nước và hiện "Nộp tờ
+   * khai quý 3 — còn 36 ngày" ngay trên đoạn nói hộ dưới ngưỡng không khai quý. Giờ cả trang đọc một
+   * nguồn: `tax-summary` → `_shared/luat/lich-thue.ts`.
+   */
+  const { du: lichThue, loi: loiLich } = useLichThue();
+  const moc = lichThue?.mocKeTiep ?? null;
   const [thue, setThue] = useState<TomTatThue | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
 
   useEffect(() => {
     let huy = false;
-    supabase.functions.invoke('tax-summary').then(({ data, error }) => {
+    kemCongTy({}).then((body) => supabase.functions.invoke('tax-summary', { body })).then(({ data, error }) => {
       if (huy) return;
       if (error || !data || data.error) setLoi('Chưa đọc được doanh thu năm. Thử lại sau ít phút.');
       else setThue(data as TomTatThue);
@@ -76,7 +82,7 @@ export default function NhacThuePage() {
     return () => { huy = true; };
   }, []);
 
-  const khan = mucKhan(ky.conLai);
+  const khan = mucKhan(moc?.con_lai ?? 999);
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
@@ -86,39 +92,42 @@ export default function NhacThuePage() {
       </header>
 
       <section aria-labelledby="sap-toi-han" className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex gap-3">
-            <CalendarClock size={22} className="mt-0.5 shrink-0 text-primary" aria-hidden />
-            <div>
-              <h2 id="sap-toi-han" className="text-lg font-semibold text-foreground">Nộp tờ khai quý {ky.quy}/{ky.nam}</h2>
-              <p className="text-sm text-muted-foreground">Hạn {ngay(ky.han)} · kỳ {dinhDang(khoang.tu, 'ngay')}–{dinhDang(khoang.den, 'ngay')}</p>
+        {!lichThue && !loiLich && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Đang tính lịch thuế của bạn…</p>}
+        {loiLich && <p className="text-sm text-destructive">Chưa đọc được lịch thuế. Thử lại sau ít phút.</p>}
+        {lichThue && !moc && <p className="text-sm text-muted-foreground">Chưa có việc thuế nào có hạn MIMI biết chắc. Xem các mục cần xác minh bên dưới.</p>}
+        {moc && (
+          <>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex gap-3">
+                <CalendarClock size={22} className="mt-0.5 shrink-0 text-primary" aria-hidden />
+                <div>
+                  <h2 id="sap-toi-han" className="text-lg font-semibold text-foreground">{moc.ten}</h2>
+                  <p className="text-sm text-muted-foreground">Hạn {ngayMoc(moc.han)} · {TEN_LOAI_MOC[moc.loai]}</p>
+                </div>
+              </div>
+              <span className={`self-start rounded-full px-3 py-1 text-sm font-medium ${MAU_KHAN[khan]}`}>{cauConLai(moc)}</span>
             </div>
-          </div>
-          <span className={`self-start rounded-full px-3 py-1 text-sm font-medium ${MAU_KHAN[khan]}`}>{conLaiChu(ky.conLai)}</span>
-        </div>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Hộ kinh doanh có doanh thu năm trên 01 tỷ đồng khai theo quý; hạn là ngày cuối của tháng liền sau quý. Doanh thu năm từ 01 tỷ
-          đồng trở xuống thì không khai quý, chỉ thông báo doanh thu năm, hạn 31/01 năm sau.{' '}
-          <span className="italic">Nguồn: Nghị định 68/2026/NĐ-CP Điều 8, sửa bởi Nghị định 141/2026/NĐ-CP.</span>{' '}
-          Nếu hạn rơi vào ngày nghỉ, luật cho lùi — ngày trên đây là mốc sớm nhất.
-        </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Link to="/dashboard/to-khai" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110">
-            <ScrollText size={16} /> Soạn tờ khai quý {ky.quy}
-          </Link>
-          <a
-            href={DUONG_DAN_NOP_TO_KHAI}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent"
-          >
-            <img src={logoDichVuCong} alt="" className="h-4 w-4 object-contain" /> Nộp trên Cổng dịch vụ công <ExternalLink size={14} />
-          </a>
-          <Link to="/dashboard/chung-tu" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent">
-            <FileCheck2 size={16} /> Kiểm chứng từ quý {ky.quy}
-          </Link>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">MIMI soạn bản nháp và mở cổng nộp; bạn ký và nộp — MIMI không nộp thay.</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{moc.vi_sao}</p>
+            {moc.cau_hoi && <p className="mt-2 text-sm font-medium text-mimi-amber">{moc.cau_hoi}</p>}
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Link to="/dashboard/to-khai" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110">
+                <ScrollText size={16} /> Mở Tờ khai thuế
+              </Link>
+              <a
+                href={DUONG_DAN_NOP_TO_KHAI}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent"
+              >
+                <img src={logoDichVuCong} alt="" className="h-4 w-4 object-contain" /> Nộp trên Cổng dịch vụ công <ExternalLink size={14} />
+              </a>
+              <Link to="/dashboard/chung-tu" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent">
+                <FileCheck2 size={16} /> Kiểm chứng từ
+              </Link>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Nếu hạn rơi vào ngày nghỉ, luật cho lùi — ngày trên đây là mốc sớm nhất. MIMI soạn bản nháp; bạn xác nhận trước khi nộp.</p>
+          </>
+        )}
       </section>
 
       {/* Bật thông báo ở đây: người dùng tới trang này để không lỡ hạn. */}
@@ -127,13 +136,16 @@ export default function NhacThuePage() {
       <section aria-labelledby="lich-ke-khai" className="rounded-2xl border border-border bg-card">
         <h2 id="lich-ke-khai" className="border-b border-border px-5 py-3 text-sm font-semibold text-foreground">Lịch kê khai</h2>
         <ol className="divide-y divide-border">
-          {lich.map((k) => (
-            <li key={`${k.quy}-${k.nam}`} className="flex items-center justify-between gap-3 px-5 py-3">
-              <div>
-                <p className="text-sm font-medium text-foreground">Tờ khai quý {k.quy}/{k.nam}</p>
-                <p className="text-xs text-muted-foreground">Hạn {ngay(k.han)}</p>
+          {(lichThue?.lich ?? []).map((k: MocThue) => (
+            <li key={k.khoa} className={`flex items-center justify-between gap-3 px-5 py-3 ${k.trang_thai === 'khong_ap_dung' ? 'opacity-60' : ''}`}>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">{k.ten}</p>
+                <p className="text-xs text-muted-foreground">
+                  {k.han ? `Hạn ${ngayMoc(k.han)}` : 'Chưa xác định hạn'} · {TEN_LOAI_MOC[k.loai]}
+                </p>
+                {k.cau_hoi && <p className="mt-0.5 text-xs text-mimi-amber">{k.cau_hoi}</p>}
               </div>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${MAU_KHAN[mucKhan(k.conLai)]}`}>{conLaiChu(k.conLai)}</span>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${k.con_lai !== null && k.trang_thai !== 'khong_ap_dung' ? MAU_KHAN[mucKhan(k.con_lai)] : 'bg-accent text-muted-foreground'}`}>{cauConLai(k)}</span>
             </li>
           ))}
         </ol>

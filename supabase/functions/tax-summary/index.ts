@@ -3,6 +3,8 @@ import { resolveCompany } from "../_shared/company.ts";
 import { congTyLaDemo } from "../_shared/minh-hoa.ts";
 import { thresholdStatus } from "../_shared/ledger/internal-transfer.ts";
 import { CHUA_GOM, docSoLieuDoanhThu } from "../_shared/doanh-thu/so-lieu.ts";
+import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
+import { mocKeTiep } from "../_shared/luat/lich-thue.ts";
 
 /**
  * "How much have I sold this year, and which obligations have I reached?"
@@ -66,10 +68,23 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return json({ error: "Invalid token" }, 401);
 
+    /*
+     * Công ty ĐANG CHỌN (sửa 25/09/2026): người thuộc nhiều công ty trước đây luôn nhận số của công ty
+     * mặc định. Nhận `company_id` từ thân POST hoặc `?company_id=`; resolveCompany vẫn kiểm người
+     * dùng có thuộc công ty đó không.
+     */
+    const chon = await (async () => {
+      const q = new URL(req.url).searchParams.get("company_id");
+      if (q) return q;
+      if (req.method !== "POST") return null;
+      const b = await req.clone().json().catch(() => null) as { company_id?: unknown } | null;
+      return typeof b?.company_id === "string" ? b.company_id : null;
+    })();
     const company = await resolveCompany<{ id: string; name: string }>(
       supabase,
       user.id,
       "id, name",
+      chon,
     );
     if (!company) return json({ error: "No company found" }, 404);
 
@@ -88,6 +103,14 @@ Deno.serve(async (req) => {
     // ledger is illustrative (_shared/minh-hoa.ts).
     const laDemo = await congTyLaDemo(supabase, company.id);
     const s = await docSoLieuDoanhThu(supabase, company.id, year, laDemo);
+
+    /*
+     * LỊCH THUẾ CỦA CHÍNH CÔNG TY NÀY (25/09/2026) — một nguồn cho Tổng quan, Nhắc thuế, trợ lý.
+     * Trước đây các màn hình đọc lịch chung cả nước và hiện "Kỳ khai Quý 3 — còn 36 ngày" cho cả hộ
+     * dưới ngưỡng, không phải khai quý. Xem `_shared/luat/lich-thue.ts`.
+     */
+    const homNay = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
+    const { lich, loaiNguoiNop } = await docLichCongTy(supabase, company.id, { nam: year, homNay, laDemo, s });
 
     // Measured on the strongest evidence available. An e-invoice total is the
     // tax authority's own record; bank income is a reading of what arrived.
@@ -124,6 +147,10 @@ Deno.serve(async (req) => {
       transactionsCounted: s.so_giao_dich,
       hasBankConnection: s.co_ket_noi_ngan_hang,
       notCovered: CHUA_GOM,
+      // Lịch nghĩa vụ cá nhân hoá — mọi màn hình hiện hạn thuế đọc từ đây.
+      loaiNguoiNop,
+      lich,
+      mocKeTiep: mocKeTiep(lich),
       disclaimer:
         "Số liệu tham khảo, tính từ dữ liệu đã kết nối. Không phải kết luận về nghĩa vụ thuế.",
     });

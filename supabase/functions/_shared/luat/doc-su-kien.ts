@@ -11,7 +11,7 @@
  * Dòng dữ liệu thử (`is_synthetic`) không bao giờ được vào đây — trừ công ty demo, nơi cả sổ là
  * minh hoạ (`_shared/minh-hoa.ts`).
  */
-import { docSoLieuDoanhThu } from '../doanh-thu/so-lieu.ts';
+import { docSoLieuDoanhThu, type SoLieuDoanhThu } from '../doanh-thu/so-lieu.ts';
 import { chiaTheoHoatDong, khoanTuNhap, type ChiaHoatDong, type PhanLoaiHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
 import {
   chonDoanhThu, HO_SO_TRONG, loaiTuTaiKhoan,
@@ -41,7 +41,11 @@ export interface DoanhThuTheoQuy extends DoanhThuDaDoc {
  * `laDemo`: công ty demo thì đọc cả dòng minh hoạ — cả sổ của nó là minh hoạ. Xem `_shared/minh-hoa.ts`.
  */
 export async function docDoanhThuQuy(db: Db, companyId: string, nam: number, laDemo = false): Promise<DoanhThuTheoQuy> {
-  const s = await docSoLieuDoanhThu(db, companyId, nam, laDemo);
+  return doanhThuQuyTuSoLieu(await docSoLieuDoanhThu(db, companyId, nam, laDemo));
+}
+
+/** Cùng kết quả, từ số liệu đã đọc sẵn — để nơi đã có `SoLieuDoanhThu` khỏi đọc CSDL lần hai. */
+export function doanhThuQuyTuSoLieu(s: SoLieuDoanhThu): DoanhThuTheoQuy {
   return {
     hoa_don: s.hoa_don_theo_quy,
     // Khoản NGƯỜI đã xác nhận là tiền vay, tiền người nhà… đã bị trừ; gợi ý của máy không bao giờ trừ gì.

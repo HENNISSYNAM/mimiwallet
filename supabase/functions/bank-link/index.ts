@@ -694,16 +694,22 @@ Deno.serve(async (req) => {
 
         // An invoice from another company must not be payable through this one.
         if (invoiceId) {
+          // Lọc hoá đơn minh hoạ NGAY TRONG truy vấn: hoá đơn demo không bao giờ đi tiếp được xuống dưới.
           const { data: inv } = await supabase
             .from("invoices")
             .select("id")
             .eq("id", invoiceId)
-            // Không dựng mã thu tiền thật cho một hoá đơn demo. Tiền vào sẽ là
-            // tiền thật, còn khoản phải thu thì không tồn tại.
-            .eq("is_synthetic", false)
             .eq("company_id", company.id)
+            .eq("is_synthetic", false)
             .maybeSingle();
-          if (!inv) return json({ error: "Không tìm thấy hoá đơn này. Tải lại trang rồi thử lại." }, 404);
+          /*
+           * Hoá đơn minh hoạ cũng rơi vào đây, và câu trả lời nói luôn khả năng đó (25/09/2026: trước đây
+           * chỉ "không tìm thấy", người thử demo tưởng tìm kiếm hỏng). Giao diện đã tự nhận hoá đơn minh
+           * hoạ và hiện bản xem trước, không gọi tới đây (`QrPayDialog` → `laMinhHoa`).
+           */
+          if (!inv) {
+            return json({ error: "Không tìm thấy hoá đơn thật này. Hoá đơn minh hoạ không tạo được mã thu tiền thật — tải lại trang rồi thử lại.", ma: "KHONG_THAY_HOA_DON" }, 404);
+          }
         }
 
         /*

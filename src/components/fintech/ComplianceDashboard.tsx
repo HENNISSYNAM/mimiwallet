@@ -46,8 +46,7 @@ const DA_CO: Muc[] = [
     label: 'Mã hoá mã truy cập ngân hàng khi lưu',
     tinhTrang: 'co',
     moTa:
-      'AES-256-GCM, khoá bọc bằng ML-KEM-768 (NIST FIPS 203) — kháng tấn công "thu thập hôm nay, giải mã sau". ' +
-      'Xem supabase/functions/_shared/pqcCrypto.ts.',
+      'AES-256-GCM, khoá bọc bằng ML-KEM-768 (NIST FIPS 203) — kháng tấn công "thu thập hôm nay, giải mã sau".',
   },
   {
     label: 'Cách ly dữ liệu giữa các doanh nghiệp',

@@ -27,7 +27,7 @@ export async function nhapTienVaoGanDay(db: Db, companyId: string, lucVN: Date, 
   const tu30 = iso(new Date(lucVN.getTime() - 30 * 86_400_000));
   const [gd, daQuyet] = await Promise.all([
     locMinhHoa(db.from('transactions')
-      .select('id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, is_synthetic')
+      .select('id, reference_id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, is_synthetic')
       .eq('company_id', companyId), laDemo)
       // Mới nhất trước: PostgREST trả tối đa 1000 dòng, nên nếu phải bỏ bớt thì bỏ khoản cũ.
       .gte('transaction_date', tu30).order('transaction_date', { ascending: false }).limit(1000),

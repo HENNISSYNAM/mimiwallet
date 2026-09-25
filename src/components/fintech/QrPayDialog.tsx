@@ -14,6 +14,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { track } from '@/lib/track';
 import { taoChuoiVietQr } from '@/lib/vietqr';
+import { kemCongTy } from '@/lib/congTyDangDung';
 
 /**
  * Mã QR nhận tiền thẳng vào tài khoản ngân hàng của chủ shop.
@@ -65,6 +66,11 @@ interface Props {
   description: string;
   /** Called once the payment is confirmed, so the caller can refresh. */
   onPaid?: () => void;
+  /**
+   * Hoá đơn minh hoạ (demo): KHÔNG tạo mã thu tiền thật — tiền chuyển vào là tiền thật, còn khoản
+   * phải thu thì không. Hộp chỉ hiện bản xem trước: số tiền, nội dung chuyển khoản, số hoá đơn.
+   */
+  laMinhHoa?: boolean;
 }
 
 const dong = (n: number) => `₫${n.toLocaleString('vi-VN')}`;
@@ -78,6 +84,7 @@ export function QrPayDialog({
   amount,
   description,
   onPaid,
+  laMinhHoa = false,
 }: Props) {
   const { toast } = useToast();
   const { session } = useAuthStore();
@@ -122,7 +129,12 @@ export function QrPayDialog({
           'Content-Type': 'application/json',
           apikey: SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ amount, description, invoice_id: invoiceId ?? null, ...(duong ? { duong } : {}) }),
+        /*
+         * Gửi kèm CÔNG TY ĐANG CHỌN (sửa 25/09/2026). Trước đây không gửi, máy chủ tự lấy công ty mặc
+         * định: người thuộc nhiều công ty, đang xem công ty khác, bấm "Nhận tiền QR" là gặp "Không tìm
+         * thấy hoá đơn" — vì máy chủ tìm hoá đơn ở nhầm công ty.
+         */
+        body: JSON.stringify(await kemCongTy({ amount, description, invoice_id: invoiceId ?? null, ...(duong ? { duong } : {}) })),
       });
       const result = await res.json();
 
@@ -167,8 +179,9 @@ export function QrPayDialog({
     }
     if (requested.current) return;
     requested.current = true;
+    if (laMinhHoa) return;
     void create();
-  }, [open, create]);
+  }, [open, create, laMinhHoa]);
 
   /*
    * Ba nguồn cho một canvas.
@@ -238,6 +251,20 @@ export function QrPayDialog({
             {dong(amount)}
           </DialogDescription>
         </DialogHeader>
+
+        {laMinhHoa && (
+          <div className="space-y-3 py-2" data-testid="qr-minh-hoa">
+            <p className="rounded-lg border border-mimi-amber/40 bg-mimi-amber/5 p-3 text-sm text-foreground">
+              Đây là hoá đơn minh hoạ, nên MIMI không tạo mã thu tiền thật. Với hoá đơn thật, khách quét mã sẽ
+              chuyển đúng số tiền và nội dung dưới đây.
+            </p>
+            <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1.5 text-sm">
+              <dt className="text-muted-foreground">Hoá đơn</dt><dd className="text-foreground">{invoiceNumber ?? '—'}</dd>
+              <dt className="text-muted-foreground">Số tiền</dt><dd className="font-medium tabular-nums text-foreground">{dong(amount)}</dd>
+              <dt className="text-muted-foreground">Nội dung</dt><dd className="font-mono text-foreground">{description}</dd>
+            </dl>
+          </div>
+        )}
 
         {loading && (
           <p className="py-10 text-center text-sm text-muted-foreground">Đang tạo mã QR…</p>

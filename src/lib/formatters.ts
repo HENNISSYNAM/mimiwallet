@@ -15,12 +15,19 @@ export const formatNumber = (n: number): string => {
 
 export const formatPercent = (n: number): string => `${n.toFixed(1)}%`;
 
-export const formatDate = (date: string | Date): string => {
+/** Ngày không đọc được hoặc là giá trị giữ chỗ (trước 1901) → null. Không dựng ngày từ mặc định. */
+const ngayDungDuoc = (date: string | Date | null | undefined): Date | null => {
+  if (!date) return null;
   const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return Number.isNaN(d.getTime()) || d.getFullYear() < 1901 ? null : d;
 };
 
-export const formatDateShort = (date: string | Date): string => {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+export const formatDate = (date: string | Date | null | undefined): string => {
+  const d = ngayDungDuoc(date);
+  return d ? d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Chưa xác định';
+};
+
+export const formatDateShort = (date: string | Date | null | undefined): string => {
+  const d = ngayDungDuoc(date);
+  return d ? d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : 'Chưa xác định';
 };

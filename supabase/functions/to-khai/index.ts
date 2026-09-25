@@ -32,6 +32,7 @@ import { chieuTien } from "../_shared/tien/chieu-tien.ts";
 import { docNguonTienVao } from "../_shared/doanh-thu/so-lieu.ts";
 import { docHet } from "../_shared/doc-het.ts";
 import { ghiNhieuSuKien } from "../_shared/do-luong/su-kien.ts";
+import { khoaTienVao } from "../_shared/thong-bao/sinh.ts";
 import { goiYHoatDong, HOAT_DONG, type ChiaHoatDong, type NguonDoanhThuKhoan } from "../_shared/doanh-thu/theo-hoat-dong.ts";
 import { docXacNhanHoatDong, keHoachHoanTacHoatDong, TOI_DA_MOT_LAN_HOAT_DONG } from "../_shared/doanh-thu/xac-nhan-hoat-dong.ts";
 import { chuanHoaTrangThai } from "../_shared/doanh-nghiep/trang-thai.ts";
@@ -484,7 +485,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (!x.ok) return loi("THAM_SO", x.cau, 400);
       const laDemo = await congTyLaDemo(db, company.id);
       const { data: gds, error: loiGd } = await locMinhHoa(db.from("transactions")
-        .select("id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, is_synthetic")
+        .select("id, reference_id, amount, type, transaction_date, merchant_name, counter_account_name, payment_reference, is_synthetic")
         .eq("company_id", company.id).in("id", x.transaction_ids), laDemo);
       if (loiGd) throw loiGd;
       const vao = ((gds ?? []) as Row[]).filter((g) => chieuTien(g) === "vao");
@@ -523,6 +524,14 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         tham_so: { transaction_ids: x.transaction_ids, loai: x.loai, bulk_group_id: nhom },
         mo_ta_da_xac_nhan: moTa.slice(0, 2000), ket_qua: "thanh_cong", ket_qua_cau: moTa.slice(0, 2000), xong_luc: bayGio,
       });
+      /*
+       * ĐÓNG MỌI THÔNG BÁO CỦA CÙNG KHOẢN (25/09/2026). Xác nhận ở hàng đợi, ở trợ lý hay ngay trên
+       * thông báo đều là một quyết định — thông báo không được treo "chưa xử lý" chỉ vì người dùng
+       * bấm ở chỗ khác. Khoá theo `khoaTienVao` (mã tham chiếu), cùng hàm bộ quét dùng.
+       */
+      await db.from("thong_bao").update({ da_xu_ly_luc: bayGio })
+        .eq("company_id", company.id).is("da_xu_ly_luc", null)
+        .in("khoa", vao.map((g) => khoaTienVao(g as { id: string; reference_id?: string | null })));
       await ghiNhieuSuKien(db, company.id, userId, [
         ["first_classification_confirmed", { loai: x.loai }],
         ["classification_confirmed", { loai: x.loai, so: vao.length, hang_loat: !!nhom }],

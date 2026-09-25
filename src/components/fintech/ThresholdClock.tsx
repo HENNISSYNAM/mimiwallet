@@ -4,6 +4,7 @@ import { Landmark, FileText, AlertTriangle, Info, Check, ChevronDown, Scale } fr
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { Coin, Chest } from '@/components/illustrations/GamifyObjects';
 import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
@@ -244,7 +245,9 @@ export function ThresholdClock() {
       return;
     }
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/tax-summary`, {
+      // Công ty đang chọn — không để máy chủ tự lấy công ty mặc định (xem tax-summary).
+      const cId = await idCongTyDangDung().catch(() => null);
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/tax-summary${cId ? `?company_id=${encodeURIComponent(cId)}` : ''}`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           apikey: SUPABASE_PUBLISHABLE_KEY,

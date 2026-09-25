@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { taiCsv } from '@/lib/csv';
 import { moTaQr } from '@/lib/moTaQr';
+import { khopHoaDon } from '@/lib/timHoaDon';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,18 +46,14 @@ const statusDotBg: Record<string, { dot: string; bg: string }> = {
   advanced: { dot: 'bg-primary', bg: 'bg-primary/8 text-primary' },
 };
 
+/** Xuất đúng danh sách đang lọc. Hoá đơn minh hoạ được đánh dấu — tệp rời app thì không còn nhãn nào khác. */
 function exportInvoicesCsv(rows: Invoice[]) {
-  const header = ['invoice_number', 'client_name', 'issued_date', 'due_date', 'amount', 'total', 'status'];
-  const lines = [header.join(',')].concat(
-    rows.map((r) => [r.invoice_number, r.client_name, r.issued_date, r.due_date, r.amount, r.total, r.status].join(','))
+  const n = taiCsv(
+    `hoa-don-${new Date().toISOString().slice(0, 10)}.csv`,
+    ['invoice_number', 'client_name', 'issued_date', 'due_date', 'amount', 'total', 'status', 'minh_hoa'],
+    rows.map((r) => [r.invoice_number, r.client_name, r.issued_date, r.due_date, r.amount, r.total, r.status, !!r.is_synthetic]),
   );
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `hoa-don-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  toast.success(`Đã xuất ${n} hoá đơn ra tệp CSV.`);
 }
 
 function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
@@ -224,14 +222,21 @@ export default function InvoicesPage() {
     if (q) setSearch(q);
   }, [searchParams]);
 
+  /*
+   * ĐỊA CHỈ LÀM CHỦ BỘ LỌC (sửa 25/09/2026). Trước đây chỉ đặt bộ lọc khi `?filter=` có mặt, nên:
+   * vào từ thẻ "chờ thanh toán" (`?filter=pending`) rồi tìm "MH-…" ở ô đầu trang (`?q=MH-…`) → trang
+   * không mount lại, bộ lọc "chờ thanh toán" vẫn giữ, hoá đơn QUÁ HẠN vừa tìm bị lọc mất → 0 kết quả.
+   * Giờ mỗi lần địa chỉ đổi, bộ lọc theo đúng địa chỉ: không có `filter` nghĩa là "tất cả".
+   */
   useEffect(() => {
     const f = searchParams.get('filter');
-    if (f && LOC_HOP_LE.includes(f)) setFilter(f);
+    setFilter(f && LOC_HOP_LE.includes(f) ? f : 'all');
   }, [searchParams]);
 
   const filtered = invoiceList.filter((inv) => {
     if (filter !== 'all' && inv.status !== filter) return false;
-    if (search && !inv.client_name.toLowerCase().includes(search.toLowerCase()) && !inv.invoice_number.toLowerCase().includes(search.toLowerCase())) return false;
+    // Cùng một cách so khớp với ô tìm đầu trang — xem `lib/timHoaDon.ts`.
+    if (!khopHoaDon(inv, search)) return false;
     return true;
   });
 
@@ -284,6 +289,8 @@ export default function InvoicesPage() {
           <button
             onClick={() => exportInvoicesCsv(filtered)}
             disabled={filtered.length === 0}
+            aria-label={filtered.length ? `Xuất ${filtered.length} hoá đơn đang hiện ra CSV` : 'Không có hoá đơn để xuất'}
+            title={filtered.length ? `Xuất ${filtered.length} hoá đơn đang hiện ra CSV` : 'Không có hoá đơn để xuất'}
             className="bg-card/60 border border-border/60 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:border-primary/20 transition-all disabled:opacity-40"
           >
             <Download size={14} />
@@ -538,6 +545,7 @@ export default function InvoicesPage() {
            CHƯA TỪNG chạy được — không ai biết vì case 12 chặn từ trước đó. */
         description={moTaQr(qrInvoice?.invoice_number ?? '')}
         onPaid={() => { void loadInvoices(); }}
+        laMinhHoa={!!qrInvoice?.is_synthetic}
       />
     </motion.div>
   );

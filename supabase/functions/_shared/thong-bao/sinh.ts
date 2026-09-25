@@ -9,7 +9,7 @@
  */
 import { goiYTienVao, TEN_LOAI_TIEN_VAO, type KhoanTienVao, type LoaiTienVao } from '../phan-loai/tien-vao.ts';
 import { TU_GOI_Y } from '../doanh-thu/phan-loai.ts';
-import { cacKyKeTiep } from '../thue/han-ke-khai.ts';
+import type { MocThue } from '../luat/lich-thue.ts';
 
 export type LoaiThongBao = 'han_thue' | 'luat_moi' | 'tien_vao' | 'goi' | 'thanh_toan' | 'khac';
 export const LOAI_THONG_BAO: LoaiThongBao[] = ['han_thue', 'luat_moi', 'tien_vao', 'goi', 'thanh_toan', 'khac'];
@@ -42,23 +42,38 @@ export interface BanNhapThongBao {
 }
 
 const so = (n: number) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
-const ngayVN = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 
-/** Báo trước hạn nộp tờ khai vào đúng các mốc này (số ngày còn lại). */
-export const MOC_NHAC_HAN = [14, 7, 3, 1, 0];
+/**
+ * Báo trước hạn vào đúng các mốc này (số ngày còn lại). Có mốc 5 ngày theo yêu cầu người dùng
+ * (25/09/2026: "thuế nhắc trước 5 ngày") — đủ để gom chứng từ và hỏi kế toán trước khi nộp.
+ */
+export const MOC_NHAC_HAN = [14, 5, 1, 0];
 
-/** `lucVN`: giờ Việt Nam (xem `lucGioVietNam`). */
-export function thongBaoHanThue(lucVN: Date): BanNhapThongBao[] {
+/**
+ * Nhắc hạn theo LỊCH CỦA CHÍNH CÔNG TY (`_shared/luat/lich-thue.ts`), không theo lịch chung cả nước.
+ * Trước 25/09/2026 mọi công ty đều nhận "Còn 7 ngày tới hạn tờ khai quý 3" — kể cả hộ không phải
+ * khai quý. Giờ:
+ *   - `khong_ap_dung` không bao giờ được nhắc;
+ *   - `can_xac_minh` được nhắc kèm ĐÚNG câu hỏi còn thiếu, không nói như việc bắt buộc;
+ *   - mốc không có hạn (thiếu dữ kiện) không được nhắc — không bịa ngày.
+ * Khoá gồm cả hạn: năm sau cùng loại mốc là một thông báo mới, còn cùng mốc cùng ngày chỉ một lần.
+ */
+export function thongBaoHanThue(lich: MocThue[]): BanNhapThongBao[] {
   const ra: BanNhapThongBao[] = [];
-  for (const k of cacKyKeTiep(lucVN, 1)) {
-    if (!MOC_NHAC_HAN.includes(k.conLai)) continue;
+  for (const m of lich) {
+    if (m.trang_thai === 'khong_ap_dung' || !m.han || m.con_lai === null) continue;
+    if (!MOC_NHAC_HAN.includes(m.con_lai)) continue;
+    const han = m.han.split('-').reverse().join('/');
+    const xacMinh = m.trang_thai === 'can_xac_minh';
     ra.push({
-      khoa: `han:${k.nam}-q${k.quy}:${k.conLai}`,
+      khoa: `han:${m.khoa}:${m.han}:${m.con_lai}`,
       loai: 'han_thue',
-      muc_do: k.conLai <= 3 ? 'gap' : 'can_chu_y',
-      tieu_de: k.conLai === 0 ? `Hôm nay là hạn nộp tờ khai quý ${k.quy}/${k.nam}` : `Còn ${k.conLai} ngày tới hạn nộp tờ khai quý ${k.quy}/${k.nam}`,
-      noi_dung: `Hạn nộp ${ngayVN(k.han)}. MIMI đã soạn sẵn bản nháp từ sao kê và hoá đơn — mở ra kiểm lại rồi nộp trên Cổng dịch vụ công.`,
-      duong_dan: '/dashboard/to-khai',
+      muc_do: m.con_lai <= 1 ? 'gap' : 'can_chu_y',
+      tieu_de: (m.con_lai === 0 ? `Hôm nay là hạn: ${m.ten}` : `Còn ${m.con_lai} ngày: ${m.ten}`).slice(0, 200),
+      noi_dung: (xacMinh
+        ? `Hạn ${han}, nếu việc này áp dụng cho bạn. MIMI chưa chắc: ${m.cau_hoi ?? 'còn thiếu một dữ kiện'} Trả lời để MIMI biết có phải làm không.`
+        : `Hạn ${han}. ${m.vi_sao} Mở Tờ khai thuế để xem bản nháp MIMI đã soạn, kiểm lại rồi mới nộp.`).slice(0, 1000),
+      duong_dan: '/dashboard/nhac-thue',
       hanh_dong: [],
     });
   }
@@ -88,7 +103,17 @@ export interface TienVaoGanDay extends KhoanTienVao {
   id: string;
   amount: number;
   transaction_date: string;
+  /** Mã tham chiếu của ngân hàng / sao kê / dữ liệu minh hoạ — ổn định hơn mã dòng. */
+  reference_id?: string | null;
 }
+
+/**
+ * DANH TÍNH của thông báo tiền vào (sửa 25/09/2026). Trước đây là `tien_vao:<mã dòng>`. Bộ nạp lại
+ * dữ liệu demo xoá và tạo lại giao dịch mỗi đêm với mã dòng mới, nên CÙNG một khoản 3 triệu sinh
+ * thêm một thông báo mỗi đêm. Khoản tiền thật được nhận diện bằng mã tham chiếu (ngân hàng, sao kê
+ * đã băm, `minhhoa:…`); chỉ khi không có mới dùng mã dòng.
+ */
+export const khoaTienVao = (t: { id: string; reference_id?: string | null }) => `tien_vao:${t.reference_id || t.id}`;
 
 /**
  * Bộ lọc tiền vào — lớp chạy ngầm thay cho một trang riêng. Khoản nào nội dung chuyển khoản giống
@@ -104,7 +129,7 @@ export function thongBaoTienVao(ds: TienVaoGanDay[], daQuyet: Set<string>): BanN
     const ten = TEN_LOAI_TIEN_VAO[g.loai as LoaiTienVao].toLowerCase();
     const noiDung = [t.counter_account_name, t.merchant_name].filter(Boolean).join(' — ');
     ra.push({
-      khoa: `tien_vao:${t.id}`,
+      khoa: khoaTienVao(t),
       loai: 'tien_vao',
       muc_do: 'can_chu_y',
       tieu_de: `${so(Math.abs(t.amount))}đ có vẻ là ${ten} — đang được tính vào doanh thu`,

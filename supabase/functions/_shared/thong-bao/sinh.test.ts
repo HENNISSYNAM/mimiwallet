@@ -1,21 +1,55 @@
 import { describe, expect, it } from 'vitest';
-import { thongBaoGoi, thongBaoHanThue, thongBaoLuatMoi, thongBaoThanhToan, thongBaoTienVao, trongGioYenLang } from './sinh';
+import { khoaTienVao, thongBaoGoi, thongBaoHanThue, thongBaoLuatMoi, thongBaoThanhToan, thongBaoTienVao, trongGioYenLang } from './sinh';
+import type { MocThue } from '../luat/lich-thue';
 
-describe('nhắc hạn nộp tờ khai', () => {
-  it('đúng mốc 7 ngày: một thông báo, khoá theo kỳ và mốc', () => {
-    // Hạn quý 3/2026 là 31/10/2026; 24/10 còn 7 ngày.
-    const ds = thongBaoHanThue(new Date(2026, 9, 24, 8, 0));
-    expect(ds).toHaveLength(1);
-    expect(ds[0]).toMatchObject({ khoa: 'han:2026-q3:7', loai: 'han_thue', duong_dan: '/dashboard/to-khai' });
-    expect(ds[0].tieu_de).toBe('Còn 7 ngày tới hạn nộp tờ khai quý 3/2026');
+describe('nhắc hạn theo lịch của chính công ty', () => {
+  const moc = (o: Partial<MocThue>): MocThue => ({
+    khoa: 'tndn_tam_nop_2026_q3', ten: 'Tạm nộp thuế TNDN quý 3/2026', loai: 'tam_nop', trang_thai: 'phai_lam',
+    han: '2026-10-30', con_lai: 5, vi_sao: 'Doanh nghiệp tạm nộp thuế TNDN theo quý.', can_cu: [], ...o,
   });
 
-  it('ngày thường không phải mốc: im lặng', () => {
-    expect(thongBaoHanThue(new Date(2026, 9, 20, 8, 0))).toEqual([]);
+  it('mốc 5 ngày: một thông báo, khoá gồm mốc, hạn và số ngày', () => {
+    const ds = thongBaoHanThue([moc({})]);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]).toMatchObject({ khoa: 'han:tndn_tam_nop_2026_q3:2026-10-30:5', loai: 'han_thue', muc_do: 'can_chu_y', duong_dan: '/dashboard/nhac-thue' });
+    expect(ds[0].tieu_de).toBe('Còn 5 ngày: Tạm nộp thuế TNDN quý 3/2026');
+    expect(ds[0].noi_dung).toContain('Hạn 30/10/2026');
+  });
+
+  it('ngày không phải mốc: im lặng', () => {
+    expect(thongBaoHanThue([moc({ con_lai: 6 }), moc({ con_lai: 7 })])).toEqual([]);
+  });
+
+  it('không áp dụng thì không bao giờ nhắc — kể cả đúng mốc', () => {
+    expect(thongBaoHanThue([moc({ trang_thai: 'khong_ap_dung', con_lai: 0 })])).toEqual([]);
+  });
+
+  it('thiếu hạn thì không nhắc, không bịa ngày', () => {
+    expect(thongBaoHanThue([moc({ trang_thai: 'can_xac_minh', han: null, con_lai: null })])).toEqual([]);
+  });
+
+  it('cần xác minh: nhắc kèm câu hỏi, không nói như việc bắt buộc', () => {
+    const [n] = thongBaoHanThue([moc({ trang_thai: 'can_xac_minh', con_lai: 1, cau_hoi: 'Công ty có trả lương cho người lao động không?' })]);
+    expect(n.muc_do).toBe('gap');
+    expect(n.noi_dung).toContain('nếu việc này áp dụng cho bạn');
+    expect(n.noi_dung).toContain('Công ty có trả lương cho người lao động không?');
   });
 
   it('ngày hạn: gấp', () => {
-    expect(thongBaoHanThue(new Date(2026, 9, 31, 8, 0))[0]).toMatchObject({ khoa: 'han:2026-q3:0', muc_do: 'gap' });
+    expect(thongBaoHanThue([moc({ con_lai: 0 })])[0]).toMatchObject({ tieu_de: 'Hôm nay là hạn: Tạm nộp thuế TNDN quý 3/2026', muc_do: 'gap' });
+  });
+});
+
+describe('danh tính thông báo tiền vào', () => {
+  it('cùng một khoản được nạp lại ba lần với mã dòng khác nhau → cùng một khoá', () => {
+    const lan = ['a1', 'b2', 'c3'].map((id) => ({ id, reference_id: 'minhhoa:tien-me-chuyen', amount: 3_000_000, transaction_date: '2026-09-20', merchant_name: 'NGUYEN THI MAI', counter_account_name: null, payment_reference: 'me chuyen' }));
+    const khoa = new Set(lan.flatMap((t) => thongBaoTienVao([t], new Set()).map((n) => n.khoa)));
+    expect(khoa).toEqual(new Set(['tien_vao:minhhoa:tien-me-chuyen']));
+    expect(new Set(lan.map(khoaTienVao)).size).toBe(1);
+  });
+
+  it('không có mã tham chiếu thì dùng mã dòng', () => {
+    expect(khoaTienVao({ id: 'x9', reference_id: null })).toBe('tien_vao:x9');
   });
 });
 
