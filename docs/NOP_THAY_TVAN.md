@@ -33,7 +33,7 @@ không ghi nguồn.
 **Mã hoá XML — chưa có.** Tờ khai nộp điện tử là tệp XML theo lược đồ XSD của Cục Thuế. Tìm kiếm
 cho thấy:
 - Lược đồ XSD **không được công bố thành tài liệu riêng**; nó nằm trong bộ cài phần mềm HTKK
-  (bản mới nhất tìm thấy: 5.7.2). Lỗi "Tờ khai không đúng định dạng với XSD" là lỗi hay gặp nhất
+  (bản mới nhất: 5.7.7, 18/09/2026). Lỗi "Tờ khai không đúng định dạng với XSD" là lỗi hay gặp nhất
   khi nộp — nghĩa là cổng thuế kiểm XSD chặt.
 - Sau 01/07/2025 cổng thuế yêu cầu nhập trực tiếp hoặc dùng phần mềm kế toán được Cục Thuế chấp
   nhận (theo Thông tư 40/2025/TT-BTC, nguồn: congtyluatacc.vn). **Cần kiểm: MIMI có phải đăng ký là
