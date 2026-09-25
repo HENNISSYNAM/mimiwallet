@@ -31,7 +31,14 @@
  * luôn thiếu.
  */
 
-export type HanhDongSua = 'cap_nhat' | 'lien_ket_lai' | 'khong_can';
+export type HanhDongSua =
+  | 'cap_nhat'
+  | 'lien_ket_lai'
+  /* Việc cần làm nằm trong app ngân hàng hoặc app Cas ID của chính họ — ở đây không có nút nào
+     giải quyết được. Xem `supabase/functions/_shared/bank/trang-thai-lien-ket.ts`. */
+  | 'mo_app_ngan_hang'
+  | 'bat_lai_tren_cas_id'
+  | 'khong_can';
 
 export interface LienKet {
   id: string;
@@ -100,6 +107,11 @@ export function tenDong(
  * mới từ đầu.
  */
 export function cachSua(lk: LienKet): HanhDongSua {
+  // Người dùng tự tạm dừng trên Cas ID: liên kết còn nguyên, chỉ cần bật lại bên đó.
+  if (lk.status === 'paused') return 'bat_lai_tren_cas_id';
+  // Vướng trong app ngân hàng (chặn đăng nhập từ website, ngân hàng tạm dừng dịch vụ): bấm nút nào
+  // ở đây cũng không xong. Nói thẳng còn hơn mời họ bấm một nút chắc chắn thất bại.
+  if (lk.status === 'needs_reauth') return 'mo_app_ngan_hang';
   if (lk.status !== 'needs_relink') return 'khong_can';
   return laLienKetQr(lk) ? 'lien_ket_lai' : 'cap_nhat';
 }
@@ -111,7 +123,7 @@ export function cachSua(lk: LienKet): HanhDongSua {
  * một câu duy nhất — đó là chỗ lời khuyên sai lọt ra.
  */
 export interface LoiNhac {
-  nhom: 'cap_nhat' | 'lien_ket_lai';
+  nhom: 'cap_nhat' | 'lien_ket_lai' | 'mo_app_ngan_hang' | 'bat_lai_tren_cas_id';
   soLuong: number;
   cau: string;
 }
@@ -129,6 +141,30 @@ export function cacLoiNhac(dsach: LienKet[]): LoiNhac[] {
         `Có ${capNhat.length} tài khoản cần xác thực lại để tiếp tục đồng bộ. ` +
         'Bấm "Cập nhật" ở tài khoản đó — bạn không phải liên kết lại từ đầu, ' +
         'lịch sử giao dịch đã tải về vẫn giữ nguyên.',
+    });
+  }
+
+  const moApp = dsach.filter((c) => cachSua(c) === 'mo_app_ngan_hang');
+  const batLai = dsach.filter((c) => cachSua(c) === 'bat_lai_tren_cas_id');
+
+  if (moApp.length) {
+    ra.push({
+      nhom: 'mo_app_ngan_hang',
+      soLuong: moApp.length,
+      cau:
+        `Có ${moApp.length} tài khoản cần bạn mở app ngân hàng để xử lý — thường là do tài khoản ` +
+        'đang bật chặn đăng nhập từ website, hoặc ngân hàng tạm dừng dịch vụ. Bấm nút ở đây không ' +
+        'giải quyết được; xong bên đó rồi bấm Đồng bộ lại.',
+    });
+  }
+
+  if (batLai.length) {
+    ra.push({
+      nhom: 'bat_lai_tren_cas_id',
+      soLuong: batLai.length,
+      cau:
+        `Có ${batLai.length} liên kết đang tạm dừng trong app Cas ID. Mở app và bật lại là MIMI đọc ` +
+        'tiếp được — không phải liên kết lại từ đầu, dữ liệu đã tải vẫn còn.',
     });
   }
 
@@ -156,6 +192,9 @@ export function cacLoiNhac(dsach: LienKet[]): LoiNhac[] {
  */
 export function phuDe(lk: LienKet, ghiChu?: string): string | null {
   if (ghiChu) return ghiChu;
+
+  if (lk.status === 'paused') return 'Bạn đang tạm dừng liên kết này trong app Cas ID';
+  if (lk.status === 'needs_reauth') return 'Cần mở app ngân hàng của bạn để xử lý';
 
   if (lk.status === 'needs_relink') {
     return laLienKetQr(lk)

@@ -7,6 +7,11 @@ import { coSaoKeDeDoc } from "../_shared/bank/dong-bo.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
 import { docThanhToanQrCas } from "../_shared/bank/thanh-toan-qr-cas.ts";
+import { anNhayCam, CACH_XU_LY, docPhongBi, dungMoiTruong, khoaChongTrung } from "../_shared/cas-webhook/phong-bi.ts";
+import { trangThaiSauSuKien } from "../_shared/bank/trang-thai-lien-ket.ts";
+import { quetVaGhiTienVao } from "../_shared/thong-bao/quet-tien-vao.ts";
+import { congTyLaDemo } from "../_shared/minh-hoa.ts";
+import { lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
 
 /**
  * Inbound webhooks from Cas (BankHub).
@@ -90,39 +95,20 @@ function pick(obj: unknown, paths: string[][]): string | undefined {
 }
 
 /**
- * Cas's envelope is undocumented in the material we have, so read defensively
- * rather than assume. Anything not found stays undefined and is recorded as
- * such — an unparsed field must look unparsed, not like an absent event.
+ * Mã tham chiếu của một khoản thu QR.
+ *
+ * Vì sao cần: sự kiện thanh toán QR lấy chủ thể là cái mã QR, không phải cái grant — nên payload có
+ * thể KHÔNG mang `grantId`. Trước 06/09 mọi envelope thiếu `grantId` đều bị ném bỏ, kể cả khi nó
+ * đang báo đúng khoản tiền mình đang chờ. Dò nhiều đường vì Cas không công bố hình dạng loại này.
  */
-function extract(payload: unknown) {
-  return {
-    type: pick(payload, [["type"], ["webhookType"], ["event"], ["eventType"], ["data", "type"]]),
-    // `webhookCode` trước — bản cũ bỏ sót nó nên cột Mã của mọi dòng GRANT trống.
-    // Xem `_shared/bank/ma-webhook-cas.ts`.
-    code: docMaWebhookCas(payload) ?? undefined,
-    grantId: pick(payload, [
-      ["grantId"], ["grant_id"], ["grant", "id"],
-      ["data", "grantId"], ["data", "grant_id"], ["data", "grant", "id"],
-    ]),
-    /*
-     * Mã tham chiếu của một khoản thu QR.
-     *
-     * Vì sao cần: sự kiện thanh toán QR lấy chủ thể là cái mã QR, không phải
-     * cái grant — nên payload có thể KHÔNG mang `grantId`. Trước 06/09 mọi
-     * envelope thiếu `grantId` đều bị ném bỏ với ghi chú "no grant id in
-     * payload", kể cả khi nó đang báo đúng khoản tiền mình đang chờ.
-     *
-     * Dò nhiều đường vì Cas không công bố hình dạng payload cho loại này. Đọc
-     * phòng thủ vẫn hơn đoán một đường rồi im lặng bỏ sót.
-     */
-    reference: pick(payload, [
-      ["referenceNumber"], ["reference_number"], ["reference"],
-      ["data", "referenceNumber"], ["data", "reference_number"], ["data", "reference"],
-      ["invoice", "referenceNumber"], ["qrPay", "referenceNumber"],
-      // Hình dạng thật, thấy lần đầu 14/09/2026 — xem `thanh-toan-qr-cas.ts`.
-      ["transaction", "paymentMeta", "referenceNumber"],
-    ]),
-  };
+function docMaThamChieu(payload: unknown): string | undefined {
+  return pick(payload, [
+    ["referenceNumber"], ["reference_number"], ["reference"],
+    ["data", "referenceNumber"], ["data", "reference_number"], ["data", "reference"],
+    ["invoice", "referenceNumber"], ["qrPay", "referenceNumber"],
+    // Hình dạng thật, thấy lần đầu 14/09/2026 — xem `thanh-toan-qr-cas.ts`.
+    ["transaction", "paymentMeta", "referenceNumber"],
+  ]);
 }
 
 Deno.serve(async (req) => {
@@ -166,32 +152,101 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
 
-  const { type, code, grantId, reference } = extract(payload);
+  const pb = docPhongBi(payload);
+  const type = pb.loai === "RONG" || pb.loai === "KHONG_RO" ? undefined : pb.loai;
+  const code = pb.ma ?? undefined;
+  const grantId = pb.grantId ?? undefined;
+  const reference = docMaThamChieu(payload);
+  const batDau = Date.now();
 
-  // Recorded before any decision, so even a body we handle badly is auditable.
-  const { data: event } = await supabase
+  /*
+   * GHI TRƯỚC MỌI QUYẾT ĐỊNH, NHƯNG BỎ DỮ LIỆU ĐỊNH DANH TRƯỚC KHI GHI.
+   *
+   * Payload SIGN mang `identityKey` (khoá tra định danh người ký), eSign mang số CCCD. Nhật ký
+   * webhook để gỡ lỗi, không phải chỗ lưu giấy tờ tuỳ thân — xem `_shared/cas-webhook/phong-bi.ts`.
+   */
+  const sach = anNhayCam(payload) as Record<string, unknown>;
+
+  /*
+   * CHỐNG TRÙNG. Cas gửi lại webhook lỗi tới 17 lần trong 24 giờ (INVOICE/TVAN 3 lần, cách 1 phút)
+   * và KHÔNG gửi mã sự kiện nào, nên khoá duy nhất là mã băm của chính nội dung. CSDL từ chối dòng
+   * trùng, và lời từ chối đó chính là câu "đã xử lý rồi".
+   */
+  const bam = await khoaChongTrung(sach);
+  const { data: event, error: loiGhi } = await supabase
     .from("webhook_events")
     .insert({
       provider: "bankhub",
       event_type: type ?? null,
       event_code: code ?? null,
       grant_id: grantId ?? null,
-      payload: payload as Record<string, unknown>,
+      environment: pb.moiTruong,
+      subject_type: pb.chuThe?.kieu ?? null,
+      subject_id: pb.chuThe?.id ?? null,
+      payload_hash: bam,
+      payload: sach,
       outcome: "received",
     })
     .select("id")
     .maybeSingle();
 
-  const finish = async (outcome: string, note?: string) => {
+  if (loiGhi) {
+    if (/duplicate|unique/i.test(loiGhi.message)) {
+      await supabase.rpc("dem_lan_nhan_webhook", { p_provider: "bankhub", p_hash: bam });
+      console.log(`cas webhook ${type ?? "?"}/${code ?? "?"}: trùng, đã xử lý trước đó`);
+      return ack({ outcome: "duplicate" });
+    }
+    // Không ghi được thì cũng không xử lý: xử lý mà không có dấu vết là chỗ khó lần nhất về sau.
+    console.error("cas webhook: không ghi được webhook_events:", loiGhi.message);
+    return new Response(JSON.stringify({ error: "log failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const finish = async (outcome: string, note?: string, handler?: string) => {
     if (event?.id) {
       await supabase
         .from("webhook_events")
-        .update({ outcome, note: note ?? null })
+        .update({
+          outcome,
+          note: note ?? null,
+          handler: handler ?? null,
+          processed_at: new Date().toISOString(),
+          duration_ms: Date.now() - batDau,
+        })
         .eq("id", event.id);
     }
     console.log(`cas webhook ${type ?? "?"}/${code ?? "?"} grant=${grantId ?? "?"}: ${outcome}`);
     return ack({ outcome, detail: note });
   };
+
+  /*
+   * THÂN RỖNG `{}` LÀ LẦN CAS CONSOLE GỬI THỬ khi lưu cấu hình — không phải lỗi, không phải sự kiện
+   * bị bỏ sót. Gọi đúng tên để nhật ký không lẫn 12 lần bấm Lưu với 12 sự kiện thật bị mất.
+   */
+  if (pb.loai === "RONG") return await finish("kiem_tra_console", "thân rỗng — Cas Console gửi thử");
+
+  /*
+   * SỰ KIỆN SANDBOX KHÔNG ĐƯỢC CHẠM DỮ LIỆU THẬT (và ngược lại). Cas gửi `environment` trong mọi
+   * payload; bản trước không đọc trường đó, nên chỉ cần một `grantId` trùng giữa hai môi trường là
+   * tiền giả của sandbox đi thẳng vào sổ công ty thật.
+   */
+  if (!dungMoiTruong(pb.moiTruong, Deno.env.get("BANKHUB_ENV") ?? "sandbox")) {
+    return await finish("sai_moi_truong", `sự kiện thuộc môi trường ${pb.moiTruong}`);
+  }
+
+  /*
+   * BỐN LOẠI CHỈ GHI NHẬN: INVOICE, TVAN, SIGN, AUTO_DEBIT.
+   *
+   * MIMI chưa gọi Invoice Hub, TVAN, eSign hay Auto Debit, nên không có gì để đối chiếu và không có
+   * đường hỏi lại Cas cho các loại này. Webhook Cas lại không có chữ ký — đổi trạng thái nghiệp vụ
+   * chỉ vì một lời báo không kiểm được là tự mở cửa cho payload giả.
+   * Xem `docs/KIEM_TOAN_CAS_WEBHOOK.md` mục O.
+   */
+  if (pb.loai !== "GRANT" && pb.loai !== "TRANSACTIONS" && pb.loai !== "KHONG_RO") {
+    return await finish("chua_dung", CACH_XU_LY[pb.loai].ket_qua_san_pham, `ghiNhan:${pb.loai}`);
+  }
 
   if (!grantId) {
     /*
@@ -276,6 +331,8 @@ Deno.serve(async (req) => {
   const window = { fromDate: back.toISOString().slice(0, 10), toDate: today };
 
   const outcomes: string[] = [];
+  /** Có ghi thêm giao dịch nào không — chỉ khi có mới đi hỏi người dùng. */
+  let daGhiThem = false;
 
   for (const conn of conns) {
     /*
@@ -317,6 +374,18 @@ Deno.serve(async (req) => {
      * trước ghi `alive` cho mọi webhook tới nó — kể cả `USER_PERMISSION_REVOKED`
      * thật ngày 12/09/2026. Xem `_shared/bank/kiem-grant-qr.ts`.
      */
+    /*
+     * NGƯỜI DÙNG TẠM DỪNG GRANT (`GRANT_PAUSED`): KHÔNG phải mất quyền. Họ mở app Cas ID bật lại là
+     * xong; bảo họ "liên kết lại" là chỉ sai đường. Xem `_shared/bank/trang-thai-lien-ket.ts`.
+     */
+    if (trangThaiSauSuKien(code, pb.maLoi) === "paused") {
+      await supabase.from("bank_connections")
+        .update({ status: "paused", last_error_code: pb.maLoi ?? null, last_error_at: new Date().toISOString() })
+        .eq("id", conn.id);
+      outcomes.push(`${conn.id}:tam-dung`);
+      continue;
+    }
+
     if (conn.scopes === "qrpay") {
       const kl = await kiemGrantQr(() => fetchQrPayIdentity(cfg, accessToken));
       if (kl.trangThai === "da_thu_hoi") {
@@ -404,6 +473,7 @@ Deno.serve(async (req) => {
         .update({ status: "connected", revoked_at: null })
         .eq("id", conn.id);
       outcomes.push(`${conn.id}:restored+${result.inserted}`);
+      if (result.inserted) daGhiThem = true;
     } else {
       /*
        * PHÂN BIỆT "KHÔNG CÓ GÌ" VỚI "KHÔNG HỎI".
@@ -421,6 +491,7 @@ Deno.serve(async (req) => {
       // được ghi "alive" — ghi đúng là không hỏi.
       const nhan = coSaoKeDeDoc(conn) ? `alive+${result.inserted}` : "khong-hoi-cas:khong-co-sao-ke";
       outcomes.push(`${conn.id}:${nhan}`);
+      if (result.inserted) daGhiThem = true;
     }
   }
 
@@ -430,7 +501,25 @@ Deno.serve(async (req) => {
     if (r.settled || r.mismatched) {
       outcomes.push(`qr:${r.settled}settled/${r.mismatched}mismatch`);
     }
+
+    /*
+     * TIỀN VỪA VỀ THÌ HỎI NGAY, KHÔNG ĐỂ NGƯỜI DÙNG CHỜ HẾT GIỜ.
+     *
+     * Trước 25/09/2026 khoản tiền vào chưa rõ chỉ được hỏi ở lượt quét đầu giờ sau. Khoá chống
+     * trùng của `thong_bao` lo phần lặp, nên chạy thêm ở đây không sinh thông báo trùng.
+     *
+     * Đo lường và thông báo KHÔNG BAO GIỜ được làm hỏng việc chính: giao dịch đã ghi xong rồi,
+     * hỏng ở đây chỉ ghi log.
+     */
+    if (daGhiThem) {
+      try {
+        const moi = await quetVaGhiTienVao(supabase, companyId, lucGioVietNam(), await congTyLaDemo(supabase, companyId));
+        if (moi) outcomes.push(`thong-bao:${moi}`);
+      } catch (e) {
+        console.error("cas webhook: quét tiền vào lỗi", e instanceof Error ? e.message : e);
+      }
+    }
   }
 
-  return await finish("verified", outcomes.join(", "));
+  return await finish("verified", outcomes.join(", "), pb.loai === "TRANSACTIONS" ? "xuLyGiaoDich" : "xuLyGrant");
 });

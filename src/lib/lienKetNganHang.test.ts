@@ -197,3 +197,35 @@ describe('giaLapLoiDuoc', () => {
     expect(giaLapLoiDuoc({ status: 'disconnected', scopes: 'transaction' })).toBe(false);
   });
 });
+
+/*
+ * Ba sự cố, ba việc phải làm khác nhau — thêm 25/09/2026 cùng bộ định tuyến webhook Cas.
+ * Gộp hết thành "liên kết lại" là chỉ sai đường: đúng lỗi đã mất một tuần với case 12.
+ */
+describe('tạm dừng và vướng app ngân hàng không phải là liên kết lại', () => {
+  const lk = (status: string, scopes: string | null = 'transaction') => ({ id: 'x', status, scopes });
+
+  it('người dùng tạm dừng trên Cas ID → bảo họ bật lại bên đó', () => {
+    expect(cachSua(lk('paused'))).toBe('bat_lai_tren_cas_id');
+    expect(phuDe(lk('paused'))).toMatch(/tạm dừng.*Cas ID/i);
+  });
+
+  it('vướng trong app ngân hàng → không mời bấm nút ở đây', () => {
+    expect(cachSua(lk('needs_reauth'))).toBe('mo_app_ngan_hang');
+    expect(phuDe(lk('needs_reauth'))).toMatch(/app ngân hàng/i);
+  });
+
+  it('liên kết QR tạm dừng cũng là tạm dừng, không phải tạo lại', () => {
+    expect(cachSua(lk('paused', 'qrpay'))).toBe('bat_lai_tren_cas_id');
+  });
+
+  it('mỗi nhóm một lời nhắc riêng, không gộp', () => {
+    const nhac = cacLoiNhac([lk('paused'), lk('needs_reauth'), lk('needs_relink'), lk('needs_relink', 'qrpay')]);
+    expect(nhac.map((n) => n.nhom).sort()).toEqual(['bat_lai_tren_cas_id', 'cap_nhat', 'lien_ket_lai', 'mo_app_ngan_hang']);
+    expect(nhac.find((n) => n.nhom === 'mo_app_ngan_hang')!.cau).toMatch(/không\s*\n?\s*giải quyết được|không giải quyết/i);
+  });
+
+  it('trạng thái tốt vẫn không có việc gì phải làm', () => {
+    expect(cachSua(lk('connected'))).toBe('khong_can');
+  });
+});
