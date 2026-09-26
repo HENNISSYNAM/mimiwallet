@@ -33,12 +33,31 @@ beforeEach(() => {
 });
 
 describe('Pet MIMI', () => {
-  it('bấm mèo (không kéo) hoặc nút bút → mở THẲNG trang Trợ lý MIMI, pet không có khung chat riêng', async () => {
+  it('bấm mèo (không kéo) → hiện ô nhập nhỏ dưới mèo, không mở khung chat mới; gửi → câu hỏi vào thẳng Trợ lý MIMI', async () => {
     mo();
     fireEvent.pointerDown(meo(), { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerUp(meo(), { clientX: 101, clientY: 101, pointerId: 1 });
+    const o = await screen.findByRole('textbox', { name: 'Hỏi MIMI' });
+    expect(diaChi()).toBe('/dashboard'); // chưa rời trang, chưa mở cửa sổ chat nào
+    expect((screen.getByRole('button', { name: 'Gửi cho Trợ lý MIMI' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(o, { target: { value: 'Khoản chi nào đang chờ tôi duyệt?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi cho Trợ lý MIMI' }));
+    await waitFor(() => expect(diaChi()).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Khoản chi nào đang chờ tôi duyệt?')}`));
+    expect(screen.queryByRole('textbox', { name: 'Hỏi MIMI' })).toBeNull();
+  });
+
+  it('ô nhập: Esc hoặc bấm ra ngoài thì thu lại; nút + mở Trợ lý MIMI đầy đủ', async () => {
+    mo();
+    fireEvent.click(screen.getByRole('button', { name: 'Gõ để hỏi Trợ lý MIMI' }));
+    fireEvent.keyDown(await screen.findByRole('textbox', { name: 'Hỏi MIMI' }), { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Hỏi MIMI' })).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Gõ để hỏi Trợ lý MIMI' }));
+    await screen.findByRole('textbox', { name: 'Hỏi MIMI' });
+    fireEvent.pointerDown(document.body);
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Hỏi MIMI' })).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Gõ để hỏi Trợ lý MIMI' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mở Trợ lý MIMI đầy đủ' }));
     await waitFor(() => expect(diaChi()).toBe('/dashboard/tro-ly'));
-    expect(screen.queryByPlaceholderText(/Hỏi trợ lý/)).toBeNull();
   });
 
   it('nói với MIMI → câu nói được gửi vào Trợ lý MIMI (?hoi=)', async () => {
@@ -153,15 +172,15 @@ describe('Pet MIMI', () => {
     await waitFor(() => expect(screen.queryByText('Năm nay bạn có mấy nguồn thu nhập?')).toBeNull());
   });
 
-  it('"Cần bạn" → mèo ngồi giơ tay vẫy', async () => {
+  it('"Cần bạn" → mèo ngồi chờ, KHÔNG vẫy tay', async () => {
     goi.ds = [{ id: 'h1', tieu_de: 'Tạm ngừng kinh doanh', cau_hoi: { cau: 'Từ ngày nào?' } }];
     mo();
-    await waitFor(() => expect(meo().getAttribute('data-gio-tay')).toBe('true'));
-    expect(meo().getAttribute('src')).toContain('sit');
-    expect(meo().parentElement?.parentElement?.querySelector('img[src*="paw"]')).not.toBeNull();
+    await waitFor(() => expect(meo().getAttribute('src')).toContain('sit'));
+    expect(document.querySelector('img[src*="paw"]')).toBeNull();
+    expect(document.querySelector('img[src*="wave"]')).toBeNull();
   });
 
-  it('rảnh 40 giây → ngồi xuống; rê chuột vào → vẫy tay chào rồi thôi', async () => {
+  it('rảnh 40 giây → ngồi xuống; rê chuột vào → không vẫy tay', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
     try {
       mo();
@@ -172,9 +191,8 @@ describe('Pet MIMI', () => {
       expect(meo().getAttribute('src')).toContain('sit');
       fireEvent.pointerEnter(meo());
       await act(async () => { await vi.advanceTimersByTimeAsync(50); });
-      expect(meo().getAttribute('data-gio-tay')).toBe('true');
-      await act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
-      expect(meo().getAttribute('data-gio-tay')).toBeNull();
+      expect(document.querySelector('img[src*="paw"]')).toBeNull();
+      expect(meo().getAttribute('src')).toContain('sit');
     } finally {
       vi.useRealTimers();
     }

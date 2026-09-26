@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AudioLines, ChevronDown, SquarePen } from 'lucide-react';
+import { ArrowUp, AudioLines, ChevronDown, Plus, SquarePen } from 'lucide-react';
 import { toast } from 'sonner';
 import { coHoTroNoi, moCuaSoNoi, PetNoi } from '@/components/mimi/PetNoi';
 import { goiTroLy } from '@/lib/goiTroLy';
@@ -19,12 +19,11 @@ import run from '@/assets/mimi/run.png';
 const DAI_CHAY = Object.values(import.meta.glob('/src/assets/mimi/run-sprite.png', { eager: true, import: 'default' }))[0] as string | undefined;
 import stretch from '@/assets/mimi/stretch.png';
 import sit from '@/assets/mimi/sit.png';
-import paw from '@/assets/mimi/paw.png';
 
 /**
  * Pet MIMI — mèo nổi trên trang, theo đúng cơ chế "Pets" của ChatGPT (xem `lib/petMimi.ts`).
- * Bấm mèo / nút bút: mở THẲNG trang Trợ lý MIMI (một cuộc trò chuyện, một bộ não — pet không có khung chat
- * riêng). Nói: câu nói được gửi vào Trợ lý MIMI. Kéo mèo: đổi chỗ (nhớ lại). Chuột phải / giữ lâu: menu.
+ * Bấm mèo / nút bút: hiện ô nhập nhỏ ngay dưới mèo (như pet của ChatGPT). Gửi → câu hỏi đi thẳng vào Trợ lý
+ * MIMI (một cuộc trò chuyện, một bộ não — pet không có khung chat riêng). Nói: câu nói cũng vào Trợ lý MIMI. Kéo mèo: đổi chỗ (nhớ lại). Chuột phải / giữ lâu: menu.
  * Alt+Shift+M: ẩn/hiện. Pet chỉ HIỂN THỊ việc của hồ sơ việc chung (câu hỏi đang chờ bạn) — không tự tạo,
  * không tự đóng việc nào.
  */
@@ -34,13 +33,8 @@ const PHUT_NGU = 3 * 60_000;
 export const VUON_VAI_MS = 1600;
 /** Rảnh bao lâu thì ngồi xuống (trước khi ngủ ở phút thứ 3); rê chuột chào thì vẫy tay bao lâu. */
 export const NGOI_SAU = 40_000;
-export const CHAO_MS = 1400;
 /** Thẻ hoạt động tự ló lên bao lâu khi có chuyện mới. */
 export const THE_LO_MS = 6000;
-/** Rê chuột vào mèo: chào tối đa một lần mỗi 5 phút. */
-const CHAO_CACH = 5 * 60_000;
-/** "Cần bạn": vẫy tay vài nhịp rồi giơ tay yên — không vẫy mãi. */
-const SO_NHIP_VAY = 3;
 const CAO_NUT = 44;
 
 interface ViecCanBan { id: string; tieu_de: string; cau: string }
@@ -68,8 +62,10 @@ export default function PetMimi() {
   const nguTruoc = useRef(false);
   // Ngồi và giơ tay (26/09/2026): rảnh một lúc thì ngồi; rê chuột vào mèo đang thức thì ngồi vẫy tay chào.
   const [ngoi, setNgoi] = useState(false);
-  const [chao, setChao] = useState(false);
-  const chaoLuc = useRef(0);
+  // Ô nhập nhỏ dưới mèo (26/09/2026): bấm mèo thì hiện, gửi thì vào Trợ lý MIMI.
+  const [moO, setMoO] = useState(false);
+  const [cauNhap, setCauNhap] = useState('');
+  const goc = useRef<HTMLDivElement>(null);
   const diemTruoc = useRef<{ x: number; t: number } | null>(null);
   const vanToc = useRef(0);
   // Mèo đang ở cửa sổ nổi trên màn hình máy (Document Picture-in-Picture).
@@ -135,11 +131,13 @@ export default function PetMimi() {
     const id = window.setTimeout(() => setNguLau(true), PHUT_NGU);
     return () => { window.clearTimeout(ngoiXuong); window.clearTimeout(id); };
   }, [tt, moKhay]);
+  // Bấm ra ngoài pet thì ô nhập thu lại (chữ đang gõ vẫn giữ).
   useEffect(() => {
-    if (!chao) return;
-    const id = window.setTimeout(() => setChao(false), CHAO_MS);
-    return () => window.clearTimeout(id);
-  }, [chao]);
+    if (!moO) return;
+    const ngoai = (e: PointerEvent) => { if (goc.current && !goc.current.contains(e.target as Node)) setMoO(false); };
+    document.addEventListener('pointerdown', ngoai);
+    return () => document.removeEventListener('pointerdown', ngoai);
+  }, [moO]);
 
   useEffect(() => {
     if (tt === 'nghi' || moKhay) { setLo(false); return; }
@@ -161,24 +159,24 @@ export default function PetMimi() {
     const id = window.setTimeout(() => setVuonVai(false), VUON_VAI_MS);
     return () => window.clearTimeout(id);
   }, [vuonVai]);
-  /** Rê chuột vào mèo: đang ngủ → thức (và vươn vai); đang thức rảnh → ngồi vẫy tay chào (tối đa 15 giây một lần). */
-  const danhThuc = () => {
-    if (nguLau) { setNguLau(false); return; }
-    if (tt !== 'nghi' || dangKeoMeo || vuonVai) return;
-    const bayGio = Date.now();
-    if (bayGio - chaoLuc.current < CHAO_CACH) return;
-    chaoLuc.current = bayGio;
-    setChao(true);
+  /** Rê chuột vào mèo đang ngủ → mèo thức (và vươn vai). Không vẫy tay, không chào. */
+  const danhThuc = () => { if (nguLau) setNguLau(false); };
+  const batO = () => { setMoKhay(false); setLo(false); setMoO((o) => !o); };
+  const guiCau = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cau = cauNhap.trim();
+    if (!cau) return;
+    setCauNhap('');
+    setMoO(false);
+    moTroLy(cau);
   };
 
-  // Ảnh theo thứ tự ưu tiên: bị kéo > tiếp đất > vươn vai > giơ tay (cần bạn / chào) > ngủ > ngồi > trạng thái.
-  const giTay = !dangKeoMeo && !vuaTha && !vuonVai && (tt === 'can_ban' || chao);
+  // Ảnh theo thứ tự ưu tiên: bị kéo > tiếp đất > vươn vai > ngủ > ngồi (rảnh lâu, hoặc cần bạn) > trạng thái.
   const anhMeo = dangKeoMeo ? run
     : vuaTha ? happy
       : vuonVai ? stretch
-        : giTay ? sit
-          : tt === 'nghi' && !nguLau && ngoi ? sit
-            : ANH[dangMeo(tt, nguLau)] ?? idle;
+        : tt === 'nghi' && !nguLau && ngoi ? sit
+          : ANH[dangMeo(tt, nguLau)] ?? idle;
 
   // ── Kéo thả: bấm mà không di quá 5px là "bấm", di hơn là "kéo" ──────────────────────────────
   const batDauKeo = (e: React.PointerEvent) => {
@@ -223,7 +221,7 @@ export default function PetMimi() {
       setNghieng(0);
       setVuaTha(true);
       window.setTimeout(() => setVuaTha(false), 1200);
-    } else moTroLy();
+    } else batO();
   };
 
   // ── Nói: nhận giọng tiếng Việt của trình duyệt, gửi thẳng vào chat ─────────────────────────────
@@ -259,7 +257,7 @@ export default function PetMimi() {
     return (
       <>
         <PetNoi
-          cuaSo={cuaSoNoi} anh={anhMeo} giTay={giTay} tt={tt} chuong={chuong} dangNghe={dangNghe}
+          cuaSo={cuaSoNoi} anh={anhMeo} tt={tt} chuong={chuong} dangNghe={dangNghe}
           onGo={() => { veTrang(); moTroLy(); }}
           onNoi={noi}
           onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else moTroLy(); }}
@@ -283,6 +281,7 @@ export default function PetMimi() {
   return (
     <>
       <div
+        ref={goc}
         className="fixed z-50 flex select-none flex-col items-center"
         style={{ left: vi.x, top: vi.y, width: kt.rong }}
         onContextMenu={(e) => { e.preventDefault(); setMoMenu(true); }}
@@ -331,10 +330,10 @@ export default function PetMimi() {
               data-ngu={(nguLau && !vuonVai && !dangKeoMeo) || undefined}
               data-vuon-vai={(vuonVai && !dangKeoMeo) || undefined}
               data-ngoi={(anhMeo === sit) || undefined}
-              data-gio-tay={giTay || undefined}
               onPointerEnter={danhThuc}
-              aria-label={`MIMI — ${TEN_TRANG_THAI_PET[tt]}. Bấm để mở Trợ lý MIMI, kéo để di chuyển.`}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); moTroLy(); } }}
+              aria-label={`MIMI — ${TEN_TRANG_THAI_PET[tt]}. Bấm để hỏi MIMI, kéo để di chuyển.`}
+              aria-expanded={moO}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); batO(); } }}
               onPointerDown={batDauKeo} onPointerMove={dangKeo} onPointerUp={thaKeo} onPointerCancel={thaKeo}
               data-huong={dangKeoMeo ? (huongTrai ? 'trai' : 'phai') : undefined}
               animate={{
@@ -354,17 +353,6 @@ export default function PetMimi() {
                 style={{ backgroundImage: `url(${DAI_CHAY})`, backgroundSize: '800% 100%', backgroundRepeat: 'no-repeat', transform: `scaleX(${huongTrai ? -1 : 1})` }} />
             )}
             </motion.div>
-            {/* Giơ tay: bàn tay vẫy bên vai phải của mèo đang ngồi. */}
-            {giTay && (
-              <motion.img
-                src={paw} alt="" aria-hidden draggable={false}
-                className="pointer-events-none absolute object-contain drop-shadow"
-                style={{ width: '40%', right: '-6%', top: '14%', transformOrigin: '50% 90%' }}
-                initial={{ opacity: 0, y: 8, rotate: 0 }}
-                animate={giamChuyenDong.current ? { opacity: 1, y: 0, rotate: 0 } : { opacity: 1, y: 0, rotate: [-12, 18, -12] }}
-                transition={giamChuyenDong.current ? { duration: 0.2 } : { rotate: { duration: 0.7, repeat: SO_NHIP_VAY - 1, ease: 'easeInOut' }, default: { duration: 0.2 } }}
-              />
-            )}
             {nguLau && !vuonVai && !dangKeoMeo && (
               <span aria-hidden className="pointer-events-none absolute -right-1 top-0 flex flex-col items-start font-display font-bold text-primary/70">
                 {[0, 1, 2].map((i) => giamChuyenDong.current
@@ -385,9 +373,32 @@ export default function PetMimi() {
             {tt === 'bi_chan' && <span aria-hidden className="absolute right-1 top-1 h-3 w-3 rounded-full bg-destructive ring-2 ring-background" />}
           </div>
         )}
-        <div className="mt-2 flex items-center" style={{ height: CAO_NUT }}>
+        <div className="relative mt-2 flex w-full items-center justify-center" style={{ height: CAO_NUT }}>
+          {/* Ô nhập nhỏ: thay chỗ thanh nút khi mở; gửi thì câu hỏi vào thẳng Trợ lý MIMI. */}
+          {moO ? (
+            <form
+              onSubmit={guiCau}
+              onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); setMoO(false); } }}
+              className="absolute top-0 flex h-11 w-[22rem] max-w-[calc(100vw-16px)] items-center gap-1 rounded-full bg-card py-1 pl-1 pr-1 shadow-xl ring-1 ring-border"
+              style={vi.x + 352 > man.rong ? { right: 0 } : { left: 0 }}
+            >
+              <button type="button" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground/80 hover:bg-accent hover:text-foreground"
+                aria-label="Mở Trợ lý MIMI đầy đủ" title="Mở Trợ lý MIMI đầy đủ" onClick={() => { setMoO(false); moTroLy(); }}>
+                <Plus size={18} />
+              </button>
+              <input
+                autoFocus value={cauNhap} onChange={(e) => setCauNhap(e.target.value)} maxLength={1000}
+                placeholder="Hỏi MIMI…" aria-label="Hỏi MIMI"
+                className="min-w-0 flex-1 bg-transparent px-1 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+              <button type="submit" disabled={!cauNhap.trim()} aria-label="Gửi cho Trợ lý MIMI" title="Gửi cho Trợ lý MIMI"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40">
+                <ArrowUp size={16} />
+              </button>
+            </form>
+          ) : (
           <div className="flex items-center rounded-full bg-card/90 px-1 py-0.5 shadow-md ring-1 ring-border backdrop-blur">
-            <button type="button" className={nut} aria-label="Gõ để hỏi Trợ lý MIMI" title="Mở Trợ lý MIMI" onClick={() => moTroLy()}><SquarePen size={16} /></button>
+            <button type="button" className={nut} aria-label="Gõ để hỏi Trợ lý MIMI" title="Hỏi MIMI" onClick={batO}><SquarePen size={16} /></button>
             <span aria-hidden className="h-4 w-px bg-border" />
             <button type="button" className={`${nut} ${dangNghe ? 'text-primary' : ''}`} aria-label={dangNghe ? 'Đang nghe' : 'Nói với MIMI'} aria-pressed={dangNghe} title="Nói với MIMI" onClick={noi}>
               {dangNghe && !giamChuyenDong.current
@@ -401,6 +412,7 @@ export default function PetMimi() {
               {chuong > 0 && <span className="absolute -right-0.5 -top-1 min-w-4 rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground">{chuong}</span>}
             </button>
           </div>
+          )}
         </div>
 
         {/* Thẻ hoạt động: bấm mũi tên thì bung/thu; có chuyện mới thì thẻ trên cùng tự ló lên vài giây. */}

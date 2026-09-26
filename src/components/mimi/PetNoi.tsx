@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, Mic, Pencil } from 'lucide-react';
 import { TEN_TRANG_THAI_PET, type TrangThaiPet } from '@/lib/petMimi';
-import paw from '@/assets/mimi/paw.png';
 
 /**
  * MIMI RA MÀN HÌNH MÁY (26/09/2026) — như pet của ChatGPT desktop nổi trên mọi app.
@@ -52,8 +51,8 @@ export async function moCuaSoNoi(): Promise<Window | null> {
   return w;
 }
 
-export function PetNoi({ cuaSo, anh, giTay = false, tt, chuong, dangNghe, onGo, onNoi, onChuong, onDong }: {
-  cuaSo: Window; anh: string; giTay?: boolean; tt: TrangThaiPet; chuong: number; dangNghe: boolean;
+export function PetNoi({ cuaSo, anh, tt, chuong, dangNghe, onGo, onNoi, onChuong, onDong }: {
+  cuaSo: Window; anh: string; tt: TrangThaiPet; chuong: number; dangNghe: boolean;
   onGo: () => void; onNoi: () => void; onChuong: () => void; onDong: () => void;
 }) {
   const [giamChuyenDong] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
@@ -74,11 +73,6 @@ export function PetNoi({ cuaSo, anh, giTay = false, tt, chuong, dangNghe, onGo, 
           src={anh} alt={`MIMI — ${TEN_TRANG_THAI_PET[tt]}`} draggable={false}
           className={`h-28 w-28 object-contain drop-shadow-lg ${tt === 'dang_chay' && !giamChuyenDong ? 'animate-bounce' : ''}`}
         />
-        {giTay && (
-          <img src={paw} alt="" aria-hidden draggable={false}
-            className={`pointer-events-none absolute object-contain drop-shadow ${giamChuyenDong ? '' : 'animate-vay-tay'}`}
-            style={{ width: '40%', right: '-6%', top: '14%', transformOrigin: '50% 90%' }} />
-        )}
       </div>
       <div className="flex gap-1.5">
         <button type="button" className={nut} aria-label="Gõ để hỏi Trợ lý MIMI" title="Mở Trợ lý MIMI" onClick={onGo}><Pencil size={15} /></button>

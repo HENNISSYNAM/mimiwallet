@@ -43,7 +43,7 @@ export const TEN_TRANG_THAI_PET: Record<TrangThaiPet, string> = {
 /** Dáng mèo cho từng trạng thái. `nguLau`: nghỉ quá lâu thì ngủ. */
 export function dangMeo(tt: TrangThaiPet, nguLau: boolean): Pose {
   switch (tt) {
-    case 'can_ban': return 'sit'; // ngồi giơ tay: bàn tay vẫy vẽ chồng lên ở PetMimi
+    case 'can_ban': return 'sit'; // ngồi chờ bạn — không vẫy tay
     case 'bi_chan': return 'surprised';
     case 'xong_chua_xem': return 'happy';
     case 'dang_chay': return 'run';
