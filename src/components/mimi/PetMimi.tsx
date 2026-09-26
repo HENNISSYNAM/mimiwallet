@@ -42,7 +42,10 @@ export const NGOI_SAU = 40_000;
 export const THE_LO_MS = 6000;
 const CAO_NUT = 44;
 
-interface ViecCanBan { id: string; tieu_de: string; cau: string }
+/** Một mục của danh sách Việc cần làm chuẩn — pet chỉ hiển thị, không giữ trạng thái việc riêng. */
+interface ViecCanBan { id: string; tieu_de: string; cau: string; duong_dan: string }
+/** Pet hỏi lại danh sách việc mỗi 5 phút (và khi mở khay), bỏ lượt khi tab đang ẩn — không thành tải máy chủ. */
+const CHU_KY_VIEC = 5 * 60_000;
 interface TheHoatDong { khoa: string; tieu: string; phu: string; mau: string; bam: () => void; dang?: boolean; gat?: () => void }
 
 export default function PetMimi() {
@@ -104,22 +107,29 @@ export default function PetMimi() {
     const doiMan = () => setMan({ rong: window.innerWidth, cao: window.innerHeight });
     const phim = (e: KeyboardEvent) => { if (laPhimTat(e)) { e.preventDefault(); setCd((c) => { const m = { ...c, an: !c.an }; luuCaiDat(m); return m; }); } };
     // Lệnh `/pet` gõ trong Trợ lý MIMI.
-    const lenh = () => setCd((c) => { const m = { ...c, an: !c.an }; luuCaiDat(m); return m; });
+    const lenh = (e: Event) => {
+      const an = (e as CustomEvent<{ an?: boolean }>).detail?.an;
+      setCd((c) => { const m = { ...c, an: typeof an === 'boolean' ? an : !c.an }; luuCaiDat(m); return m; });
+    };
     window.addEventListener('resize', doiMan);
     window.addEventListener('keydown', phim);
     window.addEventListener(SU_KIEN_LENH_PET, lenh);
     return () => { window.removeEventListener('resize', doiMan); window.removeEventListener('keydown', phim); window.removeEventListener(SU_KIEN_LENH_PET, lenh); };
   }, []);
 
-  // Việc đang chờ người dùng (câu hỏi của hành trình) — đọc mỗi 2 phút, và khi mở khay.
+  // Việc cần bạn — đọc từ CÙNG danh sách Việc cần làm của Tổng quan và Trợ lý (Prompt 4B).
   const napViec = useCallback(async () => {
     try {
-      const r = await goiTroLy('hanh_trinh_ds');
-      const ds = (r.hanh_trinh ?? []) as { id: string; tieu_de: string; cau_hoi: { cau: string } | null }[];
-      setViec(ds.filter((h) => h.cau_hoi).map((h) => ({ id: h.id, tieu_de: h.tieu_de, cau: h.cau_hoi!.cau })));
-    } catch { /* máy chủ chưa có hành động này hoặc mạng lỗi: pet vẫn chạy, chỉ không có việc */ }
+      const r = await goiTroLy('viec_can_lam');
+      const ds = (r.viec ?? []) as { id: string; tieu_de: string; can_ban: boolean; duong_dan: string; hanh_dong: { tieu_de: string } | null }[];
+      setViec(ds.filter((v) => v.can_ban).slice(0, 8).map((v) => ({ id: v.id, tieu_de: v.tieu_de, cau: v.hanh_dong?.tieu_de ?? v.tieu_de, duong_dan: v.duong_dan })));
+    } catch { /* mạng lỗi: pet vẫn chạy; việc vẫn ở trang Việc cần làm — pet không phải nơi duy nhất */ }
   }, []);
-  useEffect(() => { void napViec(); const id = window.setInterval(() => void napViec(), 120_000); return () => window.clearInterval(id); }, [napViec]);
+  useEffect(() => {
+    void napViec();
+    const id = window.setInterval(() => { if (typeof document === 'undefined' || !document.hidden) void napViec(); }, CHU_KY_VIEC);
+    return () => window.clearInterval(id);
+  }, [napViec]);
 
   // Pet phản chiếu việc chung đang chờ bạn và các câu bạn hỏi ngầm từ pet (đang trả lời / xong chưa xem / lỗi).
   const lanHoi = useLanHoiPet();
@@ -256,8 +266,8 @@ export default function PetMimi() {
     gat: h.trang_thai === 'dang' ? undefined : () => daXemLanHoi(h.id),
   });
   const chuong = viec.length + lanHoi.filter((h) => h.trang_thai !== 'dang' && !h.da_xem).length;
-  const moViec = (id: string) => { setMoKhay(false); setLo(false); navigate(`/dashboard/viec-can-lam?ht=${id}`); };
-  const theViec: TheHoatDong[] = viec.map((v) => ({ khoa: v.id, tieu: v.cau, phu: `Cần bạn · ${v.tieu_de}`, mau: 'text-mimi-amber', bam: () => moViec(v.id) }));
+  const moViec = (v: ViecCanBan) => { setMoKhay(false); setLo(false); navigate(v.duong_dan); };
+  const theViec: TheHoatDong[] = viec.map((v) => ({ khoa: v.id, tieu: v.cau, phu: v.cau === v.tieu_de ? 'Cần bạn' : `Cần bạn · ${v.tieu_de}`, mau: 'text-mimi-amber', bam: () => moViec(v) }));
   // Khay (bấm mũi tên): mọi câu đã hỏi gần đây + việc chờ bạn.
   const the: TheHoatDong[] = [...lanHoi.map(theHoi), ...theViec];
   // Tự bật lên: câu đang trả lời và kết quả CHƯA XEM ở lại tới khi bạn bấm hoặc gạt đi; việc chờ bạn ló lên vài giây.
@@ -278,23 +288,15 @@ export default function PetMimi() {
           cuaSo={cuaSoNoi} anh={anhMeo} tt={tt} chuong={chuong} dangNghe={dangNghe}
           onGo={() => { veTrang(); moTroLy(); }}
           onNoi={noi}
-          onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else moTroLy(); }}
+          onChuong={() => { veTrang(); if (viec.length) navigate(viec[0].duong_dan); else moTroLy(); }}
           onDong={() => setCuaSoNoi(null)}
         />
       </>
     );
   }
 
-  if (cd.an) {
-    return (
-      <>
-        <button type="button" onClick={() => doiCd({ an: false })} aria-label="Hiện MIMI (Alt+Shift+M)" title="Hiện MIMI (Alt+Shift+M)"
-          className="fixed bottom-28 right-0 z-50 rounded-l-lg bg-card/90 px-1.5 py-2 text-[10px] font-semibold text-muted-foreground shadow ring-1 ring-border [writing-mode:vertical-rl] hover:text-foreground">
-          MIMI
-        </button>
-      </>
-    );
-  }
+  // Ẩn (mặc định): không vẽ gì. Bật lại ở Cài đặt → Pet MIMI, Alt+Shift+M, hoặc `/pet` trong Trợ lý.
+  if (cd.an) return hopMic;
 
   return (
     <>
@@ -484,7 +486,7 @@ export default function PetMimi() {
         {moMenu && (
           <div role="menu" aria-label="Tuỳ chọn MIMI" className="absolute bottom-full mb-2 w-52 rounded-xl bg-card p-1 text-sm shadow-xl ring-1 ring-border"
             style={vi.x + 208 > man.rong ? { right: 0 } : { left: 0 }} onMouseLeave={() => setMoMenu(false)}>
-            <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => { setMoMenu(false); doiCd({ an: true }); toast('Đã ẩn MIMI. Alt+Shift+M hoặc nút "MIMI" ở mép phải để hiện lại.'); }}>Ẩn MIMI</button>
+            <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => { setMoMenu(false); doiCd({ an: true }); toast('Đã ẩn pet MIMI. Bật lại ở Cài đặt → Pet MIMI, hoặc Alt+Shift+M.'); }}>Ẩn MIMI</button>
             {coHoTroNoi() && (
               <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => void raManHinhMay()}>Đưa MIMI ra màn hình máy</button>
             )}
