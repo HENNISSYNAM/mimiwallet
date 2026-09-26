@@ -211,6 +211,17 @@ describe('MIMI Assistant — hỏi đáp', () => {
     }
   });
 
+  it('mở từ thông báo của pet → hiện đúng câu hỏi và câu trả lời pet đã nhận, KHÔNG hỏi lại', async () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/dashboard/tro-ly', state: { luotPet: { cau: 'Khoản chi nào đang chờ tôi duyệt?', traLoi: TRA_LOI } } }]}>
+        <TroLyPage />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.')).toBeTruthy();
+    expect(screen.getByText('Khoản chi nào đang chờ tôi duyệt?')).toBeTruthy();
+    expect(gia.troLy.mock.calls.filter(([hd]) => hd === 'hoi')).toHaveLength(0);
+  });
+
   it('trình duyệt không nghe được giọng nói → không hiện nút mic hỏng', async () => {
     dung();
     await screen.findByRole('button', { name: 'Gửi câu hỏi' });

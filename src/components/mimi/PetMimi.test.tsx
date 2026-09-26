@@ -4,14 +4,26 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 configure({ asyncUtilTimeout: 8000 });
 
-const goi = vi.hoisted(() => ({ ds: [] as unknown[] }));
-vi.mock('@/lib/goiTroLy', () => ({ goiTroLy: async () => ({ hanh_trinh: goi.ds }) }));
+const goi = vi.hoisted(() => ({
+  ds: [] as unknown[],
+  daGoi: [] as [string, unknown][],
+  /** Trả lời của hành động `hoi` — test tự điều khiển lúc nào xong. */
+  hoi: null as null | ((body: unknown) => Promise<unknown>),
+}));
+vi.mock('@/lib/goiTroLy', () => ({
+  goiTroLy: async (hd: string, body?: unknown) => {
+    goi.daGoi.push([hd, body]);
+    if (hd === 'hoi') return goi.hoi ? goi.hoi(body) : { cau: 'Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.', ket_qua: [], buoc: [] };
+    return { hanh_trinh: goi.ds };
+  },
+}));
 vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }));
 
 import PetMimi from './PetMimi';
+import { xoaHetLanHoi } from '@/lib/petHoi';
 
-/** Trang đang mở — để thấy pet dẫn thẳng vào Trợ lý MIMI. */
-function DiaChi() { const l = useLocation(); return <div data-testid="dia-chi">{l.pathname}{l.search}</div>; }
+/** Trang đang mở (và state điều hướng) — để thấy pet có chuyển trang hay không. */
+function DiaChi() { const l = useLocation(); return <div data-testid="dia-chi" data-state={JSON.stringify(l.state ?? null)}>{l.pathname}{l.search}</div>; }
 const mo = () => render(
   <MemoryRouter initialEntries={['/dashboard']}>
     <Routes><Route path="*" element={<><PetMimi /><DiaChi /></>} /></Routes>
@@ -20,8 +32,13 @@ const mo = () => render(
 const diaChi = () => screen.getByTestId('dia-chi').textContent;
 const meo = () => screen.getByRole('button', { name: /^MIMI —/ });
 
+const cauHoiGui = () => goi.daGoi.filter(([hd]) => hd === 'hoi').map(([, b]) => (b as { cau: string }).cau);
+
 beforeEach(() => {
   goi.ds = [];
+  goi.daGoi = [];
+  goi.hoi = null;
+  xoaHetLanHoi();
   localStorage.clear();
   window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
   HTMLElement.prototype.setPointerCapture = vi.fn();
@@ -33,17 +50,54 @@ beforeEach(() => {
 });
 
 describe('Pet MIMI', () => {
-  it('bấm mèo (không kéo) → hiện ô nhập nhỏ dưới mèo, không mở khung chat mới; gửi → câu hỏi vào thẳng Trợ lý MIMI', async () => {
+  it('gõ ở ô nhập dưới mèo → MIMI trả lời NGẦM, không chuyển trang; xong thì pet bật thông báo; bấm thông báo mới mở Trợ lý MIMI với đúng câu trả lời', async () => {
+    let xong: (v: unknown) => void = () => {};
+    goi.hoi = () => new Promise((r) => { xong = r; });
     mo();
     fireEvent.pointerDown(meo(), { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerUp(meo(), { clientX: 101, clientY: 101, pointerId: 1 });
     const o = await screen.findByRole('textbox', { name: 'Hỏi MIMI' });
-    expect(diaChi()).toBe('/dashboard'); // chưa rời trang, chưa mở cửa sổ chat nào
     expect((screen.getByRole('button', { name: 'Gửi cho Trợ lý MIMI' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(o, { target: { value: 'Khoản chi nào đang chờ tôi duyệt?' } });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi cho Trợ lý MIMI' }));
-    await waitFor(() => expect(diaChi()).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Khoản chi nào đang chờ tôi duyệt?')}`));
+
+    // Đang trả lời: vẫn ở trang cũ, thông báo "đang trả lời" trên pet, câu đi vào đúng hành động `hoi`.
+    expect(await screen.findByText('MIMI đang trả lời…')).toBeTruthy();
+    expect(diaChi()).toBe('/dashboard');
+    expect(cauHoiGui()).toEqual(['Khoản chi nào đang chờ tôi duyệt?']);
     expect(screen.queryByRole('textbox', { name: 'Hỏi MIMI' })).toBeNull();
+
+    const traLoi = { cau: 'Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.', ket_qua: [], buoc: [], hoi_thoai_id: 'ht1' };
+    await act(async () => { xong(traLoi); });
+    expect(await screen.findByText('Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.')).toBeTruthy();
+    expect(screen.getByText('Xong — chưa xem')).toBeTruthy();
+    expect(diaChi()).toBe('/dashboard'); // có kết quả vẫn chưa chuyển trang
+
+    fireEvent.click(screen.getByText('Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.'));
+    await waitFor(() => expect(diaChi()).toBe('/dashboard/tro-ly'));
+    expect(JSON.parse(screen.getByTestId('dia-chi').getAttribute('data-state') as string)).toEqual({ luotPet: { cau: 'Khoản chi nào đang chờ tôi duyệt?', traLoi } });
+    expect(cauHoiGui()).toHaveLength(1); // không hỏi lại
+  });
+
+  it('thông báo kết quả: gạt đi thì thu lại nhưng vẫn còn trong khay; lỗi thì bấm để thử lại trong Trợ lý MIMI', async () => {
+    mo();
+    fireEvent.click(screen.getByRole('button', { name: 'Gõ để hỏi Trợ lý MIMI' }));
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Hỏi MIMI' }), { target: { value: 'Doanh thu quý này?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi cho Trợ lý MIMI' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Gạt thông báo: Doanh thu quý này?' }));
+    await waitFor(() => expect(screen.queryByText('Doanh thu quý này?')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: /^Hoạt động/ }));
+    expect(await screen.findByText('Doanh thu quý này?')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Hoạt động/ }));
+
+    goi.hoi = async () => { throw new Error('Mạng lỗi'); };
+    fireEvent.click(screen.getByRole('button', { name: 'Gõ để hỏi Trợ lý MIMI' }));
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Hỏi MIMI' }), { target: { value: 'Ai nợ tôi?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi cho Trợ lý MIMI' }));
+    expect(await screen.findByText('Chưa xong — bấm để thử lại trong Trợ lý MIMI')).toBeTruthy();
+    expect(screen.getByText('Bị chặn')).toBeTruthy();
+    fireEvent.click(screen.getByText('Chưa xong — bấm để thử lại trong Trợ lý MIMI'));
+    await waitFor(() => expect(diaChi()).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Ai nợ tôi?')}`));
   });
 
   it('ô nhập: Esc hoặc bấm ra ngoài thì thu lại; nút + mở Trợ lý MIMI đầy đủ', async () => {
@@ -60,16 +114,53 @@ describe('Pet MIMI', () => {
     await waitFor(() => expect(diaChi()).toBe('/dashboard/tro-ly'));
   });
 
-  it('nói với MIMI → câu nói được gửi vào Trợ lý MIMI (?hoi=…&doc=1 để Trợ lý đọc to trả lời)', async () => {
+  it('nói với MIMI → hỏi ngầm như gõ (không chuyển trang), thông báo kết quả trên pet', async () => {
+    let daNghe = 0;
     class NhanDien { lang = ''; interimResults = false; maxAlternatives = 1; onresult: ((e: unknown) => void) | null = null; onerror: (() => void) | null = null; onend: (() => void) | null = null;
-      start() { this.onresult?.({ results: { 0: { 0: { transcript: 'Tôi muốn tạm ngừng kinh doanh' } } } }); this.onend?.(); } }
-    (window as unknown as Record<string, unknown>).SpeechRecognition = NhanDien;
+      start() { daNghe += 1; this.onresult?.({ results: { 0: { 0: { transcript: 'Tôi muốn tạm ngừng kinh doanh' } } } }); this.onend?.(); } stop() {} }
+    const w = window as unknown as Record<string, unknown>;
+    w.SpeechRecognition = NhanDien;
     try {
       mo();
       fireEvent.click(screen.getByRole('button', { name: 'Nói với MIMI' }));
-      await waitFor(() => expect(diaChi()).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Tôi muốn tạm ngừng kinh doanh')}&doc=1`));
+      await waitFor(() => expect(cauHoiGui()).toEqual(['Tôi muốn tạm ngừng kinh doanh']));
+      expect(daNghe).toBe(1);
+      expect(await screen.findByText('Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.')).toBeTruthy();
+      expect(diaChi()).toBe('/dashboard');
     } finally {
-      delete (window as unknown as Record<string, unknown>).SpeechRecognition;
+      delete w.SpeechRecognition;
+    }
+  });
+
+  it('bật mic lần đầu: MIMI hỏi xin trước, rồi mới gọi hộp cho phép của trình duyệt; bị chặn thì chỉ cách mở lại', async () => {
+    let daNghe = 0;
+    class NhanDien { lang = ''; interimResults = false; maxAlternatives = 1; onresult: ((e: unknown) => void) | null = null; onerror: (() => void) | null = null; onend: (() => void) | null = null;
+      start() { daNghe += 1; this.onresult?.({ results: { 0: { 0: { transcript: 'Doanh thu tháng này' } } } }); this.onend?.(); } stop() {} }
+    const w = window as unknown as Record<string, unknown>;
+    w.SpeechRecognition = NhanDien;
+    let quyen = 'prompt';
+    const xinMic = vi.fn(async () => ({ getTracks: () => [{ stop: vi.fn() }] }));
+    Object.defineProperty(navigator, 'permissions', { value: { query: async () => ({ state: quyen }) }, configurable: true });
+    Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: xinMic }, configurable: true });
+    try {
+      mo();
+      fireEvent.click(screen.getByRole('button', { name: 'Nói với MIMI' }));
+      expect(await screen.findByText('MIMI xin bật micro nhé?')).toBeTruthy();
+      expect(daNghe).toBe(0); // chưa bật mic khi người dùng chưa đồng ý
+      expect(xinMic).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Cho phép' }));
+      await waitFor(() => expect(xinMic).toHaveBeenCalledWith({ audio: true }));
+      await waitFor(() => expect(daNghe).toBe(1));
+      await waitFor(() => expect(cauHoiGui()).toEqual(['Doanh thu tháng này']));
+
+      quyen = 'denied';
+      fireEvent.click(screen.getByRole('button', { name: 'Nói với MIMI' }));
+      expect(await screen.findByText('Micro đang bị chặn')).toBeTruthy();
+      expect(daNghe).toBe(1);
+    } finally {
+      delete w.SpeechRecognition;
+      delete (navigator as unknown as Record<string, unknown>).permissions;
+      delete (navigator as unknown as Record<string, unknown>).mediaDevices;
     }
   });
 

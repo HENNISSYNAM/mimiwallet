@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCongCuGhim } from '@/hooks/useCongCuGhim';
 import { duongDanCongCu } from '@/lib/congCu';
 import { IconCongCu } from '@/components/cong-cu/IconCongCu';
@@ -9,6 +9,7 @@ import {
   Mic, Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, Square, Volume2, X,
 } from 'lucide-react';
 import { CAU_LOI_NGHE, useNgheGiong } from '@/hooks/useNgheGiong';
+import { HopBatMic } from '@/components/giong/HopBatMic';
 import { docGiong, dungDoc } from '@/lib/docGiong';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
@@ -169,6 +170,20 @@ export default function TroLyPage() {
     onLoi: (l) => toast.error(CAU_LOI_NGHE[l]),
   });
 
+  // Bấm thông báo kết quả trên pet → mở trang này với ĐÚNG câu hỏi và câu trả lời pet đã nhận (pet hỏi
+  // ngầm qua cùng hành động `hoi`) — hiện lại, không hỏi lại; rồi xoá khỏi lịch sử để tải lại không nhân đôi.
+  const viTri = useLocation();
+  const daNhanTuPet = useRef<unknown>(null);
+  useEffect(() => {
+    const lp = (viTri.state as { luotPet?: { cau: string; traLoi: TraLoi } } | null)?.luotPet;
+    if (!lp?.traLoi || daNhanTuPet.current === lp) return;
+    daNhanTuPet.current = lp;
+    const id = ++demLuot.current;
+    setLuot((ds) => [...ds, { id, cau: lp.cau, phamVi: null, traLoi: lp.traLoi }]);
+    navigate(`${viTri.pathname}${viTri.search}`, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viTri.state]);
+
   // Công cụ dạng câu hỏi mở trang này với ?hoi=… — hỏi đúng một lần rồi xoá khỏi địa chỉ,
   // để bấm "quay lại" hay tải lại trang không hỏi lặp.
   useEffect(() => {
@@ -325,7 +340,7 @@ export default function TroLyPage() {
               {nghe.coHoTro && (
                 <button
                   type="button"
-                  onClick={nghe.batDau}
+                  onClick={() => void nghe.batDau()}
                   disabled={dangHoi}
                   aria-pressed={nghe.dangNghe}
                   aria-label={nghe.dangNghe ? 'Đang nghe — bấm để dừng' : 'Nói câu hỏi'}
@@ -584,6 +599,7 @@ export default function TroLyPage() {
         </div>
       )}
 
+      <HopBatMic trangThai={nghe.hoiQuyen} onDongY={() => void nghe.dongY()} onDong={nghe.dongHop} />
       <AlertDialog open={!!xacNhan} onOpenChange={(mo) => { if (!mo) setXacNhan(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
