@@ -3913,7 +3913,6 @@ export type Database = {
           da_day_luc: string | null
           da_doc_luc: string | null
           da_xu_ly_luc: string | null
-          loi_thoi_luc: string | null
           duong_dan: string | null
           hanh_dong: Json
           id: string
@@ -3931,7 +3930,6 @@ export type Database = {
           da_day_luc?: string | null
           da_doc_luc?: string | null
           da_xu_ly_luc?: string | null
-          loi_thoi_luc?: string | null
           duong_dan?: string | null
           hanh_dong?: Json
           id?: string
@@ -3949,7 +3947,6 @@ export type Database = {
           da_day_luc?: string | null
           da_doc_luc?: string | null
           da_xu_ly_luc?: string | null
-          loi_thoi_luc?: string | null
           duong_dan?: string | null
           hanh_dong?: Json
           id?: string
