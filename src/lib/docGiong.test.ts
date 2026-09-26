@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { catDoan, chonGiongViet, lamSachDeDoc } from './docGiong';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { catDoan, chonGiongViet, coHoTro, docGiong, lamSachDeDoc } from './docGiong';
 
 const g = (name: string, lang: string, localService = true) => ({ name, lang, localService });
 
@@ -30,5 +30,35 @@ describe('cắt đoạn', () => {
   });
   it('câu ngắn gộp chung một đoạn', () => {
     expect(catDoan('A. B. C.', 180)).toEqual(['A. B. C.']);
+  });
+});
+
+describe('đọc thành tiếng khi bộ đọc của trình duyệt không có hoặc biến mất', () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+  it('khoá speechSynthesis còn nhưng giá trị undefined → coi là không hỗ trợ, không ném lỗi', async () => {
+    vi.stubGlobal('speechSynthesis', undefined);
+    expect(coHoTro()).toBe(false);
+    await expect(docGiong('Xin chào')).resolves.toBe('khong_ho_tro');
+  });
+
+  it('bộ đọc mất TRONG LÚC chờ nạp danh sách giọng → trả khong_ho_tro, không gọi cancel trên undefined', async () => {
+    vi.useFakeTimers();
+    let lan = 0;
+    const ss = {
+      // Lần đầu chưa có giọng (phải chờ); lần sau trả giọng tiếng Việt — và đúng lúc đó bộ đọc bị gỡ.
+      getVoices: () => {
+        if (lan++ === 0) return [];
+        vi.stubGlobal('speechSynthesis', undefined);
+        return [{ name: 'An', lang: 'vi-VN', localService: true }] as SpeechSynthesisVoice[];
+      },
+      addEventListener: () => {}, cancel: vi.fn(), speak: vi.fn(),
+    };
+    vi.stubGlobal('speechSynthesis', ss);
+    vi.stubGlobal('SpeechSynthesisUtterance', function U() {});
+    const p = docGiong('Xin chào');
+    await vi.advanceTimersByTimeAsync(1600);
+    await expect(p).resolves.toBe('khong_ho_tro');
+    expect(ss.cancel).not.toHaveBeenCalled();
   });
 });

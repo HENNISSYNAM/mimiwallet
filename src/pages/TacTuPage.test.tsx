@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import TacTuPage from './TacTuPage';
+import { dauNgayVN } from '@/lib/tacTu';
 
 /**
  * Màn Kiểm soát chi nằm sau đăng nhập, nên kiểm bằng dựng giao diện trên CSDL giả.
@@ -49,7 +50,9 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-const HOM_NAY = new Date(Date.now() - 60_000).toISOString();
+// "Một phút trước" nhưng không sớm hơn đầu ngày giờ VN: chạy trong phút đầu sau nửa đêm thì
+// một phút trước là HÔM QUA, và khoản chi mẫu không còn tính vào hạn mức ngày.
+const HOM_NAY = new Date(Math.max(Date.now() - 60_000, dauNgayVN(new Date()).getTime())).toISOString();
 const LAU_ROI = new Date(Date.now() - 40 * 86_400_000).toISOString();
 
 const yc = (x: Record<string, unknown>) => ({

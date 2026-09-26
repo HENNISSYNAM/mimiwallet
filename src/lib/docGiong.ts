@@ -60,7 +60,8 @@ export function catDoan(s: string, toiDa = 180): string[] {
 
 export type KetQuaDoc = 'xong' | 'da_dung' | 'khong_ho_tro' | 'khong_co_giong_viet';
 
-export const coHoTro = () => typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+// Kiểm theo GIÁ TRỊ, không chỉ theo tên khoá: khoá có thể còn đó mà giá trị đã là undefined.
+export const coHoTro = () => typeof window !== 'undefined' && !!window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function';
 
 /** Danh sách giọng nạp chậm trên Chrome: chờ `voiceschanged`, tối đa 1,5 giây. */
 function docGiongCoSan(): Promise<SpeechSynthesisVoice[]> {
@@ -82,6 +83,8 @@ export async function docGiong(van: string): Promise<KetQuaDoc> {
   const giong = chonGiongViet(await docGiongCoSan());
   if (!giong) return 'khong_co_giong_viet';
   const doan = catDoan(lamSachDeDoc(van).slice(0, 3000));
+  // Vừa chờ danh sách giọng tới 1,5 giây: kiểm lại, bộ đọc có thể đã mất trong lúc đó.
+  if (!coHoTro()) return 'khong_ho_tro';
   const ss = window.speechSynthesis;
   ss.cancel();
   for (const d of doan) {
@@ -93,7 +96,7 @@ export async function docGiong(van: string): Promise<KetQuaDoc> {
       u.onend = () => xong('ok');
       // `cancel()` (người dùng bấm dừng) báo lỗi "interrupted"/"canceled": coi là dừng, không phải hỏng.
       u.onerror = () => xong('dung');
-      ss.speak(u);
+      try { ss.speak(u); } catch { xong('dung'); }
     });
     if (kq === 'dung') return 'da_dung';
   }
