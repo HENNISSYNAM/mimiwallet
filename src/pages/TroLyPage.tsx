@@ -11,6 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
 import { toast } from 'sonner';
+import { docCaiDat, laLenhPet, luuCaiDat, SU_KIEN_LENH_PET } from '@/lib/petMimi';
 import { useTranslation } from 'react-i18next';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
 import {
@@ -122,6 +123,15 @@ export default function TroLyPage() {
   const hoi = useCallback(async (cauHoi: string, pv: NhomNangLuc | null = phamVi) => {
     const cau = cauHoi.trim();
     if (!cau || dangHoi) return;
+    // `/pet`: ẩn/hiện pet MIMI (pet không có khung chat riêng — lệnh gõ ở đây).
+    if (laLenhPet(cau)) {
+      const c = docCaiDat();
+      luuCaiDat({ ...c, an: !c.an });
+      window.dispatchEvent(new Event(SU_KIEN_LENH_PET));
+      setNhap('');
+      toast(c.an ? 'Đã hiện lại pet MIMI.' : 'Đã ẩn pet MIMI. Gõ /pet hoặc Alt+Shift+M để hiện lại.');
+      return;
+    }
     const id = ++demLuot.current;
     const lichSu = dungLichSu(luot);
     setLuot((ds) => [...ds, { id, cau, phamVi: pv }]);

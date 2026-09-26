@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AudioLines, ChevronDown, SquarePen } from 'lucide-react';
 import { toast } from 'sonner';
-import AIChatWidget, { type TrangThaiChat } from '@/components/AIChatWidget';
 import { coHoTroNoi, moCuaSoNoi, PetNoi } from '@/components/mimi/PetNoi';
 import { goiTroLy } from '@/lib/goiTroLy';
 import {
-  dangMeo, docCaiDat, giuTrongMan, KICH_THUOC, laPhimTat, luuCaiDat, TEN_TRANG_THAI_PET, trangThaiPet,
+  SU_KIEN_LENH_PET, dangMeo, docCaiDat, giuTrongMan, KICH_THUOC, laPhimTat, luuCaiDat, TEN_TRANG_THAI_PET, trangThaiPet,
   type CaiDatPet, type CoPet,
 } from '@/lib/petMimi';
 import idle from '@/assets/mimi/idle.png';
@@ -24,22 +23,24 @@ import paw from '@/assets/mimi/paw.png';
 
 /**
  * Pet MIMI — mèo nổi trên trang, theo đúng cơ chế "Pets" của ChatGPT (xem `lib/petMimi.ts`).
- * Bấm mèo: mở/đóng chat. Kéo mèo: đổi chỗ (nhớ lại). Chuột phải / giữ lâu: menu. Alt+Shift+M: ẩn/hiện.
+ * Bấm mèo / nút bút: mở THẲNG trang Trợ lý MIMI (một cuộc trò chuyện, một bộ não — pet không có khung chat
+ * riêng). Nói: câu nói được gửi vào Trợ lý MIMI. Kéo mèo: đổi chỗ (nhớ lại). Chuột phải / giữ lâu: menu.
+ * Alt+Shift+M: ẩn/hiện. Pet chỉ HIỂN THỊ việc của hồ sơ việc chung (câu hỏi đang chờ bạn) — không tự tạo,
+ * không tự đóng việc nào.
  */
 const ANH: Record<string, string> = { idle, sleep, wave, surprised, happy, run, sit };
 const PHUT_NGU = 3 * 60_000;
-/** Vươn vai kéo dài bao lâu, và khoảng cách giữa hai lần vươn vai lúc rảnh mà còn thức. */
+/** Vươn vai kéo dài bao lâu — chỉ khi vừa thức dậy, không lặp định kỳ (26/09/2026: bớt hoạt ảnh lặp). */
 export const VUON_VAI_MS = 1600;
-const VUON_VAI_TU = 50_000;
-const VUON_VAI_DEN = 90_000;
 /** Rảnh bao lâu thì ngồi xuống (trước khi ngủ ở phút thứ 3); rê chuột chào thì vẫy tay bao lâu. */
 export const NGOI_SAU = 40_000;
 export const CHAO_MS = 1400;
 /** Thẻ hoạt động tự ló lên bao lâu khi có chuyện mới. */
 export const THE_LO_MS = 6000;
-const CHAO_CACH = 15_000;
-const RONG_KHUNG = 380;
-const CAO_KHUNG = 560;
+/** Rê chuột vào mèo: chào tối đa một lần mỗi 5 phút. */
+const CHAO_CACH = 5 * 60_000;
+/** "Cần bạn": vẫy tay vài nhịp rồi giơ tay yên — không vẫy mãi. */
+const SO_NHIP_VAY = 3;
 const CAO_NUT = 44;
 
 interface ViecCanBan { id: string; tieu_de: string; cau: string }
@@ -51,14 +52,11 @@ const layNhanDien = (): any => (typeof window === 'undefined' ? null : (window a
 export default function PetMimi() {
   const [cd, setCd] = useState<CaiDatPet>(() => docCaiDat());
   const [man, setMan] = useState(() => ({ rong: window.innerWidth, cao: window.innerHeight }));
-  const [moChat, setMoChat] = useState(false);
   const [moKhay, setMoKhay] = useState(false);
   const [moMenu, setMoMenu] = useState(false);
-  const [chat, setChat] = useState<TrangThaiChat>({ dangTraLoi: false, dangLamHo: false, loi: false, chuaDoc: 0 });
   const [viec, setViec] = useState<ViecCanBan[]>([]);
   const [nguLau, setNguLau] = useState(false);
   const [dangNghe, setDangNghe] = useState(false);
-  const [cauGui, setCauGui] = useState<{ id: number; cau: string } | null>(null);
   const [lo, setLo] = useState(false);
   // Hoạt ảnh khi bị kéo (26/09/2026): chạy theo hướng kéo, nghiêng theo tốc độ, thả ra thì tiếp đất.
   const [dangKeoMeo, setDangKeoMeo] = useState(false);
@@ -77,6 +75,11 @@ export default function PetMimi() {
   // Mèo đang ở cửa sổ nổi trên màn hình máy (Document Picture-in-Picture).
   const [cuaSoNoi, setCuaSoNoi] = useState<Window | null>(null);
   const navigate = useNavigate();
+  /** Lối thẳng vào Trợ lý MIMI: có câu thì hỏi luôn (trang Trợ lý đọc `?hoi=` đúng một lần). */
+  const moTroLy = useCallback((cau?: string) => {
+    setMoKhay(false);
+    navigate(cau ? `/dashboard/tro-ly?hoi=${encodeURIComponent(cau.slice(0, 1000))}` : '/dashboard/tro-ly');
+  }, [navigate]);
   const raManHinhMay = async () => {
     setMoMenu(false);
     try {
@@ -103,9 +106,12 @@ export default function PetMimi() {
     giamChuyenDong.current = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const doiMan = () => setMan({ rong: window.innerWidth, cao: window.innerHeight });
     const phim = (e: KeyboardEvent) => { if (laPhimTat(e)) { e.preventDefault(); setCd((c) => { const m = { ...c, an: !c.an }; luuCaiDat(m); return m; }); } };
+    // Lệnh `/pet` gõ trong Trợ lý MIMI.
+    const lenh = () => setCd((c) => { const m = { ...c, an: !c.an }; luuCaiDat(m); return m; });
     window.addEventListener('resize', doiMan);
     window.addEventListener('keydown', phim);
-    return () => { window.removeEventListener('resize', doiMan); window.removeEventListener('keydown', phim); };
+    window.addEventListener(SU_KIEN_LENH_PET, lenh);
+    return () => { window.removeEventListener('resize', doiMan); window.removeEventListener('keydown', phim); window.removeEventListener(SU_KIEN_LENH_PET, lenh); };
   }, []);
 
   // Việc đang chờ người dùng (câu hỏi của hành trình) — đọc mỗi 2 phút, và khi mở khay.
@@ -118,7 +124,8 @@ export default function PetMimi() {
   }, []);
   useEffect(() => { void napViec(); const id = window.setInterval(() => void napViec(), 120_000); return () => window.clearInterval(id); }, [napViec]);
 
-  const tt = trangThaiPet({ ...chat, soCanBan: viec.length });
+  // Pet chỉ phản chiếu việc chung đang chờ bạn; trả lời, làm hộ, lỗi… nằm ở trang Trợ lý MIMI.
+  const tt = trangThaiPet({ dangTraLoi: false, dangLamHo: false, loi: false, chuaDoc: 0, soCanBan: viec.length });
   // Nghỉ lâu thì ngủ; có động là thức.
   useEffect(() => {
     setNguLau(false);
@@ -127,7 +134,7 @@ export default function PetMimi() {
     const ngoiXuong = window.setTimeout(() => setNgoi(true), NGOI_SAU);
     const id = window.setTimeout(() => setNguLau(true), PHUT_NGU);
     return () => { window.clearTimeout(ngoiXuong); window.clearTimeout(id); };
-  }, [tt, moChat, moKhay]);
+  }, [tt, moKhay]);
   useEffect(() => {
     if (!chao) return;
     const id = window.setTimeout(() => setChao(false), CHAO_MS);
@@ -135,11 +142,11 @@ export default function PetMimi() {
   }, [chao]);
 
   useEffect(() => {
-    if (tt === 'nghi' || moChat || moKhay) { setLo(false); return; }
+    if (tt === 'nghi' || moKhay) { setLo(false); return; }
     setLo(true);
     const id = window.setTimeout(() => setLo(false), THE_LO_MS);
     return () => window.clearTimeout(id);
-  }, [tt, moChat, moKhay]);
+  }, [tt, moKhay]);
 
   // Thức dậy → vươn vai.
   useEffect(() => {
@@ -154,12 +161,6 @@ export default function PetMimi() {
     const id = window.setTimeout(() => setVuonVai(false), VUON_VAI_MS);
     return () => window.clearTimeout(id);
   }, [vuonVai]);
-  // Rảnh mà còn thức: hẹn lần vươn vai kế (50–90 giây); đang vươn vai thì chưa hẹn.
-  useEffect(() => {
-    if (tt !== 'nghi' || nguLau || moChat || dangKeoMeo || vuonVai) return;
-    const hen = window.setTimeout(() => setVuonVai(true), VUON_VAI_TU + Math.random() * (VUON_VAI_DEN - VUON_VAI_TU));
-    return () => window.clearTimeout(hen);
-  }, [tt, nguLau, moChat, dangKeoMeo, vuonVai]);
   /** Rê chuột vào mèo: đang ngủ → thức (và vươn vai); đang thức rảnh → ngồi vẫy tay chào (tối đa 15 giây một lần). */
   const danhThuc = () => {
     if (nguLau) { setNguLau(false); return; }
@@ -222,7 +223,7 @@ export default function PetMimi() {
       setNghieng(0);
       setVuaTha(true);
       window.setTimeout(() => setVuaTha(false), 1200);
-    } else setMoChat((m) => !m);
+    } else moTroLy();
   };
 
   // ── Nói: nhận giọng tiếng Việt của trình duyệt, gửi thẳng vào chat ─────────────────────────────
@@ -236,29 +237,17 @@ export default function PetMimi() {
     setDangNghe(true);
     nd.onresult = (ev: { results: { 0: { 0: { transcript: string } } } }) => {
       const cau = ev.results[0][0].transcript.trim();
-      if (cau) { setMoChat(true); setCauGui({ id: Date.now(), cau }); }
+      if (cau) moTroLy(cau);
     };
-    nd.onerror = () => toast.error('Chưa nghe rõ. Thử nói lại, hoặc bấm nút bút để gõ.');
+    nd.onerror = () => toast.error('Chưa nghe rõ. Thử nói lại, hoặc bấm nút bút để gõ trong Trợ lý MIMI.');
     nd.onend = () => setDangNghe(false);
     nd.start();
   };
 
-  // Khung chat đặt cạnh pet: bên trái nếu đủ chỗ, không thì bên phải; luôn nằm trong màn.
-  const viTriKhung = {
-    left: vi.x - RONG_KHUNG - 12 >= 8 ? vi.x - RONG_KHUNG - 12 : Math.min(man.rong - RONG_KHUNG - 8, vi.x + kt.rong + 12),
-    top: Math.min(Math.max(8, vi.y + kt.cao - CAO_KHUNG), man.cao - CAO_KHUNG - 8),
-  };
-
-  const chuong = viec.length + chat.chuaDoc + (chat.loi ? 1 : 0);
+  const chuong = viec.length;
   const moViec = (id: string) => { setMoKhay(false); setLo(false); navigate(`/dashboard/viec-can-lam?ht=${id}`); };
-  const moChatTuThe = () => { setMoKhay(false); setLo(false); setMoChat(true); };
   const the: TheHoatDong[] = [
-    ...(chat.dangTraLoi || chat.dangLamHo
-      ? [{ khoa: 'chay', tieu: chat.dangLamHo ? 'MIMI đang làm hộ bạn' : 'MIMI đang soạn câu trả lời', phu: 'Đang làm', mau: 'text-muted-foreground', bam: moChatTuThe }]
-      : []),
     ...viec.map((v) => ({ khoa: v.id, tieu: v.cau, phu: `Cần bạn · ${v.tieu_de}`, mau: 'text-mimi-amber', bam: () => moViec(v.id) })),
-    ...(chat.chuaDoc > 0 ? [{ khoa: 'moi', tieu: `${chat.chuaDoc} câu trả lời mới`, phu: 'Xong — chưa xem', mau: 'text-primary', bam: moChatTuThe }] : []),
-    ...(chat.loi ? [{ khoa: 'loi', tieu: 'Lần hỏi vừa rồi chưa xong', phu: 'Bị chặn — bấm để thử lại', mau: 'text-destructive', bam: moChatTuThe }] : []),
   ];
   // Thẻ bật lên phía dưới thanh nếu còn chỗ, không thì bật ngược lên trên mèo.
   const caoThe = Math.min(4, Math.max(1, the.length)) * 64 + 16;
@@ -266,22 +255,14 @@ export default function PetMimi() {
   const theHien = moKhay ? the : lo ? the.slice(0, 1) : [];
   const nut = 'flex h-8 w-9 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-accent hover:text-foreground';
 
-  const chatNode = (
-    <AIChatWidget
-      anNut mo={moChat} datMo={setMoChat} viTriKhung={viTriKhung} cauGui={cauGui}
-      baoTrangThai={setChat} onLenhPet={() => doiCd({ an: !cd.an })}
-    />
-  );
-
   if (cuaSoNoi) {
     return (
       <>
-        {chatNode}
         <PetNoi
           cuaSo={cuaSoNoi} anh={anhMeo} giTay={giTay} tt={tt} chuong={chuong} dangNghe={dangNghe}
-          onGo={() => { veTrang(); setMoChat(true); }}
+          onGo={() => { veTrang(); moTroLy(); }}
           onNoi={noi}
-          onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else setMoChat(true); }}
+          onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else moTroLy(); }}
           onDong={() => setCuaSoNoi(null)}
         />
       </>
@@ -291,7 +272,6 @@ export default function PetMimi() {
   if (cd.an) {
     return (
       <>
-        {chatNode}
         <button type="button" onClick={() => doiCd({ an: false })} aria-label="Hiện MIMI (Alt+Shift+M)" title="Hiện MIMI (Alt+Shift+M)"
           className="fixed bottom-28 right-0 z-50 rounded-l-lg bg-card/90 px-1.5 py-2 text-[10px] font-semibold text-muted-foreground shadow ring-1 ring-border [writing-mode:vertical-rl] hover:text-foreground">
           MIMI
@@ -302,7 +282,6 @@ export default function PetMimi() {
 
   return (
     <>
-      {chatNode}
       <div
         className="fixed z-50 flex select-none flex-col items-center"
         style={{ left: vi.x, top: vi.y, width: kt.rong }}
@@ -312,7 +291,7 @@ export default function PetMimi() {
           <div className="relative" style={{ width: co, height: co }}>
             {/* Bong bóng trạng thái: chỉ khi có việc đáng nói. */}
             <AnimatePresence>
-              {tt !== 'nghi' && !moChat && (
+              {tt !== 'nghi' && (
                 <motion.span
                   key={tt}
                   role="status"
@@ -354,8 +333,8 @@ export default function PetMimi() {
               data-ngoi={(anhMeo === sit) || undefined}
               data-gio-tay={giTay || undefined}
               onPointerEnter={danhThuc}
-              aria-label={`MIMI — ${TEN_TRANG_THAI_PET[tt]}. Bấm để ${moChat ? 'đóng' : 'mở'} trò chuyện, kéo để di chuyển.`}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMoChat((m) => !m); } }}
+              aria-label={`MIMI — ${TEN_TRANG_THAI_PET[tt]}. Bấm để mở Trợ lý MIMI, kéo để di chuyển.`}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); moTroLy(); } }}
               onPointerDown={batDauKeo} onPointerMove={dangKeo} onPointerUp={thaKeo} onPointerCancel={thaKeo}
               data-huong={dangKeoMeo ? (huongTrai ? 'trai' : 'phai') : undefined}
               animate={{
@@ -383,7 +362,7 @@ export default function PetMimi() {
                 style={{ width: '40%', right: '-6%', top: '14%', transformOrigin: '50% 90%' }}
                 initial={{ opacity: 0, y: 8, rotate: 0 }}
                 animate={giamChuyenDong.current ? { opacity: 1, y: 0, rotate: 0 } : { opacity: 1, y: 0, rotate: [-12, 18, -12] }}
-                transition={giamChuyenDong.current ? { duration: 0.2 } : { rotate: { duration: 0.7, repeat: Infinity, ease: 'easeInOut' }, default: { duration: 0.2 } }}
+                transition={giamChuyenDong.current ? { duration: 0.2 } : { rotate: { duration: 0.7, repeat: SO_NHIP_VAY - 1, ease: 'easeInOut' }, default: { duration: 0.2 } }}
               />
             )}
             {nguLau && !vuonVai && !dangKeoMeo && (
@@ -408,7 +387,7 @@ export default function PetMimi() {
         )}
         <div className="mt-2 flex items-center" style={{ height: CAO_NUT }}>
           <div className="flex items-center rounded-full bg-card/90 px-1 py-0.5 shadow-md ring-1 ring-border backdrop-blur">
-            <button type="button" className={nut} aria-label="Gõ để trò chuyện" title="Gõ để trò chuyện" onClick={() => setMoChat((m) => !m)}><SquarePen size={16} /></button>
+            <button type="button" className={nut} aria-label="Gõ để hỏi Trợ lý MIMI" title="Mở Trợ lý MIMI" onClick={() => moTroLy()}><SquarePen size={16} /></button>
             <span aria-hidden className="h-4 w-px bg-border" />
             <button type="button" className={`${nut} ${dangNghe ? 'text-primary' : ''}`} aria-label={dangNghe ? 'Đang nghe' : 'Nói với MIMI'} aria-pressed={dangNghe} title="Nói với MIMI" onClick={noi}>
               {dangNghe && !giamChuyenDong.current

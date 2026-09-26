@@ -1,19 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 configure({ asyncUtilTimeout: 8000 });
 
-const goi = vi.hoisted(() => ({ ds: [] as unknown[], props: {} as Record<string, unknown> }));
+const goi = vi.hoisted(() => ({ ds: [] as unknown[] }));
 vi.mock('@/lib/goiTroLy', () => ({ goiTroLy: async () => ({ hanh_trinh: goi.ds }) }));
-vi.mock('@/components/AIChatWidget', () => ({
-  default: (p: Record<string, unknown>) => { goi.props = p; return p.mo ? <div data-testid="khung-chat">khung chat</div> : null; },
-}));
 vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }));
 
 import PetMimi from './PetMimi';
 
-const mo = () => render(<MemoryRouter><PetMimi /></MemoryRouter>);
+/** Trang đang mở — để thấy pet dẫn thẳng vào Trợ lý MIMI. */
+function DiaChi() { const l = useLocation(); return <div data-testid="dia-chi">{l.pathname}{l.search}</div>; }
+const mo = () => render(
+  <MemoryRouter initialEntries={['/dashboard']}>
+    <Routes><Route path="*" element={<><PetMimi /><DiaChi /></>} /></Routes>
+  </MemoryRouter>,
+);
+const diaChi = () => screen.getByTestId('dia-chi').textContent;
 const meo = () => screen.getByRole('button', { name: /^MIMI —/ });
 
 beforeEach(() => {
@@ -29,14 +33,25 @@ beforeEach(() => {
 });
 
 describe('Pet MIMI', () => {
-  it('bấm mèo (không kéo) → mở khung chat; bấm lần nữa → đóng', async () => {
+  it('bấm mèo (không kéo) hoặc nút bút → mở THẲNG trang Trợ lý MIMI, pet không có khung chat riêng', async () => {
     mo();
     fireEvent.pointerDown(meo(), { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerUp(meo(), { clientX: 101, clientY: 101, pointerId: 1 });
-    expect(await screen.findByTestId('khung-chat')).toBeTruthy();
-    fireEvent.pointerDown(meo(), { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
-    fireEvent.pointerUp(meo(), { clientX: 100, clientY: 100, pointerId: 1 });
-    await waitFor(() => expect(screen.queryByTestId('khung-chat')).toBeNull());
+    await waitFor(() => expect(diaChi()).toBe('/dashboard/tro-ly'));
+    expect(screen.queryByPlaceholderText(/Hỏi trợ lý/)).toBeNull();
+  });
+
+  it('nói với MIMI → câu nói được gửi vào Trợ lý MIMI (?hoi=)', async () => {
+    class NhanDien { lang = ''; interimResults = false; maxAlternatives = 1; onresult: ((e: unknown) => void) | null = null; onerror: (() => void) | null = null; onend: (() => void) | null = null;
+      start() { this.onresult?.({ results: { 0: { 0: { transcript: 'Tôi muốn tạm ngừng kinh doanh' } } } }); this.onend?.(); } }
+    (window as unknown as Record<string, unknown>).SpeechRecognition = NhanDien;
+    try {
+      mo();
+      fireEvent.click(screen.getByRole('button', { name: 'Nói với MIMI' }));
+      await waitFor(() => expect(diaChi()).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Tôi muốn tạm ngừng kinh doanh')}`));
+    } finally {
+      delete (window as unknown as Record<string, unknown>).SpeechRecognition;
+    }
   });
 
   it('kéo quá 5px → di chuyển, KHÔNG mở chat; vị trí được nhớ', async () => {
@@ -44,7 +59,7 @@ describe('Pet MIMI', () => {
     fireEvent.pointerDown(meo(), { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(meo(), { clientX: 60, clientY: 60, pointerId: 1 });
     fireEvent.pointerUp(meo(), { clientX: 60, clientY: 60, pointerId: 1 });
-    expect(screen.queryByTestId('khung-chat')).toBeNull();
+    expect(diaChi()).toBe('/dashboard');
     await waitFor(() => expect(JSON.parse(localStorage.getItem('mimi.pet.v1') ?? '{}').x).toEqual(expect.any(Number)));
   });
 
@@ -71,13 +86,13 @@ describe('Pet MIMI', () => {
     fireEvent.contextMenu(meo());
     fireEvent.click(screen.getByRole('menuitem', { name: /Chế độ Mini/ }));
     expect(screen.queryByRole('button', { name: /^MIMI —/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Gõ để trò chuyện' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Gõ để hỏi Trợ lý MIMI' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Nói với MIMI' })).toBeTruthy();
   });
 
-  it('lệnh /pet trong chat ẩn/hiện pet', async () => {
+  it('lệnh /pet (gõ trong Trợ lý MIMI) ẩn/hiện pet', async () => {
     mo();
-    (goi.props.onLenhPet as () => void)();
+    act(() => { window.dispatchEvent(new Event('mimi:lenh-pet')); });
     await waitFor(() => expect(screen.queryByRole('button', { name: /^MIMI —/ })).toBeNull());
   });
 
@@ -185,19 +200,16 @@ describe('Pet MIMI', () => {
     }
   });
 
-  it('rảnh mà còn thức → thỉnh thoảng vươn vai (sau 50–90 giây)', async () => {
+  it('rảnh mà còn thức → KHÔNG tự vươn vai lặp đi lặp lại (chỉ vươn vai khi vừa thức dậy)', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
     try {
       mo();
       let daVuonVai = false;
       const quan = new MutationObserver(() => { if (document.querySelector('[data-vuon-vai="true"]')) daVuonVai = true; });
       quan.observe(document.body, { attributes: true, subtree: true, childList: true });
-      await act(async () => { await vi.advanceTimersByTimeAsync(49_000); });
-      expect(daVuonVai).toBe(false); // chưa tới 50 giây thì chưa vươn vai
-      await act(async () => { await vi.advanceTimersByTimeAsync(42_000); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(2 * 60_000 + 50_000); });
       quan.disconnect();
-      expect(daVuonVai).toBe(true);
-      expect(meo().getAttribute('data-ngu')).toBeNull();
+      expect(daVuonVai).toBe(false);
     } finally {
       vi.useRealTimers();
     }
