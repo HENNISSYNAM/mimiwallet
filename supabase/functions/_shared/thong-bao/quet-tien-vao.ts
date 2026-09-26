@@ -16,11 +16,24 @@ import { ghiThongBao } from './gui.ts';
 import { locMinhHoa } from '../minh-hoa.ts';
 import { chieuTien } from '../tien/chieu-tien.ts';
 import { docHet } from '../doc-het.ts';
+import { apDungTuPhanLoai } from '../phan-loai/ap-dung.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Năm nay, và năm trước khi còn trong quý 1 (còn quyết toán). */
+export async function tuPhanLoaiNamNay(db: Db, companyId: string, lucVN: Date, laDemo: boolean): Promise<void> {
+  const nam = lucVN.getFullYear();
+  for (const n of lucVN.getMonth() < 3 ? [nam - 1, nam] : [nam]) {
+    try {
+      await apDungTuPhanLoai(db, companyId, n, laDemo);
+    } catch (e) {
+      console.error('tự phân loại:', e instanceof Error ? e.message : e);
+    }
+  }
+}
 
 /** Tiền vào 30 ngày gần nhất chưa ai phân loại → bản nháp thông báo. */
 export async function nhapTienVaoGanDay(db: Db, companyId: string, lucVN: Date, laDemo: boolean): Promise<BanNhapThongBao[]> {
@@ -44,5 +57,8 @@ export async function nhapTienVaoGanDay(db: Db, companyId: string, lucVN: Date, 
  * Lỗi ở đây KHÔNG được làm hỏng việc chính (ghi giao dịch) — nơi gọi bắt lỗi.
  */
 export async function quetVaGhiTienVao(db: Db, companyId: string, lucVN: Date, laDemo: boolean): Promise<number> {
+  // 26/09/2026: MIMI tự phân loại trước (người dùng chọn "tự quyết hết, không hỏi") — khoản đã phân
+  // loại thì không còn thông báo hỏi. Lỗi tự phân loại không chặn việc chính.
+  await tuPhanLoaiNamNay(db, companyId, lucVN, laDemo);
   return await ghiThongBao(db, companyId, await nhapTienVaoGanDay(db, companyId, lucVN, laDemo));
 }

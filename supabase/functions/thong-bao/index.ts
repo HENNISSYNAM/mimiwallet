@@ -21,7 +21,7 @@ import {
 } from "../_shared/thong-bao/sinh.ts";
 import { dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
 import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
-import { nhapTienVaoGanDay } from "../_shared/thong-bao/quet-tien-vao.ts";
+import { nhapTienVaoGanDay, tuPhanLoaiNamNay } from "../_shared/thong-bao/quet-tien-vao.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -71,6 +71,8 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
   const laDemo = await congTyLaDemo(db, companyId);
 
   // Tiền vào dùng chung một bộ quét với `cas-webhook` — xem `_shared/thong-bao/quet-tien-vao.ts`.
+  // MIMI tự phân loại tiền vào trước khi quét (khoản đã phân loại không còn thông báo hỏi).
+  await tuPhanLoaiNamNay(db, companyId, lucVN, laDemo);
   const [tienVao, goi] = await Promise.all([
     nhapTienVaoGanDay(db, companyId, lucVN, laDemo),
     db.from("subscriptions").select("plan, current_period_end").eq("company_id", companyId).maybeSingle(),
