@@ -217,7 +217,9 @@ describe('Pet MIMI', () => {
     expect(anh.getAttribute('src')).toContain('run');
     expect(anh.getAttribute('data-huong')).toBe('trai'); // kéo sang trái → quay mặt sang trái
     fireEvent.pointerUp(meo(), { clientX: 200, clientY: 300, pointerId: 1 });
-    await waitFor(() => expect(meo().getAttribute('data-dang-keo')).toBeNull());
+    // Kiểm ngay sau khi thả (fireEvent đã chạy trong act): dáng "vui" chỉ kéo dài 1,2 giây thật, máy chạy
+    // nặng mà chờ bằng waitFor thì có thể lỡ mất.
+    expect(meo().getAttribute('data-dang-keo')).toBeNull();
     expect(meo().getAttribute('src')).toContain('happy');
   });
 
