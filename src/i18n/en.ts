@@ -32,54 +32,35 @@ const en = {
     trustNetZero: 'Green finance',
   },
 
-  // Logo cloud
-  logoCloud: {
-    title: 'Partners & Integrations',
-  },
-
-  // Metrics
-  metrics: {
-    businesses: 'Active businesses',
-    businessesSub: '+23% this month',
-    capital: 'Capital disbursed',
-    capitalSuffix: ' Trillion',
-    capitalSub: '↑ from ₫1.2T in 2024',
-    disbursement: 'Disbursement time',
-    disbursementSuffix: ' hours',
-    disbursementSub: 'System-wide average',
-    satisfaction: 'Satisfaction rate',
-    satisfactionSub: 'NPS Score: 72',
-  },
-
   // Process
   process: {
     sectionLabel: 'Process',
-    title: 'From sign-up to funding —',
+    title: 'From bank statement to filing pack —',
     titleHighlight: '3 steps',
-    subtitle: 'Fully automated process, no paperwork, no interview',
+    subtitle: 'Read-only bank link, MIMI sorts every line, you review before you file',
     step: 'Step',
     steps: [
       {
-        title: 'Connect data',
-        desc: 'Link your bank & accounting in 5 minutes',
-        detail: 'Secure API connects directly with 40+ Vietnamese banks',
+        title: 'Connect account',
+        desc: 'Link your bank, MIMI reads the statement',
+        detail: 'Read-only — it cannot move money',
       },
       {
-        title: 'AI analysis',
-        desc: '200+ data points, real-time credit scoring',
-        detail: 'Machine learning processes in ~3 seconds',
+        title: 'Sort costs',
+        desc: 'Every expense gets the right category',
+        detail: 'Confirm once, MIMI applies it next time',
       },
       {
         title: 'File the return',
-        desc: 'Capital transferred to your account within 24 hours',
+        desc: 'A document pack ready for the tax period',
         detail: 'Compare both methods, pick the cheaper one',
       },
     ],
     riskLevel: 'Low',
     disbursedAmount: 'Costs recorded',
-    disbursedSuccess: '✓ Successfully transferred',
-    reviewDocs: 'Document review',
-    signContract: 'E-contract signing',
+    disbursedSuccess: '✓ Reconciled',
+    reviewDocs: 'Read statement',
+    signContract: 'Sort costs',
     disburse: 'Export return',
   },
 
@@ -110,67 +91,6 @@ const en = {
     offsetted: 'Offset',
     netZero: 'Net Zero 2050',
     sustainableFuture: 'Towards a sustainable future',
-  },
-
-  // AI Section
-  // See the long note in Landing.tsx: the scorer is a fixed-weight linear
-  // scorecard, not a trained model, and no forecast accuracy was ever measured.
-  ai: {
-    sectionLabel: 'How scoring works',
-    title: 'Not a black box —',
-    titleHighlight: 'you can see every step',
-    subtitle: 'Credit scores come from a five-factor scorecard with published weights. Every score decomposes into the five numbers that produced it.',
-    creditScoring: 'Revenue trend 25% · Invoice punctuality 25%',
-    cashFlowForecast: 'See each factor’s raw value and normalised score',
-    riskAnalysis: '12 months of data from the account you connected',
-  },
-
-  // Pricing
-  pricing: {
-    sectionLabel: 'Pricing',
-    title: 'Choose the right plan',
-    monthly: 'Monthly',
-    annual: 'Annual',
-    annualDiscount: '-20%',
-    perMonth: '/month',
-    save20: '(save 20%)',
-    mostPopular: 'Most Popular',
-    contact: 'Contact us',
-    free: 'Free',
-    freePlan: {
-      features: ['Basic analytics', '1 bank account', 'Monthly reports', 'Email support'],
-      cta: 'Start for Free',
-    },
-    growthPlan: {
-      features: ['Score with per-factor breakdown', 'Invoice advance application', 'Unlimited bank accounts', 'Personalised macro alerts', 'Emissions profile for green credit', '14-day free trial'],
-      cta: 'Try 14 days free',
-    },
-    enterprisePlan: {
-      features: ['Custom limits', 'White-label', 'Dedicated API', 'Account manager', 'SLA 99.9%', 'On-premise option'],
-      cta: 'Contact sales',
-    },
-  },
-
-  // Testimonials
-  testimonials: {
-    sectionLabel: 'Customers',
-    title: 'Trusted by 1,247+ businesses',
-    items: [
-      { name: 'Nguyen Thanh', role: 'CEO, Phuc Loc Foods', quote: 'MIMI WALLET helps us track our carbon footprint and access green capital easier than ever.' },
-      { name: 'Minh Chau', role: 'CFO, Restaurant chain, 9 branches', quote: 'The green finance dashboard helps me prove ESG compliance to international investors.' },
-      { name: 'Duc Huy', role: 'Founder, Duc Phat Import-Export', quote: 'Carbon credits from MIMI WALLET help our export products meet EU Green Deal standards.' },
-    ],
-  },
-
-  // CTA
-  cta: {
-    title: 'Ready for the green transition?',
-    subtitle: 'Sign up today — free, no credit card, no commitment.',
-    emailPlaceholder: 'Business email',
-    companyPlaceholder: 'Company name',
-    button: 'Get Free Consultation →',
-    success: '✓ Received! We\'ll contact you within 24h.',
-    privacy: 'Data secured under ISO 27001 standards',
   },
 
   // Footer
@@ -311,7 +231,7 @@ const en = {
     password: 'Password',
     confirmPassword: 'Confirm password',
     agreeTerms: 'I agree to the Terms of Service and Privacy Policy',
-    emailWarn: 'Use a business email to boost your credit score',
+    emailWarn: 'A business email helps MIMI recognise your company',
     taxIdLabel: 'Tax ID',
     companyName: 'Company name',
     industry: 'Industry',

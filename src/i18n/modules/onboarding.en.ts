@@ -111,8 +111,8 @@ const m = {
     successSub: 'AI is analyzing your data',
     analysisSteps: [
       'Analyzing bank data...',
-      'Calculating AI credit score...',
-      'Determining suitable limit...',
+      'Separating internal transfers from revenue...',
+      'Checking tax thresholds...',
       'Sending results via SMS/Email...',
     ],
     estimatedLimitLabel: 'Revenue recorded',

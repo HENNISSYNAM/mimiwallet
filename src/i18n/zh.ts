@@ -34,28 +34,11 @@ const zh = {
     trustNetZero: '绿色金融',
   },
 
-  logoCloud: {
-    title: '合作伙伴与集成',
-  },
-
-  metrics: {
-    businesses: '正在使用的企业',
-    businessesSub: '本月 +23%',
-    capital: '已放款资金',
-    capitalSuffix: ' 万亿越南盾',
-    capitalSub: '↑ 高于 2024 年的 1.2 万亿',
-    disbursement: '放款时间',
-    disbursementSuffix: ' 小时',
-    disbursementSub: '全系统平均',
-    satisfaction: '满意度',
-    satisfactionSub: 'NPS 分数：72',
-  },
-
   process: {
     sectionLabel: '流程',
-    title: '从注册到收到款 ——',
+    title: '从银行流水到申报材料 ——',
     titleHighlight: '3 步',
-    subtitle: '全自动流程，无需纸质材料，无需面谈',
+    subtitle: '银行只读连接，MIMI 逐笔分类，申报前由你确认',
     step: '第',
     steps: [
       {
@@ -105,61 +88,6 @@ const zh = {
     offsetted: '已抵消',
     netZero: '净零 2050',
     sustainableFuture: '迈向可持续的未来',
-  },
-
-  ai: {
-    sectionLabel: '评分方式',
-    title: '不是黑箱 ——',
-    titleHighlight: '每一步你都看得到',
-    subtitle: '信用评分用五项因素的评分卡计算，权重公开。每个分数都能拆回生成它的那五个数字。',
-    creditScoring: '营业额趋势 25% · 发票按期 25%',
-    cashFlowForecast: '查看每项因素的原始值和标准化分数',
-    riskAnalysis: '来自你已连接账户的 12 个月数据',
-  },
-
-  pricing: {
-    sectionLabel: '价格',
-    title: '选择合适的套餐',
-    monthly: '按月',
-    annual: '按年',
-    annualDiscount: '-20%',
-    perMonth: '/月',
-    save20: '（省 20%）',
-    mostPopular: '最受欢迎',
-    contact: '联系我们',
-    free: '免费',
-    freePlan: {
-      features: ['基础信用评分', '1 个银行账户', '月度现金流报告', '邮件支持'],
-      cta: '免费开始',
-    },
-    growthPlan: {
-      features: ['带因素拆解的评分', '发票预支材料', '银行账户不限数量', '个性化宏观预警', '绿色信贷用排放档案', '14 天试用'],
-      cta: '试用 14 天',
-    },
-    enterprisePlan: {
-      features: ['定制额度', '白标', '专用 API', '专属客户经理', 'SLA 99.9%', '本地部署选项'],
-      cta: '联系销售',
-    },
-  },
-
-  testimonials: {
-    sectionLabel: '客户',
-    title: '1,247+ 家企业的信赖',
-    items: [
-      { name: 'Nguyễn Thành', role: 'CEO, Phúc Lộc Foods', quote: 'MIMI WALLET 让我们跟踪碳足迹、获得绿色资金比以往任何时候都容易。' },
-      { name: 'Minh Châu', role: 'CFO, 9 家门店的餐饮连锁', quote: '绿色金融看板帮我向国际投资人证明了 ESG。' },
-      { name: 'Đức Huy', role: '创始人, XNK Đức Phát', quote: 'MIMI WALLET 的碳信用让我们的出口产品达到了欧盟绿色新政标准。' },
-    ],
-  },
-
-  cta: {
-    title: '准备好做绿色转型了吗？',
-    subtitle: '今天就注册 —— 免费、无需信用卡、无任何约束。',
-    emailPlaceholder: '企业邮箱',
-    companyPlaceholder: '公司名称',
-    button: '获取免费咨询 →',
-    success: '✓ 已收到！我们会在 24 小时内联系你。',
-    privacy: '数据安全符合 ISO 27001 标准',
   },
 
   footer: {
@@ -288,7 +216,7 @@ const zh = {
     password: '密码',
     confirmPassword: '确认密码',
     agreeTerms: '我同意使用条款和隐私政策',
-    emailWarn: '建议使用企业邮箱以提高信用评分',
+    emailWarn: '使用企业邮箱，MIMI 更容易识别你的公司',
     taxIdLabel: '税号',
     companyName: '公司名称',
     industry: '行业',
@@ -357,24 +285,24 @@ const zh = {
     },
     tech: {
       badge: '核心技术',
-      title: '底层跑着的三样东西',
+      title: '底层跑着的两样东西',
       subtitle: '在应用里就能看到，不用听人讲。',
       pillars: [
         { title: '抗量子加密', tag: 'ML-KEM-768 · NIST FIPS 203 标准', desc: '银行令牌用量子计算机尚未攻破的算法加密。' },
-        { title: '3 秒内评分', tag: '机器学习 · 每项因素可查', desc: '基于你自己 12 个月的交易计算，并指出哪一项在拉低分数。' },
         { title: '按公司隔离数据', tag: '数据库层的 Row-Level Security', desc: '在数据库里直接拦住，不靠代码里的过滤语句。' },
       ],
     },
     process: {
       goToStep: '跳到第 {{num}} 步：{{title}}',
       step1Tags: ['Vietcombank', 'BIDV', 'MISA', 'Shopee'],
-      step2Tags: ['信用评分', '现金流', '风险'],
+      step2Tags: ['费用类型', '发票', '需要确认'],
       step3Tags: ['有凭证的成本', '两种计税方式'],
       bankDemo: ['Vietcombank', 'BIDV', 'Techcombank', 'VPBank'],
       aiMetrics: [
-        { label: '信用评分', value: '701' },
-        { label: '风险等级', value: '低' },
-        { label: '现金流', value: '+15,5%' },
+        { label: '服务器', value: '软件' },
+        { label: '广告', value: '销售费用' },
+        { label: '印刷', value: '缺发票' },
+        { label: 'AI API', value: '再问你' },
       ],
       timeline: [
         { step: '读取流水', time: '2 分钟' },

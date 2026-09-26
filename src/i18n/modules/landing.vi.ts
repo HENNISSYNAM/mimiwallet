@@ -58,26 +58,27 @@ const m = {
     },
     tech: {
       badge: 'Công nghệ lõi',
-      title: 'Ba thứ chạy bên dưới',
+      title: 'Hai thứ chạy bên dưới',
       subtitle: 'Xem được ngay trong ứng dụng, không phải nghe kể.',
       pillars: [
         { title: 'Mã hoá kháng lượng tử', tag: 'ML-KEM-768 · chuẩn NIST FIPS 203', desc: 'Token ngân hàng mã hoá bằng thuật toán máy tính lượng tử chưa giải được.' },
-        { title: 'Chấm điểm trong 3 giây', tag: 'Học máy · xem được từng yếu tố', desc: 'Tính từ 12 tháng giao dịch của chính bạn, và chỉ ra yếu tố nào kéo điểm xuống.' },
         { title: 'Tách dữ liệu từng công ty', tag: 'Row-Level Security ở tầng CSDL', desc: 'Chặn ngay trong cơ sở dữ liệu, không phải bằng câu lệnh lọc trong mã.' },
       ],
     },
     process: {
       goToStep: 'Chuyển đến bước {{num}}: {{title}}',
       step1Tags: ['Vietcombank', 'BIDV', 'MISA', 'Shopee'],
-      step2Tags: ['Điểm tín dụng', 'Dòng tiền', 'Rủi ro'],
+      step2Tags: ['Loại chi phí', 'Hoá đơn', 'Cần hỏi lại'],
       // Bỏ '₫100M — ₫10 tỷ' và '24h': MIMI không cho vay và không giải ngân.
       step3Tags: ['Chi phí có chứng từ', 'Hai cách tính thuế'],
       bankDemo: ['Vietcombank', 'BIDV', 'Techcombank', 'VPBank'],
       aiMetrics: [
-        { label: 'Điểm tín dụng', value: '701' },
-        { label: 'Mức rủi ro', value: 'Thấp' },
-        { label: 'Dòng tiền', value: '+15,5%' },
-        // Bỏ 'Approval 98%': không có ai duyệt, và con số đó chưa từng có nguồn.
+        // Ví dụ xếp loại, không phải số đo. Trước là "Điểm tín dụng 701 · Rủi ro thấp · +15,5%":
+        // MIMI không cho vay, và +15,5% chưa từng có nguồn.
+        { label: 'Máy chủ', value: 'Phần mềm' },
+        { label: 'Quảng cáo', value: 'Bán hàng' },
+        { label: 'In ấn', value: 'Thiếu HĐ' },
+        { label: 'API AI', value: 'Hỏi lại' },
       ],
       timeline: [
         { step: 'Đọc sao kê', time: '2 phút' },

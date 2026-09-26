@@ -36,28 +36,11 @@ const ko = {
     trustNetZero: '녹색 금융',
   },
 
-  logoCloud: {
-    title: '파트너 및 연동',
-  },
-
-  metrics: {
-    businesses: '사용 중인 기업',
-    businessesSub: '이번 달 +23%',
-    capital: '집행된 자금',
-    capitalSuffix: '조 동',
-    capitalSub: '↑ 2024년 1.2조 동에서 증가',
-    disbursement: '집행 소요 시간',
-    disbursementSuffix: '시간',
-    disbursementSub: '전체 시스템 평균',
-    satisfaction: '만족도',
-    satisfactionSub: 'NPS 점수: 72',
-  },
-
   process: {
     sectionLabel: '진행 과정',
-    title: '가입부터 입금까지 —',
+    title: '거래 내역부터 신고 서류까지 —',
     titleHighlight: '3단계',
-    subtitle: '완전 자동화, 서류 없음, 면담 없음',
+    subtitle: '은행은 읽기 전용으로 연결, MIMI가 항목별로 분류, 신고 전에 직접 확인',
     step: '단계',
     steps: [
       {
@@ -107,61 +90,6 @@ const ko = {
     offsetted: '상쇄 완료',
     netZero: '넷제로 2050',
     sustainableFuture: '지속 가능한 미래를 향해',
-  },
-
-  ai: {
-    sectionLabel: '점수 산정 방식',
-    title: '블랙박스가 아닙니다 —',
-    titleHighlight: '한 단계씩 볼 수 있습니다',
-    subtitle: '신용점수는 다섯 개 요소의 스코어카드로 계산하며 가중치를 공개합니다. 모든 점수는 그것을 만든 다섯 개 숫자로 분해됩니다.',
-    creditScoring: '매출 추세 25% · 세금계산서 기한 준수 25%',
-    cashFlowForecast: '각 요소의 원본 값과 표준화 점수를 확인하세요',
-    riskAnalysis: '연결한 계좌의 12개월 데이터',
-  },
-
-  pricing: {
-    sectionLabel: '요금',
-    title: '알맞은 요금제를 선택하세요',
-    monthly: '월간',
-    annual: '연간',
-    annualDiscount: '-20%',
-    perMonth: '/월',
-    save20: '(20% 절약)',
-    mostPopular: '가장 인기',
-    contact: '문의하기',
-    free: '무료',
-    freePlan: {
-      features: ['기본 신용점수', '은행 계좌 1개', '월간 현금흐름 보고서', '이메일 지원'],
-      cta: '무료로 시작',
-    },
-    growthPlan: {
-      features: ['요소별 분해가 포함된 점수', '세금계산서 선지급 서류', '은행 계좌 무제한', '맞춤형 거시경제 알림', '녹색 신용용 배출 자료', '14일 무료 체험'],
-      cta: '14일 체험하기',
-    },
-    enterprisePlan: {
-      features: ['맞춤 한도', '화이트 라벨', '전용 API', '전담 매니저', 'SLA 99.9%', '온프레미스 옵션'],
-      cta: '영업팀 문의',
-    },
-  },
-
-  testimonials: {
-    sectionLabel: '고객',
-    title: '1,247개 이상의 기업이 신뢰합니다',
-    items: [
-      { name: 'Nguyễn Thành', role: 'CEO, Phúc Lộc Foods', quote: 'MIMI WALLET 덕분에 탄소 발자국을 추적하고 녹색 자금에 접근하기가 훨씬 쉬워졌습니다.' },
-      { name: 'Minh Châu', role: 'CFO, 9개 지점 레스토랑 체인', quote: '녹색 금융 대시보드로 해외 투자자에게 ESG를 증명할 수 있었습니다.' },
-      { name: 'Đức Huy', role: '창업자, XNK Đức Phát', quote: 'MIMI WALLET의 탄소 배출권으로 수출 제품이 EU 그린딜 기준을 충족했습니다.' },
-    ],
-  },
-
-  cta: {
-    title: '친환경 전환을 시작할 준비가 되셨나요?',
-    subtitle: '오늘 바로 가입하세요 — 무료, 신용카드 불필요, 약정 없음.',
-    emailPlaceholder: '회사 이메일',
-    companyPlaceholder: '회사명',
-    button: '무료 상담 받기 →',
-    success: '✓ 접수되었습니다! 24시간 안에 연락드립니다.',
-    privacy: 'ISO 27001 기준 데이터 보안',
   },
 
   footer: {
@@ -290,7 +218,7 @@ const ko = {
     password: '비밀번호',
     confirmPassword: '비밀번호 확인',
     agreeTerms: '이용약관과 개인정보 처리방침에 동의합니다',
-    emailWarn: '신용점수를 높이려면 회사 이메일을 사용하세요',
+    emailWarn: '회사 이메일을 쓰면 MIMI가 귀사를 알아보기 쉽습니다',
     taxIdLabel: '사업자번호',
     companyName: '회사명',
     industry: '업종',
@@ -359,24 +287,24 @@ const ko = {
     },
     tech: {
       badge: '핵심 기술',
-      title: '아래에서 돌아가는 세 가지',
+      title: '아래에서 돌아가는 두 가지',
       subtitle: '말로 듣는 것이 아니라 앱에서 바로 확인할 수 있습니다.',
       pillars: [
         { title: '양자 저항 암호화', tag: 'ML-KEM-768 · NIST FIPS 203 표준', desc: '은행 토큰을 양자컴퓨터도 아직 풀지 못한 알고리즘으로 암호화합니다.' },
-        { title: '3초 안에 점수 산정', tag: '머신러닝 · 요소별로 확인 가능', desc: '귀사의 12개월 거래에서 계산하고, 어떤 요소가 점수를 끌어내리는지 알려줍니다.' },
         { title: '회사별 데이터 분리', tag: '데이터베이스 계층의 Row-Level Security', desc: '코드의 필터 구문이 아니라 데이터베이스 안에서 바로 차단합니다.' },
       ],
     },
     process: {
       goToStep: '{{num}}단계로 이동: {{title}}',
       step1Tags: ['Vietcombank', 'BIDV', 'MISA', 'Shopee'],
-      step2Tags: ['신용점수', '현금흐름', '위험'],
+      step2Tags: ['비용 유형', '세금계산서', '확인 필요'],
       step3Tags: ['증빙이 있는 비용', '두 가지 세금 계산 방식'],
       bankDemo: ['Vietcombank', 'BIDV', 'Techcombank', 'VPBank'],
       aiMetrics: [
-        { label: '신용점수', value: '701' },
-        { label: '위험 수준', value: '낮음' },
-        { label: '현금흐름', value: '+15,5%' },
+        { label: '서버', value: '소프트웨어' },
+        { label: '광고', value: '판매비' },
+        { label: '인쇄', value: '증빙 없음' },
+        { label: 'AI API', value: '다시 확인' },
       ],
       timeline: [
         { step: '거래내역 읽기', time: '2분' },
