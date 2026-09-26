@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Mic, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import AIChatWidget, { type TrangThaiChat } from '@/components/AIChatWidget';
+import { coHoTroNoi, moCuaSoNoi, PetNoi } from '@/components/mimi/PetNoi';
 import { goiTroLy } from '@/lib/goiTroLy';
 import {
   dangMeo, docCaiDat, giuTrongMan, KICH_THUOC, laPhimTat, luuCaiDat, TEN_TRANG_THAI_PET, trangThaiPet,
@@ -42,6 +43,25 @@ export default function PetMimi() {
   const [nguLau, setNguLau] = useState(false);
   const [dangNghe, setDangNghe] = useState(false);
   const [cauGui, setCauGui] = useState<{ id: number; cau: string } | null>(null);
+  // Hoạt ảnh khi bị kéo (26/09/2026): chạy theo hướng kéo, nghiêng theo tốc độ, thả ra thì tiếp đất.
+  const [dangKeoMeo, setDangKeoMeo] = useState(false);
+  const [huongTrai, setHuongTrai] = useState(false);
+  const [nghieng, setNghieng] = useState(0);
+  const [vuaTha, setVuaTha] = useState(false);
+  const diemTruoc = useRef<{ x: number; t: number } | null>(null);
+  // Mèo đang ở cửa sổ nổi trên màn hình máy (Document Picture-in-Picture).
+  const [cuaSoNoi, setCuaSoNoi] = useState<Window | null>(null);
+  const navigate = useNavigate();
+  const raManHinhMay = async () => {
+    setMoMenu(false);
+    try {
+      const w = await moCuaSoNoi();
+      if (w) { setCuaSoNoi(w); toast('MIMI đã ra màn hình máy — nổi trên mọi ứng dụng. Đóng cửa sổ nhỏ để đưa MIMI về trang.'); }
+    } catch {
+      toast.error('Trình duyệt chưa cho mở cửa sổ nổi. Dùng Chrome hoặc Edge bản mới trên máy tính.');
+    }
+  };
+  const veTrang = () => { try { window.focus(); } catch { /* một số trình duyệt chặn */ } };
   const giamChuyenDong = useRef(false);
   const keo = useRef<{ dx: number; dy: number; bd: { x: number; y: number }; da: boolean } | null>(null);
   const giuLau = useRef<number | null>(null);
@@ -92,16 +112,37 @@ export default function PetMimi() {
   const dangKeo = (e: React.PointerEvent) => {
     const k = keo.current;
     if (!k) return;
-    if (!k.da && Math.hypot(e.clientX - k.bd.x, e.clientY - k.bd.y) > 5) { k.da = true; if (giuLau.current) window.clearTimeout(giuLau.current); }
-    if (k.da) setCd((c) => ({ ...c, ...giuTrongMan({ x: e.clientX - k.dx, y: e.clientY - k.dy }, kt, man) }));
+    if (!k.da && Math.hypot(e.clientX - k.bd.x, e.clientY - k.bd.y) > 5) {
+      k.da = true;
+      if (giuLau.current) window.clearTimeout(giuLau.current);
+      setDangKeoMeo(true);
+      setVuaTha(false);
+      diemTruoc.current = { x: e.clientX, t: performance.now() };
+    }
+    if (!k.da) return;
+    setCd((c) => ({ ...c, ...giuTrongMan({ x: e.clientX - k.dx, y: e.clientY - k.dy }, kt, man) }));
+    // Hướng và độ nghiêng theo vận tốc ngang (px/ms), giới hạn ±14°.
+    const truoc = diemTruoc.current;
+    const bayGio = performance.now();
+    if (truoc && bayGio - truoc.t > 16) {
+      const v = (e.clientX - truoc.x) / (bayGio - truoc.t);
+      if (Math.abs(e.clientX - truoc.x) > 2) setHuongTrai(v < 0);
+      setNghieng(Math.max(-14, Math.min(14, v * 10)));
+      diemTruoc.current = { x: e.clientX, t: bayGio };
+    }
   };
   const thaKeo = () => {
     if (giuLau.current) window.clearTimeout(giuLau.current);
     const k = keo.current;
     keo.current = null;
     if (!k) return;
-    if (k.da) setCd((c) => { luuCaiDat(c); return c; });
-    else setMoChat((m) => !m);
+    if (k.da) {
+      setCd((c) => { luuCaiDat(c); return c; });
+      setDangKeoMeo(false);
+      setNghieng(0);
+      setVuaTha(true);
+      window.setTimeout(() => setVuaTha(false), 1200);
+    } else setMoChat((m) => !m);
   };
 
   // ── Nói: nhận giọng tiếng Việt của trình duyệt, gửi thẳng vào chat ─────────────────────────────
@@ -138,6 +179,21 @@ export default function PetMimi() {
     />
   );
 
+  if (cuaSoNoi) {
+    return (
+      <>
+        {chatNode}
+        <PetNoi
+          cuaSo={cuaSoNoi} anh={ANH[dangMeo(tt, nguLau)] ?? idle} tt={tt} chuong={chuong} dangNghe={dangNghe}
+          onGo={() => { veTrang(); setMoChat(true); }}
+          onNoi={noi}
+          onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else setMoChat(true); }}
+          onDong={() => setCuaSoNoi(null)}
+        />
+      </>
+    );
+  }
+
   if (cd.an) {
     return (
       <>
@@ -173,19 +229,37 @@ export default function PetMimi() {
                 </motion.span>
               )}
             </AnimatePresence>
+            <motion.div
+              className="h-full w-full"
+              animate={dangKeoMeo && !giamChuyenDong.current
+                ? { y: [0, -7, 0, -2, 0], scaleY: [1, 0.9, 1.06, 0.97, 1], scaleX: [1, 1.08, 0.95, 1.02, 1], rotate: huongTrai ? -nghieng : nghieng }
+                : vuaTha && !giamChuyenDong.current
+                  ? { y: [0, 3, 0], scaleY: [1, 0.86, 1], scaleX: [1, 1.1, 1], rotate: 0 }
+                  : { y: 0, scaleY: 1, scaleX: 1, rotate: 0 }}
+              transition={dangKeoMeo ? { duration: 0.34, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.28 }}
+              style={{ transformOrigin: '50% 90%' }}
+            >
             <motion.img
-              src={ANH[dangMeo(tt, nguLau)] ?? idle}
+              src={dangKeoMeo ? run : vuaTha ? happy : ANH[dangMeo(tt, nguLau)] ?? idle}
               alt=""
               draggable={false}
               role="button"
               tabIndex={0}
+              data-dang-keo={dangKeoMeo || undefined}
               aria-label={`MIMI — ${TEN_TRANG_THAI_PET[tt]}. Bấm để ${moChat ? 'đóng' : 'mở'} trò chuyện, kéo để di chuyển.`}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMoChat((m) => !m); } }}
               onPointerDown={batDauKeo} onPointerMove={dangKeo} onPointerUp={thaKeo} onPointerCancel={thaKeo}
-              animate={giamChuyenDong.current || tt !== 'dang_chay' ? { y: 0 } : { y: [0, -4, 0] }}
-              transition={{ duration: 0.6, repeat: tt === 'dang_chay' && !giamChuyenDong.current ? Infinity : 0 }}
+              animate={giamChuyenDong.current || tt !== 'dang_chay' || dangKeoMeo ? { y: 0 } : { y: [0, -4, 0] }}
+              transition={{ duration: 0.6, repeat: tt === 'dang_chay' && !dangKeoMeo && !giamChuyenDong.current ? Infinity : 0 }}
+              style={{ transform: `scaleX(${dangKeoMeo && huongTrai ? -1 : 1})` }}
               className="no-save h-full w-full cursor-grab touch-none object-contain drop-shadow-lg active:cursor-grabbing"
             />
+            </motion.div>
+            {/* Bóng dưới chân: nhỏ lại khi mèo nhảy lên, cho cảm giác đang chạy trên mặt đất. */}
+            {dangKeoMeo && !giamChuyenDong.current && (
+              <motion.span aria-hidden className="pointer-events-none absolute bottom-0 left-1/2 h-1.5 w-1/2 -translate-x-1/2 rounded-full bg-black/15 blur-[2px]"
+                animate={{ scaleX: [1, 0.7, 1, 0.9, 1], opacity: [0.5, 0.3, 0.5, 0.4, 0.5] }} transition={{ duration: 0.34, repeat: Infinity }} />
+            )}
             {tt === 'can_ban' && <span aria-hidden className="absolute right-1 top-1 h-3 w-3 rounded-full bg-mimi-amber ring-2 ring-background" />}
             {tt === 'bi_chan' && <span aria-hidden className="absolute right-1 top-1 h-3 w-3 rounded-full bg-destructive ring-2 ring-background" />}
           </div>
@@ -235,6 +309,9 @@ export default function PetMimi() {
           <div role="menu" aria-label="Tuỳ chọn MIMI" className="absolute bottom-full mb-2 w-52 rounded-xl bg-card p-1 text-sm shadow-xl ring-1 ring-border"
             style={vi.x + 208 > man.rong ? { right: 0 } : { left: 0 }} onMouseLeave={() => setMoMenu(false)}>
             <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => { setMoMenu(false); doiCd({ an: true }); toast('Đã ẩn MIMI. Alt+Shift+M hoặc nút "MIMI" ở mép phải để hiện lại.'); }}>Ẩn MIMI</button>
+            {coHoTroNoi() && (
+              <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => void raManHinhMay()}>Đưa MIMI ra màn hình máy</button>
+            )}
             <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => { setMoMenu(false); doiCd({ mini: !cd.mini }); }}>{cd.mini ? 'Hiện mèo' : 'Chế độ Mini (chỉ nút)'}</button>
             <div className="flex gap-1 px-2 py-1.5" role="group" aria-label="Kích thước">
               {(['nho', 'vua', 'lon'] as CoPet[]).map((c) => (
