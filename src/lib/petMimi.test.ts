@@ -29,6 +29,13 @@ describe('cài đặt pet', () => {
     expect(docCaiDat({ getItem: () => JSON.stringify({ x: 'a', y: 20, co: 'khong-lo', mini: 'yes', an: true }) }))
       .toEqual({ x: null, y: 20, co: 'vua', mini: false, an: true });
   });
+  it('mặc định ẩn; bản v2 chỉ hiện khi đã ghi rõ an: false; bản v1 luôn bị coi là ẩn', () => {
+    expect(MAC_DINH.an).toBe(true);
+    const kho = (v2: unknown, v1: unknown) => ({ getItem: (k: string) => (k === 'mimi.pet.v2' ? (v2 === null ? null : JSON.stringify(v2)) : v1 === null ? null : JSON.stringify(v1)) });
+    expect(docCaiDat(kho(null, { x: 1, y: 2, co: 'lon', mini: false, an: false }))).toEqual({ x: 1, y: 2, co: 'lon', mini: false, an: true });
+    expect(docCaiDat(kho({ x: null, y: null, co: 'vua', mini: false, an: false }, null)).an).toBe(false);
+    expect(docCaiDat(kho({ x: null, y: null, co: 'vua', mini: false }, null)).an).toBe(true);
+  });
   it('ghi lỗi không làm vỡ', () => {
     expect(() => luuCaiDat(MAC_DINH, { setItem: () => { throw new Error('full'); } })).not.toThrow();
   });

@@ -12,8 +12,15 @@
  */
 import type { Pose } from '@/lib/mimiTamTrang';
 
-/** Sự kiện cửa sổ: lệnh `/pet` gõ trong Trợ lý MIMI → pet ẩn/hiện. */
+/** Sự kiện cửa sổ: lệnh `/pet` (đảo ẩn/hiện) hoặc công tắc Cài đặt (`detail.an` rõ ràng). */
 export const SU_KIEN_LENH_PET = 'mimi:lenh-pet';
+
+/** Bật / tắt pet từ nơi khác (Cài đặt): ghi cài đặt rồi báo cho pet đang mở. */
+export function datHienPet(hien: boolean) {
+  const c = docCaiDat();
+  luuCaiDat({ ...c, an: !hien });
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SU_KIEN_LENH_PET, { detail: { an: !hien } }));
+}
 
 export type TrangThaiPet = 'can_ban' | 'bi_chan' | 'xong_chua_xem' | 'dang_chay' | 'nghi';
 
@@ -56,19 +63,27 @@ export type CoPet = 'nho' | 'vua' | 'lon';
 export const KICH_THUOC: Record<CoPet, number> = { nho: 56, vua: 76, lon: 104 };
 
 export interface CaiDatPet { x: number | null; y: number | null; co: CoPet; mini: boolean; an: boolean }
-export const MAC_DINH: CaiDatPet = { x: null, y: null, co: 'vua', mini: false, an: false };
-const KHOA = 'mimi.pet.v1';
+/**
+ * Pet MẶC ĐỊNH ẨN (26/09/2026, trước go-live): chỉ hiện khi người dùng tự bật — Cài đặt → Pet MIMI,
+ * Alt+Shift+M, hoặc gõ `/pet` trong Trợ lý MIMI. Khoá v2: người đã có cài đặt v1 (vị trí, cỡ) giữ vị trí
+ * và cỡ nhưng pet vẫn ẩn cho tới khi họ bật.
+ */
+export const MAC_DINH: CaiDatPet = { x: null, y: null, co: 'vua', mini: false, an: true };
+const KHOA = 'mimi.pet.v2';
+const KHOA_CU = 'mimi.pet.v1';
 
 export function docCaiDat(kho: Pick<Storage, 'getItem'> | null = typeof localStorage === 'undefined' ? null : localStorage): CaiDatPet {
   try {
-    const v = JSON.parse(kho?.getItem(KHOA) ?? 'null');
+    const moi = kho?.getItem(KHOA) ?? null;
+    const v = JSON.parse(moi ?? kho?.getItem(KHOA_CU) ?? 'null');
     if (!v || typeof v !== 'object') return { ...MAC_DINH };
     return {
       x: Number.isFinite(v.x) ? v.x : null,
       y: Number.isFinite(v.y) ? v.y : null,
       co: v.co === 'nho' || v.co === 'lon' ? v.co : 'vua',
       mini: v.mini === true,
-      an: v.an === true,
+      // Chưa có cài đặt v2 → ẩn (kể cả khi bản v1 đang hiện); v2 chỉ hiện khi đã ghi rõ an: false.
+      an: moi === null ? true : v.an !== false,
     };
   } catch {
     return { ...MAC_DINH };

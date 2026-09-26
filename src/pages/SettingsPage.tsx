@@ -4,7 +4,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, Check, Crown, X, UsersRound } from 'lucide-react';
+import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, Check, Crown, X, UsersRound, Cat } from 'lucide-react';
+import { CaiDatPet } from '@/components/settings/CaiDatPet';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
@@ -363,6 +364,10 @@ export default function SettingsPage() {
 
       <SettingsSection icon={Bell} title={t('settings.notifications')}>
         <NotificationToggles />
+      </SettingsSection>
+
+      <SettingsSection icon={Cat} title="Pet MIMI">
+        <CaiDatPet />
       </SettingsSection>
 
       <SettingsSection icon={Shield} title={t('settings.securityTitle')}>

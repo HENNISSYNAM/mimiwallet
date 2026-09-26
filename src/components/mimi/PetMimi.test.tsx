@@ -46,6 +46,8 @@ beforeEach(() => {
   goi.hoi = null;
   xoaHetLanHoi();
   localStorage.clear();
+  // Pet mặc định ẩn: các ca dưới đây kiểm pet ĐÃ BẬT.
+  localStorage.setItem('mimi.pet.v2', JSON.stringify({ x: null, y: null, co: 'vua', mini: false, an: false }));
   window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
   HTMLElement.prototype.setPointerCapture = vi.fn();
   // jsdom chưa có PointerEvent đầy đủ: không có thì nút chuột và toạ độ bị rơi mất.
@@ -176,7 +178,7 @@ describe('Pet MIMI', () => {
     fireEvent.pointerMove(meo(), { clientX: 60, clientY: 60, pointerId: 1 });
     fireEvent.pointerUp(meo(), { clientX: 60, clientY: 60, pointerId: 1 });
     expect(diaChi()).toBe('/dashboard');
-    await waitFor(() => expect(JSON.parse(localStorage.getItem('mimi.pet.v1') ?? '{}').x).toEqual(expect.any(Number)));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('mimi.pet.v2') ?? '{}').x).toEqual(expect.any(Number)));
   });
 
   it('có việc chờ người dùng → trạng thái "Cần bạn", khay liệt kê đúng câu hỏi', async () => {
@@ -187,12 +189,30 @@ describe('Pet MIMI', () => {
     expect(await screen.findByText('Bạn muốn bắt đầu tạm ngừng từ ngày nào?')).toBeTruthy();
   });
 
-  it('chuột phải → menu; Ẩn MIMI → còn tab mép phải; Alt+Shift+M → hiện lại', async () => {
+  it('mặc định (chưa bật lần nào) pet ẩn hẳn: không mèo, không nút, không tab mép phải; bật từ Cài đặt thì hiện', async () => {
+    localStorage.clear();
+    mo();
+    expect(screen.queryByRole('button', { name: /^MIMI —/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Hiện MIMI/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Nói với MIMI' })).toBeNull();
+    act(() => { window.dispatchEvent(new CustomEvent('mimi:lenh-pet', { detail: { an: false } })); });
+    expect(await screen.findByRole('button', { name: /^MIMI —/ })).toBeTruthy();
+    expect(JSON.parse(localStorage.getItem('mimi.pet.v2') as string).an).toBe(false);
+  });
+
+  it('người đã có cài đặt cũ (v1, đang hiện) vẫn thấy pet ẩn cho tới khi tự bật', () => {
+    localStorage.clear();
+    localStorage.setItem('mimi.pet.v1', JSON.stringify({ x: 40, y: 40, co: 'lon', mini: false, an: false }));
+    mo();
+    expect(screen.queryByRole('button', { name: /^MIMI —/ })).toBeNull();
+  });
+
+  it('chuột phải → menu; Ẩn MIMI → ẩn hẳn (không tab mép phải); Alt+Shift+M → hiện lại', async () => {
     mo();
     fireEvent.contextMenu(meo());
     fireEvent.click(screen.getByRole('menuitem', { name: 'Ẩn MIMI' }));
     expect(screen.queryByRole('button', { name: /^MIMI —/ })).toBeNull();
-    expect(screen.getByRole('button', { name: /Hiện MIMI/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Hiện MIMI/ })).toBeNull();
     fireEvent.keyDown(window, { altKey: true, shiftKey: true, code: 'KeyM' });
     expect(await screen.findByRole('button', { name: /^MIMI —/ })).toBeTruthy();
   });

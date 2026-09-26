@@ -107,7 +107,10 @@ export default function PetMimi() {
     const doiMan = () => setMan({ rong: window.innerWidth, cao: window.innerHeight });
     const phim = (e: KeyboardEvent) => { if (laPhimTat(e)) { e.preventDefault(); setCd((c) => { const m = { ...c, an: !c.an }; luuCaiDat(m); return m; }); } };
     // Lệnh `/pet` gõ trong Trợ lý MIMI.
-    const lenh = () => setCd((c) => { const m = { ...c, an: !c.an }; luuCaiDat(m); return m; });
+    const lenh = (e: Event) => {
+      const an = (e as CustomEvent<{ an?: boolean }>).detail?.an;
+      setCd((c) => { const m = { ...c, an: typeof an === 'boolean' ? an : !c.an }; luuCaiDat(m); return m; });
+    };
     window.addEventListener('resize', doiMan);
     window.addEventListener('keydown', phim);
     window.addEventListener(SU_KIEN_LENH_PET, lenh);
@@ -292,16 +295,8 @@ export default function PetMimi() {
     );
   }
 
-  if (cd.an) {
-    return (
-      <>
-        <button type="button" onClick={() => doiCd({ an: false })} aria-label="Hiện MIMI (Alt+Shift+M)" title="Hiện MIMI (Alt+Shift+M)"
-          className="fixed bottom-28 right-0 z-50 rounded-l-lg bg-card/90 px-1.5 py-2 text-[10px] font-semibold text-muted-foreground shadow ring-1 ring-border [writing-mode:vertical-rl] hover:text-foreground">
-          MIMI
-        </button>
-      </>
-    );
-  }
+  // Ẩn (mặc định): không vẽ gì. Bật lại ở Cài đặt → Pet MIMI, Alt+Shift+M, hoặc `/pet` trong Trợ lý.
+  if (cd.an) return hopMic;
 
   return (
     <>
@@ -491,7 +486,7 @@ export default function PetMimi() {
         {moMenu && (
           <div role="menu" aria-label="Tuỳ chọn MIMI" className="absolute bottom-full mb-2 w-52 rounded-xl bg-card p-1 text-sm shadow-xl ring-1 ring-border"
             style={vi.x + 208 > man.rong ? { right: 0 } : { left: 0 }} onMouseLeave={() => setMoMenu(false)}>
-            <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => { setMoMenu(false); doiCd({ an: true }); toast('Đã ẩn MIMI. Alt+Shift+M hoặc nút "MIMI" ở mép phải để hiện lại.'); }}>Ẩn MIMI</button>
+            <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => { setMoMenu(false); doiCd({ an: true }); toast('Đã ẩn pet MIMI. Bật lại ở Cài đặt → Pet MIMI, hoặc Alt+Shift+M.'); }}>Ẩn MIMI</button>
             {coHoTroNoi() && (
               <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left hover:bg-accent" onClick={() => void raManHinhMay()}>Đưa MIMI ra màn hình máy</button>
             )}
