@@ -104,7 +104,7 @@ const MENU_SAN_PHAM: CauHinhMenu = {
     kieu: 'meo',
     tieuDe: { vi: 'Xem MIMI làm việc', en: 'Watch MIMI work' },
     mo: { vi: 'Bốn khung tự chạy: duyệt chi, bắt đổi số tài khoản, và hai chức năng đang xây.', en: 'Four self-running panels: approvals, account-swap alerts, and two features in progress.' },
-    href: '#demo',
+    href: '/kham-pha/demo',
   },
 };
 
@@ -177,8 +177,8 @@ const MENU_TAI_NGUYEN: CauHinhMenu = {
     [{
       tieuDe: { vi: 'Khám phá', en: 'Discover' },
       muc: [
-        { icon: Bell, ten: { vi: 'Cập nhật sản phẩm', en: 'Product updates' }, mo: { vi: 'Những gì vừa chạy thật trên MIMI', en: 'What just shipped on MIMI' }, href: '#cap-nhat' },
-        { icon: ListChecks, ten: { vi: 'Nhật ký agent', en: 'Agent activity log' }, mo: { vi: 'Mỗi bước đều để lại dấu vết', en: 'Every step leaves a trace' }, href: '#nhat-ky' },
+        { icon: Bell, ten: { vi: 'Cập nhật sản phẩm', en: 'Product updates' }, mo: { vi: 'Những gì vừa chạy thật trên MIMI', en: 'What just shipped on MIMI' }, href: '/kham-pha/cap-nhat' },
+        { icon: ListChecks, ten: { vi: 'Nhật ký agent', en: 'Agent activity log' }, mo: { vi: 'Mỗi bước đều để lại dấu vết', en: 'Every step leaves a trace' }, href: '/kham-pha/agent-ai#nhat-ky' },
       ],
     }],
     [{

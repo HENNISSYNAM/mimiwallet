@@ -38,6 +38,7 @@ const TaiNguyenDanhSach = lazy(() => import("./pages/TaiNguyenDanhSach"));
 const TaiNguyenBai = lazy(() => import("./pages/TaiNguyenBai"));
 const TuyenDung = lazy(() => import("./pages/TuyenDung"));
 const TrangNoiDungPage = lazy(() => import("./pages/TrangNoiDungPage"));
+const KhamPhaPage = lazy(() => import("./pages/KhamPhaPage"));
 const KhachHang = lazy(() => import("./pages/KhachHang"));
 const TriTueNhanTaoPage = lazy(() => import("./pages/TriTueNhanTaoPage"));
 const Login = lazy(() => import("./pages/Login"));
@@ -130,6 +131,7 @@ const App = () => (
                   tiêu đề SEO đặt ngay trong trang vì mỗi đường dẫn một tiêu đề. */}
               <Route path="/san-pham/:slug" element={<TrangNoiDungPage />} />
               <Route path="/giai-phap/:slug" element={<TrangNoiDungPage />} />
+              <Route path="/kham-pha/:trang" element={<KhamPhaPage />} />
               <Route path="/tri-tue-nhan-tao" element={<Page path="/tri-tue-nhan-tao" title="Trí tuệ nhân tạo — MIMI WALLET" description="Agent của bạn xin chi, MIMI xét bằng luật bạn đọc được: tự duyệt khi an toàn, hỏi bạn khi không, chặn đổi số tài khoản. Ghi rõ phần nào đang chạy, phần nào đang xây."><TriTueNhanTaoPage /></Page>} />
               <Route path="/privacy" element={<Page path="/privacy" title="Chính sách bảo mật — MIMI WALLET" description="Cách MIMI Wallet thu thập, lưu trữ và bảo vệ dữ liệu tài chính của doanh nghiệp bạn, cùng quyền của bạn với dữ liệu đó."><Privacy /></Page>} />
               {/* Google Play yêu cầu một đường xoá tài khoản mở được mà KHÔNG cần cài app
