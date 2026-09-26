@@ -16,13 +16,24 @@ import wave from '@/assets/mimi/wave.png';
 import surprised from '@/assets/mimi/surprised.png';
 import happy from '@/assets/mimi/happy.png';
 import run from '@/assets/mimi/run.png';
+import stretch from '@/assets/mimi/stretch.png';
+import sit from '@/assets/mimi/sit.png';
+import paw from '@/assets/mimi/paw.png';
 
 /**
  * Pet MIMI — mèo nổi trên trang, theo đúng cơ chế "Pets" của ChatGPT (xem `lib/petMimi.ts`).
  * Bấm mèo: mở/đóng chat. Kéo mèo: đổi chỗ (nhớ lại). Chuột phải / giữ lâu: menu. Alt+Shift+M: ẩn/hiện.
  */
-const ANH: Record<string, string> = { idle, sleep, wave, surprised, happy, run };
+const ANH: Record<string, string> = { idle, sleep, wave, surprised, happy, run, sit };
 const PHUT_NGU = 3 * 60_000;
+/** Vươn vai kéo dài bao lâu, và khoảng cách giữa hai lần vươn vai lúc rảnh mà còn thức. */
+export const VUON_VAI_MS = 1600;
+const VUON_VAI_TU = 50_000;
+const VUON_VAI_DEN = 90_000;
+/** Rảnh bao lâu thì ngồi xuống (trước khi ngủ ở phút thứ 3); rê chuột chào thì vẫy tay bao lâu. */
+export const NGOI_SAU = 40_000;
+export const CHAO_MS = 1400;
+const CHAO_CACH = 15_000;
 const RONG_KHUNG = 380;
 const CAO_KHUNG = 560;
 const CAO_NUT = 44;
@@ -48,6 +59,13 @@ export default function PetMimi() {
   const [huongTrai, setHuongTrai] = useState(false);
   const [nghieng, setNghieng] = useState(0);
   const [vuaTha, setVuaTha] = useState(false);
+  // Ngủ và vươn vai (26/09/2026): thức dậy thì vươn vai; rảnh mà còn thức thì thỉnh thoảng vươn vai.
+  const [vuonVai, setVuonVai] = useState(false);
+  const nguTruoc = useRef(false);
+  // Ngồi và giơ tay (26/09/2026): rảnh một lúc thì ngồi; rê chuột vào mèo đang thức thì ngồi vẫy tay chào.
+  const [ngoi, setNgoi] = useState(false);
+  const [chao, setChao] = useState(false);
+  const chaoLuc = useRef(0);
   const diemTruoc = useRef<{ x: number; t: number } | null>(null);
   // Mèo đang ở cửa sổ nổi trên màn hình máy (Document Picture-in-Picture).
   const [cuaSoNoi, setCuaSoNoi] = useState<Window | null>(null);
@@ -97,10 +115,55 @@ export default function PetMimi() {
   // Nghỉ lâu thì ngủ; có động là thức.
   useEffect(() => {
     setNguLau(false);
+    setNgoi(false);
     if (tt !== 'nghi') return;
+    const ngoiXuong = window.setTimeout(() => setNgoi(true), NGOI_SAU);
     const id = window.setTimeout(() => setNguLau(true), PHUT_NGU);
-    return () => window.clearTimeout(id);
+    return () => { window.clearTimeout(ngoiXuong); window.clearTimeout(id); };
   }, [tt, moChat, moKhay]);
+  useEffect(() => {
+    if (!chao) return;
+    const id = window.setTimeout(() => setChao(false), CHAO_MS);
+    return () => window.clearTimeout(id);
+  }, [chao]);
+
+  // Thức dậy → vươn vai.
+  useEffect(() => {
+    if (nguTruoc.current && !nguLau) setVuonVai(true);
+    // Bắt đầu ngủ thì thôi vươn vai (không "vừa ngủ vừa vươn vai").
+    if (!nguTruoc.current && nguLau) setVuonVai(false);
+    nguTruoc.current = nguLau;
+  }, [nguLau]);
+  // Vươn vai bao lâu thì thôi — bộ hẹn riêng, để việc bắt đầu vươn vai không huỷ nhầm nó.
+  useEffect(() => {
+    if (!vuonVai) return;
+    const id = window.setTimeout(() => setVuonVai(false), VUON_VAI_MS);
+    return () => window.clearTimeout(id);
+  }, [vuonVai]);
+  // Rảnh mà còn thức: hẹn lần vươn vai kế (50–90 giây); đang vươn vai thì chưa hẹn.
+  useEffect(() => {
+    if (tt !== 'nghi' || nguLau || moChat || dangKeoMeo || vuonVai) return;
+    const hen = window.setTimeout(() => setVuonVai(true), VUON_VAI_TU + Math.random() * (VUON_VAI_DEN - VUON_VAI_TU));
+    return () => window.clearTimeout(hen);
+  }, [tt, nguLau, moChat, dangKeoMeo, vuonVai]);
+  /** Rê chuột vào mèo: đang ngủ → thức (và vươn vai); đang thức rảnh → ngồi vẫy tay chào (tối đa 15 giây một lần). */
+  const danhThuc = () => {
+    if (nguLau) { setNguLau(false); return; }
+    if (tt !== 'nghi' || dangKeoMeo || vuonVai) return;
+    const bayGio = Date.now();
+    if (bayGio - chaoLuc.current < CHAO_CACH) return;
+    chaoLuc.current = bayGio;
+    setChao(true);
+  };
+
+  // Ảnh theo thứ tự ưu tiên: bị kéo > tiếp đất > vươn vai > giơ tay (cần bạn / chào) > ngủ > ngồi > trạng thái.
+  const giTay = !dangKeoMeo && !vuaTha && !vuonVai && (tt === 'can_ban' || chao);
+  const anhMeo = dangKeoMeo ? run
+    : vuaTha ? happy
+      : vuonVai ? stretch
+        : giTay ? sit
+          : tt === 'nghi' && !nguLau && ngoi ? sit
+            : ANH[dangMeo(tt, nguLau)] ?? idle;
 
   // ── Kéo thả: bấm mà không di quá 5px là "bấm", di hơn là "kéo" ──────────────────────────────
   const batDauKeo = (e: React.PointerEvent) => {
@@ -184,7 +247,7 @@ export default function PetMimi() {
       <>
         {chatNode}
         <PetNoi
-          cuaSo={cuaSoNoi} anh={ANH[dangMeo(tt, nguLau)] ?? idle} tt={tt} chuong={chuong} dangNghe={dangNghe}
+          cuaSo={cuaSoNoi} anh={anhMeo} giTay={giTay} tt={tt} chuong={chuong} dangNghe={dangNghe}
           onGo={() => { veTrang(); setMoChat(true); }}
           onNoi={noi}
           onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else setMoChat(true); }}
@@ -235,17 +298,29 @@ export default function PetMimi() {
                 ? { y: [0, -7, 0, -2, 0], scaleY: [1, 0.9, 1.06, 0.97, 1], scaleX: [1, 1.08, 0.95, 1.02, 1], rotate: huongTrai ? -nghieng : nghieng }
                 : vuaTha && !giamChuyenDong.current
                   ? { y: [0, 3, 0], scaleY: [1, 0.86, 1], scaleX: [1, 1.1, 1], rotate: 0 }
-                  : { y: 0, scaleY: 1, scaleX: 1, rotate: 0 }}
-              transition={dangKeoMeo ? { duration: 0.34, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.28 }}
+                  : vuonVai && !giamChuyenDong.current
+                    ? { y: [0, 2, 0, -2, 0], scaleX: [1, 1.14, 1.16, 1.04, 1], scaleY: [1, 0.9, 0.88, 1.03, 1], rotate: 0 }
+                    : nguLau && !giamChuyenDong.current
+                      ? { y: 0, scaleY: [1, 1.035, 1], scaleX: [1, 1.015, 1], rotate: 0 }
+                      : { y: 0, scaleY: 1, scaleX: 1, rotate: 0 }}
+              transition={dangKeoMeo ? { duration: 0.34, repeat: Infinity, ease: 'easeInOut' }
+                : vuonVai ? { duration: VUON_VAI_MS / 1000, ease: 'easeInOut' }
+                  : nguLau ? { duration: 3.2, repeat: Infinity, ease: 'easeInOut' }
+                    : { duration: 0.28 }}
               style={{ transformOrigin: '50% 90%' }}
             >
             <motion.img
-              src={dangKeoMeo ? run : vuaTha ? happy : ANH[dangMeo(tt, nguLau)] ?? idle}
+              src={anhMeo}
               alt=""
               draggable={false}
               role="button"
               tabIndex={0}
               data-dang-keo={dangKeoMeo || undefined}
+              data-ngu={(nguLau && !vuonVai && !dangKeoMeo) || undefined}
+              data-vuon-vai={(vuonVai && !dangKeoMeo) || undefined}
+              data-ngoi={(anhMeo === sit) || undefined}
+              data-gio-tay={giTay || undefined}
+              onPointerEnter={danhThuc}
               aria-label={`MIMI — ${TEN_TRANG_THAI_PET[tt]}. Bấm để ${moChat ? 'đóng' : 'mở'} trò chuyện, kéo để di chuyển.`}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMoChat((m) => !m); } }}
               onPointerDown={batDauKeo} onPointerMove={dangKeo} onPointerUp={thaKeo} onPointerCancel={thaKeo}
@@ -255,6 +330,28 @@ export default function PetMimi() {
               className="no-save h-full w-full cursor-grab touch-none object-contain drop-shadow-lg active:cursor-grabbing"
             />
             </motion.div>
+            {/* Giơ tay: bàn tay vẫy bên vai phải của mèo đang ngồi. */}
+            {giTay && (
+              <motion.img
+                src={paw} alt="" aria-hidden draggable={false}
+                className="pointer-events-none absolute object-contain drop-shadow"
+                style={{ width: '40%', right: '-6%', top: '14%', transformOrigin: '50% 90%' }}
+                initial={{ opacity: 0, y: 8, rotate: 0 }}
+                animate={giamChuyenDong.current ? { opacity: 1, y: 0, rotate: 0 } : { opacity: 1, y: 0, rotate: [-12, 18, -12] }}
+                transition={giamChuyenDong.current ? { duration: 0.2 } : { rotate: { duration: 0.7, repeat: Infinity, ease: 'easeInOut' }, default: { duration: 0.2 } }}
+              />
+            )}
+            {nguLau && !vuonVai && !dangKeoMeo && (
+              <span aria-hidden className="pointer-events-none absolute -right-1 top-0 flex flex-col items-start font-display font-bold text-primary/70">
+                {[0, 1, 2].map((i) => giamChuyenDong.current
+                  ? <span key={i} className="text-[11px] leading-none" style={{ marginLeft: i * 6 }}>z</span>
+                  : (
+                    <motion.span key={i} className="text-[11px] leading-none" style={{ marginLeft: i * 6 }}
+                      initial={{ opacity: 0, y: 6 }} animate={{ opacity: [0, 1, 0], y: [6, -10] }}
+                      transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.8, ease: 'easeOut' }}>z</motion.span>
+                  ))}
+              </span>
+            )}
             {/* Bóng dưới chân: nhỏ lại khi mèo nhảy lên, cho cảm giác đang chạy trên mặt đất. */}
             {dangKeoMeo && !giamChuyenDong.current && (
               <motion.span aria-hidden className="pointer-events-none absolute bottom-0 left-1/2 h-1.5 w-1/2 -translate-x-1/2 rounded-full bg-black/15 blur-[2px]"

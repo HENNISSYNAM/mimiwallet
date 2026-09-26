@@ -106,6 +106,10 @@ export default {
           "0%": { transform: "translateX(100%)" },
           "100%": { transform: "translateX(0)" },
         },
+        "vay-tay": {
+          "0%, 100%": { transform: "rotate(-12deg)" },
+          "50%": { transform: "rotate(18deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -113,6 +117,7 @@ export default {
         "fade-up": "fade-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "scale-in": "scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "slide-right": "slide-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+        "vay-tay": "vay-tay 0.7s ease-in-out infinite",
       },
     },
   },

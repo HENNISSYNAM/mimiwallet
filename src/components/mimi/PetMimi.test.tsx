@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 configure({ asyncUtilTimeout: 8000 });
@@ -117,6 +117,71 @@ describe('Pet MIMI', () => {
       expect(await screen.findByRole('button', { name: /^MIMI —/ })).toBeTruthy();
     } finally {
       delete (window as unknown as Record<string, unknown>).documentPictureInPicture;
+    }
+  });
+
+  it('"Cần bạn" → mèo ngồi giơ tay vẫy', async () => {
+    goi.ds = [{ id: 'h1', tieu_de: 'Tạm ngừng kinh doanh', cau_hoi: { cau: 'Từ ngày nào?' } }];
+    mo();
+    await waitFor(() => expect(meo().getAttribute('data-gio-tay')).toBe('true'));
+    expect(meo().getAttribute('src')).toContain('sit');
+    expect(meo().parentElement?.parentElement?.querySelector('img[src*="paw"]')).not.toBeNull();
+  });
+
+  it('rảnh 40 giây → ngồi xuống; rê chuột vào → vẫy tay chào rồi thôi', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    try {
+      mo();
+      await act(async () => { await vi.advanceTimersByTimeAsync(39_000); });
+      expect(meo().getAttribute('data-ngoi')).toBeNull();
+      await act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
+      expect(meo().getAttribute('data-ngoi')).toBe('true');
+      expect(meo().getAttribute('src')).toContain('sit');
+      fireEvent.pointerEnter(meo());
+      await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+      expect(meo().getAttribute('data-gio-tay')).toBe('true');
+      await act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
+      expect(meo().getAttribute('data-gio-tay')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rảnh 3 phút → ngủ (có z z z); rê chuột vào → thức dậy và vươn vai, rồi thôi', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    try {
+      mo();
+      await act(async () => { await vi.advanceTimersByTimeAsync(3 * 60_000 + 100); });
+      expect(meo().getAttribute('data-ngu')).toBe('true');
+      expect(meo().getAttribute('src')).toContain('sleep');
+      expect(document.body.textContent).toContain('z');
+      fireEvent.pointerEnter(meo());
+      await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+      expect(meo().getAttribute('data-ngu')).toBeNull();
+      expect(meo().getAttribute('data-vuon-vai')).toBe('true');
+      expect(meo().getAttribute('src')).toContain('stretch');
+      await act(async () => { await vi.advanceTimersByTimeAsync(1700); });
+      expect(meo().getAttribute('data-vuon-vai')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rảnh mà còn thức → thỉnh thoảng vươn vai (sau 50–90 giây)', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    try {
+      mo();
+      let daVuonVai = false;
+      const quan = new MutationObserver(() => { if (document.querySelector('[data-vuon-vai="true"]')) daVuonVai = true; });
+      quan.observe(document.body, { attributes: true, subtree: true, childList: true });
+      await act(async () => { await vi.advanceTimersByTimeAsync(49_000); });
+      expect(daVuonVai).toBe(false); // chưa tới 50 giây thì chưa vươn vai
+      await act(async () => { await vi.advanceTimersByTimeAsync(42_000); });
+      quan.disconnect();
+      expect(daVuonVai).toBe(true);
+      expect(meo().getAttribute('data-ngu')).toBeNull();
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

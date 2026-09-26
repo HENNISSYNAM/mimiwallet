@@ -12,7 +12,7 @@ describe('trạng thái pet — thứ tự ưu tiên theo tài liệu', () => {
     expect(trangThaiPet(t())).toBe('nghi');
   });
   it('mỗi trạng thái một dáng; nghỉ lâu thì ngủ', () => {
-    expect(dangMeo('can_ban', false)).toBe('wave');
+    expect(dangMeo('can_ban', false)).toBe('sit');
     expect(dangMeo('dang_chay', false)).toBe('run');
     expect(dangMeo('nghi', true)).toBe('sleep');
   });
