@@ -12,6 +12,7 @@ import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
 import NhatKyAgent from '@/components/landing/NhatKyAgent';
 import CapNhatSanPham from '@/components/landing/CapNhatSanPham';
+import KhamPhaThem from '@/components/landing/KhamPhaThem';
 import {
   ScoringBolt,
   CashflowChart,
@@ -516,7 +517,23 @@ function TechPillarCard({
 }
 
 /* ═══════════ MAIN ═══════════ */
-export default function Landing() {
+/**
+ * CÁC KHỐI CỦA TRANG CHỦ (26/09/2026). Trang chủ từng dài ~21.500px (69 lần kéo màn hình) vì mọi
+ * khối trình diễn đều dồn vào đây. Giờ mỗi khối có một khoá; trang chủ chỉ hiện những khối dẫn tới
+ * đăng ký, còn các khối trình diễn sâu hiện ở trang "Khám phá" (`/kham-pha/:trang`) — CÙNG mã này,
+ * không chép nội dung, nên sửa một chỗ là đúng ở mọi nơi.
+ */
+export type KhoaKhoi =
+  | 'hero' | 'dai_logo' | 'cong_nhan' | 'he_thong_roi_rac' | 'agent_ai' | 'demo' | 'bao_mat_video' | 'nhat_ky'
+  | 'cap_nhat' | 'nang_luc' | 'cong_nghe' | 'quy_trinh' | 'giai_phap' | 'minh_bach' | 'bang_gia' | 'so_lieu_that'
+  | 'kham_pha' | 'dang_ky';
+
+export const KHOI_TRANG_CHU: readonly KhoaKhoi[] = [
+  'hero', 'dai_logo', 'cong_nhan', 'he_thong_roi_rac', 'quy_trinh', 'bang_gia', 'so_lieu_that', 'kham_pha', 'dang_ky',
+];
+
+export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: readonly KhoaKhoi[]; dauTrang?: React.ReactNode } = {}) {
+  const hien = (k: KhoaKhoi) => khoi.includes(k);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [annual, setAnnual] = useState(false);
@@ -530,7 +547,9 @@ export default function Landing() {
   return (
     <div className="min-h-screen landing-light">
       <Navbar />
+      {dauTrang}
 
+      {hien('hero') && (<>
       {/* ═══ HERO ═══ */}
       <section ref={heroRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden mimi-hero-warm">
         {/*
@@ -656,33 +675,51 @@ export default function Landing() {
           </div>
         </motion.div>
       </section>
+      </>)}
 
+      {hien('dai_logo') && (<>
       {/* ═══ ĐỒNG HÀNH CÙNG MIMI ═══ */}
       <DaiLogo className="border-y border-border/60" />
+      </>)}
 
+      {hien('cong_nhan') && (<>
       {/* ═══ RECOGNITION & INCUBATION ═══ */}
       <section id="cong-nhan" className="py-16 border-y border-border/50 bg-secondary/30">
         <TrustSection />
       </section>
+      </>)}
 
+      {hien('he_thong_roi_rac') && (<>
       {/* ═══ VẤN ĐỀ: HỆ THỐNG RỜI RẠC ═══ */}
       <HeThongRoiRac />
+      </>)}
 
+      {hien('agent_ai') && (<>
       {/* ═══ BA NGUYÊN TẮC AGENT ═══ */}
       <AgentAiSection />
+      </>)}
 
+      {hien('demo') && (<>
       {/* ═══ KHUNG DEMO TỰ CHẠY ═══ */}
       <DemoTuChay />
+      </>)}
 
+      {hien('bao_mat_video') && (<>
       {/* ═══ BẢO MẬT: DỪNG KHOẢN ĐÁNG NGỜ + MÃ HOÁ KHÁNG LƯỢNG TỬ ═══ */}
       <VideoBaoMat />
+      </>)}
 
+      {hien('nhat_ky') && (<>
       {/* ═══ NHẬT KÝ AGENT + SOẠN LUẬT (ĐANG XÂY) ═══ */}
       <NhatKyAgent />
+      </>)}
 
+      {hien('cap_nhat') && (<>
       {/* ═══ CẬP NHẬT SẢN PHẨM ═══ */}
       <CapNhatSanPham />
+      </>)}
 
+      {hien('nang_luc') && (<>
       {/* ═══ VERIFIED CAPABILITY ═══
           Technical facts we can demonstrate on demand, rather than traction the
           project has not earned yet — the team has no legal entity and no
@@ -708,7 +745,9 @@ export default function Landing() {
           })()}
         </div>
       </section>
+      </>)}
 
+      {hien('cong_nghe') && (<>
       {/* ═══ CORE TECHNOLOGY ═══ */}
       <section className="py-24 bg-background" id="technology">
         <div className="container mx-auto px-4">
@@ -727,7 +766,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      </>)}
 
+      {hien('quy_trinh') && (<>
       {/* ═══ PROCESS FLOW ═══ */}
       <section className="py-24 bg-secondary/20" id="features">
         <div className="container mx-auto px-4">
@@ -753,7 +794,9 @@ export default function Landing() {
           <ProcessFlow />
         </div>
       </section>
+      </>)}
 
+      {hien('giai_phap') && (<>
       {/* ═══ SOLUTIONS BENTO ═══ */}
       <section className="py-24 bg-background" id="solutions">
         <div className="container mx-auto px-4">
@@ -1005,7 +1048,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      </>)}
 
+      {hien('minh_bach') && (<>
       {/* ═══ AI SECTION ═══ */}
       <section className="py-24 bg-secondary/20 overflow-hidden">
         <div className="container mx-auto px-4">
@@ -1101,7 +1146,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      </>)}
 
+      {hien('bang_gia') && (<>
       {/* ═══ PRICING ═══ */}
       <section className="py-24 bg-background" id="pricing">
         <div className="container mx-auto px-4">
@@ -1150,7 +1197,9 @@ export default function Landing() {
           </p>
         </div>
       </section>
+      </>)}
 
+      {hien('so_lieu_that') && (<>
       {/* ═══ LIVE PRODUCTION PROOF ═══
           Replaces invented customer testimonials. Every number below is what the
           deployed scoring model actually returned for the demo company, so it can
@@ -1202,7 +1251,11 @@ export default function Landing() {
           </p>
         </div>
       </section>
+      </>)}
 
+      {hien('kham_pha') && <KhamPhaThem />}
+
+      {hien('dang_ky') && (<>
       {/* ═══ CTA ═══ */}
       <section id="dang-ky" className="py-24 relative overflow-hidden bg-background">
         <div className="absolute inset-0">
@@ -1220,6 +1273,7 @@ export default function Landing() {
           <MoTaiKhoan />
         </div>
       </section>
+      </>)}
 
       <Footer />
     </div>

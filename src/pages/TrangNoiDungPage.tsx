@@ -95,7 +95,7 @@ export default function TrangNoiDungPage() {
                 {trang.trangThai === 'dang-xay' ? 'Đăng ký dùng sớm' : 'Liên hệ đội MIMI'} <ArrowRight size={16} />
               </a>
             )}
-            <a href="/#demo" className="inline-flex h-12 items-center justify-center rounded-lg border border-border px-6 text-[15px] font-medium text-foreground hover:bg-muted/60">
+            <a href="/kham-pha/demo" className="inline-flex h-12 items-center justify-center rounded-lg border border-border px-6 text-[15px] font-medium text-foreground hover:bg-muted/60">
               Xem MIMI làm việc
             </a>
           </div>

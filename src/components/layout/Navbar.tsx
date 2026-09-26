@@ -106,7 +106,7 @@ export default function Navbar() {
                 {vi ? ' — giữ người nhận mới 24 giờ, bắt đổi số tài khoản.' : ' — 24-hour hold on new payees, account-swap alerts.'}
               </span>
             </span>
-            <a href={anchor('#demo')} className="shrink-0 font-medium underline underline-offset-4">
+            <a href="/kham-pha/demo" className="shrink-0 font-medium underline underline-offset-4">
               {vi ? 'Xem cách hoạt động' : 'See how it works'}
             </a>
             <button
