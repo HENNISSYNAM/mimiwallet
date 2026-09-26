@@ -29,6 +29,9 @@ export default function Login() {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const hidingEyes = passwordFocused || loading;
   const { t } = useTranslation();
+  // Chỉ nhận đường nội bộ (chống chuyển hướng ra ngoài) — dùng cho màn cấp quyền agent.
+  const nextParam = new URLSearchParams(window.location.search).get('next');
+  const dich = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/dashboard/tro-ly';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +46,7 @@ export default function Login() {
       toast.error(error === 'Invalid login credentials' ? t('login.errorInvalid') : error);
     } else {
       // MIMI Assistant là màn làm việc chính từ 15/09/2026.
-      navigate('/dashboard/tro-ly');
+      if (dich.startsWith('/.lovable/')) window.location.href = dich; else navigate(dich);
     }
   };
 
@@ -184,7 +187,7 @@ export default function Login() {
           type="button"
           onClick={async () => {
             setGoogleLoading(true);
-            ghiDichSauDangNhap('/dashboard/tro-ly');
+            ghiDichSauDangNhap(dich);
             const { error } = await signInWithGoogle();
             // Only reached when the redirect never happened; on success the
             // browser has already left this page.
