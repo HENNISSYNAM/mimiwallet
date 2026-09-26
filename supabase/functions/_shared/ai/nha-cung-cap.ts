@@ -33,7 +33,7 @@ export interface NhaCungCap {
 type Goi = (url: string, init: RequestInit) => Promise<Response>;
 
 /** Bộ chuyển cho cổng dạng OpenAI Chat Completions (Lovable AI gateway, OpenRouter…). */
-export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?: Goi }): NhaCungCap {
+export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?: Goi; dauThem?: Record<string, string> }): NhaCungCap {
   const goi = o.goi ?? ((u, i) => fetch(u, i));
   return {
     ten: o.ten,
@@ -45,7 +45,7 @@ export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?
             : { role: m.vai === 'he_thong' ? 'system' : m.vai === 'tro_ly' ? 'assistant' : 'user', content: m.noi_dung ?? '' });
       const res = await goi(o.url, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${o.khoa}`, 'Content-Type': 'application/json' },
+        headers: { ...(o.dauThem ?? {}), Authorization: `Bearer ${o.khoa}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: mo_hinh, messages,
           ...(cong_cu?.length ? {
@@ -79,6 +79,45 @@ export const MUC_DICH = ['y_dinh', 'trich_xuat', 'phan_loai', 'dien_dat', 'phan_
 export type MucDich = (typeof MUC_DICH)[number];
 
 export interface Tuyen { nha_cung_cap: 'lovable'; mo_hinh: string; hang: 'nhanh' | 'manh'; ly_do: string }
+
+// ── Cổng mô hình máy chủ đang có khoá (26/09/2026) ───────────────────────────────────────────────
+export const DIEM_GOI_OPENROUTER = 'https://openrouter.ai/api/v1/chat/completions';
+/** Mô hình mặc định trên OpenRouter: cùng họ Gemini Flash với cổng Lovable, gọi công cụ và đọc ảnh được. */
+export const MO_HINH_OPENROUTER_MAC_DINH = 'google/gemini-2.5-flash';
+const TEN_MO_HINH = /^[a-z0-9][a-z0-9._-]{0,60}\/[a-z0-9][a-z0-9._:-]{0,80}$/i;
+
+export interface CongMoHinh {
+  ten: 'lovable' | 'openrouter';
+  url: string;
+  khoa: string;
+  mo_hinh: string;
+  /** Đầu thêm của cổng (OpenRouter: tên ứng dụng gọi). Không chứa khoá. */
+  dau_them: Record<string, string>;
+}
+
+/**
+ * Chọn cổng theo khoá máy chủ đang có: Lovable AI trước (đường cũ), không có thì OpenRouter. Không khoá
+ * nào → `null` và trợ lý chạy bộ hiểu câu cố định. `moHinhOpenRouter` (biến OPENROUTER_MODEL) đổi được
+ * mô hình, nhưng tên sai khuôn thì bỏ qua — không gửi chuỗi lạ lên cổng.
+ */
+export function chonCongMoHinh(env: { lovable?: string | null; openrouter?: string | null; moHinhOpenRouter?: string | null }): CongMoHinh | null {
+  const lv = env.lovable?.trim();
+  if (lv) return { ten: 'lovable', url: DIEM_GOI_LOVABLE, khoa: lv, mo_hinh: MO_HINH_MAC_DINH, dau_them: {} };
+  const or = env.openrouter?.trim();
+  if (or) {
+    const m = env.moHinhOpenRouter?.trim();
+    return {
+      ten: 'openrouter', url: DIEM_GOI_OPENROUTER, khoa: or,
+      mo_hinh: m && TEN_MO_HINH.test(m) ? m : MO_HINH_OPENROUTER_MAC_DINH,
+      dau_them: { 'HTTP-Referer': 'https://www.mimiwallet.online', 'X-Title': 'MIMI Wallet' },
+    };
+  }
+  return null;
+}
+
+/** Nhà cung cấp của một cổng. */
+export const nhaCungCapCua = (c: CongMoHinh, goi?: Goi): NhaCungCap =>
+  congKieuOpenAI({ ten: c.ten, url: c.url, khoa: c.khoa, dauThem: c.dau_them, goi });
 
 export const MO_HINH_MAC_DINH = 'google/gemini-3-flash-preview';
 const NHANH = (ly_do: string): Tuyen => ({ nha_cung_cap: 'lovable', mo_hinh: MO_HINH_MAC_DINH, hang: 'nhanh', ly_do });

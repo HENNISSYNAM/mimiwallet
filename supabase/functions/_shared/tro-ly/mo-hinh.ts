@@ -12,7 +12,7 @@
  * và viết lời. Số liệu, bảng, đề xuất trong câu trả lời là của `tinh-toan.ts`.
  */
 import type { KetQuaNangLuc, KetQuaQuet } from './kieu.ts';
-import { congKieuOpenAI, DIEM_GOI_LOVABLE, LoiNhaCungCap, MO_HINH_MAC_DINH, type NhaCungCap, type TinNhan } from '../ai/nha-cung-cap.ts';
+import { congKieuOpenAI, DIEM_GOI_LOVABLE, LoiNhaCungCap, MO_HINH_MAC_DINH, type CongMoHinh, type NhaCungCap, type TinNhan } from '../ai/nha-cung-cap.ts';
 
 export const DIEM_GOI_MO_HINH = DIEM_GOI_LOVABLE;
 export const MO_HINH = MO_HINH_MAC_DINH;
@@ -144,10 +144,10 @@ export async function hoiMoHinh(o: {
  * Gọi thẳng cổng cho việc đọc ảnh: nội dung đa phương thức (ảnh) chưa có trong khuôn chung của
  * `nha-cung-cap.ts`. Khi thêm, chuyển hàm này sang đó.
  */
-async function goiCong(khoa: string, body: unknown, goi: Goi) {
-  const res = await goi(DIEM_GOI_MO_HINH, {
+async function goiCong(cong: Pick<CongMoHinh, 'url' | 'khoa' | 'dau_them'>, body: unknown, goi: Goi) {
+  const res = await goi(cong.url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${khoa}`, 'Content-Type': 'application/json' },
+    headers: { ...cong.dau_them, Authorization: `Bearer ${cong.khoa}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -283,10 +283,11 @@ export function docKetQuaQuet(v: unknown, homNay: string): KetQuaQuet {
   };
 }
 
-export async function docAnhChungTu(o: { khoa: string; anh: string; homNay: string; goi?: Goi }): Promise<KetQuaQuet> {
+export async function docAnhChungTu(o: { khoa: string; anh: string; homNay: string; goi?: Goi; cong?: CongMoHinh }): Promise<KetQuaQuet> {
   const goi = o.goi ?? ((u, i) => fetch(u, i));
-  const msg = await goiCong(o.khoa, {
-    model: MO_HINH,
+  const cong = o.cong ?? { url: DIEM_GOI_MO_HINH, khoa: o.khoa, dau_them: {}, mo_hinh: MO_HINH };
+  const msg = await goiCong(cong, {
+    model: cong.mo_hinh,
     messages: [
       {
         role: 'system',

@@ -8,7 +8,7 @@
  * bank-link, hoặc `luu_chung_tu` ở đây).
  *
  * HAI CHẾ ĐỘ HIỂU CÂU HỎI:
- *   - `mo_hinh`: có `LOVABLE_API_KEY` → Gemini chọn năng lực và viết lời (`mo-hinh.ts`).
+ *   - `mo_hinh`: có `LOVABLE_API_KEY` (hoặc `OPENROUTER_API_KEY`) → mô hình chọn năng lực và viết lời (`mo-hinh.ts`).
  *   - `co_dinh`: không có khoá, hoặc cổng lỗi → bộ nhận ý định (`y-dinh.ts`). Tới 15/09/2026
  *     production chưa có khoá nên đây là đường đang chạy.
  *
@@ -30,7 +30,7 @@ import { coBangChungMayChu, doiChieuQuyetDinh, PHUT_TREO } from "../_shared/doi-
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
-import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, MO_HINH, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
+import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
 import {
   congNgay,
   danhSachKetNoi,
@@ -58,7 +58,7 @@ import { ghepTienVe } from "../_shared/doi-soat/cham-diem.ts";
 import { docHet } from "../_shared/doc-het.ts";
 import { dungNguCanh, nguCanhChoMoHinh } from "../_shared/tro-ly/ngu-canh.ts";
 import { chuanBiNop, dsYeuCauNop, ghiDaNop, ghiKetQua, huyNop, kiemTruocKhiNop, LoiNop, xacNhanNop } from "../_shared/thuc-thi/luu.ts";
-import { coDo, congKieuOpenAI, DIEM_GOI_LOVABLE, DINH_TUYEN, type LanGoi } from "../_shared/ai/nha-cung-cap.ts";
+import { chonCongMoHinh, coDo, nhaCungCapCua, type LanGoi } from "../_shared/ai/nha-cung-cap.ts";
 import { duocLam } from "../_shared/quyen/vai-tro.ts";
 import { chonThuTuc } from "../_shared/tro-ly/thu-tuc.ts";
 import { ngayHopLe } from "../_shared/ngay.ts";
@@ -755,7 +755,9 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
 };
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null; la_demo?: boolean | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
-  const khoaMoHinh = Deno.env.get("LOVABLE_API_KEY") ?? "";
+  // Cổng mô hình: Lovable AI nếu có khoá, không thì OpenRouter (OPENROUTER_API_KEY, mô hình đổi bằng OPENROUTER_MODEL).
+  const cong = chonCongMoHinh({ lovable: Deno.env.get("LOVABLE_API_KEY"), openrouter: Deno.env.get("OPENROUTER_API_KEY"), moHinhOpenRouter: Deno.env.get("OPENROUTER_MODEL") });
+  const khoaMoHinh = cong?.khoa ?? "";
   const can = QUYEN_HANH_DONG[hanhDong];
   if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));
   const moc = mocThoiGian();
@@ -839,12 +841,11 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             .then((ds) => nguCanhChoMoHinh(dungNguCanh({ hanhTrinh: ds })))
             .catch(() => "");
           // Mục 36: đo từng lần gọi (nhà cung cấp, mô hình, mục đích, độ trễ, token).
-          const tuyen = DINH_TUYEN.y_dinh;
-          const ncc = coDo(congKieuOpenAI({ ten: tuyen.nha_cung_cap, url: DIEM_GOI_LOVABLE, khoa: khoaMoHinh }), "y_dinh", (l) => { void ghiLanGoi(db, company.id, l); });
+          const ncc = coDo(nhaCungCapCua(cong!), "y_dinh", (l) => { void ghiLanGoi(db, company.id, l); });
           const r = await hoiMoHinh({
             khoa: khoaMoHinh,
             ncc,
-            moHinh: tuyen.mo_hinh,
+            moHinh: cong!.mo_hinh,
             nguCanh,
             cau,
             lichSu: docLichSu(body.lich_su),
@@ -855,7 +856,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             goiY: yDinh,
           });
           const tl = dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau });
-          const id = await ghiHoiThoai(db, company.id, userId, cau, tl, MO_HINH);
+          const id = await ghiHoiThoai(db, company.id, userId, cau, tl, cong!.mo_hinh);
           return json({ ...tl, hoi_thoai_id: id });
         } catch (e) {
           // Cổng lỗi không làm người dùng mất câu trả lời: chạy tiếp bằng bộ luật cố định.
@@ -967,7 +968,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (!k.ok) return loi("ANH", k.cau, 400);
       let ketQua;
       try {
-        ketQua = await docAnhChungTu({ khoa: khoaMoHinh, anh: body.anh as string, homNay: moc.homNay });
+        ketQua = await docAnhChungTu({ khoa: khoaMoHinh, anh: body.anh as string, homNay: moc.homNay, cong: cong ?? undefined });
       } catch (e) {
         if (e instanceof LoiMoHinh) return loi("DOC_ANH", "Chưa đọc được ảnh này. Chụp lại rõ hơn, đủ sáng, thấy cả tổng tiền.", 502);
         throw e;
