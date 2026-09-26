@@ -768,7 +768,11 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null; la_demo?: boolean | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
   // Cổng mô hình: Lovable AI nếu có khoá, không thì OpenRouter (OPENROUTER_API_KEY, mô hình đổi bằng OPENROUTER_MODEL).
-  const cong = chonCongMoHinh({ lovable: Deno.env.get("LOVABLE_API_KEY"), openrouter: Deno.env.get("OPENROUTER_API_KEY"), moHinhOpenRouter: Deno.env.get("OPENROUTER_MODEL") });
+  const cong = chonCongMoHinh({
+    lovable: Deno.env.get("LOVABLE_API_KEY"),
+    trungGianUrl: Deno.env.get("AI_TRUNG_GIAN_URL"), trungGianKhoa: Deno.env.get("AI_TRUNG_GIAN_KEY"),
+    openrouter: Deno.env.get("OPENROUTER_API_KEY"), moHinhOpenRouter: Deno.env.get("OPENROUTER_MODEL"),
+  });
   const khoaMoHinh = cong?.khoa ?? "";
   const can = QUYEN_HANH_DONG[hanhDong];
   if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));

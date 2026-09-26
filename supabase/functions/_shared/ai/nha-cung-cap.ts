@@ -87,7 +87,7 @@ export const MO_HINH_OPENROUTER_MAC_DINH = 'google/gemini-2.5-flash';
 const TEN_MO_HINH = /^[a-z0-9][a-z0-9._-]{0,60}\/[a-z0-9][a-z0-9._:-]{0,80}$/i;
 
 export interface CongMoHinh {
-  ten: 'lovable' | 'openrouter';
+  ten: 'lovable' | 'lovable_trung_gian' | 'openrouter';
   url: string;
   khoa: string;
   mo_hinh: string;
@@ -95,14 +95,29 @@ export interface CongMoHinh {
   dau_them: Record<string, string>;
 }
 
+/** Địa chỉ trung gian hợp lệ: function `ai-trung-gian` của một dự án Supabase (https). */
+const URL_TRUNG_GIAN = /^https:\/\/[a-z0-9]{20}\.supabase\.co\/functions\/v1\/ai-trung-gian$/;
+export const DO_DAI_KHOA_TRUNG_GIAN = 32;
+
 /**
- * Chọn cổng theo khoá máy chủ đang có: Lovable AI trước (đường cũ), không có thì OpenRouter. Không khoá
- * nào → `null` và trợ lý chạy bộ hiểu câu cố định. `moHinhOpenRouter` (biến OPENROUTER_MODEL) đổi được
- * mô hình, nhưng tên sai khuôn thì bỏ qua — không gửi chuỗi lạ lên cổng.
+ * Chọn cổng theo cấu hình máy chủ, theo thứ tự:
+ *   1. `LOVABLE_API_KEY` — gọi thẳng Lovable AI (chỉ có trong dự án Lovable Cloud);
+ *   2. trung gian Lovable (`AI_TRUNG_GIAN_URL` + `AI_TRUNG_GIAN_KEY`) — máy chủ thật gọi function
+ *      `ai-trung-gian` chạy trong dự án Lovable Cloud, function đó gọi Lovable AI;
+ *   3. `OPENROUTER_API_KEY` (mô hình đổi bằng OPENROUTER_MODEL; tên sai khuôn thì bỏ qua).
+ * Không có gì → `null`, trợ lý chạy bộ hiểu câu cố định.
  */
-export function chonCongMoHinh(env: { lovable?: string | null; openrouter?: string | null; moHinhOpenRouter?: string | null }): CongMoHinh | null {
+export function chonCongMoHinh(env: {
+  lovable?: string | null; trungGianUrl?: string | null; trungGianKhoa?: string | null;
+  openrouter?: string | null; moHinhOpenRouter?: string | null;
+}): CongMoHinh | null {
   const lv = env.lovable?.trim();
   if (lv) return { ten: 'lovable', url: DIEM_GOI_LOVABLE, khoa: lv, mo_hinh: MO_HINH_MAC_DINH, dau_them: {} };
+  const tgUrl = env.trungGianUrl?.trim() ?? '';
+  const tgKhoa = env.trungGianKhoa?.trim() ?? '';
+  if (URL_TRUNG_GIAN.test(tgUrl) && tgKhoa.length >= DO_DAI_KHOA_TRUNG_GIAN) {
+    return { ten: 'lovable_trung_gian', url: tgUrl, khoa: tgKhoa, mo_hinh: MO_HINH_MAC_DINH, dau_them: {} };
+  }
   const or = env.openrouter?.trim();
   if (or) {
     const m = env.moHinhOpenRouter?.trim();

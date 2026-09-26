@@ -36,6 +36,7 @@ const TAT_JWT_DUOC_PHEP: Record<string, string> = {
   'tac-tu': 'agent gọi bằng khoá agent',
   mcp: 'client MCP gọi bằng khoá agent',
   'nap-kho-luat': 'bộ nạp kho dùng mã nạp riêng',
+  'ai-trung-gian': 'máy chủ MIMI gọi sang dự án Lovable Cloud bằng mã bí mật chung',
 };
 
 const cacFunction = readdirSync(FN).filter((d) => !d.startsWith('_') && existsSync(join(FN, d, 'index.ts')));
