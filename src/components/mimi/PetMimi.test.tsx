@@ -90,7 +90,7 @@ describe('Pet MIMI', () => {
     const anh = meo() as HTMLImageElement;
     expect(anh.getAttribute('data-dang-keo')).toBe('true');
     expect(anh.getAttribute('src')).toContain('run');
-    expect(anh.style.transform).toBe('scaleX(-1)'); // kéo sang trái → quay mặt sang trái
+    expect(anh.getAttribute('data-huong')).toBe('trai'); // kéo sang trái → quay mặt sang trái
     fireEvent.pointerUp(meo(), { clientX: 200, clientY: 300, pointerId: 1 });
     await waitFor(() => expect(meo().getAttribute('data-dang-keo')).toBeNull());
     expect(meo().getAttribute('src')).toContain('happy');
@@ -118,6 +118,24 @@ describe('Pet MIMI', () => {
     } finally {
       delete (window as unknown as Record<string, unknown>).documentPictureInPicture;
     }
+  });
+
+  it('có chuyện mới → thẻ hoạt động tự ló lên (không cần bấm), rồi thu lại; mũi tên bung/thu cả danh sách', async () => {
+    goi.ds = [
+      { id: 'h1', tieu_de: 'Tạm ngừng kinh doanh', cau_hoi: { cau: 'Bạn muốn bắt đầu từ ngày nào?' } },
+      { id: 'h2', tieu_de: 'Quyết toán TNCN', cau_hoi: { cau: 'Năm nay bạn có mấy nguồn thu nhập?' } },
+    ];
+    mo();
+    expect(await screen.findByText('Bạn muốn bắt đầu từ ngày nào?')).toBeTruthy(); // thẻ trên cùng ló lên
+    expect(screen.queryByText('Năm nay bạn có mấy nguồn thu nhập?')).toBeNull(); // chỉ một thẻ
+    const muiTen = screen.getByRole('button', { name: /Hoạt động — 2 mục/ });
+    expect(muiTen.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(muiTen);
+    expect(muiTen.getAttribute('aria-expanded')).toBe('true');
+    expect(await screen.findByText('Năm nay bạn có mấy nguồn thu nhập?')).toBeTruthy();
+    expect(screen.getByText('Cần bạn · Quyết toán TNCN')).toBeTruthy();
+    fireEvent.click(muiTen);
+    await waitFor(() => expect(screen.queryByText('Năm nay bạn có mấy nguồn thu nhập?')).toBeNull());
   });
 
   it('"Cần bạn" → mèo ngồi giơ tay vẫy', async () => {
