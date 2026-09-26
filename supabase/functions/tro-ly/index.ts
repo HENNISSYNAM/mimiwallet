@@ -57,6 +57,7 @@ import { phanTichChenhLech } from "../_shared/phan-tich/chenh-lech.ts";
 import { ghepTienVe } from "../_shared/doi-soat/cham-diem.ts";
 import { docHet } from "../_shared/doc-het.ts";
 import { dungNguCanh, nguCanhChoMoHinh } from "../_shared/tro-ly/ngu-canh.ts";
+import { chuanBiNop, dsYeuCauNop, ghiDaNop, ghiKetQua, huyNop, kiemTruocKhiNop, LoiNop, xacNhanNop } from "../_shared/thuc-thi/luu.ts";
 import { coDo, congKieuOpenAI, DIEM_GOI_LOVABLE, DINH_TUYEN, type LanGoi } from "../_shared/ai/nha-cung-cap.ts";
 import { duocLam } from "../_shared/quyen/vai-tro.ts";
 import { chonThuTuc } from "../_shared/tro-ly/thu-tuc.ts";
@@ -555,6 +556,21 @@ async function docDuLieu(
       .then((ds) => { d.hanhTrinhMo = ds; })
       .catch((e) => { console.error("hành trình:", e instanceof Error ? e.message : e); d.hanhTrinhMo = []; }));
   }
+  if (can.has("thuc_thi")) {
+    viec.push((async () => {
+      try {
+        const [yc, tl] = await Promise.all([dsYeuCauNop(db, companyId), dsTaiLieu(db, companyId)]);
+        const dangTheoDoi = new Set(yc.filter((y) => !["cancelled", "failed"].includes(y.trang_thai)).map((y) => y.tai_lieu_id));
+        d.thucThi = {
+          yeu_cau: yc,
+          tai_lieu_cho_nop: tl.filter((x) => !dangTheoDoi.has(x.id) && kiemTruocKhiNop(x).length === 0).map((x) => ({ id: x.id, tieu_de: x.tieu_de, loai: x.loai })),
+        };
+      } catch (e) {
+        console.error("thực thi:", e instanceof Error ? e.message : e);
+        d.thucThi = null;
+      }
+    })());
+  }
   if (can.has("lich_thue")) {
     // Cùng hàm với tax-summary và cron nhắc hạn: trợ lý không thể nói hạn khác màn Nhắc thuế.
     viec.push(docLichCongTy(db, companyId, { nam: Number(moc.homNay.slice(0, 4)), homNay: moc.homNay, laDemo })
@@ -731,6 +747,11 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   hanh_trinh_soan: "ghi_chung_tu",
   tao_tai_lieu: "ghi_chung_tu",
   tai_lieu_da_nop: "ghi_chung_tu",
+  // Prompt 5: chuẩn bị / ghi đã nộp / ghi kết quả — người soạn hồ sơ làm được. XÁC NHẬN thì kiểm riêng.
+  nop_chuan_bi: "soan_to_khai",
+  nop_da_nop: "soan_to_khai",
+  nop_ket_qua: "soan_to_khai",
+  nop_huy: "soan_to_khai",
 };
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null; la_demo?: boolean | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
@@ -915,6 +936,28 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const tl = await ghiNhanDaNop(db, { companyId: company.id, userId, id: String(body.id ?? ""), xacNhan: body.xac_nhan === true, ghiChu: typeof body.ghi_chu === "string" ? body.ghi_chu : undefined });
       return json({ tai_lieu: tl });
     }
+
+    // ── Prompt 5: nộp có kiểm soát (kênh: người dùng tự nộp, MIMI theo dõi) ──────────────────
+    case "nop_ds":
+      return json({ yeu_cau: await dsYeuCauNop(db, company.id), vai_tro: vaiTro });
+    case "nop_chuan_bi": {
+      const han = typeof body.han === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.han) ? body.han : null;
+      return json({ yeu_cau: await chuanBiNop(db, { companyId: company.id, userId, taiLieuId: String(body.tai_lieu_id ?? ""), han }) });
+    }
+    case "nop_xac_nhan": {
+      // Việc hệ trọng: chỉ chủ doanh nghiệp / quản trị xác nhận nộp.
+      if (vaiTro !== "chu_so_huu" && vaiTro !== "quan_tri") return loi("KHONG_DU_QUYEN", "Chỉ chủ doanh nghiệp hoặc quản trị xác nhận nộp hồ sơ.", 403);
+      return json({ yeu_cau: await xacNhanNop(db, { companyId: company.id, userId, id: String(body.id ?? ""), xacNhan: body.xac_nhan === true }) });
+    }
+    case "nop_da_nop":
+      return json({ yeu_cau: await ghiDaNop(db, { companyId: company.id, userId, id: String(body.id ?? ""), bienNhan: String(body.bien_nhan ?? ""), ngayNop: String(body.ngay_nop ?? "") }) });
+    case "nop_ket_qua": {
+      const kqNop = body.ket_qua === "accepted" || body.ket_qua === "rejected" ? body.ket_qua : null;
+      if (!kqNop) return loi("THAM_SO", "Kết quả không hợp lệ.", 400);
+      return json({ yeu_cau: await ghiKetQua(db, { companyId: company.id, userId, id: String(body.id ?? ""), ketQua: kqNop, thongBao: String(body.thong_bao ?? "") }) });
+    }
+    case "nop_huy":
+      return json({ yeu_cau: await huyNop(db, { companyId: company.id, userId, id: String(body.id ?? "") }) });
 
     case "quet_chung_tu": {
       if (!khoaMoHinh) {
@@ -1218,7 +1261,7 @@ Deno.serve(async (req) => {
     return await xuLy(db, user.id, company, ct.vai_tro, hanhDong, body);
   } catch (e) {
     if (e instanceof LoiQuyen) return loi("KHONG_DU_QUYEN", e.message, 403);
-    if (e instanceof LoiHanhTrinh || e instanceof LoiTaiLieu) return loi("KHONG_HOP_LE", e.message, 400);
+    if (e instanceof LoiHanhTrinh || e instanceof LoiTaiLieu || e instanceof LoiNop) return loi("KHONG_HOP_LE", e.message, 400);
     // Không in thân yêu cầu: có thể chứa ảnh chứng từ hoặc câu hỏi về tiền của khách.
     console.error("tro-ly:", e instanceof Error ? e.message : e);
     return loi("LOI_HE_THONG", "MIMI gặp lỗi khi đọc dữ liệu. Thử lại sau ít phút.", 500);

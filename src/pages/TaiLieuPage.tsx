@@ -2,8 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  daNopTaiLieu, dsTaiLieu, duyetTaiLieu, moTaiLieu, TEN_DO_DAY, TEN_LOAI_TAI_LIEU, TEN_TRANG_THAI_TAI_LIEU, type TaiLieuTom,
+  chuanBiNop, daNopTaiLieu, dsNop, dsTaiLieu, duyetTaiLieu, moTaiLieu, TEN_DO_DAY, TEN_LOAI_TAI_LIEU, TEN_TRANG_THAI_TAI_LIEU,
+  type TaiLieuTom, type YeuCauNop,
 } from '@/lib/hanhTrinh';
+import NopVaTheoDoi from '@/components/tai-lieu/NopVaTheoDoi';
+
+/** Loại tài liệu nộp được cho cơ quan (báo cáo phân tích nội bộ thì không). */
+const NOP_DUOC = new Set(['explanation_letter', 'audit_pack', 'tax_readiness_pack', 'administrative_letter', 'tax_form', 'registration_document']);
 
 /**
  * Tài liệu & Chứng từ — Prompt 4 mục 18–20, 26–27.
@@ -15,7 +20,7 @@ const loiCua = (e: unknown) => (e instanceof Error ? e.message : 'Có lỗi. Th�
 const DUYET_DUOC = new Set(['chu_so_huu', 'quan_tri', 'ke_toan']);
 const DA_KHOA = new Set(['signed', 'submitted', 'accepted']);
 
-function Dong({ t, vaiTro, onDoi }: { t: TaiLieuTom; vaiTro: string; onDoi: (t: TaiLieuTom) => void }) {
+function Dong({ t, vaiTro, onDoi, onChuanBi }: { t: TaiLieuTom; vaiTro: string; onDoi: (t: TaiLieuTom) => void; onChuanBi: (y: YeuCauNop) => void }) {
   const [dang, setDang] = useState(false);
   const [xacNhan, setXacNhan] = useState<null | 'approved' | 'submitted' | 'rejected'>(null);
   const [nhanXet, setNhanXet] = useState('');
@@ -46,7 +51,13 @@ function Dong({ t, vaiTro, onDoi }: { t: TaiLieuTom; vaiTro: string; onDoi: (t: 
             <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('approved')}>Duyệt</button>
             <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('rejected')}>Không duyệt</button>
           </>}
-          {DUYET_DUOC.has(vaiTro) && <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('submitted')}>Tôi đã tự nộp</button>}
+          {DUYET_DUOC.has(vaiTro) && NOP_DUOC.has(t.loai) && (
+            <button type="button" className={nut} disabled={dang} onClick={async () => {
+              setDang(true);
+              try { onChuanBi(await chuanBiNop(t.id)); toast.success('Đã khoá bản này để nộp — xem mục "Nộp & theo dõi".'); } catch (e) { toast.error(loiCua(e)); } finally { setDang(false); }
+            }}>Chuẩn bị nộp</button>
+          )}
+          {DUYET_DUOC.has(vaiTro) && !NOP_DUOC.has(t.loai) && <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('submitted')}>Tôi đã tự nộp</button>}
         </div>
       )}
       {xacNhan && (
@@ -73,10 +84,17 @@ function Dong({ t, vaiTro, onDoi }: { t: TaiLieuTom; vaiTro: string; onDoi: (t: 
 
 export default function TaiLieuPage() {
   const [ds, setDs] = useState<TaiLieuTom[] | null>(null);
+  const [nop, setNop] = useState<YeuCauNop[]>([]);
+  const doiNop = (y: YeuCauNop) => {
+    setNop((cu) => [y, ...cu.filter((x) => x.id !== y.id)]);
+    void dsTaiLieu().then((r) => setDs(r.tai_lieu)).catch(() => undefined);
+  };
   const [vaiTro, setVaiTro] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
   const nap = useCallback(async () => {
     try { const r = await dsTaiLieu(); setDs(r.tai_lieu); setVaiTro(r.vai_tro); setLoi(null); } catch (e) { setLoi(loiCua(e)); }
+    // Danh sách nộp đọc riêng: lỗi ở đây không được làm mất thư viện.
+    try { setNop((await dsNop()).yeu_cau); } catch { /* máy chủ cũ chưa có hành động này */ }
   }, []);
   useEffect(() => { void nap(); }, [nap]);
 
@@ -92,12 +110,13 @@ export default function TaiLieuPage() {
         </div>
       )}
       {!ds && !loi && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Đang đọc thư viện…</p>}
+      <NopVaTheoDoi ds={nop} vaiTro={vaiTro} onDoi={doiNop} />
       {ds && ds.length === 0 && (
         <p className="text-sm text-muted-foreground">Chưa có tài liệu nào. Hỏi MIMI "Soạn báo cáo tháng này" hoặc làm một việc trong Việc cần làm — tài liệu MIMI soạn sẽ nằm ở đây.</p>
       )}
       {ds && ds.length > 0 && (
         <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
-          {ds.map((t) => <Dong key={t.id} t={t} vaiTro={vaiTro} onDoi={(moi) => setDs((cu) => (cu ?? []).map((x) => (x.id === moi.id ? { ...x, ...moi } : x)))} />)}
+          {ds.map((t) => <Dong key={t.id} t={t} vaiTro={vaiTro} onChuanBi={doiNop} onDoi={(moi) => setDs((cu) => (cu ?? []).map((x) => (x.id === moi.id ? { ...x, ...moi } : x)))} />)}
         </ul>
       )}
     </div>

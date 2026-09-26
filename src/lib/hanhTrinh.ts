@@ -63,3 +63,28 @@ export const tienDo = (h: HanhTrinhDay) => {
 
 /** Câu hỏi gửi trợ lý để tra thủ tục của một bước — dạng câu hỏi thông tin, không mở việc mới. */
 export const cauTraThuTuc = (tieuDe: string) => `${tieuDe} cần hồ sơ gì?`;
+
+// ── Prompt 5: nộp có kiểm soát (kênh: người dùng tự nộp, MIMI theo dõi) ─────────────────────────
+export type { YeuCauNop } from '../../supabase/functions/_shared/thuc-thi/luu.ts';
+import type { YeuCauNop } from '../../supabase/functions/_shared/thuc-thi/luu.ts';
+
+export const dsNop = async () => (await goiTroLy('nop_ds')) as { yeu_cau: YeuCauNop[]; vai_tro: string };
+export const chuanBiNop = async (tai_lieu_id: string) => ((await goiTroLy('nop_chuan_bi', { tai_lieu_id })) as { yeu_cau: YeuCauNop }).yeu_cau;
+export const xacNhanNop = async (id: string) => ((await goiTroLy('nop_xac_nhan', { id, xac_nhan: true })) as { yeu_cau: YeuCauNop }).yeu_cau;
+export const ghiDaNop = async (id: string, bien_nhan: string, ngay_nop: string) => ((await goiTroLy('nop_da_nop', { id, bien_nhan, ngay_nop })) as { yeu_cau: YeuCauNop }).yeu_cau;
+export const ghiKetQuaNop = async (id: string, ket_qua: 'accepted' | 'rejected', thong_bao: string) => ((await goiTroLy('nop_ket_qua', { id, ket_qua, thong_bao })) as { yeu_cau: YeuCauNop }).yeu_cau;
+export const huyNop = async (id: string) => ((await goiTroLy('nop_huy', { id })) as { yeu_cau: YeuCauNop }).yeu_cau;
+
+export const TEN_TRANG_THAI_NOP: Record<string, string> = {
+  draft: 'Nháp', needs_validation: 'Cần kiểm lại', needs_confirmation: 'Chờ xác nhận', ready: 'Đã xác nhận — chờ bạn nộp',
+  submitting: 'Đang ghi', submitted: 'Đã nộp', waiting_external: 'Chờ cơ quan thuế', accepted: 'Được chấp nhận',
+  rejected: 'Không được chấp nhận', failed: 'Lỗi', cancelled: 'Đã huỷ', resolved: 'Xong',
+};
+
+/** Thứ tự hiện, như trung tâm hoạt động (mục 31): việc cần bạn trước. */
+export const THU_TU_NOP = ['needs_confirmation', 'needs_validation', 'ready', 'waiting_external', 'submitted', 'rejected', 'failed', 'accepted', 'resolved', 'cancelled'];
+
+export const XEM_TRUOC_NHAN: [string, string][] = [
+  ['se_xay_ra', 'Điều gì sẽ xảy ra'], ['nguoi_nhan', 'Ai nhận'], ['tai_lieu', 'Tài liệu nộp'], ['du_lieu_chia_se', 'Dữ liệu chia sẻ'],
+  ['khong_hoan_tac', 'Không hoàn tác được'], ['ket_qua_mong_doi', 'Kết quả mong đợi'], ['rui_ro', 'Rủi ro đã biết'],
+];

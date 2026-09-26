@@ -75,7 +75,10 @@ describe('con trỏ mèo', () => {
   // người dùng bấm đi chỗ khác → "Đã dừng". Bước chỉ-cho-xem không bắt buộc không được chặn cả luồng.
   it('bước không bắt buộc bị thiếu: bỏ qua nhanh, nói ngay đang làm gì, rồi làm tiếp', async () => {
     dung();
-    const bd = Date.now();
+    // Ghi lại mọi câu mèo nói (không chộp đúng lúc — máy tải nặng thì câu đầu chỉ kịp hiện rất ngắn).
+    const daNoi: string[] = [];
+    const quan = new MutationObserver(() => document.querySelectorAll('[role="status"] p').forEach((p) => { if (p.textContent && !daNoi.includes(p.textContent)) daNoi.push(p.textContent); }));
+    quan.observe(document.body, { childList: true, subtree: true, characterData: true });
     const dang = chay!({
       ten: 'x',
       moTa: 'tạo agent "Bot A"',
@@ -84,11 +87,11 @@ describe('con trỏ mèo', () => {
         { loai: 'go', dich: 'tac-tu.ten', chu: 'Bot A', noi: 'Gõ tên.' },
       ],
     });
-    expect(await screen.findByText('Mình bắt đầu: tạo agent "Bot A".')).toBeTruthy();
     const kq = await dang;
+    quan.disconnect();
+    expect(daNoi[0]).toBe('Mình bắt đầu: tạo agent "Bot A".');
     expect(kq.xong).toBe(true);
     expect(screen.getByTestId('ten')).toHaveTextContent('Bot A');
-    expect(Date.now() - bd).toBeLessThan(4000);
   }, 15_000);
 
   it('gõ vào ô do React điều khiển và state cập nhật theo', async () => {

@@ -78,6 +78,10 @@ const DANG_BI_HOI_CHUYEN_TIEN =
  */
 const NHO_NOP_THAY =
   /\b(nop (thue |to khai )?(gium|giup|thay)|nop\b.*\b(gium|giup) (toi|minh)|nop ho (toi|minh)|(gium|giup) (toi |minh )?nop)\b/;
+const HOI_TIEN_DO_HO_SO =
+  /\b((ho so|to khai|giai trinh|cong van)\b.*\b(toi dau|den dau|sao roi|the nao roi|duoc chap nhan chua|co ket qua chua|nop chua)|tien do (ho so|nop))\b/;
+const NHO_KY =
+  /\b(ky (van ban|tai lieu|hop dong|cong van|so van ban|dien tu)( nay)?|ky (gium|giup) (toi|minh)|ky so (van ban|tai lieu|hop dong))\b/;
 const NHO_CHUYEN_TIEN =
   /\b(chuyen\b.*\b(gium|giup) (toi|minh)|(gium|giup) (toi |minh )?chuyen)\b/;
 const KHAI_SAI_TRON_THUE =
@@ -131,6 +135,9 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   if (KHAI_SAI_TRON_THUE.test(s)) return ['tu_choi_khai_sai'];
   if (DANG_BI_HOI_CHUYEN_TIEN.test(s)) return ['dang_bi_hoi_chuyen_tien'];
   if (NHO_NOP_THAY.test(s)) return ['khong_nop_thay'];
+  // Prompt 5: hỏi hồ sơ đã nộp tới đâu; nhờ ký số. "ky" bỏ dấu trùng "kỳ" nên chỉ nhận cụm rõ nghĩa.
+  if (HOI_TIEN_DO_HO_SO.test(s)) return ['trang_thai_ho_so'];
+  if (NHO_KY.test(s)) return ['ky_van_ban'];
   if (NHO_CHUYEN_TIEN.test(s)) return ['khong_chuyen_tien'];
   const khop: string[] = [];
   for (const [re, id] of LUAT) if (re.test(s) && !khop.includes(id)) khop.push(id);

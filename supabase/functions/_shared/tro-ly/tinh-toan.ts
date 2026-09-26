@@ -29,6 +29,8 @@ import type { HanhTrinhDay } from '../hanh-trinh/luu.ts';
 import { buocTiepTheo, cauHoiTiepTheo, tinhBuoc } from '../hanh-trinh/dong-co.ts';
 import { MAU_HANH_TRINH, type LoaiHanhTrinh } from '../hanh-trinh/mau.ts';
 import { phanTichChenhLech } from '../phan-tich/chenh-lech.ts';
+import type { YeuCauNop } from '../thuc-thi/luu.ts';
+import { kiemNangLuc } from '../thuc-thi/nang-luc.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -160,11 +162,13 @@ export interface DuLieu {
   hanhTrinh?: { loai: LoaiHanhTrinh; luu: boolean; moi: boolean; ht: HanhTrinhDay | null } | null;
   /** Các việc đang mở của công ty — cho bộ ưu tiên và ngữ cảnh làm việc. */
   hanhTrinhMo?: HanhTrinhDay[];
+  /** Prompt 5: yêu cầu nộp đã ghi, và tài liệu sẵn sàng nộp. null = đọc lỗi. */
+  thucThi?: { yeu_cau: YeuCauNop[]; tai_lieu_cho_nop: { id: string; tieu_de: string; loai: string }[] } | null;
 }
 
 export type NguonCan =
   | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau' | 'ket_noi_ngan_hang'
-  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong' | 'thu_tuc' | 'lich_thue' | 'hanh_trinh';
+  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong' | 'thu_tuc' | 'lich_thue' | 'hanh_trinh' | 'thuc_thi';
 
 export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuLieu {
   return {
@@ -2006,16 +2010,66 @@ function giupNguoiNha(): KetQuaNangLuc {
  * Người lớn tuổi nhờ MIMI nộp hộ mà không được trả lời rõ thì sẽ tưởng đã nộp. Đó
  * là cách người ta bị phạt nộp chậm mà không biết vì sao.
  */
-function khongNopThay(): KetQuaNangLuc {
-  return kq('khong_nop_thay', 'chung_tu', 'MIMI không nộp tờ khai hay nộp thuế thay bạn.', {
+const TEN_TT_NOP: Record<string, string> = {
+  draft: 'Nháp', needs_validation: 'Cần kiểm lại', needs_confirmation: 'Chờ bạn xác nhận', ready: 'Đã xác nhận — chờ bạn nộp',
+  submitting: 'Đang ghi', submitted: 'Đã nộp', waiting_external: 'Chờ cơ quan thuế', accepted: 'Được chấp nhận',
+  rejected: 'Không được chấp nhận', failed: 'Lỗi', cancelled: 'Đã huỷ', resolved: 'Xong',
+};
+
+/**
+ * "Nộp hồ sơ này giúp tôi" (Prompt 5 mục 29): nói rõ đã chuẩn bị gì, kênh nộp có hỗ trợ không, cần xác nhận
+ * gì, gì còn phải làm ngoài MIMI — và KHÔNG tự nộp.
+ */
+function khongNopThay(d: DuLieu): KetQuaNangLuc {
+  const tvan = kiemNangLuc({ nha_cung_cap: 'cas', nang_luc: 'tax_submission', moiTruong: 'production', co: () => false });
+  const tt = d.thucThi;
+  const choNop = tt?.tai_lieu_cho_nop ?? [];
+  const dangMo = (tt?.yeu_cau ?? []).filter((y) => !['cancelled', 'resolved', 'failed'].includes(y.trang_thai));
+  return kq('khong_nop_thay', 'chung_tu', 'MIMI không nộp tờ khai hay nộp thuế thay bạn — nhưng khoá sẵn bản để bạn nộp và theo dõi tới khi có kết quả.', {
     the: [
-      { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI soạn sẵn bản nháp tờ khai từ hoá đơn và sao kê, rồi mở cổng thuế điện tử. Bạn đọc lại, ký và tự bấm nộp. Chưa bấm nộp trên cổng thuế thì tờ khai chưa được nộp.' },
-      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Nếu người nhà làm giùm, họ có thể soạn bản nháp trên MIMI với vai trò Kế toán; việc ký và nộp vẫn do người đứng tên hộ kinh doanh.' },
+      { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `Nộp tự động qua TVAN: chưa hỗ trợ. ${tvan.ly_do}` },
+      ...(choNop.length ? [{ loai: 'bang' as const, tieu_de: 'Tài liệu sẵn sàng nộp', cot: [{ nhan: 'Tài liệu', don_vi: 'chu' as const }], dong: choNop.slice(0, 5).map((t) => [t.tieu_de]) }] : []),
+      ...(dangMo.length ? [{ loai: 'bang' as const, tieu_de: 'Đang theo dõi', cot: [{ nhan: 'Hồ sơ', don_vi: 'chu' as const }, { nhan: 'Trạng thái', don_vi: 'chu' as const }], dong: dangMo.slice(0, 5).map((y) => [String((y.xem_truoc as { tai_lieu?: string })?.tai_lieu ?? y.loai).slice(0, 80), TEN_TT_NOP[y.trang_thai] ?? y.trang_thai]) }] : []),
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Cách làm: mở Tài liệu & Chứng từ → "Chuẩn bị nộp" (MIMI khoá đúng phiên bản) → xác nhận → bạn tự nộp trên Cổng dịch vụ công → ghi mã biên nhận → khi có thông báo của cơ quan thuế, ghi kết quả. Chưa bấm nộp trên cổng thì hồ sơ chưa được nộp.' },
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Nếu người nhà làm giùm, họ có thể soạn bản nháp trên MIMI với vai trò Kế toán; việc ký và nộp vẫn do người đứng tên.' },
     ],
+    trang: [T.taiLieu],
     de_xuat: [{
       khoa: 'mo_trang:to_khai', loai: 'mo_trang', nhan: 'Mở trang Soạn tờ khai',
       mo_ta: 'Soạn bản nháp để bạn tự ký và nộp.', tham_so: { duong_dan: '/dashboard/to-khai' },
     }],
+  });
+}
+
+/** "Hồ sơ của tôi tới đâu rồi?" (mục 30): trạng thái ĐÃ GHI, nói rõ nguồn. Không đoán, không nói "xong" sớm. */
+export function trangThaiHoSo(d: DuLieu): KetQuaNangLuc {
+  const tt = d.thucThi;
+  if (!tt) return kq('trang_thai_ho_so', 'chung_tu', 'Chưa đọc được trạng thái hồ sơ lúc này. Thử lại sau ít phút.', { trang: [T.taiLieu] });
+  const ds = tt.yeu_cau.filter((y) => y.trang_thai !== 'cancelled');
+  if (!ds.length) return kq('trang_thai_ho_so', 'chung_tu', 'Bạn chưa có hồ sơ nào đang theo dõi trên MIMI. Muốn theo dõi, vào Tài liệu & Chứng từ → "Chuẩn bị nộp".', { trang: [T.taiLieu] });
+  const moi = ds[0];
+  const nguon = moi.nguon_ket_qua === 'nguoi_dung_khai' || moi.nguon_tham_chieu === 'nguoi_dung_khai' ? ' (theo thông tin bạn ghi — MIMI chưa tra trực tiếp được cổng của cơ quan thuế)' : '';
+  const cau = moi.trang_thai === 'waiting_external'
+    ? `Hồ sơ gần nhất đã nộp ngày ${moi.ngay_nop ? ngayVN(moi.ngay_nop) : '—'} (biên nhận ${moi.tham_chieu_ngoai ?? '—'}) và đang chờ thông báo của cơ quan thuế${nguon}. Chưa có kết quả thì chưa phải là xong.`
+    : `Hồ sơ gần nhất: ${TEN_TT_NOP[moi.trang_thai] ?? moi.trang_thai}${moi.ket_qua_co_quan ? ` — ${moi.ket_qua_co_quan}` : ''}${nguon}.`;
+  return kq('trang_thai_ho_so', 'chung_tu', cau, {
+    the: [{ loai: 'bang', tieu_de: 'Hồ sơ đang theo dõi', cot: [{ nhan: 'Hồ sơ', don_vi: 'chu' }, { nhan: 'Trạng thái', don_vi: 'chu' }, { nhan: 'Biên nhận', don_vi: 'chu' }],
+      dong: ds.slice(0, 8).map((y) => [String((y.xem_truoc as { tai_lieu?: string })?.tai_lieu ?? y.loai).slice(0, 80), TEN_TT_NOP[y.trang_thai] ?? y.trang_thai, y.tham_chieu_ngoai ?? '—']) }],
+    trang: [T.taiLieu],
+  });
+}
+
+/** "Ký văn bản này" (mục 16–19): kênh ký chưa bật — nói thật, kèm lý do từ sổ năng lực. */
+export function kyVanBan(): KetQuaNangLuc {
+  const pdf = kiemNangLuc({ nha_cung_cap: 'cas', nang_luc: 'document_signing', moiTruong: 'production', co: () => false });
+  const xml = kiemNangLuc({ nha_cung_cap: 'cas', nang_luc: 'tax_xml_signing', moiTruong: 'production', co: () => false });
+  return kq('ky_van_ban', 'chung_tu', 'MIMI chưa ký số được văn bản. Bạn ký bằng chữ ký số hoặc ký tay như hiện nay.', {
+    the: [
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Ký văn bản PDF: ${pdf.ly_do}` },
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Ký tờ khai XML: ${xml.ly_do}` },
+      { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Khi kênh ký được bật, MIMI sẽ khoá đúng phiên bản trước khi ký — văn bản đã ký không sửa được.' },
+    ],
+    trang: [T.taiLieu],
   });
 }
 
@@ -2056,7 +2110,9 @@ export const NANG_LUC: Record<string, NangLuc> = {
   dang_bi_hoi_chuyen_tien: { nhom: 'ngan_hang', can: [], chay: dangBiHoiChuyenTien, mo_ta: 'Người dùng mô tả một cuộc gọi hoặc tin nhắn đang hối chuyển tiền (xưng công an, ngân hàng, tài khoản tạm giữ): cảnh báo dừng lại và chỉ cách kiểm tra. Không quét sao kê, vì người đang bị gọi chưa chuyển gì.' },
   tien_vao_khong_phai_doanh_thu: { nhom: 'chung_tu', can: ['giao_dich'], chay: tienVaoKhongPhaiDoanhThu, mo_ta: 'Hỏi tiền người nhà chuyển, tiền vay, tiền góp vốn có tính là doanh thu không, hoặc nhờ lọc các khoản đó trên sao kê: trả lời thẳng là không, rồi đọc nội dung chuyển khoản của các khoản tiền vào năm nay và chỉ ra khoản nào giống tiền vay, người nhà, góp vốn, hoàn tiền, đặt cọc — chỉ ra, không tự trừ khỏi doanh thu.' },
   giup_nguoi_nha: { nhom: 'tro_ly', can: [], chay: giupNguoiNha, mo_ta: 'Người nhà (thường là con) muốn theo dõi hoặc làm giấy tờ giùm chủ hộ kinh doanh từ xa: cách mời thành viên, chọn vai trò, và những gì vai trò đó không làm được.' },
-  khong_nop_thay: { nhom: 'chung_tu', can: [], chay: khongNopThay, mo_ta: 'Người dùng nhờ MIMI nộp tờ khai hoặc nộp thuế giùm: nói rõ MIMI không nộp thay, chỉ soạn bản nháp để người đứng tên tự ký và nộp.' },
+  trang_thai_ho_so: { nhom: 'chung_tu', can: ['thuc_thi'], chay: trangThaiHoSo, mo_ta: 'Hồ sơ đã nộp tới đâu: đã xác nhận, đã nộp (biên nhận), đang chờ cơ quan thuế, được chấp nhận hay không — theo thông tin đã ghi, nói rõ nguồn.' },
+  ky_van_ban: { nhom: 'chung_tu', can: [], chay: kyVanBan, mo_ta: 'Người dùng nhờ ký số một văn bản: nói rõ kênh ký chưa bật và vì sao.' },
+  khong_nop_thay: { nhom: 'chung_tu', can: ['thuc_thi'], chay: khongNopThay, mo_ta: 'Người dùng nhờ MIMI nộp tờ khai hoặc nộp thuế giùm: nói rõ MIMI không nộp thay, chỉ soạn bản nháp để người đứng tên tự ký và nộp.' },
   khong_chuyen_tien: { nhom: 'ngan_hang', can: [], chay: khongChuyenTien, mo_ta: 'Người dùng nhờ MIMI chuyển tiền giùm: nói rõ MIMI không giữ và không chuyển tiền, và mời kiểm tra khoản chuyển trước.' },
   tu_choi_khai_sai: { nhom: 'chung_tu', can: [], chay: tuChoiKhaiSai, mo_ta: 'Từ chối giúp khai thấp doanh thu hay né thuế, nói lý do và chỉ cách giảm thuế hợp pháp.' },
   ...Object.fromEntries(Object.entries(CHUA_LAM_DUOC).map(([id, m]) => [id, {
