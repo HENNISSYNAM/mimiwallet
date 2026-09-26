@@ -15,8 +15,6 @@ import CapNhatSanPham from '@/components/landing/CapNhatSanPham';
 import KhamPhaThem from '@/components/landing/KhamPhaThem';
 import {
   ScoringBolt,
-  CashflowChart,
-  CapitalVault,
   QuantumShield,
   InvoiceDoc,
   LearnCap,
@@ -32,7 +30,7 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import mimiLogo from '@/assets/mimi-cat.png';
 import MimiCat from '@/components/brand/MimiCat';
-import { QuantumLockArt, MLScoreArt, RLSArt } from '@/components/illustrations/TechPillars';
+import { QuantumLockArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import featureSteps from '@/assets/feature-steps.png';
@@ -286,7 +284,7 @@ function ProcessFlow() {
                     className="text-3xl font-mono font-extrabold text-foreground"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
                   >
-                    ₫2,500,000,000
+                    ₫7.519.000
                   </motion.p>
                   <p className="text-xs text-mimi-green mt-1 font-medium">{t('process.disbursedSuccess')}</p>
                 </motion.div>
@@ -524,11 +522,11 @@ function TechPillarCard({
  */
 export type KhoaKhoi =
   | 'hero' | 'dai_logo' | 'cong_nhan' | 'he_thong_roi_rac' | 'agent_ai' | 'demo' | 'bao_mat_video' | 'nhat_ky'
-  | 'cap_nhat' | 'nang_luc' | 'cong_nghe' | 'quy_trinh' | 'giai_phap' | 'minh_bach' | 'bang_gia' | 'so_lieu_that'
+  | 'cap_nhat' | 'nang_luc' | 'cong_nghe' | 'quy_trinh' | 'giai_phap' | 'minh_bach' | 'bang_gia'
   | 'kham_pha' | 'dang_ky';
 
 export const KHOI_TRANG_CHU: readonly KhoaKhoi[] = [
-  'hero', 'dai_logo', 'cong_nhan', 'he_thong_roi_rac', 'quy_trinh', 'bang_gia', 'so_lieu_that', 'kham_pha', 'dang_ky',
+  'hero', 'dai_logo', 'cong_nhan', 'he_thong_roi_rac', 'quy_trinh', 'bang_gia', 'kham_pha', 'dang_ky',
 ];
 
 export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: readonly KhoaKhoi[]; dauTrang?: React.ReactNode } = {}) {
@@ -757,8 +755,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             </h2>
             <p className="mt-4 text-muted-foreground text-lg">{t('landing.tech.subtitle')}</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[QuantumLockArt, MLScoreArt, RLSArt].map((Art, i) => {
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {[QuantumLockArt, RLSArt].map((Art, i) => {
               const pillar = (t('landing.tech.pillars', { returnObjects: true }) as { title: string; tag: string; desc: string }[])[i];
               return <TechPillarCard key={pillar.title} Art={Art} title={pillar.title} tag={pillar.tag} desc={pillar.desc} index={i} />;
             })}
@@ -1080,19 +1078,19 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
                 its figures can be checked, an auditable scorecard beats an
                 unverifiable 94%.
               */}
-              <span className="text-xs text-primary font-mono uppercase tracking-widest">Cách chấm điểm</span>
+              <span className="text-xs text-primary font-mono uppercase tracking-widest">Minh bạch</span>
               <h2 className="font-serif font-normal text-[clamp(1.75rem,3.2vw,2.375rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3 mb-6">
                 Không phải hộp đen —{' '}
                 <span className="text-gradient">bạn xem được từng bước</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Điểm tín dụng tính bằng thẻ điểm năm yếu tố, trọng số công bố công khai. Mỗi điểm số tách được ra thành năm con số đã tạo ra nó — không có yếu tố nào bạn không nhìn thấy.
+                Mỗi việc MIMI nhắc đều ghi lại bằng chứng, và nói rõ bằng chứng đó do máy chủ đã kiểm trên dữ liệu hay do bạn tự xác nhận. Điều luật MIMI dẫn là câu trích nguyên văn, kèm số hiệu văn bản.
               </p>
               <div className="space-y-4">
                 {[
-                  { label: 'Năm yếu tố, trọng số công khai', value: 'Xu hướng doanh thu 25% · Đúng hạn hoá đơn 25%', icon: <Brain size={16} /> },
-                  { label: 'Phân rã từng lần chấm', value: 'Xem giá trị thô và điểm chuẩn hoá của từng yếu tố', icon: <TrendingUp size={16} /> },
-                  { label: 'Tính trên giao dịch thật', value: 'Dữ liệu 12 tháng từ tài khoản bạn đã nối', icon: <Shield size={16} /> },
+                  { label: 'Bằng chứng ghi rõ độ chắc', value: '"MIMI đã kiểm trên dữ liệu" khác với "theo xác nhận của bạn"', icon: <Brain size={16} /> },
+                  { label: 'Căn cứ trích nguyên văn', value: 'Số hiệu văn bản, điều, khoản — không diễn giải theo trí nhớ', icon: <TrendingUp size={16} /> },
+                  { label: 'Ai xác nhận khoản nào', value: 'Mỗi lần xác nhận phân loại đều ghi lại ai đã bấm', icon: <Shield size={16} /> },
                 ].map((item, i) => (
                   <motion.div
                     key={item.label}
@@ -1119,7 +1117,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               className="relative"
             >
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
-                <NetworkGraph labels={['Giao dịch', 'Đặc trưng', 'Mô hình ML', 'Điểm số']} />
+                <NetworkGraph labels={['Sao kê', 'Hoá đơn', 'Đối chiếu', 'Chứng từ']} />
                 <motion.div 
                   className="mt-4 relative overflow-hidden rounded-xl group/ai cursor-pointer"
                   whileHover={{ scale: 1.03, y: -4 }}
@@ -1173,8 +1171,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
-            <PricingCard name="Growth" price="249,000₫" features={['Tự phân loại chi phí (đang xây)', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
-            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" annual={annual} />
+            <PricingCard name="Growth" price="249,000₫" features={['Tự phân loại chi phí (đang xây)', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng (đang xây)', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
+            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt (đang xây)', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" annual={annual} />
           </div>
 
           {/*
@@ -1193,60 +1191,6 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           */}
           <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed">
             MIMI dựng sổ chi phí và bảng kê để bạn kê khai. MIMI không nộp thuế thay bạn và không cấp vốn.
-          </p>
-        </div>
-      </section>
-      </>)}
-
-      {hien('so_lieu_that') && (<>
-      {/* ═══ LIVE PRODUCTION PROOF ═══
-          Replaces invented customer testimonials. Every number below is what the
-          deployed scoring model actually returned for the demo company, so it can
-          be reproduced live in front of a judge. */}
-      <section className="py-24 bg-secondary/20">
-        <div className="container mx-auto px-4">
-          <motion.div {...fadeUp(0)} className="text-center mb-14">
-            <span className="text-xs text-primary font-mono uppercase tracking-widest">Bằng chứng vận hành</span>
-            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Số này lấy từ hệ thống đang chạy</h2>
-            <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-              Mô hình chấm điểm tính cho một doanh nghiệp mẫu, từ 12 tháng giao dịch, trên đúng máy chủ đang phục vụ khách.
-            </p>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {[
-              { icon: ScoringBolt, value: '701', unit: '/ 850', label: 'Điểm tín dụng', note: 'Hạng B — Tốt' },
-              { icon: CashflowChart, value: '34,1', unit: '%', label: 'Xác suất vỡ nợ (PD)', note: 'Hồi quy logistic' },
-              /* Bỏ "Hạn mức khả dụng 1,36 tỷ": đọc lên nghe như một khoản vay đã được
-                 duyệt, trong khi MIMI không có giấy phép tín dụng và không có đối tác
-                 giải ngân — chính lý do mục "Vay vốn" bị gỡ khỏi thanh điều hướng
-                 ngày 17/08/2026. Chữ trên trang chủ khi đó không được sửa theo. */
-              { icon: CapitalVault, value: '12', unit: ' tháng', label: 'Dữ liệu dùng để chấm', note: 'Sao kê thật của doanh nghiệp' },
-            ].map((m, i) => (
-              <motion.div
-                key={m.label}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ delay: i * 0.09, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="rounded-5xl border hairline bg-card p-6 text-center"
-                style={{ boxShadow: 'var(--shadow-soft)' }}
-              >
-                <span className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
-                  <m.icon size={22} />
-                </span>
-                <p className="mt-4 font-mono text-3xl font-bold tracking-tight text-foreground">
-                  {m.value}
-                  <span className="text-lg text-muted-foreground">{m.unit}</span>
-                </p>
-                <p className="mt-1.5 text-sm font-semibold text-foreground">{m.label}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{m.note}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Lấy từ tài khoản demo. Mở ứng dụng là tự tính lại được.
           </p>
         </div>
       </section>

@@ -43,31 +43,12 @@ const vi = {
     trustNetZero: 'Tài chính xanh',
   },
 
-  // Logo cloud
-  logoCloud: {
-    title: 'Đối tác & tích hợp',
-  },
-
-  // Metrics
-  metrics: {
-    businesses: 'Doanh nghiệp đang dùng',
-    businessesSub: '+23% tháng này',
-    capital: 'Vốn đã giải ngân',
-    capitalSuffix: ' Nghìn tỷ',
-    capitalSub: '↑ từ ₫1.2T năm 2024',
-    disbursement: 'Thời gian giải ngân',
-    disbursementSuffix: ' giờ',
-    disbursementSub: 'Trung bình toàn hệ thống',
-    satisfaction: 'Tỷ lệ hài lòng',
-    satisfactionSub: 'NPS Score: 72',
-  },
-
   // Process
   process: {
     sectionLabel: 'Quy trình',
-    title: 'Từ đăng ký đến nhận tiền —',
+    title: 'Từ sao kê đến bộ chứng từ —',
     titleHighlight: '3 bước',
-    subtitle: 'Quy trình tự động hoàn toàn, không giấy tờ, không phỏng vấn',
+    subtitle: 'Nối ngân hàng chỉ đọc, MIMI xếp từng khoản, bạn duyệt trước khi kê khai',
     step: 'Bước',
     steps: [
       /*
@@ -143,68 +124,6 @@ const vi = {
     offsetted: 'Đã offset',
     netZero: 'Net Zero 2050',
     sustainableFuture: 'Hướng tới tương lai bền vững',
-  },
-
-  // AI Section
-  ai: {
-    // Mirrors the rewritten section in Landing.tsx — see the long note there.
-    // The scorer is a fixed-weight linear scorecard, not a trained model, and
-    // no forecast accuracy has ever been measured.
-    sectionLabel: 'Cách chấm điểm',
-    title: 'Không phải hộp đen —',
-    titleHighlight: 'bạn xem được từng bước',
-    subtitle: 'Điểm tín dụng tính bằng thẻ điểm năm yếu tố, trọng số công bố công khai. Mỗi điểm số tách được ra thành năm con số đã tạo ra nó.',
-    creditScoring: 'Xu hướng doanh thu 25% · Đúng hạn hoá đơn 25%',
-    cashFlowForecast: 'Xem giá trị thô và điểm chuẩn hoá của từng yếu tố',
-    riskAnalysis: 'Dữ liệu 12 tháng từ tài khoản bạn đã nối',
-  },
-
-  // Pricing
-  pricing: {
-    sectionLabel: 'Bảng giá',
-    title: 'Chọn gói phù hợp',
-    monthly: 'Hàng tháng',
-    annual: 'Hàng năm',
-    annualDiscount: '-20%',
-    perMonth: '/tháng',
-    save20: '(tiết kiệm 20%)',
-    mostPopular: 'Phổ biến nhất',
-    contact: 'Liên hệ',
-    free: 'Miễn phí',
-    freePlan: {
-      features: ['Chấm điểm tín dụng cơ bản', '1 tài khoản ngân hàng', 'Báo cáo dòng tiền tháng', 'Hỗ trợ qua email'],
-      cta: 'Bắt đầu miễn phí',
-    },
-    growthPlan: {
-      features: ['Chấm điểm kèm phân rã từng yếu tố', 'Hồ sơ ứng vốn hóa đơn', 'Không giới hạn tài khoản ngân hàng', 'Cảnh báo vĩ mô cá nhân hóa', 'Hồ sơ phát thải cho tín dụng xanh', '14 ngày dùng thử'],
-      cta: 'Dùng thử 14 ngày',
-    },
-    enterprisePlan: {
-      features: ['Hạn mức custom', 'White-label', 'Dedicated API', 'Account manager', 'SLA 99.9%', 'On-premise option'],
-      cta: 'Liên hệ sales',
-    },
-  },
-
-  // Testimonials
-  testimonials: {
-    sectionLabel: 'Khách hàng',
-    title: 'Được tin tưởng bởi 1,247+ doanh nghiệp',
-    items: [
-      { name: 'Nguyễn Thành', role: 'CEO, Phúc Lộc Foods', quote: 'MIMI WALLET giúp chúng tôi theo dõi carbon footprint và tiếp cận vốn xanh dễ dàng hơn bao giờ hết.' },
-      { name: 'Minh Châu', role: 'CFO, Chuỗi nhà hàng 9 chi nhánh', quote: 'Dashboard tài chính xanh giúp tôi chứng minh ESG với nhà đầu tư quốc tế.' },
-      { name: 'Đức Huy', role: 'Founder, XNK Đức Phát', quote: 'Tín chỉ carbon từ MIMI WALLET giúp sản phẩm XK của chúng tôi đạt chuẩn EU Green Deal.' },
-    ],
-  },
-
-  // CTA
-  cta: {
-    title: 'Sẵn sàng chuyển đổi xanh?',
-    subtitle: 'Đăng ký ngay hôm nay — miễn phí, không cần thẻ tín dụng, không ràng buộc.',
-    emailPlaceholder: 'Email doanh nghiệp',
-    companyPlaceholder: 'Tên công ty',
-    button: 'Nhận tư vấn miễn phí →',
-    success: '✓ Đã ghi nhận! Chúng tôi sẽ liên hệ trong 24h.',
-    privacy: 'Bảo mật dữ liệu theo chuẩn ISO 27001',
   },
 
   // Footer
@@ -350,7 +269,7 @@ const vi = {
     password: 'Mật khẩu',
     confirmPassword: 'Xác nhận mật khẩu',
     agreeTerms: 'Tôi đồng ý với Điều khoản sử dụng và Chính sách bảo mật',
-    emailWarn: 'Nên dùng email doanh nghiệp để tăng điểm tín dụng',
+    emailWarn: 'Nên dùng email doanh nghiệp để MIMI nhận ra công ty của bạn',
     taxIdLabel: 'Mã số thuế',
     companyName: 'Tên công ty',
     industry: 'Ngành nghề',
