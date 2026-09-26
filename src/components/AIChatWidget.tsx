@@ -7,10 +7,11 @@ import { X, Send, Volume2, Loader2, AlertTriangle, ArrowUpRight } from 'lucide-r
 // cùng người dùng — nó là MIMI, không phải một nhân vật riêng.
 import mimiAgent from '@/assets/mimi-cat.png';
 import { toast } from 'sonner';
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { nhanViec } from '@/lib/mimiLamHo';
 import { useMimiLamHo } from '@/components/mimi/MimiLamHo';
 import { goiTroLy } from '@/lib/goiTroLy';
+import { docGiong, dungDoc } from '@/lib/docGiong';
+import { laLenhPet } from '@/lib/petMimi';
 import { dungLichSu, type TraLoi } from '@/lib/troLy';
 
 /**
@@ -23,8 +24,6 @@ import { dungLichSu, type TraLoi } from '@/lib/troLy';
  */
 
 type Msg = { role: 'user' | 'assistant'; content: string; traLoi?: TraLoi };
-
-const TTS_URL = `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
 // Opening questions steer what people think this product is for, so they track
 // the tax and cost work rather than the invoice advance MIMI cannot provide.
@@ -65,9 +64,29 @@ function ChiTietTraLoi({ cau, traLoi }: { cau: string; traLoi: TraLoi }) {
   );
 }
 
-export default function AIChatWidget() {
+/**
+ * Pet MIMI (26/09/2026) điều khiển khung chat này: mở/đóng từ nút bút, gửi câu nói bằng giọng, đặt khung
+ * cạnh pet, và nhận trạng thái để pet đổi dáng. Không truyền gì thì khung chạy như trước (nút tròn góc phải).
+ */
+export interface TrangThaiChat { dangTraLoi: boolean; dangLamHo: boolean; loi: boolean; chuaDoc: number }
+export interface DieuKhienChat {
+  mo?: boolean;
+  datMo?: (mo: boolean) => void;
+  anNut?: boolean;
+  /** Góc trên-trái của khung trên màn rộng (máy tính); màn hẹp vẫn là tấm trượt từ dưới lên. */
+  viTriKhung?: { left: number; top: number } | null;
+  cauGui?: { id: number; cau: string } | null;
+  baoTrangThai?: (s: TrangThaiChat) => void;
+  onLenhPet?: () => void;
+}
+
+export default function AIChatWidget(dk: DieuKhienChat = {}) {
   const { chay, dangChay } = useMimiLamHo();
-  const [open, setOpen] = useState(false);
+  const [moTrong, setMoTrong] = useState(false);
+  const open = dk.mo ?? moTrong;
+  const setOpen = (v: boolean) => { setMoTrong(v); dk.datMo?.(v); };
+  const [loi, setLoi] = useState(false);
+  const [chuaDoc, setChuaDoc] = useState(0);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -78,9 +97,21 @@ export default function AIChatWidget() {
     scrollRef.current?.scrollTo?.({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  // Khung mở là người dùng đã xem: xoá đếm chưa đọc.
+  useEffect(() => { if (open) setChuaDoc(0); }, [open]);
+  const baoTrangThai = dk.baoTrangThai;
+  useEffect(() => {
+    baoTrangThai?.({ dangTraLoi: isLoading, dangLamHo: dangChay, loi, chuaDoc });
+  }, [baoTrangThai, isLoading, dangChay, loi, chuaDoc]);
+  const moRef = useRef(open);
+  moRef.current = open;
+  const coTraLoiMoi = () => { if (!moRef.current) setChuaDoc((n) => n + 1); };
+
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || isLoading || dangChay) return;
+    if (laLenhPet(content) && dk.onLenhPet) { setInput(''); dk.onLenhPet(); return; }
+    setLoi(false);
     const userMsg: Msg = { role: 'user', content };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -98,6 +129,7 @@ export default function AIChatWidget() {
       setOpen(false);
       const ketQua = await chay(kichBan);
       setMessages((prev) => [...prev, { role: 'assistant', content: ketQua.cau }]);
+      if (!ketQua.xong) setLoi(true);
       setOpen(true);
       return;
     }
@@ -113,45 +145,48 @@ export default function AIChatWidget() {
       }
       const traLoi = (await goiTroLy('hoi', { cau: content, pham_vi: null, lich_su: dungLichSu(luot) })) as TraLoi;
       setMessages((prev) => [...prev, { role: 'assistant', content: traLoi.cau, traLoi }]);
+      coTraLoiMoi();
     } catch (e) {
+      setLoi(true);
       toast.error(e instanceof Error && e.message ? e.message : 'MIMI chưa trả lời được. Thử lại sau ít phút.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  /*
+   * Đọc bằng giọng có sẵn của trình duyệt (26/09/2026) — không qua ElevenLabs: miễn phí, không khoá,
+   * câu trả lời không rời máy người dùng. Bấm lần nữa để dừng. Xem `lib/docGiong.ts`.
+   */
   const speakLast = async () => {
+    if (isSpeaking) { dungDoc(); setIsSpeaking(false); return; }
     const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
-    if (!lastAssistant || isSpeaking) return;
+    if (!lastAssistant) return;
     setIsSpeaking(true);
-
     try {
-      const resp = await fetch(TTS_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ text: lastAssistant.content.slice(0, 1000) }),
-      });
-
-      if (!resp.ok) throw new Error('TTS failed');
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
-      await audio.play();
-    } catch {
-      toast.error('Không thể phát giọng nói');
+      const kq = await docGiong(lastAssistant.content);
+      if (kq === 'khong_ho_tro') toast.error('Trình duyệt này chưa đọc được giọng nói.');
+      if (kq === 'khong_co_giong_viet') toast.error('Máy chưa có giọng đọc tiếng Việt. Cài giọng tiếng Việt trong cài đặt ngôn ngữ của máy rồi thử lại.');
+    } finally {
       setIsSpeaking(false);
     }
   };
 
+  useEffect(() => () => dungDoc(), []);
+
+  const cauGui = dk.cauGui;
+  const daGui = useRef<number | null>(null);
+  useEffect(() => {
+    if (!cauGui || daGui.current === cauGui.id) return;
+    daGui.current = cauGui.id;
+    void send(cauGui.cau);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cauGui]);
+
   return (
     <>
-      {/* FAB — gradient pill */}
-      <motion.button
+      {/* FAB — gradient pill (ẩn khi pet MIMI điều khiển) */}
+      {!dk.anNut && <motion.button
         whileTap={{ scale: 0.94 }}
         onClick={() => setOpen(!open)}
         className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 h-14 pl-4 pr-5 rounded-full bg-gradient-to-br from-primary to-mimi-green text-white flex items-center gap-2 shadow-[0_8px_28px_hsla(var(--blue-500)/0.35)]"
@@ -163,7 +198,7 @@ export default function AIChatWidget() {
           <img src={mimiAgent} alt="" aria-hidden draggable={false} className="w-8 h-8 no-save" />
         )}
         {!open && <span className="text-sm font-semibold hidden sm:inline">Trợ lý AI</span>}
-      </motion.button>
+      </motion.button>}
 
       {/* Chat panel */}
       <AnimatePresence>
@@ -173,6 +208,7 @@ export default function AIChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            style={dk.viTriKhung && typeof window !== 'undefined' && window.innerWidth >= 640 ? { left: dk.viTriKhung.left, top: dk.viTriKhung.top, right: 'auto', bottom: 'auto' } : undefined}
             className="fixed z-50 flex flex-col overflow-hidden lg-surface lg-regular
                        inset-x-0 bottom-0 rounded-t-3xl max-h-[82vh] safe-bottom
                        sm:inset-x-auto sm:bottom-24 lg:sm:bottom-24 sm:right-6 sm:w-[380px] sm:max-h-[560px] sm:rounded-3xl"
@@ -197,9 +233,10 @@ export default function AIChatWidget() {
                 {messages.some(m => m.role === 'assistant') && (
                   <button
                     onClick={speakLast}
-                    disabled={isSpeaking}
+                    aria-label={isSpeaking ? 'Dừng đọc' : 'Nghe phản hồi'}
+                    aria-pressed={isSpeaking}
                     className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground hover:text-foreground pressable"
-                    title="Nghe phản hồi"
+                    title={isSpeaking ? 'Dừng đọc' : 'Nghe phản hồi'}
                   >
                     <Volume2 size={16} className={isSpeaking ? 'text-primary animate-pulse' : ''} />
                   </button>

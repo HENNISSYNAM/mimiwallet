@@ -17,7 +17,7 @@ import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
 import { ScanLine } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import AIChatWidget from '@/components/AIChatWidget';
+import PetMimi from '@/components/mimi/PetMimi';
 import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
 import { toast } from 'sonner';
 import { useScrolled } from '@/hooks/useScrolled';
@@ -386,7 +386,7 @@ export default function DashboardLayout() {
         {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
         {/* Trên màn MIMI Assistant đã có ô hỏi ở giữa; nút chat nổi chỉ là ô hỏi thứ hai. */}
         <MimiLamHoProvider>
-          {location.pathname !== '/dashboard/tro-ly' && <AIChatWidget />}
+          {location.pathname !== '/dashboard/tro-ly' && <PetMimi />}
         </MimiLamHoProvider>
       </div>
     </div>

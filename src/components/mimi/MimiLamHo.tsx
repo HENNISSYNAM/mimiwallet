@@ -139,6 +139,9 @@ export function MimiLamHoProvider({ children }: { children: ReactNode }) {
       viRef.current = batDau;
       setVi(batDau);
       setHien(true);
+      // Nói ngay mình đang làm gì: mèo đứng im không lời là người dùng tưởng nó treo rồi bấm đi chỗ
+      // khác — và cú bấm đó bị hiểu là "giành lại quyền" (lỗi 26/09/2026: "tạo agent" → "Đã dừng").
+      setNoi(`Mình bắt đầu: ${kb.moTa}.`);
 
       try {
         for (const b of kb.buoc) {
@@ -153,7 +156,12 @@ export function MimiLamHoProvider({ children }: { children: ReactNode }) {
 
           // 8 giây: trang vừa mở còn phải tải dữ liệu xong mới hiện nút. Chờ 4
           // giây thì mạng chậm là mèo báo "không thấy" trước khi trang kịp hiện.
-          const el = await choDich(b.dich, 8000);
+          // Bước "chỉ cho xem" không bắt buộc (neuKhongThay === '') thì chỉ chờ 0,7 giây: mục đó có thể
+          // không còn trên thanh bên (vd. "Kiểm soát agent" rời thanh bên khi gộp trang) — trước đây mèo
+          // đứng im 8 giây chờ nó.
+          const tuyChon = b.loai === 'chi' && b.neuKhongThay === '';
+          if (!tuyChon) setNoi((cu) => cu || 'Đang chờ trang tải xong…');
+          const el = await choDich(b.dich, tuyChon ? 700 : 8000);
           if (!el) {
             if (biDung.current) return { xong: false, cau: 'Đã dừng. Phần còn lại bạn làm tiếp nhé.' };
             if (b.loai === 'chi' && b.neuKhongThay !== undefined) {
