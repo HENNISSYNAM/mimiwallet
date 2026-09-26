@@ -6,7 +6,7 @@
  */
 import { mocKeTiep, type MocThue } from './lich-thue.ts';
 
-export type TrangThaiSanSang = 'san_sang' | 'thieu_du_lieu' | 'can_xac_minh' | 'khong_co_viec';
+export type TrangThaiSanSang = 'san_sang' | 'bi_chan' | 'thieu_du_lieu' | 'can_xac_minh' | 'khong_co_viec';
 
 export interface SanSangThue {
   ky: string | null;
@@ -22,6 +22,8 @@ export interface SanSangThue {
   so_khoan_chua_phan_loai: number;
   giay_to_can: string[];
   giay_to_thieu: string[];
+  /** Điều CHẶN tờ khai (vd. doanh thu chưa rõ nhóm hoạt động) — khác "thiếu giấy tờ". */
+  chan: string[];
   du_kien_thieu: string[];
   viec_tiep: string[];
   do_tin_cay: 'cao' | 'trung_binh' | 'thap';
@@ -44,7 +46,12 @@ const GIAY_TO: Partial<Record<MocThue['loai'], string[]>> = {
   quyet_toan: ['Sổ doanh thu, chi phí cả năm', 'Hoá đơn đầu vào cả năm'],
 };
 
-export function sanSangThue(lich: MocThue[], s: SoLieuSanSang): SanSangThue {
+/** Doanh thu chưa rõ nhóm hoạt động (chỉ hộ kinh doanh: mỗi nhóm một dòng, một tỷ lệ trên tờ khai). */
+export interface HoatDongChuaRo { so_tien: number; so_khoan: number }
+
+const tienGon = (n: number) => `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ`;
+
+export function sanSangThue(lich: MocThue[], s: SoLieuSanSang, hoatDongChuaRo: HoatDongChuaRo | null = null): SanSangThue {
   const moc = mocKeTiep(lich);
   const giay_to_can = moc ? GIAY_TO[moc.loai] ?? [] : [];
   const giay_to_thieu: string[] = [];
@@ -52,13 +59,19 @@ export function sanSangThue(lich: MocThue[], s: SoLieuSanSang): SanSangThue {
   if (giay_to_can.some((g) => g.startsWith('Phân loại')) && s.so_chua_ro > 0) giay_to_thieu.push(`Phân loại tiền vào: còn ${s.so_chua_ro} khoản chưa xác nhận`);
   const du_kien_thieu = [...new Set(lich.filter((m) => m.trang_thai === 'can_xac_minh' && m.cau_hoi).map((m) => m.cau_hoi as string))];
 
+  const chan: string[] = [];
+  if (moc && hoatDongChuaRo && hoatDongChuaRo.so_tien > 0) {
+    chan.push(`${tienGon(hoatDongChuaRo.so_tien)} doanh thu chưa xác định nhóm hoạt động${hoatDongChuaRo.so_khoan ? ` (${hoatDongChuaRo.so_khoan} khoản)` : ''}`);
+  }
   const viec_tiep: string[] = [];
+  if (chan.length) viec_tiep.push(`Phân loại ${tienGon(hoatDongChuaRo!.so_tien)} doanh thu trước khi hoàn tất tờ khai`);
   if (moc?.cau_hoi) viec_tiep.push(`Trả lời: ${moc.cau_hoi}`);
   if (s.so_chua_ro > 0) viec_tiep.push(`Xác nhận ${s.so_chua_ro} khoản tiền vào chưa rõ`);
   if (giay_to_thieu.some((g) => g.startsWith('Sao kê'))) viec_tiep.push('Kết nối ngân hàng hoặc nhập file sao kê');
   if (moc && !viec_tiep.length) viec_tiep.push('Mở Tờ khai thuế, kiểm bản nháp rồi xác nhận trước khi nộp');
 
   const trang_thai: TrangThaiSanSang = !moc ? 'khong_co_viec'
+    : chan.length ? 'bi_chan'
     : moc.trang_thai === 'can_xac_minh' ? 'can_xac_minh'
       : giay_to_thieu.length ? 'thieu_du_lieu' : 'san_sang';
   const tong = s.da_xac_nhan + s.chua_ro;
@@ -68,7 +81,7 @@ export function sanSangThue(lich: MocThue[], s: SoLieuSanSang): SanSangThue {
     ky: moc?.khoa ?? null, loai_nghia_vu: moc?.loai ?? null, ten_viec: moc?.ten ?? null, trang_thai,
     han: moc?.han ?? null, con_lai: moc?.con_lai ?? null,
     doanh_thu_biet: s.uoc_tinh, doanh_thu_da_phan_loai: s.da_xac_nhan, doanh_thu_chua_phan_loai: s.chua_ro,
-    so_khoan_chua_phan_loai: s.so_chua_ro, giay_to_can, giay_to_thieu, du_kien_thieu, viec_tiep, do_tin_cay,
+    so_khoan_chua_phan_loai: s.so_chua_ro, giay_to_can, giay_to_thieu, chan, du_kien_thieu, viec_tiep, do_tin_cay,
     nguon: ['Lịch thuế của công ty (hệ luật MIMI, NĐ 252/2026)', 'Tiền vào ngân hàng đã kết nối, đã bỏ dữ liệu thử', 'Phân loại tiền vào người dùng đã xác nhận'],
   };
 }

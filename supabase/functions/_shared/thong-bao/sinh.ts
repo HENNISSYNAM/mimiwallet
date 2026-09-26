@@ -11,8 +11,8 @@ import { goiYTienVao, TEN_LOAI_TIEN_VAO, type KhoanTienVao, type LoaiTienVao } f
 import { TU_GOI_Y } from '../doanh-thu/phan-loai.ts';
 import type { MocThue } from '../luat/lich-thue.ts';
 
-export type LoaiThongBao = 'han_thue' | 'luat_moi' | 'tien_vao' | 'goi' | 'thanh_toan' | 'khac';
-export const LOAI_THONG_BAO: LoaiThongBao[] = ['han_thue', 'luat_moi', 'tien_vao', 'goi', 'thanh_toan', 'khac'];
+export type LoaiThongBao = 'han_thue' | 'luat_moi' | 'tien_vao' | 'goi' | 'thanh_toan' | 'viec' | 'khac';
+export const LOAI_THONG_BAO: LoaiThongBao[] = ['han_thue', 'luat_moi', 'tien_vao', 'goi', 'thanh_toan', 'viec', 'khac'];
 
 export const TEN_LOAI_THONG_BAO: Record<LoaiThongBao, string> = {
   han_thue: 'Hạn khai thuế',
@@ -20,6 +20,7 @@ export const TEN_LOAI_THONG_BAO: Record<LoaiThongBao, string> = {
   tien_vao: 'Tiền vào cần xác nhận',
   goi: 'Gói sắp hết hạn',
   thanh_toan: 'Thanh toán đã nhận',
+  viec: 'Việc đang theo dõi',
   khac: 'Khác',
 };
 

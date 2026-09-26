@@ -22,6 +22,7 @@ import {
 import { dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
 import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
 import { nhapTienVaoGanDay, tuPhanLoaiNamNay } from "../_shared/thong-bao/quet-tien-vao.ts";
+import { daNhacTheoDoi, dongBoViecDoanhThu, nhapTheoDoiDenHan, type HoSoViecDong } from "../_shared/viec/luu.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,11 +84,24 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
    * hình không thể nói khác nhau. Lỗi đọc lịch không được chặn các thông báo khác.
    */
   // Mốc nhắc tính theo ngày: tính trong khung 7–9 giờ là đủ (8, 9 giờ là dự phòng khi lượt 7 giờ lỗi).
-  const hanThue = lucVN.getHours() >= 7 && lucVN.getHours() <= 9
+  const buoiSang = lucVN.getHours() >= 7 && lucVN.getHours() <= 9;
+  const hanThue = buoiSang
     ? await docLichCongTy(db, companyId, { nam: lucVN.getFullYear(), homNay, laDemo })
-      .then((l) => thongBaoHanThue(l.lich))
+      .then(async (l) => {
+        // Prompt 4B: việc "Phân loại … doanh thu" luôn khớp số mới nhất (mở / cập nhật / tự đóng) — cùng lịch vừa đọc.
+        await dongBoViecDoanhThu(db, { companyId, nam: lucVN.getFullYear(), homNay, laDemo, boi: null, lich: l })
+          .catch((e) => console.error("việc phân loại doanh thu:", e instanceof Error ? e.message : e));
+        return thongBaoHanThue(l.lich);
+      })
       .catch((e) => { console.error("lịch thuế cho nhắc hạn:", e instanceof Error ? e.message : e); return [] as BanNhapThongBao[]; })
     : [];
+  // Prompt 4B: việc đang chờ phản hồi tới ngày hẹn kiểm lại → nhắc (một lần mỗi ngày hẹn).
+  const theoDoi = buoiSang
+    ? await nhapTheoDoiDenHan(db, companyId, homNay).catch((e) => {
+      console.error("theo dõi việc chờ:", e instanceof Error ? e.message : e);
+      return { nhap: [] as BanNhapThongBao[], viec: [] as HoSoViecDong[] };
+    })
+    : { nhap: [] as BanNhapThongBao[], viec: [] as HoSoViecDong[] };
 
   const nhap: BanNhapThongBao[] = [
     // Hạn thuế chỉ báo từ 7 giờ sáng: không ai cần biết "còn 5 ngày" lúc 0 giờ 7 phút.
@@ -95,8 +109,12 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
     ...luatMoi,
     ...tienVao,
     ...thongBaoGoi(goi.data ?? null, homNay),
+    ...theoDoi.nhap,
   ];
-  return await ghiThongBao(db, companyId, nhap, nguoi);
+  const soMoi = await ghiThongBao(db, companyId, nhap, nguoi);
+  // Chỉ dời ngày hẹn khi thông báo đã ghi được (ghiThongBao ném khi lỗi).
+  if (theoDoi.viec.length) await daNhacTheoDoi(db, companyId, theoDoi.viec, homNay);
+  return soMoi;
 }
 
 Deno.serve(async (req) => {

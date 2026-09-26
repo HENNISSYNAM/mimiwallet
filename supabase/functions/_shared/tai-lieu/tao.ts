@@ -75,7 +75,7 @@ export function memoTaiChinh(pt: PhanTichChenhLech, ct: CongTyTL, homNay: string
   };
 }
 
-const TEN_TRANG_THAI_SS = { san_sang: 'Sẵn sàng', thieu_du_lieu: 'Còn thiếu dữ liệu', can_xac_minh: 'Cần xác minh', khong_co_viec: 'Không có việc thuế có hạn' } as const;
+const TEN_TRANG_THAI_SS = { san_sang: 'Sẵn sàng', bi_chan: 'Bị chặn — cần xử lý trước khi khai', thieu_du_lieu: 'Còn thiếu dữ liệu', can_xac_minh: 'Cần xác minh', khong_co_viec: 'Không có việc thuế có hạn' } as const;
 
 /** Gói sẵn sàng khai thuế — từ CHÍNH đối tượng `SanSangThue` mà Nhắc thuế và trợ lý hiện. */
 export function goiSanSangThue(ss: SanSangThue, lich: MocThue[], ct: CongTyTL, homNay: string): BanDung {

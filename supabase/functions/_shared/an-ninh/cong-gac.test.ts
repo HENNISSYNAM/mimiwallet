@@ -21,6 +21,12 @@ const CO_CHE: Record<string, RegExp> = {
   khoa_agent: /goiTacTu\(/,
   ma_nap: /x-nap-token/,
   chuyen_tiep_phien: /Authorization: auth/,
+  /*
+   * `app-mcp` (Lovable, 26/09/2026): @lovable.dev/mcp-js kiểm chữ ký token theo JWKS của issuer Supabase
+   * Auth và audience "authenticated" — khoá anon (HS256, không ký bằng khoá JWKS) không qua. Mọi công cụ đọc
+   * bằng CHÍNH token người dùng (`supabaseForUser`) nên RLS giới hạn về dữ liệu của họ. Cả hai phải có.
+   */
+  oauth_mcp: /auth\.oauth\.issuer\([\s\S]*supabaseForUser|supabaseForUser[\s\S]*auth\.oauth\.issuer\(/,
 };
 
 /** Function tắt verify_jwt: phải có lý do và cơ chế riêng. */

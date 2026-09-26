@@ -25,6 +25,8 @@ export interface DinhNghiaDuKien {
   lua_chon?: { gia_tri: string; nhan: string }[];
   /** Vì sao hỏi — hiện dưới câu hỏi, để người dùng không thấy bị tra hỏi vô cớ. */
   vi_sao: string;
+  /** Tên việc khi dữ kiện này là việc tiếp theo ("Xác nhận ngày bắt đầu tạm ngừng") — không dùng "Tiếp tục". */
+  viec?: string;
 }
 
 const CO_KHONG = [{ gia_tri: 'co', nhan: 'Có' }, { gia_tri: 'khong', nhan: 'Không' }];
@@ -34,10 +36,10 @@ export const DU_KIEN: Record<string, DinhNghiaDuKien> = {
   loai_chu_the: {
     cau: 'Bạn là hộ kinh doanh hay doanh nghiệp (công ty)?', kieu: 'lua_chon',
     lua_chon: [{ gia_tri: 'ho_kinh_doanh', nhan: 'Hộ kinh doanh' }, { gia_tri: 'doanh_nghiep', nhan: 'Doanh nghiệp' }],
-    vi_sao: 'Hai loại khai thuế và làm thủ tục khác nhau.',
+    vi_sao: 'Hai loại khai thuế và làm thủ tục khác nhau.', viec: 'Xác nhận bạn là hộ kinh doanh hay doanh nghiệp',
   },
-  da_co_mst: { cau: 'Bạn đã có mã số thuế cho việc kinh doanh chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG, vi_sao: 'Chưa có thì việc đầu tiên là đăng ký.' },
-  ngay_bat_dau_kd: { cau: 'Bạn bắt đầu kinh doanh từ ngày nào?', kieu: 'ngay', vi_sao: 'Kỳ khai thuế đầu tiên tính từ ngày này.' },
+  da_co_mst: { cau: 'Bạn đã có mã số thuế cho việc kinh doanh chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG, vi_sao: 'Chưa có thì việc đầu tiên là đăng ký.', viec: 'Cho biết đã có mã số thuế chưa' },
+  ngay_bat_dau_kd: { cau: 'Bạn bắt đầu kinh doanh từ ngày nào?', kieu: 'ngay', vi_sao: 'Kỳ khai thuế đầu tiên tính từ ngày này.', viec: 'Xác nhận ngày bắt đầu kinh doanh' },
   hoat_dong_chinh: {
     cau: 'Việc kinh doanh chính của bạn là gì?', kieu: 'lua_chon',
     lua_chon: [
@@ -47,13 +49,13 @@ export const DU_KIEN: Record<string, DinhNghiaDuKien> = {
       { gia_tri: 'cho_thue_tai_san', nhan: 'Cho thuê nhà, tài sản' },
       { gia_tri: 'khac', nhan: 'Khác' },
     ],
-    vi_sao: 'Mỗi nhóm hoạt động có tỷ lệ thuế riêng.',
+    vi_sao: 'Mỗi nhóm hoạt động có tỷ lệ thuế riêng.', viec: 'Chọn việc kinh doanh chính',
   },
-  dung_hoa_don_dien_tu: { cau: 'Bạn đã dùng hoá đơn điện tử chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG, vi_sao: 'Để biết có cần đăng ký hoá đơn điện tử không.' },
+  dung_hoa_don_dien_tu: { cau: 'Bạn đã dùng hoá đơn điện tử chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG, vi_sao: 'Để biết có cần đăng ký hoá đơn điện tử không.', viec: 'Cho biết đã dùng hoá đơn điện tử chưa' },
   ky_khai_gtgt: {
     cau: 'Công ty đang khai thuế GTGT theo tháng hay theo quý?', kieu: 'lua_chon',
     lua_chon: [{ gia_tri: 'thang', nhan: 'Theo tháng' }, { gia_tri: 'quy', nhan: 'Theo quý' }, { gia_tri: 'chua_ro', nhan: 'Tôi chưa rõ' }],
-    vi_sao: 'Hạn khai phụ thuộc kỳ khai.',
+    vi_sao: 'Hạn khai phụ thuộc kỳ khai.', viec: 'Xác nhận kỳ khai thuế GTGT',
   },
   thay_doi_gi: {
     cau: 'Bạn muốn thay đổi thông tin nào?', kieu: 'lua_chon',
@@ -61,7 +63,7 @@ export const DU_KIEN: Record<string, DinhNghiaDuKien> = {
       { gia_tri: 'dia_chi', nhan: 'Địa chỉ kinh doanh' }, { gia_tri: 'nganh_nghe', nhan: 'Ngành nghề' },
       { gia_tri: 'nguoi_dai_dien', nhan: 'Người đại diện / chủ hộ' }, { gia_tri: 'ten', nhan: 'Tên' }, { gia_tri: 'khac', nhan: 'Khác' },
     ],
-    vi_sao: 'Mỗi loại thay đổi là một thủ tục khác.',
+    vi_sao: 'Mỗi loại thay đổi là một thủ tục khác.', viec: 'Chọn thông tin cần thay đổi',
   },
   hoa_don_sai_o_dau: {
     cau: 'Hoá đơn sai ở chỗ nào?', kieu: 'lua_chon',
@@ -69,24 +71,24 @@ export const DU_KIEN: Record<string, DinhNghiaDuKien> = {
       { gia_tri: 'mst_nguoi_mua', nhan: 'Mã số thuế người mua' }, { gia_tri: 'ten_dia_chi', nhan: 'Tên, địa chỉ người mua' },
       { gia_tri: 'so_tien_thue_suat', nhan: 'Số tiền, thuế suất' }, { gia_tri: 'hang_hoa', nhan: 'Hàng hoá, dịch vụ' },
     ],
-    vi_sao: 'Sai tên/địa chỉ và sai MST hay số tiền được xử lý khác nhau.',
+    vi_sao: 'Sai tên/địa chỉ và sai MST hay số tiền được xử lý khác nhau.', viec: 'Cho biết hoá đơn sai ở đâu',
   },
-  so_hoa_don: { cau: 'Số hoá đơn bị sai là gì?', kieu: 'chu', vi_sao: 'Để MIMI tìm đúng hoá đơn và trạng thái của nó.' },
-  da_gui_nguoi_mua: { cau: 'Hoá đơn đã gửi cho người mua chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Đã gửi hay chưa quyết định cách sửa.' },
-  da_ke_khai_hoa_don: { cau: 'Hoá đơn này đã được kê khai thuế chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Đã kê khai thì có thể phải khai bổ sung.' },
-  ngay_nhan_thong_bao: { cau: 'Bạn nhận thông báo của cơ quan thuế ngày nào?', kieu: 'ngay', vi_sao: 'Thời hạn trả lời tính từ thông báo.' },
-  han_tra_loi: { cau: 'Thông báo ghi hạn trả lời là ngày nào?', kieu: 'ngay', vi_sao: 'MIMI nhắc bạn trước hạn này. Lấy đúng ngày ghi trên thông báo.' },
-  noi_dung_yeu_cau: { cau: 'Cơ quan thuế yêu cầu giải trình về việc gì? (chép ngắn nội dung chính)', kieu: 'chu', vi_sao: 'Để gom đúng chứng từ cho từng nội dung.' },
-  ky_hoi_tu: { cau: 'Thông báo hỏi về số liệu từ tháng nào? (dạng 2026-04)', kieu: 'thang', vi_sao: 'MIMI gom sao kê và hoá đơn đúng kỳ được hỏi.' },
-  ky_hoi_den: { cau: 'Tới tháng nào? (dạng 2026-06)', kieu: 'thang', vi_sao: 'Tháng cuối của kỳ được hỏi.' },
-  tam_ngung_tu: { cau: 'Bạn muốn bắt đầu tạm ngừng từ ngày nào?', kieu: 'ngay', vi_sao: 'Nghĩa vụ trước ngày này vẫn phải hoàn thành.' },
-  tam_ngung_den: { cau: 'Bạn dự định tạm ngừng tới ngày nào?', kieu: 'ngay', vi_sao: 'Để MIMI nhắc việc khi hết thời gian tạm ngừng.' },
-  tiep_tuc_tu: { cau: 'Bạn muốn kinh doanh trở lại từ ngày nào?', kieu: 'ngay', vi_sao: 'Nghĩa vụ khai thuế chạy lại từ ngày này.' },
-  ngay_cham_dut: { cau: 'Bạn dự định ngừng kinh doanh hẳn từ ngày nào?', kieu: 'ngay', vi_sao: 'Mọi nghĩa vụ phải xong trước khi đóng mã số thuế.' },
-  con_no_thue: { cau: 'Bạn còn khoản thuế nào chưa nộp không?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Còn nợ thuế thì chưa đóng được.' },
-  con_hoa_don_chua_dung: { cau: 'Bạn còn hoá đơn đã đăng ký mà chưa dùng không?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Hoá đơn chưa dùng phải được xử lý trước khi đóng.' },
-  tu_thang: { cau: 'Bạn cần dựng lại sổ từ tháng nào? (dạng 2026-01)', kieu: 'thang', vi_sao: 'MIMI đọc sao kê và hoá đơn từ tháng này.' },
-  den_thang: { cau: 'Tới tháng nào? (dạng 2026-06)', kieu: 'thang', vi_sao: 'Kỳ cuối cần dựng lại.' },
+  so_hoa_don: { cau: 'Số hoá đơn bị sai là gì?', kieu: 'chu', vi_sao: 'Để MIMI tìm đúng hoá đơn và trạng thái của nó.', viec: 'Cho biết số hoá đơn bị sai' },
+  da_gui_nguoi_mua: { cau: 'Hoá đơn đã gửi cho người mua chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Đã gửi hay chưa quyết định cách sửa.', viec: 'Cho biết hoá đơn đã gửi người mua chưa' },
+  da_ke_khai_hoa_don: { cau: 'Hoá đơn này đã được kê khai thuế chưa?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Đã kê khai thì có thể phải khai bổ sung.', viec: 'Cho biết hoá đơn đã kê khai chưa' },
+  ngay_nhan_thong_bao: { cau: 'Bạn nhận thông báo của cơ quan thuế ngày nào?', kieu: 'ngay', vi_sao: 'Thời hạn trả lời tính từ thông báo.', viec: 'Ghi ngày nhận thông báo của cơ quan thuế' },
+  han_tra_loi: { cau: 'Thông báo ghi hạn trả lời là ngày nào?', kieu: 'ngay', vi_sao: 'MIMI nhắc bạn trước hạn này. Lấy đúng ngày ghi trên thông báo.', viec: 'Ghi hạn trả lời trên thông báo' },
+  noi_dung_yeu_cau: { cau: 'Cơ quan thuế yêu cầu giải trình về việc gì? (chép ngắn nội dung chính)', kieu: 'chu', vi_sao: 'Để gom đúng chứng từ cho từng nội dung.', viec: 'Ghi nội dung cơ quan thuế yêu cầu' },
+  ky_hoi_tu: { cau: 'Thông báo hỏi về số liệu từ tháng nào? (dạng 2026-04)', kieu: 'thang', vi_sao: 'MIMI gom sao kê và hoá đơn đúng kỳ được hỏi.', viec: 'Ghi kỳ được hỏi (từ tháng)' },
+  ky_hoi_den: { cau: 'Tới tháng nào? (dạng 2026-06)', kieu: 'thang', vi_sao: 'Tháng cuối của kỳ được hỏi.', viec: 'Ghi kỳ được hỏi (đến tháng)' },
+  tam_ngung_tu: { cau: 'Bạn muốn bắt đầu tạm ngừng từ ngày nào?', kieu: 'ngay', vi_sao: 'Nghĩa vụ trước ngày này vẫn phải hoàn thành.', viec: 'Xác nhận ngày bắt đầu tạm ngừng' },
+  tam_ngung_den: { cau: 'Bạn dự định tạm ngừng tới ngày nào?', kieu: 'ngay', vi_sao: 'Để MIMI nhắc việc khi hết thời gian tạm ngừng.', viec: 'Xác nhận ngày kết thúc tạm ngừng' },
+  tiep_tuc_tu: { cau: 'Bạn muốn kinh doanh trở lại từ ngày nào?', kieu: 'ngay', vi_sao: 'Nghĩa vụ khai thuế chạy lại từ ngày này.', viec: 'Xác nhận ngày kinh doanh trở lại' },
+  ngay_cham_dut: { cau: 'Bạn dự định ngừng kinh doanh hẳn từ ngày nào?', kieu: 'ngay', vi_sao: 'Mọi nghĩa vụ phải xong trước khi đóng mã số thuế.', viec: 'Xác nhận ngày ngừng kinh doanh' },
+  con_no_thue: { cau: 'Bạn còn khoản thuế nào chưa nộp không?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Còn nợ thuế thì chưa đóng được.', viec: 'Cho biết còn nợ thuế không' },
+  con_hoa_don_chua_dung: { cau: 'Bạn còn hoá đơn đã đăng ký mà chưa dùng không?', kieu: 'lua_chon', lua_chon: CO_KHONG_CHUA_RO, vi_sao: 'Hoá đơn chưa dùng phải được xử lý trước khi đóng.', viec: 'Cho biết còn hoá đơn chưa dùng không' },
+  tu_thang: { cau: 'Bạn cần dựng lại sổ từ tháng nào? (dạng 2026-01)', kieu: 'thang', vi_sao: 'MIMI đọc sao kê và hoá đơn từ tháng này.', viec: 'Chọn tháng bắt đầu dựng lại sổ' },
+  den_thang: { cau: 'Tới tháng nào? (dạng 2026-06)', kieu: 'thang', vi_sao: 'Kỳ cuối cần dựng lại.', viec: 'Chọn tháng kết thúc dựng lại sổ' },
 };
 
 export type LoaiHanhDongBuoc = 'hoi' | 'mo_trang' | 'soan_tai_lieu' | 'nguoi_dung_lam' | 'kiem_ket_qua';

@@ -63,36 +63,54 @@ async function ghiBuoc(db: Db, companyId: string, htId: string, buoc: Buoc[]): P
 }
 
 /**
- * Mở hành trình — hoặc MỞ TIẾP hành trình cùng loại đang dở (chỉ mục duy nhất ở CSDL bảo đảm một).
- * `duKienBiet`: dữ kiện đã biết từ hồ sơ (vd. loại người nộp) để không hỏi lại điều MIMI đã biết.
+ * Mở việc có hướng dẫn — hoặc MỞ TIẾP việc cùng loại đang dở (Prompt 4B mục 3).
+ *
+ * Danh tính là HỒ SƠ VIỆC đang mở có cùng dấu vân tay (loại + đối tượng), không phải tiêu đề: hỏi lại
+ * "tôi muốn tạm ngừng" → cùng hồ sơ, cùng hành trình (kể cả khi các bước đã xong mà việc chưa đóng vì
+ * còn thiếu bằng chứng). Hai yêu cầu cùng lúc (trợ lý + pet, hai tab): chỉ mục duy nhất ở CSDL chặn bản
+ * thứ hai; bên thua đọc lại bản đã có.
+ * `duKienBiet`: dữ kiện đã biết từ hồ sơ để không hỏi lại điều MIMI đã biết.
  */
 export async function moHanhTrinh(db: Db, o: {
   companyId: string; userId: string; loai: LoaiHanhTrinh; yDinh: string; duKienBiet?: Record<string, string>;
-}): Promise<{ ht: HanhTrinhDay; moi: boolean }> {
-  const { data: dangMo } = await db.from('hanh_trinh').select('id')
-    .eq('company_id', o.companyId).eq('loai', o.loai).not('trang_thai', 'in', '(hoan_tat,da_huy)').maybeSingle();
-  if (dangMo) return { ht: (await docHanhTrinh(db, o.companyId, dangMo.id)) as HanhTrinhDay, moi: false };
+}, lan = 0): Promise<{ ht: HanhTrinhDay; moi: boolean }> {
+  const mau = MAU_HANH_TRINH[o.loai];
+  const dauVanTay = `${mau.loai_ho_so}:chung`;
+  const dangMo = ['needs_information', 'ready_to_act', 'in_progress', 'waiting_external', 'needs_review'];
+
+  const { data: hsCu, error: loiHs } = await db.from('ho_so_viec').select('id').eq('company_id', o.companyId).eq('dau_van_tay', dauVanTay)
+    .in('trang_thai', dangMo).maybeSingle();
+  if (loiHs) throw new Error(`đọc hồ sơ việc: ${loiHs.message}`);
+  if (hsCu) {
+    const { data: htCu, error: loiHt } = await db.from('hanh_trinh').select('id').eq('company_id', o.companyId).eq('ho_so_viec_id', hsCu.id)
+      .neq('trang_thai', 'da_huy').order('tao_luc', { ascending: false }).limit(1);
+    if (loiHt) throw new Error(`đọc hành trình: ${loiHt.message}`);
+    if (htCu?.[0]) return { ht: (await docHanhTrinh(db, o.companyId, htCu[0].id)) as HanhTrinhDay, moi: false };
+  }
+  // Hành trình cũ chưa gắn hồ sơ (trước Prompt 4B) cùng loại đang mở: mở tiếp nó.
+  if (!hsCu) {
+    const { data: htLe } = await db.from('hanh_trinh').select('id').eq('company_id', o.companyId).eq('loai', o.loai)
+      .not('trang_thai', 'in', '(hoan_tat,da_huy)').maybeSingle();
+    if (htLe) return { ht: (await docHanhTrinh(db, o.companyId, htLe.id)) as HanhTrinhDay, moi: false };
+  }
 
   const luc = new Date().toISOString();
   const duKien: DuKien = Object.fromEntries(Object.entries(o.duKienBiet ?? {})
     .filter(([k, v]) => v && kiemCauTraLoi(k, v).ok)
     .map(([k, v]) => [k, { gia_tri: v, nguon: 'ho_so' as const, luc, boi: null }]));
-  const mau = MAU_HANH_TRINH[o.loai];
 
-  // Hồ sơ việc đi kèm. Trùng dấu vân tay (đang mở) thì dùng lại.
-  let hoSoId: string | null = null;
-  const dauVanTay = `${mau.loai_ho_so}:chung`;
-  const { data: hsCu } = await db.from('ho_so_viec').select('id').eq('company_id', o.companyId).eq('dau_van_tay', dauVanTay)
-    .not('trang_thai', 'in', '(da_giai_quyet,da_huy)').maybeSingle();
-  if (hsCu) hoSoId = hsCu.id;
-  else {
+  let hoSoId: string | null = hsCu?.id ?? null;
+  if (!hoSoId) {
     const { data: hs, error } = await db.from('ho_so_viec').insert({
       company_id: o.companyId, loai: mau.loai_ho_so, tieu_de: mau.tieu_de, dau_van_tay: dauVanTay,
       nguon: { y_dinh: o.yDinh.slice(0, 500) }, tao_boi: o.userId,
     }).select('id').single();
-    if (error) throw new Error(`mở hồ sơ việc: ${error.message}`);
+    if (error) {
+      if (/duplicate|unique/i.test(error.message) && lan < 3) return moHanhTrinh(db, o, lan + 1);
+      throw new Error(`mở hồ sơ việc: ${error.message}`);
+    }
     hoSoId = hs.id;
-    await ghiNhatKy(db, { companyId: o.companyId, doiTuong: 'ho_so_viec', id: hs.id, hanhDong: 'mo', boi: o.userId, sau: { loai: mau.loai_ho_so }, nguon: 'tro_ly' });
+    await ghiNhatKy(db, { companyId: o.companyId, doiTuong: 'ho_so_viec', id: hs.id, hanhDong: 'mo', boi: o.userId, sau: { loai: mau.loai_ho_so, tieu_de: mau.tieu_de }, nguon: 'tro_ly' });
     await ghiSuKien(db, o.companyId, o.userId, 'first_case_created', { loai: mau.loai_ho_so });
     await ghiSuKien(db, o.companyId, o.userId, 'case_created', { loai: mau.loai_ho_so });
   }
@@ -105,7 +123,7 @@ export async function moHanhTrinh(db: Db, o: {
   }).select('id').single();
   if (error) {
     // Hai yêu cầu cùng lúc: yêu cầu kia đã mở — đọc lại cái đó.
-    if (/duplicate|unique/i.test(error.message)) return moHanhTrinh(db, o);
+    if (/duplicate|unique/i.test(error.message) && lan < 3) return moHanhTrinh(db, o, lan + 1);
     throw new Error(`mở hành trình: ${error.message}`);
   }
   await ghiBuoc(db, o.companyId, ht.id, buoc);
@@ -117,7 +135,7 @@ export async function moHanhTrinh(db: Db, o: {
 export class LoiHanhTrinh extends Error {}
 
 /** Ghi một câu trả lời. Sai thì ném `LoiHanhTrinh` với câu cho người dùng. */
-export async function traLoi(db: Db, o: { companyId: string; userId: string; id: string; khoa: string; giaTri: unknown }): Promise<HanhTrinhDay> {
+export async function traLoi(db: Db, o: { companyId: string; userId: string; id: string; khoa: string; giaTri: unknown; nguon?: string }): Promise<HanhTrinhDay> {
   const ht = await docHanhTrinh(db, o.companyId, o.id);
   if (!ht) throw new LoiHanhTrinh('Không tìm thấy việc này.');
   if (ht.trang_thai === 'hoan_tat' || ht.trang_thai === 'da_huy') throw new LoiHanhTrinh('Việc này đã đóng.');
@@ -138,13 +156,14 @@ export async function traLoi(db: Db, o: { companyId: string; userId: string; id:
   }).eq('id', o.id).eq('company_id', o.companyId);
   if (error) throw new Error(`ghi câu trả lời: ${error.message}`);
   await ghiBuoc(db, o.companyId, o.id, buoc);
-  await ghiNhatKy(db, { companyId: o.companyId, doiTuong: 'hanh_trinh', id: o.id, hanhDong: 'tra_loi', boi: o.userId, truoc: truoc ? { [o.khoa]: truoc.gia_tri } : null, sau: { [o.khoa]: k.gia_tri }, nguon: 'nguoi_dung' });
+  await ghiNhatKy(db, { companyId: o.companyId, doiTuong: 'hanh_trinh', id: o.id, hanhDong: 'tra_loi', boi: o.userId, truoc: truoc ? { [o.khoa]: truoc.gia_tri } : null, sau: { [o.khoa]: k.gia_tri }, nguon: o.nguon ?? 'nguoi_dung' });
   return (await docHanhTrinh(db, o.companyId, o.id)) as HanhTrinhDay;
 }
 
 /**
- * Người dùng đánh dấu một bước: đang làm, đã nộp (chờ bên ngoài), xong, bỏ qua.
- * Bước "kiểm kết quả" chỉ xong khi có `ketQua` (CloseCheck) — và khi đó hồ sơ việc đóng theo.
+ * Người dùng đánh dấu một bước: đang làm, đã nộp (chờ bên ngoài), xong, bỏ qua. Chỉ đổi BƯỚC. Trạng thái
+ * hồ sơ việc (kể cả đóng việc) chỉ đổi ở `viec/luu.ts` → `dongBoTrangThaiViec`, theo điều kiện và bằng chứng.
+ * Bước "kiểm kết quả" chỉ xong khi có `ketQua`.
  */
 export async function danhDauBuoc(db: Db, o: {
   companyId: string; userId: string; id: string; khoa: string; trangThai: TrangThaiBuoc; ketQua?: string;
@@ -174,15 +193,6 @@ export async function danhDauBuoc(db: Db, o: {
   await ghiBuoc(db, o.companyId, o.id, buoc);
   await ghiNhatKy(db, { companyId: o.companyId, doiTuong: 'buoc_hanh_trinh', id: `${o.id}:${o.khoa}`, hanhDong: 'danh_dau', boi: o.userId, truoc: { trang_thai: b.trang_thai }, sau: { trang_thai: o.trangThai, ket_qua: ketQua || undefined }, nguon: 'nguoi_dung' });
 
-  if (tt === 'hoan_tat' && ht.ho_so_viec_id) {
-    const { error: e2 } = await db.from('ho_so_viec').update({
-      trang_thai: 'da_giai_quyet', giai_quyet_luc: bayGio, giai_quyet_boi: o.userId, ket_qua: ketQua || 'Hoàn tất mọi bước.', cap_nhat_luc: bayGio,
-    }).eq('id', ht.ho_so_viec_id).eq('company_id', o.companyId);
-    if (e2) throw new Error(`đóng hồ sơ việc: ${e2.message}`);
-    await ghiNhatKy(db, { companyId: o.companyId, doiTuong: 'ho_so_viec', id: ht.ho_so_viec_id, hanhDong: 'giai_quyet', boi: o.userId, sau: { ket_qua: ketQua }, nguon: 'nguoi_dung' });
-    await ghiSuKien(db, o.companyId, o.userId, 'first_case_resolved', { loai: ht.loai });
-    await ghiSuKien(db, o.companyId, o.userId, 'case_resolved', { loai: ht.loai });
-  }
   return (await docHanhTrinh(db, o.companyId, o.id)) as HanhTrinhDay;
 }
 

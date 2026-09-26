@@ -36,6 +36,7 @@ import { khoaTienVao } from "../_shared/thong-bao/sinh.ts";
 import { goiYHoatDong, HOAT_DONG, type ChiaHoatDong, type NguonDoanhThuKhoan } from "../_shared/doanh-thu/theo-hoat-dong.ts";
 import { docXacNhanHoatDong, keHoachHoanTacHoatDong, TOI_DA_MOT_LAN_HOAT_DONG } from "../_shared/doanh-thu/xac-nhan-hoat-dong.ts";
 import { chuanHoaTrangThai } from "../_shared/doanh-nghiep/trang-thai.ts";
+import { dongBoViecDoanhThu } from "../_shared/viec/luu.ts";
 import { tinhNghiaVu } from "../_shared/nghia-vu/tinh.ts";
 import { TEN_NHOM_NGANH } from "../_shared/luat/he-luat.ts";
 
@@ -628,7 +629,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         tham_so: { nguon: x.nguon, nam: x.nam, hoat_dong: x.hoat_dong, so: ids.length, tat_ca_chua_ro: x.tat_ca_chua_ro, nhom_hang_loat: nhom },
         mo_ta_da_xac_nhan: moTa, ket_qua: "thanh_cong", ket_qua_cau: moTa, xong_luc: bayGio,
       });
-      return json({ ok: true, so: ids.length, nhom_hang_loat: nhom });
+      return json({ ok: true, so: ids.length, nhom_hang_loat: nhom, viec: await dongBoViecSauPhanLoai(db, company.id, userId, x.nam) });
     }
 
     case "hoan_tac_hoat_dong": {
@@ -652,7 +653,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
           nhom_hang_loat: nhom, la_hoan_tac: true, actor: userId, actor_role: vaiTro, at: bayGio,
         });
       }
-      return json({ ok: true, so: ls.length });
+      return json({ ok: true, so: ls.length, viec: await dongBoViecSauPhanLoai(db, company.id, userId, null) });
     }
 
     case "ds_nhap": {
@@ -673,6 +674,22 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
     default:
       return loi("HANH_DONG", "Hành động không hợp lệ.", 400);
+  }
+}
+
+/**
+ * Prompt 4B: phân loại (hay hoàn tác) xong thì việc "Phân loại … doanh thu" cập nhật NGAY — số tiền mới,
+ * hoặc tự đóng ở mức "MIMI đã kiểm" khi không còn phần chưa rõ. Lỗi ở đây không làm hỏng lần phân loại
+ * (đã ghi xong), nhưng được báo lại — không im lặng.
+ */
+async function dongBoViecSauPhanLoai(db: ReturnType<typeof createClient>, companyId: string, userId: string, nam: number | null) {
+  const homNay = iso(lucGioVietNam());
+  try {
+    const v = await dongBoViecDoanhThu(db, { companyId, nam: nam ?? Number(homNay.slice(0, 4)), homNay, laDemo: await congTyLaDemo(db, companyId), boi: userId });
+    return v ? { id: v.id, trang_thai: v.trang_thai, tieu_de: v.tieu_de } : null;
+  } catch (e) {
+    console.error("đồng bộ việc phân loại:", e instanceof Error ? e.message : e);
+    return { loi: "Chưa cập nhật được việc phân loại doanh thu — mở Việc cần làm để tải lại." };
   }
 }
 

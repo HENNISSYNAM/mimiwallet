@@ -11,6 +11,7 @@ import { suyLuan } from './he-luat.ts';
 import { lichThue, type MocThue } from './lich-thue.ts';
 import { chuanHoaTrangThai } from '../doanh-nghiep/trang-thai.ts';
 import { sanSangThue, type SanSangThue } from './san-sang-thue.ts';
+import type { ChiaHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -23,6 +24,8 @@ export interface LichCongTy {
   tienChuaRo: number;
   /** Prompt 4 mục 14: một đối tượng sẵn sàng khai thuế cho mọi màn. */
   sanSang: SanSangThue;
+  /** Doanh thu năm của ĐÚNG nguồn đang dùng để khai, chia theo nhóm hoạt động (null: chưa có doanh thu). */
+  hoatDong: ChiaHoatDong | null;
 }
 
 /** `s`: số liệu doanh thu năm `nam` nếu nơi gọi đã đọc (tránh đọc hai lần). */
@@ -40,5 +43,12 @@ export async function docLichCongTy(
     trangThai: chuanHoaTrangThai(cong_ty.theo_mst?.trang_thai).trang_thai,
     soNguoi: (ctNguoi?.employee_count as string | null) ?? null,
   });
-  return { lich, loaiNguoiNop: dung.su_kien.loai ?? null, soChuaRo: s.so_chua_ro, tienChuaRo: s.chua_ro, sanSang: sanSangThue(lich, s) };
+  const hoatDong = dung.su_kien.hoatDong ?? null;
+  // Chỉ hộ kinh doanh: nhóm hoạt động quyết định dòng và tỷ lệ trên tờ khai của hộ.
+  const chuaRoNhom = dung.su_kien.loai === 'ho_kinh_doanh' && hoatDong
+    ? { so_tien: hoatDong.nhom.chua_ro.so_tien, so_khoan: hoatDong.nhom.chua_ro.so_khoan } : null;
+  return {
+    lich, loaiNguoiNop: dung.su_kien.loai ?? null, soChuaRo: s.so_chua_ro, tienChuaRo: s.chua_ro,
+    sanSang: sanSangThue(lich, s, chuaRoNhom), hoatDong,
+  };
 }

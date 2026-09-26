@@ -49,7 +49,11 @@ import { docHieuLuc, kiemCanCu } from "../_shared/luat/doc-can-cu.ts";
 import { nhanHieuLuc } from "../_shared/luat/hieu-luc.ts";
 import { docDoanhThuQuy, docHoSo, dungSuKien } from "../_shared/luat/doc-su-kien.ts";
 import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
-import { danhDauBuoc, docHanhTrinh, dsHanhTrinhDangMo, LoiHanhTrinh, moHanhTrinh, traLoi, type HanhTrinhDay } from "../_shared/hanh-trinh/luu.ts";
+import { docHanhTrinh, dsHanhTrinhDangMo, LoiHanhTrinh, type HanhTrinhDay } from "../_shared/hanh-trinh/luu.ts";
+import {
+  danhDauBuocViec, docChiTietViec, dsViecCanLam, ghiNhanDaNop as ghiNhanDaNopViec, ghiNhanPhanHoi, huyViec, LoiViec, moViecHanhTrinh, traLoiViec,
+} from "../_shared/viec/luu.ts";
+import { xuLyChatViec } from "../_shared/viec/chat-viec.ts";
 import { laLoaiHanhTrinh, nhanHanhTrinh, type TrangThaiBuoc } from "../_shared/hanh-trinh/dong-co.ts";
 import { dsTaiLieu, duyetTaiLieu, ghiNhanDaNop, LoiTaiLieu, moTaiLieu, taoTaiLieu, type KetQuaDuyet } from "../_shared/tai-lieu/luu.ts";
 import { congVanGiaiTrinh, goiBangChung, goiSanSangThue, memoTaiChinh, type BanDung } from "../_shared/tai-lieu/tao.ts";
@@ -555,6 +559,10 @@ async function docDuLieu(
     viec.push(dsHanhTrinhDangMo(db, companyId)
       .then((ds) => { d.hanhTrinhMo = ds; })
       .catch((e) => { console.error("hành trình:", e instanceof Error ? e.message : e); d.hanhTrinhMo = []; }));
+    // Prompt 4B: cùng một danh sách Việc cần làm với Tổng quan và pet. Đọc hỏng → null (không giả "không có việc").
+    viec.push(dsViecCanLam(db, { companyId, homNay: moc.homNay, laDemo, boi: null })
+      .then((r) => { d.viecCanLam = r.viec; })
+      .catch((e) => { console.error("việc cần làm:", e instanceof Error ? e.message : e); d.viecCanLam = null; }));
   }
   if (can.has("thuc_thi")) {
     viec.push((async () => {
@@ -745,6 +753,10 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   hanh_trinh_tra_loi: "ghi_chung_tu",
   hanh_trinh_danh_dau: "ghi_chung_tu",
   hanh_trinh_soan: "ghi_chung_tu",
+  // Prompt 4B: hồ sơ việc — ghi nhận đã nộp, phản hồi của cơ quan, huỷ việc.
+  viec_da_nop: "ghi_chung_tu",
+  viec_phan_hoi: "ghi_chung_tu",
+  viec_huy: "ghi_chung_tu",
   tao_tai_lieu: "ghi_chung_tu",
   tai_lieu_da_nop: "ghi_chung_tu",
   // Prompt 5: chuẩn bị / ghi đã nộp / ghi kết quả — người soạn hồ sơ làm được. XÁC NHẬN thì kiểm riêng.
@@ -803,18 +815,29 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
        */
       let hanhTrinh: DuLieu["hanhTrinh"] = null;
       const loaiHT = yDinh.includes("hanh_trinh") ? nhanHanhTrinh(cau) : null;
-      if (loaiHT) {
-        if (duocLam(vaiTro, "ghi_chung_tu")) {
+      /*
+       * Prompt 4B: trợ lý LÀM TIẾP việc — mở / mở tiếp hồ sơ việc, ghi câu trả lời cho câu đang chờ,
+       * ghi "đã nộp" / "có phản hồi" — trước mô hình, cùng hàm ghi với trang Việc cần làm và pet.
+       */
+      {
+        const duKienBiet: Record<string, string> = {};
+        if (loaiHT) {
           const hs = await docHoSo(db, company.id).catch(() => null);
-          const duKienBiet: Record<string, string> = {};
           const loaiNop = hs?.cong_ty.loai_theo_mst ?? hs?.ho_so.loai_nguoi_nop ?? null;
           if (loaiNop) duKienBiet.loai_chu_the = loaiNop;
           if (hs?.cong_ty.mst) duKienBiet.da_co_mst = "co";
-          const mo = await moHanhTrinh(db, { companyId: company.id, userId, loai: loaiHT, yDinh: cau, duKienBiet });
-          hanhTrinh = { loai: loaiHT, luu: true, moi: mo.moi, ht: mo.ht };
-        } else {
-          hanhTrinh = { loai: loaiHT, luu: false, moi: false, ht: null };
+          const nganh = hs?.ho_so.nhom_nganh ?? [];
+          if (nganh.length === 1) duKienBiet.hoat_dong_chinh = nganh[0];
         }
+        const chatViec = await xuLyChatViec(db, {
+          companyId: company.id, userId, cau, homNay: moc.homNay, duocGhi: duocLam(vaiTro, "ghi_chung_tu"), loaiHanhTrinh: loaiHT, duKienBiet,
+        });
+        if (chatViec.ketQua) {
+          const tlViec = dungTraLoi({ ketQua: [chatViec.ketQua], cheDo: "co_dinh", cauHoi: cau });
+          const idViec = await ghiHoiThoai(db, company.id, userId, cau, tlViec, null);
+          return json({ ...tlViec, hoi_thoai_id: idViec });
+        }
+        hanhTrinh = chatViec.hanhTrinh;
       }
 
       // Dữ liệu đọc một lần cho cả câu hỏi, dù mô hình gọi mấy năng lực.
@@ -890,17 +913,37 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
     }
     case "hanh_trinh_mo": {
       if (!laLoaiHanhTrinh(body.loai)) return loi("THAM_SO", "Loại việc không hợp lệ.", 400);
-      const r = await moHanhTrinh(db, { companyId: company.id, userId, loai: body.loai, yDinh: String(body.y_dinh ?? "").slice(0, 1000) });
-      return json({ hanh_trinh: r.ht, moi: r.moi });
+      const r = await moViecHanhTrinh(db, { companyId: company.id, userId, loai: body.loai, yDinh: String(body.y_dinh ?? "").slice(0, 1000), homNay: moc.homNay });
+      return json({ hanh_trinh: r.ht, moi: r.moi, viec: r.viec });
     }
     case "hanh_trinh_tra_loi": {
-      const ht = await traLoi(db, { companyId: company.id, userId, id: String(body.id ?? ""), khoa: String(body.khoa ?? ""), giaTri: body.gia_tri });
-      return json({ hanh_trinh: ht });
+      const r = await traLoiViec(db, { companyId: company.id, userId, htId: String(body.id ?? ""), khoa: String(body.khoa ?? ""), giaTri: body.gia_tri, homNay: moc.homNay, nguon: body.nguon === "pet" ? "pet" : "nguoi_dung" });
+      return json({ hanh_trinh: r.ht, viec: r.viec });
     }
     case "hanh_trinh_danh_dau": {
-      const ht = await danhDauBuoc(db, { companyId: company.id, userId, id: String(body.id ?? ""), khoa: String(body.khoa ?? ""), trangThai: String(body.trang_thai ?? "") as TrangThaiBuoc, ketQua: typeof body.ket_qua === "string" ? body.ket_qua : undefined });
-      return json({ hanh_trinh: ht });
+      const r = await danhDauBuocViec(db, { companyId: company.id, userId, htId: String(body.id ?? ""), khoa: String(body.khoa ?? ""), trangThai: String(body.trang_thai ?? "") as TrangThaiBuoc, ketQua: typeof body.ket_qua === "string" ? body.ket_qua : undefined, homNay: moc.homNay });
+      return json({ hanh_trinh: r.ht, viec: r.viec });
     }
+
+    // ── Prompt 4B: hồ sơ việc chuẩn — một danh sách cho Tổng quan, Trợ lý, Pet, Lịch ────────────
+    case "viec_can_lam":
+      return json({ ...(await dsViecCanLam(db, { companyId: company.id, homNay: moc.homNay, laDemo: company.la_demo === true, boi: userId })), duoc_sua: duocLam(vaiTro, "ghi_chung_tu") });
+    case "viec_doc": {
+      const ct = await docChiTietViec(db, company.id, String(body.id ?? ""), moc.homNay);
+      if (!ct) return loi("KHONG_THAY", "Không tìm thấy việc này.", 404);
+      return json({ ...ct, duoc_sua: duocLam(vaiTro, "ghi_chung_tu") });
+    }
+    case "viec_da_nop": {
+      const ma = typeof body.ma_ho_so === "string" ? body.ma_ho_so.trim().slice(0, 60) : "";
+      const r = await ghiNhanDaNopViec(db, { companyId: company.id, userId, caseId: String(body.id ?? ""), maHoSo: ma || null, taiLieuId: typeof body.tai_lieu_id === "string" ? body.tai_lieu_id : null, homNay: moc.homNay });
+      return json({ hanh_trinh: r.ht, viec: r.viec });
+    }
+    case "viec_phan_hoi": {
+      const r = await ghiNhanPhanHoi(db, { companyId: company.id, userId, caseId: String(body.id ?? ""), noiDung: String(body.noi_dung ?? "").slice(0, 500), taiLieuId: typeof body.tai_lieu_id === "string" ? body.tai_lieu_id : null, homNay: moc.homNay });
+      return json({ hanh_trinh: r.ht, viec: r.viec });
+    }
+    case "viec_huy":
+      return json({ viec: await huyViec(db, { companyId: company.id, userId, caseId: String(body.id ?? "") }) });
     case "hanh_trinh_soan": {
       // Bước "soạn tài liệu": máy chủ dựng từ dữ liệu mới + dữ kiện của hành trình, lưu vào thư viện.
       const ht = await docHanhTrinh(db, company.id, String(body.id ?? ""));
@@ -910,8 +953,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (b.trang_thai === "blocked") return loi("CHUA_DU", b.ly_do_chan ?? "Bước này chưa mở.", 400);
       const ban = await dungBan(db, company.id, b.dich_hanh_dong, moc, ht);
       const tl = await taoTaiLieu(db, { companyId: company.id, userId, ban, hanhTrinhId: ht.id, hoSoViecId: ht.ho_so_viec_id });
-      const moi = await danhDauBuoc(db, { companyId: company.id, userId, id: ht.id, khoa: b.khoa, trangThai: "completed" });
-      return json({ tai_lieu: tl, hanh_trinh: moi });
+      const moi = await danhDauBuocViec(db, { companyId: company.id, userId, htId: ht.id, khoa: b.khoa, trangThai: "completed", homNay: moc.homNay });
+      return json({ tai_lieu: tl, hanh_trinh: moi.ht, viec: moi.viec });
     }
 
     // ── Prompt 4: thư viện tài liệu ─────────────────────────────────────────
@@ -1262,7 +1305,7 @@ Deno.serve(async (req) => {
     return await xuLy(db, user.id, company, ct.vai_tro, hanhDong, body);
   } catch (e) {
     if (e instanceof LoiQuyen) return loi("KHONG_DU_QUYEN", e.message, 403);
-    if (e instanceof LoiHanhTrinh || e instanceof LoiTaiLieu || e instanceof LoiNop) return loi("KHONG_HOP_LE", e.message, 400);
+    if (e instanceof LoiHanhTrinh || e instanceof LoiTaiLieu || e instanceof LoiNop || e instanceof LoiViec) return loi("KHONG_HOP_LE", e.message, 400);
     // Không in thân yêu cầu: có thể chứa ảnh chứng từ hoặc câu hỏi về tiền của khách.
     console.error("tro-ly:", e instanceof Error ? e.message : e);
     return loi("LOI_HE_THONG", "MIMI gặp lỗi khi đọc dữ liệu. Thử lại sau ít phút.", 500);

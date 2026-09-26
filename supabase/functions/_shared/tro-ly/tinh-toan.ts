@@ -26,6 +26,7 @@ import { goiYTienVao, TEN_LOAI_TIEN_VAO, type GoiYTienVao, type LoaiTienVao } fr
 import { mocKeTiep, TEN_LOAI_MOC, type MocThue } from '../luat/lich-thue.ts';
 import type { LichCongTy } from '../luat/doc-lich-thue.ts';
 import type { HanhTrinhDay } from '../hanh-trinh/luu.ts';
+import { TEN_MUC, type ViecCanLam } from '../viec/dong-co-viec.ts';
 import { buocTiepTheo, cauHoiTiepTheo, tinhBuoc } from '../hanh-trinh/dong-co.ts';
 import { MAU_HANH_TRINH, type LoaiHanhTrinh } from '../hanh-trinh/mau.ts';
 import { phanTichChenhLech } from '../phan-tich/chenh-lech.ts';
@@ -162,6 +163,8 @@ export interface DuLieu {
   hanhTrinh?: { loai: LoaiHanhTrinh; luu: boolean; moi: boolean; ht: HanhTrinhDay | null } | null;
   /** Các việc đang mở của công ty — cho bộ ưu tiên và ngữ cảnh làm việc. */
   hanhTrinhMo?: HanhTrinhDay[];
+  /** Prompt 4B: danh sách Việc cần làm chuẩn (cùng nguồn với Tổng quan và pet). null = chưa đọc được. */
+  viecCanLam?: ViecCanLam[] | null;
   /** Prompt 5: yêu cầu nộp đã ghi, và tài liệu sẵn sàng nộp. null = đọc lỗi. */
   thucThi?: { yeu_cau: YeuCauNop[]; tai_lieu_cho_nop: { id: string; tieu_de: string; loai: string }[] } | null;
 }
@@ -1501,7 +1504,14 @@ export function viecUuTien(d: DuLieu): KetQuaNangLuc {
     if (!ung.some((x) => x.cau === cau)) ung.push({ cau, vi_sao, muc, diem: DIEM_MUC[muc] + phu });
   };
 
-  for (const h of d.hanhTrinhMo ?? []) {
+  if (d.viecCanLam) {
+    const MUC_P: Record<number, MucUuTien> = { 1: 'P0', 2: 'P1', 3: 'P1', 4: 'P2', 5: 'P3', 6: 'P3', 7: 'P4' };
+    for (const v of d.viecCanLam) {
+      const cau = v.hanh_dong && v.hanh_dong.tieu_de !== v.tieu_de ? `${v.tieu_de}: ${v.hanh_dong.tieu_de}` : v.tieu_de;
+      them(MUC_P[v.muc] ?? 'P4', cau, `${TEN_MUC[v.muc]}${v.khi ? ` — ${v.khi.nhan}` : ''}`, 10 - v.muc);
+    }
+  }
+  for (const h of d.viecCanLam ? [] : d.hanhTrinhMo ?? []) {
     const hanTraLoi = h.du_kien.han_tra_loi?.gia_tri;
     const conNgay = hanTraLoi ? soNgayGiua(d.homNay, hanTraLoi) : null;
     const viec = h.cau_hoi ? `${h.tieu_de}: trả lời "${h.cau_hoi.cau}"` : (() => { const b = buocTiepTheo(h.buoc); return b ? `${h.tieu_de}: ${b.tieu_de}` : null; })();
@@ -1513,7 +1523,7 @@ export function viecUuTien(d: DuLieu): KetQuaNangLuc {
     }
   }
 
-  const l = d.lichThue;
+  const l = d.viecCanLam ? null : d.lichThue;
   if (l) {
     // Hạn trong 7 ngày tới: tuần này. Hạn đã qua KHÔNG tự coi là quá hạn — MIMI không biết bạn đã nộp chưa.
     for (const m of l.lich) {
@@ -1579,9 +1589,10 @@ export function hanhTrinhNL(d: DuLieu): KetQuaNangLuc {
   if (!h.luu) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Vai trò của bạn xem được hướng dẫn nhưng không mở việc được. Chủ doanh nghiệp, quản trị hoặc kế toán mở việc này.' });
   the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'MIMI chuẩn bị, bạn quyết. MIMI không nộp, không ký thay.' });
   const tom = !h.luu ? `Hướng dẫn: ${mau.tieu_de}.`
-    : h.moi ? `MIMI đã mở việc "${mau.tieu_de}" và sẽ hỏi từng câu một.` : `Tiếp tục việc "${mau.tieu_de}".`;
+    : h.moi ? `MIMI đã mở việc "${mau.tieu_de}" và sẽ hỏi từng câu một — chỉ những gì MIMI chưa biết.`
+      : `Bạn đang có việc "${mau.tieu_de}" trong quá trình xử lý — MIMI làm tiếp từ chỗ đang dở, không mở việc mới.`;
   return kq('hanh_trinh', 'tro_ly', `${tom}${cau ? ` Câu đầu tiên: ${cau.cau}` : ''}`, {
-    the, nguon: [N.hanhTrinh], trang: [h.ht ? { nhan: 'Mở việc này', duong_dan: `/dashboard/viec-can-lam?ht=${h.ht.id}` } : T.viecCanLam],
+    the, nguon: [N.hanhTrinh], trang: [h.ht ? { nhan: 'Mở việc này', duong_dan: h.ht.ho_so_viec_id ? `/dashboard/viec-can-lam?viec=${h.ht.ho_so_viec_id}` : `/dashboard/viec-can-lam?ht=${h.ht.id}` } : T.viecCanLam],
   });
 }
 

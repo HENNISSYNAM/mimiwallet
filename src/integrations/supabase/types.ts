@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      bang_chung_viec: {
+        Row: {
+          company_id: string
+          gia_tri: string | null
+          ho_so_viec_id: string
+          id: string
+          khoa_trung: string
+          loai: string
+          nguon: string
+          tai_lieu_id: string | null
+          tao_boi: string | null
+          tao_luc: string
+          trang_thai_xac_minh: string
+        }
+        Insert: {
+          company_id: string
+          gia_tri?: string | null
+          ho_so_viec_id: string
+          id?: string
+          khoa_trung: string
+          loai: string
+          nguon: string
+          tai_lieu_id?: string | null
+          tao_boi?: string | null
+          tao_luc?: string
+          trang_thai_xac_minh: string
+        }
+        Update: {
+          company_id?: string
+          gia_tri?: string | null
+          ho_so_viec_id?: string
+          id?: string
+          khoa_trung?: string
+          loai?: string
+          nguon?: string
+          tai_lieu_id?: string | null
+          tao_boi?: string | null
+          tao_luc?: string
+          trang_thai_xac_minh?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bang_chung_viec_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chi_so_pilot"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "bang_chung_viec_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bang_chung_viec_ho_so_viec_id_fkey"
+            columns: ["ho_so_viec_id"]
+            isOneToOne: false
+            referencedRelation: "ho_so_viec"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bang_chung_viec_tai_lieu_id_fkey"
+            columns: ["tai_lieu_id"]
+            isOneToOne: false
+            referencedRelation: "tai_lieu"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bang_gia_model: {
         Row: {
           gia_ra_usd_moi_trieu: number
@@ -1396,13 +1467,22 @@ export type Database = {
           cap_nhat_luc: string
           company_id: string
           dau_van_tay: string
+          doi_tuong: string | null
           giai_quyet_boi: string | null
           giai_quyet_luc: string | null
+          han_luat: string | null
+          han_luat_nguon: string | null
+          hen_kiem_lai: string | null
           id: string
           ket_qua: string | null
+          ky: string | null
           loai: string
           muc_do: string
+          ngay_nen_lam: string | null
+          ngay_nen_lam_ly_do: string | null
           nguon: Json
+          phien_ban: number
+          so_lan_nhac: number
           tao_boi: string | null
           tao_luc: string
           tieu_de: string
@@ -1412,13 +1492,22 @@ export type Database = {
           cap_nhat_luc?: string
           company_id: string
           dau_van_tay: string
+          doi_tuong?: string | null
           giai_quyet_boi?: string | null
           giai_quyet_luc?: string | null
+          han_luat?: string | null
+          han_luat_nguon?: string | null
+          hen_kiem_lai?: string | null
           id?: string
           ket_qua?: string | null
+          ky?: string | null
           loai: string
           muc_do?: string
+          ngay_nen_lam?: string | null
+          ngay_nen_lam_ly_do?: string | null
           nguon?: Json
+          phien_ban?: number
+          so_lan_nhac?: number
           tao_boi?: string | null
           tao_luc?: string
           tieu_de: string
@@ -1428,13 +1517,22 @@ export type Database = {
           cap_nhat_luc?: string
           company_id?: string
           dau_van_tay?: string
+          doi_tuong?: string | null
           giai_quyet_boi?: string | null
           giai_quyet_luc?: string | null
+          han_luat?: string | null
+          han_luat_nguon?: string | null
+          hen_kiem_lai?: string | null
           id?: string
           ket_qua?: string | null
+          ky?: string | null
           loai?: string
           muc_do?: string
+          ngay_nen_lam?: string | null
+          ngay_nen_lam_ly_do?: string | null
           nguon?: Json
+          phien_ban?: number
+          so_lan_nhac?: number
           tao_boi?: string | null
           tao_luc?: string
           tieu_de?: string
