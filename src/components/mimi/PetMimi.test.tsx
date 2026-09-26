@@ -80,4 +80,43 @@ describe('Pet MIMI', () => {
     (goi.props.onLenhPet as () => void)();
     await waitFor(() => expect(screen.queryByRole('button', { name: /^MIMI —/ })).toBeNull());
   });
+
+  it('bị kéo → mèo chạy (ảnh chạy, quay mặt theo hướng kéo); thả ra → tiếp đất rồi vui', async () => {
+    mo();
+    fireEvent.pointerDown(meo(), { button: 0, clientX: 300, clientY: 300, pointerId: 1 });
+    fireEvent.pointerMove(meo(), { clientX: 280, clientY: 300, pointerId: 1 });
+    await new Promise((r) => setTimeout(r, 40));
+    fireEvent.pointerMove(meo(), { clientX: 200, clientY: 300, pointerId: 1 });
+    const anh = meo() as HTMLImageElement;
+    expect(anh.getAttribute('data-dang-keo')).toBe('true');
+    expect(anh.getAttribute('src')).toContain('run');
+    expect(anh.style.transform).toBe('scaleX(-1)'); // kéo sang trái → quay mặt sang trái
+    fireEvent.pointerUp(meo(), { clientX: 200, clientY: 300, pointerId: 1 });
+    await waitFor(() => expect(meo().getAttribute('data-dang-keo')).toBeNull());
+    expect(meo().getAttribute('src')).toContain('happy');
+  });
+
+  it('trình duyệt không có cửa sổ nổi → không hiện nút "ra màn hình máy"', () => {
+    mo();
+    fireEvent.contextMenu(meo());
+    expect(screen.queryByRole('menuitem', { name: 'Đưa MIMI ra màn hình máy' })).toBeNull();
+  });
+
+  it('có cửa sổ nổi → mèo sang cửa sổ đó, trang không còn mèo; đóng cửa sổ → mèo về trang', async () => {
+    const cuaSo = document.implementation.createHTMLDocument('pip');
+    const w = Object.assign(new EventTarget(), { document: cuaSo, focus: () => {} }) as unknown as Window;
+    Object.defineProperty(window, 'documentPictureInPicture', { value: { window: null, requestWindow: async () => w }, configurable: true });
+    Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true });
+    try {
+      mo();
+      fireEvent.contextMenu(meo());
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Đưa MIMI ra màn hình máy' }));
+      await waitFor(() => expect(cuaSo.body.querySelector('img[alt^="MIMI"]')).not.toBeNull());
+      expect(screen.queryByRole('button', { name: /^MIMI —/ })).toBeNull();
+      (w as unknown as EventTarget).dispatchEvent(new Event('pagehide'));
+      expect(await screen.findByRole('button', { name: /^MIMI —/ })).toBeTruthy();
+    } finally {
+      delete (window as unknown as Record<string, unknown>).documentPictureInPicture;
+    }
+  });
 });
