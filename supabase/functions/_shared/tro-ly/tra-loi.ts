@@ -8,6 +8,7 @@ import type { BuocXuLy, DeXuat, KetQuaNangLuc, NhomNangLuc, TraLoi } from './kie
 import { cauCanhBao, trangThaiChung } from './do-day.ts';
 import { boDau } from './y-dinh.ts';
 import { hoiChiSoKeToan } from '../chi-so/tu-dien.ts';
+import { CAU_CHUA_HIEU_TU_NHIEN, traLoiTroChuyen } from './tro-chuyen.ts';
 
 export const TEN_NHOM: Record<NhomNangLuc, string> = {
   tro_ly: 'Trợ lý & agent',
@@ -19,8 +20,7 @@ export const TEN_NHOM: Record<NhomNangLuc, string> = {
   ket_noi: 'Kết nối',
 };
 
-export const CAU_CHUA_HIEU =
-  'Mình chưa hiểu câu này. Bạn thử hỏi về: khoản đang chờ duyệt, chi phí tháng này, khoản chi thiếu hoá đơn, công nợ, dòng tiền, chi phí AI, báo cáo hoặc kết nối.';
+export const CAU_CHUA_HIEU = CAU_CHUA_HIEU_TU_NHIEN;
 
 export const SO_DE_XUAT_TOI_DA = 10;
 
@@ -33,9 +33,11 @@ export const CAU_CHUA_CO_SO_KE_TOAN =
 export function dungTraLoi(o: { ketQua: KetQuaNangLuc[]; cheDo: TraLoi['che_do']; cauMoHinh?: string; cauHoi?: string }): TraLoi {
   const { ketQua } = o;
   if (!ketQua.length) {
+    // Chưa có mô hình AI: câu giao tiếp thường ("mimi ơi", "nói chuyện được không") vẫn được đáp tự nhiên.
+    const troChuyen = o.cauMoHinh ? null : traLoiTroChuyen(o.cauHoi);
     return {
-      cau: o.cauMoHinh?.trim() || CAU_CHUA_HIEU,
-      buoc: [{ ten: 'hieu', cau: o.cauMoHinh ? 'Câu hỏi không cần đọc số liệu của công ty.' : 'Chưa nhận ra câu hỏi thuộc việc nào.' }],
+      cau: o.cauMoHinh?.trim() || troChuyen || CAU_CHUA_HIEU,
+      buoc: [{ ten: 'hieu', cau: o.cauMoHinh || troChuyen ? 'Câu hỏi không cần đọc số liệu của công ty.' : 'Chưa nhận ra câu hỏi thuộc việc nào.' }],
       ket_qua: [],
       che_do: o.cheDo,
       do_day: 'complete',
