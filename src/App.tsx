@@ -41,6 +41,7 @@ const TrangNoiDungPage = lazy(() => import("./pages/TrangNoiDungPage"));
 const KhachHang = lazy(() => import("./pages/KhachHang"));
 const TriTueNhanTaoPage = lazy(() => import("./pages/TriTueNhanTaoPage"));
 const Login = lazy(() => import("./pages/Login"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const BankCallback = lazy(() => import("./pages/BankCallback"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
@@ -136,6 +137,7 @@ const App = () => (
                   Cài đặt; đây là đường thứ hai. Cố ý không đặt nút xoá trên trang công khai. */}
               <Route path="/xoa-tai-khoan" element={<Page path="/xoa-tai-khoan" title="Xoá tài khoản — MIMI WALLET" description="Cách xoá tài khoản MIMI Wallet và toàn bộ dữ liệu: giao dịch, hoá đơn, chứng từ, liên kết ngân hàng và hồ sơ doanh nghiệp."><XoaTaiKhoan /></Page>} />
               <Route path="/terms" element={<Page path="/terms" title="Điều khoản sử dụng — MIMI WALLET" description="Điều khoản và điều kiện khi sử dụng dịch vụ MIMI Wallet: quyền, nghĩa vụ và giới hạn trách nhiệm của các bên."><Terms /></Page>} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, khoản vay và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
               {/* Khôi phục mật khẩu. Trước đây KHÔNG có đường nào: chỉ có "Đổi
                   mật khẩu" trong Cài đặt, mà muốn vào Cài đặt thì phải đăng
