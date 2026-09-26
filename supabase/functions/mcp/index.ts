@@ -12,6 +12,7 @@
  * với API HTTP `tac-tu`. File này chỉ nối hai thứ đó với HTTP.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { daBiKhoaViSai, ghiLanSai, idTuIp, ipNguoiGoi } from "../_shared/an-ninh/gioi-han.ts";
 import { xuLyMcp, type KetQuaChay } from "../_shared/mcp/may-chu.ts";
 import { goiTacTu } from "../_shared/tac-tu/cong-tac-tu.ts";
 import { HEADER_KHOA } from "../_shared/tac-tu/khoa.ts";
@@ -79,7 +80,12 @@ Deno.serve(async (req) => {
       coKhoa: Boolean(khoa),
       chay: async (ten, doiSo) => {
         if (ten === "tra_ma_ngan_hang") return traNganHang(doiSo);
-        return await goiTacTu(layDb(), khoa!, ten, doiSo);
+        // Chống dò khoá agent — cùng bộ đếm với `tac-tu`, nên đổi cửa không lách được.
+        const khoaIp = await idTuIp(ipNguoiGoi(req), "tac-tu");
+        if (await daBiKhoaViSai(layDb(), khoaIp, "sai_khoa_agent")) return { status: 429, body: { error: "Thử sai quá nhiều lần. Đợi 10 phút.", ma: "THU_SAI_QUA_NHIEU" } };
+        const kq = await goiTacTu(layDb(), khoa!, ten, doiSo);
+        if ((kq.body as { ma?: string })?.ma === "KHOA_SAI") await ghiLanSai(layDb(), khoaIp, "sai_khoa_agent");
+        return kq;
       },
     });
     if (ra === null) return new Response(null, { status: 202, headers: corsHeaders });

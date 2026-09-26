@@ -19,6 +19,7 @@
  * theo Nghị định 52/2024/NĐ-CP.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { daBiKhoaViSai, ghiLanSai, idTuIp, ipNguoiGoi } from "../_shared/an-ninh/gioi-han.ts";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { DANH_SACH_NGAN_HANG } from "../_shared/bank/ngan-hang.ts";
@@ -370,7 +371,11 @@ Deno.serve(async (req) => {
 
     const khoa = req.headers.get(HEADER_KHOA);
     if (khoa !== null) {
+      // Chống dò khoá agent: IP sai quá 20 lần / 10 phút bị từ chối trước cả khi tra khoá.
+      const khoaIp = await idTuIp(ipNguoiGoi(req), "tac-tu");
+      if (await daBiKhoaViSai(db, khoaIp, "sai_khoa_agent")) return loi("THU_SAI_QUA_NHIEU", "Thử sai quá nhiều lần. Đợi 10 phút.", 429);
       const kq = await goiTacTu(db, khoa.trim(), hanhDong, body);
+      if ((kq.body as { ma?: string })?.ma === "KHOA_SAI") await ghiLanSai(db, khoaIp, "sai_khoa_agent");
       return json(kq.body, kq.status);
     }
 

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { duocGoi, qua429 } from "../_shared/an-ninh/gioi-han.ts";
 import { bankhubConfigFromEnv, removeGrant } from "../_shared/bank/bankhub.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 
@@ -66,6 +67,8 @@ Deno.serve(async (req) => {
       error: authError,
     } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return json({ error: "Invalid token" }, 401);
+    // Giới hạn tần suất mỗi người (26/09/2026): chống bot và script dội yêu cầu.
+    if (!(await duocGoi(supabase, user.id, [{ hanh_dong: "xoa_tai_khoan_gio", cua_so_giay: 3600, toi_da: 5 }], false))) return qua429(corsHeaders);
 
     const body = await req.json().catch(() => ({}));
     if (body?.confirm !== CAU_XAC_NHAN) {

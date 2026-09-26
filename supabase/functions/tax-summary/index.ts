@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { duocGoi, qua429 } from "../_shared/an-ninh/gioi-han.ts";
 import { resolveCompany } from "../_shared/company.ts";
 import { congTyLaDemo } from "../_shared/minh-hoa.ts";
 import { thresholdStatus } from "../_shared/ledger/internal-transfer.ts";
@@ -67,6 +68,8 @@ Deno.serve(async (req) => {
       error: authError,
     } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return json({ error: "Invalid token" }, 401);
+    // Giới hạn tần suất mỗi người (26/09/2026): chống bot và script dội yêu cầu.
+    if (!(await duocGoi(supabase, user.id, [{ hanh_dong: "tax_summary_phut", cua_so_giay: 60, toi_da: 30 }], false))) return qua429(corsHeaders);
 
     /*
      * Công ty ĐANG CHỌN (sửa 25/09/2026): người thuộc nhiều công ty trước đây luôn nhận số của công ty

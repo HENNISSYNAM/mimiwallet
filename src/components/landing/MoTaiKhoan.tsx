@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,12 +17,24 @@ import { supabase } from '@/integrations/supabase/client';
 
 const LA_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/**
+ * Chống bot (26/09/2026) — hai dấu hiệu rẻ mà bot đơn giản hầu như luôn để lộ:
+ *   - ô bẫy `website` người thật không thấy, không tab tới được; bot điền mọi ô;
+ *   - gửi dưới 1,5 giây sau khi trang hiện: người không gõ email nhanh vậy.
+ * Bị nghi là bot thì KHÔNG ghi gì, nhưng vẫn đi tiếp như thường — không cho bot biết đã bị lọc.
+ * Máy chủ còn một lớp nữa: ràng buộc email, email trùng, và chặn lũ toàn cục (migration 20260925180000).
+ */
+export const GIAY_TOI_THIEU = 1500;
+export const laBot = (o: { bay: string; batDau: number; luc: number }) => o.bay.trim() !== '' || o.luc - o.batDau < GIAY_TOI_THIEU;
+
 export default function MoTaiKhoan() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [congTy, setCongTy] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
   const [dangDi, setDangDi] = useState(false);
+  const [bay, setBay] = useState('');
+  const batDau = useRef(Date.now());
 
   const gui = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +48,8 @@ export default function MoTaiKhoan() {
     setDangDi(true);
     // Lưu lại để đội MIMI biết ai đang thử; hỏng thì vẫn cho đi tiếp, không chặn người dùng.
     const p = new URLSearchParams(window.location.search);
-    const { error } = await supabase.from('waitlist').insert({
+    const nghiBot = laBot({ bay, batDau: batDau.current, luc: Date.now() });
+    const { error } = nghiBot ? { error: null } : await supabase.from('waitlist').insert({
       email: em,
       company_name: ct || em.split('@')[1],
       utm_source: p.get('utm_source'),
@@ -64,6 +77,12 @@ export default function MoTaiKhoan() {
           aria-label="Tên công ty (không bắt buộc)"
           placeholder="Tên công ty (không bắt buộc)"
           className="w-full flex-1 rounded-xl border border-border bg-card px-5 py-3.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-primary/10 sm:w-auto"
+        />
+        {/* Ô bẫy bot: ngoài màn hình, không đọc bởi trình đọc màn hình, không tab tới. */}
+        <input
+          name="website" value={bay} onChange={(e) => setBay(e.target.value)}
+          tabIndex={-1} autoComplete="off" aria-hidden="true"
+          style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, opacity: 0 }}
         />
         <button
           type="submit"

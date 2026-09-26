@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { daBiKhoaViSai, ghiLanSai, idTuIp, ipNguoiGoi } from "../_shared/an-ninh/gioi-han.ts";
 import { bankhubConfigFromEnv, fetchQrPayIdentity } from "../_shared/bank/bankhub.ts";
 import { kiemGrantQr, nhanKetLuan } from "../_shared/bank/kiem-grant-qr.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
@@ -141,6 +142,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  // Chống dò khoá (26/09/2026): IP sai quá 20 lần / 10 phút bị từ chối trước cả khi so khoá.
+  const gac = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+  const khoaIp = await idTuIp(ipNguoiGoi(req), "cas-webhook");
+  if (await daBiKhoaViSai(gac, khoaIp, "sai_khoa_cas")) return new Response(JSON.stringify({ error: "Thử sai quá nhiều lần. Đợi 10 phút." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "600" } });
   const presented = presentedKey(new URL(req.url));
   const khoaKhop = expectedMoi && safeEqual(presented, expectedMoi)
     ? "moi"
@@ -149,6 +154,7 @@ Deno.serve(async (req) => {
       : null;
   if (!khoaKhop) {
     console.warn("rejected cas webhook: bad or missing key");
+    await ghiLanSai(gac, khoaIp, "sai_khoa_cas");
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

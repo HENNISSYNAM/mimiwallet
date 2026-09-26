@@ -11,6 +11,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { nhanViec } from '@/lib/mimiLamHo';
 import { useMimiLamHo } from '@/components/mimi/MimiLamHo';
 import { goiTroLy } from '@/lib/goiTroLy';
+import { supabase } from '@/integrations/supabase/client';
 import { dungLichSu, type TraLoi } from '@/lib/troLy';
 
 /**
@@ -126,12 +127,15 @@ export default function AIChatWidget() {
     setIsSpeaking(true);
 
     try {
+      // Phiên của người dùng, không phải khoá anon công khai: máy chủ từ chối khoá anon (25/09/2026).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Cần đăng nhập');
       const resp = await fetch(TTS_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           apikey: SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ text: lastAssistant.content.slice(0, 1000) }),
       });

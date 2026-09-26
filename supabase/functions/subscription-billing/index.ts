@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { duocGoi, qua429 } from "../_shared/an-ninh/gioi-han.ts";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 import { taoMaThamChieu } from "../_shared/billing/subscription.ts";
@@ -114,6 +115,8 @@ Deno.serve(async (req) => {
       error: authError,
     } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return json({ error: "Invalid token" }, 401);
+    // Giới hạn tần suất mỗi người (26/09/2026): chống bot và script dội yêu cầu.
+    if (!(await duocGoi(supabase, user.id, [{ hanh_dong: "thanh_toan_phut", cua_so_giay: 60, toi_da: 20 }, { hanh_dong: "thanh_toan_ngay", cua_so_giay: 86400, toi_da: 200 }], false))) return qua429(corsHeaders);
 
     const chonCty = typeof body?.company_id === "string" ? body.company_id : null;
     const ctVai = await resolveCompanyVaiTro<{ id: string }>(supabase, user.id, "id", chonCty);

@@ -18,6 +18,7 @@
  * Tiền là USD — đơn vị nhà cung cấp tính. Không quy đổi, không ước tính tiền từ token.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { duocGoi, qua429 } from "../_shared/an-ninh/gioi-han.ts";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { decryptField, encryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
@@ -478,6 +479,8 @@ Deno.serve(async (req) => {
     if (!authHeader) return loi("CHUA_DANG_NHAP", "Cần đăng nhập.", 401);
     const { data: { user }, error: authError } = await db.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
+    // Giới hạn tần suất mỗi người (26/09/2026): chống bot và script dội yêu cầu.
+    if (!(await duocGoi(db, user.id, [{ hanh_dong: "chi_phi_ai_phut", cua_so_giay: 60, toi_da: 20 }], false))) return qua429(corsHeaders);
 
     const chon = typeof body?.company_id === "string" ? body.company_id : null;
     const ct = await resolveCompanyVaiTro<{ id: string }>(db, user.id, "id", chon);
