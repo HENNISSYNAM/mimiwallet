@@ -6,8 +6,10 @@ import { IconCongCu } from '@/components/cong-cu/IconCongCu';
 import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import {
   AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2,
-  Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, X,
+  Mic, Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, Square, Volume2, X,
 } from 'lucide-react';
+import { CAU_LOI_NGHE, useNgheGiong } from '@/hooks/useNgheGiong';
+import { docGiong, dungDoc } from '@/lib/docGiong';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
 import { toast } from 'sonner';
@@ -120,7 +122,19 @@ export default function TroLyPage() {
     if (luot.length) cuoiHoiThoai.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }, [luot.length]);
 
-  const hoi = useCallback(async (cauHoi: string, pv: NhomNangLuc | null = phamVi) => {
+  // ── Giọng nói (26/09/2026): nói câu hỏi bằng mic; MIMI đọc to câu trả lời bằng giọng của trình duyệt ──
+  const [dangDoc, setDangDoc] = useState<number | null>(null);
+  const docTraLoi = useCallback(async (luotId: number, van: string) => {
+    if (dangDoc === luotId) { dungDoc(); setDangDoc(null); return; }
+    setDangDoc(luotId);
+    const kq = await docGiong(van);
+    setDangDoc((d) => (d === luotId ? null : d));
+    if (kq === 'khong_co_giong_viet') toast.error('Máy này chưa có giọng đọc tiếng Việt. Trên Windows: Cài đặt → Thời gian & ngôn ngữ → Giọng nói → thêm Tiếng Việt.');
+    if (kq === 'khong_ho_tro') toast.error('Trình duyệt này chưa đọc được thành tiếng.');
+  }, [dangDoc]);
+  useEffect(() => () => dungDoc(), []);
+
+  const hoi = useCallback(async (cauHoi: string, pv: NhomNangLuc | null = phamVi, bangGiong = false) => {
     const cau = cauHoi.trim();
     if (!cau || dangHoi) return;
     // `/pet`: ẩn/hiện pet MIMI (pet không có khung chat riêng — lệnh gõ ở đây).
@@ -141,12 +155,19 @@ export default function TroLyPage() {
     try {
       const traLoi = (await goiTroLy('hoi', { cau, pham_vi: pv, lich_su: lichSu })) as TraLoi;
       setLuot((ds) => ds.map((l) => (l.id === id ? { ...l, traLoi } : l)));
+      // Hỏi bằng giọng thì nghe trả lời bằng giọng — cuộc nói chuyện, không phải đọc màn hình.
+      if (bangGiong && traLoi?.cau) void docTraLoi(id, traLoi.cau);
     } catch (e) {
       setLuot((ds) => ds.map((l) => (l.id === id ? { ...l, loi: e instanceof Error ? e.message : t('man.troLy.loi.hoi') } : l)));
     } finally {
       setDangHoi(false);
     }
-  }, [dangHoi, luot, phamVi]);
+  }, [dangHoi, luot, phamVi, docTraLoi]);
+
+  const nghe = useNgheGiong({
+    onCau: (cau) => void hoi(cau.slice(0, 1000), phamVi, true),
+    onLoi: (l) => toast.error(CAU_LOI_NGHE[l]),
+  });
 
   // Công cụ dạng câu hỏi mở trang này với ?hoi=… — hỏi đúng một lần rồi xoá khỏi địa chỉ,
   // để bấm "quay lại" hay tải lại trang không hỏi lặp.
@@ -154,8 +175,9 @@ export default function TroLyPage() {
     const cau = thamSo.get('hoi');
     if (!cau || daHoiTuDuongDan.current) return;
     daHoiTuDuongDan.current = true;
+    const bangGiong = thamSo.get('doc') === '1';
     datThamSo({}, { replace: true });
-    void hoi(cau.slice(0, 1000), null);
+    void hoi(cau.slice(0, 1000), null, bangGiong);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thamSo]);
 
@@ -300,6 +322,19 @@ export default function TroLyPage() {
                   </div>
                 </PopoverContent>
               </Popover>
+              {nghe.coHoTro && (
+                <button
+                  type="button"
+                  onClick={nghe.batDau}
+                  disabled={dangHoi}
+                  aria-pressed={nghe.dangNghe}
+                  aria-label={nghe.dangNghe ? 'Đang nghe — bấm để dừng' : 'Nói câu hỏi'}
+                  title={nghe.dangNghe ? 'Đang nghe — bấm để dừng' : 'Nói câu hỏi (tiếng Việt)'}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${nghe.dangNghe ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
+                >
+                  <Mic size={18} className={nghe.dangNghe ? 'animate-pulse' : undefined} />
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={!nhap.trim() || dangHoi}
@@ -538,6 +573,8 @@ export default function TroLyPage() {
                 <TraLoiMimi
                   luotId={l.id}
                   traLoi={l.traLoi}
+                  dangDoc={dangDoc === l.id}
+                  onDoc={() => void docTraLoi(l.id, l.traLoi?.cau ?? '')}
                   viec={viec}
                   onChon={(dx) => (canXacNhan(dx) ? setXacNhan({ luotId: l.id, dx }) : void lamDeXuat(l.id, dx))}
                 />
@@ -785,9 +822,11 @@ function TheThueCuaBan({ thue, onSua }: { thue: ThueManDau; onSua: () => void })
 
 // ── Câu trả lời ─────────────────────────────────────────────────────────────
 
-function TraLoiMimi({ luotId, traLoi, viec, onChon }: {
+function TraLoiMimi({ luotId, traLoi, dangDoc, onDoc, viec, onChon }: {
   luotId: number;
   traLoi: TraLoi;
+  dangDoc: boolean;
+  onDoc: () => void;
   viec: Record<string, TrangThaiViec>;
   onChon: (dx: DeXuat) => void;
 }) {
@@ -812,7 +851,16 @@ function TraLoiMimi({ luotId, traLoi, viec, onChon }: {
           ))}
         </ol>
       )}
-      <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground">{traLoi.cau}</p>
+      <div className="flex items-start gap-2">
+        <p className="flex-1 whitespace-pre-line text-[15px] leading-relaxed text-foreground">{traLoi.cau}</p>
+        <button
+          type="button" onClick={onDoc} aria-pressed={dangDoc}
+          aria-label={dangDoc ? 'Dừng đọc' : 'Đọc to câu trả lời'} title={dangDoc ? 'Dừng đọc' : 'Đọc to câu trả lời'}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          {dangDoc ? <Square size={14} /> : <Volume2 size={16} />}
+        </button>
+      </div>
       {traLoi.ket_qua.map((r) => (
         <KetQua key={r.nang_luc} luotId={luotId} r={r} viec={viec} yeuCauDaXong={yeuCauDaXong} onChon={onChon} />
       ))}

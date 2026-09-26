@@ -184,6 +184,39 @@ describe('MIMI Assistant — công cụ', () => {
 });
 
 describe('MIMI Assistant — hỏi đáp', () => {
+  it('giọng nói: bấm mic, nói → câu hỏi gửi vào MIMI và câu trả lời được đọc to bằng giọng tiếng Việt; bấm loa lần nữa thì dừng', async () => {
+    const doc: string[] = [];
+    let huy = 0;
+    class Utt { text: string; voice: unknown = null; lang = ''; rate = 1; onend: (() => void) | null = null; onerror: (() => void) | null = null; constructor(t: string) { this.text = t; } }
+    const ss = {
+      getVoices: () => [{ name: 'Microsoft An', lang: 'vi-VN', localService: true }, { name: 'Zira', lang: 'en-US', localService: true }],
+      speak: (x: Utt) => { doc.push(x.text); setTimeout(() => x.onend?.(), 0); },
+      cancel: () => { huy += 1; },
+      addEventListener: () => {},
+    };
+    class NhanDien { lang = ''; interimResults = false; maxAlternatives = 1; onresult: ((e: unknown) => void) | null = null; onerror: ((e: unknown) => void) | null = null; onend: (() => void) | null = null;
+      start() { setTimeout(() => { this.onresult?.({ results: { 0: { 0: { transcript: 'Khoản chi nào đang chờ tôi duyệt' } } } }); this.onend?.(); }, 0); } stop() {} abort() {} }
+    const w = window as unknown as Record<string, unknown>;
+    Object.assign(w, { speechSynthesis: ss, SpeechSynthesisUtterance: Utt, SpeechRecognition: NhanDien });
+    try {
+      dung();
+      fireEvent.click(await screen.findByRole('button', { name: 'Nói câu hỏi' }));
+      await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Khoản chi nào đang chờ tôi duyệt' })));
+      await waitFor(() => expect(doc.join(' ')).toContain('Có 1 khoản đang chờ bạn duyệt'));
+      expect(doc.join(' ')).toContain('đồng'); // "₫" đọc thành "đồng"
+      fireEvent.click(await screen.findByRole('button', { name: /Đọc to câu trả lời|Dừng đọc/ }));
+      expect(huy).toBeGreaterThan(0);
+    } finally {
+      delete w.speechSynthesis; delete w.SpeechSynthesisUtterance; delete w.SpeechRecognition;
+    }
+  });
+
+  it('trình duyệt không nghe được giọng nói → không hiện nút mic hỏng', async () => {
+    dung();
+    await screen.findByRole('button', { name: 'Gửi câu hỏi' });
+    expect(screen.queryByRole('button', { name: 'Nói câu hỏi' })).toBeNull();
+  });
+
   it('hỏi → gửi đúng câu, hiện bước làm, bảng số, nguồn và nút việc', async () => {
     dung();
     await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
