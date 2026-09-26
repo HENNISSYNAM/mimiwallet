@@ -27,3 +27,8 @@ verify_jwt = false
 # secret (constant-time compare); returns 503 when that secret is unset.
 [functions.nap-kho-luat]
 verify_jwt = false
+
+# Trung gian Lovable AI: chạy trong dự án Lovable Cloud, người gọi là máy chủ MIMI (không có phiên người
+# dùng của dự án đó). Function tự kiểm mã bí mật MIMI_TRUNG_GIAN_KEY bằng so sánh thời gian không đổi.
+[functions.ai-trung-gian]
+verify_jwt = false
