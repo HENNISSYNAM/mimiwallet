@@ -17,6 +17,22 @@ export interface TaiLieuTom {
   ky?: string | null; phien_ban_hien_tai?: number; tao_luc: string; cap_nhat_luc?: string;
 }
 
+// ── Prompt 4B: hồ sơ việc chuẩn — MỘT danh sách cho Tổng quan, Trợ lý, pet, lịch ─────────────────
+import type { KetQuaViecCanLam, ChiTietViec, HoSoViecDong } from '../../supabase/functions/_shared/viec/luu.ts';
+export type { KetQuaViecCanLam, ChiTietViec, HoSoViecDong } from '../../supabase/functions/_shared/viec/luu.ts';
+export type { ViecCanLam, HanhDongTiep, MucLich, LoaiNgay } from '../../supabase/functions/_shared/viec/dong-co-viec.ts';
+export { TEN_LOAI_NGAY, TEN_MUC } from '../../supabase/functions/_shared/viec/dong-co-viec.ts';
+export { laDangMo, TEN_LOAI_BANG_CHUNG, TEN_TRANG_THAI_VIEC as TEN_TRANG_THAI_HO_SO, TEN_XAC_MINH } from '../../supabase/functions/_shared/viec/trang-thai.ts';
+
+export const dsViecCanLam = async () => (await goiTroLy('viec_can_lam')) as KetQuaViecCanLam & { duoc_sua: boolean };
+export const docChiTietViec = async (id: string) => (await goiTroLy('viec_doc', { id })) as ChiTietViec & { duoc_sua: boolean };
+type KetQuaGhi = { hanh_trinh: HanhTrinhDay | null; viec: HoSoViecDong | null };
+/** "Tôi đã nộp": ghi là BẠN xác nhận đã nộp (kèm mã hồ sơ nếu có) — chưa phải xác nhận của cơ quan. */
+export const ghiDaNopViec = async (id: string, maHoSo?: string) => (await goiTroLy('viec_da_nop', { id, ma_ho_so: maHoSo })) as KetQuaGhi;
+/** Ghi phản hồi của cơ quan (số thông báo, biên nhận) — mức "theo xác nhận của bạn". */
+export const ghiPhanHoiViec = async (id: string, noiDung: string) => (await goiTroLy('viec_phan_hoi', { id, noi_dung: noiDung })) as KetQuaGhi;
+export const huyViec = async (id: string) => (await goiTroLy('viec_huy', { id })) as { viec: HoSoViecDong | null };
+
 export const dsViec = async () =>
   (await goiTroLy('hanh_trinh_ds')) as { hanh_trinh: HanhTrinhDay[]; ho_so_viec: HoSoViec[]; duoc_sua: boolean };
 export const docViec = async (id: string) =>

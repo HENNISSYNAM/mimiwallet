@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { duocHien } from '../../supabase/functions/_shared/minh-hoa.ts';
 import { HangDoiTienVao } from '@/components/tien-vao/HangDoiTienVao';
+import { ViecCanLamTomTat } from '@/components/viec/ViecCanLamTomTat';
 import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
 import { cauConLai, ngayMoc, useLichThue } from '@/lib/lichThue';
 import { congTyDangDung } from '@/lib/congTyDangDung';
@@ -364,6 +365,9 @@ export default function DashboardOverview() {
       {/* TCCN-01: dấu hiệu bất thường đứng trên mọi thứ khác — tiền đã đi thì mỗi giờ đều đáng giá.
           Tự ẩn khi chưa có sao kê; khi sạch thì chỉ còn một dòng xác nhận đã kiểm. */}
       <motion.div variants={fadeUp}><TheBatThuong /></motion.div>
+
+      {/* Prompt 4B: khu quyết định chính — cùng danh sách Việc cần làm với Trợ lý, pet và lịch. */}
+      <motion.div variants={fadeUp}><ViecCanLamTomTat /></motion.div>
 
       {/* Viec can lam, dat TREN cau hoi ve nguoi dung: ai vua vao lan dau can
           biet phai lam gi truoc khi duoc hoi ho la ai. Tu an khi xong het. */}

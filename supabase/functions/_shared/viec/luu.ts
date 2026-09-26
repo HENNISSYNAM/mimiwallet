@@ -305,6 +305,8 @@ function hanhDongPhanLoai(v: HoSoViecDong): HanhDongTiep {
 export interface KetQuaViecCanLam {
   viec: ViecCanLam[];
   lich: MucLich[];
+  /** Việc đã xong / huỷ gần đây — mức giải quyết nói rõ "theo bạn" hay "MIMI đã kiểm". */
+  da_xong: { id: string; tieu_de: string; trang_thai: string; giai_quyet_luc: string | null; ket_qua: string | null }[];
   /** Nguồn nào đọc hỏng — giao diện nói "chưa đọc được", không hiện như "không có việc". */
   loi: { nguon: string; cau: string }[];
 }
@@ -397,7 +399,9 @@ export async function dsViecCanLam(db: Db, o: {
   }
 
   const lich = tatCa.filter((v) => conCanLam(v.trang_thai) || (v.giai_quyet_luc && v.giai_quyet_luc.slice(0, 10) >= congNgayLui(o.homNay, 60))).flatMap(lichTuViec);
-  return { viec: xepViec(viec), lich, loi };
+  const da_xong = tatCa.filter((v) => !conCanLam(v.trang_thai)).slice(0, 20)
+    .map((v) => ({ id: v.id, tieu_de: v.tieu_de, trang_thai: v.trang_thai, giai_quyet_luc: v.giai_quyet_luc, ket_qua: v.ket_qua }));
+  return { viec: xepViec(viec), lich, da_xong, loi };
 }
 
 const congNgayLui = (ymd: string, n: number) => {

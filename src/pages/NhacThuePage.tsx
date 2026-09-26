@@ -10,6 +10,7 @@ import { kemCongTy } from '@/lib/congTyDangDung';
 import { dinhDang } from '@/lib/troLy';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '@/lib/giayTo';
 import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
+import { LichViec } from '@/components/viec/LichViec';
 
 /**
  * Nhắc thuế — như "Scheduled" của ChatGPT, nhưng là các mốc nghĩa vụ thuế (15/09/2026).
@@ -150,6 +151,9 @@ export default function NhacThuePage() {
           ))}
         </ol>
       </section>
+
+      {/* Prompt 4B: ngày của các việc đang làm — cùng nguồn với Việc cần làm, không giữ ngày riêng. */}
+      <LichViec />
 
       <section aria-labelledby="nguong-doanh-thu" className="rounded-2xl border border-border bg-card p-5">
         <h2 id="nguong-doanh-thu" className="text-lg font-semibold text-foreground">Ngưỡng doanh thu năm {thue?.year ?? new Date().getFullYear()}</h2>

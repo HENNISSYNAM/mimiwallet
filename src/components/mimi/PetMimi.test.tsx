@@ -14,6 +14,12 @@ vi.mock('@/lib/goiTroLy', () => ({
   goiTroLy: async (hd: string, body?: unknown) => {
     goi.daGoi.push([hd, body]);
     if (hd === 'hoi') return goi.hoi ? goi.hoi(body) : { cau: 'Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.', ket_qua: [], buoc: [] };
+    // Máy chủ giả trả danh sách Việc cần làm chuẩn (mục có câu hỏi → việc tiếp theo là trả lời câu đó).
+    if (hd === 'viec_can_lam') {
+      return { viec: (goi.ds as { id: string; tieu_de: string; cau_hoi: { cau: string } }[]).map((h) => ({
+        id: h.id, nguon: 'ho_so_viec', tieu_de: h.tieu_de, can_ban: true, duong_dan: `/dashboard/viec-can-lam?viec=${h.id}`, hanh_dong: { tieu_de: h.cau_hoi.cau },
+      })), lich: [], da_xong: [], loi: [] };
+    }
     return { hanh_trinh: goi.ds };
   },
 }));

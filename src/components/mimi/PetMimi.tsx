@@ -42,7 +42,10 @@ export const NGOI_SAU = 40_000;
 export const THE_LO_MS = 6000;
 const CAO_NUT = 44;
 
-interface ViecCanBan { id: string; tieu_de: string; cau: string }
+/** Một mục của danh sách Việc cần làm chuẩn — pet chỉ hiển thị, không giữ trạng thái việc riêng. */
+interface ViecCanBan { id: string; tieu_de: string; cau: string; duong_dan: string }
+/** Pet hỏi lại danh sách việc mỗi 5 phút (và khi mở khay), bỏ lượt khi tab đang ẩn — không thành tải máy chủ. */
+const CHU_KY_VIEC = 5 * 60_000;
 interface TheHoatDong { khoa: string; tieu: string; phu: string; mau: string; bam: () => void; dang?: boolean; gat?: () => void }
 
 export default function PetMimi() {
@@ -111,15 +114,19 @@ export default function PetMimi() {
     return () => { window.removeEventListener('resize', doiMan); window.removeEventListener('keydown', phim); window.removeEventListener(SU_KIEN_LENH_PET, lenh); };
   }, []);
 
-  // Việc đang chờ người dùng (câu hỏi của hành trình) — đọc mỗi 2 phút, và khi mở khay.
+  // Việc cần bạn — đọc từ CÙNG danh sách Việc cần làm của Tổng quan và Trợ lý (Prompt 4B).
   const napViec = useCallback(async () => {
     try {
-      const r = await goiTroLy('hanh_trinh_ds');
-      const ds = (r.hanh_trinh ?? []) as { id: string; tieu_de: string; cau_hoi: { cau: string } | null }[];
-      setViec(ds.filter((h) => h.cau_hoi).map((h) => ({ id: h.id, tieu_de: h.tieu_de, cau: h.cau_hoi!.cau })));
-    } catch { /* máy chủ chưa có hành động này hoặc mạng lỗi: pet vẫn chạy, chỉ không có việc */ }
+      const r = await goiTroLy('viec_can_lam');
+      const ds = (r.viec ?? []) as { id: string; tieu_de: string; can_ban: boolean; duong_dan: string; hanh_dong: { tieu_de: string } | null }[];
+      setViec(ds.filter((v) => v.can_ban).slice(0, 8).map((v) => ({ id: v.id, tieu_de: v.tieu_de, cau: v.hanh_dong?.tieu_de ?? v.tieu_de, duong_dan: v.duong_dan })));
+    } catch { /* mạng lỗi: pet vẫn chạy; việc vẫn ở trang Việc cần làm — pet không phải nơi duy nhất */ }
   }, []);
-  useEffect(() => { void napViec(); const id = window.setInterval(() => void napViec(), 120_000); return () => window.clearInterval(id); }, [napViec]);
+  useEffect(() => {
+    void napViec();
+    const id = window.setInterval(() => { if (typeof document === 'undefined' || !document.hidden) void napViec(); }, CHU_KY_VIEC);
+    return () => window.clearInterval(id);
+  }, [napViec]);
 
   // Pet phản chiếu việc chung đang chờ bạn và các câu bạn hỏi ngầm từ pet (đang trả lời / xong chưa xem / lỗi).
   const lanHoi = useLanHoiPet();
@@ -256,8 +263,8 @@ export default function PetMimi() {
     gat: h.trang_thai === 'dang' ? undefined : () => daXemLanHoi(h.id),
   });
   const chuong = viec.length + lanHoi.filter((h) => h.trang_thai !== 'dang' && !h.da_xem).length;
-  const moViec = (id: string) => { setMoKhay(false); setLo(false); navigate(`/dashboard/viec-can-lam?ht=${id}`); };
-  const theViec: TheHoatDong[] = viec.map((v) => ({ khoa: v.id, tieu: v.cau, phu: `Cần bạn · ${v.tieu_de}`, mau: 'text-mimi-amber', bam: () => moViec(v.id) }));
+  const moViec = (v: ViecCanBan) => { setMoKhay(false); setLo(false); navigate(v.duong_dan); };
+  const theViec: TheHoatDong[] = viec.map((v) => ({ khoa: v.id, tieu: v.cau, phu: v.cau === v.tieu_de ? 'Cần bạn' : `Cần bạn · ${v.tieu_de}`, mau: 'text-mimi-amber', bam: () => moViec(v) }));
   // Khay (bấm mũi tên): mọi câu đã hỏi gần đây + việc chờ bạn.
   const the: TheHoatDong[] = [...lanHoi.map(theHoi), ...theViec];
   // Tự bật lên: câu đang trả lời và kết quả CHƯA XEM ở lại tới khi bạn bấm hoặc gạt đi; việc chờ bạn ló lên vài giây.
@@ -278,7 +285,7 @@ export default function PetMimi() {
           cuaSo={cuaSoNoi} anh={anhMeo} tt={tt} chuong={chuong} dangNghe={dangNghe}
           onGo={() => { veTrang(); moTroLy(); }}
           onNoi={noi}
-          onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else moTroLy(); }}
+          onChuong={() => { veTrang(); if (viec.length) navigate(viec[0].duong_dan); else moTroLy(); }}
           onDong={() => setCuaSoNoi(null)}
         />
       </>
