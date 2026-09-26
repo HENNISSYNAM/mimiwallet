@@ -35,6 +35,7 @@ export const VAN_BAN: Record<string, { ten: string; ngay_ban_hanh: string }> = {
   '18/2026/TT-BTC': { ten: 'Thông tư 18/2026/TT-BTC về hồ sơ, thủ tục quản lý thuế đối với hộ kinh doanh, cá nhân kinh doanh', ngay_ban_hanh: '2026-03-05' },
   '50/2026/TT-BTC': { ten: 'Thông tư 50/2026/TT-BTC sửa đổi Thông tư 18/2026/TT-BTC, thay mẫu 01/TKN-CNKD và 01/CNKD', ngay_ban_hanh: '2026-05-13' },
   '252/2026/NĐ-CP': { ten: 'Nghị định số 252/2026/NĐ-CP quy định chi tiết một số điều và biện pháp để tổ chức, hướng dẫn thi hành Luật Quản lý thuế', ngay_ban_hanh: '2026-06-30' },
+  '58/2026/TT-BTC': { ten: 'Thông tư số 58/2026/TT-BTC hướng dẫn chế độ kế toán cho doanh nghiệp siêu nhỏ', ngay_ban_hanh: '2026-05-25' },
   '69/2025/TT-BTC': { ten: 'Thông tư 69/2025/TT-BTC hướng dẫn Luật Thuế GTGT và Nghị định 181/2025/NĐ-CP', ngay_ban_hanh: '2025-07-01' },
 };
 
@@ -54,6 +55,9 @@ const SUA_1_TY = 'Mức "500 triệu đồng" trong câu trích đã được Ng
 
 export const CAN_CU: Record<string, CanCu> = {
   // Nghị định 252/2026/NĐ-CP (hiệu lực 01/07/2026) — chép từ kho Công báo ngày 25/09/2026.
+  // Thông tư 58/2026/TT-BTC (hiệu lực 01/07/2026) — chép từ kho Công báo ngày 26/09/2026.
+  tt58_d10_k1a: { van_ban: '58/2026/TT-BTC', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 1 điểm a', trich: 'Báo cáo tài chính năm của doanh nghiệp siêu nhỏ phải được nộp cho cơ quan nhà nước có thẩm quyền trong thời hạn 90 ngày, kể từ ngày kết thúc kỳ kế toán năm.', y: 'Doanh nghiệp siêu nhỏ nộp TNDN theo thu nhập tính thuế: nộp báo cáo tài chính năm trong 90 ngày sau khi hết năm.' },
+  tt58_d10_k1b: { van_ban: '58/2026/TT-BTC', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 1 điểm b', trich: 'Doanh nghiệp siêu nhỏ nộp thuế TNDN theo tỷ lệ % trên doanh thu bán hàng hóa, dịch vụ không bắt buộc phải lập báo cáo tài chính để nộp cho cơ quan nhà nước có thẩm quyền, trừ trường hợp pháp luật khác có yêu cầu.', y: 'Nộp TNDN theo tỷ lệ % trên doanh thu thì không bắt buộc nộp báo cáo tài chính.' },
   nd252_d10_k2: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 2', trich: 'Đối với loại thuế khai theo tháng, thời hạn nộp hồ sơ khai thuế chậm nhất là ngày thứ 20 của tháng tiếp theo tháng phát sinh nghĩa vụ thuế.', y: 'Khai theo tháng: hạn ngày 20 tháng sau.' },
   nd252_d10_k3: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 3', trich: 'Đối với loại thuế khai theo quý, thời hạn nộp hồ sơ khai thuế chậm nhất là ngày cuối cùng của tháng đầu của quý tiếp theo quý phát sinh nghĩa vụ thuế.', y: 'Khai theo quý: hạn ngày cuối tháng đầu của quý sau.' },
   nd252_d10_k5a: { van_ban: '252/2026/NĐ-CP', dieu: 'Điều 10', vi_tri: 'Điều 10 khoản 5 điểm a', trich: 'Chậm nhất là ngày cuối cùng của tháng thứ 03 kể từ ngày kết thúc kỳ quyết toán thuế;', y: 'Quyết toán năm: hạn ngày cuối tháng thứ 3 sau khi kết thúc năm.' },

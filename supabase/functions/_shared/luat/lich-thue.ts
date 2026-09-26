@@ -17,7 +17,7 @@
 import { hanNopQuy, type SuKienThue, type SuyLuan } from './he-luat.ts';
 import type { TrangThaiDoanhNghiep } from '../doanh-nghiep/trang-thai.ts';
 
-export type LoaiMoc = 'khai_va_nop' | 'tam_nop' | 'thong_bao_doanh_thu' | 'quyet_toan' | 'khai_thue' | 'thong_bao';
+export type LoaiMoc = 'khai_va_nop' | 'tam_nop' | 'thong_bao_doanh_thu' | 'quyet_toan' | 'khai_thue' | 'thong_bao' | 'nop_bao_cao';
 export type TrangThaiMoc = 'phai_lam' | 'can_xac_minh' | 'khong_ap_dung';
 
 export interface MocThue {
@@ -42,6 +42,7 @@ export const TEN_LOAI_MOC: Record<LoaiMoc, string> = {
   quyet_toan: 'Quyết toán năm',
   khai_thue: 'Khai thuế',
   thong_bao: 'Thông báo cho cơ quan thuế (không nộp tiền)',
+  nop_bao_cao: 'Nộp báo cáo tài chính (không nộp tiền)',
 };
 
 const soNgay = (tu: string, den: string) =>
@@ -58,6 +59,17 @@ export interface DuKienLich {
   kyKhaiGtgt?: 'thang' | 'quy' | null;
   /** `companies.employee_count`: '1' = chỉ mình tôi. */
   soNguoi?: string | null;
+  /** Doanh nghiệp siêu nhỏ hay không. null = chưa biết. */
+  sieuNho?: boolean | null;
+  /** Cách nộp TNDN: theo thu nhập tính thuế, hay theo tỷ lệ % trên doanh thu. null = chưa biết. */
+  phuongPhapTndn?: 'thu_nhap' | 'ty_le' | null;
+}
+
+/** Ngày thứ 90 kể từ ngày kết thúc năm `nam` (31/12) — năm nhuận là 30/3, năm thường 31/3. */
+export function han90NgaySauNam(nam: number): string {
+  const d = new Date(Date.UTC(nam, 11, 31));
+  d.setUTCDate(d.getUTCDate() + 90);
+  return d.toISOString().slice(0, 10);
 }
 
 export function lichThue(dk: DuKienLich): MocThue[] {
@@ -136,6 +148,29 @@ export function lichThue(dk: DuKienLich): MocThue[] {
         loai: 'khai_va_nop', trang_thai: 'phai_lam', han, vi_sao: 'Kỳ khai GTGT bạn đã cho biết.',
         can_cu: [dk.kyKhaiGtgt === 'thang' ? 'nd252_d10_k2' : 'nd252_d10_k3'],
       }));
+    }
+    /*
+     * Báo cáo tài chính năm (26/09/2026, người dùng: "cuối năm còn báo cáo tài chính").
+     * Căn cứ đã đối chiếu: TT 58/2026 Điều 10 — CHỈ cho doanh nghiệp siêu nhỏ. Doanh nghiệp khác: kho
+     * chưa có văn bản đã đối chiếu → "cần xác minh", không khẳng định hạn.
+     */
+    for (const namBc of [nam - 1, nam]) {
+      const han = han90NgaySauNam(namBc);
+      const ten = `Nộp báo cáo tài chính năm ${namBc}`;
+      if (dk.sieuNho && dk.phuongPhapTndn === 'ty_le') {
+        ra.push(moc({ khoa: `bctc:${namBc}`, ten, loai: 'nop_bao_cao', trang_thai: 'khong_ap_dung', han, vi_sao: 'Doanh nghiệp siêu nhỏ nộp TNDN theo tỷ lệ % trên doanh thu không bắt buộc nộp báo cáo tài chính.', can_cu: ['tt58_d10_k1b'] }));
+      } else if (dk.sieuNho && dk.phuongPhapTndn === 'thu_nhap') {
+        ra.push(moc({ khoa: `bctc:${namBc}`, ten, loai: 'nop_bao_cao', trang_thai: 'phai_lam', han, vi_sao: 'Doanh nghiệp siêu nhỏ nộp TNDN theo thu nhập tính thuế: nộp báo cáo tài chính năm trong 90 ngày sau khi hết năm.', can_cu: ['tt58_d10_k1a'] }));
+      } else {
+        ra.push(moc({
+          khoa: `bctc:${namBc}`, ten, loai: 'nop_bao_cao', trang_thai: 'can_xac_minh', han,
+          vi_sao: dk.sieuNho === false
+            ? 'Doanh nghiệp không phải siêu nhỏ: MIMI chưa đối chiếu được văn bản quy định hạn nộp báo cáo tài chính cho nhóm này — hỏi kế toán. Mốc hiển thị là hạn 90 ngày của doanh nghiệp siêu nhỏ để tham khảo.'
+            : 'Doanh nghiệp siêu nhỏ nộp TNDN theo thu nhập tính thuế phải nộp báo cáo tài chính năm trong 90 ngày; nộp theo tỷ lệ % trên doanh thu thì không bắt buộc.',
+          can_cu: ['tt58_d10_k1a', 'tt58_d10_k1b'],
+          cau_hoi: dk.sieuNho === false ? 'Kế toán của công ty có nắm hạn nộp báo cáo tài chính không?' : 'Công ty nộp thuế TNDN theo thu nhập tính thuế hay theo tỷ lệ % trên doanh thu?',
+        }));
+      }
     }
     // TNCN: chỉ tổ chức trả lương mới khấu trừ và quyết toán thay.
     if (dk.soNguoi === '1') {

@@ -46,8 +46,9 @@ const so = (n: number) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
 /**
  * Báo trước hạn vào đúng các mốc này (số ngày còn lại). Có mốc 5 ngày theo yêu cầu người dùng
  * (25/09/2026: "thuế nhắc trước 5 ngày") — đủ để gom chứng từ và hỏi kế toán trước khi nộp.
+ * Thêm mốc 10 ngày (26/09/2026: "nhắc sớm hơn 5 ngày ra").
  */
-export const MOC_NHAC_HAN = [14, 5, 1, 0];
+export const MOC_NHAC_HAN = [14, 10, 5, 1, 0];
 
 /**
  * Nhắc hạn theo LỊCH CỦA CHÍNH CÔNG TY (`_shared/luat/lich-thue.ts`), không theo lịch chung cả nước.

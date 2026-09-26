@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { suyLuan, type SuKienThue } from './he-luat';
-import { lichThue, mocKeTiep } from './lich-thue';
+import { han90NgaySauNam, lichThue, mocKeTiep } from './lich-thue';
 
 const HOM_NAY = '2026-09-25';
 const sk = (p: Partial<SuKienThue> = {}): SuKienThue => ({
@@ -66,5 +66,35 @@ describe('lịch thuế — một nguồn, không tự coi "chưa biết" là "b
     const m = mocKeTiep(lich(sk({ loai: 'doanh_nghiep' })));
     expect(m?.khoa).toBe('tndn_tam_nop:2026-q3');
     expect(m?.con_lai).toBe(36);
+  });
+});
+
+describe('báo cáo tài chính năm (TT 58/2026)', () => {
+  const dn = sk({ loai: 'doanh_nghiep' });
+  const bc = (p: Record<string, unknown>) => lich(dn, p).filter((m) => m.loai === 'nop_bao_cao');
+
+  it('hạn đúng 90 ngày sau khi hết năm: 31/3 năm thường, 30/3 năm nhuận', () => {
+    expect(han90NgaySauNam(2025)).toBe('2026-03-31');
+    expect(han90NgaySauNam(2027)).toBe('2028-03-30');
+  });
+
+  it('siêu nhỏ, TNDN theo thu nhập → phải nộp, căn cứ điểm a', () => {
+    const m = bc({ sieuNho: true, phuongPhapTndn: 'thu_nhap' });
+    expect(m.map((x) => x.trang_thai)).toEqual(['phai_lam', 'phai_lam']);
+    expect(m[0].can_cu).toEqual(['tt58_d10_k1a']);
+    expect(m[1]).toMatchObject({ ten: 'Nộp báo cáo tài chính năm 2026', han: '2027-03-31' });
+  });
+
+  it('siêu nhỏ, TNDN theo tỷ lệ % → không áp dụng, căn cứ điểm b', () => {
+    expect(bc({ sieuNho: true, phuongPhapTndn: 'ty_le' }).every((x) => x.trang_thai === 'khong_ap_dung')).toBe(true);
+  });
+
+  it('chưa biết → cần xác minh, hỏi đúng một câu; không phải siêu nhỏ → không khẳng định hạn', () => {
+    expect(bc({})[0]).toMatchObject({ trang_thai: 'can_xac_minh', cau_hoi: 'Công ty nộp thuế TNDN theo thu nhập tính thuế hay theo tỷ lệ % trên doanh thu?' });
+    expect(bc({ sieuNho: false })[0].vi_sao).toContain('chưa đối chiếu được');
+  });
+
+  it('hộ kinh doanh không có mốc báo cáo tài chính', () => {
+    expect(lich(sk({ loai: 'ho_kinh_doanh' })).some((m) => m.loai === 'nop_bao_cao')).toBe(false);
   });
 });

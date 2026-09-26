@@ -20,6 +20,10 @@ describe('nhắc hạn theo lịch của chính công ty', () => {
     expect(thongBaoHanThue([moc({ con_lai: 6 }), moc({ con_lai: 7 })])).toEqual([]);
   });
 
+  it('có mốc 10 ngày — nhắc sớm hơn mốc 5 ngày', () => {
+    expect(thongBaoHanThue([moc({ con_lai: 10 })])[0].tieu_de).toBe('Còn 10 ngày: Tạm nộp thuế TNDN quý 3/2026');
+  });
+
   it('không áp dụng thì không bao giờ nhắc — kể cả đúng mốc', () => {
     expect(thongBaoHanThue([moc({ trang_thai: 'khong_ap_dung', con_lai: 0 })])).toEqual([]);
   });
