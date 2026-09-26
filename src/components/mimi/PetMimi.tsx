@@ -72,9 +72,9 @@ export default function PetMimi() {
   const [cuaSoNoi, setCuaSoNoi] = useState<Window | null>(null);
   const navigate = useNavigate();
   /** Lối thẳng vào Trợ lý MIMI: có câu thì hỏi luôn (trang Trợ lý đọc `?hoi=` đúng một lần). */
-  const moTroLy = useCallback((cau?: string) => {
+  const moTroLy = useCallback((cau?: string, bangGiong = false) => {
     setMoKhay(false);
-    navigate(cau ? `/dashboard/tro-ly?hoi=${encodeURIComponent(cau.slice(0, 1000))}` : '/dashboard/tro-ly');
+    navigate(cau ? `/dashboard/tro-ly?hoi=${encodeURIComponent(cau.slice(0, 1000))}${bangGiong ? '&doc=1' : ''}` : '/dashboard/tro-ly');
   }, [navigate]);
   const raManHinhMay = async () => {
     setMoMenu(false);
@@ -235,7 +235,7 @@ export default function PetMimi() {
     setDangNghe(true);
     nd.onresult = (ev: { results: { 0: { 0: { transcript: string } } } }) => {
       const cau = ev.results[0][0].transcript.trim();
-      if (cau) moTroLy(cau);
+      if (cau) moTroLy(cau, true); // hỏi bằng giọng → Trợ lý đọc to câu trả lời
     };
     nd.onerror = () => toast.error('Chưa nghe rõ. Thử nói lại, hoặc bấm nút bút để gõ trong Trợ lý MIMI.');
     nd.onend = () => setDangNghe(false);

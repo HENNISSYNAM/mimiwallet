@@ -60,14 +60,14 @@ describe('Pet MIMI', () => {
     await waitFor(() => expect(diaChi()).toBe('/dashboard/tro-ly'));
   });
 
-  it('nói với MIMI → câu nói được gửi vào Trợ lý MIMI (?hoi=)', async () => {
+  it('nói với MIMI → câu nói được gửi vào Trợ lý MIMI (?hoi=…&doc=1 để Trợ lý đọc to trả lời)', async () => {
     class NhanDien { lang = ''; interimResults = false; maxAlternatives = 1; onresult: ((e: unknown) => void) | null = null; onerror: (() => void) | null = null; onend: (() => void) | null = null;
       start() { this.onresult?.({ results: { 0: { 0: { transcript: 'Tôi muốn tạm ngừng kinh doanh' } } } }); this.onend?.(); } }
     (window as unknown as Record<string, unknown>).SpeechRecognition = NhanDien;
     try {
       mo();
       fireEvent.click(screen.getByRole('button', { name: 'Nói với MIMI' }));
-      await waitFor(() => expect(diaChi()).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Tôi muốn tạm ngừng kinh doanh')}`));
+      await waitFor(() => expect(diaChi()).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Tôi muốn tạm ngừng kinh doanh')}&doc=1`));
     } finally {
       delete (window as unknown as Record<string, unknown>).SpeechRecognition;
     }
