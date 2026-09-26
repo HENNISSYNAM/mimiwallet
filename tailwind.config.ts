@@ -106,6 +106,15 @@ export default {
           "0%": { transform: "translateX(100%)" },
           "100%": { transform: "translateX(0)" },
         },
+        "vay-tay": {
+          "0%, 100%": { transform: "rotate(-12deg)" },
+          "50%": { transform: "rotate(18deg)" },
+        },
+        // Dải 8 khung: 0% → 8/7·100% với steps(8) cho đúng từng khung, không trượt nửa khung.
+        "chay-khung": {
+          from: { backgroundPosition: "0% 0" },
+          to: { backgroundPosition: "114.2857% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -113,6 +122,8 @@ export default {
         "fade-up": "fade-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "scale-in": "scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "slide-right": "slide-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+        "vay-tay": "vay-tay 0.7s ease-in-out infinite",
+        "chay-khung": "chay-khung 0.56s steps(8) infinite",
       },
     },
   },

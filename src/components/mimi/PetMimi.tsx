@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Mic, Pencil } from 'lucide-react';
+import { AudioLines, ChevronDown, SquarePen } from 'lucide-react';
 import { toast } from 'sonner';
 import AIChatWidget, { type TrangThaiChat } from '@/components/AIChatWidget';
 import { coHoTroNoi, moCuaSoNoi, PetNoi } from '@/components/mimi/PetNoi';
@@ -16,18 +16,34 @@ import wave from '@/assets/mimi/wave.png';
 import surprised from '@/assets/mimi/surprised.png';
 import happy from '@/assets/mimi/happy.png';
 import run from '@/assets/mimi/run.png';
+// Dải 8 khung chạy (scripts/cat-khung-chay.mjs). Chưa có file thì pet dùng ảnh run.png như cũ.
+const DAI_CHAY = Object.values(import.meta.glob('/src/assets/mimi/run-sprite.png', { eager: true, import: 'default' }))[0] as string | undefined;
+import stretch from '@/assets/mimi/stretch.png';
+import sit from '@/assets/mimi/sit.png';
+import paw from '@/assets/mimi/paw.png';
 
 /**
  * Pet MIMI — mèo nổi trên trang, theo đúng cơ chế "Pets" của ChatGPT (xem `lib/petMimi.ts`).
  * Bấm mèo: mở/đóng chat. Kéo mèo: đổi chỗ (nhớ lại). Chuột phải / giữ lâu: menu. Alt+Shift+M: ẩn/hiện.
  */
-const ANH: Record<string, string> = { idle, sleep, wave, surprised, happy, run };
+const ANH: Record<string, string> = { idle, sleep, wave, surprised, happy, run, sit };
 const PHUT_NGU = 3 * 60_000;
+/** Vươn vai kéo dài bao lâu, và khoảng cách giữa hai lần vươn vai lúc rảnh mà còn thức. */
+export const VUON_VAI_MS = 1600;
+const VUON_VAI_TU = 50_000;
+const VUON_VAI_DEN = 90_000;
+/** Rảnh bao lâu thì ngồi xuống (trước khi ngủ ở phút thứ 3); rê chuột chào thì vẫy tay bao lâu. */
+export const NGOI_SAU = 40_000;
+export const CHAO_MS = 1400;
+/** Thẻ hoạt động tự ló lên bao lâu khi có chuyện mới. */
+export const THE_LO_MS = 6000;
+const CHAO_CACH = 15_000;
 const RONG_KHUNG = 380;
 const CAO_KHUNG = 560;
 const CAO_NUT = 44;
 
 interface ViecCanBan { id: string; tieu_de: string; cau: string }
+interface TheHoatDong { khoa: string; tieu: string; phu: string; mau: string; bam: () => void }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const layNhanDien = (): any => (typeof window === 'undefined' ? null : (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition ?? null);
@@ -43,12 +59,21 @@ export default function PetMimi() {
   const [nguLau, setNguLau] = useState(false);
   const [dangNghe, setDangNghe] = useState(false);
   const [cauGui, setCauGui] = useState<{ id: number; cau: string } | null>(null);
+  const [lo, setLo] = useState(false);
   // Hoạt ảnh khi bị kéo (26/09/2026): chạy theo hướng kéo, nghiêng theo tốc độ, thả ra thì tiếp đất.
   const [dangKeoMeo, setDangKeoMeo] = useState(false);
   const [huongTrai, setHuongTrai] = useState(false);
   const [nghieng, setNghieng] = useState(0);
   const [vuaTha, setVuaTha] = useState(false);
+  // Ngủ và vươn vai (26/09/2026): thức dậy thì vươn vai; rảnh mà còn thức thì thỉnh thoảng vươn vai.
+  const [vuonVai, setVuonVai] = useState(false);
+  const nguTruoc = useRef(false);
+  // Ngồi và giơ tay (26/09/2026): rảnh một lúc thì ngồi; rê chuột vào mèo đang thức thì ngồi vẫy tay chào.
+  const [ngoi, setNgoi] = useState(false);
+  const [chao, setChao] = useState(false);
+  const chaoLuc = useRef(0);
   const diemTruoc = useRef<{ x: number; t: number } | null>(null);
+  const vanToc = useRef(0);
   // Mèo đang ở cửa sổ nổi trên màn hình máy (Document Picture-in-Picture).
   const [cuaSoNoi, setCuaSoNoi] = useState<Window | null>(null);
   const navigate = useNavigate();
@@ -97,10 +122,62 @@ export default function PetMimi() {
   // Nghỉ lâu thì ngủ; có động là thức.
   useEffect(() => {
     setNguLau(false);
+    setNgoi(false);
     if (tt !== 'nghi') return;
+    const ngoiXuong = window.setTimeout(() => setNgoi(true), NGOI_SAU);
     const id = window.setTimeout(() => setNguLau(true), PHUT_NGU);
+    return () => { window.clearTimeout(ngoiXuong); window.clearTimeout(id); };
+  }, [tt, moChat, moKhay]);
+  useEffect(() => {
+    if (!chao) return;
+    const id = window.setTimeout(() => setChao(false), CHAO_MS);
+    return () => window.clearTimeout(id);
+  }, [chao]);
+
+  useEffect(() => {
+    if (tt === 'nghi' || moChat || moKhay) { setLo(false); return; }
+    setLo(true);
+    const id = window.setTimeout(() => setLo(false), THE_LO_MS);
     return () => window.clearTimeout(id);
   }, [tt, moChat, moKhay]);
+
+  // Thức dậy → vươn vai.
+  useEffect(() => {
+    if (nguTruoc.current && !nguLau) setVuonVai(true);
+    // Bắt đầu ngủ thì thôi vươn vai (không "vừa ngủ vừa vươn vai").
+    if (!nguTruoc.current && nguLau) setVuonVai(false);
+    nguTruoc.current = nguLau;
+  }, [nguLau]);
+  // Vươn vai bao lâu thì thôi — bộ hẹn riêng, để việc bắt đầu vươn vai không huỷ nhầm nó.
+  useEffect(() => {
+    if (!vuonVai) return;
+    const id = window.setTimeout(() => setVuonVai(false), VUON_VAI_MS);
+    return () => window.clearTimeout(id);
+  }, [vuonVai]);
+  // Rảnh mà còn thức: hẹn lần vươn vai kế (50–90 giây); đang vươn vai thì chưa hẹn.
+  useEffect(() => {
+    if (tt !== 'nghi' || nguLau || moChat || dangKeoMeo || vuonVai) return;
+    const hen = window.setTimeout(() => setVuonVai(true), VUON_VAI_TU + Math.random() * (VUON_VAI_DEN - VUON_VAI_TU));
+    return () => window.clearTimeout(hen);
+  }, [tt, nguLau, moChat, dangKeoMeo, vuonVai]);
+  /** Rê chuột vào mèo: đang ngủ → thức (và vươn vai); đang thức rảnh → ngồi vẫy tay chào (tối đa 15 giây một lần). */
+  const danhThuc = () => {
+    if (nguLau) { setNguLau(false); return; }
+    if (tt !== 'nghi' || dangKeoMeo || vuonVai) return;
+    const bayGio = Date.now();
+    if (bayGio - chaoLuc.current < CHAO_CACH) return;
+    chaoLuc.current = bayGio;
+    setChao(true);
+  };
+
+  // Ảnh theo thứ tự ưu tiên: bị kéo > tiếp đất > vươn vai > giơ tay (cần bạn / chào) > ngủ > ngồi > trạng thái.
+  const giTay = !dangKeoMeo && !vuaTha && !vuonVai && (tt === 'can_ban' || chao);
+  const anhMeo = dangKeoMeo ? run
+    : vuaTha ? happy
+      : vuonVai ? stretch
+        : giTay ? sit
+          : tt === 'nghi' && !nguLau && ngoi ? sit
+            : ANH[dangMeo(tt, nguLau)] ?? idle;
 
   // ── Kéo thả: bấm mà không di quá 5px là "bấm", di hơn là "kéo" ──────────────────────────────
   const batDauKeo = (e: React.PointerEvent) => {
@@ -118,16 +195,19 @@ export default function PetMimi() {
       setDangKeoMeo(true);
       setVuaTha(false);
       diemTruoc.current = { x: e.clientX, t: performance.now() };
+      vanToc.current = 0;
     }
     if (!k.da) return;
     setCd((c) => ({ ...c, ...giuTrongMan({ x: e.clientX - k.dx, y: e.clientY - k.dy }, kt, man) }));
-    // Hướng và độ nghiêng theo vận tốc ngang (px/ms), giới hạn ±14°.
+    // Hướng và độ nghiêng theo vận tốc ngang (px/ms), làm mượt để mèo không lật qua lật lại khi tay run.
     const truoc = diemTruoc.current;
     const bayGio = performance.now();
     if (truoc && bayGio - truoc.t > 16) {
       const v = (e.clientX - truoc.x) / (bayGio - truoc.t);
-      if (Math.abs(e.clientX - truoc.x) > 2) setHuongTrai(v < 0);
-      setNghieng(Math.max(-14, Math.min(14, v * 10)));
+      vanToc.current = vanToc.current * 0.6 + v * 0.4;
+      const vm = vanToc.current;
+      if (Math.abs(vm) > 0.08) setHuongTrai(vm < 0); // đủ nhanh mới quay mặt
+      setNghieng(Math.max(-12, Math.min(12, vm * 9))); // nghiêng về phía đang chạy
       diemTruoc.current = { x: e.clientX, t: bayGio };
     }
   };
@@ -170,7 +250,21 @@ export default function PetMimi() {
   };
 
   const chuong = viec.length + chat.chuaDoc + (chat.loi ? 1 : 0);
-  const nut = 'flex h-9 w-9 items-center justify-center rounded-full bg-card/90 text-foreground shadow-md ring-1 ring-border backdrop-blur hover:bg-accent';
+  const moViec = (id: string) => { setMoKhay(false); setLo(false); navigate(`/dashboard/viec-can-lam?ht=${id}`); };
+  const moChatTuThe = () => { setMoKhay(false); setLo(false); setMoChat(true); };
+  const the: TheHoatDong[] = [
+    ...(chat.dangTraLoi || chat.dangLamHo
+      ? [{ khoa: 'chay', tieu: chat.dangLamHo ? 'MIMI đang làm hộ bạn' : 'MIMI đang soạn câu trả lời', phu: 'Đang làm', mau: 'text-muted-foreground', bam: moChatTuThe }]
+      : []),
+    ...viec.map((v) => ({ khoa: v.id, tieu: v.cau, phu: `Cần bạn · ${v.tieu_de}`, mau: 'text-mimi-amber', bam: () => moViec(v.id) })),
+    ...(chat.chuaDoc > 0 ? [{ khoa: 'moi', tieu: `${chat.chuaDoc} câu trả lời mới`, phu: 'Xong — chưa xem', mau: 'text-primary', bam: moChatTuThe }] : []),
+    ...(chat.loi ? [{ khoa: 'loi', tieu: 'Lần hỏi vừa rồi chưa xong', phu: 'Bị chặn — bấm để thử lại', mau: 'text-destructive', bam: moChatTuThe }] : []),
+  ];
+  // Thẻ bật lên phía dưới thanh nếu còn chỗ, không thì bật ngược lên trên mèo.
+  const caoThe = Math.min(4, Math.max(1, the.length)) * 64 + 16;
+  const theOTren = vi.y + kt.cao + caoThe > man.cao - 8;
+  const theHien = moKhay ? the : lo ? the.slice(0, 1) : [];
+  const nut = 'flex h-8 w-9 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-accent hover:text-foreground';
 
   const chatNode = (
     <AIChatWidget
@@ -184,7 +278,7 @@ export default function PetMimi() {
       <>
         {chatNode}
         <PetNoi
-          cuaSo={cuaSoNoi} anh={ANH[dangMeo(tt, nguLau)] ?? idle} tt={tt} chuong={chuong} dangNghe={dangNghe}
+          cuaSo={cuaSoNoi} anh={anhMeo} giTay={giTay} tt={tt} chuong={chuong} dangNghe={dangNghe}
           onGo={() => { veTrang(); setMoChat(true); }}
           onNoi={noi}
           onChuong={() => { veTrang(); if (viec.length) navigate(`/dashboard/viec-can-lam?ht=${viec[0].id}`); else setMoChat(true); }}
@@ -232,29 +326,77 @@ export default function PetMimi() {
             <motion.div
               className="h-full w-full"
               animate={dangKeoMeo && !giamChuyenDong.current
-                ? { y: [0, -7, 0, -2, 0], scaleY: [1, 0.9, 1.06, 0.97, 1], scaleX: [1, 1.08, 0.95, 1.02, 1], rotate: huongTrai ? -nghieng : nghieng }
+                ? DAI_CHAY
+                  ? { y: [0, -3, 0], scaleY: 1, scaleX: 1, rotate: nghieng }
+                  : { y: [0, -7, 0, -2, 0], scaleY: [1, 0.9, 1.06, 0.97, 1], scaleX: [1, 1.08, 0.95, 1.02, 1], rotate: nghieng }
                 : vuaTha && !giamChuyenDong.current
                   ? { y: [0, 3, 0], scaleY: [1, 0.86, 1], scaleX: [1, 1.1, 1], rotate: 0 }
-                  : { y: 0, scaleY: 1, scaleX: 1, rotate: 0 }}
-              transition={dangKeoMeo ? { duration: 0.34, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.28 }}
+                  : vuonVai && !giamChuyenDong.current
+                    ? { y: [0, 2, 0, -2, 0], scaleX: [1, 1.14, 1.16, 1.04, 1], scaleY: [1, 0.9, 0.88, 1.03, 1], rotate: 0 }
+                    : nguLau && !giamChuyenDong.current
+                      ? { y: 0, scaleY: [1, 1.035, 1], scaleX: [1, 1.015, 1], rotate: 0 }
+                      : { y: 0, scaleY: 1, scaleX: 1, rotate: 0 }}
+              transition={dangKeoMeo ? { duration: DAI_CHAY ? 0.28 : 0.34, repeat: Infinity, ease: 'easeInOut', rotate: { duration: 0.2 } }
+                : vuonVai ? { duration: VUON_VAI_MS / 1000, ease: 'easeInOut' }
+                  : nguLau ? { duration: 3.2, repeat: Infinity, ease: 'easeInOut' }
+                    : { duration: 0.28 }}
               style={{ transformOrigin: '50% 90%' }}
             >
             <motion.img
-              src={dangKeoMeo ? run : vuaTha ? happy : ANH[dangMeo(tt, nguLau)] ?? idle}
+              src={anhMeo}
               alt=""
               draggable={false}
               role="button"
               tabIndex={0}
               data-dang-keo={dangKeoMeo || undefined}
+              data-ngu={(nguLau && !vuonVai && !dangKeoMeo) || undefined}
+              data-vuon-vai={(vuonVai && !dangKeoMeo) || undefined}
+              data-ngoi={(anhMeo === sit) || undefined}
+              data-gio-tay={giTay || undefined}
+              onPointerEnter={danhThuc}
               aria-label={`MIMI — ${TEN_TRANG_THAI_PET[tt]}. Bấm để ${moChat ? 'đóng' : 'mở'} trò chuyện, kéo để di chuyển.`}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMoChat((m) => !m); } }}
               onPointerDown={batDauKeo} onPointerMove={dangKeo} onPointerUp={thaKeo} onPointerCancel={thaKeo}
-              animate={giamChuyenDong.current || tt !== 'dang_chay' || dangKeoMeo ? { y: 0 } : { y: [0, -4, 0] }}
-              transition={{ duration: 0.6, repeat: tt === 'dang_chay' && !dangKeoMeo && !giamChuyenDong.current ? Infinity : 0 }}
-              style={{ transform: `scaleX(${dangKeoMeo && huongTrai ? -1 : 1})` }}
-              className="no-save h-full w-full cursor-grab touch-none object-contain drop-shadow-lg active:cursor-grabbing"
+              data-huong={dangKeoMeo ? (huongTrai ? 'trai' : 'phai') : undefined}
+              animate={{
+                ...(giamChuyenDong.current || tt !== 'dang_chay' || dangKeoMeo ? { y: 0 } : { y: [0, -4, 0] }),
+                scaleX: dangKeoMeo && huongTrai ? -1 : 1,
+              }}
+              transition={{
+                default: { duration: 0.6, repeat: tt === 'dang_chay' && !dangKeoMeo && !giamChuyenDong.current ? Infinity : 0 },
+                scaleX: { duration: giamChuyenDong.current ? 0 : 0.14, ease: 'easeOut' },
+              }}
+              data-dai-khung={(dangKeoMeo && DAI_CHAY && !giamChuyenDong.current) || undefined}
+              className={`no-save h-full w-full cursor-grab touch-none object-contain drop-shadow-lg active:cursor-grabbing ${dangKeoMeo && DAI_CHAY && !giamChuyenDong.current ? 'opacity-0' : ''}`}
             />
+            {/* Chạy bằng dải khung: ảnh thật vẫn nằm trên (trong suốt) để nhận kéo thả; dải khung vẽ bên dưới, lật theo hướng. */}
+            {dangKeoMeo && DAI_CHAY && !giamChuyenDong.current && (
+              <span aria-hidden className="pointer-events-none absolute inset-0 animate-chay-khung drop-shadow-lg"
+                style={{ backgroundImage: `url(${DAI_CHAY})`, backgroundSize: '800% 100%', backgroundRepeat: 'no-repeat', transform: `scaleX(${huongTrai ? -1 : 1})` }} />
+            )}
             </motion.div>
+            {/* Giơ tay: bàn tay vẫy bên vai phải của mèo đang ngồi. */}
+            {giTay && (
+              <motion.img
+                src={paw} alt="" aria-hidden draggable={false}
+                className="pointer-events-none absolute object-contain drop-shadow"
+                style={{ width: '40%', right: '-6%', top: '14%', transformOrigin: '50% 90%' }}
+                initial={{ opacity: 0, y: 8, rotate: 0 }}
+                animate={giamChuyenDong.current ? { opacity: 1, y: 0, rotate: 0 } : { opacity: 1, y: 0, rotate: [-12, 18, -12] }}
+                transition={giamChuyenDong.current ? { duration: 0.2 } : { rotate: { duration: 0.7, repeat: Infinity, ease: 'easeInOut' }, default: { duration: 0.2 } }}
+              />
+            )}
+            {nguLau && !vuonVai && !dangKeoMeo && (
+              <span aria-hidden className="pointer-events-none absolute -right-1 top-0 flex flex-col items-start font-display font-bold text-primary/70">
+                {[0, 1, 2].map((i) => giamChuyenDong.current
+                  ? <span key={i} className="text-[11px] leading-none" style={{ marginLeft: i * 6 }}>z</span>
+                  : (
+                    <motion.span key={i} className="text-[11px] leading-none" style={{ marginLeft: i * 6 }}
+                      initial={{ opacity: 0, y: 6 }} animate={{ opacity: [0, 1, 0], y: [6, -10] }}
+                      transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.8, ease: 'easeOut' }}>z</motion.span>
+                  ))}
+              </span>
+            )}
             {/* Bóng dưới chân: nhỏ lại khi mèo nhảy lên, cho cảm giác đang chạy trên mặt đất. */}
             {dangKeoMeo && !giamChuyenDong.current && (
               <motion.span aria-hidden className="pointer-events-none absolute bottom-0 left-1/2 h-1.5 w-1/2 -translate-x-1/2 rounded-full bg-black/15 blur-[2px]"
@@ -264,45 +406,58 @@ export default function PetMimi() {
             {tt === 'bi_chan' && <span aria-hidden className="absolute right-1 top-1 h-3 w-3 rounded-full bg-destructive ring-2 ring-background" />}
           </div>
         )}
-        <div className="mt-2 flex items-center gap-1.5" style={{ height: CAO_NUT }}>
-          <button type="button" className={nut} aria-label="Gõ để trò chuyện" title="Gõ để trò chuyện" onClick={() => setMoChat((m) => !m)}><Pencil size={15} /></button>
-          <button type="button" className={`${nut} ${dangNghe ? 'text-primary ring-primary' : ''}`} aria-label={dangNghe ? 'Đang nghe' : 'Nói với MIMI'} aria-pressed={dangNghe} title="Nói với MIMI" onClick={noi}><Mic size={15} /></button>
-          <button type="button" className={`${nut} relative`} aria-label={`Hoạt động${chuong ? ` — ${chuong} mục` : ''}`} title="Hoạt động" onClick={() => { setMoKhay((m) => !m); void napViec(); }}>
-            <Bell size={15} />
-            {chuong > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground">{chuong}</span>}
-          </button>
+        <div className="mt-2 flex items-center" style={{ height: CAO_NUT }}>
+          <div className="flex items-center rounded-full bg-card/90 px-1 py-0.5 shadow-md ring-1 ring-border backdrop-blur">
+            <button type="button" className={nut} aria-label="Gõ để trò chuyện" title="Gõ để trò chuyện" onClick={() => setMoChat((m) => !m)}><SquarePen size={16} /></button>
+            <span aria-hidden className="h-4 w-px bg-border" />
+            <button type="button" className={`${nut} ${dangNghe ? 'text-primary' : ''}`} aria-label={dangNghe ? 'Đang nghe' : 'Nói với MIMI'} aria-pressed={dangNghe} title="Nói với MIMI" onClick={noi}>
+              {dangNghe && !giamChuyenDong.current
+                ? <motion.span animate={{ scaleY: [1, 0.55, 1] }} transition={{ duration: 0.6, repeat: Infinity }}><AudioLines size={16} /></motion.span>
+                : <AudioLines size={16} />}
+            </button>
+            <span aria-hidden className="h-4 w-px bg-border" />
+            <button type="button" className={`${nut} relative`} aria-label={`Hoạt động${chuong ? ` — ${chuong} mục` : ''}`} aria-expanded={moKhay} title="Hoạt động"
+              onClick={() => { setMoKhay((m) => !m); setLo(false); void napViec(); }}>
+              <ChevronDown size={16} className={`transition-transform duration-200 ${(moKhay ? !theOTren : theOTren) ? 'rotate-180' : ''}`} />
+              {chuong > 0 && <span className="absolute -right-0.5 -top-1 min-w-4 rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground">{chuong}</span>}
+            </button>
+          </div>
         </div>
 
-        {/* Khay hoạt động */}
-        {moKhay && (
-          <div role="dialog" aria-label="Hoạt động của MIMI" className="absolute bottom-full mb-2 w-72 rounded-2xl bg-card p-3 text-sm shadow-xl ring-1 ring-border"
-            style={vi.x + 288 > man.rong ? { right: 0 } : { left: 0 }}>
-            <p className="mb-2 text-xs font-semibold text-muted-foreground">Hoạt động</p>
-            {chuong === 0 && <p className="text-muted-foreground">Không có gì cần bạn lúc này.</p>}
-            <ul className="space-y-1.5">
-              {viec.map((v) => (
-                <li key={v.id}>
-                  <Link to={`/dashboard/viec-can-lam?ht=${v.id}`} onClick={() => setMoKhay(false)} className="block rounded-lg p-2 hover:bg-accent">
-                    <span className="text-xs font-medium text-mimi-amber">Cần bạn · {v.tieu_de}</span>
-                    <span className="block text-foreground">{v.cau}</span>
-                  </Link>
-                </li>
-              ))}
-              {chat.chuaDoc > 0 && (
-                <li><button type="button" onClick={() => { setMoKhay(false); setMoChat(true); }} className="w-full rounded-lg p-2 text-left hover:bg-accent">
-                  <span className="text-xs font-medium text-primary">Xong — chưa xem</span>
-                  <span className="block text-foreground">{chat.chuaDoc} câu trả lời mới</span>
-                </button></li>
+        {/* Thẻ hoạt động: bấm mũi tên thì bung/thu; có chuyện mới thì thẻ trên cùng tự ló lên vài giây. */}
+        <AnimatePresence>
+          {(moKhay || theHien.length > 0) && (
+            <motion.div
+              key="the"
+              role={moKhay ? 'dialog' : 'status'} aria-label="Hoạt động của MIMI"
+              initial={{ opacity: 0, y: theOTren ? 10 : -10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: theOTren ? 10 : -10, scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+              className={`absolute flex w-72 gap-2 ${theOTren ? 'bottom-full mb-2 flex-col-reverse' : 'top-full mt-1 flex-col'}`}
+              style={vi.x + 288 > man.rong ? { right: 0 } : { left: 0 }}
+            >
+              {moKhay && the.length === 0 && (
+                <div className="rounded-3xl bg-card px-5 py-3 text-sm shadow-xl ring-1 ring-border">
+                  <p className="font-semibold text-foreground">Không có gì cần bạn lúc này</p>
+                  <p className="text-muted-foreground">Sẵn sàng</p>
+                </div>
               )}
-              {chat.loi && (
-                <li><button type="button" onClick={() => { setMoKhay(false); setMoChat(true); }} className="w-full rounded-lg p-2 text-left hover:bg-accent">
-                  <span className="text-xs font-medium text-destructive">Bị chặn</span>
-                  <span className="block text-foreground">Lần hỏi vừa rồi chưa xong — mở để thử lại</span>
-                </button></li>
-              )}
-            </ul>
-          </div>
-        )}
+              <AnimatePresence initial={false}>
+                {theHien.map((h) => (
+                  <motion.button
+                    key={h.khoa} type="button" layout onClick={h.bam}
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                    className="block w-full overflow-hidden rounded-3xl bg-card px-5 py-3 text-left text-sm shadow-xl ring-1 ring-border hover:bg-accent"
+                  >
+                    <span className="block truncate font-semibold text-foreground">{h.tieu}</span>
+                    <span className={`block truncate ${h.mau}`}>{h.phu}</span>
+                  </motion.button>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Menu chuột phải / giữ lâu */}
         {moMenu && (
