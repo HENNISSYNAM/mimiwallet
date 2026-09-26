@@ -81,7 +81,7 @@ export function PetNoi({ cuaSo, anh, giTay = false, tt, chuong, dangNghe, onGo, 
         )}
       </div>
       <div className="flex gap-1.5">
-        <button type="button" className={nut} aria-label="Gõ để trò chuyện" title="Mở MIMI để gõ" onClick={onGo}><Pencil size={15} /></button>
+        <button type="button" className={nut} aria-label="Gõ để hỏi Trợ lý MIMI" title="Mở Trợ lý MIMI" onClick={onGo}><Pencil size={15} /></button>
         <button type="button" className={`${nut} ${dangNghe ? 'text-primary ring-primary' : ''}`} aria-label="Nói với MIMI" title="Nói với MIMI" onClick={onNoi}><Mic size={15} /></button>
         <button type="button" className={`${nut} relative`} aria-label={`Hoạt động${chuong ? ` — ${chuong} mục` : ''}`} title="Hoạt động" onClick={onChuong}>
           <Bell size={15} />

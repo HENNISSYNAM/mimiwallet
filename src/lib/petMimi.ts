@@ -12,6 +12,9 @@
  */
 import type { Pose } from '@/lib/mimiTamTrang';
 
+/** Sự kiện cửa sổ: lệnh `/pet` gõ trong Trợ lý MIMI → pet ẩn/hiện. */
+export const SU_KIEN_LENH_PET = 'mimi:lenh-pet';
+
 export type TrangThaiPet = 'can_ban' | 'bi_chan' | 'xong_chua_xem' | 'dang_chay' | 'nghi';
 
 export interface TinHieuPet {
