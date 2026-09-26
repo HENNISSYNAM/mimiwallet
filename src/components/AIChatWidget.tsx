@@ -7,11 +7,10 @@ import { X, Send, Volume2, Loader2, AlertTriangle, ArrowUpRight } from 'lucide-r
 // cùng người dùng — nó là MIMI, không phải một nhân vật riêng.
 import mimiAgent from '@/assets/mimi-cat.png';
 import { toast } from 'sonner';
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { nhanViec } from '@/lib/mimiLamHo';
 import { useMimiLamHo } from '@/components/mimi/MimiLamHo';
 import { goiTroLy } from '@/lib/goiTroLy';
-import { supabase } from '@/integrations/supabase/client';
+import { docGiong, dungDoc } from '@/lib/docGiong';
 import { dungLichSu, type TraLoi } from '@/lib/troLy';
 
 /**
@@ -24,8 +23,6 @@ import { dungLichSu, type TraLoi } from '@/lib/troLy';
  */
 
 type Msg = { role: 'user' | 'assistant'; content: string; traLoi?: TraLoi };
-
-const TTS_URL = `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
 // Opening questions steer what people think this product is for, so they track
 // the tax and cost work rather than the invoice advance MIMI cannot provide.
@@ -121,36 +118,25 @@ export default function AIChatWidget() {
     }
   };
 
+  /*
+   * Đọc bằng giọng có sẵn của trình duyệt (26/09/2026) — không qua ElevenLabs: miễn phí, không khoá,
+   * câu trả lời không rời máy người dùng. Bấm lần nữa để dừng. Xem `lib/docGiong.ts`.
+   */
   const speakLast = async () => {
+    if (isSpeaking) { dungDoc(); setIsSpeaking(false); return; }
     const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
-    if (!lastAssistant || isSpeaking) return;
+    if (!lastAssistant) return;
     setIsSpeaking(true);
-
     try {
-      // Phiên của người dùng, không phải khoá anon công khai: máy chủ từ chối khoá anon (25/09/2026).
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Cần đăng nhập');
-      const resp = await fetch(TTS_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ text: lastAssistant.content.slice(0, 1000) }),
-      });
-
-      if (!resp.ok) throw new Error('TTS failed');
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
-      await audio.play();
-    } catch {
-      toast.error('Không thể phát giọng nói');
+      const kq = await docGiong(lastAssistant.content);
+      if (kq === 'khong_ho_tro') toast.error('Trình duyệt này chưa đọc được giọng nói.');
+      if (kq === 'khong_co_giong_viet') toast.error('Máy chưa có giọng đọc tiếng Việt. Cài giọng tiếng Việt trong cài đặt ngôn ngữ của máy rồi thử lại.');
+    } finally {
       setIsSpeaking(false);
     }
   };
+
+  useEffect(() => () => dungDoc(), []);
 
   return (
     <>
@@ -201,9 +187,10 @@ export default function AIChatWidget() {
                 {messages.some(m => m.role === 'assistant') && (
                   <button
                     onClick={speakLast}
-                    disabled={isSpeaking}
+                    aria-label={isSpeaking ? 'Dừng đọc' : 'Nghe phản hồi'}
+                    aria-pressed={isSpeaking}
                     className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground hover:text-foreground pressable"
-                    title="Nghe phản hồi"
+                    title={isSpeaking ? 'Dừng đọc' : 'Nghe phản hồi'}
                   >
                     <Volume2 size={16} className={isSpeaking ? 'text-primary animate-pulse' : ''} />
                   </button>
