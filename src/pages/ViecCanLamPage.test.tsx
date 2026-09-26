@@ -34,7 +34,8 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 import ViecCanLamPage from './ViecCanLamPage';
 
 // Máy CI chậm khi chạy cả bộ: một lượt render + hai lời gọi giả lập có lúc quá 1 giây mặc định.
-configure({ asyncUtilTimeout: 8000 });
+configure({ asyncUtilTimeout: 20000 });
+vi.setConfig({ testTimeout: 40_000 });
 
 const mo = () => render(<MemoryRouter initialEntries={[`/dashboard/viec-can-lam?ht=${HT_ID}`]}><ViecCanLamPage /></MemoryRouter>);
 
@@ -46,9 +47,12 @@ describe('Việc cần làm', () => {
     expect(await screen.findByRole('heading', { name: 'Bạn muốn bắt đầu tạm ngừng từ ngày nào?' })).toBeTruthy();
     expect(screen.getAllByRole('heading', { level: 2 }).filter((h) => h.id === 'cau-hoi')).toHaveLength(1);
     fireEvent.change(document.querySelector('input[type=date]') as HTMLInputElement, { target: { value: '2026-10-01' } });
-    fireEvent.click(screen.getByText('Trả lời'));
+    // Máy tải nặng: chờ React bật nút rồi mới bấm, và chờ lời gọi máy chủ thật sự xảy ra.
+    const nutTraLoi = screen.getByText('Trả lời').closest('button') as HTMLButtonElement;
+    await waitFor(() => expect(nutTraLoi.disabled).toBe(false));
+    fireEvent.click(nutTraLoi);
+    await waitFor(() => expect(goi.cuoc).toContainEqual(['hanh_trinh_tra_loi', { id: HT_ID, khoa: 'tam_ngung_tu', gia_tri: '2026-10-01' }]));
     expect(await screen.findByRole('heading', { name: 'Bạn dự định tạm ngừng tới ngày nào?' })).toBeTruthy();
-    expect(goi.cuoc).toContainEqual(['hanh_trinh_tra_loi', { id: HT_ID, khoa: 'tam_ngung_tu', gia_tri: '2026-10-01' }]);
   });
 
   it('bước chưa đủ dữ kiện hiện lý do chặn, không có nút làm', async () => {

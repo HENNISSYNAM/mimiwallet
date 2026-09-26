@@ -20,7 +20,6 @@ function CauHoiCard({ ht, duocSua, onXong }: { ht: HanhTrinhDay; duocSua: boolea
   const c = ht.cau_hoi;
   const [gt, setGt] = useState('');
   const [dang, setDang] = useState(false);
-  useEffect(() => setGt(''), [c?.khoa]);
   if (!c) return null;
   const gui = async (v: string) => {
     setDang(true);
@@ -212,7 +211,9 @@ export default function ViecCanLamPage() {
             {chiTiet && (
               <>
                 <h2 className="text-lg font-semibold text-foreground">{chiTiet.ht.tieu_de}</h2>
-                <CauHoiCard ht={chiTiet.ht} duocSua={duocSua} onXong={capNhat} />
+                {/* key theo câu hỏi: câu mới là ô mới. Trước đây một hiệu ứng xoá ô chạy cả sau lần hiện đầu,
+                    nên chữ gõ nhanh (hoặc máy chậm) bị xoá mất. */}
+                <CauHoiCard key={chiTiet.ht.cau_hoi?.khoa ?? 'het'} ht={chiTiet.ht} duocSua={duocSua} onXong={capNhat} />
                 <ol className="divide-y divide-border rounded-2xl border border-border bg-card">
                   {chiTiet.ht.buoc.map((b) => (
                     <li key={b.khoa} className={`space-y-2 p-4 ${b.trang_thai === 'skipped' ? 'opacity-60' : ''}`}>
