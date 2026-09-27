@@ -12,6 +12,7 @@ import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection
 import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
+import { DangXuatMoiThietBi } from '@/components/settings/DangXuatMoiThietBi';
 
 /*
  * `disbursement` đã rời khỏi đây 24/09/2026.
@@ -327,10 +328,10 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
+  // Bỏ "Xác thực 2 lớp" và "Quản lý thiết bị" (27/09/2026): hai nút chỉ hiện "sẽ ra mắt sớm". Thay bằng
+  // "Đăng xuất khỏi mọi thiết bị" — có thật ở máy chủ (DangXuatMoiThietBi).
   const securityItems = [
     { label: t('settings.changePassword'), onClick: () => setShowPasswordModal(true) },
-    { label: t('settings.twoFactor'), onClick: () => toast('Tính năng xác thực 2 lớp đang được phát triển, sẽ ra mắt sớm') },
-    { label: t('settings.manageDevices'), onClick: () => toast('Tính năng quản lý thiết bị đang được phát triển, sẽ ra mắt sớm') },
   ];
 
   return (
@@ -382,6 +383,7 @@ export default function SettingsPage() {
               <ChevronRight size={14} />
             </button>
           ))}
+          <DangXuatMoiThietBi sauKhiXong={() => navigate('/')} />
         </div>
       </SettingsSection>
 
