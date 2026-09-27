@@ -69,6 +69,7 @@ const GiayToPage = lazy(() => import("./pages/GiayToPage"));
 const ViecCanLamPage = lazy(() => import("./pages/ViecCanLamPage"));
 const TaiLieuPage = lazy(() => import("./pages/TaiLieuPage"));
 const TachChiCaNhanPage = lazy(() => import("./pages/TachChiCaNhanPage"));
+const DocBaoCaoPage = lazy(() => import("./pages/DocBaoCaoPage"));
 const ToKhaiPage = lazy(() => import("./pages/ToKhaiPage"));
 const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -167,6 +168,7 @@ const App = () => (
                 <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Hoá đơn điện tử và chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
                 <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Kiểm tra trước khi chuyển tiền — MIMI WALLET" description="Nhập khoản sắp chuyển, MIMI so với lịch sử chi của công ty để tìm dấu hiệu đổi tài khoản, người nhận lạ hoặc kịch bản lừa đảo."><KiemChuyenTienPage /></Page>} />
                 <Route path="chi-ca-nhan" element={<Page noIndex path="/dashboard/chi-ca-nhan" title="Tách chi cá nhân — MIMI WALLET" description="Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi hộ kinh doanh dùng chung một tài khoản ngân hàng."><TachChiCaNhanPage /></Page>} />
+                <Route path="doc-bao-cao" element={<Page noIndex path="/dashboard/doc-bao-cao" title="Đọc báo cáo tài chính & tờ khai — MIMI WALLET" description="Tải báo cáo tài chính hoặc tờ khai thuế (Excel/CSV): MIMI nhận dạng, xếp từng chỉ tiêu và kiểm đẳng thức kế toán, ngay trên máy bạn."><DocBaoCaoPage /></Page>} />
                 <Route path="viec-can-lam" element={<Page noIndex path="/dashboard/viec-can-lam" title="Việc cần làm — MIMI WALLET" description="Việc nhiều bước: tạm ngừng, hoá đơn sai, trả lời giải trình — MIMI hỏi từng câu, chuẩn bị giấy tờ, bạn tự nộp."><ViecCanLamPage /></Page>} />
                 <Route path="tai-lieu" element={<Page noIndex path="/dashboard/tai-lieu" title="Tài liệu & Chứng từ — MIMI WALLET" description="Báo cáo, gói bằng chứng và công văn MIMI soạn, có phiên bản, nguồn và mã băm."><TaiLieuPage /></Page>} />
                 <Route path="giay-to" element={<Page noIndex path="/dashboard/giay-to" title="Soạn giấy tờ — MIMI WALLET" description="Bản nháp đơn tra soát chuyển nhầm, công văn giải trình và công văn đề nghị huỷ tờ khai, điền sẵn từ dữ liệu của công ty."><GiayToPage /></Page>} />
