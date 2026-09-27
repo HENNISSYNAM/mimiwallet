@@ -9,6 +9,7 @@ import { ghepChungTu, type HoaDonVao, type KhoanChi } from '@/lib/khopChungTu';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
 import { chieuTien } from '@/lib/chieuTien';
+import { docHet } from '../../supabase/functions/_shared/doc-het';
 
 /**
  * Chứng từ chi phí: khoản nào đã có giấy tờ, khoản nào chưa.
@@ -74,35 +75,48 @@ export default function ChungTuPage() {
       // Từ đầu năm của quý đang tới hạn tới cuối quý đó.
       const dauNam = `${cuoiKy.getFullYear()}-01-01`;
 
+      // Đọc HẾT theo trang (PostgREST cắt ở 1000 dòng): doanh thu năm ở đây được so với ngưỡng thuế,
+      // cộng thiếu là con số sai mà trông như đủ. Giữ dạng { data, error } để phần báo lỗi bên dưới như cũ.
+      const het = <T,>(tao: (a: number, b: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>, ten: string) =>
+        docHet(tao, ten).then(
+          (data) => ({ data: data as T[], error: null as { message: string } | null }),
+          (e: unknown) => ({ data: null as T[] | null, error: { message: e instanceof Error ? e.message : String(e) } }),
+        );
+      type GdKy = { id: string; amount: number; type: string; transaction_date: string; merchant_name: string | null; payment_reference: string | null; counter_account_name: string | null; is_synthetic: boolean };
+      type HdKy = { id: string; total_amount: number | null; issued_at: string; invoice_number: string | null; counterparty_name: string | null; counterparty_tax_code: string | null };
       const [gd, hd, thuNam, hdNam] = await Promise.all([
-        supabase
+        het<GdKy>((a, b) => supabase
           .from('transactions')
           .select(
             'id, amount, type, transaction_date, merchant_name, payment_reference, counter_account_name, is_synthetic',
           )
           .eq('company_id', cty.id)
           .gte('transaction_date', iso(dauKy))
-          .lte('transaction_date', iso(cuoiKy)),
-        supabase
+          .lte('transaction_date', iso(cuoiKy))
+          .order('id').range(a, b), 'giao dịch trong kỳ'),
+        het<HdKy>((a, b) => supabase
           .from('gdt_invoices')
           .select('id, total_amount, issued_at, invoice_number, counterparty_name, counterparty_tax_code')
           .eq('company_id', cty.id)
           .eq('direction', 'received')
           .gte('issued_at', iso(dauKy))
-          .lte('issued_at', `${iso(cuoiKy)}T23:59:59`),
-        supabase
+          .lte('issued_at', `${iso(cuoiKy)}T23:59:59`)
+          .order('id').range(a, b), 'hoá đơn trong kỳ'),
+        het<{ amount: number; type: string; is_synthetic: boolean }>((a, b) => supabase
           .from('transactions')
-          .select('amount, type, is_synthetic')
+          .select('id, amount, type, is_synthetic')
           .eq('company_id', cty.id)
           .gte('transaction_date', dauNam)
-          .lte('transaction_date', iso(cuoiKy)),
-        supabase
+          .lte('transaction_date', iso(cuoiKy))
+          .order('id').range(a, b), 'giao dịch từ đầu năm'),
+        het<{ total_amount: number | null }>((a, b) => supabase
           .from('gdt_invoices')
-          .select('total_amount')
+          .select('id, total_amount')
           .eq('company_id', cty.id)
           .eq('direction', 'received')
           .gte('issued_at', dauNam)
-          .lte('issued_at', `${iso(cuoiKy)}T23:59:59`),
+          .lte('issued_at', `${iso(cuoiKy)}T23:59:59`)
+          .order('id').range(a, b), 'hoá đơn từ đầu năm'),
       ]);
 
       // Không nuốt lỗi — bài học 08/09: truy vấn hỏng trông y hệt không có dữ liệu.

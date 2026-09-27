@@ -7,6 +7,7 @@ import { locMinhHoa } from '../../supabase/functions/_shared/minh-hoa.ts';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { chieuTien, doLonTien } from '@/lib/chieuTien';
 import { goiYCaNhan } from '../../supabase/functions/_shared/phan-loai/ca-nhan.ts';
+import { docHet } from '../../supabase/functions/_shared/doc-het';
 
 /**
  * TCCN-08 — Tách chi tiêu cá nhân khỏi chi phí kinh doanh.
@@ -58,7 +59,12 @@ export default function TachChiCaNhanPage() {
           .select('id, transaction_date, amount, type, merchant_name, counter_account_name, payment_reference, is_synthetic', { count: 'exact' })
           .eq('company_id', id), dang?.la_demo === true).gte('transaction_date', tu)
           .order('transaction_date', { ascending: false }).limit(TRAN),
-        supabase.from('transaction_labels').select('transaction_id, is_personal, source').eq('company_id', id).limit(20_000),
+        // `.limit(20_000)` cũ KHÔNG vượt được mốc 1000 dòng của PostgREST — nhãn thứ 1001 trở đi mất, và
+        // khoản người dùng đã phân loại hiện lại như chưa phân loại. Đọc hết theo trang.
+        docHet((a, b) => supabase.from('transaction_labels').select('transaction_id, is_personal, source')
+          .eq('company_id', id).order('transaction_id').range(a, b), 'nhãn chi cá nhân')
+          .then((data) => ({ data: data as { transaction_id: string; is_personal: boolean; source: string }[], error: null }),
+            (e: unknown) => ({ data: null, error: e instanceof Error ? e : new Error(String(e)) })),
       ]);
       if (gd.error) throw gd.error;
       if (nhan.error) throw nhan.error;

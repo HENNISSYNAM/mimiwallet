@@ -22,6 +22,8 @@ import { cauConLai, ngayMoc, useLichThue } from '@/lib/lichThue';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
+import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
+import { docHet } from '../../supabase/functions/_shared/doc-het';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
 /**
@@ -152,6 +154,8 @@ export default function DashboardOverview() {
   const [laDemo, setLaDemo] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [hasBank, setHasBank] = useState(false);
+  const [loiTai, setLoiTai] = useState(false);
+  const [lanTai, setLanTai] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,10 +173,14 @@ export default function DashboardOverview() {
 
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
       const [txRes, invRes, bankRes] = await Promise.all([
-        supabase.from('transactions')
+        // Đọc HẾT theo trang: PostgREST cắt ở 1000 dòng, và một năm giao dịch vượt mốc đó là tổng thu
+        // chi trên màn này sai mà không ai thấy lỗi.
+        docHet((a, b) => supabase.from('transactions')
           .select('id, amount, type, category, merchant_name, transaction_date, is_synthetic')
           .eq('company_id', company.id).gte('transaction_date', iso(yearAgo))
-          .order('transaction_date', { ascending: false }),
+          .order('transaction_date', { ascending: false }).order('id', { ascending: false })
+          .range(a, b), 'giao dịch')
+          .then((data) => ({ data, error: null }), (e: unknown) => ({ data: null, error: e })),
         supabase.from('invoices')
           .select('id, total, status, due_date, client_name, invoice_number, is_synthetic')
           // Cùng quy ước với `transactions` ngay trên: màn hình này trình bày
@@ -187,6 +195,9 @@ export default function DashboardOverview() {
 
       if (cancelled) return;
       setCompanyName(company.name);
+      // Đọc lỗi thì nói là lỗi — không để màn hình hiện toàn số 0 như một doanh nghiệp chưa có giao dịch.
+      if (txRes.error || invRes.error || bankRes.error) { setLoiTai(true); setLoading(false); return; }
+      setLoiTai(false);
       setLaDemo(demo);
       setTxs((txRes.data as Tx[]) ?? []);
       setInvoices(((invRes.data ?? []) as (Invoice & { is_synthetic?: boolean })[]).filter(duocHien(demo)));
@@ -194,7 +205,7 @@ export default function DashboardOverview() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [lanTai]);
 
   /** Chỉ tiền thật — mọi con số VÀ danh sách trên màn này đều dựa vào đây. */
   const giaoDichThat = useMemo(() => txs.filter(duocHien(laDemo)), [txs, laDemo]);
@@ -302,6 +313,14 @@ export default function DashboardOverview() {
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="animate-spin text-muted-foreground" size={28} /></div>;
+  }
+
+  if (loiTai && txs.length === 0) {
+    return (
+      <div className="py-12 max-w-xl">
+        <LoiTaiLai cau="Chưa tải được số liệu của bạn. Dữ liệu vẫn còn nguyên, chỉ là lần đọc này lỗi." thuLai={() => { setLoading(true); setLanTai((n) => n + 1); }} />
+      </div>
+    );
   }
 
   const noData = txs.length === 0;
