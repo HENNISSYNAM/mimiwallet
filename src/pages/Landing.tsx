@@ -424,8 +424,8 @@ function BentoCard({ title, desc, icon, badge, children, className = '', delay =
 }
 
 /* ─── Pricing ─── */
-function PricingCard({ name, price, features, cta, highlighted, annual, badge }: {
-  name: string; price: string; features: string[]; cta: string; highlighted?: boolean; annual: boolean; badge?: string;
+function PricingCard({ name, price, features, cta, highlighted, badge }: {
+  name: string; price: string; features: string[]; cta: string; highlighted?: boolean; badge?: string;
 }) {
   const navigate = useNavigate();
   return (
@@ -444,10 +444,10 @@ function PricingCard({ name, price, features, cta, highlighted, annual, badge }:
       )}
       <h3 className="font-display font-bold text-foreground text-xl">{name}</h3>
       <p className="font-mono text-3xl font-extrabold text-foreground mt-3">
-        {price === 'Liên hệ' ? price : annual && price !== 'Miễn phí' ? `${Math.round(parseInt(price.replace(/\D/g, '')) * 0.8).toLocaleString('vi-VN')}₫` : price}
+        {price}
       </p>
       {price !== 'Miễn phí' && price !== 'Liên hệ' && (
-        <p className="text-xs text-muted-foreground mt-1">/tháng {annual && '(tiết kiệm 20%)'}</p>
+        <p className="text-xs text-muted-foreground mt-1">/tháng</p>
       )}
       <div className="w-full h-px bg-border my-6" />
       <ul className="space-y-3 flex-1">
@@ -534,7 +534,6 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
   const hien = (k: KhoaKhoi) => khoi.includes(k);
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [annual, setAnnual] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const { signInAsDemo, demoAvailable } = useAuthStore();
   const heroRef = useRef<HTMLDivElement>(null);
@@ -1154,26 +1153,18 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             <span className="text-xs text-primary font-mono uppercase tracking-widest">Bảng giá</span>
             <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Chọn gói phù hợp</h2>
           </motion.div>
-          <div className="flex items-center justify-center gap-4 mb-14">
-            <span className={`text-sm font-medium ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>Hàng tháng</span>
-            <button
-              onClick={() => setAnnual(!annual)}
-              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${annual ? 'bg-primary' : 'bg-accent border border-border'}`}
-            >
-              <motion.div
-                className="absolute top-1 w-5 h-5 rounded-full bg-primary-foreground shadow-sm"
-                animate={{ left: annual ? 30 : 4 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              />
-            </button>
-            <span className={`text-sm font-medium ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Hàng năm <span className="text-mimi-green font-mono text-xs ml-1">-20%</span>
-            </span>
-          </div>
+          {/*
+            Gỡ nút gạt "Hàng tháng / Hàng năm" và dòng dùng thử 14 ngày (27/09/2026, trước Go-Live):
+            `subscription-billing` chỉ thu theo tháng và không có dùng thử, nên trang đang hứa một giá
+            và một quyền lợi hệ thống không làm được. Giá tháng giữ nguyên, lấy từ `GOI_THANG` — cùng
+            bảng giá máy chủ thu. Muốn bán gói năm hay cho dùng thử thì làm ở máy chủ TRƯỚC, rồi mới
+            đưa lên đây.
+          */}
+          <div className="mb-14" />
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
-            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['Tự phân loại chi phí (đang xây)', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng (đang xây)', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
-            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt (đang xây)', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" annual={annual} />
+            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" />
+            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['Tự phân loại chi phí (đang xây)', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng (đang xây)']} cta="Bắt đầu, nâng cấp khi cần" highlighted badge="Phổ biến nhất" />
+            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt (đang xây)', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" />
           </div>
 
           {/*

@@ -7,21 +7,20 @@
 
 ## Kết luận: **GO CÓ ĐIỀU KIỆN**
 
-Mở cho người dùng thật **không thu phí** ngay khi xong 2 điều kiện chặn (mục dưới). Chưa nhận thanh toán
-cho tới khi bảng giá khớp với phần thu tiền.
+Hai điều kiện chặn **đã xong** (27/09/2026, 11:38 và 12:00). Mở được cho người dùng thật. Thu phí gói
+tháng được — bảng giá nay khớp với phần thu tiền; chỉ còn P2 (CSP) trước khi coi là xong hẳn.
 
 ### Điều kiện chặn (phải xong trước khi mời người dùng)
 
 | # | Việc | Ai | Vì sao chặn |
 |---|---|---|---|
-| C1 | Deploy lại `tro-ly` | Chủ sản phẩm (lệnh bị chặn với agent) | Bản trên máy chủ (v46, 22:32 26/09) trước commit trung gian 22:58; đưa máy chủ về đúng mã đã đẩy |
-| C2 | Bảng giá: "14 ngày dùng thử" và "Hàng năm −20%" | Chủ sản phẩm quyết | `subscription-billing` không có dùng thử, không có gói năm. Trang hứa điều hệ thống không làm |
+| C1 | Deploy lại `tro-ly` | **XONG** — chủ sản phẩm deploy, v48 lúc 04:38 UTC 27/09; gọi không đăng nhập → 401 | Bản cũ (v46) trước commit trung gian 22:58 |
+| C2 | Bảng giá: "14 ngày dùng thử" và "Hàng năm −20%" | **XONG** — chủ sản phẩm giao agent quyết: **gỡ hai lời hứa, giữ nguyên giá tháng** 249.000đ (từ `GOI_THANG`, cùng bảng giá máy chủ thu) | `subscription-billing` chỉ thu theo tháng, không có dùng thử. Làm thêm hai cơ chế thanh toán ngay trước ra mắt rủi ro hơn nói đúng cái đang có; muốn bán gói năm / cho dùng thử thì làm máy chủ trước rồi mới đưa lên trang |
 
 ### Điều kiện trước khi thu phí
 
 | # | Việc |
 |---|---|
-| P1 | Làm (hoặc gỡ) dùng thử và gói năm cho khớp C2 |
 | P2 | Đăng nhập web thật, bấm qua Tổng quan / Trợ lý / Liên kết ngân hàng, kiểm console không có vi phạm CSP → chuyển CSP từ Report-Only sang chặn thật (`vercel.json`) |
 
 ## Bảng điểm
@@ -33,7 +32,7 @@ cho tới khi bảng giá khớp với phần thu tiền.
 | Khoá bí mật | ĐẠT | Quét mã đang theo dõi + toàn bộ lịch sử git: chỉ khoá giả của test và chỗ giữ chỗ |
 | Đo lường không bị giả mạo chéo công ty | ĐẠT (mới) | Ghi `product_events` kèm `company_id` phải là thành viên (test 11/11) |
 | Header bảo mật | MỘT PHẦN | `frame-ancestors 'none'`, `object-src 'none'` đang chặn thật; phần còn lại Report-Only (P2) |
-| Function máy chủ | ĐẠT trừ C1 | 13 function deploy 26/09 16:50 UTC; gọi không đăng nhập → 401 gọn, không 500 |
+| Function máy chủ | ĐẠT | 13 function deploy 26/09 16:50 UTC; gọi không đăng nhập → 401 gọn, không 500 |
 | Migration | ĐẠT | Local = production (kiểm `migration list`), gồm `20260927090000` |
 | Chữ trên trang không quá lời | ĐẠT (mới) | Gỡ "điểm tín dụng 701", "xác suất vỡ nợ", "học máy 3 giây", lời chứng thực bịa, NPS, ISO 27001 |
 | Lỗi im lặng | ĐẠT phần nặng (mới) | Xem mục Rà lỗi im lặng |
