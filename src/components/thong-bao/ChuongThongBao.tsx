@@ -15,8 +15,9 @@ import { DanhSachThongBao } from './DanhSachThongBao';
 export function ChuongThongBao() {
   const [ds, setDs] = useState<ThongBao[]>([]);
   const [mo, setMo] = useState(false);
+  const [loi, setLoi] = useState(false);
 
-  const tai = useCallback(() => { void docThongBao(10).then(setDs).catch(() => {}); }, []);
+  const tai = useCallback(() => { void docThongBao(10).then((d) => { setDs(d); setLoi(false); }).catch(() => setLoi(true)); }, []);
 
   useEffect(() => {
     tai();
@@ -56,7 +57,7 @@ export function ChuongThongBao() {
           <Link to="/dashboard/nhac-thue" onClick={() => setMo(false)} className="text-xs text-primary hover:underline">Cài đặt và xem tất cả</Link>
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
-          <DanhSachThongBao ds={ds} onDoi={tai} gon />
+          <DanhSachThongBao ds={ds} onDoi={tai} gon loi={loi} />
         </div>
       </PopoverContent>
     </Popover>

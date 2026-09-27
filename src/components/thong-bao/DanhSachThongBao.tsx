@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { danhDauThongBao, type HanhDongThongBao, type ThongBao } from '@/lib/thongBao';
+import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 
 /**
  * Danh sách thông báo — dùng ở chuông đầu trang và trong Nhắc thuế.
@@ -23,7 +24,7 @@ const tuongDoi = (iso: string) => {
   return new Date(iso).toLocaleDateString('vi-VN');
 };
 
-export function DanhSachThongBao({ ds, onDoi, gon }: { ds: ThongBao[]; onDoi: () => void; gon?: boolean }) {
+export function DanhSachThongBao({ ds, onDoi, gon, loi }: { ds: ThongBao[]; onDoi: () => void; gon?: boolean; loi?: boolean }) {
   const navigate = useNavigate();
   const [dang, setDang] = useState<string | null>(null);
 
@@ -48,6 +49,11 @@ export function DanhSachThongBao({ ds, onDoi, gon }: { ds: ThongBao[]; onDoi: ()
     if (t.duong_dan) navigate(t.duong_dan);
     onDoi();
   };
+
+  // Đọc lỗi thì không được nói "Chưa có thông báo nào" — thông báo có thể là hạn nộp thuế.
+  if (!ds.length && loi) {
+    return <div className="p-3"><LoiTaiLai cau="Chưa tải được thông báo." thuLai={onDoi} /></div>;
+  }
 
   if (!ds.length) {
     return <p className="p-4 text-sm text-muted-foreground">Chưa có thông báo nào. MIMI sẽ báo khi tới hạn khai thuế, có văn bản luật mới, hoặc có khoản tiền vào cần bạn xác nhận.</p>;

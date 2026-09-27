@@ -7,6 +7,7 @@ import {
 import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 import { cauKetQuaDongBo } from '@/lib/ketQuaDongBo';
 import {
   cachSua,
@@ -128,6 +129,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const { session } = useAuthStore();
   const [connections, setConnections] = useState<CasConnection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loiTai, setLoiTai] = useState<string | null>(null);
   const [linking, setLinking] = useState(false);
   /**
    * Per-connection note for a failure that is not MIMI's to fix.
@@ -276,7 +278,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     }
     void call('env').then((r) => r?.environment && setEnvironment(r.environment));
     const { supabase } = await import('@/integrations/supabase/client');
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('bank_connections')
       // access_token_enc is deliberately absent. RLS lets the owner read their
       // own row, so anything selected here is reachable from the browser.
@@ -298,7 +300,14 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
        */
       .neq('status', 'disconnected')
       .order('created_at', { ascending: true });
-    setConnections((data as CasConnection[] | null) ?? []);
+    // Lỗi đọc KHÔNG được thành "chưa liên kết tài khoản nào": câu đó sai và có thể khiến người dùng
+    // liên kết lại lần hai. Giữ danh sách cũ, nói lỗi, cho thử lại.
+    if (error) {
+      setLoiTai('Chưa tải được danh sách tài khoản đã liên kết. Liên kết của bạn không bị ảnh hưởng.');
+    } else {
+      setLoiTai(null);
+      setConnections((data as CasConnection[] | null) ?? []);
+    }
     setLoading(false);
   }, [session]);
 
@@ -973,6 +982,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           <div className="flex justify-center py-6">
             <Loader2 className="animate-spin text-muted-foreground" size={20} />
           </div>
+        ) : loiTai && connections.length === 0 ? (
+          <LoiTaiLai className="mt-4" cau={loiTai} thuLai={() => { setLoading(true); void loadConnections(); }} />
         ) : connections.length === 0 ? (
           <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40">
             {/* Câu cũ nói "điểm tín dụng bên dưới đang tính trên dữ liệu demo" — không còn

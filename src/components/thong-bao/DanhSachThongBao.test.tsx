@@ -59,3 +59,19 @@ describe('danh sách thông báo', () => {
     expect(screen.getByText(/MIMI sẽ báo khi tới hạn khai thuế/)).toBeTruthy();
   });
 });
+
+describe('danh sách thông báo — đọc lỗi', () => {
+  it('lỗi và chưa có gì trong tay → báo lỗi + thử lại, KHÔNG nói "Chưa có thông báo nào"', () => {
+    const onDoi = vi.fn();
+    render(<MemoryRouter><DanhSachThongBao ds={[]} onDoi={onDoi} loi /></MemoryRouter>);
+    expect(screen.getByRole('alert').textContent).toContain('Chưa tải được thông báo');
+    expect(screen.queryByText(/Chưa có thông báo nào/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Thử lại/ }));
+    expect(onDoi).toHaveBeenCalled();
+  });
+
+  it('lỗi lần làm mới nhưng đã có danh sách cũ → vẫn hiện danh sách cũ', () => {
+    render(<MemoryRouter><DanhSachThongBao ds={[TB]} onDoi={vi.fn()} loi /></MemoryRouter>);
+    expect(screen.getByText(TB.tieu_de)).toBeTruthy();
+  });
+});
