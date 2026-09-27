@@ -24,6 +24,7 @@ import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
 import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 import { docHet } from '../../supabase/functions/_shared/doc-het';
+import { homNayVN } from '../../supabase/functions/_shared/viec/dong-co-viec';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
 /**
@@ -330,7 +331,9 @@ export default function DashboardOverview() {
   // tiên nằm trong `lib/mimiTamTrang.ts` cùng bộ test của nó; chỗ này chỉ dịch
   // state của trang sang các sự việc mà hàm đó nhận.
   const soQuaHan = invoices.filter(
-    (i) => i.status !== 'paid' && i.due_date && new Date(i.due_date) < new Date(),
+    // So NGÀY theo giờ VN: `new Date('2026-09-18')` là 07:00 sáng 18/09 giờ VN, nên cách cũ báo quá hạn
+    // ngay trong chính ngày đến hạn. Quá hạn = hạn trước hôm nay.
+    (i) => i.status !== 'paid' && !!i.due_date && i.due_date.slice(0, 10) < homNayVN(),
   ).length;
   const mimi = tamTrang({
     chuaCoDuLieu: noData && !hasBank,

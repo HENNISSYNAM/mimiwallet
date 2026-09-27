@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { GlassTabs } from '@/components/ui/glass-tabs';
 import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
+import { homNayVN } from '../../supabase/functions/_shared/viec/dong-co-viec';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -92,7 +93,8 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
       amount: amountNum,
       vat_rate: vat,
       total,
-      issued_date: new Date().toISOString().slice(0, 10),
+      // Ngày theo giờ VN: ngày UTC làm hoá đơn tạo lúc 00:00–07:00 mang ngày hôm trước.
+      issued_date: homNayVN(),
       due_date: dueDate,
       status: 'pending',
     });
