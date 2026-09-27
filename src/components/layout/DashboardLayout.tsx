@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { layDichSauDangNhap } from '@/lib/sauDangNhap';
+import { ghiMoUngDung } from '@/lib/track';
 
 /**
  * Two initials for the avatar, from whatever real name we actually have.
@@ -133,6 +134,8 @@ export default function DashboardLayout() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [moThem, setMoThem] = useState(false);
+  // Đo "quay lại": một lần mỗi ngày mỗi công ty (ghiMoUngDung tự chặn trùng).
+  useEffect(() => { void ghiMoUngDung(); }, []);
   const [moTaiApp, setMoTaiApp] = useState(false);
   const [moKho, setMoKho] = useState(false);
   const congTy = useCongTy();

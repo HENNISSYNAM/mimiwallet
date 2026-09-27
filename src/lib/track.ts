@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { idNguoiDung } from './nguoiDung';
+import { idCongTyDangDung } from './congTyDangDung';
 
 /**
  * Record that something happened, so launch produces evidence instead of
@@ -36,7 +37,10 @@ export type EventName =
   | 'report_exported'
   // Nguoi dung dong the "Bat dau tu dau". Dong la mot cau tra loi that: no cho
   // biet huong dan khong huu ich, hoac ho da biet phai lam gi.
-  | 'batdau_dismissed';
+  | 'batdau_dismissed'
+  // Mở ứng dụng khi đã đăng nhập, tối đa một lần mỗi ngày (giờ VN) mỗi công ty — để đo "quay lại sau 7
+  // ngày" (view hanh_trinh_kich_hoat). Các mốc kích hoạt khác tính thẳng từ bảng nghiệp vụ.
+  | 'app_opened';
 
 export function track(name: EventName, props: Record<string, string | number | boolean> = {}) {
   void (async () => {
@@ -45,9 +49,30 @@ export function track(name: EventName, props: Record<string, string | number | b
       // Anonymous events would be unattributable anyway, and the RLS policy
       // requires user_id = auth.uid(), so a signed-out call cannot be stored.
       if (!userId) return;
-      await supabase.from('product_events').insert({ user_id: userId, name, props });
+      // Gắn công ty đang dùng: hành trình kích hoạt tính theo công ty. Máy chủ chỉ nhận company_id của
+      // công ty mình là thành viên; bị từ chối (vừa rời công ty) thì ghi không kèm công ty.
+      const companyId = await idCongTyDangDung().catch(() => null);
+      const { error } = await supabase.from('product_events').insert({ user_id: userId, name, props, ...(companyId ? { company_id: companyId } : {}) });
+      if (error && companyId) await supabase.from('product_events').insert({ user_id: userId, name, props });
     } catch {
       // See above: never let measurement break the product.
     }
   })();
+}
+
+const ngayVN = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+/**
+ * Ghi 'app_opened' tối đa một lần mỗi ngày (giờ VN) cho mỗi công ty. Nhớ bằng localStorage; không đọc
+ * được (chế độ riêng tư) thì vẫn ghi — thừa một dòng trong ngày không làm sai chỉ số "có quay lại".
+ */
+export async function ghiMoUngDung(): Promise<void> {
+  const cty = await idCongTyDangDung().catch(() => null);
+  const khoa = `mimi.mo_ung_dung.${cty ?? 'chung'}`;
+  const homNay = ngayVN();
+  try {
+    if (localStorage.getItem(khoa) === homNay) return;
+    localStorage.setItem(khoa, homNay);
+  } catch { /* không lưu được thì vẫn ghi */ }
+  track('app_opened');
 }

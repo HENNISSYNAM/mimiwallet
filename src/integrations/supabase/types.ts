@@ -70,6 +70,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bang_chung_viec_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "bang_chung_viec_ho_so_viec_id_fkey"
             columns: ["ho_so_viec_id"]
             isOneToOne: false
@@ -203,6 +210,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bank_connections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       buoc_hanh_trinh: {
@@ -277,6 +291,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buoc_hanh_trinh_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "buoc_hanh_trinh_hanh_trinh_id_fkey"
@@ -360,6 +381,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "carbon_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       chi_phi_ai: {
@@ -413,6 +441,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chi_phi_ai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "chi_phi_ai_lo_nhap_id_fkey"
@@ -477,6 +512,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chinh_sach_chi_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "chinh_sach_chi_tac_tu_id_fkey"
@@ -557,6 +599,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chung_tu_quet_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       clients: {
@@ -619,6 +668,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -877,6 +933,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "credit_score_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       dang_ky_day: {
@@ -957,6 +1020,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "danh_muc_dau_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -1108,6 +1178,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "device_wallets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "device_wallets_loan_id_fkey"
             columns: ["loan_id"]
             isOneToOne: false
@@ -1202,6 +1279,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duyet_tai_lieu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "duyet_tai_lieu_tai_lieu_id_fkey"
@@ -1300,6 +1384,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gdt_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       gioi_han_goi: {
@@ -1394,6 +1485,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "hanh_trinh_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "hanh_trinh_ho_so_viec_id_fkey"
             columns: ["ho_so_viec_id"]
             isOneToOne: false
@@ -1459,6 +1557,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ho_so_thue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -1553,6 +1658,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ho_so_viec_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       hoi_thoai_tro_ly: {
@@ -1612,6 +1724,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hoi_thoai_tro_ly_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -1721,6 +1840,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       ket_noi_chi_phi_ai: {
@@ -1778,6 +1904,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ket_noi_chi_phi_ai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       ket_qua_quy_trinh: {
@@ -1828,6 +1961,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ket_qua_quy_trinh_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "ket_qua_quy_trinh_quy_trinh_id_fkey"
@@ -1902,6 +2042,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "kyc_verifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       lan_goi_mo_hinh: {
@@ -1959,6 +2106,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lan_goi_mo_hinh_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       learning_progress: {
@@ -1997,6 +2151,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -2114,6 +2275,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lo_nhap_chi_phi_ai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       loan_applications: {
@@ -2174,6 +2342,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "loan_applications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       luot_to_khai: {
@@ -2221,6 +2396,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "luot_to_khai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "luot_to_khai_hoa_don_id_fkey"
@@ -2455,6 +2637,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "neo_thoi_gian_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       ngan_sach_chi_phi_ai: {
@@ -2490,6 +2679,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ngan_sach_chi_phi_ai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -2535,6 +2731,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nguoi_nhan_duoc_phep_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -2606,6 +2809,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "nhat_ky_quyet_dinh_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "nhat_ky_quyet_dinh_hoi_thoai_id_fkey"
             columns: ["hoi_thoai_id"]
             isOneToOne: false
@@ -2662,6 +2872,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nhat_ky_tac_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "nhat_ky_tac_tu_tac_tu_id_fkey"
@@ -2734,6 +2951,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "nhat_ky_thay_doi_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       p2p_commitments: {
@@ -2778,6 +3002,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p2p_commitments_lender_company_id_fkey"
+            columns: ["lender_company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "p2p_commitments_listing_id_fkey"
@@ -2840,6 +3071,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "p2p_listings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       phan_loai_hoat_dong: {
@@ -2900,6 +3138,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "phan_loai_hoat_dong_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       phan_loai_hoat_dong_su_kien: {
@@ -2956,6 +3201,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phan_loai_hoat_dong_su_kien_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -3016,6 +3268,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phien_ban_tai_lieu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "phien_ban_tai_lieu_tai_lieu_id_fkey"
@@ -3113,6 +3372,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       profiles: {
@@ -3169,6 +3435,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_active_company_id_fkey"
+            columns: ["active_company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -3238,6 +3511,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "qr_payments_invoice_id_fkey"
@@ -3340,6 +3620,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quy_trinh_ai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       revenue_classification_events: {
@@ -3399,6 +3686,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_classification_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "revenue_classification_events_transaction_id_fkey"
@@ -3480,6 +3774,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "revenue_classifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "revenue_classifications_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: true
@@ -3543,6 +3844,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sao_ke_nhap_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       so_cai_chung_tu: {
@@ -3596,6 +3904,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "so_cai_chung_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "so_cai_chung_tu_neo_id_fkey"
@@ -3674,6 +3989,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "subscription_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "subscription_invoices_matched_transaction_id_fkey"
             columns: ["matched_transaction_id"]
             isOneToOne: false
@@ -3728,6 +4050,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "subscriptions_last_invoice_id_fkey"
@@ -3789,6 +4118,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tac_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -3879,6 +4215,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tai_lieu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "tai_lieu_hanh_trinh_id_fkey"
@@ -4003,6 +4346,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "thanh_vien_cong_ty_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       thong_bao: {
@@ -4071,6 +4421,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "thong_bao_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -4233,6 +4590,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "to_khai_nhap_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       token_ai: {
@@ -4286,6 +4650,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_ai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -4352,6 +4723,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "transaction_labels_paired_transaction_id_fkey"
@@ -4444,6 +4822,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "transactions_import_id_fkey"
@@ -4626,6 +5011,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "webhook_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       xung_dot_hoa_don: {
@@ -4679,6 +5071,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "xung_dot_hoa_don_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "xung_dot_hoa_don_hoa_don_id_fkey"
@@ -4779,6 +5178,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yeu_cau_chi_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "yeu_cau_chi_tac_tu_id_fkey"
@@ -4939,6 +5345,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "yeu_cau_thuc_thi_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "yeu_cau_thuc_thi_hanh_trinh_id_fkey"
             columns: ["hanh_trinh_id"]
             isOneToOne: false
@@ -4970,6 +5383,34 @@ export type Database = {
           phan_tram_da_giai_thich: number | null
           so_khoan_vao: number | null
           tong_vao: number | null
+        }
+        Relationships: []
+      }
+      hanh_trinh_kich_hoat: {
+        Row: {
+          co_so_doanh_thu: string | null
+          company_id: string | null
+          da_kich_hoat: boolean | null
+          dang_ky: string | null
+          kich_hoat_trong_7_ngay: boolean | null
+          noi_nguon: string | null
+          quay_lai_7_ngay: boolean | null
+          tu_tay_bat_dau: string | null
+          xong_viec_dau: string | null
+        }
+        Relationships: []
+      }
+      pheu_kich_hoat: {
+        Row: {
+          co_so_doanh_thu: number | null
+          da_kich_hoat: number | null
+          dang_ky: number | null
+          kich_hoat_trong_7_ngay: number | null
+          noi_nguon: number | null
+          quay_lai_7_ngay: number | null
+          tu_tay_bat_dau: number | null
+          tuan_dang_ky: string | null
+          xong_viec_dau: number | null
         }
         Relationships: []
       }
