@@ -542,6 +542,15 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           toast.success('Đã đọc định danh một lần và thu hồi quyền');
           return;
         }
+        // Liên kết THUẾ thì kéo hoá đơn ngay. Trước 28/09/2026 nhánh này luôn gọi `runSync` — đồng bộ
+        // SAO KÊ, vốn bỏ qua grant `gdt` — nên liên kết xong vẫn 0 hoá đơn cho tới khi người dùng tự tìm
+        // nút tải riêng (trên DB thật: 2 liên kết thuế từ 15/09, 0 hoá đơn).
+        if (pendingFeature.current === 'gdt') {
+          toast.success('Đã kết nối Tổng Cục Thuế — đang tải hoá đơn điện tử');
+          await loadConnections();
+          await dongBoThue('gdt');
+          return;
+        }
         toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
         await loadConnections();
         await runSync();
@@ -551,7 +560,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         setLinking(false);
       }
     },
-    [call, loadConnections, runSync]
+    [call, loadConnections, runSync, dongBoThue]
   );
 
   /**

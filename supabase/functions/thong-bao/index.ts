@@ -23,6 +23,8 @@ import { dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/tho
 import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
 import { nhapTienVaoGanDay, tuPhanLoaiNamNay } from "../_shared/thong-bao/quet-tien-vao.ts";
 import { daNhacTheoDoi, dongBoViecDoanhThu, nhapTheoDoiDenHan, type HoSoViecDong } from "../_shared/viec/luu.ts";
+import { bankhubConfigFromEnv } from "../_shared/bank/bankhub.ts";
+import { denHanTuDong, dongBoHoaDonThue } from "../_shared/tax/dong-bo-gdt.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,6 +119,43 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
   return soMoi;
 }
 
+/** Mỗi lượt cron kéo hoá đơn cho tối đa ngần này liên kết — giữ lượt chạy trong thời hạn của function. */
+const HOA_DON_MOI_LUOT = 25;
+
+// deno-lint-ignore no-explicit-any
+async function tuDongBoHoaDon(db: any): Promise<{ da_chay: number; hoa_don_moi: number; loi: number } | { bo_qua: string }> {
+  const khoa = Deno.env.get("PQC_KYC_PRIVATE_KEY");
+  if (!khoa) return { bo_qua: "thiếu khoá giải mã" };
+  let cfg;
+  try { cfg = bankhubConfigFromEnv(); } catch { return { bo_qua: "thiếu cấu hình Cas" }; }
+  const { data: ds, error } = await db.from("bank_connections")
+    .select("company_id, last_synced_at, last_error_at, created_at")
+    .eq("provider", "bankhub").eq("scopes", "gdt").eq("status", "connected").is("revoked_at", null)
+    .order("created_at", { ascending: false }).limit(1000);
+  if (error) { console.error("đọc liên kết thuế:", error.message); return { bo_qua: "không đọc được liên kết" }; }
+  const now = new Date();
+  // Một công ty có thể còn hai dòng `gdt` (liên kết lại) — dòng mới nhất quyết định. Lần LỖI gần nhất
+  // cũng tính là một lần chạy: không gọi lại Cas mỗi giờ cho một lỗi chưa ai sửa.
+  const theoCty = new Map<string, string | null>();
+  for (const r of ds ?? []) {
+    if (theoCty.has(r.company_id)) continue;
+    const moc = [r.last_synced_at, r.last_error_at].filter(Boolean).sort().pop() ?? null;
+    theoCty.set(r.company_id, moc);
+  }
+  const denHan = [...theoCty].filter(([, lanCuoi]) => denHanTuDong(lanCuoi, now)).slice(0, HOA_DON_MOI_LUOT);
+  let hoaDonMoi = 0, loi = 0;
+  for (const [companyId] of denHan) {
+    try {
+      const kq = await dongBoHoaDonThue(db, cfg, khoa, companyId, { now });
+      if (kq.loai === "xong") hoaDonMoi += kq.stored; else { loi++; console.warn(`tự đồng bộ hoá đơn ${companyId}: ${kq.loai}`); }
+    } catch (e) {
+      loi++;
+      console.error("tự đồng bộ hoá đơn:", e instanceof Error ? e.message : e);
+    }
+  }
+  return { da_chay: denHan.length, hoa_don_moi: hoaDonMoi, loi };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Chỉ nhận POST." }, 405);
@@ -146,9 +185,14 @@ Deno.serve(async (req) => {
           console.error("quét thông báo công ty:", e instanceof Error ? e.message : e);
         }
       }
+      // Hoá đơn điện tử từ Tổng Cục Thuế (qua Cas): không có webhook đẩy về như sao kê, nên tự kéo
+      // theo lịch — mỗi liên kết tối đa một lần mỗi 20 giờ. Trước 28/09/2026 chỉ chạy khi người dùng
+      // tự bấm nút tải, nên liên kết xong vẫn 0 hoá đơn. Lỗi một liên kết không chặn liên kết khác.
+      const hoaDon = await tuDongBoHoaDon(db);
+
       // Giờ yên lặng: lưu hết, sáng mới đẩy.
       const kq = trongGioYenLang(lucVN) ? { da_day: 0, go_thiet_bi: 0, doi_sang: true } : await dayThongBao(db, (await napKhoa())?.may ?? null);
-      return json({ cong_ty: cty?.length ?? 0, thong_bao_moi: moi, ...kq });
+      return json({ cong_ty: cty?.length ?? 0, thong_bao_moi: moi, hoa_don_thue: hoaDon, ...kq });
     }
 
     // Các hành động còn lại: người dùng đã đăng nhập.
