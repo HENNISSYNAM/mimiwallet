@@ -30,6 +30,7 @@ import { coBangChungMayChu, doiChieuQuyetDinh, PHUT_TREO } from "../_shared/doi-
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
+import { chayDanAgent, danhSachAgent, laQuyTrinh } from "../_shared/tro-ly/dan-agent.ts";
 import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
 import {
   congNgay,
@@ -95,6 +96,8 @@ const KICH_THUOC_THAN_TOI_DA = 8_000_000;
  */
 const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   hoi: { cuaSoGiay: 60, toiDa: 30 },
+  // Mỗi lần chạy đàn agent đọc nhiều nguồn một lúc — chặt hơn một câu hỏi.
+  chay_dan_agent: { cuaSoGiay: 60, toiDa: 10 },
   quet_chung_tu: { cuaSoGiay: 60, toiDa: 10 },
   luu_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
   xoa_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
@@ -803,7 +806,35 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         // P0-002: màn đầu cũng nói nguồn nào thiếu hoặc cũ.
         do_day: Object.values(d.doDay),
         do_day_chung: trangThaiChung(Object.values(d.doDay) as DoDayNguon[]),
+        // Đàn agent: agent cần nguồn chưa kết nối → "cần kết nối". Giao diện chỉ hiện nút quy trình khi có trường này.
+        danh_sach_agent: danhSachAgent(
+          (id) => NANG_LUC[id]?.can ?? [],
+          new Set((Object.values(d.doDay) as DoDayNguon[]).filter((x) => x.coverage_status === "unavailable").map((x) => x.nguon)),
+        ),
       });
+    }
+
+    /*
+     * Đàn agent (29/09/2026): chạy một quy trình trong allowlist bằng các năng lực CÓ SẴN, đọc dữ liệu một lần,
+     * không gọi mô hình. Câu trả lời đi qua đúng `dungTraLoi` + `locDeXuat` + nhật ký hội thoại như `hoi`, nên đề
+     * xuất (duyệt chi, lưu chứng từ…) vẫn phải xác nhận ở Trợ lý MIMI. Không gửi tin, không ghi sổ, không chuyển tiền.
+     */
+    case "chay_dan_agent": {
+      if (!laQuyTrinh(body.quy_trinh)) return loi("QUY_TRINH", "Quy trình không hợp lệ.", 400);
+      const r = await chayDanAgent(body.quy_trinh, {
+        congTyId: company.id,
+        nguonCua: (id) => NANG_LUC[id]?.can ?? [],
+        docNguon: (can) => docDuLieu(db, company.id, can as Set<NguonCan>, moc),
+        chayNangLuc: async (id, d) => {
+          const nl = NANG_LUC[id];
+          return await themMaBam(apDoDay(nl.chay(d), nl.can.map((n) => d.doDay[n]).filter((x): x is DoDayNguon => !!x)), d);
+        },
+      });
+      const tl0 = dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "co_dinh", cauHoi: r.ten });
+      // Không tác vụ nào ra kết quả: nói đúng vậy, không để câu "chưa hiểu câu hỏi" của hội thoại thường.
+      const tl = r.ket_qua.length ? tl0 : { ...tl0, cau: `${r.ten}: chưa có kết quả nào — xem lỗi từng tác vụ bên dưới.` };
+      const idHt = await ghiHoiThoai(db, company.id, userId, `Chạy quy trình: ${r.ten}`, tl, null);
+      return json({ ...tl, hoi_thoai_id: idHt, dan_agent: r.dan_agent });
     }
 
     case "hoi": {

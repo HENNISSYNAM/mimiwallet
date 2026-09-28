@@ -15,43 +15,13 @@ export { TEN_NHOM } from '../../supabase/functions/_shared/tro-ly/tra-loi.ts';
 const SO_NGUYEN = /^-?\d+$/;
 const dinhDangVndChuoi = (s: string) => `${new Intl.NumberFormat('vi-VN').format(BigInt(s))} ₫`;
 
-// ── Đàn agent (hợp đồng Codex đang thêm vào `kieu.ts`) ──────────────────────────────────────────────
-/*
- * TƯƠNG THÍCH NGƯỢC, KHÔNG PHẢI BỘ KIỂU THỨ HAI. Khi `kieu.ts` có `TraLoi.dan_agent` / `BoiCanh.danh_sach_agent`,
- * `DanAgent` và `AgentMimi` TỰ lấy đúng kiểu đó (nhánh `infer`). Hai kiểu `…Cho` dưới đây chỉ dùng tới khi máy
- * chủ chưa gửi — chép từ hợp đồng đã chốt, và bị bỏ qua ngay khi kiểu thật có mặt.
- */
-interface DanAgentCho {
-  lan_chay_id: string;
-  cong_ty_id: string;
-  bat_dau: string;
-  ket_thuc: string;
-  trang_thai: 'hoan_tat' | 'mot_phan' | 'can_bo_sung';
-  tac_vu: Array<{
-    agent_id: string; nang_luc: string; ten: string;
-    trang_thai: 'hoan_tat' | 'loi' | 'can_bo_sung';
-    thoi_gian_ms: number; tai_su_dung: boolean; cau: string;
-  }>;
-  tai_nguyen: {
-    so_agent: number; so_tac_vu: number; so_nguon_doc: number;
-    so_luot_mo_hinh: number; so_luot_tai_su_dung: number; gioi_han_song_song: number;
-  };
-  gioi_han: string[];
-}
-interface AgentMimiCho {
-  id: string; ten: string; mo_ta: string; nang_luc: string[];
-  trang_thai: 'san_sang' | 'can_ket_noi'; quyen: 'chi_doc_va_soan_nhap';
-}
-type Lay<T, K extends string, Cho> = T extends { [k in K]?: infer D } ? (NonNullable<D> extends Array<infer P> ? P : NonNullable<D>) : Cho;
-export type DanAgent = TraLoi extends { dan_agent?: infer D } ? NonNullable<D> : DanAgentCho;
-export type AgentMimi = Lay<BoiCanh, 'danh_sach_agent', AgentMimiCho>;
-/** Câu trả lời có thể kèm đàn agent (máy chủ cũ không gửi — giao diện vẫn chạy). */
-export type TraLoiNao = TraLoi & { dan_agent?: DanAgent | null };
-export type BoiCanhNao = BoiCanh & { danh_sach_agent?: AgentMimi[] | null };
-
-/** Ba quy trình máy chủ cho phép chạy bằng đàn agent. */
-export const QUY_TRINH_AGENT = ['ke_toan_hang_ngay', 'thu_hoi_cong_no', 'kiem_tra_so_sach'] as const;
-export type QuyTrinhAgent = (typeof QUY_TRINH_AGENT)[number];
+// ── Đàn agent ─────────────────────────────────────────────────────────────────────────────────────
+// Kiểu thật nằm ở `kieu.ts` (re-export ở trên): `DanAgent`, `AgentMimi`, `TraLoi.dan_agent`, `BoiCanh.danh_sach_agent`.
+// Hai bí danh dưới đây giữ tên giao diện đã dùng; không phải bộ kiểu thứ hai.
+export type TraLoiNao = TraLoi;
+export type BoiCanhNao = BoiCanh;
+export { QUY_TRINH_DAN_AGENT as QUY_TRINH_AGENT } from '../../supabase/functions/_shared/tro-ly/kieu.ts';
+export type { QuyTrinhDanAgent as QuyTrinhAgent } from '../../supabase/functions/_shared/tro-ly/kieu.ts';
 
 export function dinhDang(v: O | undefined, donVi: DonVi): string {
   // Thiếu dữ liệu là "—", không bao giờ là 0.

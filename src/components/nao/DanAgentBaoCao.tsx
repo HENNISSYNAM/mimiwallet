@@ -39,7 +39,7 @@ export function DanAgentBaoCao({ dan, gon = false }: { dan: DanAgent; gon?: bool
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-foreground">{tv.ten}</span>
                 <span className="flex items-center gap-3">
-                  {tv.tai_su_dung && <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Recycle size={12} /> Dùng lại kết quả</span>}
+                  {tv.tai_su_dung && <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Recycle size={12} /> Dùng lại dữ liệu đã đọc</span>}
                   <span className="text-xs tabular-nums text-muted-foreground">{giay(tv.thoi_gian_ms)}</span>
                   <NhanTacVu tt={tv.trang_thai} />
                 </span>
@@ -53,7 +53,7 @@ export function DanAgentBaoCao({ dan, gon = false }: { dan: DanAgent; gon?: bool
       <p className="mt-3 text-xs text-muted-foreground" aria-label="Tài nguyên đã dùng">
         {tn.so_agent} agent · {tn.so_tac_vu} tác vụ · {tn.so_nguon_doc} nguồn đã đọc ·{' '}
         {tn.so_luot_mo_hinh > 0 ? `${tn.so_luot_mo_hinh} lượt gọi mô hình` : 'không gọi mô hình'}
-        {tn.so_luot_tai_su_dung > 0 && ` · dùng lại ${tn.so_luot_tai_su_dung} kết quả`} · tối đa {tn.gioi_han_song_song} việc song song
+        {tn.so_luot_tai_su_dung > 0 && ` · ${tn.so_luot_tai_su_dung} tác vụ dùng lại dữ liệu đã đọc`} · tối đa {tn.gioi_han_song_song} việc song song
       </p>
 
       {dan.gioi_han.length > 0 && (

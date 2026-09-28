@@ -128,6 +128,50 @@ export interface BuocXuLy {
   cau: string;
 }
 
+// ── Đàn agent (28–29/09/2026) ────────────────────────────────────────────────────────────────────
+/** Ba quy trình máy chủ cho phép chạy bằng đàn agent. Ngoài danh sách này là 400. */
+export const QUY_TRINH_DAN_AGENT = ['ke_toan_hang_ngay', 'thu_hoi_cong_no', 'kiem_tra_so_sach'] as const;
+export type QuyTrinhDanAgent = (typeof QUY_TRINH_DAN_AGENT)[number];
+
+/** Một tác vụ trong một lần chạy: agent nào, năng lực nào, kết quả ra sao — đúng như đã chạy thật. */
+export interface TacVuAgent {
+  agent_id: string;
+  nang_luc: string;
+  ten: string;
+  trang_thai: 'hoan_tat' | 'loi' | 'can_bo_sung';
+  thoi_gian_ms: number;
+  /** Không đọc thêm nguồn nào: mọi nguồn cần đã được tác vụ trước trong CÙNG lần chạy đọc (hoặc cùng năng lực đã chạy). */
+  tai_su_dung: boolean;
+  cau: string;
+}
+
+export interface DanAgent {
+  lan_chay_id: string;
+  cong_ty_id: string;
+  bat_dau: string;
+  ket_thuc: string;
+  trang_thai: 'hoan_tat' | 'mot_phan' | 'can_bo_sung';
+  tac_vu: TacVuAgent[];
+  tai_nguyen: {
+    so_agent: number;
+    so_tac_vu: number;
+    so_nguon_doc: number;
+    so_luot_mo_hinh: number;
+    so_luot_tai_su_dung: number;
+    gioi_han_song_song: number;
+  };
+  gioi_han: string[];
+}
+
+export interface AgentMimi {
+  id: string;
+  ten: string;
+  mo_ta: string;
+  nang_luc: string[];
+  trang_thai: 'san_sang' | 'can_ket_noi';
+  quyen: 'chi_doc_va_soan_nhap';
+}
+
 export interface TraLoi {
   cau: string;
   buoc: BuocXuLy[];
@@ -141,6 +185,8 @@ export interface TraLoi {
    * và khi đó việc cần xác nhận sẽ bị chặn (không có dấu vết thì không cho chạy).
    */
   hoi_thoai_id?: string | null;
+  /** Có khi câu trả lời do đàn agent chạy (`chay_dan_agent`). Máy chủ cũ không gửi. */
+  dan_agent?: DanAgent;
 }
 
 export interface ViecHomNay {
@@ -209,6 +255,8 @@ export interface ThueManDau {
 }
 
 export interface BoiCanh {
+  /** Các agent MIMI và năng lực của chúng (chỉ đọc, soạn nháp). Máy chủ cũ không gửi. */
+  danh_sach_agent?: AgentMimi[];
   cong_ty: string | null;
   viec: ViecHomNay[];
   ket_noi: KetNoiHienThi[];

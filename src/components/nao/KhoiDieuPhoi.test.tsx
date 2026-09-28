@@ -63,7 +63,7 @@ describe('Khối điều phối trên Tổng quan', () => {
     expect(dan.textContent).toContain('Xong một phần');
     expect(dan.textContent).toContain('Tìm khoản thiếu chứng từ');
     expect(within(dan).getAllByText('Lỗi')).toHaveLength(1);
-    expect(dan.textContent).toContain('Dùng lại kết quả');
+    expect(dan.textContent).toContain('Dùng lại dữ liệu đã đọc');
     expect(dan.textContent).toContain('không gọi mô hình');
     expect(dan.textContent).toContain('Nhắc nợ chỉ là bản nháp');
     expect(dan.textContent).toMatch(/Không phải báo cáo tài chính pháp định/);
