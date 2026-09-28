@@ -653,7 +653,7 @@ export const TRANG_GIAI_PHAP: TrangNoiDung[] = [
       { tieuDe: 'Chứng từ chi phí', mo: 'Chi phí có giấy tờ theo quý.' },
     ],
     ranhGioi: ['MIMI không đòi nợ thay bạn; nhắc nợ tự động nằm trong lộ trình.'],
-    trongApp: { ten: 'Khách hàng · Hoá đơn', duong: '/dashboard/clients' },
+    trongApp: { ten: 'Hoá đơn', duong: '/dashboard/invoices' },
     hoiDap: [
       { hoi: 'Một khách viết tên nhiều kiểu thì sao?', dap: 'Danh bạ là nơi duy nhất để tra tên, để cùng một khách không thành ba người trong công nợ.' },
     ],

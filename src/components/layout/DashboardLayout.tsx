@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
-import { ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, Users, X } from 'lucide-react';
+import { ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
 import { NhanMinhHoa } from './NhanMinhHoa';
@@ -349,7 +349,6 @@ export default function DashboardLayout() {
               {[
                 { icon: Puzzle, khoa: 'man.ten.ketNoi', duong: '/dashboard/ket-noi' },
                 { icon: LayoutDashboard, khoa: 'man.ten.tongQuanGiaoDich', duong: '/dashboard' },
-                { icon: Users, khoa: 'man.ten.khachHang', duong: '/dashboard/clients' },
                 { icon: Settings, khoa: 'man.ten.caiDat', duong: '/dashboard/settings' },
               ].map((m) => (
                 <NavLink key={m.duong} to={m.duong} end onClick={() => setMoThem(false)} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">

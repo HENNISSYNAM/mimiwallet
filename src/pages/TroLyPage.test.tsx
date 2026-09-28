@@ -111,7 +111,7 @@ describe('MIMI Assistant — màn đầu', () => {
     // Kết nối gọn một nút; bấm mới mở danh sách.
     // Ca đầu tiên của tệp gánh cả phần biên dịch trang lớn nhất; khi cả bộ chạy song song, 8 giây
     // không đủ (21/09/2026 hỏng một lần, chạy riêng thì đạt). Nới chờ, không nới điều kiện.
-    await screen.findByRole('region', { name: 'Chi phí AI tháng này' }, { timeout: 20_000 });
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
     expect(screen.queryByRole('list', { name: 'Các kết nối' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Kết nối/ }));
     const ketNoi = await screen.findByRole('list', { name: 'Các kết nối' });
@@ -124,14 +124,13 @@ describe('MIMI Assistant — màn đầu', () => {
     // Ca đầu tiên của tệp gánh cả thời gian nạp module: chạy cả bộ test song song thì vượt 5 giây mặc định.
   }, 40_000);
 
-  it('ba thẻ phân tích lấy số từ máy chủ; tháng chưa có số không vẽ thành 0', async () => {
+  it('thẻ phân tích lấy số từ máy chủ; thẻ Chi phí AI / Tối ưu model đã đóng băng không còn hiện', async () => {
     dung();
-    const chiPhi = await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
-    expect(chiPhi.textContent).toContain('$50.00');
-    expect(chiPhi.textContent).toContain('25% so với cùng kỳ tháng trước');
-    expect(within(chiPhi).getByRole('table', { hidden: true }).textContent).toContain('T5Chưa có số liệu');
-    expect(screen.getByRole('region', { name: 'Đề xuất tối ưu' }).textContent).toContain('Đặt ngân sách AI tháng');
-    expect(screen.getByRole('region', { name: 'Cần bạn xác nhận' }).textContent).toContain('1 khoản chi cần phê duyệt, tổng 2.000.000 ₫');
+    const canXacNhan = await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
+    expect(canXacNhan.textContent).toContain('1 khoản chi cần phê duyệt, tổng 2.000.000 ₫');
+    // Đóng băng 28/09/2026 (`lib/dongBang.ts`): máy chủ vẫn trả số, màn đầu không vẽ nữa.
+    expect(screen.queryByRole('region', { name: 'Chi phí AI tháng này' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Đề xuất tối ưu' })).toBeNull();
     // Việc đã có thẻ riêng không lặp lại thành chip; việc khác vẫn hiện.
     const deY = screen.getByRole('region', { name: 'Cũng cần để ý' });
     expect(deY.textContent).toContain('hoá đơn bán ra quá hạn');
@@ -154,7 +153,7 @@ describe('MIMI Assistant — màn đầu', () => {
 
   it('chọn nhóm việc rồi bấm mẹo nhanh: câu hỏi gửi kèm phạm vi', async () => {
     dung();
-    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
     fireEvent.click(screen.getByRole('button', { name: /Nhóm việc/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'AI & token' }));
     fireEvent.click(screen.getByRole('button', { name: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.' }));
@@ -230,7 +229,7 @@ describe('MIMI Assistant — hỏi đáp', () => {
 
   it('hỏi → gửi đúng câu, hiện bước làm, bảng số, nguồn và nút việc', async () => {
     dung();
-    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
     hoiBangTay('Khoản nào đang chờ tôi duyệt?');
 
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?', pham_vi: null, lich_su: [] }));
@@ -401,7 +400,7 @@ describe('MIMI Assistant — hỏi đáp', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Hỏi lại/ }));
     expect(await screen.findByRole('table')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Cuộc hỏi mới/ }));
-    expect(await screen.findByRole('region', { name: 'Chi phí AI tháng này' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Cần bạn xác nhận' })).toBeTruthy();
   });
 });
 
@@ -430,7 +429,8 @@ describe('MIMI Assistant — khảo sát đầu vào và thuế cá nhân hoá',
       }),
     }));
     // Người dùng chưa tự chọn công cụ nên MIMI chọn theo ngành.
-    expect(gia.datLai).toHaveBeenCalledWith(['soan_to_khai', 'thieu_chung_tu', 'lien_ket_ngan_hang', 'hoa_don_ban', 'khach_hang']);
+    // Vòng chính đứng đầu; Khách hàng (CRM) đã đóng băng nên không được gợi ý.
+    expect(gia.datLai).toHaveBeenCalledWith(['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu', 'hoa_don_ban']);
     await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBeGreaterThanOrEqual(2));
   });
 

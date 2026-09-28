@@ -7,6 +7,8 @@
  *     `congCu.test.ts` chạy từng câu qua `nhanYDinh` để câu nào trôi khỏi bộ luật là đỏ ngay.
  */
 
+import { CONG_CU_DONG_BANG } from './dongBang';
+
 export type NhomCongCu = 'chung_tu' | 'thue' | 'ngan_hang' | 'chi_tieu' | 'ai' | 'ban_hang';
 
 /** Công cụ mở trang Tờ khai thuế — lõi pháp lý của MIMI, nên đứng đầu bộ mặc định. */
@@ -31,7 +33,7 @@ export const TEN_NHOM_CONG_CU: Record<NhomCongCu, string> = {
   ban_hang: 'Bán hàng & công nợ',
 };
 
-export const DANH_MUC_CONG_CU: CongCu[] = [
+const DANH_MUC_DAY_DU: CongCu[] = [
   { khoa: 'thieu_chung_tu', ten: 'Khoản chi thiếu chứng từ', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/chung-tu', mo_ta: 'Khoản chi trong kỳ kê khai chưa có hoá đơn điện tử.', tu_khoa: ['chi phi', 'hoa don dau vao', 'khau tru'] },
   { khoa: 'soan_to_khai', ten: 'Soạn tờ khai thuế', nhom: 'thue', loai: 'trang', dich: '/dashboard/to-khai', mo_ta: 'MIMI điền mẫu tờ khai từ hoá đơn, sao kê và quy định trong kho văn bản.', tu_khoa: ['to khai', 'khai thue', 'thong bao doanh thu', 'gtgt', 'tncn'] },
   { khoa: 'doc_bao_cao', ten: 'Đọc báo cáo tài chính & tờ khai', nhom: 'thue', loai: 'trang', dich: '/dashboard/doc-bao-cao', mo_ta: 'Tải báo cáo tài chính hoặc tờ khai (Excel/CSV): xếp từng chỉ tiêu, kiểm đẳng thức kế toán, cảnh báo mẫu hết hiệu lực.', tu_khoa: ['bao cao tai chinh', 'bang can doi ke toan', 'tinh hinh tai chinh', 'ket qua kinh doanh', 'luu chuyen tien te', 'quyet toan', 'b01', 'b02'] },
@@ -49,6 +51,9 @@ export const DANH_MUC_CONG_CU: CongCu[] = [
   { khoa: 'hoa_don_ban', ten: 'Hoá đơn bán ra', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/invoices', mo_ta: 'Lập hoá đơn cho khách và theo dõi khoản chưa thu.', tu_khoa: ['xuat hoa don', 'phai thu'] },
   { khoa: 'khach_hang', ten: 'Khách hàng', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/clients', mo_ta: 'Danh sách khách, mã số thuế, tình trạng tiếp cận.', tu_khoa: ['doi tac', 'ma so thue', 'crm'] },
 ];
+
+/** Danh mục người dùng thấy: bỏ công cụ đóng băng (`lib/dongBang.ts`) — mã và dữ liệu vẫn giữ. */
+export const DANH_MUC_CONG_CU: CongCu[] = DANH_MUC_DAY_DU.filter((c) => !CONG_CU_DONG_BANG.has(c.khoa));
 
 export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH_MUC_CONG_CU.map((c) => [c.khoa, c]));
 
@@ -80,7 +85,8 @@ export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH
  * Đây là công cụ duy nhất trong danh mục mà việc tìm thấy nó CHẬM vài phút có
  * thể khiến người dùng mất tiền, nên nó đứng đầu.
  */
-export const CONG_CU_MAC_DINH = ['kiem_truoc_khi_chuyen', 'soan_to_khai', 'thieu_chung_tu', 'chi_phi_ai'];
+// 28/09/2026: "Chi phí AI" đóng băng (`lib/dongBang.ts`); liên kết ngân hàng thay chỗ — vòng kiểm → đối soát cần sao kê.
+export const CONG_CU_MAC_DINH = ['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu'];
 
 export const SO_CONG_CU_TOI_DA = 12;
 
@@ -121,8 +127,8 @@ export function congCuGoiY(h: {
   kenh: string | null;
   nganh_dac_thu: string | null;
 }): string[] {
-  const ds = ['soan_to_khai', 'thieu_chung_tu'];
-  if (h.kenh === 'tmdt_co_thanh_toan' || h.kenh === 'tmdt_khong_thanh_toan') ds.push('lien_ket_ngan_hang');
+  // 28/09/2026: vòng chính (kiểm trước khi chuyển + sao kê để đối soát) đứng đầu cho MỌI ngành; thuế theo sau.
+  const ds = ['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu'];
   for (const n of h.nhom_nganh) {
     if (n === 'noi_dung_so') ds.push('chi_phi_ai', 'model_re_hon');
     if (n === 'dich_vu') ds.push('hoa_don_ban', 'khach_hang');

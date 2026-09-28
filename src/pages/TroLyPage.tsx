@@ -520,9 +520,8 @@ export default function TroLyPage() {
           )}
 
           {boiCanh ? (
-            <div className="grid gap-4 md:grid-cols-3">
-              <TheChiPhiAi p={boiCanh.phan_tich.chi_phi_ai} />
-              <TheToiUu p={boiCanh.phan_tich.toi_uu} onHoi={(c) => void hoi(c, 'ai_token')} />
+            // Hai thẻ Chi phí AI / Tối ưu model rời màn đầu 28/09/2026 (đóng băng — `lib/dongBang.ts`).
+            <div className="grid gap-4">
               <TheCanXacNhan
                 p={boiCanh.phan_tich.can_xac_nhan}
                 viec={viec}

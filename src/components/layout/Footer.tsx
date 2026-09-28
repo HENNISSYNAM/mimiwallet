@@ -39,7 +39,6 @@ export default function Footer() {
   const sanPham: NavItem[] = [
     { label: 'Tổng quan', to: '/dashboard' },
     { label: 'Hoá đơn', to: '/dashboard/invoices' },
-    { label: 'Khách hàng', to: '/dashboard/clients' },
     { label: 'Báo cáo', to: '/dashboard/reports' },
   ];
 

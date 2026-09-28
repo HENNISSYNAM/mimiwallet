@@ -7,6 +7,7 @@ const m = {
       thuVien: '증빙 보관함',
       thuVienNgan: '증빙',
       viecCanLam: '할 일',
+      kiemTruocKhiChuyen: '송금 전 확인',
       taiLieu: '문서 및 증빙',
       nhacThue: '세무 알림',
       ketNoi: '연동',

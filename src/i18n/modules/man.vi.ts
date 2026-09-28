@@ -18,6 +18,7 @@ const m = {
       thuVien: 'Thư viện chứng từ',
       thuVienNgan: 'Chứng từ',
       viecCanLam: 'Việc cần làm',
+      kiemTruocKhiChuyen: 'Kiểm trước khi chuyển',
       taiLieu: 'Tài liệu & Chứng từ',
       nhacThue: 'Nhắc thuế',
       ketNoi: 'Kết nối',

@@ -7,6 +7,7 @@ const m = {
       thuVien: 'Document library',
       thuVienNgan: 'Documents',
       viecCanLam: 'To-do',
+      kiemTruocKhiChuyen: 'Check before paying',
       taiLieu: 'Documents & records',
       nhacThue: 'Tax reminders',
       ketNoi: 'Connections',

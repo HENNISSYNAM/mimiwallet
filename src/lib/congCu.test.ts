@@ -48,13 +48,16 @@ describe('danh mục công cụ', () => {
     // tài chính & tờ khai" đọc tờ khai người dùng tải lên.
     expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['soan_to_khai', 'doc_bao_cao', 'soan_giay_to']);
     expect(timCongCu('bảng cân đối kế toán').map((c) => c.khoa)).toEqual(['doc_bao_cao']);
-    expect(timCongCu('claude').map((c) => c.khoa)).toEqual(['chi_phi_ai']);
+    // Chi phí AI đóng băng 28/09/2026 (`lib/dongBang.ts`): không còn trong danh mục người dùng thấy.
+    expect(timCongCu('claude')).toEqual([]);
+    expect(DANH_MUC_CONG_CU.some((c) => c.khoa === 'chi_phi_ai' || c.khoa === 'khach_hang' || c.khoa === 'model_re_hon')).toBe(false);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
     expect(timCongCu('  ')).toHaveLength(DANH_MUC_CONG_CU.length);
   });
 
   it('công cụ câu hỏi mở trợ lý với câu hỏi đã mã hoá', () => {
-    expect(duongDanCongCu(CONG_CU_THEO_KHOA.model_re_hon)).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.')}`);
+    const hoi = { khoa: 'thu', ten: 'Thử', mo_ta: '', nhom: 'thue' as const, loai: 'hoi' as const, dich: 'Hạn nộp thuế quý này là khi nào?', tu_khoa: [] };
+    expect(duongDanCongCu(hoi)).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Hạn nộp thuế quý này là khi nào?')}`);
     expect(duongDanCongCu(CONG_CU_THEO_KHOA.thieu_chung_tu)).toBe('/dashboard/chung-tu');
   });
 
@@ -72,9 +75,10 @@ describe('danh mục công cụ', () => {
 
   it('gợi ý công cụ theo khảo sát: đúng ngành, chỉ công cụ có thật, tối đa 6', () => {
     const ho = congCuGoiY({ loai_nguoi_nop: 'ho_kinh_doanh', nhom_nganh: ['noi_dung_so'], kenh: 'tmdt_khong_thanh_toan', nganh_dac_thu: 'khong' });
-    expect(ho).toEqual(['soan_to_khai', 'thieu_chung_tu', 'lien_ket_ngan_hang', 'chi_phi_ai', 'model_re_hon']);
+    // Vòng chính đứng đầu; công cụ đóng băng (chi phí AI) không được gợi ý.
+    expect(ho).toEqual(['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu']);
     const dn = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['dich_vu'], kenh: null, nganh_dac_thu: null });
-    expect(dn).toEqual(['soan_to_khai', 'thieu_chung_tu', 'hoa_don_ban', 'khach_hang', 'chinh_sach_chi', 'kiem_soat_agent']);
+    expect(dn).toEqual(['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu', 'hoa_don_ban', 'chinh_sach_chi']);
     const nhieu = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['noi_dung_so', 'dich_vu', 'khac'], kenh: 'tmdt_co_thanh_toan', nganh_dac_thu: 'cho_thue_bat_dong_san' });
     expect(nhieu.length).toBe(6);
     for (const k of nhieu) expect(CONG_CU_THEO_KHOA[k], k).toBeTruthy();
