@@ -5,8 +5,7 @@ import { duongDanCongCu } from '@/lib/congCu';
 import { IconCongCu } from '@/components/cong-cu/IconCongCu';
 import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import {
-  AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2,
-  Mic, Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, Square, Volume2, X,
+  AlertTriangle, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2, Mic, Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, Square, Volume2, X,
 } from 'lucide-react';
 import { CAU_LOI_NGHE, useNgheGiong } from '@/hooks/useNgheGiong';
 import { HopBatMic } from '@/components/giong/HopBatMic';
@@ -635,100 +634,7 @@ export default function TroLyPage() {
 
 // ── Màn đầu ─────────────────────────────────────────────────────────────────
 
-function TheChiPhiAi({ p }: { p: PhanTichNhanh['chi_phi_ai'] }) {
-  const { t } = useTranslation();
-  return (
-    <section aria-labelledby="the-chi-phi-ai" className={THE}>
-      <h3 id="the-chi-phi-ai" className="text-base font-semibold text-foreground">{t('man.troLy.the.chiPhiAi')}</h3>
-      {!p ? (
-        <>
-          <p className="mt-2 text-sm text-muted-foreground">{t('man.troLy.the.chuaCoChiPhiAi')}</p>
-          <Link to="/dashboard/chi-phi-ai" className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-primary hover:underline">
-            {t('man.troLy.the.taiFileHoacBat')} <ArrowRight size={14} />
-          </Link>
-        </>
-      ) : (
-        <>
-          <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-foreground">{dinhDang(p.thang_nay_usd, 'usd')}</p>
-          <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-            {p.thay_doi_phan_tram === null ? t('man.troLy.the.chuaCoThangTruoc') : (
-              <>
-                {p.thay_doi_phan_tram >= 0 ? <ArrowUp size={14} aria-hidden /> : <ArrowDown size={14} aria-hidden />}
-                {t('man.troLy.the.soVoiCungKy', { phanTram: Math.abs(p.thay_doi_phan_tram) })}
-              </>
-            )}
-          </p>
-          {p.ngan_sach_usd !== null && (
-            <p className={`mt-1 text-sm ${p.phan_tram_ngan_sach !== null && p.phan_tram_ngan_sach >= 100 ? 'font-medium text-mimi-amber' : 'text-muted-foreground'}`}>
-              {t('man.troLy.the.daDungNganSach', { phanTram: p.phan_tram_ngan_sach, nganSach: dinhDang(p.ngan_sach_usd, 'usd') })}
-            </p>
-          )}
-          <BieuDoThang ds={p.theo_thang} />
-        </>
-      )}
-    </section>
-  );
-}
-
-/** Cột theo tháng, một dãy số nên không cần chú giải; tháng chưa có số hiện gạch, không vẽ cột 0. */
-function BieuDoThang({ ds }: { ds: { khoa: string; nhan: string; usd: number | null }[] }) {
-  const { t } = useTranslation();
-  const lonNhat = Math.max(0, ...ds.map((d) => d.usd ?? 0));
-  return (
-    <figure className="mt-auto pt-5">
-      <div className="flex h-24 items-end gap-3" aria-hidden>
-        {ds.map((d, i) => (
-          <div key={d.khoa} className="flex h-full flex-1 flex-col items-center justify-end" title={d.usd === null ? t('man.troLy.the.cotChuaCoSoLieu', { nhan: d.nhan }) : `${d.nhan}: ${dinhDang(d.usd, 'usd')}`}>
-            {d.usd === null ? (
-              <span className="mb-1 text-xs text-muted-foreground">—</span>
-            ) : (
-              <span
-                className={`w-full max-w-[28px] rounded-t-[4px] ${i === ds.length - 1 ? 'bg-primary' : 'bg-primary/35'}`}
-                style={{ height: `${lonNhat > 0 ? Math.max(3, (d.usd / lonNhat) * 100) : 3}%` }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="mt-1.5 flex gap-3 text-xs text-muted-foreground" aria-hidden>
-        {ds.map((d) => <span key={d.khoa} className="flex-1 text-center">{d.nhan}</span>)}
-      </div>
-      <table className="sr-only">
-        <caption>{t('man.troLy.the.bieuDoCaption')}</caption>
-        <tbody>
-          {ds.map((d) => <tr key={d.khoa}><th scope="row">{d.nhan}</th><td>{d.usd === null ? t('man.troLy.the.chuaCoSoLieu') : dinhDang(d.usd, 'usd')}</td></tr>)}
-        </tbody>
-      </table>
-    </figure>
-  );
-}
-
-function TheToiUu({ p, onHoi }: { p: PhanTichNhanh['toi_uu']; onHoi: (cau: string) => void }) {
-  const { t } = useTranslation();
-  return (
-    <section aria-labelledby="the-toi-uu" className={THE}>
-      <h3 id="the-toi-uu" className="text-base font-semibold text-foreground">{t('man.troLy.the.deXuatToiUu')}</h3>
-      <p className="text-sm text-muted-foreground">{t('man.troLy.the.tuSoLieuThat')}</p>
-      <ul className="mt-3 space-y-2">
-        {p.y.map((y) => (
-          <li key={y} className="flex gap-2 text-sm text-foreground">
-            <Check size={16} className="mt-0.5 shrink-0 text-mimi-green" aria-hidden /> {y}
-          </li>
-        ))}
-      </ul>
-      {p.tiet_kiem_usd !== null && (
-        <div className="mt-4 rounded-xl bg-mimi-green/10 px-4 py-3">
-          <p className="text-xs text-muted-foreground">{t('man.troLy.the.tietKiemUocTinh')}</p>
-          <p className="font-display text-xl font-semibold tabular-nums text-foreground">~ {dinhDang(p.tiet_kiem_usd, 'usd')} {t('man.troLy.the.moi30Ngay')}</p>
-        </div>
-      )}
-      <button type="button" onClick={() => onHoi(p.hoi)} className="mt-auto inline-flex items-center gap-1 self-start pt-4 text-sm font-medium text-primary hover:underline">
-        {t('man.troLy.the.hoiChiTiet')} <ArrowRight size={14} />
-      </button>
-    </section>
-  );
-}
-
+// Thẻ Chi phí AI / Tối ưu model (và biểu đồ tháng của nó) gỡ 28/09/2026 — tính năng đóng băng, `lib/dongBang.ts`.
 function TheCanXacNhan({ p, viec, onDuyet }: {
   p: PhanTichNhanh['can_xac_nhan'];
   viec: Record<string, TrangThaiViec>;
