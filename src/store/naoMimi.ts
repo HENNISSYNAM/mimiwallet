@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import i18n from 'i18next';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { useAuthStore } from '@/store/useAuthStore';
 import { idCongTyDangDung, SU_KIEN_DOI_CONG_TY } from '@/lib/congTyDangDung';
@@ -22,6 +23,16 @@ import type { NhomNangLuc, QuyTrinhAgent, TraLoiNao } from '@/lib/troLy';
  */
 
 export type NguonHoi = 'tro_ly' | 'pet' | 'trang_chu';
+
+/**
+ * Ngôn ngữ giao diện gửi kèm mỗi yêu cầu (`ngon_ngu`) — pet, Trợ lý, Tổng quan cùng một bộ não, trả lời theo
+ * ngôn ngữ người dùng đang xem. Chỉ là mã ngôn ngữ; mã chứng từ, số tài khoản, tiền tệ, số tiền không bị dịch.
+ * Không có mô hình thì bộ luật chỉ hiểu một số ý định tiếng Việt/Anh — giao diện không hứa hơn thế.
+ */
+export function ngonNguHienTai(): string {
+  const l = (i18n.resolvedLanguage ?? i18n.language ?? 'vi').toLowerCase();
+  return ['vi', 'en', 'ko', 'zh'].find((m) => l.startsWith(m)) ?? 'vi';
+}
 
 export interface LuotNao {
   id: number;
@@ -126,13 +137,13 @@ export const useNaoMimi = create<NaoState>()((set, get) => {
       const khoa = `${get().phamVi ?? '-'}|hoi|${pv ?? ''}|${cau}`;
       return chay(khoa, { loai: 'hoi', cau, phamVi: pv, quyTrinh: null, nguon: tc.nguon ?? 'tro_ly', bangGiong: !!tc.bangGiong },
         // Gửi đúng như nơi gọi đưa (Trợ lý gửi cả `pham_vi: null` và lịch sử; pet chỉ gửi câu) — cùng hợp đồng `hoi` cũ.
-        async (signal) => (await goiTroLy('hoi', { cau, ...(tc.phamVi !== undefined ? { pham_vi: tc.phamVi } : {}), ...(tc.lichSu ? { lich_su: tc.lichSu } : {}) }, { signal })) as TraLoiNao);
+        async (signal) => (await goiTroLy('hoi', { cau, ...(tc.phamVi !== undefined ? { pham_vi: tc.phamVi } : {}), ...(tc.lichSu ? { lich_su: tc.lichSu } : {}), ngon_ngu: ngonNguHienTai() }, { signal })) as TraLoiNao);
     },
 
     chayQuyTrinh: (q, tc = {}) => {
       const khoa = `${get().phamVi ?? '-'}|dan_agent|${q}`;
       return chay(khoa, { loai: 'dan_agent', cau: TEN_QUY_TRINH[q], phamVi: null, quyTrinh: q, nguon: tc.nguon ?? 'trang_chu', bangGiong: false },
-        async (signal) => (await goiTroLy('chay_dan_agent', { quy_trinh: q }, { signal })) as TraLoiNao);
+        async (signal) => (await goiTroLy('chay_dan_agent', { quy_trinh: q, ngon_ngu: ngonNguHienTai() }, { signal })) as TraLoiNao);
     },
 
     ngungCho: (id) => {

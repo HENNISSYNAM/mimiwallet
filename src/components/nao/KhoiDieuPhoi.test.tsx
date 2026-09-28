@@ -51,7 +51,7 @@ describe('Khối điều phối trên Tổng quan', () => {
 
   it('bấm quy trình hai lần → một request; báo cáo hiện agent thật, agent lỗi, không gọi mô hình, giới hạn, thiếu dữ liệu', async () => {
     let xong!: (v: unknown) => void;
-    gia.goi.mockImplementation((h: string) => (h === 'boi_canh' ? Promise.resolve({ danh_sach_agent: [] }) : new Promise((r) => { xong = r; })));
+    gia.goi.mockImplementation((h: string) => (h === 'danh_sach_agent' ? Promise.resolve({ danh_sach_agent: [] }) : new Promise((r) => { xong = r; })));
     dung();
     const nut = await screen.findByRole('button', { name: /Kế toán hằng ngày/ });
     fireEvent.click(nut); fireEvent.click(nut);
@@ -73,7 +73,7 @@ describe('Khối điều phối trên Tổng quan', () => {
   });
 
   it('việc thay đổi dữ liệu KHÔNG chạy ở đây: dẫn sang MIMI Assistant để xác nhận', async () => {
-    gia.goi.mockImplementation((h: string) => Promise.resolve(h === 'boi_canh' ? { danh_sach_agent: [] } : traLoi()));
+    gia.goi.mockImplementation((h: string) => Promise.resolve(h === 'danh_sach_agent' ? { danh_sach_agent: [] } : traLoi()));
     dung();
     fireEvent.click(await screen.findByRole('button', { name: /Kiểm tra sổ sách/ }));
     const link = await screen.findByRole('link', { name: /Xem và xác nhận việc cần làm ở MIMI Assistant/ });
@@ -82,17 +82,18 @@ describe('Khối điều phối trên Tổng quan', () => {
     expect(gia.goi.mock.calls.map((c) => c[0])).not.toContain('xac_nhan');
   });
 
-  it('máy chủ cũ (bối cảnh không có danh_sach_agent) → KHÔNG hiện nút quy trình; lối thu nạp và báo cáo vẫn dùng được', async () => {
-    gia.goi.mockResolvedValue({ viec: [] });
+  it('máy chủ cũ chưa có action danh_sach_agent → KHÔNG hiện nút quy trình, hiện NGUYÊN VĂN câu lỗi máy chủ; thu nạp vẫn dùng được', async () => {
+    gia.goi.mockImplementation((h: string) => (h === 'danh_sach_agent' ? Promise.reject(new Error('Hành động không hợp lệ.')) : Promise.resolve({})));
     dung();
-    await waitFor(() => expect(gia.goi).toHaveBeenCalledWith('boi_canh', {}, expect.anything()));
+    expect(await screen.findByText(/máy chủ báo: Hành động không hợp lệ\./)).toBeTruthy();
     expect(screen.queryByRole('group', { name: 'Quy trình' })).toBeNull();
     expect(screen.getByRole('navigation', { name: 'Thu nạp dữ liệu' })).toBeTruthy();
-    expect(screen.getByText(/Hỏi MIMI Assistant hoặc hỏi pet/)).toBeTruthy();
+    // Danh mục là action nhẹ: không gọi boi_canh (đọc sao kê, chứng từ) chỉ để lấy danh sách agent.
+    expect(gia.goi.mock.calls.map((c) => c[0])).not.toContain('boi_canh');
   });
 
   it('máy chủ có danh sách agent nhưng chạy quy trình lỗi → báo đúng câu lỗi, nút mở lại', async () => {
-    gia.goi.mockImplementation((h: string) => (h === 'boi_canh' ? Promise.resolve({ danh_sach_agent: [] }) : Promise.reject(new Error('Hành động không hợp lệ.'))));
+    gia.goi.mockImplementation((h: string) => (h === 'danh_sach_agent' ? Promise.resolve({ danh_sach_agent: [] }) : Promise.reject(new Error('Hành động không hợp lệ.'))));
     dung();
     fireEvent.click(await screen.findByRole('button', { name: /Thu hồi công nợ/ }));
     expect((await screen.findByRole('alert')).textContent).toBe('Hành động không hợp lệ.');
@@ -100,7 +101,7 @@ describe('Khối điều phối trên Tổng quan', () => {
   });
 
   it('câu trả lời không có dan_agent (máy chủ cũ) vẫn hiện; lượt hỏi từ pet hiện ở đây, không hỏi lại', async () => {
-    gia.goi.mockImplementation((h: string) => Promise.resolve(h === 'boi_canh' ? {} : traLoi({ do_day: 'complete' })));
+    gia.goi.mockImplementation((h: string) => Promise.resolve(h === 'danh_sach_agent' ? {} : traLoi({ do_day: 'complete' })));
     await useNaoMimi.getState().hoi('Khoản chi nào chưa có chứng từ?', { nguon: 'pet' });
     dung();
     expect(await screen.findByText('Đã chạy kế toán hằng ngày.')).toBeTruthy();

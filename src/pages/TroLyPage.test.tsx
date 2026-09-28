@@ -171,7 +171,7 @@ describe('MIMI Assistant — công cụ', () => {
         <TroLyPage />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khách nào đang nợ quá hạn?', pham_vi: null, lich_su: [] }, { signal: expect.any(AbortSignal) }));
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khách nào đang nợ quá hạn?', pham_vi: null, lich_su: [], ngon_ngu: expect.any(String) }, { signal: expect.any(AbortSignal) }));
     expect(gia.troLy.mock.calls.filter((c) => c[0] === 'hoi')).toHaveLength(1);
   });
 
@@ -235,7 +235,7 @@ describe('MIMI Assistant — hỏi đáp', () => {
     await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
     hoiBangTay('Khoản nào đang chờ tôi duyệt?');
 
-    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?', pham_vi: null, lich_su: [] }, { signal: expect.any(AbortSignal) }));
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?', pham_vi: null, lich_su: [], ngon_ngu: expect.any(String) }, { signal: expect.any(AbortSignal) }));
     const bang = await screen.findByRole('table');
     expect(within(bang).getByText('2.000.000 ₫')).toBeTruthy();
     expect(within(bang).getByText('14/09/2026')).toBeTruthy();

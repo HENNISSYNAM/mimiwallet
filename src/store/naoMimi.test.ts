@@ -35,7 +35,7 @@ describe('bộ não dùng chung', () => {
     t.xong(traLoi('Có 1 khoản chờ duyệt.'));
     await tuPet; const kq = await tuTroLy;
     expect(gia.goi).toHaveBeenCalledTimes(1);
-    expect(gia.goi).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?' }, { signal: expect.any(AbortSignal) });
+    expect(gia.goi).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?', ngon_ngu: 'vi' }, { signal: expect.any(AbortSignal) });
     const luot = useNaoMimi.getState().luot;
     expect(luot).toHaveLength(1);
     expect(kq.id).toBe(luot[0].id);
@@ -51,7 +51,7 @@ describe('bộ não dùng chung', () => {
     t.xong(traLoi('Đã chạy.'));
     await Promise.all([a, b]);
     expect(gia.goi).toHaveBeenCalledTimes(1);
-    expect(gia.goi).toHaveBeenCalledWith('chay_dan_agent', { quy_trinh: 'ke_toan_hang_ngay' }, expect.anything());
+    expect(gia.goi).toHaveBeenCalledWith('chay_dan_agent', { quy_trinh: 'ke_toan_hang_ngay', ngon_ngu: 'vi' }, expect.anything());
   });
 
   it('đổi phạm vi (tài khoản/công ty) → xoá sạch; phản hồi của phạm vi cũ đến muộn KHÔNG quay vào', async () => {

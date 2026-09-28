@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Bot, FileSpreadsheet, Landmark, Loader2, Plug, Receipt, ScanLine } from 'lucide-react';
 import { goiTroLy } from '@/lib/goiTroLy';
-import { QUY_TRINH_AGENT, type AgentMimi, type BoiCanhNao, type QuyTrinhAgent } from '@/lib/troLy';
+import { QUY_TRINH_AGENT, type AgentMimi, type QuyTrinhAgent } from '@/lib/troLy';
 import { TEN_QUY_TRINH, useNaoMimi, type LuotNao } from '@/store/naoMimi';
 import { DanAgentBaoCao } from './DanAgentBaoCao';
 
@@ -88,13 +88,21 @@ export function KhoiDieuPhoi() {
   const luot = useNaoMimi((s) => s.luot);
   const chayQuyTrinh = useNaoMimi((s) => s.chayQuyTrinh);
   const [agent, setAgent] = useState<AgentMimi[] | null>(null);
+  /** Câu lỗi NGUYÊN VĂN của máy chủ khi chưa đọc được danh mục (vd. action chưa triển khai). */
+  const [loiDanhMuc, setLoiDanhMuc] = useState<string | null>(null);
 
   // Danh sách agent: đọc một lần khi mở trang (máy chủ cũ không gửi → không hiện gì). Không thăm dò.
   useEffect(() => {
     const ctrl = new AbortController();
-    goiTroLy('boi_canh', {}, { signal: ctrl.signal })
-      .then((bc) => { const ds = (bc as BoiCanhNao).danh_sach_agent; if (!ctrl.signal.aborted && Array.isArray(ds)) setAgent(ds); })
-      .catch(() => { /* khối vẫn dùng được không cần danh sách agent */ });
+    // Action nhẹ `danh_sach_agent`: máy chủ chỉ kiểm JWT, quyền công ty, giới hạn gọi — không đọc sao kê,
+    // chứng từ, không gọi mô hình. Đây là DANH MỤC năng lực, không phải trạng thái việc đang chạy.
+    goiTroLy('danh_sach_agent', {}, { signal: ctrl.signal })
+      .then((kq) => {
+        if (ctrl.signal.aborted) return;
+        const ds = (kq as { danh_sach_agent?: unknown }).danh_sach_agent;
+        if (Array.isArray(ds)) { setAgent(ds as AgentMimi[]); setLoiDanhMuc(null); }
+      })
+      .catch((e: unknown) => { if (!ctrl.signal.aborted) setLoiDanhMuc(e instanceof Error ? e.message : String(e)); });
     return () => ctrl.abort();
   }, []);
 
@@ -122,7 +130,7 @@ export function KhoiDieuPhoi() {
       </nav>
 
       {/*
-        Nút quy trình CHỈ hiện khi máy chủ đã có đàn agent — dấu hiệu là `boi_canh` gửi `danh_sach_agent`.
+        Nút quy trình CHỈ hiện khi máy chủ trả được danh mục agent (`danh_sach_agent`).
         Máy chủ cũ chưa có `chay_dan_agent`: hiện ba nút bấm vào chỉ ra lỗi là hứa điều không làm được.
       */}
       {coDanAgent && (
@@ -142,6 +150,10 @@ export function KhoiDieuPhoi() {
           </button>
         ))}
       </div>
+      )}
+
+      {loiDanhMuc && (
+        <p className="mt-4 text-xs text-muted-foreground">Chưa chạy được đàn agent — máy chủ báo: {loiDanhMuc}</p>
       )}
 
       {agent && agent.length > 0 && (
