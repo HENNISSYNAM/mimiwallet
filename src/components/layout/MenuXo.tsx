@@ -79,7 +79,6 @@ const MENU_SAN_PHAM: CauHinhMenu = {
       muc: [
         { icon: QrCode, ten: { vi: 'Hoá đơn kèm mã QR', en: 'QR invoices' }, mo: { vi: 'Tự khớp khi tiền về', en: 'Reconcile when money arrives' }, href: '/san-pham/hoa-don-qr' },
         { icon: Receipt, ten: { vi: 'Chứng từ chi phí', en: 'Expense records' }, mo: { vi: 'Sổ chi phí kèm nguồn từng dòng', en: 'Every line with its source' }, href: '/san-pham/chung-tu-chi-phi' },
-        { icon: FileText, ten: { vi: 'Hoá đơn điện tử', en: 'E-invoices' }, mo: { vi: 'Đọc từ cơ quan thuế, chỉ đọc', en: 'Read-only from the tax authority' }, href: '/san-pham/hoa-don-dien-tu' },
       ],
     }],
     [{
@@ -95,15 +94,14 @@ const MENU_SAN_PHAM: CauHinhMenu = {
     muc: [
       { icon: Sparkles, ten: { vi: 'Trí tuệ nhân tạo', en: 'Intelligence' }, mo: { vi: 'Agent làm gì, và bạn giữ gì', en: 'What agents do, what you keep' }, href: '/tri-tue-nhan-tao' },
       { icon: Code2, ten: { vi: 'MCP & API cho agent', en: 'MCP & agent API' }, mo: { vi: 'Nối Claude, Cursor trong một lệnh', en: 'Connect Claude, Cursor in one command' }, href: '/san-pham/mcp-api' },
-      { icon: LineChart, ten: { vi: 'Chi phí AI', en: 'AI costs' }, mo: { vi: 'Thấy và giới hạn chi phí AI', en: 'See and cap your AI spend' }, href: '/san-pham/chi-phi-ai', nhan: { vi: 'Đang xây', en: 'In progress' } },
       { icon: Lock, ten: { vi: 'Bảo mật', en: 'Security' }, mo: { vi: 'Mã hoá kháng lượng tử, tách dữ liệu', en: 'Post-quantum encryption, data isolation' }, href: '/san-pham/bao-mat' },
-      { icon: Plug, ten: { vi: 'Kết nối', en: 'Connections' }, mo: { vi: 'Ngân hàng, SePay, hoá đơn điện tử', en: 'Banks, SePay, e-invoices' }, href: '/san-pham/ket-noi' },
+      { icon: Plug, ten: { vi: 'Kết nối', en: 'Connections' }, mo: { vi: 'Ngân hàng, SePay', en: 'Banks, SePay' }, href: '/san-pham/ket-noi' },
     ],
   },
   noiBat: {
     kieu: 'meo',
     tieuDe: { vi: 'Xem MIMI làm việc', en: 'Watch MIMI work' },
-    mo: { vi: 'Bốn khung tự chạy: duyệt chi, bắt đổi số tài khoản, và hai chức năng đang xây.', en: 'Four self-running panels: approvals, account-swap alerts, and two features in progress.' },
+    mo: { vi: 'Hai khung tự chạy: duyệt chi và bắt đổi số tài khoản.', en: 'Two self-running panels: approvals and account-swap alerts.' },
     href: '/kham-pha/demo',
   },
 };

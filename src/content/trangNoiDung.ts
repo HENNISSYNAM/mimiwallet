@@ -202,13 +202,13 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
   {
     loai: 'san-pham', slug: 'chung-tu-chi-phi', nhom: 'Hoá đơn & chứng từ', trangThai: 'dang-chay',
     ten: 'Chứng từ chi phí',
-    motCau: 'Ghép tiền đã chi trong sao kê với hoá đơn đầu vào từ cơ quan thuế, để biết khoản nào đã có giấy tờ, khoản nào còn thiếu — theo đúng kỳ kê khai đang tới hạn.',
+    motCau: 'Ghép tiền đã chi trong sao kê với chứng từ bạn chụp, để biết khoản nào đã có giấy tờ, khoản nào còn thiếu — theo đúng kỳ kê khai đang tới hạn.',
     vanDe: {
       tieuDe: 'Không có giấy tờ thì không được trừ chi phí',
       doan: 'Từ 2026 hộ kinh doanh được chọn tính thuế theo lợi nhuận — nhưng chỉ khi chứng minh được chi phí. Tiền ra nằm ở ngân hàng, hoá đơn nằm ở cơ quan thuế; không ai ghép hai thứ đó lại cho bạn.',
     },
     cachHoatDong: [
-      { tieuDe: 'Đọc hai nguồn', mo: 'Tiền ra từ sao kê ngân hàng, và hoá đơn mua vào kéo từ Tổng cục Thuế.' },
+      { tieuDe: 'Đọc hai nguồn', mo: 'Tiền ra từ sao kê ngân hàng, và hoá đơn bạn chụp trong Thư viện chứng từ (MIMI đọc số tiền, ngày, bên bán).' },
       { tieuDe: 'Ghép', mo: 'Theo số hoá đơn có trong nội dung chuyển khoản, hoặc theo số tiền và ngày gần nhau.' },
       { tieuDe: 'Chia ba nhóm', mo: 'Đã ghép · cần xem (ghép mơ hồ) · chưa có giấy tờ.' },
       { tieuDe: 'Theo kỳ đang tới hạn', mo: 'Chỉ đọc quý đang tới hạn kê khai, kèm số ngày còn lại.' },
@@ -225,42 +225,11 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     ],
     trongApp: { ten: 'Chứng từ chi phí', duong: '/dashboard/chung-tu' },
     hoiDap: [
-      { hoi: 'Trang trống thì làm gì?', dap: 'Mỗi trạng thái trống đều chỉ việc cần làm: nối ngân hàng để có tiền ra, hoặc kết nối Tổng cục Thuế để có hoá đơn.' },
+      { hoi: 'Trang trống thì làm gì?', dap: 'Mỗi trạng thái trống đều chỉ việc cần làm: nối ngân hàng để có tiền ra, hoặc chụp hoá đơn để có giấy tờ.' },
       { hoi: 'Vì sao chỉ đọc một quý?', dap: 'Chi phí được trừ trong kỳ phát sinh. Gộp cả năm ra một con số to hơn nhưng không mang đi khai được.' },
     ],
-    lienQuan: ['/san-pham/hoa-don-dien-tu', '/san-pham/hai-cach-tinh-thue', '/giai-phap/ho-kinh-doanh'],
+    lienQuan: ['/san-pham/hai-cach-tinh-thue', '/giai-phap/ho-kinh-doanh'],
   },
-  {
-    loai: 'san-pham', slug: 'hoa-don-dien-tu', nhom: 'Hoá đơn & chứng từ', trangThai: 'dang-chay',
-    ten: 'Hoá đơn điện tử',
-    motCau: 'Kéo hoá đơn điện tử bán ra và mua vào từ hệ thống của cơ quan thuế — chỉ đọc, chỉ sau khi bạn đồng ý.',
-    vanDe: {
-      tieuDe: 'Hoá đơn đã có, chỉ là nằm ở chỗ khác',
-      doan: 'Hoá đơn điện tử của bạn đã nằm trên hệ thống thuế. Tải tay từng tháng, lưu vào thư mục, rồi đối chiếu với sao kê là việc lặp lại mà không thêm giá trị nào.',
-    },
-    cachHoatDong: [
-      { tieuDe: 'Đồng ý chia sẻ', mo: 'MIMI ghi nhận sự đồng ý chia sẻ dữ liệu thuế, kèm phiên bản điều khoản bạn đã đọc.' },
-      { tieuDe: 'Kết nối qua Cas', mo: 'Bấm "Kết nối Tổng Cục Thuế" trong Fintech Hub và xác thực trên giao diện của Cas.' },
-      { tieuDe: 'Đồng bộ', mo: 'MIMI kéo hoá đơn trong khoảng thời gian bạn chọn; hoá đơn đã có không bị ghi trùng.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Chứng từ chi phí', mo: 'Hoá đơn mua vào được ghép với tiền đã chi.' },
-      { tieuDe: 'Doanh thu từ hoá đơn', mo: 'Hoá đơn bán ra cho con số doanh thu thay vì đoán từ nội dung chuyển khoản.' },
-      { tieuDe: 'Ngắt bất cứ lúc nào', mo: 'Ngắt kết nối thì mã truy cập bị xoá khỏi hệ thống.' },
-    ],
-    ranhGioi: [
-      'Chỉ đọc. MIMI không phát hành hoá đơn và không nộp hồ sơ thuế thay bạn.',
-      'Logo cơ quan thuế trên trang không hàm ý chứng nhận hay bảo trợ.',
-    ],
-    trongApp: { ten: 'Fintech Hub → Kết nối Tổng Cục Thuế', duong: '/dashboard/fintech' },
-    hoiDap: [
-      { hoi: 'MIMI có thấy mật khẩu của tôi không?', dap: 'Không. Bạn xác thực trên giao diện của Cas; MIMI chỉ nhận mã truy cập đã mã hoá.' },
-      { hoi: 'Đồng bộ báo thiếu mã số thuế?', dap: 'Vào Cài đặt điền mã số thuế của doanh nghiệp rồi đồng bộ lại.' },
-    ],
-    lienQuan: ['/san-pham/chung-tu-chi-phi', '/san-pham/ket-noi', '/san-pham/bao-mat'],
-  },
-
-  /* ── Sổ & thuế ────────────────────────────────────────────────── */
   {
     loai: 'san-pham', slug: 'doi-soat-sao-ke', nhom: 'Sổ & thuế', trangThai: 'dang-chay',
     ten: 'Đối soát sao kê',
@@ -286,7 +255,7 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     ],
     trongApp: { ten: 'Fintech Hub', duong: '/dashboard/fintech' },
     hoiDap: [
-      { hoi: 'Có cần cả SePay lẫn Cas không?', dap: 'Không. SePay đủ để báo tiền về; Cas thêm lịch sử giao dịch và kết nối hoá đơn điện tử.' },
+      { hoi: 'Có cần cả SePay lẫn Cas không?', dap: 'Không. SePay đủ để báo tiền về; Cas thêm lịch sử giao dịch và nhận tiền QR.' },
       { hoi: 'Tiền vào không có mã thì sao?', dap: 'Vẫn được ghi vào sổ; chỉ là không tự khớp với hoá đơn nào.' },
     ],
     lienQuan: ['/san-pham/hoa-don-qr', '/san-pham/ket-noi', '/san-pham/duyet-chi'],
@@ -320,7 +289,7 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
       { hoi: 'Tôi không biết tỷ lệ ngành mình?', dap: 'Hỏi kế toán hoặc cơ quan thuế quản lý. MIMI để bạn nhập vì đoán sai tỷ lệ là sai tiền.' },
       { hoi: 'MIMI có nộp tờ khai giúp tôi không?', dap: 'Không. MIMI chuẩn bị số liệu và chứng từ; bạn hoặc kế toán nộp.' },
     ],
-    lienQuan: ['/san-pham/chung-tu-chi-phi', '/san-pham/hoa-don-dien-tu', '/giai-phap/ho-kinh-doanh'],
+    lienQuan: ['/san-pham/chung-tu-chi-phi', '/giai-phap/ho-kinh-doanh'],
   },
 
   /* ── Nền tảng ─────────────────────────────────────────────────── */
@@ -358,34 +327,6 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     lienQuan: ['/san-pham/kiem-soat-agent', '/giai-phap/phan-mem-ai', '/giai-phap/startup-cong-nghe'],
   },
   {
-    loai: 'san-pham', slug: 'chi-phi-ai', nhom: 'Nền tảng', trangThai: 'dang-xay',
-    ten: 'Chi phí AI',
-    motCau: 'Thấy chi phí AI theo mô hình, người dùng và dự án, đặt ngân sách tháng và nhận cảnh báo khi gần chạm. Chức năng đang xây.',
-    vanDe: {
-      tieuDe: 'Chi phí AI tăng mà không ai thấy',
-      doan: 'Tiền trả cho API AI thường đi qua thẻ quốc tế nên sao kê chuyển khoản không thấy đủ. Muốn biết chi bao nhiêu, cho dự án nào, phải nối thẳng dữ liệu sử dụng của nhà cung cấp.',
-      soLieu: AWS_AI,
-    },
-    cachHoatDong: [
-      { tieuDe: 'Nối khoá quản trị chỉ-đọc', mo: 'Dự kiến nối khoá xem sử dụng của nhà cung cấp AI — không cần nối ngân hàng.' },
-      { tieuDe: 'Chia theo mô hình và dự án', mo: 'Chi phí theo mô hình, người dùng, dự án.' },
-      { tieuDe: 'Ngân sách và cảnh báo', mo: 'Đặt ngân sách tháng, cảnh báo khi gần chạm.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Hôm nay đã làm được', mo: 'Cho agent chi nhóm "Hạ tầng AI" với trần mỗi lần, ngày, tháng riêng trong Kiểm soát agent.' },
-      { tieuDe: 'Mốc dự kiến', mo: 'Chu kỳ S1, 29/09–12/10/2026. Đây là mục tiêu, không phải cam kết.' },
-      { tieuDe: 'Đăng ký dùng sớm', mo: 'Để lại liên hệ để được mời thử khi chức năng sẵn sàng.' },
-    ],
-    ranhGioi: [
-      'Chức năng này CHƯA có trong app.',
-      'Trước khi làm, MIMI sẽ đọc tài liệu API sử dụng của từng nhà cung cấp để xác nhận trường dữ liệu và quyền chỉ-đọc.',
-    ],
-    hoiDap: [
-      { hoi: 'Khi nào có?', dap: 'Mục tiêu là chu kỳ 29/09–12/10/2026. Trang Cập nhật sản phẩm sẽ ghi khi chức năng thật sự chạy.' },
-    ],
-    lienQuan: ['/san-pham/kiem-soat-agent', '/giai-phap/phan-mem-ai', '/giai-phap/startup-cong-nghe'],
-  },
-  {
     loai: 'san-pham', slug: 'bao-mat', nhom: 'Nền tảng', trangThai: 'dang-chay',
     ten: 'Bảo mật',
     motCau: 'Mã truy cập ngân hàng mã hoá kháng lượng tử, dữ liệu mỗi công ty tách ở tầng cơ sở dữ liệu, khoá agent chỉ lưu bản băm, nhật ký không sửa được.',
@@ -412,18 +353,18 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     hoiDap: [
       { hoi: 'Tôi ngắt liên kết thì dữ liệu còn không?', dap: 'Mã truy cập bị xoá ngay khi ngắt. Dòng liên kết giữ lại để có dấu vết kiểm toán về thời điểm ngắt.' },
     ],
-    lienQuan: ['/san-pham/ket-noi', '/san-pham/kiem-soat-agent', '/san-pham/hoa-don-dien-tu'],
+    lienQuan: ['/san-pham/ket-noi', '/san-pham/kiem-soat-agent'],
   },
   {
     loai: 'san-pham', slug: 'ket-noi', nhom: 'Nền tảng', trangThai: 'dang-chay',
     ten: 'Kết nối',
-    motCau: 'Những dịch vụ MIMI đang kết nối tới để đọc giao dịch, nhận thông báo tiền về, kéo hoá đơn điện tử và cho agent gọi vào.',
+    motCau: 'Những dịch vụ MIMI đang kết nối tới để đọc giao dịch, nhận thông báo tiền về và cho agent gọi vào.',
     vanDe: {
       tieuDe: 'Một khoản chi đi qua nhiều hệ thống',
-      doan: 'Ngân hàng giữ tiền, cơ quan thuế giữ hoá đơn, agent chạy ở chỗ khác. MIMI nối các nguồn đó lại để một khoản chi có đủ lý do, lệnh trả, sao kê và hoá đơn.',
+      doan: 'Ngân hàng giữ tiền, agent chạy ở chỗ khác, hoá đơn nằm trong ngăn kéo. MIMI nối các nguồn đó lại để một khoản chi có đủ lý do, lệnh trả, sao kê và giấy tờ.',
     },
     cachHoatDong: [
-      { tieuDe: 'Cas', mo: 'Liên kết tài khoản ngân hàng để đọc giao dịch, và kết nối Tổng cục Thuế để kéo hoá đơn điện tử. Ngắt quyền trong app Cas thì MIMI tự ghi nhận.' },
+      { tieuDe: 'Cas', mo: 'Liên kết tài khoản ngân hàng để đọc giao dịch và nhận tiền QR. Ngắt quyền trong app Cas thì MIMI tự ghi nhận.' },
       { tieuDe: 'SePay', mo: 'Báo tiền về theo thời gian thực. Bạn chỉ khai số tài khoản, không cấp quyền gì.' },
       { tieuDe: 'VietQR', mo: 'Chuẩn mã QR chuyển khoản, dựng ngay trên máy cho hoá đơn và lệnh trả.' },
       { tieuDe: 'MCP', mo: 'Claude, Cursor và ứng dụng hỗ trợ MCP gọi vào MIMI bằng khoá agent.' },
@@ -435,13 +376,12 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     ],
     ranhGioi: [
       'Đây là dịch vụ MIMI kết nối tới, không phải thoả thuận đối tác.',
-      'Danh sách ngân hàng hiển thị trên trang chủ là lộ trình tích hợp, không phải thoả thuận với từng ngân hàng.',
     ],
     trongApp: { ten: 'Fintech Hub', duong: '/dashboard/fintech' },
     hoiDap: [
       { hoi: 'Ngân hàng của tôi có được hỗ trợ không?', dap: 'Cas Link hiện danh sách ngân hàng hỗ trợ khi bạn bấm liên kết. Báo tiền về qua SePay theo danh sách ngân hàng của SePay.' },
     ],
-    lienQuan: ['/san-pham/doi-soat-sao-ke', '/san-pham/hoa-don-dien-tu', '/san-pham/bao-mat'],
+    lienQuan: ['/san-pham/doi-soat-sao-ke', '/san-pham/bao-mat'],
   },
 ];
 
@@ -466,14 +406,13 @@ export const TRANG_GIAI_PHAP: TrangNoiDung[] = [
       { tieuDe: 'Kiểm soát agent', mo: 'Khoá riêng, chính sách riêng, tạm dừng và thu hồi.' },
       { tieuDe: 'Chặn vòng lặp', mo: 'Trần số yêu cầu mỗi giờ bắt được agent hỏng gửi đi gửi lại.' },
       { tieuDe: 'Chống chuyển nhầm', mo: 'Người nhận mới giữ 24 giờ, cảnh báo đổi số tài khoản.' },
-      { tieuDe: 'Chi phí AI (đang xây)', mo: 'Chi phí theo mô hình và dự án, ngân sách tháng.' },
     ],
     ranhGioi: ['MIMI không cầm tiền và không cấp thẻ cho agent — tiền đi bằng chuyển khoản khi bạn trả.'],
     trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
     hoiDap: [
       { hoi: 'Tôi có nhiều agent cho nhiều việc?', dap: 'Tạo mỗi agent một khoá và một chính sách; khoá này lộ không ảnh hưởng agent kia.' },
     ],
-    lienQuan: ['/san-pham/kiem-soat-agent', '/san-pham/mcp-api', '/san-pham/chi-phi-ai'],
+    lienQuan: ['/san-pham/kiem-soat-agent', '/san-pham/mcp-api'],
   },
   {
     loai: 'giai-phap', slug: 'doanh-nghiep-nho-va-vua', nhom: 'Theo quy mô', trangThai: 'dang-chay',
@@ -526,7 +465,7 @@ export const TRANG_GIAI_PHAP: TrangNoiDung[] = [
     hoiDap: [
       { hoi: 'Doanh thu dưới 01 tỷ có cần MIMI?', dap: 'Vẫn cần thông báo doanh thu; sổ thu chi và theo dõi ngưỡng giúp biết lúc nào sắp vượt.' },
     ],
-    lienQuan: ['/san-pham/hai-cach-tinh-thue', '/san-pham/chung-tu-chi-phi', '/san-pham/hoa-don-dien-tu'],
+    lienQuan: ['/san-pham/hai-cach-tinh-thue', '/san-pham/chung-tu-chi-phi'],
   },
   {
     loai: 'giai-phap', slug: 'van-phong-ke-toan', nhom: 'Theo quy mô', trangThai: 'lien-he',
@@ -623,14 +562,14 @@ export const TRANG_GIAI_PHAP: TrangNoiDung[] = [
     lamDuoc: [
       { tieuDe: 'Chặn vòng lặp', mo: 'Quá số yêu cầu mỗi giờ là từ chối.' },
       { tieuDe: 'Kiểm soát agent', mo: 'Tạm dừng, thu hồi, chính sách có hạn.' },
-      { tieuDe: 'Chi phí AI (đang xây)', mo: 'Theo mô hình và dự án.' },
+      { tieuDe: 'Kiểm trước khi chuyển', mo: 'Người nhận mới giữ 24 giờ, cảnh báo khi nhà cung cấp đổi số tài khoản.' },
     ],
     ranhGioi: ['Khoản trả bằng thẻ quốc tế cho nhà cung cấp AI chưa đi qua luật duyệt của MIMI.'],
     trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
     hoiDap: [
       { hoi: 'Agent CI/CD của tôi gọi được không?', dap: 'Được, bằng API HTTP với header x-mimi-agent-key.' },
     ],
-    lienQuan: ['/san-pham/mcp-api', '/san-pham/chi-phi-ai', '/san-pham/kiem-soat-agent'],
+    lienQuan: ['/san-pham/mcp-api', '/san-pham/kiem-soat-agent'],
   },
   {
     loai: 'giai-phap', slug: 'dich-vu-chuyen-mon', nhom: 'Theo ngành', trangThai: 'dang-chay',

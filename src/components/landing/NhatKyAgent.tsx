@@ -78,56 +78,6 @@ function KhungNhatKy() {
   );
 }
 
-const NHIP_SOAN_LUAT = [1400, 1800, 3400] as const;
-
-function KhungSoanLuat() {
-  const { khung, buoc } = useCanh(NHIP_SOAN_LUAT, 2);
-
-  return (
-    <Khung khungRef={khung} nen="bg-primary/5" nhan="Đang xây · minh hoạ">
-      <div className="relative w-full max-w-md">
-        <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
-          <p className="text-lg font-semibold text-foreground">Chính sách chi tiêu · Công ty ABC</p>
-          <p className="mt-1 text-[12px] text-muted-foreground">Cập nhật 09/2026 · Áp dụng cho mọi agent</p>
-
-          <p className="mt-4 text-[13px] font-semibold text-foreground">2.1 Quảng cáo</p>
-          <p className={`mt-1 rounded px-1 -mx-1 text-[13px] leading-relaxed text-foreground transition-colors ${buoc >= 1 ? 'bg-primary/10' : ''}`}>
-            Khoản quảng cáo trên 2 triệu đồng phải có giám đốc duyệt.
-          </p>
-          <p className="mt-3 text-[13px] font-semibold text-foreground">2.2 Nhà cung cấp mới</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-            Không chuyển tiền cho tài khoản mới khi chưa gọi xác nhận qua số điện thoại đã lưu.
-          </p>
-        </div>
-
-        {buoc === 1 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-[13px] text-foreground shadow-md"
-          >
-            <span className="grid grid-cols-2 gap-0.5" aria-hidden>
-              {[0, 1, 2, 3].map((i) => <span key={i} className="h-1 w-1 animate-pulse rounded-full bg-foreground" style={{ animationDelay: `${i * 150}ms` }} />)}
-            </span>
-            Đang soạn gợi ý
-          </motion.div>
-        )}
-
-        {buoc === 2 && (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3 rounded-lg border border-primary/40 bg-card p-4 shadow-sm">
-            <p className="text-[12px] font-semibold text-primary">Đề xuất luật · trích mục 2.1</p>
-            <p className="mt-1.5 font-mono text-[12px] text-foreground">nhom_chi: quang_cao · nguong_can_duyet: 2.000.000đ</p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <span className="grid h-8 place-items-center rounded-lg border border-border text-[12px] text-foreground">Bỏ qua</span>
-              <span className="grid h-8 place-items-center rounded-lg bg-primary text-[12px] font-semibold text-primary-foreground">Áp dụng</span>
-            </div>
-          </motion.div>
-        )}
-      </div>
-    </Khung>
-  );
-}
-
 export default function NhatKyAgent() {
   return (
     <section id="nhat-ky" className="py-24 bg-background">
@@ -146,13 +96,6 @@ export default function NhatKyAgent() {
             <h3 className="mt-6 font-display text-xl font-semibold text-foreground text-balance">Mỗi quyết định truy được tới luật.</h3>
             <p className="mt-2 max-w-lg leading-relaxed text-muted-foreground">
               Không có bước nào "tự nhiên xảy ra": mỗi dòng mang mã lý do của bộ luật và thời điểm, để kế toán và kiểm toán đọc lại được.
-            </p>
-          </article>
-          <article>
-            <KhungSoanLuat />
-            <h3 className="mt-6 font-display text-xl font-semibold text-foreground text-balance">Viết chính sách bằng lời, MIMI đề xuất luật.</h3>
-            <p className="mt-2 max-w-lg leading-relaxed text-muted-foreground">
-              Tải văn bản chính sách; MIMI gợi ý từng luật kèm trích điều khoản, bạn duyệt trước khi áp dụng. Chức năng đang xây.
             </p>
           </article>
         </div>

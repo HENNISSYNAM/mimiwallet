@@ -84,7 +84,14 @@ export default function ChungTuPage() {
         );
       type GdKy = { id: string; amount: number; type: string; transaction_date: string; merchant_name: string | null; payment_reference: string | null; counter_account_name: string | null; is_synthetic: boolean };
       type HdKy = { id: string; total_amount: number | null; issued_at: string; invoice_number: string | null; counterparty_name: string | null; counterparty_tax_code: string | null };
-      const [gd, hd, thuNam, hdNam] = await Promise.all([
+      /*
+       * HAI NGUỒN GIẤY TỜ (28/09/2026). Trước đây chỉ đọc hoá đơn từ cơ quan thuế (`gdt_invoices`, kéo qua
+       * Cas) — mà Casso chưa bật sản phẩm đó cho app production, nên trang luôn báo mọi khoản "chưa có
+       * giấy tờ". Nay đọc thêm chứng từ người dùng tự chụp (`chung_tu_quet`, Thư viện chứng từ). Cùng một
+       * hoá đơn có ở cả hai nguồn (số hoá đơn + MST bên bán) thì chỉ tính một lần.
+       */
+      type ChungTuKy = { id: string; tong_tien: number; ngay: string | null; so_hoa_don: string | null; ben_ban: string | null; ma_so_thue_ben_ban: string | null };
+      const [gd, hd, thuNam, hdNam, quetKy, quetNam] = await Promise.all([
         het<GdKy>((a, b) => supabase
           .from('transactions')
           .select(
@@ -109,14 +116,28 @@ export default function ChungTuPage() {
           .gte('transaction_date', dauNam)
           .lte('transaction_date', iso(cuoiKy))
           .order('id').range(a, b), 'giao dịch từ đầu năm'),
-        het<{ total_amount: number | null }>((a, b) => supabase
+        het<{ total_amount: number | null; invoice_number: string | null; counterparty_tax_code: string | null }>((a, b) => supabase
           .from('gdt_invoices')
-          .select('id, total_amount')
+          .select('id, total_amount, invoice_number, counterparty_tax_code')
           .eq('company_id', cty.id)
           .eq('direction', 'received')
           .gte('issued_at', dauNam)
           .lte('issued_at', `${iso(cuoiKy)}T23:59:59`)
           .order('id').range(a, b), 'hoá đơn từ đầu năm'),
+        het<ChungTuKy>((a, b) => supabase
+          .from('chung_tu_quet')
+          .select('id, tong_tien, ngay, so_hoa_don, ben_ban, ma_so_thue_ben_ban')
+          .eq('company_id', cty.id)
+          .gte('ngay', iso(dauKy))
+          .lte('ngay', iso(cuoiKy))
+          .order('id').range(a, b), 'chứng từ chụp trong kỳ'),
+        het<ChungTuKy>((a, b) => supabase
+          .from('chung_tu_quet')
+          .select('id, tong_tien, ngay, so_hoa_don, ben_ban, ma_so_thue_ben_ban')
+          .eq('company_id', cty.id)
+          .gte('ngay', dauNam)
+          .lte('ngay', iso(cuoiKy))
+          .order('id').range(a, b), 'chứng từ chụp từ đầu năm'),
       ]);
 
       // Không nuốt lỗi — bài học 08/09: truy vấn hỏng trông y hệt không có dữ liệu.
@@ -124,6 +145,12 @@ export default function ChungTuPage() {
       if (hd.error) toast.error(`Không đọc được hoá đơn: ${hd.error.message}`);
       if (thuNam.error) toast.error(`Không đọc được doanh thu năm: ${thuNam.error.message}`);
       if (hdNam.error) toast.error(`Không đọc được hoá đơn năm: ${hdNam.error.message}`);
+      if (quetKy.error || quetNam.error) toast.error(`Không đọc được chứng từ đã chụp: ${(quetKy.error ?? quetNam.error)?.message}`);
+
+      // Khoá chống đếm trùng: số hoá đơn + MST bên bán (bỏ khoảng trắng, không phân biệt hoa thường).
+      const khoaHd = (so: string | null, mst: string | null) =>
+        so && mst ? `${so.replace(/\s/g, '').toUpperCase()}|${mst.replace(/[\s-]/g, '')}` : null;
+
 
       setDoanhThuNam(
         (thuNam.data ?? [])
@@ -133,8 +160,12 @@ export default function ChungTuPage() {
           .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
       );
       // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi hoá đơn đầu vào.
+      const daCoNam = new Set((hdNam.data ?? []).map((h) => khoaHd(h.invoice_number, h.counterparty_tax_code)).filter(Boolean));
       setChiPhiCoChungTuNam(
-        (hdNam.data ?? []).reduce((s, h) => s + (Number(h.total_amount) || 0), 0),
+        (hdNam.data ?? []).reduce((s, h) => s + (Number(h.total_amount) || 0), 0)
+        + (quetNam.data ?? [])
+          .filter((c) => { const k = khoaHd(c.so_hoa_don, c.ma_so_thue_ben_ban); return !k || !daCoNam.has(k); })
+          .reduce((s, c) => s + (Number(c.tong_tien) || 0), 0),
       );
 
       /*
@@ -165,16 +196,26 @@ export default function ChungTuPage() {
           })),
       );
 
-      setHoaDon(
-        (hd.data ?? []).map((h) => ({
-          id: h.id as string,
-          soTien: Number(h.total_amount),
-          ngay: String(h.issued_at).slice(0, 10),
-          soHoaDon: (h.invoice_number as string) ?? null,
-          tenBenBan: (h.counterparty_name as string) ?? null,
-          maSoThueBenBan: (h.counterparty_tax_code as string) ?? null,
-        })),
-      );
+      const tuCqt = (hd.data ?? []).map((h) => ({
+        id: h.id as string,
+        soTien: Number(h.total_amount),
+        ngay: String(h.issued_at).slice(0, 10),
+        soHoaDon: (h.invoice_number as string) ?? null,
+        tenBenBan: (h.counterparty_name as string) ?? null,
+        maSoThueBenBan: (h.counterparty_tax_code as string) ?? null,
+      }));
+      const daCo = new Set(tuCqt.map((h) => khoaHd(h.soHoaDon, h.maSoThueBenBan)).filter(Boolean));
+      const tuChup = (quetKy.data ?? [])
+        .filter((c) => { const k = khoaHd(c.so_hoa_don, c.ma_so_thue_ben_ban); return !k || !daCo.has(k); })
+        .map((c) => ({
+          id: `quet:${c.id}`,
+          soTien: Number(c.tong_tien),
+          ngay: String(c.ngay).slice(0, 10),
+          soHoaDon: c.so_hoa_don,
+          tenBenBan: c.ben_ban,
+          maSoThueBenBan: c.ma_so_thue_ben_ban,
+        }));
+      setHoaDon([...tuCqt, ...tuChup]);
     } finally {
       setDangTai(false);
     }
@@ -267,11 +308,11 @@ export default function ChungTuPage() {
           )}
           {chuaCoHoaDon && (
             <p className="text-sm">
-              Chưa có hoá đơn đầu vào nào.{' '}
-              <Link to="/dashboard/fintech" className="font-medium text-primary underline">
-                Bấm đồng bộ ở dòng Tổng Cục Thuế
+              Chưa có chứng từ nào trong quý.{' '}
+              <Link to="/dashboard/thu-vien" className="font-medium text-primary underline">
+                Chụp hoá đơn trong Thư viện chứng từ
               </Link>{' '}
-              để tải hoá đơn điện tử của quý.
+              — MIMI đọc số tiền, ngày, bên bán rồi tự ghép với khoản chi.
             </p>
           )}
         </div>

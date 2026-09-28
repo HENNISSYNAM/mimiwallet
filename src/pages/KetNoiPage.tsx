@@ -23,10 +23,10 @@ const MO_TA: Record<string, string> = {
   openrouter: 'Chi phí và token khi gọi model qua OpenRouter; kèm bảng giá để tìm model rẻ hơn.',
 };
 
+// 28/09/2026: chỉ giữ nhóm đang chạy thật. "Thuế" (hoá đơn điện tử qua Cas) gỡ vì Casso chưa bật sản phẩm
+// đó cho app production; "Nhà cung cấp AI" phục vụ Chi phí AI, đã đóng băng (`lib/dongBang.ts`).
 const NHOM: { loai: KetNoiHienThi['loai']; ten: string }[] = [
   { loai: 'ngan_hang', ten: 'Ngân hàng & thanh toán' },
-  { loai: 'thue', ten: 'Thuế' },
-  { loai: 'ai', ten: 'Nhà cung cấp AI' },
 ];
 
 const TRANG_THAI: Record<KetNoiHienThi['trang_thai'], { nhan: string; lop: string }> = {

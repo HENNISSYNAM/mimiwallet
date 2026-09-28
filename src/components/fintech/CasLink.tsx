@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Landmark, Shield, Loader2, RefreshCw, Unlink, AlertTriangle, Check, ArrowRight, QrCode, X,
 } from 'lucide-react';
-import taxAuthorityLogo from '@/assets/logos/tax-authority.png';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
@@ -952,25 +951,10 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               <QrCode size={14} />
               Liên kết để nhận tiền QR
             </button>
-            {/* Read-only. MIMI pulls the invoices the tax authority already
-                holds so revenue stops being inferred from bank descriptions —
-                it does not file anything. */}
-            <button
-              onClick={() => { setLinkFeature('gdt'); setConsentOpen(true); }}
-              disabled={linking}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-border text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-            >
-              {/* 18px rather than the 14px the lucide icons beside it use: the
-                  emblem carries a star, laurel and gear, and below that size it
-                  collapses into an unreadable red dot. */}
-              <img
-                src={taxAuthorityLogo}
-                alt=""
-                aria-hidden="true"
-                className="h-[18px] w-[18px] shrink-0 object-contain"
-              />
-              Kết nối Tổng Cục Thuế
-            </button>
+            {/* Nút "Kết nối Tổng Cục Thuế" gỡ 28/09/2026: Casso chưa bật sản phẩm hoá đơn điện tử
+                (GDT) cho app production — console chỉ có Transaction, Identity, Balance, QR Pay — nên
+                liên kết sẽ không đọc được hoá đơn nào. Phần kéo và tự đồng bộ ở máy chủ vẫn giữ
+                (`_shared/tax/dong-bo-gdt.ts`); Casso bật xong thì trả nút này về. */}
             {/* Case 18 nghiệm thu Casso. Chỉ hiện ở sandbox: sản phẩm không dùng
                 CCCD, ngày sinh hay địa chỉ, nên đây không phải tính năng cho
                 khách thật — chỉ là bằng chứng gọi /identity thành công. */}

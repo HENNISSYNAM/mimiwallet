@@ -26,7 +26,6 @@ const m = {
       { label: 'Equipment investment', desc: 'Machinery, technology' },
       { label: 'Cash flow reserve', desc: 'Financial safety' },
     ],
-    connectingIntegrationToast: 'Connecting {{name}} is under development, coming soon',
     dataModelAI: 'AI data model',
     networkLabels: ['Bank', 'Invoice', 'Cash flow', 'Credit'],
     estimatedCreditScore: 'Estimated credit score',

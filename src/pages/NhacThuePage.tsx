@@ -166,7 +166,7 @@ export default function NhacThuePage() {
               ({thue.basis === 'gdt' ? 'theo hoá đơn điện tử đã phát hành' : 'ước tính theo tiền về ngân hàng'})
             </p>
             {thue.basis === 'bank' && !thue.hasBankConnection && (
-              <p className="mt-1 text-sm text-mimi-amber">Chưa liên kết ngân hàng hay Tổng cục Thuế — con số này chưa đủ để dựa vào.</p>
+              <p className="mt-1 text-sm text-mimi-amber">Chưa liên kết ngân hàng — con số này chưa đủ để dựa vào.</p>
             )}
             <ul className="mt-4 space-y-4">
               {thue.milestones.map((m) => {

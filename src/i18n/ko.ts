@@ -372,7 +372,6 @@ const ko = {
       { label: '설비 투자', desc: '기계, 기술' },
       { label: '현금흐름 예비', desc: '재무 안전' },
     ],
-    connectingIntegrationToast: '{{name}} 연동은 개발 중이며 곧 출시됩니다',
     dataModelAI: 'AI 데이터 모델',
     networkLabels: ['은행', '세금계산서', '현금흐름', '신용'],
     estimatedCreditScore: '예상 신용점수',

@@ -370,7 +370,6 @@ const zh = {
       { label: '设备投资', desc: '机器、技术' },
       { label: '现金流备用', desc: '财务安全' },
     ],
-    connectingIntegrationToast: '{{name}} 的连接正在开发，很快上线',
     dataModelAI: 'AI 数据模型',
     networkLabels: ['银行', '发票', '现金流', '信用'],
     estimatedCreditScore: '预计信用评分',

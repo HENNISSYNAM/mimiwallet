@@ -174,7 +174,7 @@ export default function ThuVienChungTuPage() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Thư viện chứng từ</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Hoá đơn điện tử từ Tổng cục Thuế và chứng từ bạn chụp, ở một chỗ để kế toán tra lại.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Chứng từ bạn chụp, ở một chỗ để kế toán tra lại.</p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
           {nutChup}
@@ -207,11 +207,10 @@ export default function ThuVienChungTuPage() {
           <FileText size={28} className="mx-auto text-muted-foreground" aria-hidden />
           <h2 className="mt-3 text-lg font-semibold text-foreground">Chưa có chứng từ nào</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Chụp hoá đơn giấy để MIMI đọc giúp, hoặc kết nối Tổng cục Thuế để hoá đơn điện tử tự về đây.
+            Chụp hoá đơn để MIMI đọc số tiền, ngày, bên bán và tự ghép với khoản chi.
           </p>
           <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
             {nutChup}
-            <Link to="/dashboard/ket-noi" className="inline-flex h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent">Kết nối Tổng cục Thuế</Link>
           </div>
         </section>
       )}

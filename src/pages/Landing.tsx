@@ -22,7 +22,7 @@ import {
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Shield, Zap, Brain, CheckCircle, Play, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
+import { Shield, Zap, Brain, Play, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, BarChart3, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { DUONG_MINH_HOA } from '@/lib/minhHoa';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,8 +37,6 @@ import featureSteps from '@/assets/feature-steps.png';
 import aiAnalysis from '@/assets/ai-analysis.png';
 import aiGreenAnalysis from '@/assets/ai-green-analysis.png';
 import securityShield from '@/assets/security-shield.png';
-import greenFinanceDashboard from '@/assets/green-finance-dashboard.png';
-import carbonCreditsVisual from '@/assets/carbon-credits-visual.png';
 import AnimatedStepFlow from '@/components/onboarding/AnimatedStepFlow';
 import NetworkGraph from '@/components/onboarding/NetworkGraph';
 import { GOI_THANG, giaVND } from '../../supabase/functions/_shared/billing/bang-gia.ts';
@@ -924,124 +922,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               </motion.div>
             </BentoCard>
 
-            {/* Green Finance Cards */}
-            <BentoCard
-              title={t('solutions.greenFinance')}
-              badge={t('landing.solutions.greenFinanceBadge')}
-              desc={t('landing.solutions.greenFinanceDesc')}
-              icon={<Leaf size={18} />}
-              delay={0.4}
-            >
-              <motion.div 
-                className="mt-4 relative overflow-hidden rounded-xl group/green cursor-pointer"
-                whileHover={{ scale: 1.03, y: -4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                <motion.img 
-                  src={greenFinanceDashboard} 
-                  alt="Green Finance Dashboard" 
-                  className="w-full rounded-xl transition-all duration-700 group-hover/green:scale-110 group-hover/green:brightness-110"
-                  initial={{ scale: 1.15, opacity: 0, filter: 'blur(6px)' }}
-                  whileInView={{ scale: 1, opacity: 0.95, filter: 'blur(0px)' }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                />
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(158,100%,43%,0.08) 50%, transparent 70%)' }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/20 to-transparent pointer-events-none" />
-              </motion.div>
-              {/* No rate or limit here: green lending is not live, so any number
-                  would be a promise we cannot honour. */}
-              <div className="mt-3 rounded-xl border border-mimi-green/10 bg-mimi-green/5 p-3">
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  {t('landing.solutions.greenFinanceNote')}
-                </p>
-              </div>
-            </BentoCard>
-
-            <BentoCard
-              title={t('landing.solutions.carbonTitle')}
-              desc={t('landing.solutions.carbonDesc')}
-              icon={<TreePine size={18} />}
-              className="md:col-span-2"
-              delay={0.48}
-            >
-              <div className="mt-4 grid md:grid-cols-2 gap-4">
-                <motion.div 
-                  className="relative overflow-hidden rounded-xl group/carbon cursor-pointer"
-                  whileHover={{ scale: 1.04, rotate: 1, y: -4 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                >
-                  <motion.img 
-                    src={carbonCreditsVisual} 
-                    alt="Carbon Credits" 
-                    className="w-full h-40 object-cover rounded-xl transition-all duration-700 group-hover/carbon:scale-110 group-hover/carbon:brightness-110"
-                    initial={{ opacity: 0, scale: 1.2, filter: 'blur(8px)' }}
-                    whileInView={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                  <motion.div 
-                    className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-foreground/15 to-transparent pointer-events-none"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.4 }}
-                  />
-                  {/* Shimmer effect */}
-                  <motion.div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{ background: 'linear-gradient(105deg, transparent 40%, hsla(158,100%,43%,0.1) 48%, hsla(158,100%,43%,0.2) 50%, hsla(158,100%,43%,0.1) 52%, transparent 60%)' }}
-                    initial={{ x: '-150%' }}
-                    whileInView={{ x: '250%' }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 2, delay: 1, ease: 'easeInOut' }}
-                  />
-                  <motion.div
-                    className="absolute bottom-3 left-3 right-3"
-                    initial={{ opacity: 0, y: 15 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">{t('solutions.netZero')}</p>
-                    <p className="text-white/80 text-xs drop-shadow-md">{t('solutions.sustainableFuture')}</p>
-                  </motion.div>
-                </motion.div>
-                <div className="flex flex-col justify-center space-y-3">
-                  <div className="flex items-center justify-between bg-mimi-green/5 border border-mimi-green/10 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-mimi-green/15 flex items-center justify-center">
-                        <Recycle size={18} className="text-mimi-green" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{t('solutions.carbonCredits')}</p>
-                        <p className="text-xs text-muted-foreground">{t('landing.solutions.carbonNotDeployed')}</p>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Capability outline, not measurements — the product has no
-                      emissions data yet, so any figure here would be invented. */}
-                  <div className="space-y-2">
-                    {(t('landing.solutions.carbonFeatures', { returnObjects: true }) as string[]).map((s, i) => (
-                      <motion.div
-                        key={s}
-                        className="flex items-start gap-2 bg-card/50 border border-border/50 rounded-lg p-2.5"
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.3 + i * 0.1 }}
-                      >
-                        <Leaf size={13} className="text-mimi-green shrink-0 mt-0.5" />
-                        <p className="text-[11px] leading-snug text-muted-foreground">{s}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </BentoCard>
+            {/* Gỡ 28/09/2026: thẻ "Tài chính xanh" (lộ trình, chưa có đối tác tín dụng xanh) và "Tín chỉ carbon"
+                (chưa triển khai) — trang chỉ nói thứ đang chạy thật. */}
           </div>
         </div>
       </section>
@@ -1163,8 +1045,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           <div className="mb-14" />
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" />
-            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['Tự phân loại chi phí (đang xây)', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng (đang xây)']} cta="Bắt đầu, nâng cấp khi cần" highlighted badge="Phổ biến nhất" />
-            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt (đang xây)', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" />
+            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['So sánh hai cách tính thuế', 'Không giới hạn tài khoản ngân hàng']} cta="Bắt đầu, nâng cấp khi cần" highlighted badge="Phổ biến nhất" />
+            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" />
           </div>
 
           {/*

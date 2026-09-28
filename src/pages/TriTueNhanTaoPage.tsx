@@ -10,7 +10,9 @@ import { Chip, useCanh } from '@/components/landing/DemoTuChay';
  * Trí tuệ nhân tạo (/tri-tue-nhan-tao) — các thẻ tính năng kiểu Ramp Intelligence,
  * bản MIMI.
  *
- * MỖI THẺ PHẢI TRỎ VỀ CODE ĐANG CHẠY, hoặc ghi "Đang xây". Hình trong thẻ là
+ * MỖI THẺ PHẢI TRỎ VỀ CODE ĐANG CHẠY. Từ 28/09/2026 không còn thẻ "Đang xây": thứ chưa chạy thì không
+ * lên trang (các thẻ phân loại sao kê, hoá đơn cơ quan thuế, luật chặn nhiều nhất, gợi ý chính sách đã
+ * gỡ). Hình trong thẻ là
  * minh hoạ bằng dữ liệu ví dụ; mã lý do (VUOT_HAN_MUC_NGAY, DOI_SO_TAI_KHOAN…) và
  * tên công cụ MCP (xem_chinh_sach) là tên thật trong `_shared/tac-tu/chinh-sach.ts`
  * và `_shared/mcp/may-chu.ts`.
@@ -219,70 +221,6 @@ function TheTraChoGi() {
   );
 }
 
-/* ── B2. Luật nào chặn nhiều nhất (đang xây) ───────────────────────── */
-const LUAT_MINH_HOA = [
-  ['TREN_NGUONG_DUYET', 88],
-  ['NGUOI_NHAN_MOI', 61],
-  ['VUOT_HAN_MUC_NGAY', 40],
-  ['DOI_SO_TAI_KHOAN', 18],
-] as const;
-
-function TheLuatChan() {
-  const { khung, buoc } = useCanh([900, 3600] as const, 1);
-  return (
-    <The
-      khungRef={khung}
-      tt="xay"
-      nen="bg-primary/5"
-      tieuDe="Thấy luật nào đang chặn nhiều nhất."
-      mo="Gom mã lý do trong nhật ký theo tuần, để biết agent vướng luật nào nhiều — và luật nào có lẽ đang đặt quá chặt. Độ dài cột trong hình là ví dụ, không phải số liệu."
-    >
-      <Hop>
-        <p className="text-[11px] text-muted-foreground">Lý do dừng · 7 ngày</p>
-        <div className="mt-3 grid gap-2.5">
-          {LUAT_MINH_HOA.map(([ma, dai], i) => (
-            <div key={ma}>
-              <p className="font-mono text-[11px] text-foreground">{ma}</p>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
-                <motion.span
-                  className="block h-full rounded-full bg-primary"
-                  initial={false}
-                  animate={{ width: buoc >= 1 ? `${dai}%` : '0%' }}
-                  transition={{ duration: 0.8, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Hop>
-    </The>
-  );
-}
-
-/* ── B3. Gợi ý chỉnh chính sách (đang xây) ─────────────────────────── */
-function TheGoiY() {
-  return (
-    <The
-      tt="xay"
-      nen="bg-secondary/60"
-      tieuDe="Chính sách tốt lên theo cách bạn duyệt."
-      mo="Khi bạn liên tục duyệt tay cùng một kiểu khoản, MIMI đề xuất một thay đổi luật cụ thể. Đề xuất chỉ là đề xuất: không bấm Áp dụng thì không có gì đổi."
-    >
-      <Hop>
-        <p className="text-[11px] font-semibold text-primary">Gợi ý chính sách</p>
-        <p className="mt-2 text-[13px] leading-relaxed text-foreground">
-          Nâng ngưỡng tự duyệt của nhóm <strong>Hạ tầng AI, API, máy chủ</strong> lên <span className="font-mono">1.000.000đ</span>?
-        </p>
-        <p className="mt-1 text-[11px] text-muted-foreground">Mọi khoản dưới mức này trong 30 ngày qua bạn đều đã duyệt tay.</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <span className="grid h-8 place-items-center rounded-lg border border-border text-[12px] text-foreground">Bỏ qua</span>
-          <span className="grid h-8 place-items-center rounded-lg bg-primary text-[12px] font-semibold text-primary-foreground">Áp dụng</span>
-        </div>
-      </Hop>
-    </The>
-  );
-}
-
 /* ── C1. Chặn lừa đảo ──────────────────────────────────────────────── */
 const NHIP_LUA = [1400, 3400] as const;
 
@@ -325,8 +263,6 @@ function TheLuaDao() {
 /* ── C2. Khớp ba chiều ─────────────────────────────────────────────── */
 const BA_CHIEU: Array<{ tu: string; toi: string; tt: TrangThaiThe; cach: string }> = [
   { tu: 'Yêu cầu chi', toi: 'Sao kê', tt: 'chay', cach: 'Khớp theo nội dung chuyển khoản MIMI…' },
-  { tu: 'Sao kê', toi: 'Hoá đơn điện tử', tt: 'chay', cach: 'Trong Chứng từ chi phí' },
-  { tu: 'Yêu cầu chi', toi: 'Hoá đơn điện tử', tt: 'xay', cach: 'Theo số hoá đơn agent gửi kèm' },
 ];
 
 function TheBaChieu() {
@@ -335,8 +271,8 @@ function TheBaChieu() {
       tt="chay"
       nen="bg-secondary/60"
       cao="min-h-[320px]"
-      tieuDe="Khớp ba chiều: yêu cầu, sao kê, hoá đơn."
-      mo="Một khoản chỉ thành “Đã chi” khi sao kê xác nhận, không có nút nào tự đánh dấu. Tiền đã ra thì được ghép với hoá đơn đầu vào từ cơ quan thuế. Chiều thứ ba, ghép thẳng yêu cầu với hoá đơn, đang xây."
+      tieuDe="Chỉ “Đã chi” khi sao kê xác nhận."
+      mo="Một khoản chỉ thành “Đã chi” khi sao kê ngân hàng xác nhận tiền đã ra, khớp theo nội dung chuyển khoản MIMI tạo — không có nút nào tự đánh dấu."
     >
       <div className="grid w-full max-w-sm gap-2">
         {BA_CHIEU.map((c) => (
@@ -357,57 +293,8 @@ function TheBaChieu() {
   );
 }
 
-/* ── D. Bớt việc tay ───────────────────────────────────────────────── */
-const DONG_PHAN_LOAI = [
-  ['OPENAI API', 'Hạ tầng AI'],
-  ['Quảng cáo Facebook', 'Quảng cáo'],
-  ['In ấn ABC', 'Nhà cung cấp'],
-] as const;
-
-function ThePhanLoai() {
-  return (
-    <The
-      tt="xay"
-      nen="bg-primary/5"
-      cao="min-h-[260px]"
-      tieuDe="Không nhập tay nhóm chi từng dòng."
-      mo="Dòng tiền ra trong sao kê được đề xuất nhóm chi, bạn chỉ sửa dòng sai. Hôm nay sao kê về MIMI chưa có nhóm chi — phần này đang xây."
-    >
-      <Hop>
-        {DONG_PHAN_LOAI.map(([ten, nhom]) => (
-          <div key={ten} className="flex items-center justify-between gap-3 border-b border-border/60 py-2 text-[12px] last:border-b-0">
-            <span className="truncate text-foreground">{ten}</span>
-            <span className="shrink-0 rounded-full border border-dashed border-primary/40 px-2 py-0.5 text-[11px] text-primary">{nhom}?</span>
-          </div>
-        ))}
-      </Hop>
-    </The>
-  );
-}
-
-function TheHoaDon() {
-  return (
-    <The
-      tt="chay"
-      nen="bg-secondary/60"
-      cao="min-h-[260px]"
-      tieuDe="Không phải đi xin lại hoá đơn."
-      mo="Hoá đơn điện tử mua vào đã nằm trên hệ thống cơ quan thuế. MIMI kéo về — chỉ đọc, chỉ sau khi bạn đồng ý — rồi chỉ ra khoản chi nào còn thiếu giấy tờ."
-    >
-      <Hop>
-        {[['CÔNG TY IN ẤN ABC', true], ['VIETTEL IDC', true], ['Chuyển khoản 3.200.000đ', false]].map(([ten, co]) => (
-          <div key={String(ten)} className="flex items-center justify-between gap-3 border-b border-border/60 py-2 text-[12px] last:border-b-0">
-            <span className="truncate text-foreground">{ten}</span>
-            {co
-              ? <span className="flex shrink-0 items-center gap-1 text-emerald-700 dark:text-emerald-400"><Check size={12} /> Có hoá đơn</span>
-              : <span className="shrink-0 text-amber-700 dark:text-amber-400">Thiếu hoá đơn</span>}
-          </div>
-        ))}
-      </Hop>
-    </The>
-  );
-}
-
+/* ── D. Bớt việc tay — 28/09/2026 gỡ thẻ phân loại sao kê (chưa chạy) và thẻ hoá đơn cơ quan thuế
+   (Casso chưa bật hoá đơn điện tử cho app production). ─────────────────── */
 function TheMaLyDo() {
   return (
     <The
@@ -511,8 +398,6 @@ export default function TriTueNhanTaoPage() {
           <TieuDeKhu nhan="Hiểu khoản chi">Thấy rõ, rồi mới chỉnh.</TieuDeKhu>
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <TheTraChoGi />
-            <TheLuatChan />
-            <TheGoiY />
           </div>
         </div>
       </section>
@@ -537,8 +422,6 @@ export default function TriTueNhanTaoPage() {
           <TieuDeKhu nhan="Bớt việc tay">Việc lặp lại để máy làm.</TieuDeKhu>
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <TheMaLyDo />
-            <TheHoaDon />
-            <ThePhanLoai />
           </div>
         </div>
       </section>

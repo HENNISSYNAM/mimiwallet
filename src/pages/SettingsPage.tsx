@@ -143,7 +143,8 @@ function SubscriptionSection() {
                   ? ['Xuất tờ khai không giới hạn (thay vì 10.000đ mỗi tờ)', 'Sửa số, xuất lại bao nhiêu lần cũng được']
                   // Xác nhận tiền vào là MIỄN PHÍ cho mọi người (docs/KIEM_TOAN_RA_MAT.md, P-4) — không
                   // bán nó trong gói. Growth chờ tới khi có thứ riêng thật sự.
-                  : ['Tất cả Starter', 'Sắp có: theo dõi liên tục, xuất bộ đối chiếu cả năm']
+                  // "Sắp có…" gỡ 28/09/2026: không bán thứ chưa chạy.
+                  : ['Tất cả Starter']
                 ).map(f => (
                   <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Check size={12} className="text-primary shrink-0" /> {f}

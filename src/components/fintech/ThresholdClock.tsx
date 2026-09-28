@@ -305,7 +305,7 @@ export function ThresholdClock() {
         </div>
         <h3 className="text-sm font-semibold text-foreground relative">Doanh thu và nghĩa vụ thuế</h3>
         <p className="text-sm text-muted-foreground mt-2 relative max-w-[85%]">
-          Chưa có dữ liệu để tính. Kết nối ngân hàng hoặc Tổng Cục Thuế ở{' '}
+          Chưa có dữ liệu để tính. Kết nối ngân hàng ở{' '}
           <span className="font-medium text-foreground">Fintech Hub</span>, doanh thu sẽ tự cộng
           từ đó.
         </p>

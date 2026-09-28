@@ -183,8 +183,7 @@ export function ThongTinDoanhNghiep() {
           </div>
         </label>
         <p className="mt-2 text-xs text-muted-foreground">
-          Cần mã số thuế để tải hoá đơn điện tử từ Tổng Cục Thuế — thiếu nó thì không
-          phân biệt được hoá đơn bán ra và mua vào.
+          Cần mã số thuế để MIMI phân biệt hoá đơn bán ra và mua vào, và để điền tờ khai.
         </p>
       </div>
     </div>

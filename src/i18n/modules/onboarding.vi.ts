@@ -24,7 +24,6 @@ const m = {
       { label: 'Đầu tư thiết bị', desc: 'Máy móc, công nghệ' },
       { label: 'Dự phòng dòng tiền', desc: 'An toàn tài chính' },
     ],
-    connectingIntegrationToast: 'Kết nối {{name}} đang được phát triển, sẽ ra mắt sớm',
     dataModelAI: 'Mô hình dữ liệu AI',
     networkLabels: ['Ngân hàng', 'Hóa đơn', 'Dòng tiền', 'Tín dụng'],
     estimatedCreditScore: 'Điểm tín dụng ước tính',
