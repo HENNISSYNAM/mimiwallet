@@ -88,3 +88,20 @@ describe('Kiểm tra trước khi chuyển tiền', () => {
     expect(screen.queryByRole('region', { name: 'Kết quả kiểm tra' })).toBeNull();
   });
 });
+
+describe('Kiểm tra trước khi chuyển — việc cần làm theo dấu hiệu', () => {
+  it('nhà cung cấp đổi số tài khoản → hướng dẫn xác minh cụ thể, cộng lời khuyên chung', async () => {
+    gia.goiTroLy.mockResolvedValue({
+      muc_do: 'cao', lich_su_du: true, trong_danh_sach_tin_cay: false, lan_tra_truoc: 0, lan_cuoi: null, lon_nhat_da_tra: null,
+      dau_hieu: [{ ma: 'doi_so_tai_khoan', muc_do: 'cao', cau: '7 lần trước trả vào ••••1234, lần này ••••8910.', can_cu: [] }],
+    });
+    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
+    nhap('Số tài khoản người nhận', '0123458910');
+    nhap('Số tiền (₫)', '80000000');
+    bam();
+    const viec = await screen.findByRole('list', { name: 'Việc nên làm' });
+    expect(viec.textContent).toContain('số điện thoại trong hợp đồng');
+    expect(viec.textContent).toContain('tên chủ tài khoản');
+    expect(viec.textContent).toContain('Không đưa mã OTP');
+  });
+});

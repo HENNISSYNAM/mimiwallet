@@ -18,6 +18,24 @@ import { HOAN_CANH, type DauHieu, type MaHoanCanh, type MucDo } from '@/lib/batT
  * câu đó phải hiện ra ngay cả khi kết quả sạch.
  */
 
+/**
+ * Việc cần làm theo TỪNG dấu hiệu (28/09/2026). Lời khuyên chung ("gọi lại người yêu cầu") vẫn giữ; đây là
+ * bước cụ thể cho đúng khuôn mẫu bộ luật vừa thấy. Chỉ là hướng dẫn — MIMI không tự làm việc nào thay bạn.
+ */
+const VIEC_THEO_DAU_HIEU: Partial<Record<DauHieu['ma'], string[]>> = {
+  doi_so_tai_khoan: [
+    'Gọi nhà cung cấp bằng số điện thoại trong hợp đồng hoặc đã lưu từ trước — hỏi thẳng họ có đổi tài khoản không.',
+    'Đề nghị văn bản thông báo đổi tài khoản có chữ ký, đóng dấu; email đổi tài khoản là kiểu giả mạo hay gặp nhất.',
+    'Khi chuyển, đọc tên chủ tài khoản ngân hàng hiện ra trong app — khác tên nhà cung cấp thì dừng.',
+  ],
+  nguoi_nhan_moi_so_lon: [
+    'Người nhận mới và số tiền lớn: chuyển thử một khoản nhỏ, gọi xác nhận đã nhận, rồi mới chuyển phần còn lại.',
+    'Đối chiếu số tài khoản với hợp đồng hoặc hoá đơn của người bán.',
+  ],
+  vuot_muc_quen: ['Số tiền lớn hơn hẳn các lần trước: đối chiếu với hoá đơn và hợp đồng trước khi chuyển.'],
+  tach_nho: ['Nhiều khoản nhỏ cùng người nhận trong một ngày: kiểm lại có phải một khoản bị tách ra để né bước duyệt không.'],
+};
+
 interface KetQua {
   muc_do: MucDo | null;
   dau_hieu: DauHieu[];
@@ -200,7 +218,8 @@ function KetQuaKiem({ kq }: { kq: KetQua }) {
       {kq.muc_do && (
         <div className="mt-4 rounded-md border border-border bg-card p-3 text-sm text-foreground">
           <p className="font-medium">Việc nên làm</p>
-          <ul className="mt-1 list-disc space-y-1 pl-5">
+          <ul className="mt-1 list-disc space-y-1 pl-5" aria-label="Việc nên làm">
+            {[...new Set(kq.dau_hieu.flatMap((d) => VIEC_THEO_DAU_HIEU[d.ma] ?? []))].map((v) => <li key={v}>{v}</li>)}
             <li>Gọi lại người yêu cầu qua số điện thoại bạn đã có từ trước — không dùng số trong tin nhắn hay email vừa nhận.</li>
             <li>Không đưa mã OTP, không cài ứng dụng theo hướng dẫn của người lạ.</li>
             <li>Nếu đã lỡ chuyển: gọi ngay tổng đài ngân hàng của bạn để yêu cầu tra soát, và báo cơ quan công an nơi gần nhất.</li>
