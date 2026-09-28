@@ -18,6 +18,7 @@ import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
 import { ScanLine } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import PetMimi from '@/components/mimi/PetMimi';
+import { HuongDanPet } from '@/components/mimi/HuongDanPet';
 import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
 import { toast } from 'sonner';
 import { useScrolled } from '@/hooks/useScrolled';
@@ -28,6 +29,7 @@ import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { layDichSauDangNhap } from '@/lib/sauDangNhap';
 import { ghiMoUngDung } from '@/lib/track';
+import { ganPhamViNao } from '@/store/naoMimi';
 
 /**
  * Two initials for the avatar, from whatever real name we actually have.
@@ -136,6 +138,8 @@ export default function DashboardLayout() {
   const [moThem, setMoThem] = useState(false);
   // Đo "quay lại": một lần mỗi ngày mỗi công ty (ghiMoUngDung tự chặn trùng).
   useEffect(() => { void ghiMoUngDung(); }, []);
+  // Bộ não dùng chung tách theo tài khoản + công ty: đổi một trong hai (hay đăng xuất) là xoá sạch.
+  useEffect(() => ganPhamViNao(), []);
   const [moTaiApp, setMoTaiApp] = useState(false);
   const [moKho, setMoKho] = useState(false);
   const congTy = useCongTy();
@@ -392,6 +396,8 @@ export default function DashboardLayout() {
         <MimiLamHoProvider>
           {location.pathname !== '/dashboard/tro-ly' && <PetMimi />}
         </MimiLamHoProvider>
+        {/* Người mới: pet ẩn mặc định nên phải nói cho họ biết nó có và dùng thế nào. */}
+        <HuongDanPet />
       </div>
     </div>
   );

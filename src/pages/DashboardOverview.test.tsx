@@ -45,6 +45,8 @@ vi.mock('@/components/tien-vao/HangDoiTienVao', () => ({ HangDoiTienVao: () => n
 vi.mock('@/components/viec/ViecCanLamTomTat', () => ({ ViecCanLamTomTat: () => null }));
 vi.mock('@/components/to-khai/PhanLoaiHoatDong', () => ({ PhanLoaiHoatDong: () => null }));
 vi.mock('@/components/fintech/ThresholdClock', () => ({ ThresholdClock: () => null }));
+// Khối điều phối có test riêng (`components/nao`).
+vi.mock('@/components/nao/KhoiDieuPhoi', () => ({ KhoiDieuPhoi: () => null }));
 
 // Biểu đồ (recharts) cần ResizeObserver; jsdom không có.
 vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });

@@ -32,8 +32,10 @@ import { goiChiPhiAi } from '@/lib/goiChiPhiAi';
 import {
   canXacNhan, dinhDang, dinhTien, dungLichSu, GOI_Y_THEO_NHOM, laCotSo, NHOM_NANG_LUC, TEN_NHOM, thucHienDeXuat,
   type BoiCanh, type DeXuat, type DoDayNguon, type KetNoiHienThi, type KetQuaNangLuc, type KetQuaQuet, type NhomNangLuc, type PhanTichNhanh,
-  type The, type ThueManDau, type TraLoi,
+  type The, type ThueManDau, type TraLoi, type TraLoiNao,
 } from '@/lib/troLy';
+import { useNaoMimi } from '@/store/naoMimi';
+import { DanAgentBaoCao } from '@/components/nao/DanAgentBaoCao';
 import claudeLogo from '@/assets/logos/claude.webp';
 import geminiLogo from '@/assets/logos/gemini.png';
 import thueLogo from '@/assets/logos/tax-authority.png';
@@ -65,8 +67,10 @@ interface Luot {
   id: number;
   cau: string;
   phamVi: NhomNangLuc | null;
-  traLoi?: TraLoi;
+  traLoi?: TraLoiNao;
   loi?: string;
+  /** Request thật đang chạy (kho chung) — nút "Ngừng chờ" chỉ hiện khi đúng vậy. */
+  dang?: boolean;
 }
 
 type TrangThaiViec = { trangThai: 'dang' | 'xong' | 'loi'; cau: string };
@@ -89,15 +93,20 @@ export default function TroLyPage() {
   const { t } = useTranslation();
   const [boiCanh, setBoiCanh] = useState<BoiCanh | null>(null);
   const [loiBoiCanh, setLoiBoiCanh] = useState<string | null>(null);
-  const [luot, setLuot] = useState<Luot[]>([]);
+  // Lượt hỏi nằm ở BỘ NÃO DÙNG CHUNG (`store/naoMimi.ts`): pet, trang này và Tổng quan thấy cùng kết quả.
+  const luotNao = useNaoMimi((s) => s.luot);
+  const luot: Luot[] = useMemo(() => luotNao.map((l) => ({
+    id: l.id, cau: l.cau, phamVi: l.phamVi, traLoi: l.traLoi ?? undefined, loi: l.loi ?? undefined, dang: l.trangThai === 'dang',
+  })), [luotNao]);
   const [nhap, setNhap] = useState('');
   const [phamVi, setPhamVi] = useState<NhomNangLuc | null>(null);
-  const [dangHoi, setDangHoi] = useState(false);
+  const dangHoi = luotNao.some((l) => l.trangThai === 'dang' && l.nguon === 'tro_ly');
+  /** Chốt chống bấm hai lần một đề xuất — state React cập nhật trễ, ref thì không. */
+  const dangLamDeXuat = useRef(new Set<string>());
   const [viec, setViec] = useState<Record<string, TrangThaiViec>>({});
   const [xacNhan, setXacNhan] = useState<{ luotId: number; dx: DeXuat } | null>(null);
   const [moTrangChiTiet, setMoTrangChiTiet] = useState(false);
   const [hienMeo, setHienMeo] = useState(true);
-  const demLuot = useRef(0);
   const [moKhoCongCu, setMoKhoCongCu] = useState(false);
   const [moTaiApp, setMoTaiApp] = useState(false);
   const [moNhom, setMoNhom] = useState(false);
@@ -147,22 +156,13 @@ export default function TroLyPage() {
       toast(c.an ? 'Đã hiện lại pet MIMI.' : 'Đã ẩn pet MIMI. Gõ /pet hoặc Alt+Shift+M để hiện lại.');
       return;
     }
-    const id = ++demLuot.current;
     const lichSu = dungLichSu(luot);
-    setLuot((ds) => [...ds, { id, cau, phamVi: pv }]);
     setNhap('');
     setMoTrangChiTiet(false);
-    setDangHoi(true);
-    try {
-      const traLoi = (await goiTroLy('hoi', { cau, pham_vi: pv, lich_su: lichSu })) as TraLoi;
-      setLuot((ds) => ds.map((l) => (l.id === id ? { ...l, traLoi } : l)));
-      // Hỏi bằng giọng thì nghe trả lời bằng giọng — cuộc nói chuyện, không phải đọc màn hình.
-      if (bangGiong && traLoi?.cau) void docTraLoi(id, traLoi.cau);
-    } catch (e) {
-      setLuot((ds) => ds.map((l) => (l.id === id ? { ...l, loi: e instanceof Error ? e.message : t('man.troLy.loi.hoi') } : l)));
-    } finally {
-      setDangHoi(false);
-    }
+    // Cùng câu đang chạy (vd. vừa hỏi từ pet) → kho trả lại đúng request đó, không gửi lần hai.
+    const kq = await useNaoMimi.getState().hoi(cau, { phamVi: pv, nguon: 'tro_ly', lichSu });
+    // Hỏi bằng giọng thì nghe trả lời bằng giọng — cuộc nói chuyện, không phải đọc màn hình.
+    if (bangGiong && kq.trangThai === 'xong' && kq.traLoi?.cau) void docTraLoi(kq.id, kq.traLoi.cau);
   }, [dangHoi, luot, phamVi, docTraLoi]);
 
   const nghe = useNgheGiong({
@@ -175,11 +175,13 @@ export default function TroLyPage() {
   const viTri = useLocation();
   const daNhanTuPet = useRef<unknown>(null);
   useEffect(() => {
-    const lp = (viTri.state as { luotPet?: { cau: string; traLoi: TraLoi } } | null)?.luotPet;
+    const st = viTri.state as { luotId?: number; luotPet?: { cau: string; traLoi: TraLoi } } | null;
+    const lp = st?.luotPet;
     if (!lp?.traLoi || daNhanTuPet.current === lp) return;
     daNhanTuPet.current = lp;
-    const id = ++demLuot.current;
-    setLuot((ds) => [...ds, { id, cau: lp.cau, phamVi: null, traLoi: lp.traLoi }]);
+    // Lượt của pet đã nằm trong kho chung → chỉ cần hiện. Chỉ chèn khi kho không còn nó (vd. đã đổi phạm vi).
+    const daCo = useNaoMimi.getState().luot.some((l) => l.id === st?.luotId || l.traLoi === lp.traLoi);
+    if (!daCo) useNaoMimi.getState().themLuotCoSan(lp.cau, lp.traLoi as TraLoiNao, 'pet');
     navigate(`${viTri.pathname}${viTri.search}`, { replace: true, state: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viTri.state]);
@@ -205,6 +207,8 @@ export default function TroLyPage() {
       return;
     }
     const k = `${luotId}:${dx.khoa}`;
+    if (dangLamDeXuat.current.has(k)) return;
+    dangLamDeXuat.current.add(k);
     setViec((m) => ({ ...m, [k]: { trangThai: 'dang', cau: '' } }));
     let quyetDinhId: number | null = null;
     try {
@@ -237,6 +241,8 @@ export default function TroLyPage() {
       setViec((m) => ({ ...m, [k]: { trangThai: 'loi', cau } }));
       if (quyetDinhId) void goiTroLy('ket_qua_quyet_dinh', { quyet_dinh_id: quyetDinhId, ok: false, cau }).catch(() => {});
       if (luotId === LUOT_MAN_DAU) toast.error(cau);
+    } finally {
+      dangLamDeXuat.current.delete(k);
     }
   }, [navigate, taiBoiCanh, luot]);
 
@@ -558,7 +564,7 @@ export default function TroLyPage() {
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => { setLuot([]); setViec({}); void taiBoiCanh(); }}
+              onClick={() => { useNaoMimi.getState().xoaLuotDaXong(); setViec({}); void taiBoiCanh(); }}
               disabled={dangHoi}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
             >
@@ -573,6 +579,11 @@ export default function TroLyPage() {
               {!l.traLoi && !l.loi && (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 size={15} className="animate-spin" /> {t('man.troLy.dangTinh')}
+                  {l.dang && (
+                    <button type="button" onClick={() => useNaoMimi.getState().ngungCho(l.id)} className="ml-2 text-xs underline underline-offset-4 hover:text-foreground">
+                      Ngừng chờ
+                    </button>
+                  )}
                 </p>
               )}
               {l.loi && (
@@ -593,6 +604,7 @@ export default function TroLyPage() {
                   onChon={(dx) => (canXacNhan(dx) ? setXacNhan({ luotId: l.id, dx }) : void lamDeXuat(l.id, dx))}
                 />
               )}
+              {l.traLoi?.dan_agent && <DanAgentBaoCao dan={l.traLoi.dan_agent} />}
             </article>
           ))}
         </div>

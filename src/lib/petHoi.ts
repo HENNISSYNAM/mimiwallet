@@ -1,21 +1,20 @@
-import { useSyncExternalStore } from 'react';
+import { useMemo } from 'react';
 import { toast } from 'sonner';
-import { goiTroLy } from '@/lib/goiTroLy';
 import { docGiong } from '@/lib/docGiong';
 import type { TraLoi } from '@/lib/troLy';
+import { datLaiNaoChoTest, useNaoMimi, type LuotNao } from '@/store/naoMimi';
 
 /**
- * HỎI MIMI TỪ PET — CHẠY NGẦM (26/09/2026).
+ * HỎI MIMI TỪ PET — CHẠY NGẦM (26/09/2026), nay trên BỘ NÃO DÙNG CHUNG (28/09/2026, `store/naoMimi.ts`).
  *
- * Gõ (hoặc nói) ở ô nhỏ dưới mèo: câu hỏi đi vào ĐÚNG hành động `hoi` của Trợ lý MIMI (cùng bộ não, cùng
- * nhật ký hội thoại ở máy chủ), nhưng người dùng KHÔNG bị chuyển trang. Trả lời xong thì pet bật một
- * thông báo; bấm vào thông báo mới mở Trợ lý MIMI, hiện đúng câu hỏi và câu trả lời đó (không hỏi lại).
+ * Gõ (hoặc nói) ở ô nhỏ dưới mèo: câu hỏi vào đúng hành động `hoi` của Trợ lý MIMI, người dùng KHÔNG bị
+ * chuyển trang. Lượt hỏi nằm trong kho chung, nên Trợ lý MIMI và Tổng quan thấy CÙNG kết quả mà không hỏi
+ * lại; pet chỉ vẽ trạng thái thật của request (đang / xong / lỗi / đã ngừng chờ) — không tự nhận "đã xong".
  *
- * Kho ở cấp mô-đun, ngoài React: pet bị tháo khỏi trang khi mở Trợ lý MIMI hoặc khi ẩn (Alt+Shift+M) —
- * câu hỏi đang chạy không được mất theo.
+ * File này giữ nguyên API cũ cho PetMimi (`useLanHoiPet`, `hoiNgam`…) như một lớp mỏng trên kho.
  */
 export interface LanHoiPet {
-  id: string;
+  id: number;
   cau: string;
   trang_thai: 'dang' | 'xong' | 'loi';
   tra_loi: TraLoi | null;
@@ -28,36 +27,42 @@ export interface LanHoiPet {
 }
 
 const TOI_DA = 6;
-let ds: readonly LanHoiPet[] = [];
-const nguoiNghe = new Set<() => void>();
-const doi = (f: (d: readonly LanHoiPet[]) => readonly LanHoiPet[]) => { ds = f(ds); nguoiNghe.forEach((g) => g()); };
 
-export const layLanHoi = () => ds;
-export const dangKyLanHoi = (g: () => void) => { nguoiNghe.add(g); return () => { nguoiNghe.delete(g); }; };
-export const useLanHoiPet = () => useSyncExternalStore(dangKyLanHoi, layLanHoi, layLanHoi);
+const sangLanHoi = (l: LuotNao): LanHoiPet => ({
+  id: l.id,
+  cau: l.cau,
+  // "Đã ngừng chờ" hiện như lỗi trên pet: không có câu trả lời, và câu `loi` nói rõ máy chủ có thể vẫn xong.
+  trang_thai: l.trangThai === 'ngung_cho' ? 'loi' : l.trangThai,
+  tra_loi: l.traLoi,
+  loi: l.loi,
+  bang_giong: l.bangGiong,
+  luc: l.luc,
+  da_xem: l.daXem,
+});
 
-let dem = 0;
+/** Lượt pet đã hỏi, mới nhất trước. */
+export function useLanHoiPet(): LanHoiPet[] {
+  const luot = useNaoMimi((s) => s.luot);
+  return useMemo(() => luot.filter((l) => l.nguon === 'pet').slice(-TOI_DA).reverse().map(sangLanHoi), [luot]);
+}
+
+export const layLanHoi = (): LanHoiPet[] =>
+  useNaoMimi.getState().luot.filter((l) => l.nguon === 'pet').slice(-TOI_DA).reverse().map(sangLanHoi);
+
 export async function hoiNgam(cau: string, o: { bangGiong?: boolean } = {}): Promise<void> {
   const c = cau.trim().slice(0, 1000);
   if (!c) return;
-  const id = `p${Date.now()}-${++dem}`;
-  doi((d) => [{ id, cau: c, trang_thai: 'dang' as const, tra_loi: null, loi: null, bang_giong: !!o.bangGiong, luc: Date.now(), da_xem: false }, ...d].slice(0, TOI_DA));
-  try {
-    const tl = (await goiTroLy('hoi', { cau: c })) as TraLoi;
-    doi((d) => d.map((x) => (x.id === id ? { ...x, trang_thai: 'xong' as const, tra_loi: tl } : x)));
-    if (o.bangGiong && tl?.cau) {
-      const kq = await docGiong(tl.cau);
-      if (kq === 'khong_co_giong_viet') toast.error('Máy này chưa có giọng đọc tiếng Việt nên MIMI chưa đọc to được. Bấm thông báo để xem câu trả lời.');
-    }
-  } catch (e) {
-    doi((d) => d.map((x) => (x.id === id ? { ...x, trang_thai: 'loi' as const, loi: e instanceof Error ? e.message : 'Chưa hỏi được MIMI.' } : x)));
+  const kq = await useNaoMimi.getState().hoi(c, { nguon: 'pet', bangGiong: !!o.bangGiong });
+  if (kq.trangThai === 'xong' && kq.bangGiong && kq.traLoi?.cau) {
+    const doc = await docGiong(kq.traLoi.cau);
+    if (doc === 'khong_co_giong_viet') toast.error('Máy này chưa có giọng đọc tiếng Việt nên MIMI chưa đọc to được. Bấm thông báo để xem câu trả lời.');
   }
 }
 
-export const daXemLanHoi = (id: string) => doi((d) => d.map((x) => (x.id === id ? { ...x, da_xem: true } : x)));
-export const boLanHoi = (id: string) => doi((d) => d.filter((x) => x.id !== id));
+export const daXemLanHoi = (id: number) => useNaoMimi.getState().danhDauDaXem(id);
+export const boLanHoi = (id: number) => useNaoMimi.getState().boLuot(id);
 /** Chỉ cho test: xoá sạch giữa các ca. */
-export const xoaHetLanHoi = () => doi(() => []);
+export const xoaHetLanHoi = () => datLaiNaoChoTest();
 
 /** Một dòng ngắn của câu trả lời, cho thông báo trên pet. */
 export const trichTraLoi = (tl: TraLoi | null, toiDa = 90): string => {

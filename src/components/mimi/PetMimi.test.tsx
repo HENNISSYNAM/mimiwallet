@@ -83,7 +83,7 @@ describe('Pet MIMI', () => {
 
     fireEvent.click(screen.getByText('Có 1 khoản đang chờ bạn duyệt, tổng 2.000.000 ₫.'));
     await waitFor(() => expect(diaChi()).toBe('/dashboard/tro-ly'));
-    expect(JSON.parse(screen.getByTestId('dia-chi').getAttribute('data-state') as string)).toEqual({ luotPet: { cau: 'Khoản chi nào đang chờ tôi duyệt?', traLoi } });
+    expect(JSON.parse(screen.getByTestId('dia-chi').getAttribute('data-state') as string)).toEqual({ luotId: expect.any(Number), luotPet: { cau: 'Khoản chi nào đang chờ tôi duyệt?', traLoi } });
     expect(cauHoiGui()).toHaveLength(1); // không hỏi lại
   });
 
