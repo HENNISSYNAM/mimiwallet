@@ -40,7 +40,10 @@ export type EventName =
   | 'batdau_dismissed'
   // Mở ứng dụng khi đã đăng nhập, tối đa một lần mỗi ngày (giờ VN) mỗi công ty — để đo "quay lại sau 7
   // ngày" (view hanh_trinh_kich_hoat). Các mốc kích hoạt khác tính thẳng từ bảng nghiệp vụ.
-  | 'app_opened';
+  | 'app_opened'
+  // Vòng chính (28/09/2026): một lần kiểm khoản sắp chuyển. Chỉ mức cảnh báo và nơi bấm — KHÔNG số tiền,
+  // số tài khoản, tên người nhận.
+  | 'payment_check_run';
 
 export function track(name: EventName, props: Record<string, string | number | boolean> = {}) {
   void (async () => {

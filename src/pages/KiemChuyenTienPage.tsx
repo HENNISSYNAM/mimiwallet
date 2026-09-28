@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Loader2, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react';
 import { goiTroLy } from '@/lib/goiTroLy';
+import { track } from '@/lib/track';
 import { HOAN_CANH, type DauHieu, type MaHoanCanh, type MucDo } from '@/lib/batThuong';
 
 /**
@@ -32,10 +34,19 @@ const chiSo = (s: string) => s.replace(/\D/g, '');
 
 const O_NHAP = 'w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/10';
 
+/**
+ * Điền sẵn từ ô "Sắp chuyển tiền?" ở Tổng quan. Đi qua STATE của điều hướng, không qua địa chỉ: số tài khoản
+ * không được nằm trong URL, lịch sử trình duyệt hay log máy chủ.
+ */
+export interface DienSanKiem { stk?: string; ten?: string; soTien?: string; tuDong?: boolean }
+
 export default function KiemChuyenTienPage() {
-  const [stk, setStk] = useState('');
-  const [ten, setTen] = useState('');
-  const [soTien, setSoTien] = useState('');
+  const viTri = useLocation();
+  const navigate = useNavigate();
+  const dienSan = (viTri.state as { kiem?: DienSanKiem } | null)?.kiem ?? null;
+  const [stk, setStk] = useState(dienSan?.stk ?? '');
+  const [ten, setTen] = useState(dienSan?.ten ?? '');
+  const [soTien, setSoTien] = useState(() => { const s = chiSo(dienSan?.soTien ?? ''); return s ? new Intl.NumberFormat('vi-VN').format(Number(s)) : ''; });
   const [noiDung, setNoiDung] = useState('');
   const [hoanCanh, setHoanCanh] = useState<MaHoanCanh[]>([]);
   const [dangKiem, setDangKiem] = useState(false);
@@ -45,8 +56,8 @@ export default function KiemChuyenTienPage() {
   const doiHoanCanh = (m: MaHoanCanh, co: boolean) =>
     setHoanCanh((ds) => (co ? [...ds, m] : ds.filter((x) => x !== m)));
 
-  const kiem = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const kiem = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const so = Number(chiSo(soTien));
     if (chiSo(stk).length < 6) { setLoi('Số tài khoản cần ít nhất 6 chữ số.'); return; }
     if (!so) { setLoi('Nhập số tiền sắp chuyển.'); return; }
@@ -58,12 +69,24 @@ export default function KiemChuyenTienPage() {
         so_tai_khoan: chiSo(stk), ten_nguoi_nhan: ten.trim(), so_tien: so, noi_dung: noiDung.trim(), hoan_canh: hoanCanh,
       });
       setKq(r as unknown as KetQua);
+      track('payment_check_run', { muc_do: String((r as { muc_do?: unknown }).muc_do ?? 'khong'), tu: dienSan?.tuDong ? 'kiem_nhanh' : 'trang' });
     } catch (e2) {
       setLoi(e2 instanceof Error ? e2.message : 'Chưa kiểm được. Thử lại sau ít phút.');
     } finally {
       setDangKiem(false);
     }
   };
+
+  // Đến từ ô kiểm nhanh: kiểm ngay một lần (việc chỉ đọc), rồi xoá state để tải lại trang không kiểm lặp
+  // và số tài khoản không còn nằm trong lịch sử điều hướng.
+  const daTuKiem = useRef(false);
+  useEffect(() => {
+    if (!dienSan?.tuDong || daTuKiem.current) return;
+    daTuKiem.current = true;
+    navigate(viTri.pathname, { replace: true, state: null });
+    void kiem();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-10">
