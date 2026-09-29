@@ -10,6 +10,7 @@ import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { dinhDangTien } from '@/lib/tien';
 import { goiToKhai } from '@/lib/goiToKhai';
+import { CauHoiNhanh } from '@/components/phan-hoi/CauHoiNhanh';
 import { nhanDinhNguong, type TienMat } from '@/lib/nhanDinhNguong';
 
 /**
@@ -390,6 +391,19 @@ export function ThresholdClock() {
       </div>
 
       <NhanDinhMocMotTy data={data} daLuu={() => void load()} />
+      {/* Đo đúng giả thuyết cốt lõi "tiền vào ≠ doanh thu": con số MIMI đưa ra có khớp điều chủ doanh nghiệp biết. */}
+      {data.revenue > 0 && (
+        <CauHoiNhanh
+          cauHoi="doanh_thu_dung"
+          className="mt-3"
+          cau="Con số doanh thu này có đúng như bạn nghĩ không?"
+          luaChon={[
+            { gia: 'dung', nhan: 'Đúng' },
+            { gia: 'cao_hon_thuc_te', nhan: 'Cao hơn thực tế', hoiThem: true },
+            { gia: 'thap_hon_thuc_te', nhan: 'Thấp hơn thực tế', hoiThem: true },
+          ]}
+        />
+      )}
 
       <div className="mt-5 space-y-4">
         {(data.milestones ?? []).map((m) => (

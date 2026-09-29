@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { CauHoiNhanh } from '@/components/phan-hoi/CauHoiNhanh';
 import { Link } from 'react-router-dom';
 import { FileSpreadsheet, Loader2, Upload } from 'lucide-react';
 import {
@@ -109,6 +110,14 @@ export function NhapSaoKe() {
           Đã thêm {so(ketQua.moi)} giao dịch mới{ketQua.trung ? `, bỏ qua ${so(ketQua.trung)} dòng đã có` : ''}{ketQua.hong ? `, ${so(ketQua.hong)} dòng không dùng được` : ''}.{' '}
           <Link to="/dashboard" className="font-medium text-primary hover:underline">Xem tiền vào cần xem</Link>
         </div>
+      )}
+      {ketQua && ketQua.moi > 0 && (
+        <CauHoiNhanh
+          cauHoi="sao_ke_khop"
+          className="mt-3"
+          cau="Số giao dịch MIMI vừa đọc có khớp sao kê của bạn không?"
+          luaChon={[{ gia: 'khop', nhan: 'Khớp' }, { gia: 'khong_khop', nhan: 'Không khớp', hoiThem: true }]}
+        />
       )}
 
       {bang && (

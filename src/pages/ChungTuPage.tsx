@@ -10,6 +10,7 @@ import {
 } from '@/lib/khopChungTu';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
+import { CauHoiNhanh } from '@/components/phan-hoi/CauHoiNhanh';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
 import { chieuTien } from '@/lib/chieuTien';
@@ -522,6 +523,21 @@ export default function ChungTuPage() {
             ))}
           </ul>
         </div>
+      )}
+
+      {/* Xử lý hết ngoại lệ của quý → hỏi một câu: việc này dễ hay khó. */}
+      {kq.chuaCoGiay.length === 0 && kq.canXem.length === 0 && kq.tongDaChi + loc.khongCoChungTu.length + loc.caNhan.length > 0 && (
+        <CauHoiNhanh
+          cauHoi="doi_soat_de_kho"
+          cau="Đối soát chứng từ quý này với MIMI dễ hay khó?"
+          luaChon={[
+            { gia: '1', nhan: 'Rất khó', diem: 1, hoiThem: true },
+            { gia: '2', nhan: 'Khó', diem: 2, hoiThem: true },
+            { gia: '3', nhan: 'Bình thường', diem: 3, hoiThem: true },
+            { gia: '4', nhan: 'Dễ', diem: 4 },
+            { gia: '5', nhan: 'Rất dễ', diem: 5 },
+          ]}
+        />
       )}
 
       {/* ── Hoá đơn chưa thấy đường tiền ───────────────────────────────── */}
