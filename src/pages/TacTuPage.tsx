@@ -1818,7 +1818,7 @@ function PanelQuyetDinh({
             </li>
             <li className="flex items-start gap-2">
               <Info size={14} className="mt-0.5 shrink-0 text-muted-foreground" />
-              <span>Hoá đơn điện tử đầu vào: <Link to="/dashboard/chung-tu" className={`font-medium text-foreground underline underline-offset-4 ${vien}`}>đối chiếu ở Chứng từ chi phí</Link></span>
+              <span>Hoá đơn, chứng từ đầu vào: <Link to="/dashboard/chung-tu" className={`font-medium text-foreground underline underline-offset-4 ${vien}`}>đối chiếu ở Chứng từ chi phí</Link></span>
             </li>
           </ul>
         </section>

@@ -34,7 +34,7 @@ export const TEN_NHOM_CONG_CU: Record<NhomCongCu, string> = {
 };
 
 const DANH_MUC_DAY_DU: CongCu[] = [
-  { khoa: 'thieu_chung_tu', ten: 'Khoản chi thiếu chứng từ', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/chung-tu', mo_ta: 'Khoản chi trong kỳ kê khai chưa có hoá đơn điện tử.', tu_khoa: ['chi phi', 'hoa don dau vao', 'khau tru'] },
+  { khoa: 'thieu_chung_tu', ten: 'Khoản chi thiếu chứng từ', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/chung-tu', mo_ta: 'Khoản chi trong kỳ kê khai chưa có hoá đơn, chứng từ.', tu_khoa: ['chi phi', 'hoa don dau vao', 'khau tru'] },
   { khoa: 'soan_to_khai', ten: 'Soạn tờ khai thuế', nhom: 'thue', loai: 'trang', dich: '/dashboard/to-khai', mo_ta: 'MIMI điền mẫu tờ khai từ hoá đơn, sao kê và quy định trong kho văn bản.', tu_khoa: ['to khai', 'khai thue', 'thong bao doanh thu', 'gtgt', 'tncn'] },
   { khoa: 'doc_bao_cao', ten: 'Đọc báo cáo tài chính & tờ khai', nhom: 'thue', loai: 'trang', dich: '/dashboard/doc-bao-cao', mo_ta: 'Tải báo cáo tài chính hoặc tờ khai (Excel/CSV): xếp từng chỉ tiêu, kiểm đẳng thức kế toán, cảnh báo mẫu hết hiệu lực.', tu_khoa: ['bao cao tai chinh', 'bang can doi ke toan', 'tinh hinh tai chinh', 'ket qua kinh doanh', 'luu chuyen tien te', 'quyet toan', 'b01', 'b02'] },
   { khoa: 'bao_cao', ten: 'Báo cáo thu chi', nhom: 'thue', loai: 'trang', dich: '/dashboard/reports', mo_ta: 'Thu, chi, chênh lệch theo tháng từ sao kê ngân hàng.', tu_khoa: ['loi nhuan', 'lai lo', 'bao cao'] },

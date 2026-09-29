@@ -36,7 +36,7 @@ const ngayVN = (s: string) => {
 /**
  * Doanh thu năm theo đúng một định nghĩa với Đồng hồ ngưỡng và tờ khai nháp (`tax-summary` →
  * `_shared/doanh-thu/so-lieu.ts`): trừ tiền chuyển giữa tài khoản của mình và khoản người dùng đã xác nhận
- * không phải doanh thu (vay, vốn góp…); khoản chưa rõ vẫn tính là doanh thu. Có hoá đơn điện tử thì theo hoá đơn.
+ * không phải doanh thu (vay, vốn góp…); khoản chưa rõ vẫn tính là doanh thu.
  */
 async function docDoanhThuNam(nam: number, congTy: string): Promise<number> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -109,15 +109,12 @@ export default function ChungTuPage() {
           (e: unknown) => ({ data: null as T[] | null, error: { message: e instanceof Error ? e.message : String(e) } }),
         );
       type GdKy = { id: string; amount: number; type: string; transaction_date: string; merchant_name: string | null; payment_reference: string | null; counter_account_name: string | null; is_synthetic: boolean };
-      type HdKy = { id: string; total_amount: number | null; issued_at: string; invoice_number: string | null; counterparty_name: string | null; counterparty_tax_code: string | null };
       /*
-       * HAI NGUỒN GIẤY TỜ (28/09/2026). Trước đây chỉ đọc hoá đơn từ cơ quan thuế (`gdt_invoices`, kéo qua
-       * Cas) — mà Casso chưa bật sản phẩm đó cho app production, nên trang luôn báo mọi khoản "chưa có
-       * giấy tờ". Nay đọc thêm chứng từ người dùng tự chụp (`chung_tu_quet`, Thư viện chứng từ). Cùng một
-       * hoá đơn có ở cả hai nguồn (số hoá đơn + MST bên bán) thì chỉ tính một lần.
+       * NGUỒN GIẤY TỜ: chứng từ người dùng tự chụp (`chung_tu_quet`, Thư viện chứng từ).
+       * 29/09/2026: gỡ hoá đơn điện tử (GDT) — Casso chưa bật sản phẩm đó cho app production nên MIMI không đọc được hoá đơn nào từ cơ quan thuế; trước đó trang còn đọc bảng `gdt_invoices`, luôn trống.
        */
       type ChungTuKy = { id: string; tong_tien: number; ngay: string | null; so_hoa_don: string | null; ben_ban: string | null; ma_so_thue_ben_ban: string | null };
-      const [gd, hd, thuNam, hdNam, quetKy, quetNam] = await Promise.all([
+      const [gd, thuNam, quetKy, quetNam] = await Promise.all([
         het<GdKy>((a, b) => supabase
           .from('transactions')
           .select(
@@ -127,26 +124,10 @@ export default function ChungTuPage() {
           .gte('transaction_date', iso(dauKy))
           .lte('transaction_date', iso(cuoiKy))
           .order('id').range(a, b), 'giao dịch trong kỳ'),
-        het<HdKy>((a, b) => supabase
-          .from('gdt_invoices')
-          .select('id, total_amount, issued_at, invoice_number, counterparty_name, counterparty_tax_code')
-          .eq('company_id', cty.id)
-          .eq('direction', 'received')
-          .gte('issued_at', iso(dauKy))
-          .lte('issued_at', `${iso(cuoiKy)}T23:59:59`)
-          .order('id').range(a, b), 'hoá đơn trong kỳ'),
         docDoanhThuNam(cuoiKy.getFullYear(), cty.id).then(
           (data) => ({ data, error: null as { message: string } | null }),
           (e: unknown) => ({ data: null as number | null, error: { message: e instanceof Error ? e.message : String(e) } }),
         ),
-        het<{ total_amount: number | null; invoice_number: string | null; counterparty_tax_code: string | null }>((a, b) => supabase
-          .from('gdt_invoices')
-          .select('id, total_amount, invoice_number, counterparty_tax_code')
-          .eq('company_id', cty.id)
-          .eq('direction', 'received')
-          .gte('issued_at', dauNam)
-          .lte('issued_at', `${iso(cuoiKy)}T23:59:59`)
-          .order('id').range(a, b), 'hoá đơn từ đầu năm'),
         het<ChungTuKy>((a, b) => supabase
           .from('chung_tu_quet')
           .select('id, tong_tien, ngay, so_hoa_don, ben_ban, ma_so_thue_ben_ban')
@@ -165,26 +146,16 @@ export default function ChungTuPage() {
 
       // Không nuốt lỗi — bài học 08/09: truy vấn hỏng trông y hệt không có dữ liệu. Báo NGAY TRÊN khối
       // bị ảnh hưởng (không chỉ một thông báo thoáng qua), và không tính khối đó từ dữ liệu thiếu.
-      const loiQuy = gd.error ?? hd.error ?? quetKy.error;
+      const loiQuy = gd.error ?? quetKy.error;
       setLoiKy(loiQuy ? loiQuy.message : null);
-      const loiCaNam = thuNam.error ?? hdNam.error ?? quetNam.error;
+      const loiCaNam = thuNam.error ?? quetNam.error;
       setLoiNam(loiCaNam ? loiCaNam.message : null);
       if (loiQuy) toast.error(`Không đọc được số liệu quý: ${loiQuy.message}`);
 
-      // Khoá chống đếm trùng: số hoá đơn + MST bên bán (bỏ khoảng trắng, không phân biệt hoa thường).
-      const khoaHd = (so: string | null, mst: string | null) =>
-        so && mst ? `${so.replace(/\s/g, '').toUpperCase()}|${mst.replace(/[\s-]/g, '')}` : null;
-
-
       setDoanhThuNam(thuNam.data);
-      // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi hoá đơn đầu vào.
-      const daCoNam = new Set((hdNam.data ?? []).map((h) => khoaHd(h.invoice_number, h.counterparty_tax_code)).filter(Boolean));
-      setChiPhiCoChungTuNam(hdNam.error || quetNam.error ? null :
-        (hdNam.data ?? []).reduce((s, h) => s + (Number(h.total_amount) || 0), 0)
-        + (quetNam.data ?? [])
-          .filter((c) => { const k = khoaHd(c.so_hoa_don, c.ma_so_thue_ben_ban); return !k || !daCoNam.has(k); })
-          .reduce((s, c) => s + (Number(c.tong_tien) || 0), 0),
-      );
+      // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi chứng từ đầu vào.
+      setChiPhiCoChungTuNam(quetNam.error ? null :
+        (quetNam.data ?? []).reduce((s, c) => s + (Number(c.tong_tien) || 0), 0));
 
       /*
        * BỎ DÒNG DỮ LIỆU THỬ.
@@ -214,17 +185,7 @@ export default function ChungTuPage() {
           })),
       );
 
-      const tuCqt = (hd.data ?? []).map((h) => ({
-        id: h.id as string,
-        soTien: Number(h.total_amount),
-        ngay: String(h.issued_at).slice(0, 10),
-        soHoaDon: (h.invoice_number as string) ?? null,
-        tenBenBan: (h.counterparty_name as string) ?? null,
-        maSoThueBenBan: (h.counterparty_tax_code as string) ?? null,
-      }));
-      const daCo = new Set(tuCqt.map((h) => khoaHd(h.soHoaDon, h.maSoThueBenBan)).filter(Boolean));
       const tuChup = (quetKy.data ?? [])
-        .filter((c) => { const k = khoaHd(c.so_hoa_don, c.ma_so_thue_ben_ban); return !k || !daCo.has(k); })
         .map((c) => ({
           id: `quet:${c.id}`,
           soTien: Number(c.tong_tien),
@@ -233,7 +194,7 @@ export default function ChungTuPage() {
           tenBenBan: c.ben_ban,
           maSoThueBenBan: c.ma_so_thue_ben_ban,
         }));
-      setHoaDon([...tuCqt, ...tuChup]);
+      setHoaDon(tuChup);
     } finally {
       setDangTai(false);
     }
@@ -252,7 +213,7 @@ export default function ChungTuPage() {
   if (dangTai) {
     return (
       <p className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
-        <Loader2 size={15} className="animate-spin" /> Đang đọc giao dịch và hoá đơn…
+        <Loader2 size={15} className="animate-spin" /> Đang đọc giao dịch và chứng từ…
       </p>
     );
   }
@@ -262,7 +223,7 @@ export default function ChungTuPage() {
       <div className="max-w-3xl space-y-4">
         <h2 className="font-display text-2xl font-extrabold tracking-tight text-foreground">Chứng từ chi phí</h2>
         <div role="alert" className="rounded-2xl border border-destructive/40 bg-card/50 p-5">
-          <p className="text-sm font-semibold text-foreground">Chưa đọc được giao dịch hoặc hoá đơn của quý này.</p>
+          <p className="text-sm font-semibold text-foreground">Chưa đọc được giao dịch hoặc chứng từ của quý này.</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Đây là lỗi đọc dữ liệu, không phải bạn không có khoản chi nào. Chi tiết: {loiKy}
           </p>
@@ -309,9 +270,9 @@ export default function ChungTuPage() {
           {dong(kq.tongChuaCoGiay)}
         </p>
         <p className="mt-2 max-w-prose text-sm text-muted-foreground">
-          Đã chi {dong(kq.tongDaChi)}, trong đó chứng minh được {dong(kq.tongCoGiay)} bằng hoá đơn
-          đầu vào. Phần còn lại chưa có hoá đơn điện tử nào ứng với nó — có thể bạn đã có hoá đơn
-          giấy mà chưa nhập.
+          Đã chi {dong(kq.tongDaChi)}, trong đó chứng minh được {dong(kq.tongCoGiay)} bằng chứng từ
+          bạn đã chụp. Phần còn lại chưa có chứng từ nào ứng với nó — có thể bạn đã có hoá đơn mà
+          chưa chụp lên Thư viện chứng từ.
         </p>
         {soDongThu > 0 && (
           // Nói ra chứ không lặng lẽ bỏ: người dùng thấy số nhỏ hơn họ tưởng

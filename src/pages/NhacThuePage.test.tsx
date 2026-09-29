@@ -66,7 +66,7 @@ describe('Nhắc thuế', () => {
   it('ngưỡng doanh thu từ tax-summary, có nguồn văn bản và lời miễn trừ', async () => {
     gia.invoke.mockResolvedValue({
       data: {
-        year: 2026, basis: 'gdt', revenue: 1_200_000_000, hasBankConnection: true, disclaimer: 'Số liệu tham khảo.',
+        year: 2026, basis: 'bank', revenue: 1_200_000_000, hasBankConnection: true, disclaimer: 'Số liệu tham khảo.',
         milestones: [
           { key: 'tax_exemption', threshold: 1e9, remaining: -200_000_000, ratio: 1.2, crossed: true },
           { key: 'profit_method_required', threshold: 3e9, remaining: 1_800_000_000, ratio: 0.4, crossed: false },
@@ -76,7 +76,8 @@ describe('Nhắc thuế', () => {
     });
     dung();
     expect(await screen.findByText(/Đã vượt 200\.000\.000/)).toBeTruthy();
-    expect(document.body.textContent).toContain('theo hoá đơn điện tử đã phát hành');
+    // 29/09/2026: đã gỡ hoá đơn điện tử — doanh thu luôn là ước tính từ tiền về ngân hàng.
+    expect(document.body.textContent).toContain('ước tính theo tiền về ngân hàng');
     expect(document.body.textContent).toContain('Nguồn: Luật Thuế thu nhập cá nhân số 109/2025/QH15');
     expect(document.body.textContent).toContain('Số liệu tham khảo.');
     expect(screen.getAllByRole('progressbar')).toHaveLength(2);

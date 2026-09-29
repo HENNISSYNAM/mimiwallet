@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Landmark, FileText, AlertTriangle, Info, Check, ChevronDown, Scale } from 'lucide-react';
+import { Landmark, AlertTriangle, Info, Check, ChevronDown, Scale } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
@@ -293,7 +293,7 @@ export function ThresholdClock() {
   }
 
   const nothingToMeasure =
-    !data.hasBankConnection && data.gdtRevenue === null && data.transactionsCounted === 0;
+    !data.hasBankConnection && data.transactionsCounted === 0;
 
   if (nothingToMeasure) {
     return (
@@ -322,15 +322,10 @@ export function ThresholdClock() {
             Doanh thu năm {data.year}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {data.basis === 'gdt' ? (
-              <span className="inline-flex items-center gap-1">
-                <FileText size={11} /> Theo hoá đơn điện tử (Tổng Cục Thuế)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1">
-                <Landmark size={11} /> Ước tính từ tiền vào tài khoản
-              </span>
-            )}
+            {/* 29/09/2026: bỏ nhánh "theo hoá đơn điện tử" — MIMI không đọc được hoá đơn từ cơ quan thuế. */}
+            <span className="inline-flex items-center gap-1">
+              <Landmark size={11} /> Ước tính từ tiền vào tài khoản
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -349,16 +344,6 @@ export function ThresholdClock() {
         ))}
       </div>
 
-      {/* A gap between money received and invoices issued is a fact worth
-          seeing, not noise to average away. */}
-      {data.gap !== null && Math.abs(data.gap) > 1_000_000 && (
-        <p className="mt-4 text-xs text-muted-foreground flex items-start gap-1.5">
-          <Info size={12} className="mt-0.5 shrink-0" />
-          Hoá đơn điện tử {short(data.gdtRevenue ?? 0)}, tiền về tài khoản {short(data.bankRevenue)}.
-          Chênh {short(Math.abs(data.gap))} — thường là bán thu tiền mặt chưa xuất hoá đơn, hoặc
-          hoá đơn đã xuất mà chưa thu tiền.
-        </p>
-      )}
 
       {data.needsReview > 0 && (
         <p className="mt-2 text-xs text-amber-600 dark:text-amber-500 flex items-start gap-1.5">

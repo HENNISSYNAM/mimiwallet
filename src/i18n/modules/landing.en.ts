@@ -6,7 +6,7 @@ const m = {
       titleLine1: 'Let agents spend.',
       titleLine2: 'Keep the final say.',
       subtitle:
-        'MIMI checks every spend request against your policy, builds a VietQR payment order, then matches bank statements and e-invoices so you know where the money actually went. MIMI never holds your money.',
+        'MIMI checks every spend request against your policy, builds a VietQR payment order, then matches bank statements and receipts so you know where the money actually went. MIMI never holds your money.',
       pills: [
         'Approve before money moves',
         'Unknown recipients blocked',

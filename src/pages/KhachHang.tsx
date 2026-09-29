@@ -22,7 +22,7 @@ export const NHOM_KHACH = [
     van_de: 'Từ 2026, hộ doanh thu trên 01 tỷ đồng/năm phải khai thuế theo doanh thu thật, và tự lo chứng từ chi phí.',
     mimi_lam: [
       'Hỏi bốn câu khi mở ứng dụng để biết bạn khai mẫu nào',
-      'Đọc doanh thu từ hoá đơn điện tử và sao kê ngân hàng',
+      'Ước tính doanh thu từ sao kê ngân hàng',
       'Soạn sẵn mẫu 01/TKN-CNKD hoặc 01/CNKD để bạn in và tự nộp',
     ],
     href: '/giai-phap/ho-kinh-doanh',

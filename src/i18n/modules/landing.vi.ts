@@ -20,7 +20,7 @@ const m = {
       titleLine1: 'Agent được chi.',
       titleLine2: 'Bạn giữ quyền quyết.',
       subtitle:
-        'MIMI xét từng khoản chi theo chính sách của bạn, dựng lệnh trả VietQR, rồi đối chiếu sao kê và hoá đơn điện tử để biết tiền đã thật sự đi đâu. MIMI không giữ tiền của bạn.',
+        'MIMI xét từng khoản chi theo chính sách của bạn, dựng lệnh trả VietQR, rồi đối chiếu sao kê và chứng từ để biết tiền đã thật sự đi đâu. MIMI không giữ tiền của bạn.',
       pills: [
         'Duyệt trước khi tiền đi',
         'Chặn người nhận lạ',

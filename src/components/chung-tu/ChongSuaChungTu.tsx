@@ -178,7 +178,7 @@ function HopSaoLuu({ che, onDong }: { che: 'tai' | 'mo' | null; onDong: () => vo
       a.download = `mimi-sao-luu-${new Date().toISOString().slice(0, 10)}.mimi`;
       a.click();
       URL.revokeObjectURL(url);
-      setKetQua(`Đã tạo bản sao lưu: ${hd.length} hoá đơn điện tử, ${ct.length} chứng từ chụp, ${sc.length} mắt xích sổ cái. Cất tệp ở nơi khác MIMI (ổ cứng, email riêng) và nhớ mật khẩu — quên là không ai mở được.`);
+      setKetQua(`Đã tạo bản sao lưu: ${ct.length} chứng từ chụp, ${sc.length} mắt xích sổ cái. Cất tệp ở nơi khác MIMI (ổ cứng, email riêng) và nhớ mật khẩu — quên là không ai mở được.`);
     } catch (e) {
       setLoi(e instanceof Error ? e.message : 'Chưa tạo được bản sao lưu.');
     } finally {
@@ -206,7 +206,7 @@ function HopSaoLuu({ che, onDong }: { che: 'tai' | 'mo' | null; onDong: () => vo
         if (c.anh_base64 && c.anh_sha256 && await bamHex(Uint8Array.from(atob(c.anh_base64), (x) => x.charCodeAt(0))) === c.anh_sha256) anhKhop++;
       }
       const daNeo = du.neo_thoi_gian.filter((n) => n.trang_thai === 'da_vao_bitcoin').length;
-      setKetQua(`Mở được bản sao lưu của ${du.cong_ty.name ?? 'công ty'}: ${du.hoa_don_dien_tu.length} hoá đơn điện tử, ${du.chung_tu_quet.length} chứng từ chụp (${anhKhop} ảnh khớp mã băm). ${khop} chứng từ khớp sổ cái${lech ? `, ${lech} KHÔNG khớp` : ''}; ${daNeo} lần neo đã vào Bitcoin.`);
+      setKetQua(`Mở được bản sao lưu của ${du.cong_ty.name ?? 'công ty'}: ${du.hoa_don_dien_tu.length ? `${du.hoa_don_dien_tu.length} hoá đơn điện tử, ` : ''}${du.chung_tu_quet.length} chứng từ chụp (${anhKhop} ảnh khớp mã băm). ${khop} chứng từ khớp sổ cái${lech ? `, ${lech} KHÔNG khớp` : ''}; ${daNeo} lần neo đã vào Bitcoin.`);
     } catch (e) {
       setLoi(e instanceof Error ? e.message : 'Chưa mở được bản sao lưu.');
     } finally {
@@ -222,7 +222,7 @@ function HopSaoLuu({ che, onDong }: { che: 'tai' | 'mo' | null; onDong: () => vo
           <DialogDescription>
             {che === 'mo'
               ? 'Giải mã ngay trên máy này và tự kiểm mã băm từng chứng từ — không gửi gì lên MIMI.'
-              : 'Toàn bộ hoá đơn điện tử, chứng từ chụp và sổ cái, mã hoá bằng mật khẩu bạn đặt. MIMI không lưu mật khẩu này.'}
+              : 'Toàn bộ chứng từ chụp và sổ cái, mã hoá bằng mật khẩu bạn đặt. MIMI không lưu mật khẩu này.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={(e) => { e.preventDefault(); void (che === 'mo' ? moSaoLuu() : taoSaoLuu()); }} className="space-y-3">

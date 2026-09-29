@@ -20,7 +20,6 @@ import {
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 import { dongKhungCasLink, moKhungCasLink, urlCasLink } from '@/lib/casLink';
-import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Linking a real bank account through Cas (BankHub).
@@ -315,54 +314,6 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     loadConnections();
   }, [loadConnections]);
 
-  /**
-   * Kéo hoá đơn điện tử từ Tổng Cục Thuế.
-   *
-   * ĐƯỜNG RIÊNG, KHÔNG DÙNG CHUNG `runSync`. `action=sync` đọc sao kê ngân
-   * hàng và bỏ qua grant `gdt` (`_shared/bank/dong-bo.ts`), nên gọi nó ở đây
-   * chỉ tạo ra một nút quay vòng rồi không đổi gì.
-   *
-   * Máy chủ từ chối khi công ty chưa có mã số thuế — thiếu nó thì không phân
-   * biệt được hoá đơn bán ra và mua vào. Hiện nguyên `remedy` thay vì nuốt:
-   * đây là việc người dùng làm được ngay, ở Cài đặt.
-   */
-  const dongBoThue = useCallback(
-    async (connectionId: string) => {
-      setSyncing(connectionId);
-      const kq = await call('gdt-sync', {});
-      setSyncing(null);
-      if (!kq) return;
-
-      if (kq.revoked) {
-        toast.warning(kq.message ?? 'Quyền truy cập đã bị thu hồi trong app Cas.', {
-          description: kq.remedy,
-          duration: 10000,
-        });
-        await loadConnections();
-        return;
-      }
-
-      await loadConnections();
-      track('gdt_synced', { stored: kq.stored ?? 0 });
-
-      const daLuu = Number(kq.stored ?? 0);
-      const banRa = Number(kq.issued ?? 0);
-      const muaVao = Number(kq.received ?? 0);
-
-      if (!daLuu) {
-        toast('Không có hoá đơn nào trong kỳ', {
-          description: `Đã hỏi từ ${kq.window?.fromDate} tới ${kq.window?.toDate}.`,
-        });
-        return;
-      }
-
-      toast.success(`Đã tải ${daLuu} hoá đơn`, {
-        description: `${banRa} bán ra, ${muaVao} mua vào. Doanh thu theo hoá đơn: ${dinhDangTien(kq.revenueFromInvoices)}.`,
-      });
-    },
-    [call, loadConnections],
-  );
-
   const runSync = useCallback(
     async (connectionId?: string) => {
       setSyncing(connectionId ?? 'all');
@@ -540,15 +491,6 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           toast.success('Đã đọc định danh một lần và thu hồi quyền');
           return;
         }
-        // Liên kết THUẾ thì kéo hoá đơn ngay. Trước 28/09/2026 nhánh này luôn gọi `runSync` — đồng bộ
-        // SAO KÊ, vốn bỏ qua grant `gdt` — nên liên kết xong vẫn 0 hoá đơn cho tới khi người dùng tự tìm
-        // nút tải riêng (trên DB thật: 2 liên kết thuế từ 15/09, 0 hoá đơn).
-        if (pendingFeature.current === 'gdt') {
-          toast.success('Đã kết nối Tổng Cục Thuế — đang tải hoá đơn điện tử');
-          await loadConnections();
-          await dongBoThue('gdt');
-          return;
-        }
         toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
         await loadConnections();
         await runSync();
@@ -558,7 +500,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         setLinking(false);
       }
     },
-    [call, loadConnections, runSync, dongBoThue]
+    [call, loadConnections, runSync]
   );
 
   /**
@@ -950,10 +892,9 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               <QrCode size={14} />
               Liên kết để nhận tiền QR
             </button>
-            {/* Nút "Kết nối Tổng Cục Thuế" gỡ 28/09/2026: Casso chưa bật sản phẩm hoá đơn điện tử
-                (GDT) cho app production — console chỉ có Transaction, Identity, Balance, QR Pay — nên
-                liên kết sẽ không đọc được hoá đơn nào. Phần kéo và tự đồng bộ ở máy chủ vẫn giữ
-                (`_shared/tax/dong-bo-gdt.ts`); Casso bật xong thì trả nút này về. */}
+            {/* Nút "Kết nối Tổng Cục Thuế" gỡ 28/09/2026, nút tải hoá đơn điện tử gỡ 29/09/2026: Casso chưa
+                bật sản phẩm hoá đơn điện tử (GDT) cho app production — console chỉ có Transaction, Identity,
+                Balance, QR Pay. */}
             {/* Case 18 nghiệm thu Casso. Chỉ hiện ở sandbox: sản phẩm không dùng
                 CCCD, ngày sinh hay địa chỉ, nên đây không phải tính năng cho
                 khách thật — chỉ là bằng chứng gọi /identity thành công. */}
@@ -1083,24 +1024,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       co scope `transaction`, nen bam vao khong bao gio ra giao
                       dich nao. Mot nut khong lam gi ca la mot nut noi doi.
 
-                      Lien ket `gdt` cung khong dung `action=sync` — `sync` bo qua
-                      grant do. No co duong rieng: `gdt-sync`. Truoc 08/09/2026
-                      khong noi nao trong giao dien goi duong ay, nen noi duoc
-                      Tong Cuc Thue roi bang hoa don trong vinh vien. */}
-                  {c.status === 'connected' && laLienKetThue(c) && (
-                    <button
-                      onClick={() => void dongBoThue(c.id)}
-                      disabled={syncing !== null}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-                      aria-label="Tải hoá đơn điện tử từ Tổng Cục Thuế"
-                    >
-                      {syncing === c.id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <RefreshCw size={14} />
-                      )}
-                    </button>
-                  )}
+                      Lien ket `gdt` (Tong Cuc Thue) khong dong bo duoc gi: Casso chua bat hoa don dien tu. */}
                   {c.status === 'connected' && !laLienKetQr(c) && !laLienKetThue(c) && (
                     <button
                       onClick={() => runSync(c.id)}

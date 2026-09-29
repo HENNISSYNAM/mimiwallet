@@ -107,6 +107,8 @@ export function tenDong(
  * mới từ đầu.
  */
 export function cachSua(lk: LienKet): HanhDongSua {
+  // Liên kết thuế không dùng được (xem `phuDe`): sửa nó cũng không đọc được hoá đơn nào.
+  if (laLienKetThue(lk)) return 'khong_can';
   // Người dùng tự tạm dừng trên Cas ID: liên kết còn nguyên, chỉ cần bật lại bên đó.
   if (lk.status === 'paused') return 'bat_lai_tren_cas_id';
   // Vướng trong app ngân hàng (chặn đăng nhập từ website, ngân hàng tạm dừng dịch vụ): bấm nút nào
@@ -193,6 +195,9 @@ export function cacLoiNhac(dsach: LienKet[]): LoiNhac[] {
 export function phuDe(lk: LienKet, ghiChu?: string): string | null {
   if (ghiChu) return ghiChu;
 
+  // 29/09/2026: Casso chưa bật hoá đơn điện tử cho app production — liên kết thuế (còn sót từ trước) không đọc
+  // được gì, ở trạng thái nào cũng vậy. Nói đúng thế, không mời đồng bộ hay cập nhật.
+  if (laLienKetThue(lk)) return 'Chưa dùng được — Casso chưa mở hoá đơn điện tử. Có thể ngắt liên kết này.';
   if (lk.status === 'paused') return 'Bạn đang tạm dừng liên kết này trong app Cas ID';
   if (lk.status === 'needs_reauth') return 'Cần mở app ngân hàng của bạn để xử lý';
 
@@ -217,21 +222,6 @@ export function phuDe(lk: LienKet, ghiChu?: string): string | null {
     return 'Sẵn sàng nhận tiền QR · không có sao kê để đồng bộ';
   }
 
-  /*
-   * Lần thứ ba của cùng một họ lỗi, và lần này nó ẩn lâu nhất.
-   *
-   * Dòng `gdt` rơi xuống câu dự phòng *"Chưa đồng bộ lần nào"* — một câu gợi ý
-   * việc đang chờ. Nhưng nút Đồng bộ chung gọi `action=sync`, mà `sync` bỏ qua
-   * grant `gdt` (`coSaoKeDeDoc` trả false). Và **không nơi nào trong giao diện
-   * gọi `gdt-sync`**, dù máy chủ đã có sẵn nhánh đó và `tax-summary` đã đọc
-   * bảng `gdt_invoices`.
-   *
-   * Nghĩa là: nối được Tổng Cục Thuế, rồi bảng hoá đơn trống vĩnh viễn, và
-   * `ThresholdClock` báo `gdtRevenue = null` mãi mãi. Kết nối chỉ để trưng.
-   */
-  if (lk.status === 'connected' && laLienKetThue(lk)) {
-    return 'Đã kết nối · bấm đồng bộ để tải hoá đơn điện tử';
-  }
 
   return null;
 }

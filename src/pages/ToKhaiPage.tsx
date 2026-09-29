@@ -452,7 +452,7 @@ export default function ToKhaiPage() {
       <header className="no-print">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tờ khai thuế</h1>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          MIMI đọc hoá đơn điện tử và sao kê của bạn, áp quy định trong kho văn bản Công báo, rồi điền đúng mẫu tờ khai.
+          MIMI đọc sao kê ngân hàng của bạn, áp quy định trong kho văn bản Công báo, rồi điền đúng mẫu tờ khai.
           Bạn kiểm lại và tự nộp trên Cổng dịch vụ công — MIMI không nộp thay bạn.
         </p>
       </header>
@@ -496,10 +496,6 @@ export default function ToKhaiPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  <tr>
-                    <th scope="row" className="py-2 text-left font-normal text-muted-foreground">Hoá đơn điện tử ({kq.doanh_thu.so_hoa_don})</th>
-                    {[0, 1, 2, 3].map((i) => <td key={i} className="py-2 text-right tabular-nums">{kq.doanh_thu.hoa_don ? so(kq.doanh_thu.hoa_don[i]) : '—'}</td>)}
-                  </tr>
                   <tr>
                     <th scope="row" className="py-2 text-left font-normal text-muted-foreground">Tiền về ngân hàng</th>
                     {[0, 1, 2, 3].map((i) => <td key={i} className="py-2 text-right tabular-nums">{kq.doanh_thu.ngan_hang ? so(kq.doanh_thu.ngan_hang[i]) : '—'}</td>)}

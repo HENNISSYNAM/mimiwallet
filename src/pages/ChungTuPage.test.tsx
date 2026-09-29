@@ -71,7 +71,7 @@ describe('Chứng từ chi phí — doanh thu năm và lỗi đọc', () => {
   it('đọc giao dịch lỗi → nói là lỗi đọc, không hiện "chi phí chưa có giấy tờ"', async () => {
     may.loiGd = { message: 'timeout' };
     dung();
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Chưa đọc được giao dịch hoặc hoá đơn'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Chưa đọc được giao dịch hoặc chứng từ'));
     expect(screen.queryByText('Chi phí chưa có giấy tờ trong quý này')).toBeNull();
     expect(screen.getByRole('button', { name: /Thử lại/ })).toBeTruthy();
   });

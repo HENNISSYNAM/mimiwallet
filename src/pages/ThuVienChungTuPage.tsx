@@ -10,7 +10,7 @@ import { docDu } from '@/lib/docDu';
 import { dinhDang } from '@/lib/troLy';
 import {
   csvChoKeToan, gopThuVien, locThuVien,
-  type ChungTuQuetDong, type GiaoDichGan, type HoaDonDienTuDong, type LocThuVien, type MucThuVien,
+  type ChungTuQuetDong, type GiaoDichGan, type LocThuVien, type MucThuVien,
 } from '@/lib/thuVienChungTu';
 import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { ChongSuaChungTu } from '@/components/chung-tu/ChongSuaChungTu';
@@ -24,8 +24,8 @@ import {
 /**
  * Thư viện chứng từ — "thư viện ảnh" của hoá đơn, chứng từ (15/09/2026).
  *
- * Hai nguồn thật: hoá đơn điện tử đầu vào lấy từ Tổng cục Thuế, và chứng từ người dùng chụp
- * (ảnh lưu ở kho riêng tư `chung-tu`, đọc bằng URL ký tạm một giờ). Học cách Ramp giữ biên
+ * Nguồn: chứng từ người dùng chụp (ảnh lưu ở kho riêng tư `chung-tu`, đọc bằng URL ký tạm một giờ).
+ * 29/09/2026: gỡ hoá đơn điện tử (GDT) — Casso chưa bật sản phẩm đó cho app production nên MIMI không đọc được hoá đơn nào từ cơ quan thuế. Học cách Ramp giữ biên
  * lai: mỗi chứng từ nói nó gắn khoản chi nào; chứng từ chưa gắn lộ ra để xử lý trước khi
  * chốt sổ; xuất một file cho kế toán.
  */
@@ -40,8 +40,6 @@ const LO_ID = 100;
 
 const LOC: { khoa: LocThuVien; nhan: string }[] = [
   { khoa: 'tat_ca', nhan: 'Tất cả' },
-  { khoa: 'chup', nhan: 'Chứng từ chụp' },
-  { khoa: 'hoa_don_dien_tu', nhan: 'Hoá đơn điện tử' },
   { khoa: 'chua_gan', nhan: 'Chưa gắn khoản chi' },
 ];
 
@@ -69,20 +67,15 @@ export default function ThuVienChungTuPage() {
       if (!id) { setDs([]); return; }
       const cty = { id, la_demo: dang?.la_demo === true };
       const tho = supabase as unknown as BangTho;
-      const [q, h] = await Promise.all([
+      const [q] = await Promise.all([
         docDu<ChungTuQuetDong>((tu, den, demTong) => tho.from('chung_tu_quet')
           .select('id, loai, so_hoa_don, ky_hieu, ngay, ben_ban, ma_so_thue_ben_ban, tien_thue, tong_tien, giao_dich_id, anh_path, created_at', demTong ? { count: 'exact' } : undefined)
           .eq('company_id', cty.id).order('created_at', { ascending: false }).order('id', { ascending: true }).range(tu, den),
         { toiDa: TOI_DA_MUC }),
-        docDu<HoaDonDienTuDong>((tu, den, demTong) => tho.from('gdt_invoices')
-          .select('id, invoice_number, invoice_serial, counterparty_name, counterparty_tax_code, total_amount, tax_amount, issued_at', demTong ? { count: 'exact' } : undefined)
-          .eq('company_id', cty.id).eq('direction', 'received').order('issued_at', { ascending: false }).order('id', { ascending: true }).range(tu, den),
-        { toiDa: TOI_DA_MUC }),
       ]);
       if (q.loi) throw new Error(q.loi);
-      if (h.loi) throw new Error(h.loi);
-      setChuaHet(q.du && h.du ? null
-        : `Mới hiện ${(q.dong.length + h.dong.length).toLocaleString('vi-VN')} chứng từ — còn chứng từ chưa đọc tới (quá ${TOI_DA_MUC.toLocaleString('vi-VN')} mỗi nguồn). File CSV xuất ra cũng CHƯA đủ.`);
+      setChuaHet(q.du ? null
+        : `Mới hiện ${q.dong.length.toLocaleString('vi-VN')} chứng từ — còn chứng từ chưa đọc tới (quá ${TOI_DA_MUC.toLocaleString('vi-VN')}). File CSV xuất ra cũng CHƯA đủ.`);
       const quet = q.dong;
 
       const ids = [...new Set(quet.map((x) => x.giao_dich_id).filter(Boolean))] as string[];
@@ -96,7 +89,7 @@ export default function ThuVienChungTuPage() {
           id: t.id, transaction_date: t.transaction_date, ten: t.counter_account_name || t.merchant_name, so_tien: Math.abs(Number(t.amount)),
         })));
       }
-      setDs(gopThuVien(quet, h.dong, gd));
+      setDs(gopThuVien(quet, gd));
 
       const duong = quet.map((x) => x.anh_path).filter(Boolean) as string[];
       if (duong.length) {
@@ -131,12 +124,12 @@ export default function ThuVienChungTuPage() {
 
   const taiBangChung = async (m: MucThuVien) => {
     try {
-      const r = await goiDauThoiGian('bang_chung', { loai: m.nguon === 'chup' ? 'chung_tu_quet' : 'hoa_don_dien_tu', ban_ghi_id: m.id });
+      const r = await goiDauThoiGian('bang_chung', { loai: 'chung_tu_quet', ban_ghi_id: m.id });
       if (r.trang_thai === 'chua_neo') {
         toast.info('Chứng từ này đã ghi sổ, sẽ neo lên Bitcoin lúc 0 giờ đêm nay. Tải bằng chứng sau.');
         return;
       }
-      taiTepBase64(String(r.ots), `mimi-${m.nguon === 'chup' ? 'chung-tu' : 'hoa-don'}-${m.id.slice(0, 8)}.ots`);
+      taiTepBase64(String(r.ots), `mimi-chung-tu-${m.id.slice(0, 8)}.ots`);
       toast.success(r.trang_thai === 'da_vao_bitcoin'
         ? `Đã tải bằng chứng — nằm trong khối Bitcoin #${Number(r.khoi_bitcoin).toLocaleString('vi-VN')}.`
         : 'Đã tải bằng chứng — đang chờ Bitcoin xác nhận; tải lại sau vài giờ để có bản đầy đủ.');
@@ -277,17 +270,14 @@ export default function ThuVienChungTuPage() {
                       </a>
                     ) : (
                       <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-                        {m.nguon === 'hoa_don_dien_tu' ? <FileText size={26} aria-hidden /> : <ImageOff size={26} aria-hidden />}
-                        {m.nguon === 'hoa_don_dien_tu' ? 'Hoá đơn điện tử' : 'Không lưu ảnh'}
+                        <ImageOff size={26} aria-hidden />
+                        Không lưu ảnh
                       </span>
                     )}
                   </div>
                   <div className="flex flex-1 flex-col gap-1 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <p className="min-w-0 truncate text-sm font-medium text-foreground" title={m.ben_ban}>{m.ben_ban}</p>
-                      <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[11px] text-muted-foreground">
-                        {m.nguon === 'chup' ? 'Chụp' : 'HĐĐT'}
-                      </span>
                     </div>
                     <p className="font-display text-lg font-semibold tabular-nums text-foreground">{dinhDang(m.tong_tien, 'vnd')}</p>
                     <p className="text-xs text-muted-foreground">
@@ -330,7 +320,7 @@ export default function ThuVienChungTuPage() {
             </ul>
           )}
           <p className="text-xs text-muted-foreground">
-            Chứng từ chụp giúp bạn biết khoản chi đã có giấy tờ; số liệu thuế vẫn tính theo hoá đơn điện tử.{' '}
+            Chứng từ chụp giúp bạn biết khoản chi nào đã có giấy tờ.{' '}
             <Link to="/dashboard/chung-tu" className="underline underline-offset-4">Xem khoản chi còn thiếu chứng từ</Link>
           </p>
         </>

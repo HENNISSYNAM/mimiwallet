@@ -17,7 +17,7 @@ import { LichViec } from '@/components/viec/LichViec';
  *
  * Hai loại mốc, cả hai tính từ thứ đã có trong MIMI:
  *  - Hạn nộp tờ khai theo quý (`hanKeKhai.ts`, có test từng mốc chuyển quý).
- *  - Ngưỡng doanh thu năm 1 tỷ và 3 tỷ (edge function `tax-summary`, đọc hoá đơn điện tử hoặc
+ *  - Ngưỡng doanh thu năm 1 tỷ và 3 tỷ (edge function `tax-summary`, trước đây đọc cả hoá đơn điện tử hoặc
  *    tiền về ngân hàng, đã bỏ dữ liệu thử và chuyển khoản nội bộ).
  *
  * MIMI nhắc trong ứng dụng; chưa gửi nhắc qua email hay Zalo — nói rõ trên màn hình.
@@ -163,7 +163,7 @@ export default function NhacThuePage() {
           <>
             <p className="mt-1 text-sm text-muted-foreground">
               Doanh thu đến hôm nay: <span className="font-semibold tabular-nums text-foreground">{dinhDang(thue.revenue, 'vnd')}</span>{' '}
-              ({thue.basis === 'gdt' ? 'theo hoá đơn điện tử đã phát hành' : 'ước tính theo tiền về ngân hàng'})
+              (ước tính theo tiền về ngân hàng)
             </p>
             {thue.basis === 'bank' && !thue.hasBankConnection && (
               <p className="mt-1 text-sm text-mimi-amber">Chưa liên kết ngân hàng — con số này chưa đủ để dựa vào.</p>
