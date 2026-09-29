@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { MenuTaiKhoan } from './MenuTaiKhoan';
-import { ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, X } from 'lucide-react';
+import ThanhLichSu, { DanhSachLichSu } from './ThanhLichSu';
+import { ChevronRight, Clock, HelpCircle, History, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
 import { NhanMinhHoa } from './NhanMinhHoa';
@@ -137,6 +138,7 @@ export default function DashboardLayout() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [moThem, setMoThem] = useState(false);
+  const [moLichSu, setMoLichSu] = useState(false);
   // Đo "quay lại": một lần mỗi ngày mỗi công ty (ghiMoUngDung tự chặn trùng).
   useEffect(() => { void ghiMoUngDung(); }, []);
   // Bộ não dùng chung tách theo tài khoản + công ty: đổi một trong hai (hay đăng xuất) là xoá sạch.
@@ -219,10 +221,11 @@ export default function DashboardLayout() {
 
   return (
     /*
-      Không còn thanh bên trái (29/09/2026): module ở thanh công cụ dưới ô hỏi, tài khoản ở menu ảnh đại diện —
-      MIMI dùng hết chiều rộng màn hình như một không gian làm việc.
+      Thanh bên trái là LỊCH SỬ HỎI MIMI như ChatGPT/Claude (29/09/2026). Module ở thanh công cụ dưới ô hỏi, tài khoản
+      ở menu ảnh đại diện. Điện thoại: nút đồng hồ ở đầu trang mở cùng danh sách trong bảng trượt.
     */
     <div className="flex min-h-screen bg-background">
+      <ThanhLichSu />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header
@@ -231,6 +234,10 @@ export default function DashboardLayout() {
           }`}
         >
           <div className="flex min-w-0 items-center gap-1.5">
+            <button type="button" onClick={() => setMoLichSu(true)} aria-label="Lịch sử hỏi MIMI"
+              className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden">
+              <History size={20} />
+            </button>
             {/* Tên MIMI luôn đưa về Không gian Trợ lý; ở trang module thì thành đường dẫn "MIMI › Hoá đơn". */}
             <NavLink to="/dashboard" end data-mimi="nav:/dashboard" className="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-1 font-display text-[19px] font-bold tracking-tight text-foreground hover:opacity-80">
               <IconMeo size={26} aria-hidden />
@@ -406,6 +413,15 @@ export default function DashboardLayout() {
                 </button>
               </div>
             </nav>
+          </SheetContent>
+        </Sheet>
+        <Sheet open={moLichSu} onOpenChange={setMoLichSu}>
+          <SheetContent side="left" className="flex w-[85vw] max-w-xs flex-col px-0 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
+            <SheetHeader className="px-6 text-left">
+              <SheetTitle>Lịch sử hỏi MIMI</SheetTitle>
+              <SheetDescription className="sr-only">Các cuộc hỏi MIMI gần đây của bạn</SheetDescription>
+            </SheetHeader>
+            {moLichSu && <DanhSachLichSu luonHienXoa onDaChon={() => setMoLichSu(false)} />}
           </SheetContent>
         </Sheet>
         <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} tab="dien_thoai" />

@@ -78,6 +78,11 @@ interface NaoState {
   boLuot: (id: number) => void;
   /** "Cuộc hỏi mới": bỏ các lượt đã xong; lượt đang chạy (vd. của pet) vẫn giữ. */
   xoaLuotDaXong: () => void;
+  /**
+   * Mở lại một cuộc hỏi cũ từ thanh lịch sử: thay các lượt đã xong bằng các lượt đọc từ máy chủ (chỉ trong bộ
+   * nhớ, không lưu xuống đĩa). Lượt đang chạy vẫn giữ. Không gọi máy chủ để hỏi lại.
+   */
+  napCuoc: (ds: { cau: string; traLoi: TraLoiNao; luc: number }[]) => void;
 }
 
 const sua = (id: number, f: (l: LuotNao) => LuotNao) => (s: NaoState) => ({ luot: s.luot.map((l) => (l.id === id ? f(l) : l)) });
@@ -164,6 +169,12 @@ export const useNaoMimi = create<NaoState>()((set, get) => {
     danhDauDaXem: (id) => set(sua(id, (l) => ({ ...l, daXem: true }))),
     boLuot: (id) => set((s) => ({ luot: s.luot.filter((l) => l.id !== id) })),
     xoaLuotDaXong: () => set((s) => ({ luot: s.luot.filter((l) => l.trangThai === 'dang') })),
+    napCuoc: (ds) => set((s) => ({
+      luot: [
+        ...ds.map((d) => ({ id: ++demId, loai: 'hoi' as const, cau: d.cau, phamVi: null, quyTrinh: null, nguon: 'tro_ly' as const, trangThai: 'xong' as const, traLoi: d.traLoi, loi: null, luc: d.luc, bangGiong: false, daXem: true })),
+        ...s.luot.filter((l) => l.trangThai === 'dang'),
+      ].slice(-TOI_DA_LUOT),
+    })),
   };
 });
 
