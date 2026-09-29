@@ -25,7 +25,7 @@ export function NhanMinhHoa() {
 
   if (!laDemo) return null;
   return (
-    <div role="note" className="mb-4 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
+    <div role="note" className="relative z-20 mb-4 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
       <FlaskConical size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
       <p>
         <span className="font-medium">Cửa hàng minh hoạ.</span>{' '}

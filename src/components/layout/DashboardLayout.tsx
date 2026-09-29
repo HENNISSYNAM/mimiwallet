@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import DashboardSidebar from './DashboardSidebar';
+import { MenuTaiKhoan } from './MenuTaiKhoan';
 import { ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
@@ -76,8 +76,6 @@ const mobileNav = [
   { icon: Clock, khoa: 'man.ten.nhacThue', path: '/dashboard/nhac-thue' },
 ];
 
-/** Trang chi tiết mở từ MIMI Assistant: tiêu đề kèm đường quay về trợ lý. */
-const TRANG_CHI_TIET_CUA_TRO_LY = new Set(TRANG_CHI_TIET.map((t) => t.duong_dan));
 
 /**
  * Header title per route, keyed to the same i18n strings the sidebar uses.
@@ -220,8 +218,11 @@ export default function DashboardLayout() {
   };
 
   return (
+    /*
+      Không còn thanh bên trái (29/09/2026): module ở thanh công cụ dưới ô hỏi, tài khoản ở menu ảnh đại diện —
+      MIMI dùng hết chiều rộng màn hình như một không gian làm việc.
+    */
     <div className="flex min-h-screen bg-background">
-      <DashboardSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header
@@ -230,15 +231,19 @@ export default function DashboardLayout() {
           }`}
         >
           <div className="flex min-w-0 items-center gap-1.5">
-            {TRANG_CHI_TIET_CUA_TRO_LY.has(location.pathname) && (
+            {/* Tên MIMI luôn đưa về Không gian Trợ lý; ở trang module thì thành đường dẫn "MIMI › Hoá đơn". */}
+            <NavLink to="/dashboard" end data-mimi="nav:/dashboard" className="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-1 font-display text-[19px] font-bold tracking-tight text-foreground hover:opacity-80">
+              <IconMeo size={26} aria-hidden />
+              <span className={laKhongGianTroLy(location.pathname) ? '' : 'hidden sm:inline'}>MIMI</span>
+            </NavLink>
+            {laKhongGianTroLy(location.pathname) ? (
+              <h1 className="sr-only">{title}</h1>
+            ) : (
               <>
-                <NavLink to="/dashboard" end className="hidden shrink-0 text-sm text-muted-foreground hover:text-foreground sm:inline">
-                  {t('man.ten.troLy')}
-                </NavLink>
-                <ChevronRight size={14} className="hidden shrink-0 text-muted-foreground sm:inline" aria-hidden />
+                <ChevronRight size={16} className="shrink-0 text-muted-foreground" aria-hidden />
+                <h1 className="truncate font-display text-[17px] font-semibold tracking-tight text-foreground">{title}</h1>
               </>
             )}
-            <h1 className="truncate font-display font-bold text-[19px] text-foreground tracking-tight">{title}</h1>
           </div>
           <div className="flex items-center gap-3">
             <form
@@ -271,6 +276,7 @@ export default function DashboardLayout() {
             {/* The gradient stays as the backing layer, so it shows through
                 while the photo is still loading and remains the whole avatar
                 when there is no photo — no empty circle, no layout shift. */}
+            <MenuTaiKhoan tenCongTy={congTy?.ten ?? null} anhDaiDien={
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
               {avatarUrl && !avatarFailed ? (
                 <img
@@ -287,6 +293,7 @@ export default function DashboardLayout() {
                 <span className="text-xs font-bold text-white">{initials}</span>
               )}
             </div>
+            } />
           </div>
         </header>
 

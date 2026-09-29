@@ -25,6 +25,7 @@ export function ThanhCongCuNguCanh({ className }: { className?: string }) {
           <Link
             key={m.khoa}
             to={m.duong}
+            data-mimi={`nav:${m.duong.split('?')[0]}`}
             aria-current={mo ? 'page' : undefined}
             className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm transition-colors ${
               mo

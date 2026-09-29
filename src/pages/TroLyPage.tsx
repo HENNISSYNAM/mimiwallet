@@ -4,7 +4,6 @@ import { TongQuanNhanh } from '@/components/khong-gian/TongQuanNhanh';
 import { ViecCanChuY } from '@/components/khong-gian/ViecCanChuY';
 import { ThuYeuCau } from '@/components/khong-gian/ThuYeuCau';
 import { CauHoiSeanEllis } from '@/components/phan-hoi/CauHoiNhanh';
-import { IconMeo } from '@/components/brand/IconMeo';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCongCuGhim } from '@/hooks/useCongCuGhim';
 import { duongDanCongCu } from '@/lib/congCu';
@@ -274,7 +273,6 @@ export default function TroLyPage() {
       >
         <NenVongHat />
         <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
-          {!coHoiThoai && <IconMeo size={44} className="mx-auto mb-3 text-primary" aria-hidden />}
           <h2 className={`font-display font-semibold tracking-tight text-foreground ${coHoiThoai ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-5xl'}`}>
             {t('man.troLy.tieuDe')}
           </h2>
@@ -454,8 +452,9 @@ export default function TroLyPage() {
             </nav>
           </div>
           {/* Các module của MIMI (29/09/2026): mở ngay trong cùng khung, ô hỏi vẫn còn. */}
-          <div className="mx-auto mt-4 max-w-3xl text-left">
-            <ThanhCongCuNguCanh />
+          <div className="mx-auto mt-4 max-w-4xl text-left">
+            {/* Màn rộng: đủ tám chip trên một-hai hàng, căn giữa; điện thoại: một hàng cuộn ngang. */}
+            <ThanhCongCuNguCanh className="sm:flex-wrap sm:justify-center sm:overflow-visible" />
           </div>
           <KhoCongCu mo={moKhoCongCu} onDong={() => setMoKhoCongCu(false)} />
           <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} />
