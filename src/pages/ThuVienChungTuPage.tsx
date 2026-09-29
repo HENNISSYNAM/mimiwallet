@@ -221,7 +221,9 @@ export default function ThuVienChungTuPage() {
           <FileText size={28} className="mx-auto text-muted-foreground" aria-hidden />
           <h2 className="mt-3 text-lg font-semibold text-foreground">Chưa có chứng từ nào</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Chụp hoá đơn để MIMI đọc số tiền, ngày, bên bán và tự ghép với khoản chi.
+            {coMoHinh === false
+              ? 'MIMI chưa bật đọc ảnh chứng từ, nên hiện chưa thêm được chứng từ.'
+              : 'Chụp hoá đơn để MIMI đọc số tiền, ngày, bên bán và tự ghép với khoản chi.'}
           </p>
           <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
             {nutChup}

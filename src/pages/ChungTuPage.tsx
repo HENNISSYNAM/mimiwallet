@@ -12,6 +12,7 @@ import { chieuTien } from '@/lib/chieuTien';
 import { docHet } from '../../supabase/functions/_shared/doc-het';
 import { dinhDangTien } from '@/lib/tien';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
 
 /**
  * Chứng từ chi phí: khoản nào đã có giấy tờ, khoản nào chưa.
@@ -72,6 +73,8 @@ export default function ChungTuPage() {
   const [dangTai, setDangTai] = useState(true);
 
   const ky = useMemo(() => kyKeKhaiKeTiep(), []);
+  /** Máy chủ đã bật đọc ảnh chứng từ chưa. Chưa bật thì nút chụp bị khoá — không được hứa "MIMI đọc". */
+  const coMoHinh = useCoMoHinh();
 
   /**
    * Đọc dữ liệu của **kỳ đang tới hạn**, không phải toàn bộ lịch sử.
@@ -306,13 +309,21 @@ export default function ChungTuPage() {
             </p>
           )}
           {chuaCoHoaDon && (
-            <p className="text-sm">
-              Chưa có chứng từ nào trong quý.{' '}
-              <Link to="/dashboard/thu-vien" className="font-medium text-primary underline">
-                Chụp hoá đơn trong Thư viện chứng từ
-              </Link>{' '}
-              — MIMI đọc số tiền, ngày, bên bán rồi tự ghép với khoản chi.
-            </p>
+            coMoHinh === false ? (
+              // 29/09/2026: câu cũ hứa "MIMI đọc số tiền, ngày, bên bán" trong khi đọc ảnh chưa bật và nút chụp bị khoá.
+              <p className="text-sm">
+                Chưa có chứng từ nào trong quý. MIMI <strong>chưa bật đọc ảnh chứng từ</strong>, nên hiện chưa thêm
+                được chứng từ — mọi khoản chi dưới đây sẽ nằm ở nhóm chưa có giấy tờ. Hãy giữ hoá đơn gốc cho kế toán.
+              </p>
+            ) : (
+              <p className="text-sm">
+                Chưa có chứng từ nào trong quý.{' '}
+                <Link to="/dashboard/thu-vien" className="font-medium text-primary underline">
+                  Chụp hoá đơn trong Thư viện chứng từ
+                </Link>{' '}
+                — MIMI đọc số tiền, ngày, bên bán rồi tự ghép với khoản chi.
+              </p>
+            )
           )}
         </div>
       )}

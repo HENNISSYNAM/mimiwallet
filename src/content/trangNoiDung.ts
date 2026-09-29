@@ -208,7 +208,7 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
       doan: 'Từ 2026 hộ kinh doanh được chọn tính thuế theo lợi nhuận — nhưng chỉ khi chứng minh được chi phí. Tiền ra nằm ở ngân hàng, hoá đơn nằm ở cơ quan thuế; không ai ghép hai thứ đó lại cho bạn.',
     },
     cachHoatDong: [
-      { tieuDe: 'Đọc hai nguồn', mo: 'Tiền ra từ sao kê ngân hàng, và hoá đơn bạn chụp trong Thư viện chứng từ (MIMI đọc số tiền, ngày, bên bán).' },
+      { tieuDe: 'Đọc hai nguồn', mo: 'Tiền ra từ sao kê ngân hàng, và hoá đơn, chứng từ bạn lưu trong Thư viện chứng từ.' },
       { tieuDe: 'Ghép', mo: 'Theo số hoá đơn có trong nội dung chuyển khoản, hoặc theo số tiền và ngày gần nhau.' },
       { tieuDe: 'Chia ba nhóm', mo: 'Đã ghép · cần xem (ghép mơ hồ) · chưa có giấy tờ.' },
       { tieuDe: 'Theo kỳ đang tới hạn', mo: 'Chỉ đọc quý đang tới hạn kê khai, kèm số ngày còn lại.' },

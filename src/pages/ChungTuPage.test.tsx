@@ -13,7 +13,9 @@ const may = vi.hoisted(() => ({
   gd: [] as Record<string, unknown>[],
   loiGd: null as null | { message: string },
   doanhThu: { ok: true, body: { revenue: 1_500_000_000 } as Record<string, unknown> },
+  coMoHinh: undefined as boolean | undefined,
 }));
+vi.mock('@/hooks/useTrangThaiTroLy', () => ({ useCoMoHinh: () => may.coMoHinh }));
 
 function bang(ten: string) {
   const q: Record<string, unknown> = {};
@@ -41,6 +43,7 @@ const dung = () => render(<MemoryRouter><ChungTuPage /></MemoryRouter>);
 beforeEach(() => {
   may.gd = [];
   may.loiGd = null;
+  may.coMoHinh = undefined;
   may.doanhThu = { ok: true, body: { revenue: 1_500_000_000 } };
   globalThis.fetch = vi.fn(async () => ({
     ok: may.doanhThu.ok,
@@ -74,5 +77,13 @@ describe('Chứng từ chi phí — doanh thu năm và lỗi đọc', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Chưa đọc được giao dịch hoặc chứng từ'));
     expect(screen.queryByText('Chi phí chưa có giấy tờ trong quý này')).toBeNull();
     expect(screen.getByRole('button', { name: /Thử lại/ })).toBeTruthy();
+  });
+
+  // Hồi quy 29/09/2026: trang hứa "MIMI đọc số tiền, ngày, bên bán" khi đọc ảnh chưa bật và nút chụp bị khoá.
+  it('đọc ảnh chưa bật → nói thẳng là chưa thêm được chứng từ, không hứa MIMI đọc', async () => {
+    may.coMoHinh = false;
+    dung();
+    expect(await screen.findByText(/chưa bật đọc ảnh chứng từ/)).toBeTruthy();
+    expect(screen.queryByText(/MIMI đọc số tiền/)).toBeNull();
   });
 });
