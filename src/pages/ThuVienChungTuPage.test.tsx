@@ -18,6 +18,8 @@ vi.mock('@/integrations/supabase/client', () => {
   const chuoi = (data: unknown) => {
     const p = Promise.resolve({ data, error: null }) as Promise<unknown> & Record<string, unknown>;
     for (const k of ['select', 'eq', 'order', 'limit', 'in', 'maybeSingle']) p[k] = () => p;
+    // Đọc theo trang như PostgREST: cắt đúng đoạn được xin.
+    p.range = (a: number, b: number) => chuoi(Array.isArray(data) ? data.slice(a, b + 1) : data);
     return p;
   };
   return {

@@ -65,6 +65,11 @@ export function congTien(ds: ReadonlyArray<TienVND | null | undefined>): TienVND
   return tuBigInt(b);
 }
 
+/** a − b, chính xác tới đồng. */
+export function truTien(a: TienVND, b: TienVND): TienVND {
+  return tuBigInt(sangBigInt(a) - sangBigInt(b));
+}
+
 /** So sánh để sắp xếp (âm / 0 / dương), không ép chuỗi về Number. */
 export function soSanhTien(a: TienVND, b: TienVND): number {
   const x = sangBigInt(a); const y = sangBigInt(b);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MA_LY_DO } from './tacTu';
 import {
   NHAN_MA, canChuY, cauTomTatKiemSoat, giuTheoNgay, ketQuaDanhGia, kiemTruocYeuCau, locYeuCau, luatDaKhop, nganSachQuanhKhoan, nhomTrungTen, thoiGianGiu, tienTrinh, tinhKpi,
-  tomTatLuat, trangThaiHienThi, type ChinhSachRow, type NguoiNhan, type TacTu, type YeuCau,
+  tinhSuDung, tomTatLuat, trangThaiHienThi, type ChinhSachRow, type NguoiNhan, type TacTu, type YeuCau,
 } from './kiemSoatChi';
 
 /** 12:00 ngày 15/09/2026 giờ Việt Nam. */
@@ -285,5 +285,23 @@ describe('lọc yêu cầu', () => {
     expect(locYeuCau(ds, { trangThai: 'tu_choi', tim: '' }, {}).map((y) => y.id)).toEqual(['D']);
     expect(locYeuCau(ds, { trangThai: 'tat_ca', tim: 'in an' }, {}).map((y) => y.id)).toEqual(['A']);
     expect(locYeuCau(ds, { trangThai: 'tat_ca', tim: 'bot-a' }, { t1: 'bot-a' }).map((y) => y.id)).toEqual(['A', 'D']);
+  });
+});
+
+// Hồi quy 29/09/2026: cộng hạn mức bằng Number thì tổng vượt MAX_SAFE_INTEGER lệch đồng lẻ không báo.
+describe('hạn mức cộng chính xác tới đồng', () => {
+  const lon = { tac_tu_id: 'a', so_tien: Number.MAX_SAFE_INTEGER, created_at: HOM_NAY };
+  const nho = { tac_tu_id: 'a', so_tien: 2, created_at: HOM_NAY };
+
+  it('đã dùng trong ngày/tháng: 9.007.199.254.740.991 + 2 = …993, không phải …992', () => {
+    expect(tinhSuDung([lon, nho], NOW).a).toEqual({ ngay: '9007199254740993', thang: '9007199254740993' });
+  });
+
+  it('KPI "đã giữ hôm nay" cũng chính xác', () => {
+    expect(tinhKpi({ yeuCau: [], dsTacTu: [], chinhSach: {}, giu: [lon, nho], now: NOW }).daGiuHomNay).toBe('9007199254740993');
+  });
+
+  it('số nhỏ vẫn là number như cũ', () => {
+    expect(tinhSuDung([nho, nho], NOW).a).toEqual({ ngay: 4, thang: 4 });
   });
 });

@@ -37,7 +37,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LoiTroLy } from '@/components/tro-ly/LoiTroLy';
-import { dinhDangTien } from '@/lib/tien';
+import { dinhDangTien, soSanhTien, truTien, type TienVND } from '@/lib/tien';
 import { baoKetQua } from '@/lib/mimiLamHo';
 
 /**
@@ -863,7 +863,7 @@ function ThanhTab({ tab, chon, dem }: { tab: KhoaTab; chon: (k: KhoaTab) => void
 function HangKpi({ kpi, moXemXet }: { kpi: Kpi; moXemXet: () => void }) {
   const chuaCo = kpi.coAgent ? null : 'Chưa có agent';
   const ns = kpi.nganSachThang;
-  const daDungPct = ns && ns.tran > 0 ? Math.min(100, Math.round(((ns.tran - ns.conLai) / ns.tran) * 100)) : 0;
+  const daDungPct = ns && Number(ns.tran) > 0 ? Math.min(100, Math.round((Number(truTien(ns.tran, ns.conLai)) / Number(ns.tran)) * 100)) : 0;
   return (
     <section
       aria-label="Chỉ số chi tiêu"
@@ -1191,8 +1191,15 @@ function MenuTacTu({ t, dangLam, doiTrangThai, xoayKhoa, thuHoi }: { t: TacTu; d
   );
 }
 
-function ThanhDung({ nhan, da, tran }: { nhan: string; da: number; tran: number }) {
-  const pct = tran > 0 ? Math.min(100, (da / tran) * 100) : 100;
+/** Hạn mức còn lại, không âm, chính xác tới đồng. */
+const conLaiTien = (tran: TienVND, daDung: TienVND): TienVND => {
+  const c = truTien(tran, daDung);
+  return soSanhTien(c, 0) > 0 ? c : 0;
+};
+
+function ThanhDung({ nhan, da, tran }: { nhan: string; da: TienVND; tran: TienVND }) {
+  // Độ dài thanh chỉ cần gần đúng; số in ra lấy giá trị chính xác.
+  const pct = Number(tran) > 0 ? Math.min(100, (Number(da) / Number(tran)) * 100) : 100;
   return (
     <div>
       <div className="flex justify-between gap-2 text-xs">
@@ -1218,7 +1225,7 @@ function BangAgent({
 }: {
   ds: TacTu[];
   chinhSach: Record<string, ChinhSachRow>;
-  suDung: Record<string, { ngay: number; thang: number }>;
+  suDung: Record<string, { ngay: TienVND; thang: TienVND }>;
   soCho: Record<string, number>;
   chuSoHuu: string;
   dangLam: string | null;
@@ -1290,7 +1297,7 @@ function TheTacTu({
 }: {
   t: TacTu;
   cs: ChinhSachRow | undefined;
-  suDung: { ngay: number; thang: number };
+  suDung: { ngay: TienVND; thang: TienVND };
   soCho: number;
   chuSoHuu: string;
   dangLam: boolean;
@@ -1644,7 +1651,7 @@ function PanelQuyetDinh({
   tenTacTu: string;
   nguoiYeuCau: string;
   cs: ChinhSachRow | undefined;
-  suDung: { ngay: number; thang: number } | undefined;
+  suDung: { ngay: TienVND; thang: TienVND } | undefined;
   dangLam: boolean;
   duyet: (themNguoiNhan: boolean) => void;
   tuChoi: () => void;
@@ -1772,13 +1779,14 @@ function PanelQuyetDinh({
                   </thead>
                   <tbody className="divide-y divide-border font-mono tabular-nums">
                     {ns.dong.map((d) => {
-                      const sau = d.tran - d.tinhCa;
+                      const sau = truTien(d.tran, d.tinhCa);
+                      const vuot = soSanhTien(sau, 0) < 0;
                       return (
                         <tr key={d.nhan}>
                           <th scope="row" className="px-3 py-1.5 text-left font-sans font-medium text-foreground">{d.nhan}</th>
                           <td className="px-3 py-1.5 text-right">{dong(d.tran)}</td>
-                          <td className="px-3 py-1.5 text-right">{dong(d.tran - d.khongTinh)}</td>
-                          <td className={`px-3 py-1.5 text-right ${sau < 0 ? 'text-destructive' : ''}`}>{sau < 0 ? `Vượt ${dong(-sau)}` : dong(sau)}</td>
+                          <td className="px-3 py-1.5 text-right">{dong(truTien(d.tran, d.khongTinh))}</td>
+                          <td className={`px-3 py-1.5 text-right ${vuot ? 'text-destructive' : ''}`}>{vuot ? `Vượt ${dong(truTien(d.tinhCa, d.tran))}` : dong(sau)}</td>
                         </tr>
                       );
                     })}
@@ -1935,7 +1943,7 @@ function FormTaoYeuCau({
 }: {
   ds: TacTu[];
   chinhSach: Record<string, ChinhSachRow>;
-  suDung: Record<string, { ngay: number; thang: number }>;
+  suDung: Record<string, { ngay: TienVND; thang: TienVND }>;
   nguoiNhan: NguoiNhan[];
   dangGui: boolean;
   gui: (du: Record<string, unknown>) => void;
@@ -2024,8 +2032,8 @@ function FormTaoYeuCau({
           </select>
           {cs && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Hôm nay còn <span className="font-mono tabular-nums text-foreground">{dong(Math.max(0, cs.han_muc_ngay - (su?.ngay ?? 0)))}</span>
-              {' · '}tháng này còn <span className="font-mono tabular-nums text-foreground">{dong(Math.max(0, cs.han_muc_thang - (su?.thang ?? 0)))}</span>
+              Hôm nay còn <span className="font-mono tabular-nums text-foreground">{dong(conLaiTien(cs.han_muc_ngay, su?.ngay ?? 0))}</span>
+              {' · '}tháng này còn <span className="font-mono tabular-nums text-foreground">{dong(conLaiTien(cs.han_muc_thang, su?.thang ?? 0))}</span>
               {' · '}mỗi khoản tối đa <span className="font-mono tabular-nums text-foreground">{dong(cs.han_muc_moi_lan)}</span>
             </p>
           )}

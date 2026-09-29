@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { goiTroLy } from '@/lib/goiTroLy';
+import { docDu } from '@/lib/docDu';
 import { dinhDang } from '@/lib/troLy';
 import {
   csvChoKeToan, gopThuVien, locThuVien,
@@ -32,6 +33,11 @@ import {
 // Bảng mới chưa có trong kiểu sinh sẵn.
 type BangTho = { from: (bang: string) => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
+/** Trần đọc một lần; vượt thì nói rõ là chưa hiện hết, không im lặng cắt. */
+const TOI_DA_MUC = 20_000;
+/** `in('id', …)` dài quá thì URL vượt giới hạn của máy chủ — chia lô. */
+const LO_ID = 100;
+
 const LOC: { khoa: LocThuVien; nhan: string }[] = [
   { khoa: 'tat_ca', nhan: 'Tất cả' },
   { khoa: 'chup', nhan: 'Chứng từ chụp' },
@@ -42,6 +48,11 @@ const LOC: { khoa: LocThuVien; nhan: string }[] = [
 export default function ThuVienChungTuPage() {
   const [ds, setDs] = useState<MucThuVien[] | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
+  /**
+   * Chưa đọc hết (29/09/2026). Bản trước `.limit(500)` mỗi nguồn và không báo — công ty có hơn 500 chứng từ
+   * thấy thư viện thiếu, file CSV cho kế toán thiếu, mà không có dấu hiệu nào.
+   */
+  const [chuaHet, setChuaHet] = useState<string | null>(null);
   const [loc, setLoc] = useState<LocThuVien>('tat_ca');
   const [tuKhoa, setTuKhoa] = useState('');
   const [anh, setAnh] = useState<Record<string, string>>({});
@@ -59,29 +70,33 @@ export default function ThuVienChungTuPage() {
       const cty = { id, la_demo: dang?.la_demo === true };
       const tho = supabase as unknown as BangTho;
       const [q, h] = await Promise.all([
-        tho.from('chung_tu_quet')
-          .select('id, loai, so_hoa_don, ky_hieu, ngay, ben_ban, ma_so_thue_ben_ban, tien_thue, tong_tien, giao_dich_id, anh_path, created_at')
-          .eq('company_id', cty.id).order('created_at', { ascending: false }).limit(500),
-        tho.from('gdt_invoices')
-          .select('id, invoice_number, invoice_serial, counterparty_name, counterparty_tax_code, total_amount, tax_amount, issued_at')
-          .eq('company_id', cty.id).eq('direction', 'received').order('issued_at', { ascending: false }).limit(500),
+        docDu<ChungTuQuetDong>((tu, den, demTong) => tho.from('chung_tu_quet')
+          .select('id, loai, so_hoa_don, ky_hieu, ngay, ben_ban, ma_so_thue_ben_ban, tien_thue, tong_tien, giao_dich_id, anh_path, created_at', demTong ? { count: 'exact' } : undefined)
+          .eq('company_id', cty.id).order('created_at', { ascending: false }).order('id', { ascending: true }).range(tu, den),
+        { toiDa: TOI_DA_MUC }),
+        docDu<HoaDonDienTuDong>((tu, den, demTong) => tho.from('gdt_invoices')
+          .select('id, invoice_number, invoice_serial, counterparty_name, counterparty_tax_code, total_amount, tax_amount, issued_at', demTong ? { count: 'exact' } : undefined)
+          .eq('company_id', cty.id).eq('direction', 'received').order('issued_at', { ascending: false }).order('id', { ascending: true }).range(tu, den),
+        { toiDa: TOI_DA_MUC }),
       ]);
-      if (q.error) throw q.error;
-      if (h.error) throw h.error;
-      const quet = (q.data ?? []) as ChungTuQuetDong[];
+      if (q.loi) throw new Error(q.loi);
+      if (h.loi) throw new Error(h.loi);
+      setChuaHet(q.du && h.du ? null
+        : `Mới hiện ${(q.dong.length + h.dong.length).toLocaleString('vi-VN')} chứng từ — còn chứng từ chưa đọc tới (quá ${TOI_DA_MUC.toLocaleString('vi-VN')} mỗi nguồn). File CSV xuất ra cũng CHƯA đủ.`);
+      const quet = q.dong;
 
       const ids = [...new Set(quet.map((x) => x.giao_dich_id).filter(Boolean))] as string[];
-      let gd: GiaoDichGan[] = [];
-      if (ids.length) {
+      const gd: GiaoDichGan[] = [];
+      for (let i = 0; i < ids.length; i += LO_ID) {
         const r = await supabase.from('transactions')
           .select('id, transaction_date, counter_account_name, merchant_name, amount, is_synthetic')
-          .in('id', ids);
+          .in('id', ids.slice(i, i + LO_ID));
         if (r.error) throw r.error;
-        gd = (r.data ?? []).filter((t) => cty.la_demo === true || !t.is_synthetic).map((t) => ({
+        gd.push(...(r.data ?? []).filter((t) => cty.la_demo === true || !t.is_synthetic).map((t) => ({
           id: t.id, transaction_date: t.transaction_date, ten: t.counter_account_name || t.merchant_name, so_tien: Math.abs(Number(t.amount)),
-        }));
+        })));
       }
-      setDs(gopThuVien(quet, (h.data ?? []) as HoaDonDienTuDong[], gd));
+      setDs(gopThuVien(quet, h.dong, gd));
 
       const duong = quet.map((x) => x.anh_path).filter(Boolean) as string[];
       if (duong.length) {
@@ -196,6 +211,12 @@ export default function ThuVienChungTuPage() {
           <span>Chưa đọc được thư viện: {loi}</span>
           <button type="button" onClick={() => void tai()} className="inline-flex items-center gap-1 font-medium underline underline-offset-4"><RefreshCw size={14} /> Thử lại</button>
         </div>
+      )}
+
+      {chuaHet && !loi && (
+        <p role="alert" className="flex items-start gap-2 rounded-lg border border-mimi-amber/40 bg-mimi-amber/10 px-4 py-3 text-sm text-foreground">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" /> {chuaHet}
+        </p>
       )}
 
       {!ds && !loi && (

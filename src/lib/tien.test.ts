@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { congTien, dinhDangTien, dinhDangTienVanBan, laTien, soSanhTien, soTien } from './tien';
+import { congTien, dinhDangTien, dinhDangTienVanBan, laTien, soSanhTien, soTien, truTien } from './tien';
 
 /* Intl có thể dùng khoảng trắng không ngắt trước ₫ — so sau khi bỏ khoảng trắng. */
 const g = (s: string) => s.replace(/\s/g, ' ');
@@ -41,5 +41,14 @@ describe('tiền VND dùng chung', () => {
   it('so sánh để sắp xếp không ép chuỗi về Number', () => {
     const ds = ['9007199254740993', '9007199254740992', 5] as const;
     expect([...ds].sort(soSanhTien)).toEqual([5, '9007199254740992', '9007199254740993']);
+  });
+});
+
+describe('truTien', () => {
+  it('trừ chính xác kể cả vượt MAX_SAFE_INTEGER, kết quả âm giữ dấu', () => {
+    expect(truTien('9007199254740995', 1)).toBe('9007199254740994');
+    expect(truTien(5, '9007199254740995')).toBe(-9007199254740990);
+    expect(truTien(0, '9007199254740995')).toBe('-9007199254740995');
+    expect(truTien(10, 3)).toBe(7);
   });
 });
