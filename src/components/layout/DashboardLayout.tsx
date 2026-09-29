@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { MenuTaiKhoan } from './MenuTaiKhoan';
-import ThanhLichSu, { DanhSachLichSu } from './ThanhLichSu';
+import { MeoSong } from '@/components/mimi/MeoSong';
+import ThanhBen, { DanhSachLichSu } from './ThanhLichSu';
 import { ChevronRight, Clock, HelpCircle, History, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
@@ -219,13 +220,33 @@ export default function DashboardLayout() {
     setMobileSearch(false);
   };
 
+  const anhDaiDien = (
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+              {avatarUrl && !avatarFailed ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  aria-hidden="true"
+                  // Google serves these cross-origin; without this the request
+                  // carries no credentials and stays a plain public fetch.
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarFailed(true)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-bold text-white">{initials}</span>
+              )}
+            </div>
+  );
+
   return (
     /*
-      Thanh bên trái là LỊCH SỬ HỎI MIMI như ChatGPT/Claude (29/09/2026). Module ở thanh công cụ dưới ô hỏi, tài khoản
-      ở menu ảnh đại diện. Điện thoại: nút đồng hồ ở đầu trang mở cùng danh sách trong bảng trượt.
+      Bên trái (máy tính): dải biểu tượng — trang chủ, lịch sử, thư viện, kết nối, mọi công cụ, quét hoá đơn, pet MIMI,
+      hỗ trợ, tài khoản — và bảng lịch sử hỏi MIMI mở cạnh nó (29/09/2026). Điện thoại: nút đồng hồ ở đầu trang mở
+      lịch sử trong bảng trượt; thanh dưới giữ nguyên.
     */
     <div className="flex min-h-screen bg-background">
-      <ThanhLichSu />
+      <ThanhBen tenCongTy={congTy?.ten ?? null} anhDaiDien={anhDaiDien} />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header
@@ -240,7 +261,7 @@ export default function DashboardLayout() {
             </button>
             {/* Tên MIMI luôn đưa về Không gian Trợ lý; ở trang module thì thành đường dẫn "MIMI › Hoá đơn". */}
             <NavLink to="/dashboard" end data-mimi="nav:/dashboard" className="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-1 font-display text-[19px] font-bold tracking-tight text-foreground hover:opacity-80">
-              <IconMeo size={26} aria-hidden />
+              <MeoSong size={28} />
               <span className={laKhongGianTroLy(location.pathname) ? '' : 'hidden sm:inline'}>MIMI</span>
             </NavLink>
             {laKhongGianTroLy(location.pathname) ? (
@@ -283,24 +304,8 @@ export default function DashboardLayout() {
             {/* The gradient stays as the backing layer, so it shows through
                 while the photo is still loading and remains the whole avatar
                 when there is no photo — no empty circle, no layout shift. */}
-            <MenuTaiKhoan tenCongTy={congTy?.ten ?? null} anhDaiDien={
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
-              {avatarUrl && !avatarFailed ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  aria-hidden="true"
-                  // Google serves these cross-origin; without this the request
-                  // carries no credentials and stays a plain public fetch.
-                  referrerPolicy="no-referrer"
-                  onError={() => setAvatarFailed(true)}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-bold text-white">{initials}</span>
-              )}
-            </div>
-            } />
+            {/* Máy tính: tài khoản ở đáy dải biểu tượng bên trái; đầu trang chỉ còn trên điện thoại. */}
+            <div className="lg:hidden"><MenuTaiKhoan tenCongTy={congTy?.ten ?? null} anhDaiDien={anhDaiDien} /></div>
           </div>
         </header>
 
@@ -430,7 +435,8 @@ export default function DashboardLayout() {
         {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
         {/* Trên màn MIMI Assistant đã có ô hỏi ở giữa; nút chat nổi chỉ là ô hỏi thứ hai. */}
         <MimiLamHoProvider>
-          {!laKhongGianTroLy(location.pathname) && <PetMimi />}
+          {/* Pet bật/tắt ở dải biểu tượng bên trái; đã bật thì hiện ở mọi trang, kể cả trang Trợ lý. */}
+          <PetMimi />
         </MimiLamHoProvider>
         {/* Người mới: pet ẩn mặc định nên phải nói cho họ biết nó có và dùng thế nào. */}
         <HuongDanPet />

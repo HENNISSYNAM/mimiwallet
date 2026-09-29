@@ -14,7 +14,9 @@ const DONG = 'flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left t
  * dưới ô hỏi, thanh bên chỉ còn vài mục hiếm dùng mà chiếm 256px mọi màn. Giờ MIMI dùng hết chiều rộng; kết nối,
  * cài đặt, ngôn ngữ, hỗ trợ và đăng xuất gom về đây — đúng chỗ người dùng tìm tài khoản của mình.
  */
-export function MenuTaiKhoan({ tenCongTy, anhDaiDien }: { tenCongTy: string | null; anhDaiDien: React.ReactNode }) {
+export function MenuTaiKhoan({ tenCongTy, anhDaiDien, side = 'bottom', align = 'end' }: {
+  tenCongTy: string | null; anhDaiDien: React.ReactNode; side?: 'bottom' | 'right'; align?: 'start' | 'end';
+}) {
   const [mo, setMo] = useState(false);
   const [moTaiApp, setMoTaiApp] = useState(false);
   const logout = useAuthStore((s) => s.logout);
@@ -31,7 +33,7 @@ export function MenuTaiKhoan({ tenCongTy, anhDaiDien }: { tenCongTy: string | nu
             {anhDaiDien}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 rounded-2xl p-1.5">
+        <PopoverContent side={side} align={align} sideOffset={side === 'right' ? 10 : 4} className="w-64 rounded-2xl p-1.5">
           {tenCongTy && <p className="truncate px-2.5 pb-1.5 pt-1 text-xs font-medium text-muted-foreground">{tenCongTy}</p>}
           <nav aria-label="Tài khoản" className="grid gap-0.5">
             <NavLink to="/dashboard/ket-noi" data-mimi="nav:/dashboard/ket-noi" onClick={dong} className={DONG}>
