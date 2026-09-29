@@ -26,6 +26,7 @@ import { taiKhoanCuaToi } from '../ledger/tai-khoan.ts';
 import { locMinhHoa } from '../minh-hoa.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import { docHet } from '../doc-het.ts';
+import { goiYTienVao, laTienSanTmdt } from '../phan-loai/tien-vao.ts';
 import { chiaTheoHoatDong, type ChiaHoatDong, type KhoanDoanhThu, type PhanLoaiHoatDong } from './theo-hoat-dong.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -162,7 +163,31 @@ export async function docNguonTienVao(db: Db, companyId: string, nam: number, la
   return { giao_dich: dong, tai_khoan: taiKhoan, xac_nhan: xacNhan, noi_bo: noiBo };
 }
 
-export interface SoLieuDoanhThu extends SoLieuTienVao {
+export interface PhanTichTienVao {
+  /** Khoản CHƯA ai xác nhận mà MIMI đoán không phải doanh thu (vay, góp vốn, người nhà…): đang tạm tính là doanh thu. */
+  goi_y_loai_ra: { so_tien: number; so_khoan: number };
+  /** Tiền sàn TMĐT trả về (ròng, đã trừ phí) — doanh thu tính thuế là giá bán, cao hơn. */
+  tien_san_tmdt: { so_tien: number; so_khoan: number };
+}
+
+/**
+ * Hai con số giúp giao diện KHÔNG kết luận ngưỡng quá sớm (29/09/2026, xem docs/PHAN_HOI_GIA_LAP_WTP.md):
+ * vừa nhập sao kê, khoản vay 200 triệu chưa ai xác nhận đẩy doanh thu qua 1 tỷ; và sàn trả tiền ròng.
+ */
+export function phanTichTienVao(nam: number, giaoDich: (GiaoDichTinh & Row)[], xacNhan: XacNhanTinh[], noiBoIds: Set<string>): PhanTichTienVao {
+  const daXacNhan = new Set(xacNhan.filter((x) => x.revenue_effect === 'include' || x.revenue_effect === 'exclude').map((x) => String(x.transaction_id)));
+  const kq: PhanTichTienVao = { goi_y_loai_ra: { so_tien: 0, so_khoan: 0 }, tien_san_tmdt: { so_tien: 0, so_khoan: 0 } };
+  const tienTo = String(nam);
+  for (const t of giaoDich) {
+    if (chieuTien(t) !== 'vao' || !String(t.transaction_date).startsWith(tienTo) || noiBoIds.has(String(t.id))) continue;
+    const k = { merchant_name: t.merchant_name ?? null, counter_account_name: t.counter_account_name ?? null, payment_reference: t.payment_reference ?? null };
+    if (laTienSanTmdt(k)) { kq.tien_san_tmdt.so_tien += doLonTien(t); kq.tien_san_tmdt.so_khoan += 1; }
+    if (!daXacNhan.has(String(t.id)) && goiYTienVao(k)) { kq.goi_y_loai_ra.so_tien += doLonTien(t); kq.goi_y_loai_ra.so_khoan += 1; }
+  }
+  return kq;
+}
+
+export interface SoLieuDoanhThu extends SoLieuTienVao, PhanTichTienVao {
   hoa_don: number | null;
   hoa_don_theo_quy: Bon | null;
   so_hoa_don: number;
@@ -182,7 +207,7 @@ export async function docSoLieuDoanhThu(db: Db, companyId: string, nam: number, 
   // Doanh thu mọi nơi (tax-summary, tờ khai nháp, trợ lý) là ước tính từ ngân hàng.
   const hoaDon: Row[] = [];
   const [nguon, phanLoai] = await Promise.all([
-    docNguonTienVao(db, companyId, nam, laDemo),
+    docNguonTienVao(db, companyId, nam, laDemo, ', merchant_name, counter_account_name, payment_reference'),
     docHet((a, b) => db.from('phan_loai_hoat_dong')
       .select('nguon, nguon_id, hoat_dong')
       .eq('company_id', companyId).order('id', { ascending: true }).range(a, b), 'nhóm hoạt động'),
@@ -191,6 +216,7 @@ export async function docSoLieuDoanhThu(db: Db, companyId: string, nam: number, 
   const hd = tinhHoaDon(hoaDon);
   return {
     ...tv,
+    ...phanTichTienVao(nam, nguon.giao_dich as (GiaoDichTinh & Row)[], nguon.xac_nhan as XacNhanTinh[], nguon.noi_bo.internalIds),
     hoa_don: hd?.tong ?? null,
     hoa_don_theo_quy: hd?.theo_quy ?? null,
     so_hoa_don: hd?.so ?? 0,

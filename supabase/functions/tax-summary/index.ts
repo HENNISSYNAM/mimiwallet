@@ -106,6 +106,8 @@ Deno.serve(async (req) => {
     // ledger is illustrative (_shared/minh-hoa.ts).
     const laDemo = await congTyLaDemo(supabase, company.id);
     const s = await docSoLieuDoanhThu(supabase, company.id, year, laDemo);
+    // Khách trả tiền mặt nhiều hay ít (NULL = chưa hỏi) — xem migration 20260929120000.
+    const { data: hoSo } = await supabase.from("ho_so_thue").select("tien_mat, kenh").eq("company_id", company.id).maybeSingle();
 
     /*
      * LỊCH THUẾ CỦA CHÍNH CÔNG TY NÀY (25/09/2026) — một nguồn cho Tổng quan, Nhắc thuế, trợ lý.
@@ -144,6 +146,11 @@ Deno.serve(async (req) => {
       gap: s.hoa_don !== null ? s.hoa_don - s.uoc_tinh : null,
       ...status,
       internalTransfersExcluded: s.so_giao_dich_noi_bo,
+      // 29/09/2026 — để giao diện không kết luận ngưỡng quá sớm (docs/PHAN_HOI_GIA_LAP_WTP.md).
+      suggestedExclusion: s.goi_y_loai_ra,
+      marketplacePayout: s.tien_san_tmdt,
+      cashShare: hoSo?.tien_mat ?? null,
+      salesChannel: hoSo?.kenh ?? null,
       // Pairs inferred rather than proved. They reduce revenue, so anyone
       // relying on this figure deserves to know how many were guesses.
       needsReview: s.can_xem_lai,

@@ -53,6 +53,26 @@ Gộp 5 người, bộ gợi ý bằng quy tắc hỏi **37 câu, đúng 24 (65%
 5. **Quy tắc thiếu mẫu câu.** "CON TRAI GUI BA" không khớp mẫu "con gui" nên bị tính là doanh thu (9 lần, 45 triệu).
    "CHI GUI TIEN LIEU TRINH CHO EM" (khách trả hộ em gái) bị gợi ý là người nhà.
 
+### Đã sửa cùng ngày, và đo lại
+
+| | Trước | Sau |
+|---|---|---|
+| Câu MIMI hỏi / đúng / sai / sót (5 người) | 37 / 24 / 13 / 18 | 33 / **33** / **0** / 9 |
+| Chị Hạnh bấm đồng ý mọi gợi ý | 805 triệu (khai thiếu 157 triệu) | **961 triệu = đúng** |
+| Bác Sáu (tiệm vàng): đồng hồ ngưỡng nói | "Chưa vượt 1 tỷ" | "Chưa kết luận được… khách có hay trả tiền mặt không?"; trả lời "phần lớn" → "Có thể ĐÃ vượt" |
+| Chị Hạnh vừa nhập sao kê | "Đã vượt 1 tỷ" | "Có thể CHƯA vượt: … khoản giống tiền vay … chưa ai xác nhận" |
+| Minh (sàn TMĐT) | không nhắc | nhắc doanh thu tính thuế là giá bán trước phí sàn |
+
+Sửa gì: (1) có dấu hiệu bán hàng thì không gợi ý "người nhà"; (2) bỏ tên người chuyển trước khi xét "người nhà" —
+lỗi "NGUYEN VAN **BA** CHUYEN KHOAN" = "bố chuyển" là lỗi hàng loạt với mọi tên kết thúc bằng Anh, Ba, Em…;
+(3) thêm "con trai/con gái gửi"; (4) `tax-summary` trả thêm tiền MIMI đoán không phải doanh thu nhưng chưa xác
+nhận, tiền sàn, và câu trả lời "khách trả tiền mặt" (cột mới `ho_so_thue.tien_mat`); (5) đồng hồ ngưỡng nói
+theo `src/lib/nhanDinhNguong.ts`, có 3 nút trả lời câu tiền mặt.
+
+**"0 sai" là lạc quan:** quy tắc được chỉnh trên chính bộ dữ liệu này. Muốn biết độ chính xác thật phải đo trên
+nội dung chuyển khoản do người khác viết (tập D2 của khoá luận). 9 khoản còn sót là tiền bạn trả tiền ăn
+(200 nghìn) — không có dấu hiệu gì, MIMI tính là doanh thu, tức là phía an toàn.
+
 ## Phần B — Phản hồi đóng vai (GIẢ LẬP, không phải khách thật)
 
 Khung hỏi giá: Van Westendorp (4 mức), "có trả 249.000đ/tháng như bảng giá hiện tại không", và câu Sean Ellis

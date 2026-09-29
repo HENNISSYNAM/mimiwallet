@@ -9,6 +9,8 @@ import { Coin, Chest } from '@/components/illustrations/GamifyObjects';
 import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { dinhDangTien } from '@/lib/tien';
+import { goiToKhai } from '@/lib/goiToKhai';
+import { nhanDinhNguong, type TienMat } from '@/lib/nhanDinhNguong';
 
 /**
  * The two revenue milestones a Vietnamese household business meets, and where
@@ -69,6 +71,10 @@ interface Summary {
   /* Từ 24/09/2026 — cùng nguồn với tờ khai nháp (`_shared/doanh-thu/so-lieu.ts`). Tuỳ chọn để bản
      máy chủ cũ vẫn hiện được. */
   unclassifiedAmount?: number;
+  /* Từ 29/09/2026 — để không kết luận ngưỡng quá sớm (`lib/nhanDinhNguong.ts`). */
+  suggestedExclusion?: { so_tien: number; so_khoan: number } | null;
+  marketplacePayout?: { so_tien: number; so_khoan: number } | null;
+  cashShare?: TienMat | null;
   unclassifiedCount?: number;
   excludedByPerson?: number;
   coverage?: number | null;
@@ -234,6 +240,51 @@ export function GiaiThichUocTinh({ data }: { data: Pick<Summary, 'unclassifiedAm
   );
 }
 
+const TIEN_MAT: { gia: TienMat; nhan: string }[] = [
+  { gia: 'gan_nhu_khong', nhan: 'Gần như không' },
+  { gia: 'mot_phan', nhan: 'Một phần' },
+  { gia: 'phan_lon', nhan: 'Phần lớn' },
+];
+
+/**
+ * Câu kết luận về mốc 1 tỷ, đặt ngay dưới con số (29/09/2026). Thanh mốc bên dưới chỉ đo tiền vào tài
+ * khoản; câu này nói con số đó đủ để kết luận chưa — tiền mặt, khoản chưa xác nhận, tiền sàn trả ròng.
+ */
+function NhanDinhMocMotTy({ data, daLuu }: { data: Summary; daLuu: () => void }) {
+  const [dangLuu, setDangLuu] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const nd = nhanDinhNguong({
+    doanhThu: data.revenue, nguong: 1_000_000_000,
+    goiYLoaiRa: data.suggestedExclusion, tienSan: data.marketplacePayout, tienMat: data.cashShare ?? null,
+  });
+  const mau = nd.muc === 'da_vuot' || nd.muc === 'co_the_vuot'
+    ? 'border-mimi-amber/40 bg-mimi-amber/10'
+    : nd.muc === 'chua_vuot' ? 'border-border/60 bg-card/40' : 'border-primary/30 bg-primary/5';
+  const tra = async (tienMat: TienMat) => {
+    setDangLuu(true); setLoi(null);
+    try { await goiToKhai('luu_tien_mat', { tien_mat: tienMat }); daLuu(); }
+    catch (e) { setLoi(e instanceof Error ? e.message : 'Chưa lưu được.'); }
+    finally { setDangLuu(false); }
+  };
+  return (
+    <div className={`mt-4 rounded-xl border px-3 py-2.5 text-xs text-foreground ${mau}`} data-muc-nguong={nd.muc}>
+      <p>{nd.cau}</p>
+      {nd.hoiTienMat && (
+        <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Khách trả tiền mặt">
+          {TIEN_MAT.map((t) => (
+            <button key={t.gia} type="button" disabled={dangLuu} onClick={() => void tra(t.gia)}
+              className="rounded-full border border-border bg-card px-3 py-1 font-medium hover:bg-accent disabled:opacity-50">
+              {t.nhan}
+            </button>
+          ))}
+        </div>
+      )}
+      {nd.ghiChuSan && <p className="mt-1.5 text-muted-foreground">{nd.ghiChuSan}</p>}
+      {loi && <p role="alert" className="mt-1.5 text-destructive">{loi}</p>}
+    </div>
+  );
+}
+
 export function ThresholdClock() {
   const { session } = useAuthStore();
   const [data, setData] = useState<Summary | null>(null);
@@ -337,6 +388,8 @@ export function ThresholdClock() {
           </p>
         </div>
       </div>
+
+      <NhanDinhMocMotTy data={data} daLuu={() => void load()} />
 
       <div className="mt-5 space-y-4">
         {(data.milestones ?? []).map((m) => (

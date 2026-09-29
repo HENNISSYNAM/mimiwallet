@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { goiYTienVao } from './tien-vao';
+import { goiYTienVao, laTienSanTmdt } from './tien-vao';
 
 const k = (payment_reference: string, counter_account_name: string | null = null) =>
   ({ merchant_name: null, counter_account_name, payment_reference });
@@ -56,5 +56,40 @@ describe('đọc nội dung chuyển khoản — tiền vào không phải doanh
   it('mỗi gợi ý có lý do bằng lời thường', () => {
     const g = goiYTienVao(k('CON GUI BA ME'));
     expect(g?.ly_do.length).toBeGreaterThan(20);
+  });
+});
+
+// Hồi quy 29/09/2026 — khách giả lập (docs/PHAN_HOI_GIA_LAP_WTP.md).
+describe('dấu hiệu bán hàng thắng gợi ý "người nhà"', () => {
+  it('chồng chuyển tiền hàng thu được: KHÔNG gợi ý người nhà (từng làm khai thiếu 157 triệu)', () => {
+    expect(goiYTienVao(k('CHONG CHUYEN TIEN HANG THU DUOC'))).toBeNull();
+    expect(goiYTienVao(k('CHI GUI TIEN LIEU TRINH CHO EM'))).toBeNull();
+  });
+  it('không có dấu hiệu bán hàng thì vẫn gợi ý như cũ', () => {
+    expect(goiYTienVao(k('CHONG CHUYEN TIEN'))?.loai).toBe('nguoi_nha');
+  });
+  it('"con trai/con gái gửi" là người nhà', () => {
+    expect(goiYTienVao(k('CON TRAI GUI BA'))?.loai).toBe('nguoi_nha');
+    expect(goiYTienVao(k('CON GAI CHUYEN ME'))?.loai).toBe('nguoi_nha');
+  });
+  it('vay vẫn là vay dù có chữ "tiền hàng"', () => {
+    expect(goiYTienVao(k('GIAI NGAN HDTD VAY TIEN HANG'))?.loai).toBe('vay');
+  });
+  it('nhận ra tiền đối soát của sàn TMĐT', () => {
+    expect(laTienSanTmdt(k('TIKTOK SHOP THANH TOAN DOI SOAT'))).toBe(true);
+    expect(laTienSanTmdt(k('CK TIEN HANG'))).toBe(false);
+  });
+});
+
+describe('tên người chuyển không bị đọc thành quan hệ gia đình', () => {
+  it('"NGUYEN VAN BA CHUYEN KHOAN" là khách tên Ba, không phải bố chuyển', () => {
+    expect(goiYTienVao(k('NGUYEN VAN BA CHUYEN KHOAN', 'NGUYEN VAN BA'))).toBeNull();
+    expect(goiYTienVao(k('NGUYEN VAN BA CHUYEN KHOAN'))).toBeNull();
+    expect(goiYTienVao(k('NGUYEN TUAN ANH CHUYEN TIEN'))).toBeNull();
+  });
+  it('quan hệ gia đình thật vẫn nhận ra', () => {
+    expect(goiYTienVao(k('CON GUI ME', 'LE THI NGOC HAN'))?.loai).toBe('nguoi_nha');
+    expect(goiYTienVao(k('BO ME GUI TIEN HOC KY', 'NGUYEN VAN HUNG'))?.loai).toBe('nguoi_nha');
+    expect(goiYTienVao(k('ME CHUYEN KHOAN'))?.loai).toBe('nguoi_nha');
   });
 });

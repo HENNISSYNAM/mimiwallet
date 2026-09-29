@@ -59,7 +59,7 @@ const NHOM: { loai: LoaiTienVao; mau: RegExp; ly_do: string }[] = [
     // KHÔNG có "tiền thuốc", "tiền học", "tiền ăn", "quà Tết": với nhà thuốc, trung
     // tâm dạy thêm, quán ăn, tiệm quà thì đó chính là tiền khách trả — gợi ý loại ra
     // sẽ xui người ta khai thiếu.
-    mau: /\b(con (gui|chuyen|cho|bieu)|(me|bo|ba|cha|anh|chi|em|vo|chong|ong|ba noi|ba ngoai) (gui|chuyen|cho)( tien)?|gui (me|bo|ba me|bo me|cha me|ong ba)|chuyen (cho|ve cho) (me|bo|ba me|bo me|cha me)|bieu (ong ba|bo me|ba me|cha me)|phung duong|tien (tieu|sinh hoat)|li xi|mung tuoi)\b/,
+    mau: /\b(con (trai |gai |re |dau )?(gui|chuyen|cho|bieu)|(me|bo|ba|cha|anh|chi|em|vo|chong|ong|ba noi|ba ngoai) (gui|chuyen|cho)( tien)?|gui (me|bo|ba me|bo me|cha me|ong ba)|chuyen (cho|ve cho) (me|bo|ba me|bo me|cha me)|bieu (ong ba|bo me|ba me|cha me)|phung duong|tien (tieu|sinh hoat)|li xi|mung tuoi)\b/,
     ly_do: 'Nội dung giống tiền người nhà chuyển cho — không phải tiền bán hàng.',
   },
   {
@@ -74,10 +74,49 @@ const NHOM: { loai: LoaiTienVao; mau: RegExp; ly_do: string }[] = [
   },
 ];
 
+/**
+ * Dấu hiệu tiền BÁN HÀNG trong nội dung (29/09/2026). Thử bằng khách giả lập
+ * (docs/PHAN_HOI_GIA_LAP_WTP.md): "CHONG CHUYEN TIEN HANG THU DUOC" — chồng giao hàng, thu tiền của tiệm rồi
+ * chuyển về — bị gợi ý "người nhà" 9/9 lần; đồng ý theo gợi ý là khai thiếu 157 triệu. Có dấu hiệu bán hàng
+ * thì KHÔNG gợi ý "người nhà": thà hỏi thiếu một câu (khoản vẫn tính là doanh thu) còn hơn xui khai thiếu.
+ */
+const DAU_HIEU_BAN_HANG = /\b(tien hang|don hang|thu duoc|thu ho|ban hang|lieu trinh|dich vu|hoa don|cong no)\b/;
+
+/**
+ * Nội dung để xét "người nhà", đã bỏ TÊN người chuyển (29/09/2026). Ngân hàng tự sinh nội dung "HỌ TÊN chuyen
+ * khoan": khách tên "NGUYEN VAN BA" thành "... ba chuyen ..." — khớp mẫu "bố chuyển". Tên kết thúc bằng Anh, Ba,
+ * Em, Chi… rất phổ biến, nên đây là lỗi hàng loạt. Bỏ tên người chuyển, và coi "3–4 chữ + chuyen khoan/tien" ở
+ * đầu nội dung là tên người, không phải quan hệ gia đình.
+ */
+function noiDungXetNguoiNha(k: KhoanTienVao): string | null {
+  let nd = ` ${boDau([k.merchant_name, k.payment_reference].filter(Boolean).join(' ')).replace(/\s+/g, ' ').trim()} `;
+  const ten = boDau(k.counter_account_name ?? '').replace(/\s+/g, ' ').trim();
+  if (ten.length >= 5) nd = nd.split(` ${ten} `).join(' ');
+  if (/^ ([a-z]+ ){3,4}chuyen (khoan|tien)\b/.test(nd)) return null;
+  return nd;
+}
+
 export function goiYTienVao(k: KhoanTienVao): GoiYTienVao | null {
   const chu = ` ${boDau([k.merchant_name, k.counter_account_name, k.payment_reference].filter(Boolean).join(' '))} `;
-  for (const n of NHOM) if (n.mau.test(chu)) return { loai: n.loai, ly_do: n.ly_do };
+  const banHang = DAU_HIEU_BAN_HANG.test(chu);
+  for (const n of NHOM) {
+    if (n.loai === 'nguoi_nha') {
+      const nd = banHang ? null : noiDungXetNguoiNha(k);
+      if (nd && n.mau.test(nd)) return { loai: n.loai, ly_do: n.ly_do };
+      continue;
+    }
+    if (n.mau.test(chu)) return { loai: n.loai, ly_do: n.ly_do };
+  }
   return null;
+}
+
+/**
+ * Tiền đối soát của sàn thương mại điện tử. Sàn trả tiền RÒNG (đã trừ phí), còn doanh thu tính thuế là giá
+ * bán — nên số tiền về tài khoản thấp hơn doanh thu thật.
+ */
+const SAN_TMDT = /\b(tiktok|shopee|lazada|tiki|sendo)\b/;
+export function laTienSanTmdt(k: KhoanTienVao): boolean {
+  return SAN_TMDT.test(` ${boDau([k.merchant_name, k.counter_account_name, k.payment_reference].filter(Boolean).join(' '))} `);
 }
 
 /** Tên ngắn cho từng loại, dùng làm tiêu đề cột. */

@@ -16,29 +16,16 @@
       "can_xem_lai": 0
     },
     "goi_y": {
-      "so_cau_hoi": 24,
+      "so_cau_hoi": 12,
       "dung": 12,
-      "sai": 12,
+      "sai": 0,
       "bo_sot": 0,
-      "ca_sai": [
-        "CHONG CHUYEN TIEN HANG THU DUOC (16.999.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "NGUYEN VAN BA CHUYEN KHOAN (3.796.000) — MIMI gợi ý \"nguoi_nha\", thật là business_revenue",
-        "NGUYEN VAN BA CHUYEN KHOAN (4.137.000) — MIMI gợi ý \"nguoi_nha\", thật là business_revenue",
-        "CHONG CHUYEN TIEN HANG THU DUOC (17.838.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "CHONG CHUYEN TIEN HANG THU DUOC (12.884.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "CHONG CHUYEN TIEN HANG THU DUOC (16.338.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "NGUYEN VAN BA CHUYEN KHOAN (4.320.000) — MIMI gợi ý \"nguoi_nha\", thật là business_revenue",
-        "CHONG CHUYEN TIEN HANG THU DUOC (15.640.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "CHONG CHUYEN TIEN HANG THU DUOC (14.855.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "CHONG CHUYEN TIEN HANG THU DUOC (16.994.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "CHONG CHUYEN TIEN HANG THU DUOC (15.252.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf",
-        "CHONG CHUYEN TIEN HANG THU DUOC (17.658.000) — MIMI gợi ý \"nguoi_nha\", thật là collection_on_behalf"
-      ],
+      "ca_sai": [],
       "ca_sot": []
     },
     "doanh_thu": {
       "A_chua_xac_nhan": 1201876000,
-      "B_dong_y_moi_goi_y": 804665000,
+      "B_dong_y_moi_goi_y": 961376000,
       "C_xac_nhan_dung_het": 961376000,
       "that_qua_ngan_hang": 961376000,
       "that_day_du": 961376000,
@@ -69,18 +56,16 @@
       "can_xem_lai": 0
     },
     "goi_y": {
-      "so_cau_hoi": 7,
+      "so_cau_hoi": 6,
       "dung": 6,
-      "sai": 1,
+      "sai": 0,
       "bo_sot": 0,
-      "ca_sai": [
-        "CHI GUI TIEN LIEU TRINH CHO EM (2.400.000) — MIMI gợi ý \"nguoi_nha\", thật là business_revenue"
-      ],
+      "ca_sai": [],
       "ca_sot": []
     },
     "doanh_thu": {
       "A_chua_xac_nhan": 488120000,
-      "B_dong_y_moi_goi_y": 411720000,
+      "B_dong_y_moi_goi_y": 414120000,
       "C_xac_nhan_dung_het": 434120000,
       "that_qua_ngan_hang": 434120000,
       "that_day_du": 434120000,
@@ -201,26 +186,16 @@
       "can_xem_lai": 0
     },
     "goi_y": {
-      "so_cau_hoi": 1,
-      "dung": 1,
+      "so_cau_hoi": 10,
+      "dung": 10,
       "sai": 0,
-      "bo_sot": 9,
+      "bo_sot": 0,
       "ca_sai": [],
-      "ca_sot": [
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi",
-        "CON TRAI GUI BA (5.000.000) — thật là family_transfer, MIMI không hỏi"
-      ]
+      "ca_sot": []
     },
     "doanh_thu": {
       "A_chua_xac_nhan": 937700000,
-      "B_dong_y_moi_goi_y": 927700000,
+      "B_dong_y_moi_goi_y": 882700000,
       "C_xac_nhan_dung_het": 892700000,
       "that_qua_ngan_hang": 892700000,
       "that_day_du": 2587700000,
