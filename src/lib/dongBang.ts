@@ -24,3 +24,11 @@ export const TRANG_DONG_BANG: Record<string, { ten: string; ly_do: string }> = {
 };
 
 export const daDongBang = (duong: string) => duong in TRANG_DONG_BANG;
+
+/**
+ * Đàn agent trên khối Điều phối (29/09/2026). Giao diện đã dựng, nhưng máy chủ chưa có `danh_sach_agent` /
+ * `chay_dan_agent`: mỗi lần mở Tổng quan, mọi người dùng thấy "Chưa chạy được đàn agent — máy chủ báo:
+ * Hành động không hợp lệ." Chủ sản phẩm đã chốt KHÔNG thêm agent lúc này, nên đóng băng: không gọi, không
+ * hiện. Máy chủ có hành động đó thì đổi thành false.
+ */
+export const DAN_AGENT_DONG_BANG = true;

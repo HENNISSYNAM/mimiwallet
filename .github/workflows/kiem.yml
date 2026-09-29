@@ -41,4 +41,4 @@ jobs:
 
       # Edge function chạy bằng Deno, không nằm trong tsc ở trên.
       - name: Kiểm kiểu edge function
-        run: npx --yes deno check supabase/functions/tro-ly/index.ts supabase/functions/to-khai/index.ts supabase/functions/chat/index.ts
+        run: npx --yes deno check supabase/functions/tro-ly/index.ts supabase/functions/to-khai/index.ts

@@ -31,7 +31,8 @@ const traLoi = (them: Record<string, unknown> = {}) => ({
   ...them,
 });
 
-const dung = () => render(<MemoryRouter><KhoiDieuPhoi /></MemoryRouter>);
+// Các ca dưới đây kiểm phần đàn agent khi được MỞ; mặc định trên production đang đóng băng (ca cuối).
+const dung = () => render(<MemoryRouter><KhoiDieuPhoi moDanAgent /></MemoryRouter>);
 
 beforeEach(() => {
   gia.goi.mockReset();
@@ -114,5 +115,14 @@ describe('Khối điều phối trên Tổng quan', () => {
     dung();
     const ds = await screen.findByRole('list', { name: 'Agent của MIMI' });
     expect(ds.textContent).toContain('Kế toán · cần kết nối · chỉ đọc và soạn nháp');
+  });
+
+  // Hồi quy 29/09/2026: máy chủ chưa có `danh_sach_agent` → mọi người dùng thấy lỗi 400 trên Tổng quan.
+  it('mặc định (đóng băng): không gọi danh_sach_agent, không hiện lỗi, lối thu nạp vẫn còn', async () => {
+    render(<MemoryRouter><KhoiDieuPhoi /></MemoryRouter>);
+    expect(screen.getByRole('navigation', { name: 'Thu nạp dữ liệu' })).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(gia.goi).not.toHaveBeenCalledWith('danh_sach_agent', expect.anything(), expect.anything());
+    expect(screen.queryByText(/Chưa chạy được đàn agent/)).toBeNull();
   });
 });

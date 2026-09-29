@@ -229,3 +229,56 @@ score_change_request:
   cùng lúc có thể bị chặn tần suất, đúng vào ngày nhiều người bấm nhất.
 - **Gói Supabase FREE đang vượt hạn mức.**
 - Lỗi console trên trang chủ: `<circle> attribute cx: Expected length, "undefined"`.
+
+## Vòng 29/09/2026 — đề nghị điểm
+
+Đối chiếu với báo cáo rà của Codex (bản OneDrive, cũ hơn `main`): Pet gọi `/chat` và báo `xong: true`
+sớm đều **đã sửa** trên `main` (`da1b675`, `6506ae0`). Điểm "chưa có danh mục vai trò" là **lỗi thật**:
+khối Điều phối gọi `tro-ly` hành động `danh_sach_agent` mà máy chủ chưa có → mọi người dùng thấy
+"Chưa chạy được đàn agent — máy chủ báo: Hành động không hợp lệ." Đã đóng băng (`DAN_AGENT_DONG_BANG`)
+vì chủ sản phẩm chốt không thêm agent lúc này. Function `chat` không còn ai gọi → đã gỡ khỏi production.
+
+Việc lớn trong ngày: tiền chính xác tới đồng (BigInt); đọc đủ theo trang và nói khi chưa đủ; đọc lỗi không
+thành số 0; Chứng từ chi phí hết lấy tổng tiền vào làm doanh thu cho lời khuyên thuế; khoản chờ duyệt không
+bị cắt ở 100 dòng; gỡ hoá đơn điện tử (Casso chưa bật) cả giao diện lẫn máy chủ; đồng hồ ngưỡng không kết
+luận sớm (tiền mặt, khoản chưa xác nhận, tiền sàn); quy tắc tiền vào không đọc tên khách thành "người nhà";
+khách giả lập có đáp án (`docs/PHAN_HOI_GIA_LAP_WTP.md`). Test **1874/1874**, 202 tệp.
+
+Đo trên production cùng ngày (chỉ đọc): 17 người dùng, 16 công ty, **0/16 kích hoạt**, 3 giao dịch thật,
+0 gói trả phí, waitlist 0; 4/7 liên kết "đọc sao kê" đang kết nối là `mock`, không liên kết Casso nào đọc
+sao kê; đọc ảnh chứng từ chưa bật nên chưa ai thêm được chứng từ.
+
+| Trục | Trọng số | 24/09 | **29/09** | Căn cứ |
+|---|---:|---:|---:|---|
+| data_truth_completeness | 0.13 | 6.8 | **6.9** | BigInt, docDu, lỗi đọc không thành số 0. Không lên trần vì 4/7 liên kết là mock |
+| security_tenant_isolation | 0.13 | 7.0 | 7.0 | Ở trần; CSP chặn thật |
+| tax_legal_correctness | 0.10 | 5.4 | **5.8** | Doanh thu cho lời khuyên thuế theo tax-summary; ngưỡng không kết luận sai với tiền mặt / khoản chưa xác nhận |
+| auditability_evidence_graph | 0.08 | 5.8 | 5.8 | Không đổi |
+| functional_completeness | 0.08 | 6.6 | **6.3** | Không thêm được chứng từ; gỡ hoá đơn điện tử; đàn agent đóng băng |
+| financial_control_safety | 0.11 | 7.0 | 7.0 | Ở trần; khoản chờ duyệt không mất, hạn mức chính xác |
+| test_ai_evaluation | 0.08 | 6.7 | **6.9** | 1226 → 1874 ca; khách giả lập có đáp án (quy tắc chỉnh trên chính bộ đó — không xin cao hơn) |
+| reliability_observability | 0.08 | 6.2 | **6.1** | Chưa quan trắc lỗi; lỗi 400 ở Tổng quan (đã đóng băng); plugin Lovable viết lại `app-mcp` khi build/test |
+| mobile_ux_activation | 0.06 | 6.3 | **5.8** | Đã đo: 0/16 kích hoạt |
+| market_differentiation | 0.06 | 5.7 | 5.7 | Phản hồi đóng vai không phải bằng chứng |
+| pmf_evidence | 0.05 | 4.6 | **4.2** | 0 trả phí, 0 kích hoạt, waitlist 0 |
+| multi_country_repeatability | 0.04 | 2.5 | 2.5 | Không đổi |
+
+```yaml
+score_change_request:
+  snapshot_base: MIMI-2026-09-16-AUDIT-01
+  measured_at: 2026-09-29
+  weighted_product_readiness:
+    frozen: 5.77
+    proposed_2026_09_24: 6.18
+    proposed: 6.17
+  separate_scores:
+    commercial_readiness: 3.8   # từ 4.2 — đã đo được 0 kích hoạt, 0 khách trả tiền
+  ceiling_checks:
+    automated_tests_present: true        # 1874 ca, 202 tệp
+    production_telemetry_present: false
+    paying_customer_evidence: false
+  decision: pending_human_review
+```
+
+Việc tiếp theo, theo thứ tự: (1) đường nhập chứng từ chạy được — nhập tay khi đọc ảnh chưa bật;
+(2) quan trắc lỗi; (3) 5 hộ kinh doanh thật kích hoạt.

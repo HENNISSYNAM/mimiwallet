@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DAN_AGENT_DONG_BANG } from '@/lib/dongBang';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Bot, FileSpreadsheet, Landmark, Loader2, Plug, Receipt, ScanLine } from 'lucide-react';
 import { goiTroLy } from '@/lib/goiTroLy';
@@ -84,7 +85,7 @@ function BaoCaoLuot({ l }: { l: LuotNao }) {
   );
 }
 
-export function KhoiDieuPhoi() {
+export function KhoiDieuPhoi({ moDanAgent = !DAN_AGENT_DONG_BANG }: { moDanAgent?: boolean } = {}) {
   const luot = useNaoMimi((s) => s.luot);
   const chayQuyTrinh = useNaoMimi((s) => s.chayQuyTrinh);
   const [agent, setAgent] = useState<AgentMimi[] | null>(null);
@@ -93,6 +94,8 @@ export function KhoiDieuPhoi() {
 
   // Danh sách agent: đọc một lần khi mở trang (máy chủ cũ không gửi → không hiện gì). Không thăm dò.
   useEffect(() => {
+    // Đóng băng (`lib/dongBang.ts`): không gọi hành động máy chủ chưa có — tránh lỗi hiện cho mọi người dùng.
+    if (!moDanAgent) return;
     const ctrl = new AbortController();
     // Action nhẹ `danh_sach_agent`: máy chủ chỉ kiểm JWT, quyền công ty, giới hạn gọi — không đọc sao kê,
     // chứng từ, không gọi mô hình. Đây là DANH MỤC năng lực, không phải trạng thái việc đang chạy.
@@ -104,7 +107,7 @@ export function KhoiDieuPhoi() {
       })
       .catch((e: unknown) => { if (!ctrl.signal.aborted) setLoiDanhMuc(e instanceof Error ? e.message : String(e)); });
     return () => ctrl.abort();
-  }, []);
+  }, [moDanAgent]);
 
   const coDanAgent = agent !== null;
   const moiNhat = luot[luot.length - 1] ?? null;
