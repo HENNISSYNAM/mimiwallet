@@ -44,7 +44,13 @@ interface GoiYGiaoDich {
   so_tien: number;
 }
 
-type TrangThaiQuet = { dangDoc: true } | { ketQua: KetQuaQuet; goiY: GoiYGiaoDich | null; anh: string } | null;
+type TrangThaiQuet = { dangDoc: true } | { ketQua: KetQuaQuet; goiY: GoiYGiaoDich | null; anh: string; nhapTay?: boolean } | null;
+
+/** Form trống cho nhập tay — cùng hình dạng kết quả đọc ảnh, để dùng chung một hộp xem lại. */
+const RONG: KetQuaQuet = {
+  loai: 'hoa_don', so_hoa_don: null, ky_hieu: null, ngay: null, ben_ban: null, ma_so_thue_ben_ban: null,
+  tien_truoc_thue: null, tien_thue: null, tong_tien: null, can_xem_lai: [],
+};
 
 export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanAn, children }: {
   /** `false` khi máy chủ chưa bật mô hình đọc ảnh; `undefined` khi chưa biết (để máy chủ trả lời). */
@@ -75,10 +81,15 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
    * điều chưa biết còn tệ hơn.
    */
   const chuaBat = coMoHinh === false;
-  const LY_DO = 'MIMI chưa bật đọc ảnh chứng từ. Bạn vẫn đối chiếu chứng từ ở trang Chứng từ chi phí.';
+  /*
+   * 29/09/2026: chưa bật đọc ảnh thì NHẬP TAY, không khoá nút. Máy chủ (`luu_chung_tu`) lưu các ô người dùng gõ
+   * mà không cần mô hình; trước đây nút bị khoá nên cả production chưa ai thêm được chứng từ nào, và trang
+   * Chứng từ chi phí chỉ còn liệt kê khoản thiếu giấy tờ.
+   */
+  const LY_DO = 'MIMI chưa bật đọc ảnh chứng từ — bấm để nhập tay các ô trên hoá đơn.';
 
   const mo = () => {
-    if (chuaBat) return;
+    if (chuaBat) { setQuet({ ketQua: RONG, goiY: null, anh: '', nhapTay: true }); return; }
     oAnh.current?.click();
   };
 
@@ -102,12 +113,9 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
       <button
         type="button"
         onClick={mo}
-        disabled={chuaBat}
         aria-label={nhanAn}
-        /* Lý do thay cho tên nút khi nút bị khoá: rê chuột hoặc trình đọc màn
-           hình đều nghe được vì sao, không phải đoán. */
         title={chuaBat ? LY_DO : nhanAn}
-        className={`${className ?? ''} ${chuaBat ? 'opacity-50 cursor-not-allowed' : ''}`.trim()}
+        className={className}
       >
         {children}
       </button>
@@ -157,7 +165,11 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
   const [luuAnh, setLuuAnh] = useState(true);
   const [dangLuu, setDangLuu] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  /** Ảnh gốc người dùng tự đính kèm khi nhập tay (tuỳ chọn). */
+  const [anhKem, setAnhKem] = useState('');
   const daDoc = quet && 'ketQua' in quet ? quet : null;
+  const nhapTay = !!daDoc?.nhapTay;
+  const anh = daDoc?.anh || anhKem;
 
   useEffect(() => {
     if (!daDoc) return;
@@ -166,7 +178,9 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
       const v = daDoc.ketQua[t.khoa];
       f[t.khoa] = v === null || v === undefined ? '' : String(v);
     }
+    f.loai = daDoc.ketQua.loai;
     setForm(f);
+    setAnhKem('');
     setGan(true);
     setLuuAnh(true);
     setLoi(null);
@@ -179,7 +193,7 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
     const so = (s: string) => (s.replace(/[^\d]/g, '') ? Number(s.replace(/[^\d]/g, '')) : null);
     try {
       const kq = await goiTroLy('luu_chung_tu', {
-        loai: daDoc.ketQua.loai,
+        loai: form.loai || daDoc.ketQua.loai,
         ben_ban: form.ben_ban || null,
         ma_so_thue_ben_ban: form.ma_so_thue_ben_ban || null,
         so_hoa_don: form.so_hoa_don || null,
@@ -189,7 +203,7 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
         tien_thue: so(form.tien_thue ?? ''),
         tong_tien: so(form.tong_tien ?? ''),
         giao_dich_id: giaoDichId ?? (daDoc.goiY && gan ? daDoc.goiY.id : null),
-        anh: luuAnh ? daDoc.anh : null,
+        anh: luuAnh && anh ? anh : null,
       });
       onDaLuu(typeof kq.canh_bao === 'string' ? kq.canh_bao : null);
     } catch (e) {
@@ -203,14 +217,29 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
     <Dialog open={!!quet} onOpenChange={(mo) => { if (!mo && !dangLuu) onDong(); }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Xem lại chứng từ</DialogTitle>
-          <DialogDescription>MIMI đọc từ ảnh bạn chụp. Kiểm từng ô rồi bấm lưu — chứng từ vào Thư viện chứng từ của công ty.</DialogDescription>
+          <DialogTitle>{nhapTay ? 'Nhập chứng từ' : 'Xem lại chứng từ'}</DialogTitle>
+          <DialogDescription>
+            {nhapTay
+              ? 'Gõ các ô trên hoá đơn hoặc biên lai. Chỉ tổng tiền là bắt buộc. Chứng từ vào Thư viện chứng từ của công ty.'
+              : 'MIMI đọc từ ảnh bạn chụp. Kiểm từng ô rồi bấm lưu — chứng từ vào Thư viện chứng từ của công ty.'}
+          </DialogDescription>
         </DialogHeader>
         {!daDoc ? (
           <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" /> Đang đọc ảnh…</p>
         ) : (
           <form onSubmit={(e) => { e.preventDefault(); void luu(); }} className="grid gap-3 sm:grid-cols-2">
-            <img src={daDoc.anh} alt="Ảnh chứng từ vừa chụp" className="max-h-48 w-full rounded-lg border border-border object-contain sm:col-span-2" />
+            {anh && <img src={anh} alt="Ảnh chứng từ vừa chụp" className="max-h-48 w-full rounded-lg border border-border object-contain sm:col-span-2" />}
+            {nhapTay && (
+              <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                <span className="text-muted-foreground">Loại chứng từ</span>
+                <select value={form.loai ?? 'hoa_don'} onChange={(e) => setForm((f) => ({ ...f, loai: e.target.value }))}
+                  className="h-11 rounded-lg border border-border bg-background px-3 text-foreground">
+                  <option value="hoa_don">Hoá đơn</option>
+                  <option value="bien_lai">Biên lai</option>
+                  <option value="khac">Khác</option>
+                </select>
+              </label>
+            )}
             {TRUONG.map((t) => {
               const canXem = daDoc.ketQua.can_xem_lai.includes(t.khoa);
               return (
@@ -236,10 +265,20 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
                 </span>
               </label>
             )}
-            <label className="flex items-start gap-2 text-sm sm:col-span-2">
-              <input type="checkbox" checked={luuAnh} onChange={(e) => setLuuAnh(e.target.checked)} className="mt-0.5" />
-              <span className="text-foreground">Lưu cả ảnh gốc (chỉ người trong công ty xem được)</span>
-            </label>
+            {nhapTay && !anhKem && (
+              <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                <span className="text-muted-foreground">Ảnh gốc (không bắt buộc)</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Đính kèm ảnh chứng từ"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void anhThanhDataUrl(f).then(setAnhKem).catch(() => setLoi('Không đọc được ảnh này.')); }}
+                  className="text-sm text-foreground" />
+              </label>
+            )}
+            {anh && (
+              <label className="flex items-start gap-2 text-sm sm:col-span-2">
+                <input type="checkbox" checked={luuAnh} onChange={(e) => setLuuAnh(e.target.checked)} className="mt-0.5" />
+                <span className="text-foreground">Lưu cả ảnh gốc (chỉ người trong công ty xem được)</span>
+              </label>
+            )}
             {loi && <p className="text-sm text-destructive sm:col-span-2" role="alert">{loi}</p>}
             <DialogFooter className="gap-2 sm:col-span-2">
               <button type="button" onClick={onDong} className="h-11 rounded-lg border border-border px-4 text-sm">Huỷ</button>

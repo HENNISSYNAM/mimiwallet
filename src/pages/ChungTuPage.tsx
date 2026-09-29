@@ -312,8 +312,10 @@ export default function ChungTuPage() {
             coMoHinh === false ? (
               // 29/09/2026: câu cũ hứa "MIMI đọc số tiền, ngày, bên bán" trong khi đọc ảnh chưa bật và nút chụp bị khoá.
               <p className="text-sm">
-                Chưa có chứng từ nào trong quý. MIMI <strong>chưa bật đọc ảnh chứng từ</strong>, nên hiện chưa thêm
-                được chứng từ — mọi khoản chi dưới đây sẽ nằm ở nhóm chưa có giấy tờ. Hãy giữ hoá đơn gốc cho kế toán.
+                Chưa có chứng từ nào trong quý. MIMI <strong>chưa bật đọc ảnh chứng từ</strong>, nhưng bạn nhập tay
+                được:{' '}
+                <Link to="/dashboard/thu-vien" className="font-medium text-primary underline">mở Thư viện chứng từ</Link>
+                , gõ tổng tiền, ngày, bên bán trên hoá đơn — MIMI tự ghép với khoản chi.
               </p>
             ) : (
               <p className="text-sm">

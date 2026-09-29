@@ -171,7 +171,7 @@ export default function ThuVienChungTuPage() {
       </NutQuetChungTu>
       {coMoHinh === false && (
         <p className="max-w-xs text-xs text-muted-foreground">
-          MIMI chưa bật đọc ảnh chứng từ. Bạn vẫn đối chiếu chứng từ ở trang Chứng từ chi phí.
+          MIMI chưa bật đọc ảnh chứng từ — bấm để nhập tay các ô trên hoá đơn.
         </p>
       )}
     </div>
@@ -222,7 +222,7 @@ export default function ThuVienChungTuPage() {
           <h2 className="mt-3 text-lg font-semibold text-foreground">Chưa có chứng từ nào</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             {coMoHinh === false
-              ? 'MIMI chưa bật đọc ảnh chứng từ, nên hiện chưa thêm được chứng từ.'
+              ? 'MIMI chưa bật đọc ảnh chứng từ: bấm nút dưới để nhập tay số tiền, ngày, bên bán trên hoá đơn.'
               : 'Chụp hoá đơn để MIMI đọc số tiền, ngày, bên bán và tự ghép với khoản chi.'}
           </p>
           <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">

@@ -81,13 +81,24 @@ describe('Thư viện chứng từ', () => {
    * ngay tại đó. Máy chủ đã trả lời `co_mo_hinh: false` từ trước khi hiện nút,
    * nên giấu tới sau cú bấm chỉ tốn của người dùng một lần tin tưởng.
    */
-  it('chưa bật đọc ảnh thì nút chụp bị khoá và nói rõ lý do ngay trên trang', async () => {
+  // 29/09/2026: chưa bật đọc ảnh thì NHẬP TAY (máy chủ `luu_chung_tu` không cần mô hình). Trước đây nút bị khoá
+  // nên cả production chưa ai thêm được chứng từ nào.
+  it('chưa bật đọc ảnh: nút mở form nhập tay, lưu gọi luu_chung_tu, không gọi quét ảnh', async () => {
     dung();
     await screen.findByRole('list', { name: 'Chứng từ' });
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('trang_thai'));
+    expect(screen.getByText(/chưa bật đọc ảnh chứng từ/i)).toBeTruthy();
 
     const nut = await screen.findByRole('button', { name: /Chụp chứng từ/ });
-    await waitFor(() => expect((nut as HTMLButtonElement).disabled).toBe(true));
-    expect(screen.getByText(/chưa bật đọc ảnh chứng từ/i)).toBeTruthy();
+    expect((nut as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(nut);
+    expect(await screen.findByText('Nhập chứng từ')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Tổng tiền (₫)'), { target: { value: '1.250.000' } });
+    fireEvent.change(screen.getByLabelText('Bên bán'), { target: { value: 'Cửa hàng Minh Phát' } });
+    fireEvent.click(screen.getByRole('button', { name: /Lưu chứng từ/ }));
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('luu_chung_tu', expect.objectContaining({
+      tong_tien: 1_250_000, ben_ban: 'Cửa hàng Minh Phát', loai: 'hoa_don', anh: null,
+    })));
+    expect(gia.troLy).not.toHaveBeenCalledWith('quet_chung_tu', expect.anything());
   });
 });
