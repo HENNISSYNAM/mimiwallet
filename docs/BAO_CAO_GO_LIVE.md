@@ -103,6 +103,16 @@ trong Trợ lý (lỗi thì nhật ký thiếu dòng kết quả; bước ghi TR
 
 ## Giới hạn đã biết (không chặn, nói rõ với người dùng)
 
+- **Hoá đơn điện tử (GDT) — ĐÃ GỠ 29/09/2026.** Casso chưa bật sản phẩm này cho app production, nên
+  MIMI không đọc được hoá đơn nào từ cơ quan thuế (`gdt_invoices` 0 dòng). Giao diện bỏ mọi chỗ đọc/hứa;
+  máy chủ: `docSoLieuDoanhThu` thôi đọc bảng (doanh thu luôn là ước tính từ ngân hàng), `bank-link`
+  trả 410 `GDT_DA_GO` cho `feature=gdt` và `gdt-sync`, lịch tự tải trong `thong-bao` tắt, trợ lý đối
+  chiếu "thiếu chứng từ" với chứng từ chụp. Lõi `_shared/tax/dong-bo-gdt.ts` ĐÓNG BĂNG để bật lại khi
+  Casso mở. Bảng giữ nguyên (sổ cái chống sửa và tệp sao lưu cũ còn dùng). 3 liên kết `scopes='gdt'`
+  đều đã `disconnected` từ trước. Deploy 6 function lúc 29/09/2026, gọi không đăng nhập → 401.
+- **Đọc ảnh chứng từ chưa bật** (thiếu khoá mô hình): nút chụp bị khoá, chưa ai thêm được chứng từ;
+  màn Chứng từ chi phí và Thư viện nói thẳng điều đó thay vì hứa "MIMI đọc".
+
 - **AI hội thoại**: khi mô hình không gọi được, Trợ lý trả lời theo mẫu soạn sẵn cho các câu thường gặp.
   Mọi việc có nút (việc cần làm, phân loại, tờ khai, nhắc hạn) chạy bằng mã, không phụ thuộc mô hình.
 - **Bộ đọc báo cáo tài chính / tờ khai tải lên**: phần đọc và phân loại đã có và có test, **chưa có

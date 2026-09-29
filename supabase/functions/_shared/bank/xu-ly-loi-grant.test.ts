@@ -38,7 +38,7 @@ describe('xử lý lỗi grant cho mọi loại liên kết', () => {
 
   it('lời nhắc trỏ đúng nút của từng loại liên kết', () => {
     expect(loiNhacLienKetLai('qrpay')).toContain('Liên kết để nhận tiền QR');
-    expect(loiNhacLienKetLai('gdt')).toContain('Kết nối Tổng Cục Thuế');
+    expect(loiNhacLienKetLai('gdt')).toContain('không cần cấp lại');
     expect(loiNhacLienKetLai('transaction')).toContain('Liên kết ngân hàng');
     expect(loiNhacLienKetLai(null)).toContain('Liên kết ngân hàng');
   });

@@ -13,7 +13,8 @@
  *                nhận không phải doanh thu. Khoản chưa ai xác nhận vẫn tính là doanh thu: máy không
  *                bao giờ tự làm giảm doanh thu khai thuế.
  *   da_xac_nhan  phần của uoc_tinh mà người đã xác nhận là tiền bán hàng.
- *   hoa_don      tổng hoá đơn điện tử đã xuất, theo Tổng cục Thuế. Không phải ước tính.
+ *   hoa_don      LUÔN null từ 29/09/2026: đã gỡ hoá đơn điện tử (Casso chưa bật sản phẩm hoá đơn điện tử cho app production).
+ *                Giữ trường để hợp đồng phản hồi không đổi; hàm tính hoá đơn bên dưới đóng băng.
  * Con số đưa vào tờ khai nháp do `chonDoanhThu` (`luat/he-luat.ts`) chọn giữa hoa_don, uoc_tinh và
  * số người dùng tự nhập.
  *
@@ -36,7 +37,7 @@ type Bon = [number, number, number, number];
 const bon = (): Bon => [0, 0, 0, 0];
 const quyCuaThang = (thang: number) => Math.max(1, Math.min(4, Math.ceil(thang / 3)));
 
-export const CHUA_GOM = 'Chưa gồm tiền bán thu bằng tiền mặt: MIMI chỉ thấy tiền qua tài khoản ngân hàng và hoá đơn điện tử.';
+export const CHUA_GOM = 'Chưa gồm tiền bán thu bằng tiền mặt: MIMI chỉ thấy tiền qua tài khoản ngân hàng.';
 
 export interface GiaoDichTinh {
   id: string;
@@ -177,13 +178,11 @@ export interface SoLieuDoanhThu extends SoLieuTienVao {
 }
 
 export async function docSoLieuDoanhThu(db: Db, companyId: string, nam: number, laDemo = false): Promise<SoLieuDoanhThu> {
-  const [nguon, hoaDon, phanLoai] = await Promise.all([
+  // 29/09/2026: KHÔNG đọc `gdt_invoices` nữa — Casso chưa bật sản phẩm hoá đơn điện tử cho app production, bảng luôn trống.
+  // Doanh thu mọi nơi (tax-summary, tờ khai nháp, trợ lý) là ước tính từ ngân hàng.
+  const hoaDon: Row[] = [];
+  const [nguon, phanLoai] = await Promise.all([
     docNguonTienVao(db, companyId, nam, laDemo),
-    docHet((a, b) => db.from('gdt_invoices')
-      .select('id, direction, total_amount, invoice_status, issuance_period')
-      .eq('company_id', companyId)
-      .gte('issuance_period', nam * 100 + 1).lte('issuance_period', nam * 100 + 12)
-      .order('id', { ascending: true }).range(a, b), 'hoá đơn điện tử'),
     docHet((a, b) => db.from('phan_loai_hoat_dong')
       .select('nguon, nguon_id, hoat_dong')
       .eq('company_id', companyId).order('id', { ascending: true }).range(a, b), 'nhóm hoạt động'),

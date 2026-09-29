@@ -201,6 +201,11 @@ Deno.serve(async (req) => {
         if (!allowedRedirects.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
         const forQrPay = body.feature === "qrpay";
         const forGdt = body.feature === "gdt";
+        // 29/09/2026: đã gỡ hoá đơn điện tử — Casso chưa bật sản phẩm hoá đơn điện tử cho app production. Chặn trước khi Cas Link mở,
+        // để không ai cấp một quyền không đọc được gì.
+        if (forGdt) {
+          return json({ error: "MIMI chưa đọc được hoá đơn điện tử: Casso chưa mở sản phẩm này.", code: "GDT_DA_GO" }, 410);
+        }
         // Case 18: grant chỉ dùng một lần để gọi /identity rồi thu hồi — xem nhánh `exchange`.
         const forIdentity = body.feature === "identity";
         // Refused here rather than at `exchange`, so the customer is stopped
@@ -1528,8 +1533,11 @@ Deno.serve(async (req) => {
 
       // ── 8. Pull e-invoices from the tax authority ─────────────────────────
       case "gdt-sync": {
-        // Lõi dùng chung với lịch tự đồng bộ (`_shared/tax/dong-bo-gdt.ts`); ở đây chỉ dịch kết quả
-        // ra đúng dạng phản hồi giao diện đang đọc.
+        // 29/09/2026: đã gỡ hoá đơn điện tử (Casso chưa bật sản phẩm hoá đơn điện tử cho app production). Giao diện không còn gọi
+        // đường này; trả 410 thay vì gọi Cas. Lõi `_shared/tax/dong-bo-gdt.ts` ĐÓNG BĂNG, giữ để bật lại.
+        if (true as boolean) {
+          return json({ error: "MIMI chưa đọc được hoá đơn điện tử: Casso chưa mở sản phẩm này.", code: "GDT_DA_GO" }, 410);
+        }
         const kq = await dongBoHoaDonThue(supabase, cfg, privateKey, company.id, {
           ...(typeof body.from_date === "string" ? { fromDate: body.from_date } : {}),
         });

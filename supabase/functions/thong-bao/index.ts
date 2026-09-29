@@ -124,6 +124,9 @@ const HOA_DON_MOI_LUOT = 25;
 
 // deno-lint-ignore no-explicit-any
 async function tuDongBoHoaDon(db: any): Promise<{ da_chay: number; hoa_don_moi: number; loi: number } | { bo_qua: string }> {
+  // 29/09/2026: đã gỡ hoá đơn điện tử — Casso chưa bật sản phẩm hoá đơn điện tử cho app production. Không gọi Cas mỗi giờ cho một quyền
+  // không tồn tại. Bỏ dòng này để bật lại khi Casso mở.
+  if (true as boolean) return { bo_qua: "đã gỡ hoá đơn điện tử" };
   const khoa = Deno.env.get("PQC_KYC_PRIVATE_KEY");
   if (!khoa) return { bo_qua: "thiếu khoá giải mã" };
   let cfg;

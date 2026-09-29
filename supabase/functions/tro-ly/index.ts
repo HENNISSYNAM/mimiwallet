@@ -616,7 +616,7 @@ async function docDuLieu(
   }
   if (can.has("chung_tu_quet")) {
     viec.push(docTrang(
-      (a, b, c) => db.from("chung_tu_quet").select("id, tong_tien, ngay, giao_dich_id", dem(c))
+      (a, b, c) => db.from("chung_tu_quet").select("id, tong_tien, ngay, giao_dich_id, so_hoa_don, ben_ban, ma_so_thue_ben_ban", dem(c))
         .eq("company_id", companyId).order("id", { ascending: true }).range(a, b),
       "chứng từ quét", 5000,
     ).then(({ dong, tong }) => {
@@ -660,7 +660,8 @@ async function docThueManDau(db: Db, companyId: string, homNay: string) {
 }
 
 // `boi_canh` (màn đầu) không cần đọc mọi nguồn của hệ luật thuế: khối thuế đọc riêng.
-const TAT_CA_NGUON: NguonCan[] = ["giao_dich", "hoa_don_vao", "hoa_don_ban", "yeu_cau", "ket_noi_ngan_hang", "chi_phi_ai", "token_ai", "bang_gia", "chung_tu_quet"];
+// 29/09/2026: bỏ "hoa_don_vao" (gdt_invoices) — đã gỡ hoá đơn điện tử.
+const TAT_CA_NGUON: NguonCan[] = ["giao_dich", "hoa_don_ban", "yeu_cau", "ket_noi_ngan_hang", "chi_phi_ai", "token_ai", "bang_gia", "chung_tu_quet"];
 
 function docLichSu(v: unknown): TinNhanCu[] {
   if (!Array.isArray(v)) return [];
