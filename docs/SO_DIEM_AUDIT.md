@@ -282,3 +282,44 @@ score_change_request:
 
 Việc tiếp theo, theo thứ tự: (1) đường nhập chứng từ chạy được — nhập tay khi đọc ảnh chưa bật;
 (2) quan trắc lỗi; (3) 5 hộ kinh doanh thật kích hoạt.
+
+## Vòng 29/09/2026 — cuối ngày (sau bốn việc lên production)
+
+Sau lần đề nghị 6.17 sáng cùng ngày, lên production: (1) quy trình người duyệt ngoại lệ chứng từ — gắn chứng
+từ, chi cá nhân, "không có chứng từ" kèm lý do, chọn chứng từ cho khoản ghép mơ hồ, bảng `quyet_dinh_chung_tu`
+chỉ thêm, hoàn tác được, cùng bộ lọc cho màn Chứng từ chi phí và trợ lý (`2bf7458`); (2) nhập chứng từ bằng tay
+khi chưa bật đọc ảnh (`ad4787f`); (3) ghi lỗi giao diện first-party `client_error` (`409afde`); (4) đóng băng
+đàn agent — hết lỗi 400 trên Tổng quan — và gỡ function `chat` (`a292e6b`). Test **1897/1897**.
+Mảng trạm sạc nhượng quyền ghi vào `docs/MANG_TIEM_NANG.md` (6,0/10) — không tính vào điểm sản phẩm.
+
+| Trục | Trọng số | Sáng 29/09 | **Cuối ngày** | Căn cứ |
+|---|---:|---:|---:|---|
+| data_truth_completeness | 0.13 | 6.9 | 6.9 | Màn và trợ lý cùng bộ lọc ngoại lệ; vẫn 4/7 liên kết là mock |
+| security_tenant_isolation | 0.13 | 7.0 | 7.0 | Ở trần; bảng mới RLS theo thành viên, chỉ edge function ghi |
+| tax_legal_correctness | 0.10 | 5.8 | 5.8 | Không đổi |
+| auditability_evidence_graph | 0.08 | 5.8 | **6.2** | Quyết định ngoại lệ chỉ thêm (trigger cấm sửa/xoá), ai–lúc nào–lý do–ai hoàn tác; gắn chứng từ ghi thêm mắt xích sổ cái |
+| functional_completeness | 0.08 | 6.3 | **6.8** | Thêm được chứng từ (nhập tay); ngoại lệ xử lý được tới cùng; hết lỗi đàn agent |
+| financial_control_safety | 0.11 | 7.0 | 7.0 | Ở trần |
+| test_ai_evaluation | 0.08 | 6.9 | 6.9 | 1874 → 1897 ca; bộ ca eval vẫn 54/300 |
+| reliability_observability | 0.08 | 6.1 | **6.5** | Có ghi lỗi giao diện; chưa có cảnh báo, chưa ghi lỗi người chưa đăng nhập |
+| mobile_ux_activation | 0.06 | 5.8 | 5.8 | Vẫn 0/16 kích hoạt |
+| market_differentiation | 0.06 | 5.7 | 5.7 | Chân dung khách và mảng tiềm năng là suy nghĩ, chưa là bằng chứng |
+| pmf_evidence | 0.05 | 4.2 | 4.2 | 0 trả phí, 0 kích hoạt |
+| multi_country_repeatability | 0.04 | 2.5 | 2.5 | Không đổi |
+
+```yaml
+score_change_request:
+  snapshot_base: MIMI-2026-09-16-AUDIT-01
+  measured_at: 2026-09-29T-cuoi-ngay
+  weighted_product_readiness:
+    frozen: 5.77
+    proposed_sang_2026_09_29: 6.17
+    proposed: 6.27
+  separate_scores:
+    commercial_readiness: 3.8   # không đổi — chưa có khách kích hoạt, chưa có khách trả tiền
+  ceiling_checks:
+    automated_tests_present: true        # 1897 ca, 204 tệp
+    production_telemetry_present: partial  # client_error cho người đã đăng nhập; chưa có cảnh báo
+    paying_customer_evidence: false
+  decision: pending_human_review
+```
