@@ -174,6 +174,12 @@ export default function TacTuPage() {
   const [yeuCau, setYeuCau] = useState<YeuCau[]>([]);
   const [giuThang, setGiuThang] = useState<DongGiu[]>([]);
   const [nhatKy, setNhatKy] = useState<NhatKy[]>([]);
+  /**
+   * Đọc lỗi (29/09/2026): trước đây bật thông báo rồi ghi mảng rỗng — trang nói "Chưa có agent nào" và
+   * "Không có khoản nào chờ" trong khi có khoản đang chờ duyệt. Giờ giữ dữ liệu lần đọc trước và nói rõ.
+   */
+  const [loiTai, setLoiTai] = useState<string | null>(null);
+  const [daDocDuoc, setDaDocDuoc] = useState(false);
   const [khoaMoi, setKhoaMoi] = useState<{ ten: string; khoa: string } | null>(null);
   const [dangLam, setDangLam] = useState<string | null>(null);
   const [yeuCauMo, setYeuCauMo] = useState<string | null>(null);
@@ -206,11 +212,15 @@ export default function TacTuPage() {
       if (!id) return;
       const cty = { id };
 
-      const [tt, cs, nn, yc, giu, nk, tao] = await Promise.all([
+      const [tt, cs, nn, yc, dang, giu, nk, tao] = await Promise.all([
         supabase.from('tac_tu').select('*').eq('company_id', cty.id).order('created_at', { ascending: true }),
         supabase.from('chinh_sach_chi').select('*').eq('company_id', cty.id),
         supabase.from('nguoi_nhan_duoc_phep').select('*').eq('company_id', cty.id).order('created_at', { ascending: true }),
         supabase.from('yeu_cau_chi').select('*').eq('company_id', cty.id).order('created_at', { ascending: false }).limit(100),
+        // Khoản còn chờ quyết/chờ trả đọc RIÊNG, không giới hạn 100 dòng mới nhất: một khoản chờ duyệt cũ
+        // hơn 100 yêu cầu gần đây từng biến mất khỏi "Cần duyệt" — đúng khoản người dùng phải quyết.
+        supabase.from('yeu_cau_chi').select('*').eq('company_id', cty.id).in('trang_thai', ['cho_duyet', 'da_duyet'])
+          .order('created_at', { ascending: false }),
         supabase.from('yeu_cau_chi').select('tac_tu_id, so_tien, created_at').eq('company_id', cty.id)
           .in('trang_thai', [...TRANG_THAI_GIU_HAN_MUC])
           .gte('created_at', dauThangVN(new Date()).toISOString()),
@@ -221,13 +231,21 @@ export default function TacTuPage() {
       ]);
 
       // Không nuốt lỗi: bảng chưa có (migration chưa chạy) trông y hệt "chưa có agent nào".
-      const loi = [tt, cs, nn, yc, giu, nk, tao].find((r) => r.error)?.error;
-      if (loi) toast.error(`Không đọc được dữ liệu agent: ${loi.message}`);
+      const loi = [tt, cs, nn, yc, dang, giu, nk, tao].find((r) => r.error)?.error;
+      if (loi) {
+        toast.error(`Không đọc được dữ liệu agent: ${loi.message}`);
+        setLoiTai(loi.message);
+        return;
+      }
+      setLoiTai(null);
+      setDaDocDuoc(true);
 
       setDsTacTu(tt.data ?? []);
       setChinhSach(Object.fromEntries((cs.data ?? []).map((r) => [r.tac_tu_id, r])));
       setNguoiNhan(nn.data ?? []);
-      setYeuCau(yc.data ?? []);
+      const gan = yc.data ?? [];
+      const daCo = new Set(gan.map((y) => y.id));
+      setYeuCau([...gan, ...(dang.data ?? []).filter((y) => !daCo.has(y.id))]);
       setGiuThang(giu.data ?? []);
       setNhatKy(nk.data ?? []);
       setNguoiTao(Object.fromEntries(
@@ -373,6 +391,20 @@ export default function TacTuPage() {
     );
   }
 
+  if (loiTai && !daDocDuoc) {
+    return (
+      <div role="alert" className="mx-auto max-w-3xl rounded-2xl border border-destructive/40 bg-card p-6">
+        <p className="text-sm font-semibold text-foreground">Chưa đọc được agent và yêu cầu chi.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Đây là lỗi đọc dữ liệu — không có nghĩa là bạn chưa có agent hay không có khoản nào chờ duyệt. Chi tiết: {loiTai}
+        </p>
+        <button onClick={() => void tai()} className="mt-3 rounded-xl border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent">
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
   const nguoiYeuCau = (y: YeuCau) => (nguoiTao[y.id] ? (nguoiTao[y.id] === userId ? 'Bạn' : 'Người dùng') : 'Agent');
   const hanhDongBang = {
     tenTacTu,
@@ -385,6 +417,12 @@ export default function TacTuPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 pb-16">
+      {loiTai && (
+        <p role="alert" className="rounded-lg border border-mimi-amber/40 bg-mimi-amber/10 px-3 py-2 text-sm text-foreground">
+          Lần đọc mới nhất bị lỗi ({loiTai}) — số liệu dưới đây là của lần đọc trước, có thể đã cũ.{' '}
+          <button onClick={() => void tai()} className="font-medium underline">Thử lại</button>
+        </p>
+      )}
       {/* ── Đầu trang ─────────────────────────────────────────────── */}
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">

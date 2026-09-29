@@ -286,8 +286,12 @@ export default function DashboardOverview() {
         // cannot lend from. Revenue going up is a tax event before it is a
         // credit event: it moves you toward the thresholds, which is something
         // this product can actually do something about.
-        msg: `Doanh thu tháng này đang cao hơn tháng trước ${pct}% — kiểm tra xem bạn đang ở đâu so với ngưỡng thuế.`,
-        cta: 'Xem ngưỡng thuế', action: () => navigate('/dashboard/reports'),
+        // Đây là TIỀN VÀO, không phải doanh thu (29/09/2026): một khoản giải ngân vay trong tháng từng hiện
+        // thành "Doanh thu tăng 900%". Nút dẫn tới Đồng hồ ngưỡng ngay trên trang này — trang Báo cáo chỉ
+        // có dòng tiền, không có ngưỡng.
+        msg: `Tiền vào tháng này cao hơn tháng trước ${pct}%. Nếu phần lớn là tiền bán hàng, kiểm xem bạn đang ở đâu so với ngưỡng thuế.`,
+        cta: 'Xem ngưỡng thuế',
+        action: () => document.getElementById('dong-ho-nguong')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       });
     }
     if (m.overdue.length) {
@@ -552,7 +556,7 @@ export default function DashboardOverview() {
       {/* Above the charts on purpose. For a household under 1 tỷ this is the
           only tax number that matters, and burying it below a cash-flow graph
           would put the decoration above the decision. */}
-      <motion.div variants={fadeUp}>
+      <motion.div id="dong-ho-nguong" variants={fadeUp}>
         <ThresholdClock />
       </motion.div>
 

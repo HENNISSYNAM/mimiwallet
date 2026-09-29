@@ -11,6 +11,7 @@ import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
 import { chieuTien } from '@/lib/chieuTien';
 import { docHet } from '../../supabase/functions/_shared/doc-het';
 import { dinhDangTien } from '@/lib/tien';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 
 /**
  * Chứng từ chi phí: khoản nào đã có giấy tờ, khoản nào chưa.
@@ -32,6 +33,23 @@ const ngayVN = (s: string) => {
   return `${d}/${m}/${y}`;
 };
 
+/**
+ * Doanh thu năm theo đúng một định nghĩa với Đồng hồ ngưỡng và tờ khai nháp (`tax-summary` →
+ * `_shared/doanh-thu/so-lieu.ts`): trừ tiền chuyển giữa tài khoản của mình và khoản người dùng đã xác nhận
+ * không phải doanh thu (vay, vốn góp…); khoản chưa rõ vẫn tính là doanh thu. Có hoá đơn điện tử thì theo hoá đơn.
+ */
+async function docDoanhThuNam(nam: number, congTy: string): Promise<number> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Phiên đăng nhập đã hết. Đăng nhập lại.');
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/tax-summary?year=${nam}&company_id=${encodeURIComponent(congTy)}`, {
+    headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_PUBLISHABLE_KEY },
+  });
+  const body = (await res.json().catch(() => ({}))) as { error?: string; revenue?: unknown };
+  if (!res.ok || body.error) throw new Error(body.error ?? `Lỗi ${res.status}`);
+  if (typeof body.revenue !== 'number' || !Number.isFinite(body.revenue)) throw new Error('Máy chủ không trả doanh thu năm.');
+  return body.revenue;
+}
+
 export default function ChungTuPage() {
   const [chi, setChi] = useState<KhoanChi[]>([]);
   const [hoaDon, setHoaDon] = useState<HoaDonVao[]>([]);
@@ -40,9 +58,16 @@ export default function ChungTuPage() {
    * khối "chọn cách tính thuế" so với ngưỡng NĂM (01 tỷ, 3 tỷ). Bản trước đưa
    * doanh thu một quý vào đó — hộ bán 2 tỷ một năm, 500 triệu một quý, bị báo
    * "chưa phải nộp". Hai kỳ, hai bộ số, không trộn.
+   *
+   * KHÔNG CỘNG MỌI TIỀN VÀO (29/09/2026). Bản trước cộng mọi khoản tiền vào từ đầu năm và gọi là doanh thu —
+   * một khoản giải ngân vay 100 tỷ biến thành 100 tỷ doanh thu, và lời khuyên cách tính thuế đổi theo.
+   * `null` = chưa tính được (đọc lỗi): khi đó KHÔNG đưa lời khuyên, thay vì khuyên trên số 0.
    */
-  const [doanhThuNam, setDoanhThuNam] = useState(0);
-  const [chiPhiCoChungTuNam, setChiPhiCoChungTuNam] = useState(0);
+  const [doanhThuNam, setDoanhThuNam] = useState<number | null>(null);
+  const [chiPhiCoChungTuNam, setChiPhiCoChungTuNam] = useState<number | null>(null);
+  const [loiNam, setLoiNam] = useState<string | null>(null);
+  /** Đọc giao dịch/hoá đơn của quý hỏng → không hiện "chi phí chưa có giấy tờ" (số đó sẽ sai). */
+  const [loiKy, setLoiKy] = useState<string | null>(null);
   const [soDongThu, setSoDongThu] = useState(0);
   const [dangTai, setDangTai] = useState(true);
 
@@ -110,13 +135,10 @@ export default function ChungTuPage() {
           .gte('issued_at', iso(dauKy))
           .lte('issued_at', `${iso(cuoiKy)}T23:59:59`)
           .order('id').range(a, b), 'hoá đơn trong kỳ'),
-        het<{ amount: number; type: string; is_synthetic: boolean }>((a, b) => supabase
-          .from('transactions')
-          .select('id, amount, type, is_synthetic')
-          .eq('company_id', cty.id)
-          .gte('transaction_date', dauNam)
-          .lte('transaction_date', iso(cuoiKy))
-          .order('id').range(a, b), 'giao dịch từ đầu năm'),
+        docDoanhThuNam(cuoiKy.getFullYear(), cty.id).then(
+          (data) => ({ data, error: null as { message: string } | null }),
+          (e: unknown) => ({ data: null as number | null, error: { message: e instanceof Error ? e.message : String(e) } }),
+        ),
         het<{ total_amount: number | null; invoice_number: string | null; counterparty_tax_code: string | null }>((a, b) => supabase
           .from('gdt_invoices')
           .select('id, total_amount, invoice_number, counterparty_tax_code')
@@ -141,28 +163,23 @@ export default function ChungTuPage() {
           .order('id').range(a, b), 'chứng từ chụp từ đầu năm'),
       ]);
 
-      // Không nuốt lỗi — bài học 08/09: truy vấn hỏng trông y hệt không có dữ liệu.
-      if (gd.error) toast.error(`Không đọc được giao dịch: ${gd.error.message}`);
-      if (hd.error) toast.error(`Không đọc được hoá đơn: ${hd.error.message}`);
-      if (thuNam.error) toast.error(`Không đọc được doanh thu năm: ${thuNam.error.message}`);
-      if (hdNam.error) toast.error(`Không đọc được hoá đơn năm: ${hdNam.error.message}`);
-      if (quetKy.error || quetNam.error) toast.error(`Không đọc được chứng từ đã chụp: ${(quetKy.error ?? quetNam.error)?.message}`);
+      // Không nuốt lỗi — bài học 08/09: truy vấn hỏng trông y hệt không có dữ liệu. Báo NGAY TRÊN khối
+      // bị ảnh hưởng (không chỉ một thông báo thoáng qua), và không tính khối đó từ dữ liệu thiếu.
+      const loiQuy = gd.error ?? hd.error ?? quetKy.error;
+      setLoiKy(loiQuy ? loiQuy.message : null);
+      const loiCaNam = thuNam.error ?? hdNam.error ?? quetNam.error;
+      setLoiNam(loiCaNam ? loiCaNam.message : null);
+      if (loiQuy) toast.error(`Không đọc được số liệu quý: ${loiQuy.message}`);
 
       // Khoá chống đếm trùng: số hoá đơn + MST bên bán (bỏ khoảng trắng, không phân biệt hoa thường).
       const khoaHd = (so: string | null, mst: string | null) =>
         so && mst ? `${so.replace(/\s/g, '').toUpperCase()}|${mst.replace(/[\s-]/g, '')}` : null;
 
 
-      setDoanhThuNam(
-        (thuNam.data ?? [])
-          // Chiều tiền dùng chung (`lib/chieuTien.ts`). Bản cũ coi `amount > 0` là thu, nên
-          // mọi khoản chi ngân hàng (ghi số dương) bị cộng vào doanh thu năm — con số so ngưỡng thuế.
-          .filter((t) => (laDemo || !t.is_synthetic) && chieuTien(t) === 'vao')
-          .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
-      );
+      setDoanhThuNam(thuNam.data);
       // Cùng định nghĩa với `tongCoGiay` của bảng quý: tổng mọi hoá đơn đầu vào.
       const daCoNam = new Set((hdNam.data ?? []).map((h) => khoaHd(h.invoice_number, h.counterparty_tax_code)).filter(Boolean));
-      setChiPhiCoChungTuNam(
+      setChiPhiCoChungTuNam(hdNam.error || quetNam.error ? null :
         (hdNam.data ?? []).reduce((s, h) => s + (Number(h.total_amount) || 0), 0)
         + (quetNam.data ?? [])
           .filter((c) => { const k = khoaHd(c.so_hoa_don, c.ma_so_thue_ben_ban); return !k || !daCoNam.has(k); })
@@ -237,6 +254,26 @@ export default function ChungTuPage() {
       <p className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
         <Loader2 size={15} className="animate-spin" /> Đang đọc giao dịch và hoá đơn…
       </p>
+    );
+  }
+
+  if (loiKy) {
+    return (
+      <div className="max-w-3xl space-y-4">
+        <h2 className="font-display text-2xl font-extrabold tracking-tight text-foreground">Chứng từ chi phí</h2>
+        <div role="alert" className="rounded-2xl border border-destructive/40 bg-card/50 p-5">
+          <p className="text-sm font-semibold text-foreground">Chưa đọc được giao dịch hoặc hoá đơn của quý này.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Đây là lỗi đọc dữ liệu, không phải bạn không có khoản chi nào. Chi tiết: {loiKy}
+          </p>
+          <button
+            onClick={() => void tai()}
+            className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium"
+          >
+            <RefreshCw size={14} /> Thử lại
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -411,10 +448,17 @@ export default function ChungTuPage() {
       {/* ── Nối thẳng sang câu hỏi tiền ────────────────────────────────── */}
       <div>
         <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <ArrowRight size={13} /> Ngưỡng thuế tính theo năm, nên phép so sánh dưới đây dùng số từ
-          01/01 tới hết quý này, không chỉ riêng quý
+          <ArrowRight size={13} /> Ngưỡng thuế tính theo năm, nên phép so sánh dưới đây dùng doanh thu cả năm
+          (cùng số với Đồng hồ ngưỡng — đã trừ tiền chuyển nội bộ và khoản bạn xác nhận không phải doanh thu)
         </p>
-        <ChonCachTinhThue doanhThu={doanhThuNam} chiPhiCoChungTu={chiPhiCoChungTuNam} />
+        {loiNam || doanhThuNam === null || chiPhiCoChungTuNam === null ? (
+          <p role="alert" className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm text-foreground">
+            Chưa tính được doanh thu hoặc chi phí có chứng từ cả năm{loiNam ? ` (${loiNam})` : ''}, nên chưa so sánh
+            cách tính thuế — so trên số thiếu là lời khuyên sai.
+          </p>
+        ) : (
+          <ChonCachTinhThue doanhThu={doanhThuNam} chiPhiCoChungTu={chiPhiCoChungTuNam} />
+        )}
       </div>
     </div>
   );
