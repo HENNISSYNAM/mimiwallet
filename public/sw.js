@@ -61,6 +61,8 @@ self.addEventListener('fetch', (e) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || laDuLieu(url)) return;
+  // Video tải từng đoạn (Range → 206): cache không lưu được, để trình duyệt tự lấy thẳng.
+  if (request.destination === 'video' || request.headers.has('range')) return;
 
   // Điều hướng: ưu tiên mạng để người dùng luôn nhận bản mới nhất; mất mạng thì
   // trả vỏ đã cache, và nếu cũng không có thì một câu nói thật.

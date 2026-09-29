@@ -7,6 +7,7 @@ import TrustSection from '@/components/landing/TrustSection';
 import DaiLogo from '@/components/landing/DaiLogo';
 import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
 import VideoBaoMat from '@/components/landing/VideoBaoMat';
+import VideoMeoMimi from '@/components/landing/VideoMeoMimi';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
@@ -29,7 +30,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import mimiLogo from '@/assets/mimi-cat.png';
-import MimiCat from '@/components/brand/MimiCat';
 import { QuantumLockArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
@@ -546,22 +546,24 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
 
       {hien('hero') && (<>
       {/* ═══ HERO ═══ */}
-      <section ref={heroRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden mimi-hero-warm">
-        {/*
-          Warm ground rather than plain white, the way MetaMask stages its fox:
-          the mark is orange, so a neutral background makes it look pasted on
-          while a cream field makes it look at home. Still a static wash — no
-          drifting orbs — so nothing competes with the headline.
-        */}
-        <div aria-hidden className="mimi-hero-glow" />
+      {/*
+        29/09/2026: video mèo MIMI đuổi đồng xu làm NỀN phần đầu trang; tiêu đề và nút nằm ngay trên video.
+        Máy tính: video chiếm ~2/3 bên phải, mép trái tan dần vào nền kem nơi chữ đứng — mèo và đồng xu luôn lộ,
+        chữ luôn đọc được. Điện thoại: video ở nửa trên, tan xuống nền kem, chữ và nút ngay dưới.
+      */}
+      <section ref={heroRef} className="relative overflow-hidden mimi-hero-warm">
+        {/* Mép video tan bằng mask (không phủ màu) nên hoà vào đúng nền phía sau, không lộ đường kẻ. */}
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[52svh] [mask-image:linear-gradient(to_bottom,black_55%,transparent)] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[66%] lg:[mask-composite:intersect] lg:[mask-image:linear-gradient(to_right,transparent,black_30%),linear-gradient(to_bottom,black_72%,transparent)]">
+          <VideoMeoMimi />
+          {/* Mép trên nhạt đi cho thanh điều hướng đọc rõ. */}
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[hsl(36_44%_98%/0.75)] to-transparent" />
+        </div>
 
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
-          className="relative z-10 container mx-auto px-4 pt-24 pb-12
-                     grid lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-6 items-center
-                     text-center lg:text-left"
+          className="relative z-10 container mx-auto px-4 pt-[46svh] pb-4 text-center lg:flex lg:min-h-[100svh] lg:items-center lg:pt-28 lg:pb-44 lg:text-left"
         >
-          <div className="order-2 lg:order-1">
+          <div className="mx-auto max-w-xl lg:mx-0">
           {/* Eyebrow — states the category, makes no ranking claim. */}
           <motion.p {...fadeUp(0)} className="text-sm font-medium text-muted-foreground mb-6">
             {t('hero.badge')}
@@ -584,7 +586,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           */}
           <motion.h1
             {...fadeUp(0.1)}
-            className="font-serif font-normal text-foreground leading-[1.06] tracking-[-0.02em] max-w-4xl mx-auto lg:mx-0 text-balance"
+            className="font-serif font-normal text-foreground leading-[1.06] tracking-[-0.02em] mx-auto lg:mx-0 text-balance"
             style={{ fontSize: 'clamp(2.4rem, 3.6vw, 3.9rem)' }}
           >
             {/* Copy stays in i18n — that arrived from the other branch and is
@@ -594,7 +596,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             <br className="hidden sm:block" /> {t('landing.hero.titleLine2')}
           </motion.h1>
 
-          <motion.p {...fadeUp(0.2)} className="mt-6 text-muted-foreground text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed">
+          <motion.p {...fadeUp(0.2)} className="mt-6 text-slate-700 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed">
             {t('landing.hero.subtitle')}
           </motion.p>
 
@@ -621,8 +623,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
                   else navigate('/dashboard');
                 }}
                 disabled={demoLoading}
-                className="text-[15px] font-medium text-primary hover:underline underline-offset-4 flex items-center gap-1.5 disabled:opacity-60"
-                style={{ minHeight: '44px' }}
+                className="flex items-center gap-1.5 rounded-2xl border border-white/70 bg-white/60 px-5 text-[15px] font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white/80 disabled:opacity-60"
+                style={{ height: '52px' }}
               >
                 {demoLoading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
                 {t('hero.ctaSecondary')}
@@ -638,7 +640,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           */}
           <motion.div
             {...fadeUp(0.4)}
-            className="mt-9 flex flex-wrap items-center justify-center lg:justify-start gap-x-7 gap-y-3 text-[13px] text-muted-foreground"
+            className="mt-9 flex flex-wrap items-center justify-center lg:justify-start gap-x-7 gap-y-3 text-[13px] text-slate-700"
           >
             {[ScoringBolt, QuantumShield, InvoiceDoc, LearnCap].map((Icon, i) => {
               const text = (t('landing.hero.pills', { returnObjects: true }) as string[])[i];
@@ -652,24 +654,12 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           </motion.div>
           </div>
 
-          {/*
-            The mark, staged the way MetaMask stages its fox: large, on a warm
-            ground, turning toward the pointer. It sits second in the DOM so a
-            screen reader and a phone both reach the headline first, and the
-            grid puts it first visually only from `lg` up.
-          */}
-          <motion.div
-            {...fadeUp(0.15)}
-            className="order-1 lg:order-2 mx-auto w-[210px] sm:w-[260px] lg:w-full lg:max-w-[420px]"
-          >
-            <MimiCat variant="live" className="w-full" />
-          </motion.div>
-          {/* Spans both columns so the mockup keeps full width under the fold. */}
-          <div className="lg:col-span-2 order-3">
-            <HeroMockup />
-          </div>
         </motion.div>
       </section>
+      {/* Ảnh giao diện nổi lên từ mép dưới video. */}
+      <div className="relative z-10 container mx-auto px-4 lg:-mt-36">
+        <HeroMockup />
+      </div>
       </>)}
 
       {hien('dai_logo') && (<>
