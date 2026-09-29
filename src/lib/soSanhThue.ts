@@ -1,3 +1,4 @@
+import { dinhDangTien } from '@/lib/tien';
 /**
  * Hai cách tính thuế thu nhập cá nhân cho hộ kinh doanh trên 01 tỷ đến 3 tỷ, và
  * cách nào rẻ hơn.
@@ -95,7 +96,7 @@ export interface KetQua {
   cau: string;
 }
 
-const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
+const dong = dinhDangTien;
 
 export function soSanhThue(v: DauVao): KetQua {
   const { doanhThu, chiPhiCoChungTu, tyLeNganh } = v;

@@ -27,6 +27,8 @@ function bangKhac(data: unknown[]) {
   const q: Record<string, unknown> = {};
   for (const m of ['select', 'eq', 'gte', 'order']) q[m] = () => q;
   q.limit = async () => ({ data, error: null });
+  // Hoá đơn cũng đọc theo trang (`docHet`): trang đầu ngắn hơn 1000 dòng là hết.
+  q.range = async () => ({ data, error: null });
   (q as { then: unknown }).then = (ok: (v: unknown) => void) => ok({ data, error: null });
   return q;
 }

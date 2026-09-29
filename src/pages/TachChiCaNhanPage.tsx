@@ -8,6 +8,7 @@ import { goiTroLy } from '@/lib/goiTroLy';
 import { chieuTien, doLonTien } from '@/lib/chieuTien';
 import { goiYCaNhan } from '../../supabase/functions/_shared/phan-loai/ca-nhan.ts';
 import { docHet } from '../../supabase/functions/_shared/doc-het';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * TCCN-08 — Tách chi tiêu cá nhân khỏi chi phí kinh doanh.
@@ -37,7 +38,7 @@ interface Khoan {
 type Loc = 'chua' | 'ca_nhan' | 'kinh_doanh' | 'tat_ca';
 const TEN_LOC: Record<Loc, string> = { chua: 'Chưa phân loại', ca_nhan: 'Cá nhân', kinh_doanh: 'Kinh doanh', tat_ca: 'Tất cả' };
 
-const vnd = (n: number) => `${new Intl.NumberFormat('vi-VN').format(Math.round(n))} ₫`;
+const vnd = dinhDangTien;
 const ngayVN = (s: string) => s.slice(0, 10).split('-').reverse().join('/');
 
 export default function TachChiCaNhanPage() {

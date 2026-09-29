@@ -4,6 +4,7 @@ import { ArrowRight, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { goiTroLy } from '@/lib/goiTroLy';
 import type { CanhBao } from '@/lib/batThuong';
 import { duongDanGiayTo } from '@/lib/giayTo';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * TCCN-01 — thẻ "Dấu hiệu bất thường" trên màn Tổng quan.
@@ -24,7 +25,7 @@ interface KetQua {
   so_khoan_da_xet: number;
 }
 
-const vnd = (n: number) => `${new Intl.NumberFormat('vi-VN').format(Math.round(n))} ₫`;
+const vnd = dinhDangTien;
 const ngay = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
 const CAU_HOI = 'Có giao dịch nào bất thường hay có dấu hiệu lừa đảo không?';
 

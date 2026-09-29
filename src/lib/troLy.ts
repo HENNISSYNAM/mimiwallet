@@ -4,6 +4,7 @@
  */
 import type { BoiCanh, DeXuat, DonVi, NhomNangLuc, O, TraLoi } from '../../supabase/functions/_shared/tro-ly/kieu.ts';
 import { ngayHienThi } from '../../supabase/functions/_shared/ngay.ts';
+import { dinhDangTien } from '@/lib/tien';
 
 export * from '../../supabase/functions/_shared/tro-ly/kieu.ts';
 export { TEN_NHOM } from '../../supabase/functions/_shared/tro-ly/tra-loi.ts';
@@ -13,7 +14,7 @@ export { TEN_NHOM } from '../../supabase/functions/_shared/tro-ly/tra-loi.ts';
  * Number — trên Number.MAX_SAFE_INTEGER (~9 triệu tỷ) Number làm tròn mất đồng lẻ mà không báo gì.
  */
 const SO_NGUYEN = /^-?\d+$/;
-const dinhDangVndChuoi = (s: string) => `${new Intl.NumberFormat('vi-VN').format(BigInt(s))} ₫`;
+const dinhDangVndChuoi = (s: string) => dinhDangTien(s);
 
 // ── Đàn agent (hợp đồng Codex đang thêm vào `kieu.ts`) ──────────────────────────────────────────────
 /*
@@ -63,7 +64,7 @@ export function dinhDang(v: O | undefined, donVi: DonVi): string {
     return v;
   }
   switch (donVi) {
-    case 'vnd': return `${new Intl.NumberFormat('vi-VN').format(Math.round(v))} ₫`;
+    case 'vnd': return dinhDangTien(v);
     case 'usd': return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     case 'phan_tram': return `${v}%`;
     default: return new Intl.NumberFormat('vi-VN').format(v);

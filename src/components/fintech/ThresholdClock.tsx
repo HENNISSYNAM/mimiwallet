@@ -8,6 +8,7 @@ import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { Coin, Chest } from '@/components/illustrations/GamifyObjects';
 import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * The two revenue milestones a Vietnamese household business meets, and where
@@ -96,7 +97,7 @@ const MILESTONE: Partial<Record<
   },
 };
 
-const dong = (n: number) => `₫${Math.round(n).toLocaleString('vi-VN')}`;
+const dong = dinhDangTien;
 
 /** ₫1.234.567.890 is unreadable at a glance; "1,23 tỷ" is not. */
 function short(n: number): string {

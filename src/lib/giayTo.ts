@@ -7,6 +7,7 @@
  */
 import { docSoTienBangChu } from './soTienBangChu';
 import { MO_TA_GIAY_TO, type LoaiGiayTo } from '../../supabase/functions/_shared/giay-to/loai.ts';
+import { dinhDangTienVanBan } from '@/lib/tien';
 
 export { LOAI_GIAY_TO, MO_TA_GIAY_TO, duongDanGiayTo, type LoaiGiayTo } from '../../supabase/functions/_shared/giay-to/loai.ts';
 
@@ -58,7 +59,8 @@ function oTrong(thieu: string[]) {
   };
 }
 
-const vnd = (n: number) => `${new Intl.NumberFormat('vi-VN').format(Math.round(n))} đồng`;
+// Văn bản gửi ngân hàng / cơ quan thuế: viết "đồng", không ký hiệu.
+const vnd = dinhDangTienVanBan;
 const ngayVN = (ymd: string) => (/^\d{4}-\d{2}-\d{2}/.test(ymd) ? ymd.slice(0, 10).split('-').reverse().join('/') : ymd);
 
 export function ngayThang(diaDanh: string, homNay: Date): string {

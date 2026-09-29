@@ -1,12 +1,22 @@
-export const formatVND = (amount: number): string => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount);
-};
+import { dinhDangTien, laTien, sangBigInt, type TienVND } from '@/lib/tien';
 
-export const formatVNDShort = (amount: number): string => {
-  if (amount >= 1_000_000_000_000) return `₫${(amount / 1_000_000_000_000).toFixed(1)}T`;
-  if (amount >= 1_000_000_000) return `₫${(amount / 1_000_000_000).toFixed(1)} tỷ`;
-  if (amount >= 1_000_000) return `₫${(amount / 1_000_000).toFixed(0)}M`;
-  return formatVND(amount);
+/** "1.000.000 ₫" — cùng hàm với mọi nơi (`lib/tien.ts`); nhận cả tổng dạng chuỗi số nguyên. */
+export const formatVND = (amount: TienVND | null | undefined): string => dinhDangTien(amount);
+
+/**
+ * Dạng rút gọn cho ô số liệu: "1,5 tỷ ₫", "25 triệu ₫". Đây là con số ĐÃ LÀM TRÒN để đọc nhanh — nơi cần
+ * đúng từng đồng dùng `formatVND`. Trước 29/09/2026 hàm này viết "₫1.5 tỷ" / "₫5M", bỏ qua số âm.
+ */
+export const formatVNDShort = (amount: TienVND | null | undefined): string => {
+  if (!laTien(amount)) return '—';
+  const b = sangBigInt(amount);
+  const tuyetDoi = b < 0n ? -b : b;
+  const so = Number(b);
+  const mot = (x: number) => x.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+  if (tuyetDoi >= 1_000_000_000_000n) return `${mot(so / 1e12)} nghìn tỷ ₫`;
+  if (tuyetDoi >= 1_000_000_000n) return `${mot(so / 1e9)} tỷ ₫`;
+  if (tuyetDoi >= 1_000_000n) return `${Math.round(so / 1e6).toLocaleString('vi-VN')} triệu ₫`;
+  return dinhDangTien(amount);
 };
 
 export const formatNumber = (n: number): string => {

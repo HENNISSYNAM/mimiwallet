@@ -10,6 +10,7 @@ import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
 import { chieuTien } from '@/lib/chieuTien';
 import { docHet } from '../../supabase/functions/_shared/doc-het';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Chứng từ chi phí: khoản nào đã có giấy tờ, khoản nào chưa.
@@ -25,7 +26,7 @@ import { docHet } from '../../supabase/functions/_shared/doc-het';
  * kèm việc cần bấm và đường dẫn tới đó.
  */
 
-const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
+const dong = dinhDangTien;
 const ngayVN = (s: string) => {
   const [y, m, d] = s.split('-');
   return `${d}/${m}/${y}`;

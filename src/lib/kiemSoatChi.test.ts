@@ -111,8 +111,8 @@ describe('câu trợ lý màn Kiểm soát chi', () => {
     });
     expect(cau).toBe(
       'Có 2 khoản chờ bạn duyệt, trong đó 1 khoản cần xem kỹ vì người nhận mới hoặc đổi số tài khoản. ' +
-      '1 khoản đã duyệt đang chờ bạn chuyển tiền. Hôm nay ngân hàng đã xác nhận 1 khoản, tổng 850.000đ. ' +
-      'Hạn mức tháng của các agent còn 5.850.000đ.',
+      '1 khoản đã duyệt đang chờ bạn chuyển tiền. Hôm nay ngân hàng đã xác nhận 1 khoản, tổng 850.000 ₫. ' +
+      'Hạn mức tháng của các agent còn 5.850.000 ₫.',
     );
     expect(cau).not.toMatch(/[A-Z]{3,}_[A-Z]/);
   });
@@ -255,7 +255,7 @@ describe('kiểm tra trước khi tạo yêu cầu', () => {
   it('vượt hạn mức ngày: sẽ bị từ chối, nói còn bao nhiêu', () => {
     const r = kiemTruocYeuCau(nhap(), agent, cs({ nguong_can_duyet: 1_000_000 }), { ngay: 4_800_000, thang: 4_800_000 }, [nn({})], NOW);
     expect(r.ketLuan).toBe('tu_choi');
-    expect(r.dong.map((d) => d.cau).join(' ')).toContain('hôm nay còn 200.000đ');
+    expect(r.dong.map((d) => d.cau).join(' ')).toContain('hôm nay còn 200.000 ₫');
   });
 
   it('người nhận lạ: từ chối nếu chính sách chặn, cần duyệt nếu chính sách hỏi', () => {

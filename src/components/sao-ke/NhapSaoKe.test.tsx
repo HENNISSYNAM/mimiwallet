@@ -31,7 +31,7 @@ describe('tải sao kê lên', () => {
   it('tự nhận cột, tự đọc số tài khoản, xem trước trước khi nhập', async () => {
     chon();
     expect(await screen.findByRole('button', { name: /Nhập 3 giao dịch/ })).toBeTruthy();
-    expect(screen.getByText(/2 khoản tiền vào \(200\.900\.000đ\), 1 khoản tiền ra \(8\.000\.000đ\)/)).toBeTruthy();
+    expect(screen.getByText(/2 khoản tiền vào \(200\.900\.000\s₫\), 1 khoản tiền ra \(8\.000\.000\s₫\)/)).toBeTruthy();
     expect((screen.getByLabelText('Số tài khoản của sao kê') as HTMLInputElement).value).toBe('0123456789');
   });
 

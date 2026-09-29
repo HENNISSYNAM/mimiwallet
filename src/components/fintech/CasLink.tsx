@@ -20,6 +20,7 @@ import {
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 import { dongKhungCasLink, moKhungCasLink, urlCasLink } from '@/lib/casLink';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Linking a real bank account through Cas (BankHub).
@@ -356,9 +357,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       }
 
       toast.success(`Đã tải ${daLuu} hoá đơn`, {
-        description: `${banRa} bán ra, ${muaVao} mua vào. Doanh thu theo hoá đơn: ${Number(
-          kq.revenueFromInvoices ?? 0,
-        ).toLocaleString('vi-VN')}đ.`,
+        description: `${banRa} bán ra, ${muaVao} mua vào. Doanh thu theo hoá đơn: ${dinhDangTien(kq.revenueFromInvoices)}.`,
       });
     },
     [call, loadConnections],

@@ -184,14 +184,18 @@ export default function DashboardOverview() {
           .order('transaction_date', { ascending: false }).order('id', { ascending: false })
           .range(a, b), 'giao dịch')
           .then((data) => ({ data, error: null }), (e: unknown) => ({ data: null, error: e })),
-        supabase.from('invoices')
+        // Cũng đọc HẾT theo trang: thẻ "Hoá đơn chờ thanh toán" cộng từ đây.
+        docHet((a, b) => supabase.from('invoices')
           .select('id, total, status, due_date, client_name, invoice_number, is_synthetic')
           // Cùng quy ước với `transactions` ngay trên: màn hình này trình bày
           // tiền của công ty, nên hoá đơn demo không được góp vào con số nào
           // (trừ công ty demo, nơi cả sổ là minh hoạ — `_shared/minh-hoa.ts`).
           // Thiếu dòng này thì thẻ "Hoá đơn chờ thanh toán" đếm cả dòng seed
           // trong khi thẻ dòng tiền đã lọc — hai thẻ cạnh nhau nói ngược nhau.
-          .eq('company_id', company.id),
+          .eq('company_id', company.id)
+          .order('due_date', { ascending: true }).order('id', { ascending: true })
+          .range(a, b), 'hoá đơn')
+          .then((data) => ({ data, error: null }), (e: unknown) => ({ data: null, error: e })),
         supabase.from('bank_connections')
           .select('id').eq('company_id', company.id).eq('status', 'connected').limit(1),
       ]);

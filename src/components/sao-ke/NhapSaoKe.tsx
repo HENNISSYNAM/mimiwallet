@@ -5,6 +5,7 @@ import {
   docDong, docTep, doanTaiKhoan, goiSaoKe, nhanCot, TEN_COT,
   type BanDoCot, type Cot, type O,
 } from '@/lib/saoKe';
+import { congTien, dinhDangTien } from '@/lib/tien';
 
 /**
  * Tải sao kê lên — đường vào dữ liệu cho người chưa liên kết được ngân hàng.
@@ -115,7 +116,7 @@ export function NhapSaoKe() {
           {xem && xem.dong.length > 0 && (
             <p className="text-sm text-foreground">
               MIMI đọc được <span className="font-medium">{so(xem.dong.length)} giao dịch</span> từ {ngay(ngays[0])} đến {ngay(ngays[ngays.length - 1])}:
-              {' '}{so(vao.length)} khoản tiền vào ({so(vao.reduce((s, d) => s + d.amount, 0))}đ), {so(ra.length)} khoản tiền ra ({so(ra.reduce((s, d) => s + d.amount, 0))}đ).
+              {' '}{so(vao.length)} khoản tiền vào ({dinhDangTien(congTien(vao.map((d) => d.amount)))}), {so(ra.length)} khoản tiền ra ({dinhDangTien(congTien(ra.map((d) => d.amount)))}).
               {xem.loi.length > 0 && <span className="text-mimi-amber"> {xem.loi.length} dòng không đọc được (dòng {xem.loi.slice(0, 3).map((l) => l.dong).join(', ')}…).</span>}
             </p>
           )}

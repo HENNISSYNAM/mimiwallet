@@ -13,6 +13,7 @@ import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
   type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
 } from '@/lib/heLuat';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Tờ khai thuế — chỗ công nghệ lõi của MIMI hiện ra thành giấy tờ hành chính.
@@ -86,7 +87,7 @@ function nhanNutXuat(t: ThanhToanToKhai): string {
   if (t.goi) return 'Xuất tờ khai · gói còn hạn';
   if (t.da_tra_ky_nay) return 'Xuất lại · kỳ này đã trả';
   if (t.con_luot > 0) return `Xuất tờ khai · dùng 1 lượt (còn ${t.con_luot})`;
-  return `Xuất tờ khai · ${t.gia_mot_to.toLocaleString('vi-VN')}đ`;
+  return `Xuất tờ khai · ${dinhDangTien(t.gia_mot_to)}`;
 }
 
 function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[]; xemTruoc: boolean }) {
@@ -642,7 +643,7 @@ export default function ToKhaiPage() {
                     </p>
                     {canMua && (
                       <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-                        <p className="text-sm font-medium text-foreground">Xuất tờ khai này: {kq.thanh_toan.gia_mot_to.toLocaleString('vi-VN')}đ</p>
+                        <p className="text-sm font-medium text-foreground">Xuất tờ khai này: {dinhDangTien(kq.thanh_toan.gia_mot_to)}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           Quét mã chuyển khoản. Tiền về là MIMI tự cộng lượt và xuất tờ khai ngay — không phải bấm lại.
                           Sửa số rồi xuất lại cùng kỳ thì không tính thêm.
@@ -656,7 +657,7 @@ export default function ToKhaiPage() {
                               aria-pressed={muaLuot === n}
                               className={`h-9 rounded-xl px-3 text-sm ${muaLuot === n ? 'bg-primary text-primary-foreground' : 'border border-border text-foreground hover:bg-accent'}`}
                             >
-                              {n === 1 ? 'Tờ này' : '4 quý trong năm'} · {(n * kq.thanh_toan.gia_mot_to).toLocaleString('vi-VN')}đ
+                              {n === 1 ? 'Tờ này' : '4 quý trong năm'} · {dinhDangTien(n * kq.thanh_toan.gia_mot_to)}
                             </button>
                           ))}
                           <Link to="/dashboard/settings" className="inline-flex h-9 items-center rounded-xl px-3 text-sm text-primary hover:underline">

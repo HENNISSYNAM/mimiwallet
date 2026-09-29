@@ -2,6 +2,7 @@ import type { Database } from '@/integrations/supabase/types';
 import {
   GIU_NGUOI_NHAN_MOI_MS, TRANG_THAI_GIU_HAN_MUC, chuanHoaTen, dauNgayVN, dauThangVN, type MaLyDo,
 } from './tacTu';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Mọi con số và nhãn của màn Kiểm soát chi, suy ra từ đúng dữ liệu màn đó đã đọc.
@@ -317,7 +318,7 @@ export const yeuCauDoiTaiKhoan = (ds: YeuCau[]) => ds.filter((y) => lyDoCua(y).s
 
 /* ── Cần chú ý và biểu đồ ────────────────────────────────────────────── */
 
-const dongTien = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
+const dongTien = dinhDangTien;
 
 /** Agent dùng từ mức này của hạn mức tháng thì đưa vào "Cần chú ý" — cùng mốc thanh hạn mức đổi màu. */
 export const MOC_GAN_CHAM_HAN_MUC = 0.9;

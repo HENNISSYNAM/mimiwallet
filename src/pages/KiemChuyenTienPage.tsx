@@ -4,6 +4,7 @@ import { Loader2, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react'
 import { goiTroLy } from '@/lib/goiTroLy';
 import { track } from '@/lib/track';
 import { HOAN_CANH, type DauHieu, type MaHoanCanh, type MucDo } from '@/lib/batThuong';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * TCCN-02 — Kiểm tra trước khi chuyển tiền.
@@ -46,7 +47,7 @@ interface KetQua {
   lon_nhat_da_tra: number | null;
 }
 
-const vnd = (n: number) => `${new Intl.NumberFormat('vi-VN').format(Math.round(n))} ₫`;
+const vnd = dinhDangTien;
 const ngay = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
 const chiSo = (s: string) => s.replace(/\D/g, '');
 

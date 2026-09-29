@@ -13,6 +13,7 @@ import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
 import { DangXuatMoiThietBi } from '@/components/settings/DangXuatMoiThietBi';
+import { dinhDangTien } from '@/lib/tien';
 
 /*
  * `disbursement` đã rời khỏi đây 24/09/2026.
@@ -130,7 +131,7 @@ function SubscriptionSection() {
                 {key === 'growth' && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{t('settings.popular')}</span>}
               </div>
               <p className="text-2xl font-mono font-bold text-foreground">
-                {tier.price.toLocaleString('vi-VN')}₫
+                {dinhDangTien(tier.price)}
                 <span className="text-xs text-muted-foreground font-normal">/tháng</span>
               </p>
               <ul className="mt-3 space-y-1.5">

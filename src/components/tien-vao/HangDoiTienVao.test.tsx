@@ -35,7 +35,7 @@ describe('hàng đợi tiền vào trên Tổng quan', () => {
   it('nói MIMI đã đọc gì, bao nhiêu chưa ai xác nhận, và mời xem khoản đáng ngờ', async () => {
     render(<HangDoiTienVao />);
     expect(await screen.findByText(/Đã đọc 3 khoản tiền vào/)).toBeTruthy();
-    expect(screen.getByText(/201.600.000đ chưa ai xác nhận/)).toBeTruthy();
+    expect(screen.getByText(/201.600.000 ₫ chưa ai xác nhận/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Xem 1 khoản cần xem/ })).toBeTruthy();
   });
 

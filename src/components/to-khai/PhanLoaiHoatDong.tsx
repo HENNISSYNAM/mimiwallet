@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Tags } from 'lucide-react';
 import { toast } from 'sonner';
 import { goiToKhai } from '@/lib/goiToKhai';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Doanh thu thuộc NHÓM HOẠT ĐỘNG nào — mỗi nhóm là một dòng và một tỷ lệ thuế trên tờ khai.
@@ -23,7 +24,7 @@ interface DuLieu {
   cac_nhom: { ma: string; ten: string }[];
 }
 
-const tien = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
+const tien = dinhDangTien;
 const TEN_NGUON: Record<string, string> = { giao_dich: 'tiền về ngân hàng', hoa_don: 'hoá đơn điện tử', tu_nhap: 'số bạn tự nhập' };
 const HIEN_TRUOC = 8;
 

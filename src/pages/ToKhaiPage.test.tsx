@@ -209,7 +209,7 @@ describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
   it('nói giá ngay trên nút, và bản chưa xuất mang dấu "BẢN XEM TRƯỚC"', async () => {
     voiThanhToan({ goi: null, con_luot: 0, gia_mot_to: 10_000, da_tra_ky_nay: false });
     dung();
-    expect(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000đ/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000 ₫/ })).toBeTruthy();
     expect(screen.getByText('BẢN XEM TRƯỚC — CHƯA XUẤT')).toBeTruthy();
   });
 
@@ -233,9 +233,9 @@ describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
       return { ok: true };
     });
     dung();
-    fireEvent.click(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000đ/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000 ₫/ }));
     expect(await screen.findByText(/Tiền về là MIMI tự cộng lượt và xuất tờ khai ngay/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /4 quý trong năm · 40\.000đ/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /4 quý trong năm · 40\.000 ₫/ })).toBeTruthy();
     expect(inRa).not.toHaveBeenCalled();
     inRa.mockRestore();
   });

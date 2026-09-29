@@ -24,7 +24,7 @@ describe('văn bản chính sách chi', () => {
 
   it('có ngưỡng thì nói rõ trên ngưỡng hỏi, dưới ngưỡng mới được tự duyệt', () => {
     const vb = vanBanChinhSach({ ...MAC_DINH, nguong_can_duyet: 500_000 }).join('\n');
-    expect(vb).toContain('Khoản trên 500.000đ phải có người duyệt.');
+    expect(vb).toContain('Khoản trên 500.000 ₫ phải có người duyệt.');
     expect(vb).toContain('trở xuống được tự duyệt nếu đạt mọi luật khác');
   });
 
@@ -52,7 +52,7 @@ describe('văn bản chính sách chi', () => {
     expect(tomTatChinhSach(MAC_DINH, 3)).toEqual({
       duyet: 'Mọi khoản',
       'nguoi-la': 'Từ chối',
-      'han-muc': '1.000.000đ / khoản',
+      'han-muc': '1.000.000 ₫ / khoản',
       'tan-suat': '30 / giờ',
       'het-han': 'Không hết hạn',
       'nhom-chi': 'Mọi nhóm',

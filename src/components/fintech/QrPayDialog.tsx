@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { track } from '@/lib/track';
 import { taoChuoiVietQr } from '@/lib/vietqr';
 import { kemCongTy } from '@/lib/congTyDangDung';
+import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Mã QR nhận tiền thẳng vào tài khoản ngân hàng của chủ shop.
@@ -73,7 +74,7 @@ interface Props {
   laMinhHoa?: boolean;
 }
 
-const dong = (n: number) => `₫${n.toLocaleString('vi-VN')}`;
+const dong = dinhDangTien;
 
 export function QrPayDialog({
   open,

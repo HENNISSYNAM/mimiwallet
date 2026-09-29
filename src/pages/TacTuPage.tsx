@@ -37,6 +37,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LoiTroLy } from '@/components/tro-ly/LoiTroLy';
+import { dinhDangTien } from '@/lib/tien';
+import { baoKetQua } from '@/lib/mimiLamHo';
 
 /**
  * Kiểm soát chi — trung tâm điều hành chi tiêu của agent.
@@ -58,7 +60,7 @@ import { LoiTroLy } from '@/components/tro-ly/LoiTroLy';
 
 type NhatKy = Database['public']['Tables']['nhat_ky_tac_tu']['Row'];
 
-const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
+const dong = dinhDangTien;
 const tenNganHang = (bin: string) => DANH_SACH_NGAN_HANG.find((n) => n.bin === bin)?.ten ?? bin;
 const luc = (s: string | null) =>
   s ? new Date(s).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
@@ -574,6 +576,10 @@ export default function TacTuPage() {
               tao={async (ten, moTa) => {
                 const kq = await lam('tao', 'tao_tac_tu', { ten, mo_ta: moTa || null });
                 if (kq?.khoa) setKhoaMoi({ ten, khoa: kq.khoa });
+                // Báo cho con trỏ mèo (nếu nó đang chờ nút này) kết quả THẬT của yêu cầu, không phải cú bấm.
+                baoKetQua(kq
+                  ? { dich: 'tac-tu.them', ok: true, cau: `Đã thêm agent "${ten}". Chép khoá ngay — nó chỉ hiện một lần.` }
+                  : { dich: 'tac-tu.them', ok: false, cau: 'Chưa thêm được agent — xem thông báo lỗi trên trang.' });
               }}
             />
           </section>
@@ -635,7 +641,12 @@ export default function TacTuPage() {
             nguoiNhan={nguoiNhan}
             yeuCau={yeuCau}
             dangLam={dangLam}
-            them={(du) => lam('nguoi_nhan', 'them_nguoi_nhan', du, 'Đã thêm người nhận.')}
+            them={async (du) => {
+              const kq = await lam('nguoi_nhan', 'them_nguoi_nhan', du, 'Đã thêm người nhận.');
+              baoKetQua(kq !== null
+                ? { dich: 'tac-tu.nguoi-nhan.them', ok: true, cau: 'Đã thêm người nhận vào danh sách được phép.' }
+                : { dich: 'tac-tu.nguoi-nhan.them', ok: false, cau: 'Chưa thêm được người nhận — xem thông báo lỗi trên trang.' });
+            }}
             bo={boNguoiNhan}
             xem={(id) => setYeuCauMo(id)}
           />
