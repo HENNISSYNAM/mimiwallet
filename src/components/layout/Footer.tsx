@@ -37,7 +37,7 @@ export default function Footer() {
 
   // Chỉ những đường dẫn thật sự tồn tại trong bảng route.
   const sanPham: NavItem[] = [
-    { label: 'Tổng quan', to: '/dashboard' },
+    { label: 'MIMI Trợ lý', to: '/dashboard' },
     { label: 'Hoá đơn', to: '/dashboard/invoices' },
     { label: 'Báo cáo', to: '/dashboard/reports' },
   ];

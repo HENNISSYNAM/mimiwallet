@@ -56,10 +56,10 @@ const m = {
     troLy: {
       vungHoi: 'Hỏi MIMI Assistant',
       tieuDe: 'MIMI có thể giúp gì cho bạn?',
-      gioiThieu: 'Hỏi, yêu cầu hoặc giao việc — MIMI đọc số liệu của {{congTy}} và đề xuất cách làm. Việc nào đổi dữ liệu, bạn xác nhận là xong.',
+      gioiThieu: 'MIMI đang theo dõi {{congTy}}. Việc nào đổi dữ liệu, bạn xác nhận là xong.',
       congTyBan: 'công ty bạn',
       nhanOHoi: 'Câu hỏi cho MIMI',
-      oHoiPlaceholder: 'Bạn muốn MIMI xử lý việc gì?',
+      oHoiPlaceholder: 'Hỏi MIMI hoặc yêu cầu MIMI làm việc gì đó…',
       taiAnhChungTu: 'Tải ảnh chứng từ lên',
       nhomViec: 'Nhóm việc: {{nhom}}',
       tatCaViec: 'Tất cả việc',

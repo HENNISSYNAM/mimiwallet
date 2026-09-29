@@ -45,10 +45,10 @@ const m = {
     troLy: {
       vungHoi: 'Ask MIMI Assistant',
       tieuDe: 'What can MIMI do for you?',
-      gioiThieu: 'Ask, request or hand over a task — MIMI reads {{congTy}}\'s own numbers and proposes what to do. Anything that changes data waits for your confirmation.',
+      gioiThieu: 'MIMI is keeping an eye on {{congTy}}. Anything that changes data waits for your confirmation.',
       congTyBan: 'your company',
       nhanOHoi: 'Question for MIMI',
-      oHoiPlaceholder: 'What would you like MIMI to handle?',
+      oHoiPlaceholder: 'Ask MIMI, or ask MIMI to do something…',
       taiAnhChungTu: 'Upload a document photo',
       nhomViec: 'Task group: {{nhom}}',
       tatCaViec: 'All tasks',

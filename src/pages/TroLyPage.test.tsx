@@ -135,7 +135,8 @@ describe('MIMI Assistant — màn đầu', () => {
     expect(screen.queryByRole('region', { name: 'Chi phí AI tháng này' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Đề xuất tối ưu' })).toBeNull();
     // Việc đã có thẻ riêng không lặp lại thành chip; việc khác vẫn hiện.
-    const deY = screen.getByRole('region', { name: 'Cũng cần để ý' });
+    // 29/09/2026: việc cần để ý là khung "Việc cần chú ý hôm nay" của Không gian Trợ lý.
+    const deY = screen.getByRole('region', { name: 'Việc cần chú ý hôm nay' });
     expect(deY.textContent).toContain('hoá đơn bán ra quá hạn');
     expect(deY.textContent).not.toContain('chờ bạn duyệt');
   });
@@ -154,13 +155,16 @@ describe('MIMI Assistant — màn đầu', () => {
     await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBe(2));
   });
 
-  it('chọn nhóm việc rồi bấm mẹo nhanh: câu hỏi gửi kèm phạm vi', async () => {
+  // 29/09/2026: "Thử yêu cầu MIMI" thay mẹo nhanh — ĐIỀN SẴN câu và phạm vi (không tự chạy), gửi thì mang phạm vi.
+  it('bấm "Thử yêu cầu MIMI": điền sẵn câu hỏi, gửi kèm phạm vi', async () => {
     dung();
     await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
-    fireEvent.click(screen.getByRole('button', { name: /Nhóm việc/ }));
-    fireEvent.click(await screen.findByRole('button', { name: 'AI & token' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.' }));
-    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ pham_vi: 'ai_token' }), expect.anything()));
+    fireEvent.click(screen.getByRole('button', { name: 'Nghĩa vụ thuế năm nay' }));
+    const o = screen.getByLabelText(/./, { selector: '#o-hoi-mimi' }) as HTMLTextAreaElement;
+    expect(o.value).toBe('Năm nay tôi có phải nộp thuế không?');
+    expect(gia.troLy).not.toHaveBeenCalledWith('hoi', expect.anything(), expect.anything());
+    fireEvent.click(screen.getByRole('button', { name: /Gửi câu hỏi|Send/ }));
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Năm nay tôi có phải nộp thuế không?', pham_vi: 'chung_tu' }), expect.anything()));
   });
 });
 

@@ -1,15 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, Globe, HelpCircle, Images, LayoutDashboard, ListChecks, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Puzzle, Settings, ShieldCheck, Store } from 'lucide-react';
+import { Globe, HelpCircle, LogOut, PanelLeftClose, PanelLeftOpen, Puzzle, Settings, Store } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
-import { useCongCuGhim } from '@/hooks/useCongCuGhim';
-import { duongDanCongCu } from '@/lib/congCu';
-import { IconCongCu } from '@/components/cong-cu/IconCongCu';
-import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { NGON_NGU } from '@/i18n';
 
@@ -40,8 +36,6 @@ const DONG_DANG_MO = 'bg-white font-medium text-foreground shadow-[0_1px_2px_hsl
 export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [moTaiApp, setMoTaiApp] = useState(false);
-  const [moKho, setMoKho] = useState(false);
-  const congCu = useCongCuGhim();
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -53,16 +47,14 @@ export default function DashboardSidebar() {
    * không phải việc hằng ngày — nó vẫn còn nguyên ở bảng "Thêm" trên điện thoại, ở kho công cụ
    * và ở đường /dashboard/clients.
    */
+  /*
+   * 29/09/2026 — MIMI là trợ lý có công cụ phía sau: thanh bên chỉ còn nơi làm việc chính và kết nối. Các module
+   * (Dòng tiền, Hoá đơn, Thuế, Công nợ, Chứng từ, Báo cáo, Doanh nghiệp) nằm ở thanh công cụ ngay dưới ô hỏi —
+   * không lặp hai nơi. Mọi trang cũ vẫn mở được qua thanh công cụ và nút "…".
+   */
   const muc: { icon: Icon; label: string; path: string }[] = [
-    { icon: IconMeo, label: t('man.ten.troLy'), path: '/dashboard/tro-ly' },
-    { icon: LayoutDashboard, label: t('sidebar.overview'), path: '/dashboard' },
-    // 28/09/2026: kiểm một khoản TRƯỚC khi chuyển là việc chính của MIMI — đứng ngay sau Tổng quan.
-    { icon: ShieldCheck, label: t('man.ten.kiemTruocKhiChuyen'), path: '/dashboard/kiem-truoc-khi-chuyen' },
-    // Prompt 4 mục 31: việc cần làm là nơi chính sau trợ lý.
-    { icon: ListChecks, label: t('man.ten.viecCanLam'), path: '/dashboard/viec-can-lam' },
-    { icon: Images, label: t('man.ten.thuVien'), path: '/dashboard/thu-vien' },
-    { icon: Clock, label: t('man.ten.nhacThue'), path: '/dashboard/nhac-thue' },
-    { icon: Puzzle, label: t('man.ten.ketNoi'), path: '/dashboard/ket-noi' },
+    { icon: IconMeo, label: t('man.ten.troLy'), path: '/dashboard' },
+    { icon: Puzzle, label: 'Ứng dụng & kết nối', path: '/dashboard/ket-noi' },
   ];
 
   const lop = (dangMo: boolean) => `${DONG} ${dangMo ? DONG_DANG_MO : DONG_THUONG} ${collapsed ? 'justify-center px-0' : ''}`;
@@ -124,34 +116,7 @@ export default function DashboardSidebar() {
           );
         })()}
 
-        {/* Công cụ người dùng tự ghim — như mục "Pinned" của ChatGPT. */}
-        <div className="mt-5">
-          {collapsed ? (
-            <div className="mx-2 mb-2 border-t border-slate-900/[0.06]" />
-          ) : (
-            <p className="mb-1 px-2.5 text-[11px] font-medium uppercase tracking-wider text-slate-400">{t('man.chung.congCu')}</p>
-          )}
-          <div className="space-y-0.5">
-            {congCu.ds.filter((c) => !muc.some((m) => m.path === c.dich)).map((c) => (
-              <NavLink
-                key={c.khoa}
-                to={duongDanCongCu(c)}
-                end
-                title={collapsed ? c.ten : undefined}
-                className={({ isActive }) => lop(isActive && c.loai === 'trang')}
-              >
-                <IconCongCu khoa={c.khoa} size={17} />
-                {!collapsed && <span className="truncate">{c.ten}</span>}
-              </NavLink>
-            ))}
-            <button type="button" onClick={() => setMoKho(true)} title={collapsed ? t('man.chung.themCongCu') : undefined} className={`w-full ${lop(false)}`}>
-              <Plus size={17} className="shrink-0" />
-              {!collapsed && <span>{t('man.chung.themCongCu')}</span>}
-            </button>
-          </div>
-        </div>
       </nav>
-      <KhoCongCu mo={moKho} onDong={() => setMoKho(false)} />
 
       <div className="space-y-0.5 border-t border-slate-900/[0.06] px-3 py-2 dark:border-white/10">
         {/* Bốn ngôn ngữ (16/09/2026): chọn trong danh sách, không còn nút bật/tắt hai thứ tiếng. */}

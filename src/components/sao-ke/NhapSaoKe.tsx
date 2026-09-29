@@ -108,7 +108,7 @@ export function NhapSaoKe() {
       {ketQua && (
         <div className="mt-3 rounded-xl border border-mimi-green/30 bg-mimi-green/5 p-3 text-sm text-foreground">
           Đã thêm {so(ketQua.moi)} giao dịch mới{ketQua.trung ? `, bỏ qua ${so(ketQua.trung)} dòng đã có` : ''}{ketQua.hong ? `, ${so(ketQua.hong)} dòng không dùng được` : ''}.{' '}
-          <Link to="/dashboard" className="font-medium text-primary hover:underline">Xem tiền vào cần xem</Link>
+          <Link to="/dashboard/cashflow" className="font-medium text-primary hover:underline">Xem tiền vào cần xem</Link>
         </div>
       )}
       {ketQua && ketQua.moi > 0 && (

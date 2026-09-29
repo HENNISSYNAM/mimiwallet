@@ -30,6 +30,9 @@ import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { layDichSauDangNhap } from '@/lib/sauDangNhap';
 import { ghiMoUngDung } from '@/lib/track';
 import { ganPhamViNao } from '@/store/naoMimi';
+import { ThanhCongCuNguCanh } from '@/components/khong-gian/ThanhCongCuNguCanh';
+import { HoiMimiTrongModule } from '@/components/khong-gian/HoiMimiTrongModule';
+import { laKhongGianTroLy } from '@/lib/nguCanhModule';
 
 /**
  * Two initials for the avatar, from whatever real name we actually have.
@@ -68,7 +71,7 @@ function initialsOf(name: string | null): string {
  * bảng "Thêm".
  */
 const mobileNav = [
-  { icon: IconMeo, khoa: 'man.ten.troLyNgan', path: '/dashboard/tro-ly' },
+  { icon: IconMeo, khoa: 'man.ten.troLyNgan', path: '/dashboard' },
   { icon: Images, khoa: 'man.ten.thuVienNgan', path: '/dashboard/thu-vien' },
   { icon: Clock, khoa: 'man.ten.nhacThue', path: '/dashboard/nhac-thue' },
 ];
@@ -85,7 +88,7 @@ const TRANG_CHI_TIET_CUA_TRO_LY = new Set(TRANG_CHI_TIET.map((t) => t.duong_dan)
  * two ways on one screen. One source of truth for the name of a place.
  */
 const pageTitleKeys: Record<string, string> = {
-  '/dashboard': 'sidebar.overview',
+  '/dashboard': 'man.ten.troLy',
   '/dashboard/cashflow': 'sidebar.cashflow',
   '/dashboard/invoices': 'sidebar.invoices',
   '/dashboard/fintech': 'sidebar.fintechHub',
@@ -229,7 +232,7 @@ export default function DashboardLayout() {
           <div className="flex min-w-0 items-center gap-1.5">
             {TRANG_CHI_TIET_CUA_TRO_LY.has(location.pathname) && (
               <>
-                <NavLink to="/dashboard/tro-ly" className="hidden shrink-0 text-sm text-muted-foreground hover:text-foreground sm:inline">
+                <NavLink to="/dashboard" end className="hidden shrink-0 text-sm text-muted-foreground hover:text-foreground sm:inline">
                   {t('man.ten.troLy')}
                 </NavLink>
                 <ChevronRight size={14} className="hidden shrink-0 text-muted-foreground sm:inline" aria-hidden />
@@ -314,6 +317,16 @@ export default function DashboardLayout() {
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6">
           <NhanMinhHoa />
+          {/*
+            Module mở ngay trong khung của MIMI Trợ lý (29/09/2026): thanh công cụ và ô hỏi MIMI luôn ở đầu trang,
+            nên người dùng không phải quay lại trang chính để hỏi hay đổi module.
+          */}
+          {!laKhongGianTroLy(location.pathname) && (
+            <div className="mx-auto mb-5 max-w-6xl space-y-2">
+              <ThanhCongCuNguCanh />
+              <HoiMimiTrongModule />
+            </div>
+          )}
           <Outlet />
         </main>
 
@@ -352,7 +365,7 @@ export default function DashboardLayout() {
             <nav className="mt-4 grid gap-1" aria-label="Thêm">
               {[
                 { icon: Puzzle, khoa: 'man.ten.ketNoi', duong: '/dashboard/ket-noi' },
-                { icon: LayoutDashboard, khoa: 'man.ten.tongQuanGiaoDich', duong: '/dashboard' },
+                { icon: LayoutDashboard, khoa: 'man.ten.tongQuanGiaoDich', duong: '/dashboard/cashflow' },
                 { icon: Settings, khoa: 'man.ten.caiDat', duong: '/dashboard/settings' },
               ].map((m) => (
                 <NavLink key={m.duong} to={m.duong} end onClick={() => setMoThem(false)} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
@@ -394,7 +407,7 @@ export default function DashboardLayout() {
         {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
         {/* Trên màn MIMI Assistant đã có ô hỏi ở giữa; nút chat nổi chỉ là ô hỏi thứ hai. */}
         <MimiLamHoProvider>
-          {location.pathname !== '/dashboard/tro-ly' && <PetMimi />}
+          {!laKhongGianTroLy(location.pathname) && <PetMimi />}
         </MimiLamHoProvider>
         {/* Người mới: pet ẩn mặc định nên phải nói cho họ biết nó có và dùng thế nào. */}
         <HuongDanPet />

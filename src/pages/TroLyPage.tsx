@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ThanhCongCuNguCanh } from '@/components/khong-gian/ThanhCongCuNguCanh';
+import { TongQuanNhanh } from '@/components/khong-gian/TongQuanNhanh';
+import { ViecCanChuY } from '@/components/khong-gian/ViecCanChuY';
+import { ThuYeuCau } from '@/components/khong-gian/ThuYeuCau';
+import { CauHoiSeanEllis } from '@/components/phan-hoi/CauHoiNhanh';
+import { IconMeo } from '@/components/brand/IconMeo';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCongCuGhim } from '@/hooks/useCongCuGhim';
 import { duongDanCongCu } from '@/lib/congCu';
@@ -104,8 +110,6 @@ export default function TroLyPage() {
   const dangLamDeXuat = useRef(new Set<string>());
   const [viec, setViec] = useState<Record<string, TrangThaiViec>>({});
   const [xacNhan, setXacNhan] = useState<{ luotId: number; dx: DeXuat } | null>(null);
-  const [moTrangChiTiet, setMoTrangChiTiet] = useState(false);
-  const [hienMeo, setHienMeo] = useState(true);
   const [moKhoCongCu, setMoKhoCongCu] = useState(false);
   const [moTaiApp, setMoTaiApp] = useState(false);
   const [moNhom, setMoNhom] = useState(false);
@@ -157,7 +161,6 @@ export default function TroLyPage() {
     }
     const lichSu = dungLichSu(luot);
     setNhap('');
-    setMoTrangChiTiet(false);
     // Cùng câu đang chạy (vd. vừa hỏi từ pet) → kho trả lại đúng request đó, không gửi lần hai.
     const kq = await useNaoMimi.getState().hoi(cau, { phamVi: pv, nguon: 'tro_ly', lichSu });
     // Hỏi bằng giọng thì nghe trả lời bằng giọng — cuộc nói chuyện, không phải đọc màn hình.
@@ -251,9 +254,6 @@ export default function TroLyPage() {
   const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
   const ketNoiLoc = ketNoi.filter((k) => boDau(k.ten).includes(boDau(timKetNoi.trim())));
   const coHoiThoai = luot.length > 0;
-  const goiYMeo = phamVi
-    ? GOI_Y_THEO_NHOM[phamVi].slice(0, 2)
-    : [GOI_Y_THEO_NHOM.ai_token[0], GOI_Y_THEO_NHOM.chung_tu[0]];
 
   return (
     <div className="pb-10">
@@ -274,6 +274,7 @@ export default function TroLyPage() {
       >
         <NenVongHat />
         <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
+          {!coHoiThoai && <IconMeo size={44} className="mx-auto mb-3 text-primary" aria-hidden />}
           <h2 className={`font-display font-semibold tracking-tight text-foreground ${coHoiThoai ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-5xl'}`}>
             {t('man.troLy.tieuDe')}
           </h2>
@@ -452,6 +453,10 @@ export default function TroLyPage() {
               </button>
             </nav>
           </div>
+          {/* Các module của MIMI (29/09/2026): mở ngay trong cùng khung, ô hỏi vẫn còn. */}
+          <div className="mx-auto mt-4 max-w-3xl text-left">
+            <ThanhCongCuNguCanh />
+          </div>
           <KhoCongCu mo={moKhoCongCu} onDong={() => setMoKhoCongCu(false)} />
           <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} />
 
@@ -466,7 +471,14 @@ export default function TroLyPage() {
 
       {/* Màn đầu: MIMI vừa phân tích cho bạn */}
       {!coHoiThoai && (
-        <div className="mx-auto mt-8 max-w-5xl">
+        <div className="mx-auto mt-2 max-w-5xl">
+          {/*
+            Không gian Trợ lý là trang chính sau đăng nhập (29/09/2026): việc cần chú ý (máy chủ tính, dữ liệu
+            thật) rồi bốn con số nhanh. Trang Tổng quan cũ vẫn nguyên ở module Dòng tiền (/dashboard/cashflow).
+          */}
+          <ViecCanChuY viec={viecKhac} soChoDuyet={0} dangHoi={dangHoi} onHoi={(v) => void hoi(v.hoi, v.nhom)} />
+          <TongQuanNhanh thue={boiCanh ? boiCanh.thue : undefined} />
+          <div className="mt-6" />
           {/*
             Cá nhân hoá từ khảo sát đầu vào: chưa trả lời thì hỏi (ngành quyết định mẫu tờ khai),
             trả lời rồi thì nói đúng nghĩa vụ thuế của người này.
@@ -484,46 +496,6 @@ export default function TroLyPage() {
               <TheThueCuaBan thue={boiCanh.thue} onSua={() => setSuaKhaoSat(true)} />
             </div>
           )}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-foreground">{t('man.troLy.vuaPhanTich')}</h2>
-            <button
-              type="button"
-              aria-expanded={moTrangChiTiet}
-              onClick={() => setMoTrangChiTiet((v) => !v)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-            >
-              <LayoutGrid size={15} /> {t('man.chung.trangChiTiet')}
-            </button>
-          </div>
-
-          {moTrangChiTiet && (
-            <div className="mb-4 grid gap-1 rounded-xl border border-border bg-card p-2 sm:grid-cols-2 lg:grid-cols-4" role="region" aria-label={t('man.chung.trangChiTiet')}>
-              {TRANG_CHI_TIET.map((tr) => (
-                <Link key={tr.duong_dan} to={tr.duong_dan} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-accent">
-                  <span className="text-foreground">{t(tr.khoa)}</span>
-                  <span className="text-xs text-muted-foreground">{TEN_NHOM[tr.nhom]}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {viecKhac.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2" role="region" aria-label={t('man.troLy.cungCanDeY')}>
-              {viecKhac.map((v) => (
-                <button
-                  key={v.khoa}
-                  type="button"
-                  onClick={() => void hoi(v.hoi, v.nhom)}
-                  disabled={dangHoi}
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-60"
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${v.muc_do === 'can_chu_y' ? 'bg-mimi-amber' : 'bg-muted-foreground/50'}`} aria-hidden />
-                  {v.cau}
-                </button>
-              ))}
-            </div>
-          )}
-
           {boiCanh ? (
             // Hai thẻ Chi phí AI / Tối ưu model rời màn đầu 28/09/2026 (đóng băng — `lib/dongBang.ts`).
             <div className="grid gap-4">
@@ -537,23 +509,8 @@ export default function TroLyPage() {
             <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground"><Loader2 size={15} className="animate-spin" /> {t('man.troLy.dangDocSoLieu')}</p>
           ) : null}
 
-          {hienMeo && (
-            <div className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm" role="note">
-              <Lightbulb size={17} className="mt-0.5 shrink-0 text-mimi-amber" aria-hidden />
-              <p className="flex-1 leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">{t('man.troLy.meoNhanh')}</span> {t('man.troLy.banCoTheHoi')}{' '}
-                {goiYMeo.map((g, i) => (
-                  <span key={g}>
-                    {i > 0 && ` ${t('man.troLy.hoac')} `}“<button type="button" onClick={() => void hoi(g, phamVi)} className="text-foreground underline underline-offset-4 hover:text-primary">{g}</button>”
-                  </span>
-                ))}{' '}
-                {t('man.troLy.deMimiXuLy')}
-              </p>
-              <button type="button" onClick={() => setHienMeo(false)} aria-label={t('man.troLy.anMeo')} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent">
-                <X size={15} />
-              </button>
-            </div>
-          )}
+          <ThuYeuCau onChon={(cau, nhom) => { setNhap(cau); setPhamVi(nhom); document.getElementById('o-hoi-mimi')?.focus(); }} />
+          <CauHoiSeanEllis className="mt-6" />
         </div>
       )}
 
