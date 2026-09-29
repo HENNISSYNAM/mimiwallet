@@ -4,6 +4,10 @@ import App from "./App.tsx";
 import AppErrorBoundary from "./components/AppErrorBoundary.tsx";
 import "./index.css";
 import "./i18n";
+import { batLoiToanCuc } from "./lib/ghiLoi";
+
+// Lỗi người dùng gặp phải được ghi lại (first-party, đã xoá số và email) — trước đây không ai biết.
+batLoiToanCuc();
 
 /*
  * Đăng ký service worker — chỉ ở bản dựng thật, không ở máy phát triển.

@@ -43,7 +43,9 @@ export type EventName =
   | 'app_opened'
   // Vòng chính (28/09/2026): một lần kiểm khoản sắp chuyển. Chỉ mức cảnh báo và nơi bấm — KHÔNG số tiền,
   // số tài khoản, tên người nhận.
-  | 'payment_check_run';
+  | 'payment_check_run'
+  // Lỗi giao diện (29/09/2026, `lib/ghiLoi.ts`): loại, tên lỗi, thông điệp ĐÃ xoá số/email, đường dẫn đã thay id.
+  | 'client_error';
 
 export function track(name: EventName, props: Record<string, string | number | boolean> = {}) {
   void (async () => {
