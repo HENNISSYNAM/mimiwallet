@@ -17,6 +17,7 @@
  *
  * Chỉ chủ doanh nghiệp (JWT). Đọc bằng service role, luôn lọc theo công ty đang dùng.
  */
+import { LY_DO_KHONG_CHUNG_TU } from "../_shared/chung-tu/khop-chung-tu.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { danhSachCongTy, kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
@@ -97,6 +98,9 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   hoi: { cuaSoGiay: 60, toiDa: 30 },
   quet_chung_tu: { cuaSoGiay: 60, toiDa: 10 },
   luu_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
+  gan_chung_tu: { cuaSoGiay: 60, toiDa: 60 },
+  quyet_dinh_chung_tu: { cuaSoGiay: 60, toiDa: 60 },
+  huy_quyet_dinh_chung_tu: { cuaSoGiay: 60, toiDa: 60 },
   xoa_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
   boi_canh: { cuaSoGiay: 60, toiDa: 60 },
   bang_chung: { cuaSoGiay: 60, toiDa: 60 },
@@ -624,6 +628,19 @@ async function docDuLieu(
       d.doDay.chung_tu_quet = danhGiaDoDay({ nguon: "chung_tu_quet", ten: "Chứng từ đã quét", daDoc: dong.length, tong, gioiHan: 5000 });
     }));
   }
+  if (can.has("chung_tu_quet")) {
+    // Ngoại lệ người duyệt đã xử lý (29/09/2026): chi cá nhân (nhãn người chọn) và "không có chứng từ".
+    viec.push((async () => {
+      const [nhan, qd] = await Promise.all([
+        docHet((a, b) => db.from("transaction_labels").select("transaction_id").eq("company_id", companyId)
+          .eq("source", "human").eq("is_personal", true).order("transaction_id").range(a, b), "nhãn chi cá nhân"),
+        docHet((a, b) => db.from("quyet_dinh_chung_tu").select("id, transaction_id, ly_do, ghi_chu, tao_luc").eq("company_id", companyId)
+          .is("huy_luc", null).order("id").range(a, b), "quyết định chứng từ"),
+      ]);
+      d.chiCaNhan = nhan.map((r) => String(r.transaction_id));
+      d.quyetDinhChungTu = qd as DuLieu["quyetDinhChungTu"];
+    })());
+  }
   await Promise.all(viec);
   return d;
 }
@@ -749,6 +766,10 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   quet_chung_tu: "ghi_chung_tu",
   // TCCN-08: gắn "kinh doanh / cá nhân" cho khoản chi là việc sổ sách — cùng quyền ghi chứng từ.
   gan_nhan_chi: "ghi_chung_tu",
+  // Đối soát (29/09/2026): người duyệt xử lý ngoại lệ — gắn chứng từ có sẵn, quyết "không có chứng từ", hoàn tác.
+  gan_chung_tu: "ghi_chung_tu",
+  quyet_dinh_chung_tu: "ghi_chung_tu",
+  huy_quyet_dinh_chung_tu: "ghi_chung_tu",
   // Prompt 4: mở và làm hồ sơ việc, dựng tài liệu — cùng quyền ghi sổ sách. Duyệt kiểm vai trò riêng.
   hanh_trinh_mo: "ghi_chung_tu",
   hanh_trinh_tra_loi: "ghi_chung_tu",
@@ -1189,6 +1210,55 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       }, { onConflict: "transaction_id" });
       if (error) throw error;
       return json({ ok: true, giao_dich_id: gdId, ca_nhan: body.ca_nhan });
+    }
+
+    /*
+     * ĐỐI SOÁT — NGƯỜI DUYỆT XỬ LÝ NGOẠI LỆ (29/09/2026). Sao kê → chứng từ → ngoại lệ → người duyệt.
+     * Chỉ trên giao dịch thật, tiền ra, của đúng công ty. Nhật ký là chính các dòng: chung_tu_quet (mỗi lần
+     * gắn ghi thêm một mắt xích sổ cái) và quyet_dinh_chung_tu (chỉ thêm; hoàn tác bằng huy_luc).
+     */
+    case "gan_chung_tu": {
+      const ctId = String(body.chung_tu_id ?? ""), gdId = String(body.giao_dich_id ?? "");
+      if (!ctId || !gdId) return loi("THAM_SO", "Thiếu chứng từ hoặc khoản chi.", 400);
+      const { data: gd, error: loiGd } = await locMinhHoa(db.from("transactions")
+        .select("id, amount, type, is_synthetic").eq("id", gdId).eq("company_id", company.id), company.la_demo === true).maybeSingle();
+      if (loiGd) throw loiGd;
+      if (!gd || chieuTien(gd) !== "ra") return loi("KHONG_THAY", "Không có khoản chi này trong công ty.", 404);
+      const { data: ct, error: loiCt } = await db.from("chung_tu_quet").update({ giao_dich_id: gdId })
+        .eq("id", ctId).eq("company_id", company.id).select("id").maybeSingle();
+      if (loiCt) throw loiCt;
+      if (!ct) return loi("KHONG_THAY", "Không có chứng từ này trong công ty.", 404);
+      return json({ ok: true, chung_tu_id: ctId, giao_dich_id: gdId });
+    }
+
+    case "quyet_dinh_chung_tu": {
+      const gdId = String(body.giao_dich_id ?? "");
+      const lyDo = String(body.ly_do ?? "");
+      if (!gdId || !(lyDo in LY_DO_KHONG_CHUNG_TU)) return loi("THAM_SO", "Chọn khoản chi và lý do không có chứng từ.", 400);
+      const ghiChu = typeof body.ghi_chu === "string" && body.ghi_chu.trim() ? body.ghi_chu.trim().slice(0, 300) : null;
+      if (lyDo === "khac" && !ghiChu) return loi("GHI_CHU", "Lý do khác: ghi rõ vì sao không có chứng từ.", 400);
+      const { data: gd, error: loiGd } = await locMinhHoa(db.from("transactions")
+        .select("id, amount, type, is_synthetic").eq("id", gdId).eq("company_id", company.id), company.la_demo === true).maybeSingle();
+      if (loiGd) throw loiGd;
+      if (!gd || chieuTien(gd) !== "ra") return loi("KHONG_THAY", "Không có khoản chi này trong công ty.", 404);
+      const { data, error } = await db.from("quyet_dinh_chung_tu").insert({
+        company_id: company.id, transaction_id: gdId, ly_do: lyDo, ghi_chu: ghiChu, user_id: userId,
+      }).select("id, transaction_id, ly_do, ghi_chu, tao_luc").single();
+      if (error) {
+        if (error.code === "23505") return loi("DA_CO", "Khoản này đã có quyết định. Hoàn tác trước nếu muốn đổi.", 409);
+        throw error;
+      }
+      return json({ ok: true, quyet_dinh: data });
+    }
+
+    case "huy_quyet_dinh_chung_tu": {
+      const id = String(body.id ?? "");
+      if (!id) return loi("THAM_SO", "Thiếu quyết định.", 400);
+      const { data, error } = await db.from("quyet_dinh_chung_tu").update({ huy_luc: new Date().toISOString(), huy_boi: userId })
+        .eq("id", id).eq("company_id", company.id).is("huy_luc", null).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return loi("KHONG_THAY", "Không có quyết định này, hoặc đã hoàn tác.", 404);
+      return json({ ok: true, id });
     }
 
     case "kiem_truoc_khi_chuyen": {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 /*
@@ -14,14 +14,18 @@ const may = vi.hoisted(() => ({
   loiGd: null as null | { message: string },
   doanhThu: { ok: true, body: { revenue: 1_500_000_000 } as Record<string, unknown> },
   coMoHinh: undefined as boolean | undefined,
+  quyetDinh: [] as Record<string, unknown>[],
+  troLy: vi.fn(),
 }));
+vi.mock('@/lib/goiTroLy', () => ({ goiTroLy: may.troLy }));
 vi.mock('@/hooks/useTrangThaiTroLy', () => ({ useCoMoHinh: () => may.coMoHinh }));
 
 function bang(ten: string) {
   const q: Record<string, unknown> = {};
-  for (const f of ['select', 'eq', 'gte', 'lte', 'order']) q[f] = () => q;
+  for (const f of ['select', 'eq', 'gte', 'lte', 'order', 'is']) q[f] = () => q;
   q.range = async () => {
     if (ten === 'transactions') return may.loiGd ? { data: null, error: may.loiGd } : { data: may.gd, error: null };
+    if (ten === 'quyet_dinh_chung_tu') return { data: may.quyetDinh, error: null };
     return { data: [], error: null };
   };
   return q;
@@ -44,6 +48,8 @@ beforeEach(() => {
   may.gd = [];
   may.loiGd = null;
   may.coMoHinh = undefined;
+  may.quyetDinh = [];
+  may.troLy.mockReset().mockResolvedValue({ ok: true });
   may.doanhThu = { ok: true, body: { revenue: 1_500_000_000 } };
   globalThis.fetch = vi.fn(async () => ({
     ok: may.doanhThu.ok,
@@ -85,5 +91,26 @@ describe('Chứng từ chi phí — doanh thu năm và lỗi đọc', () => {
     dung();
     expect(await screen.findByText(/chưa bật đọc ảnh chứng từ/)).toBeTruthy();
     expect(screen.queryByText(/MIMI đọc số tiền/)).toBeNull();
+  });
+
+  // 29/09/2026 — quy trình đối soát: người duyệt xử lý từng ngoại lệ, có nhật ký, hoàn tác được.
+  it('người duyệt ghi "không có chứng từ" kèm lý do; khoản đã quyết rời danh sách đòi hoá đơn', async () => {
+    may.gd = [
+      { id: 'g1', amount: 12_000_000, type: 'expense', transaction_date: '2026-08-05', merchant_name: 'LUONG THANG 8', payment_reference: null, counter_account_name: 'NHAN VIEN A', is_synthetic: false },
+      { id: 'g2', amount: 3_000_000, type: 'expense', transaction_date: '2026-08-06', merchant_name: 'MUA HANG', payment_reference: null, counter_account_name: 'CUA HANG B', is_synthetic: false },
+    ];
+    dung();
+    expect(await screen.findByText('2 khoản cần đòi hoá đơn')).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Không có chứng từ' })[0]);
+    fireEvent.change(screen.getByLabelText('Lý do không có chứng từ'), { target: { value: 'luong_bao_hiem' } });
+    // Máy chủ ghi xong thì trang đọc lại: lần đọc sau đã có quyết định cho g1.
+    may.quyetDinh = [{ id: 'q1', transaction_id: 'g1', ly_do: 'luong_bao_hiem', ghi_chu: null, tao_luc: '2026-09-29T00:00:00Z' }];
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi quyết định' }));
+    await waitFor(() => expect(may.troLy).toHaveBeenCalledWith('quyet_dinh_chung_tu', { giao_dich_id: 'g1', ly_do: 'luong_bao_hiem', ghi_chu: null }));
+    expect(await screen.findByText('1 khoản cần đòi hoá đơn')).toBeTruthy();
+    expect(screen.getByText('Đã xử lý trong quý')).toBeTruthy();
+    expect(screen.getByText(/Không có chứng từ — Lương, bảo hiểm/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Hoàn tác' }));
+    await waitFor(() => expect(may.troLy).toHaveBeenCalledWith('huy_quyet_dinh_chung_tu', { id: 'q1' }));
   });
 });

@@ -51,9 +51,11 @@ export interface HoaDonVao {
   soHoaDon: string | null;
   tenBenBan: string | null;
   maSoThueBenBan: string | null;
+  /** Người dùng đã GẮN chứng từ này vào một khoản chi (chung_tu_quet.giao_dich_id) — thắng mọi phỏng đoán. */
+  giaoDichId?: string | null;
 }
 
-export type CachGhep = 'so_hoa_don' | 'so_tien_va_ngay';
+export type CachGhep = 'gan_tay' | 'so_hoa_don' | 'so_tien_va_ngay';
 
 export interface CapDaGhep {
   khoanChiId: string;
@@ -134,6 +136,16 @@ export function ghepChungTu(
   const chiDaDung = new Set<string>();
   const hoaDonDaDung = new Set<string>();
 
+  // ── Vòng 0: người dùng đã gắn tay (29/09/2026) ──────────────────────────
+  // Quyết định của người thắng mọi phỏng đoán của máy, kể cả khi số tiền lệch (trả góp, trả một phần).
+  const idChi = new Set(chi.map((c) => c.id));
+  for (const h of hoaDon) {
+    if (!h.giaoDichId || !idChi.has(h.giaoDichId) || hoaDonDaDung.has(h.id)) continue;
+    daGhep.push({ khoanChiId: h.giaoDichId, hoaDonId: h.id, soTien: h.soTien, cach: 'gan_tay' });
+    chiDaDung.add(h.giaoDichId);
+    hoaDonDaDung.add(h.id);
+  }
+
   // ── Vòng 1: số hoá đơn nằm trong nội dung chuyển khoản ──────────────────
   for (const c of chi) {
     if (chiDaDung.has(c.id)) continue;
@@ -209,4 +221,37 @@ export function ghepChungTu(
     tongCoGiay,
     tongChuaCoGiay,
   };
+}
+
+/* ── Ngoại lệ đã có người quyết (29/09/2026) ───────────────────────────────── */
+
+/** Lý do người duyệt chấp nhận một khoản chi KHÔNG có chứng từ (khớp CHECK của bảng quyet_dinh_chung_tu). */
+export const LY_DO_KHONG_CHUNG_TU = {
+  luong_bao_hiem: 'Lương, bảo hiểm',
+  thue_phi_nha_nuoc: 'Thuế, phí nộp nhà nước',
+  phi_lai_ngan_hang: 'Phí, lãi ngân hàng',
+  nguoi_ban_khong_xuat: 'Người bán không xuất hoá đơn',
+  khac: 'Lý do khác',
+} as const;
+export type LyDoKhongChungTu = keyof typeof LY_DO_KHONG_CHUNG_TU;
+
+export interface QuyetDinhChungTu { id: string; transaction_id: string; ly_do: LyDoKhongChungTu; ghi_chu: string | null; tao_luc: string }
+
+/**
+ * Tách khoản chi CẦN chứng từ khỏi khoản người duyệt đã quyết: chi cá nhân (nhãn người chọn) và "không có
+ * chứng từ" kèm lý do. Trang Chứng từ chi phí và trợ lý dùng CÙNG hàm này để ra cùng một con số.
+ */
+export function locKhoanCanChungTu<T extends KhoanChi>(chi: T[], o: { caNhan: ReadonlySet<string>; quyetDinh: readonly QuyetDinhChungTu[] }): {
+  canChungTu: T[];
+  caNhan: T[];
+  khongCoChungTu: { khoan: T; quyet: QuyetDinhChungTu }[];
+} {
+  const theoGd = new Map(o.quyetDinh.map((q) => [q.transaction_id, q]));
+  const canChungTu: T[] = [], caNhan: T[] = [], khongCoChungTu: { khoan: T; quyet: QuyetDinhChungTu }[] = [];
+  for (const c of chi) {
+    if (o.caNhan.has(c.id)) caNhan.push(c);
+    else if (theoGd.has(c.id)) khongCoChungTu.push({ khoan: c, quyet: theoGd.get(c.id)! });
+    else canChungTu.push(c);
+  }
+  return { canChungTu, caNhan, khongCoChungTu };
 }

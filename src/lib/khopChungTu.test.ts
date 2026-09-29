@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from './khopChungTu';
+import { ghepChungTu, LECH_TIEN, locKhoanCanChungTu, type HoaDonVao, type KhoanChi } from './khopChungTu';
 
 const chi = (
   id: string,
@@ -177,5 +177,36 @@ describe('chữ dùng phải đúng', () => {
     expect(r.hoaDonChuaThayTien).toHaveLength(1);
     // Vẫn được cộng vào chi phí chứng minh được.
     expect(r.tongCoGiay).toBe(1_000_000);
+  });
+});
+
+// 29/09/2026 — quy trình đối soát: người duyệt xử lý ngoại lệ.
+describe('người duyệt: gắn tay và quyết định', () => {
+  it('chứng từ gắn tay thắng phỏng đoán, kể cả khi số tiền lệch (trả một phần)', () => {
+    const r = ghepChungTu(
+      [chi('c1', 3_000_000, '2026-08-10'), chi('c2', 5_000_000, '2026-08-10')],
+      [{ ...hd('h1', 5_000_000, '2026-08-09'), giaoDichId: 'c1' }],
+    );
+    expect(r.daGhep).toEqual([{ khoanChiId: 'c1', hoaDonId: 'h1', soTien: 5_000_000, cach: 'gan_tay' }]);
+    // Không đem h1 đi ghép lại với c2 dù đúng số tiền.
+    expect(r.chuaCoGiay.map((c) => c.id)).toEqual(['c2']);
+  });
+
+  it('khoản ghép mơ hồ hết mơ hồ khi người duyệt chọn một chứng từ', () => {
+    const truoc = ghepChungTu([chi('c1', 1_000_000, '2026-08-10')], [hd('h1', 1_000_000, '2026-08-09'), hd('h2', 1_000_000, '2026-08-11')]);
+    expect(truoc.canXem).toHaveLength(1);
+    const sau = ghepChungTu([chi('c1', 1_000_000, '2026-08-10')], [hd('h1', 1_000_000, '2026-08-09'), { ...hd('h2', 1_000_000, '2026-08-11'), giaoDichId: 'c1' }]);
+    expect(sau.canXem).toHaveLength(0);
+    expect(sau.daGhep[0]).toMatchObject({ khoanChiId: 'c1', hoaDonId: 'h2', cach: 'gan_tay' });
+  });
+
+  it('chi cá nhân và "không có chứng từ" rời danh sách cần chứng từ', () => {
+    const r = locKhoanCanChungTu([chi('a', 1, '2026-08-01'), chi('b', 2, '2026-08-01'), chi('c', 3, '2026-08-01')], {
+      caNhan: new Set(['a']),
+      quyetDinh: [{ id: 'q1', transaction_id: 'b', ly_do: 'luong_bao_hiem', ghi_chu: null, tao_luc: '2026-09-29T00:00:00Z' }],
+    });
+    expect(r.canChungTu.map((c) => c.id)).toEqual(['c']);
+    expect(r.caNhan.map((c) => c.id)).toEqual(['a']);
+    expect(r.khongCoChungTu[0]).toMatchObject({ khoan: { id: 'b' }, quyet: { ly_do: 'luong_bao_hiem' } });
   });
 });

@@ -12,7 +12,7 @@
  */
 import type { BangChung, DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, LoaiBangChung, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
-import { ghepChungTu, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
+import { ghepChungTu, locKhoanCanChungTu, type HoaDonVao, type KhoanChi, type QuyetDinhChungTu } from '../chung-tu/khop-chung-tu.ts';
 import { CAN_DO_TRUOC_KHI_DOI, chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
 import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH, type SuKienThue } from '../luat/he-luat.ts';
 import { HOAT_DONG } from '../doanh-thu/theo-hoat-dong.ts';
@@ -122,6 +122,10 @@ export interface DuLieu {
   bangGia: GiaModel[];
   bangGiaLuc: string | null;
   chungTuQuet: ChungTuQuetTL[];
+  /** Khoản chi người dùng đánh dấu chi cá nhân (nhãn người chọn) — không cần chứng từ kinh doanh. */
+  chiCaNhan?: string[];
+  /** Quyết định "không có chứng từ" còn hiệu lực. */
+  quyetDinhChungTu?: QuyetDinhChungTu[];
   /**
    * Hồ sơ thuế + doanh thu đã chọn nguồn, cho hệ luật thuế. `canCuDaKiem` là kết quả đối chiếu
    * từng câu trích với kho Công báo (`luat/doc-can-cu.ts`) — năng lực chỉ nói "đã đối chiếu"
@@ -484,8 +488,11 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
       soHoaDon: c.so_hoa_don ?? null,
       tenBenBan: c.ben_ban ?? null,
       maSoThueBenBan: c.ma_so_thue_ben_ban ?? null,
+      giaoDichId: c.giao_dich_id,
     }));
-  const g = ghepChungTu(chi, hoaDon);
+  // Cùng bộ lọc với màn Chứng từ chi phí: bỏ chi cá nhân và khoản người duyệt đã quyết "không có chứng từ".
+  const loc = locKhoanCanChungTu(chi, { caNhan: new Set(d.chiCaNhan ?? []), quyetDinh: d.quyetDinhChungTu ?? [] });
+  const g = ghepChungTu(loc.canChungTu, hoaDon);
   const conThieu = g.chuaCoGiay;
 
   if (!chi.length) {

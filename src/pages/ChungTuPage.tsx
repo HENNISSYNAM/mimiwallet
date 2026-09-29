@@ -5,7 +5,11 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung } from '@/lib/congTyDangDung';
-import { ghepChungTu, type HoaDonVao, type KhoanChi } from '@/lib/khopChungTu';
+import {
+  ghepChungTu, locKhoanCanChungTu, LY_DO_KHONG_CHUNG_TU, type HoaDonVao, type KhoanChi, type LyDoKhongChungTu, type QuyetDinhChungTu,
+} from '@/lib/khopChungTu';
+import { goiTroLy } from '@/lib/goiTroLy';
+import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
 import { chieuTien } from '@/lib/chieuTien';
@@ -53,6 +57,17 @@ async function docDoanhThuNam(nam: number, congTy: string): Promise<number> {
 
 export default function ChungTuPage() {
   const [chi, setChi] = useState<KhoanChi[]>([]);
+  /**
+   * NGOẠI LỆ ĐÃ CÓ NGƯỜI QUYẾT (29/09/2026) — quy trình sao kê → chứng từ → ngoại lệ → người duyệt. Chi cá
+   * nhân (nhãn người chọn) và "không có chứng từ" kèm lý do rời danh sách cần đòi hoá đơn; cùng bộ lọc với
+   * trợ lý (`locKhoanCanChungTu`), nên hai nơi ra cùng con số. Mỗi quyết định hoàn tác được.
+   */
+  const [caNhan, setCaNhan] = useState<Set<string>>(new Set());
+  const [quyetDinh, setQuyetDinh] = useState<QuyetDinhChungTu[]>([]);
+  const [dangXuLy, setDangXuLy] = useState<string | null>(null);
+  const [moLyDo, setMoLyDo] = useState<string | null>(null);
+  const [lyDo, setLyDo] = useState<LyDoKhongChungTu>('nguoi_ban_khong_xuat');
+  const [ghiChu, setGhiChu] = useState('');
   const [hoaDon, setHoaDon] = useState<HoaDonVao[]>([]);
   /*
    * DOANH THU NĂM, KHÔNG PHẢI QUÝ. Bảng chứng từ bên dưới đọc theo quý, nhưng
@@ -116,8 +131,8 @@ export default function ChungTuPage() {
        * NGUỒN GIẤY TỜ: chứng từ người dùng tự chụp (`chung_tu_quet`, Thư viện chứng từ).
        * 29/09/2026: gỡ hoá đơn điện tử (GDT) — Casso chưa bật sản phẩm đó cho app production nên MIMI không đọc được hoá đơn nào từ cơ quan thuế; trước đó trang còn đọc bảng `gdt_invoices`, luôn trống.
        */
-      type ChungTuKy = { id: string; tong_tien: number; ngay: string | null; so_hoa_don: string | null; ben_ban: string | null; ma_so_thue_ben_ban: string | null };
-      const [gd, thuNam, quetKy, quetNam] = await Promise.all([
+      type ChungTuKy = { id: string; tong_tien: number; ngay: string | null; so_hoa_don: string | null; ben_ban: string | null; ma_so_thue_ben_ban: string | null; giao_dich_id?: string | null };
+      const [gd, thuNam, quetKy, quetNam, nhanCaNhan, qdChungTu] = await Promise.all([
         het<GdKy>((a, b) => supabase
           .from('transactions')
           .select(
@@ -133,7 +148,7 @@ export default function ChungTuPage() {
         ),
         het<ChungTuKy>((a, b) => supabase
           .from('chung_tu_quet')
-          .select('id, tong_tien, ngay, so_hoa_don, ben_ban, ma_so_thue_ben_ban')
+          .select('id, tong_tien, ngay, so_hoa_don, ben_ban, ma_so_thue_ben_ban, giao_dich_id')
           .eq('company_id', cty.id)
           .gte('ngay', iso(dauKy))
           .lte('ngay', iso(cuoiKy))
@@ -145,11 +160,26 @@ export default function ChungTuPage() {
           .gte('ngay', dauNam)
           .lte('ngay', iso(cuoiKy))
           .order('id').range(a, b), 'chứng từ chụp từ đầu năm'),
+        het<{ transaction_id: string }>((a, b) => supabase
+          .from('transaction_labels')
+          .select('transaction_id')
+          .eq('company_id', cty.id).eq('source', 'human').eq('is_personal', true)
+          .order('transaction_id').range(a, b), 'nhãn chi cá nhân'),
+        het<QuyetDinhChungTu>((a, b) => (supabase as unknown as { from: (b: string) => any }) // eslint-disable-line @typescript-eslint/no-explicit-any
+          .from('quyet_dinh_chung_tu')
+          .select('id, transaction_id, ly_do, ghi_chu, tao_luc')
+          .eq('company_id', cty.id).is('huy_luc', null)
+          .order('id').range(a, b), 'quyết định chứng từ'),
       ]);
+      // Không đọc được quyết định thì KHÔNG coi như chưa có quyết định nào (sẽ đòi lại khoản đã xử lý):
+      // báo lỗi quý, như khi không đọc được giao dịch.
+      const loiQuyetDinh = nhanCaNhan.error ?? qdChungTu.error;
+      setCaNhan(new Set((nhanCaNhan.data ?? []).map((r) => String(r.transaction_id))));
+      setQuyetDinh(qdChungTu.data ?? []);
 
       // Không nuốt lỗi — bài học 08/09: truy vấn hỏng trông y hệt không có dữ liệu. Báo NGAY TRÊN khối
       // bị ảnh hưởng (không chỉ một thông báo thoáng qua), và không tính khối đó từ dữ liệu thiếu.
-      const loiQuy = gd.error ?? quetKy.error;
+      const loiQuy = gd.error ?? quetKy.error ?? loiQuyetDinh;
       setLoiKy(loiQuy ? loiQuy.message : null);
       const loiCaNam = thuNam.error ?? quetNam.error;
       setLoiNam(loiCaNam ? loiCaNam.message : null);
@@ -196,6 +226,7 @@ export default function ChungTuPage() {
           soHoaDon: c.so_hoa_don,
           tenBenBan: c.ben_ban,
           maSoThueBenBan: c.ma_so_thue_ben_ban,
+          giaoDichId: c.giao_dich_id ?? null,
         }));
       setHoaDon(tuChup);
     } finally {
@@ -205,7 +236,23 @@ export default function ChungTuPage() {
 
   useEffect(() => { void tai(); }, [tai]);
 
-  const kq = useMemo(() => ghepChungTu(chi, hoaDon), [chi, hoaDon]);
+  const loc = useMemo(() => locKhoanCanChungTu(chi, { caNhan, quyetDinh }), [chi, caNhan, quyetDinh]);
+  const kq = useMemo(() => ghepChungTu(loc.canChungTu, hoaDon), [loc, hoaDon]);
+
+  /** Gọi một hành động của người duyệt, rồi đọc lại — con số trên trang luôn từ máy chủ, không tự trừ. */
+  const lam = async (khoa: string, hanhDong: string, du: Record<string, unknown>, xong: string) => {
+    setDangXuLy(khoa);
+    try {
+      await goiTroLy(hanhDong, du);
+      toast.success(xong);
+      setMoLyDo(null); setGhiChu('');
+      await tai();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Chưa lưu được.');
+    } finally {
+      setDangXuLy(null);
+    }
+  };
 
   const tenHoaDon = useMemo(() => {
     const m = new Map<string, HoaDonVao>();
@@ -351,6 +398,7 @@ export default function ChungTuPage() {
                   <th className="pb-2 font-medium">Ngày</th>
                   <th className="pb-2 font-medium">Nội dung</th>
                   <th className="pb-2 text-right font-medium">Số tiền</th>
+                  <th className="pb-2 pl-3 text-right font-medium">Xử lý</th>
                 </tr>
               </thead>
               <tbody>
@@ -363,6 +411,37 @@ export default function ChungTuPage() {
                       )}
                     </td>
                     <td className="py-2.5 text-right font-mono font-medium">{dong(c.soTien)}</td>
+                    <td className="py-2.5 pl-3 text-right">
+                      {moLyDo === c.id ? (
+                        <form
+                          className="flex flex-col items-end gap-1.5"
+                          onSubmit={(e) => { e.preventDefault(); void lam(c.id, 'quyet_dinh_chung_tu', { giao_dich_id: c.id, ly_do: lyDo, ghi_chu: ghiChu || null }, 'Đã ghi: khoản này không có chứng từ.'); }}
+                        >
+                          <select aria-label="Lý do không có chứng từ" value={lyDo} onChange={(e) => setLyDo(e.target.value as LyDoKhongChungTu)}
+                            className="h-9 rounded-lg border border-border bg-background px-2 text-xs">
+                            {(Object.keys(LY_DO_KHONG_CHUNG_TU) as LyDoKhongChungTu[]).map((k) => <option key={k} value={k}>{LY_DO_KHONG_CHUNG_TU[k]}</option>)}
+                          </select>
+                          <input aria-label="Ghi chú" value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} maxLength={300}
+                            placeholder={lyDo === 'khac' ? 'Bắt buộc: vì sao không có?' : 'Ghi chú (không bắt buộc)'}
+                            className="h-9 w-44 rounded-lg border border-border bg-background px-2 text-xs" />
+                          <span className="flex gap-1.5">
+                            <button type="button" onClick={() => setMoLyDo(null)} className="rounded-lg border border-border px-2 py-1 text-xs">Huỷ</button>
+                            <button type="submit" disabled={dangXuLy === c.id || (lyDo === 'khac' && !ghiChu.trim())}
+                              className="rounded-lg bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50">Ghi quyết định</button>
+                          </span>
+                        </form>
+                      ) : (
+                        <span className="inline-flex flex-wrap justify-end gap-1.5">
+                          <NutQuetChungTu coMoHinh={coMoHinh} giaoDichId={c.id} onDaLuu={() => void tai()}
+                            className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent">Gắn chứng từ</NutQuetChungTu>
+                          <button type="button" disabled={dangXuLy === c.id}
+                            onClick={() => void lam(c.id, 'gan_nhan_chi', { giao_dich_id: c.id, ca_nhan: true }, 'Đã đánh dấu chi cá nhân.')}
+                            className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50">Chi cá nhân</button>
+                          <button type="button" onClick={() => { setMoLyDo(c.id); setLyDo('nguoi_ban_khong_xuat'); setGhiChu(''); }}
+                            className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent">Không có chứng từ</button>
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -391,14 +470,54 @@ export default function ChungTuPage() {
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             {kq.canXem.map((x) => (
-              <li key={x.khoanChiId} className="flex flex-wrap items-baseline gap-2">
+              <li key={x.khoanChiId} className="flex flex-wrap items-center gap-2">
                 <span className="font-mono font-medium">{dong(x.soTien)}</span>
-                <span className="text-muted-foreground">
-                  khớp {x.hoaDonId.length} hoá đơn:{' '}
-                  {x.hoaDonId
-                    .map((id) => tenHoaDon.get(id)?.tenBenBan ?? tenHoaDon.get(id)?.soHoaDon ?? id)
-                    .join(' · ')}
+                <span className="text-muted-foreground">khớp {x.hoaDonId.length} chứng từ — chọn đúng cái:</span>
+                {x.hoaDonId.map((id) => (
+                  <button key={id} type="button" disabled={dangXuLy === x.khoanChiId}
+                    onClick={() => void lam(x.khoanChiId, 'gan_chung_tu', { chung_tu_id: id.replace(/^quet:/, ''), giao_dich_id: x.khoanChiId }, 'Đã gắn chứng từ vào khoản chi.')}
+                    className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50">
+                    {tenHoaDon.get(id)?.tenBenBan ?? tenHoaDon.get(id)?.soHoaDon ?? 'Chứng từ'}{tenHoaDon.get(id)?.ngay ? ` · ${ngayVN(tenHoaDon.get(id)!.ngay)}` : ''}
+                  </button>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ── Đã xử lý: người duyệt quyết, hoàn tác được ─────────────────── */}
+      {(loc.khongCoChungTu.length > 0 || loc.caNhan.length > 0) && (
+        <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
+          <p className="text-sm font-semibold">Đã xử lý trong quý</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Không tính vào "chi phí chưa có giấy tờ". Mỗi dòng ghi ai quyết lúc nào; bấm Hoàn tác nếu quyết nhầm.
+          </p>
+          <ul className="mt-3 divide-y divide-border/40 text-sm">
+            {loc.khongCoChungTu.map(({ khoan, quyet }) => (
+              <li key={khoan.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>
+                  <span className="font-mono">{ngayVN(khoan.ngay)}</span> · {khoan.tenNguoiNhan || khoan.noiDung || '—'} ·{' '}
+                  <span className="font-mono font-medium">{dong(khoan.soTien)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Không có chứng từ — {LY_DO_KHONG_CHUNG_TU[quyet.ly_do] ?? quyet.ly_do}{quyet.ghi_chu ? `: ${quyet.ghi_chu}` : ''}
+                  </span>
                 </span>
+                <button type="button" disabled={dangXuLy === khoan.id}
+                  onClick={() => void lam(khoan.id, 'huy_quyet_dinh_chung_tu', { id: quyet.id }, 'Đã hoàn tác.')}
+                  className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50">Hoàn tác</button>
+              </li>
+            ))}
+            {loc.caNhan.map((khoan) => (
+              <li key={khoan.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>
+                  <span className="font-mono">{ngayVN(khoan.ngay)}</span> · {khoan.tenNguoiNhan || khoan.noiDung || '—'} ·{' '}
+                  <span className="font-mono font-medium">{dong(khoan.soTien)}</span>
+                  <span className="block text-xs text-muted-foreground">Chi cá nhân — không cần chứng từ kinh doanh</span>
+                </span>
+                <button type="button" disabled={dangXuLy === khoan.id}
+                  onClick={() => void lam(khoan.id, 'gan_nhan_chi', { giao_dich_id: khoan.id, ca_nhan: false }, 'Đã hoàn tác.')}
+                  className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50">Hoàn tác</button>
               </li>
             ))}
           </ul>
