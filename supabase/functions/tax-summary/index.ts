@@ -145,6 +145,15 @@ Deno.serve(async (req) => {
       // Both present and disagreeing is worth surfacing rather than hiding.
       gap: s.hoa_don !== null ? s.hoa_don - s.uoc_tinh : null,
       ...status,
+      // 30/09/2026 — `crossed` ở trên là phép so ƯỚC TÍNH với ngưỡng. `crossedCertain` chỉ có giá trị khi
+      // khoảng doanh thu thật nằm trọn một phía ngưỡng 01 tỷ; null = phụ thuộc phần chưa rõ, ĐỪNG nói
+      // "đã vượt / chưa vượt". Khi hoá đơn của cơ quan thuế là nguồn (`basis: gdt`) thì là bằng chứng.
+      crossedCertain: basis === "gdt" ? status.crossed : (() => {
+        const n = s.do_chac_chan.nguong.find((x) => x.ma === "mien_thue_1_ty");
+        return !n || n.phia === "chua_chac" ? null : n.phia === "tren";
+      })(),
+      // Khoảng doanh thu thật, độ chắc chắn và ĐÚNG MỘT câu hỏi (xem `_shared/doanh-thu/do-chac-chan.ts`).
+      revenueUncertainty: s.do_chac_chan,
       internalTransfersExcluded: s.so_giao_dich_noi_bo,
       // 29/09/2026 — để giao diện không kết luận ngưỡng quá sớm (docs/PHAN_HOI_GIA_LAP_WTP.md).
       suggestedExclusion: s.goi_y_loai_ra,

@@ -12,6 +12,7 @@
  * minh hoạ (`_shared/minh-hoa.ts`).
  */
 import { docSoLieuDoanhThu, type SoLieuDoanhThu } from '../doanh-thu/so-lieu.ts';
+import type { KetQuaDoChacChan } from '../doanh-thu/do-chac-chan.ts';
 import { chiaTheoHoatDong, khoanTuNhap, type ChiaHoatDong, type PhanLoaiHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
 import {
   chonDoanhThu, HO_SO_TRONG, loaiTuTaiKhoan,
@@ -33,6 +34,8 @@ export interface DoanhThuTheoQuy extends DoanhThuDaDoc {
   da_giai_trinh?: { so: number; tong: number };
   /** Doanh thu theo nhóm hoạt động từng nguồn. Thiếu = bản cũ, coi như mọi khoản chưa rõ nhóm. */
   hoat_dong?: { ngan_hang: ChiaHoatDong; hoa_don: ChiaHoatDong | null; phan_loai: PhanLoaiHoatDong[] };
+  /** Khoảng doanh thu thật và câu hỏi (`doanh-thu/do-chac-chan.ts`). Chỉ áp cho nguồn ngân hàng — ước tính. */
+  do_chac_chan?: KetQuaDoChacChan;
 }
 
 /**
@@ -55,6 +58,7 @@ export function doanhThuQuyTuSoLieu(s: SoLieuDoanhThu): DoanhThuTheoQuy {
     can_xem_lai: s.can_xem_lai,
     da_giai_trinh: { so: s.so_khong_phai_doanh_thu, tong: s.khong_phai_doanh_thu },
     hoat_dong: s.hoat_dong,
+    do_chac_chan: s.do_chac_chan,
   };
 }
 
@@ -146,6 +150,23 @@ export interface SuKienDaDung {
   canh_bao: string[];
 }
 
+/** Từ kết quả độ chắc chắn sang cờ cho hệ luật. null khi chắc chắn (hoặc chưa tính). */
+export function chuaChacTuDoChacChan(dc: KetQuaDoChacChan | undefined): SuKienThue['doanhThuChuaChac'] {
+  if (!dc || !dc.ket_luan_phu_thuoc) return null;
+  const c = dc.cau_hoi;
+  return {
+    nguong_1_ty: dc.nguong_chua_chac.includes('mien_thue_1_ty'),
+    nguong_3_ty: dc.nguong_chua_chac.includes('phuong_phap_3_ty'),
+    nguong_50_ty: dc.nguong_chua_chac.includes('khai_thang_50_ty'),
+    quy_vuot: dc.nguong_chua_chac.includes('quy_vuot_1_ty'),
+    cau_hoi: {
+      khoa: c?.khoa ?? 'tong_chua_ro',
+      cau: c?.cau ?? 'Xác nhận các khoản tiền vào chưa rõ có phải tiền bán hàng không.',
+      vi_sao: c?.vi_sao ?? 'Doanh thu ước tính đang nằm sát một ngưỡng luật; MIMI chưa biết bạn ở phía nào.',
+    },
+  };
+}
+
 /** Gộp hồ sơ, doanh thu và số người dùng tự nhập thành sự kiện cho hệ luật. */
 export function dungSuKien(o: {
   nam: number;
@@ -181,6 +202,9 @@ export function dungSuKien(o: {
           : chon.nguon === 'tu_khai' && chon.quy
             ? chiaTheoHoatDong('tu_nhap', khoanTuNhap(o.nam, chon.quy), o.doanhThu.hoat_dong?.phan_loai ?? [])
             : null,
+      // Chỉ ước tính từ ngân hàng mới có thể "chưa chắc" theo khoảng; hoá đơn của cơ quan thuế và số người
+      // dùng tự khai là bằng chứng, không phải suy đoán.
+      doanhThuChuaChac: chon.nguon === 'ngan_hang' ? chuaChacTuDoChacChan(o.doanhThu.do_chac_chan) : null,
       nhomNganh: o.hoSo.nhom_nganh,
       kenh: o.hoSo.kenh,
       phuongPhapTncn: o.hoSo.phuong_phap_tncn,

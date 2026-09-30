@@ -1254,13 +1254,18 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
         // Ngưỡng là con số của pháp luật: bằng chứng là chính điều khoản, không phải bản ghi của công ty.
         { nhan: 'Ngưỡng phải nộp thuế', gia_tri: NGUONG_THUE, don_vi: 'vnd', ghi_chu: 'NĐ 68/2026 sửa bởi NĐ 141/2026', bang_chung: [{ loai: 'van_ban_luat', id: ['nd68_d3_k1', 'nd141_d1_k1'], so_ban_ghi: 2 }] },
         {
-          nhan: sl.doanh_thu_nam > NGUONG_THUE ? 'Đã vượt' : 'Còn cách ngưỡng',
+          // Khoảng doanh thu thật cắt ngưỡng: KHÔNG nói "đã vượt" hay "còn cách" — con số ước tính chưa đủ chắc.
+          nhan: suKien.doanhThuChuaChac?.nguong_1_ty ? 'Chưa chắc: ước tính đang sát ngưỡng' : sl.doanh_thu_nam > NGUONG_THUE ? 'Đã vượt' : 'Còn cách ngưỡng',
           gia_tri: Math.abs(NGUONG_THUE - sl.doanh_thu_nam),
           don_vi: 'vnd',
-          can_chu_y: sl.doanh_thu_nam > NGUONG_THUE,
+          can_chu_y: suKien.doanhThuChuaChac?.nguong_1_ty ? true : sl.doanh_thu_nam > NGUONG_THUE,
         },
       ],
     });
+    // Đúng MỘT câu hỏi để gỡ — do `doanh-thu/do-chac-chan.ts` chọn (khoản chưa rõ lớn nhất trước).
+    if (suKien.doanhThuChuaChac) {
+      the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `MIMI chưa kết luận được nghĩa vụ: ${suKien.doanhThuChuaChac.cau_hoi.cau} ${suKien.doanhThuChuaChac.cau_hoi.vi_sao}` });
+    }
   }
   if (chinh.length) {
     the.push({
@@ -1468,6 +1473,13 @@ export function chuanBiHanThue(d: DuLieu): KetQuaNangLuc {
     ] });
     for (const g of ss.giay_to_thieu) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `Còn thiếu: ${g}` });
     the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Độ tin cậy: ${ss.do_tin_cay === 'cao' ? 'cao' : ss.do_tin_cay === 'trung_binh' ? 'trung bình' : 'thấp'}.` });
+    // Kết luận về ngưỡng phụ thuộc phần chưa rõ: nói khoảng và hỏi ĐÚNG MỘT câu, không nói nghĩa vụ.
+    if (ss.ket_luan_phu_thuoc && ss.cau_hoi_can_xem) {
+      the.push({
+        loai: 'ghi_chu', muc_do: 'can_chu_y',
+        cau: `Doanh thu thật nằm trong khoảng ${vnd(Number(ss.khoang_doanh_thu.can_duoi))} – ${vnd(Number(ss.khoang_doanh_thu.can_tren))}, cắt ngưỡng thuế nên MIMI chưa kết luận nghĩa vụ. ${ss.cau_hoi_can_xem.cau}`,
+      });
+    }
   }
   return kq('chuan_bi_han_thue', 'chung_tu', tom, {
     the, nguon: [N.lichThue], trang: [T.nhacThue, T.toKhai],

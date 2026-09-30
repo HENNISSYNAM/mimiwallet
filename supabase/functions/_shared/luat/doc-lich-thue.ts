@@ -49,6 +49,6 @@ export async function docLichCongTy(
     ? { so_tien: hoatDong.nhom.chua_ro.so_tien, so_khoan: hoatDong.nhom.chua_ro.so_khoan } : null;
   return {
     lich, loaiNguoiNop: dung.su_kien.loai ?? null, soChuaRo: s.so_chua_ro, tienChuaRo: s.chua_ro,
-    sanSang: sanSangThue(lich, s, chuaRoNhom), hoatDong,
+    sanSang: sanSangThue(lich, s, chuaRoNhom, dung.su_kien.loai ?? null), hoatDong,
   };
 }
