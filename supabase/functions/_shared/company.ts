@@ -20,8 +20,8 @@ type AnySupabaseClient = SupabaseClient<any, any, any, any, any>;
  *   - người thuộc nhiều công ty không chọn được công ty đang làm;
  *   - mọi thành viên đều có quyền như chủ, vì không có vai trò nào để kiểm.
  *
- * Nguồn sự thật giờ là `thanh_vien_cong_ty`. `companies.user_id` vẫn được chấp nhận như chủ sở
- * hữu để dữ liệu cũ (và công ty vừa tạo trong cùng một transaction) không bị khoá ngoài.
+ * Nguồn sự thật DUY NHẤT là `thanh_vien_cong_ty` (từ 30/09/2026 không còn dự phòng theo `companies.user_id`:
+ * người tạo công ty đã bị gỡ thì không được vào lại).
  *
  * `columns` được truyền thẳng cho `.select()` để nơi gọi cần thêm cột không phải truy vấn hai lần.
  */
@@ -55,19 +55,12 @@ export async function resolveCompanyVaiTro<T extends { id: string }>(
     if (ct && laVaiTro(dong.vai_tro)) return { cong_ty: ct, vai_tro: dong.vai_tro };
   }
 
-  // 2) Dự phòng: công ty do chính người này tạo nhưng chưa có dòng thành viên (dữ liệu cũ, hoặc
-  //    trigger chưa chạy). Chủ tạo ra công ty là chủ sở hữu.
-  let q2 = supabase
-    .from("companies")
-    .select(chonCot)
-    .eq("user_id", userId);
-  if (companyId) q2 = q2.eq("id", companyId);
-  const { data: ct, error: loi } = await q2.order("created_at", { ascending: true }).limit(1).maybeSingle();
-  if (loi) {
-    console.error(`resolveCompany failed for user ${userId}:`, loi.message);
-    return null;
-  }
-  return ct ? { cong_ty: ct as unknown as T, vai_tro: "chu_so_huu" } : null;
+  // Không có dòng thành viên thì KHÔNG có quyền. Trước 30/09/2026 ở đây có đường dự phòng theo
+  // `companies.user_id`, nhưng đó là người TẠO công ty chứ không phải thành viên hiện tại: chủ khác gỡ
+  // người tạo khỏi `thanh_vien_cong_ty` mà họ vẫn vào lại được với vai chủ sở hữu. Công ty cũ đã được
+  // backfill dòng thành viên (migration 18/09 và 30/09), nên không còn ai cần đường này.
+  // Truy vấn thành viên lỗi cũng trả null: lỗi thì đóng, không mở.
+  return null;
 }
 
 /** Bản cũ: chỉ cần công ty, không cần vai trò. Giữ cho các function chưa kiểm quyền. */

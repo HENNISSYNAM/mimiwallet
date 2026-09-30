@@ -15,7 +15,9 @@ interface DongCT { id: string; name: string; user_id: string | null; created_at:
 const CONG_TY: DongCT[] = [
   { id: 'c1', name: 'Công ty Một', user_id: 'u-chu', created_at: '2026-01-01' },
   { id: 'c2', name: 'Công ty Hai', user_id: 'u-chu', created_at: '2026-02-01' },
-  { id: 'c3', name: 'Công ty Ba (dữ liệu cũ)', user_id: 'u-cu', created_at: '2026-03-01' },
+  { id: 'c3', name: 'Công ty Ba (không còn dòng thành viên nào)', user_id: 'u-cu', created_at: '2026-03-01' },
+  // Người tạo (u-tao) đã bị chủ khác gỡ khỏi công ty; companies.user_id vẫn trỏ về họ.
+  { id: 'c4', name: 'Công ty Bốn', user_id: 'u-tao', created_at: '2026-04-01' },
 ];
 
 const THANH_VIEN: DongTV[] = [
@@ -24,6 +26,7 @@ const THANH_VIEN: DongTV[] = [
   // Kế toán của công ty 2 — không thuộc công ty 1.
   { company_id: 'c2', user_id: 'u-ke-toan', vai_tro: 'ke_toan', tao_luc: '2026-02-02' },
   { company_id: 'c1', user_id: 'u-xem', vai_tro: 'nguoi_xem', tao_luc: '2026-01-05' },
+  { company_id: 'c4', user_id: 'u-chu-moi', vai_tro: 'chu_so_huu', tao_luc: '2026-04-02' },
 ];
 
 /** CSDL giả: đủ để chạy đúng chuỗi select/eq/order/limit/maybeSingle mà hàm thật dùng. */
@@ -76,18 +79,26 @@ describe('công ty đang làm việc và vai trò', () => {
     expect(r).toMatchObject({ cong_ty: { id: 'c2' }, vai_tro: 'ke_toan' });
   });
 
-  it('dữ liệu cũ chưa có dòng thành viên: người tạo công ty vẫn vào được với vai chủ sở hữu', async () => {
-    const r = await resolveCompanyVaiTro<{ id: string }>(dbGia(), 'u-cu');
-    expect(r).toMatchObject({ cong_ty: { id: 'c3' }, vai_tro: 'chu_so_huu' });
+  it('người tạo công ty đã bị gỡ khỏi thành viên thì KHÔNG vào lại được qua companies.user_id', async () => {
+    // Trước 30/09/2026 đường dự phòng theo người tạo trả về vai chủ sở hữu cho người đã bị gỡ.
+    expect(await resolveCompanyVaiTro(dbGia(), 'u-tao')).toBeNull();
+    expect(await resolveCompanyVaiTro(dbGia(), 'u-tao', 'id', 'c4')).toBeNull();
+    expect(await resolveCompany(dbGia(), 'u-tao', 'id', 'c4')).toBeNull();
+    // Chủ hiện tại của công ty đó thì vào bình thường.
+    expect(await resolveCompanyVaiTro(dbGia(), 'u-chu-moi', 'id', 'c4')).toMatchObject({ vai_tro: 'chu_so_huu' });
+  });
+
+  it('công ty không còn dòng thành viên nào: người tạo cũng không tự vào lại (đóng, không mở)', async () => {
+    expect(await resolveCompanyVaiTro(dbGia(), 'u-cu')).toBeNull();
   });
 
   it('người lạ không có công ty nào', async () => {
     expect(await resolveCompanyVaiTro(dbGia(), 'u-la')).toBeNull();
   });
 
-  it('bảng thành viên lỗi thì vẫn thử đường dự phòng, không ném lỗi', async () => {
+  it('bảng thành viên lỗi thì trả null (đóng), không ném lỗi và không mở bằng đường khác', async () => {
     const r = await resolveCompanyVaiTro<{ id: string }>(dbGia({ bang: 'thanh_vien_cong_ty', cau: 'sập' }), 'u-chu');
-    expect(r?.cong_ty.id).toBe('c1');
+    expect(r).toBeNull();
   });
 
   it('danh sách công ty cho người dùng chọn, kèm vai trò', async () => {

@@ -11,13 +11,13 @@ import type { BanNhapThongBao } from './sinh.ts';
 // deno-lint-ignore no-explicit-any
 type Db = any;
 
-/** Thành viên công ty, cộng chủ công ty (dữ liệu cũ chưa có dòng thành viên). */
+/**
+ * Thành viên HIỆN TẠI của công ty. Không cộng `companies.user_id`: đó là người tạo, và nếu họ đã bị
+ * gỡ hay đã rời thì không được nhận thông báo có số liệu công ty nữa (30/09/2026).
+ */
 export async function nguoiNhan(db: Db, companyId: string): Promise<string[]> {
-  const [{ data: tv }, { data: ct }] = await Promise.all([
-    db.from('thanh_vien_cong_ty').select('user_id').eq('company_id', companyId),
-    db.from('companies').select('user_id').eq('id', companyId).maybeSingle(),
-  ]);
-  return [...new Set([...(tv ?? []).map((r: { user_id: string }) => r.user_id), ...(ct?.user_id ? [ct.user_id] : [])])];
+  const { data: tv } = await db.from('thanh_vien_cong_ty').select('user_id').eq('company_id', companyId);
+  return [...new Set((tv ?? []).map((r: { user_id: string }) => r.user_id))] as string[];
 }
 
 /** Ghi mỗi bản nháp cho mỗi người nhận. Khoá trùng thì bỏ qua — cron chạy lại không báo hai lần. */
