@@ -18,7 +18,7 @@
  * Đổi `PHIEN_BAN` mỗi lần đổi danh sách VO — service worker cũ sẽ tự dọn.
  */
 
-const PHIEN_BAN = 'mimi-v2';
+const PHIEN_BAN = 'mimi-v3';
 const VO = [
   '/',
   '/manifest.webmanifest',
@@ -86,7 +86,9 @@ self.addEventListener('fetch', (e) => {
     caches.match(request).then((cache) => {
       const mang = fetch(request)
         .then((res) => {
-          if (res.ok) caches.open(PHIEN_BAN).then((c) => c.put(request, res.clone()));
+          // Tệp tĩnh mà máy chủ trả HTML = tệp đã mất sau deploy (bị viết lại về index.html): không cache.
+          const laHtml = (res.headers.get('content-type') ?? '').includes('text/html');
+          if (res.ok && !laHtml) caches.open(PHIEN_BAN).then((c) => c.put(request, res.clone()));
           return res;
         })
         .catch(() => cache);

@@ -85,9 +85,12 @@ export async function docLichSu(): Promise<DongLichSu[]> {
 
 /** Nội dung đầy đủ của một cuộc, để mở lại trong khung trợ lý. Đề xuất cũ không mở lại — số liệu đã cũ. */
 export async function docCuoc(ids: string[]): Promise<{ cau: string; traLoi: TraLoiNao; luc: number }[]> {
+  const cid = await idCongTyDangDung();
+  if (!cid) return [];
   const { data, error } = await supabase
     .from('hoi_thoai_tro_ly')
     .select('id, cau_hoi, cau_tra_loi, che_do, do_day, tao_luc')
+    .eq('company_id', cid)
     .in('id', ids)
     .order('tao_luc', { ascending: true });
   if (error) throw new Error(error.message);

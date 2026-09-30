@@ -42,12 +42,19 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
   /** Mã hội thoại của các lượt đang hiện trong khung trợ lý. */
   const idDangHien = useMemo(() => new Set(luot.map((l) => l.traLoi?.hoi_thoai_id).filter((x): x is string => !!x)), [luot]);
 
+  /** Chỉ nhận kết quả của lần đọc mới nhất, và chỉ khi phạm vi (người dùng + công ty) chưa đổi giữa chừng. */
+  const lanDoc = useRef(0);
   const tai = useCallback(async () => {
+    const lan = ++lanDoc.current;
+    const pv = useNaoMimi.getState().phamVi;
+    const conDung = () => lan === lanDoc.current && useNaoMimi.getState().phamVi === pv;
     try {
-      setDong(await docLichSu());
+      const ds = await docLichSu();
+      if (!conDung()) return;
+      setDong(ds);
       setLoi(false);
     } catch {
-      setLoi(true);
+      if (conDung()) setLoi(true);
     }
   }, []);
 
@@ -83,7 +90,11 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
   const mo = async (c: CuocHoi) => {
     setDangMo(c.id);
     try {
-      useNaoMimi.getState().napCuoc(await docCuoc(c.ids));
+      const pv = useNaoMimi.getState().phamVi;
+      const ds = await docCuoc(c.ids);
+      // Đổi tài khoản/công ty trong lúc đọc thì bỏ — không nạp cuộc hỏi của phạm vi cũ vào kho mới.
+      if (useNaoMimi.getState().phamVi !== pv) return;
+      useNaoMimi.getState().napCuoc(ds);
       if (pathname !== DUONG_TRO_LY) navigate(DUONG_TRO_LY);
       onDaChon?.();
     } catch {
