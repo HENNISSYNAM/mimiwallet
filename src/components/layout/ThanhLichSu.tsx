@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { HelpCircle, History, House, LibraryBig, Loader2, MoreHorizontal, PanelLeftClose, Puzzle, ScanLine, Search, SquarePen, Trash2, type LucideIcon } from 'lucide-react';
+import { CalendarClock, HelpCircle, History, House, LibraryBig, SlidersHorizontal, Loader2, MoreHorizontal, PanelLeftClose, Puzzle, ScanLine, Search, SquarePen, Trash2, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,10 @@ import { DUONG_TRO_LY, MODULE_TRO_LY, TRANG_THEM, laKhongGianTroLy } from '@/lib
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MeoSong } from '@/components/mimi/MeoSong';
+import { useCongCuGhim } from '@/hooks/useCongCuGhim';
+import { duongDanCongCu } from '@/lib/congCu';
+import { IconCongCu } from '@/components/cong-cu/IconCongCu';
+import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
 import { SU_KIEN_LENH_PET, datHienPet, docCaiDat, laPhimTat } from '@/lib/petMimi';
@@ -270,6 +274,11 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
   const coMoHinh = useCoMoHinh();
   const [petHien, setPetHien] = usePetDangHien();
   const { t } = useTranslation();
+  const [moKho, setMoKho] = useState(false);
+  const congCu = useCongCuGhim();
+  // Công cụ người dùng tự ghim (Tùy chỉnh) — bỏ những cái đã có sẵn ở nhóm cố định để không lặp biểu tượng.
+  const CO_DINH = new Set([DUONG_TRO_LY, '/dashboard/thu-vien', '/dashboard/nhac-thue', '/dashboard/ket-noi']);
+  const daGhim = congCu.ds.map((c) => ({ c, to: duongDanCongCu(c) })).filter((x) => !CO_DINH.has(x.to.split('?')[0]));
   const duongDay = `${pathname}${search}`;
   const trongThem = !laKhongGianTroLy(pathname) && pathname !== '/dashboard/thu-vien' && pathname !== '/dashboard/ket-noi';
 
@@ -285,6 +294,7 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
             </button>
           </GoiY>
           <NutDi to="/dashboard/thu-vien" ten={t('kg.ben.thuVien')} icon={LibraryBig} dangMo={pathname === '/dashboard/thu-vien'} />
+          <NutDi to="/dashboard/nhac-thue" ten={t('kg.ben.nhacThue')} icon={CalendarClock} dangMo={pathname === '/dashboard/nhac-thue'} />
           <NutDi to="/dashboard/ket-noi" ten={t('kg.ben.ketNoi')} icon={Puzzle} dangMo={pathname === '/dashboard/ket-noi'} />
           <Popover>
             <GoiY ten={t('kg.ben.tatCa')}>
@@ -312,7 +322,26 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
             </PopoverContent>
           </Popover>
 
-          <span aria-hidden className="my-2 h-px w-7 bg-slate-900/10 dark:bg-white/10" />
+          {daGhim.length > 0 && <span aria-hidden className="my-1 h-px w-7 bg-slate-900/10 dark:bg-white/10" />}
+          {/* Công cụ đã ghim: cuộn được khi nhiều (tối đa 12). */}
+          <div className="mimi-cuon-an flex max-h-[30vh] flex-col items-center gap-1 overflow-y-auto">
+            {daGhim.map(({ c, to }) => {
+              const dangMo = pathname === to.split('?')[0];
+              return (
+                <GoiY key={c.khoa} ten={c.ten}>
+                  <Link to={to} aria-label={c.ten} aria-current={dangMo ? 'page' : undefined} className={`${NUT} ${dangMo ? NUT_MO : NUT_THUONG}`}>
+                    <IconCongCu khoa={c.khoa} size={20} />
+                  </Link>
+                </GoiY>
+              );
+            })}
+          </div>
+          <GoiY ten={t('kg.ben.tuyChinh')}>
+            <button type="button" onClick={() => setMoKho(true)} aria-label={t('kg.ben.tuyChinh')} className={`${NUT} ${NUT_THUONG}`}>
+              <SlidersHorizontal size={19} strokeWidth={1.9} />
+            </button>
+          </GoiY>
+          <span aria-hidden className="my-1 h-px w-7 bg-slate-900/10 dark:bg-white/10" />
           <GoiY ten={coMoHinh === false ? t('kg.ben.quetChuaBat') : t('kg.ben.quet')}>
             <span className="inline-flex">
               <NutQuetChungTu coMoHinh={coMoHinh} nhanAn={t('kg.ben.quet')} className={`${NUT} ${NUT_THUONG}`}>
@@ -344,6 +373,8 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
           </div>
         </div>
       </nav>
+
+      <KhoCongCu mo={moKho} onDong={() => setMoKho(false)} />
 
       {moLichSu && (
         <aside aria-label={t('kg.ben.lichSu')} className="mimi-thanh-kinh flex w-[260px] flex-col border-l border-slate-900/[0.06] pt-3 dark:border-white/10">
