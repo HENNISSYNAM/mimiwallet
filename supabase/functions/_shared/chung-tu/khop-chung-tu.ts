@@ -100,10 +100,7 @@ function soNgayCach(a: string, b: string): number {
   return Math.abs(Math.round((x - y) / 86_400_000));
 }
 
-/**
- * Bỏ dấu, viết thường, bỏ ký tự lạ — để dò số hoá đơn trong nội dung chuyển
- * khoản. Ngân hàng hay viết hoa toàn bộ và chèn dấu gạch.
- */
+/** Bỏ dấu, viết hoa, bỏ ký tự lạ. Ngân hàng hay viết hoa toàn bộ và chèn dấu gạch. */
 function phang(s: string): string {
   return s
     .normalize('NFD')
@@ -111,6 +108,41 @@ function phang(s: string): string {
     .replace(/đ/gi, 'd')
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '');
+}
+
+/**
+ * Khoá so sánh của một số hoá đơn: bỏ tiền tố "HD/HDON/INV/SO" và số 0 đứng đầu — "00001234", "HD 1234",
+ * "hd-1234" cùng ra "1234".
+ */
+function khoaSoHoaDon(s: string): string {
+  return phang(s).replace(/^(HDON|INVOICE|INV|HD|SO)(?=[A-Z0-9])/, '').replace(/^0+(?=[A-Z0-9])/, '');
+}
+
+/**
+ * Các khoá số hoá đơn có thể có trong một nội dung chuyển khoản.
+ *
+ * TÁCH TỪ trước rồi mới so, không tìm chuỗi con trong chuỗi đã dính liền (30/09/2026, sửa P1-3 của đợt kiểm trước
+ * go-live): "1.234.000" không được chứa hoá đơn "1234" chỉ vì các chữ số nằm cạnh nhau sau khi bỏ dấu chấm.
+ * Cho phép ghép 2–3 từ liền nhau ("AA 24E 0001234") nhưng KHÔNG ghép các từ toàn chữ số — đó chính là cách
+ * một số tiền bị đọc thành số hoá đơn.
+ */
+function khoaTrongNoiDung(noi: string): Set<string> {
+  const tu = noi
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/gi, 'd')
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean);
+  const ra = new Set<string>();
+  for (let i = 0; i < tu.length; i++) {
+    for (let n = 1; n <= 3 && i + n <= tu.length; n++) {
+      const nhom = tu.slice(i, i + n);
+      if (n > 1 && nhom.every((t) => /^\d+$/.test(t))) continue;
+      ra.add(khoaSoHoaDon(nhom.join('')));
+    }
+  }
+  return ra;
 }
 
 /**
@@ -147,21 +179,26 @@ export function ghepChungTu(
   }
 
   // ── Vòng 1: số hoá đơn nằm trong nội dung chuyển khoản ──────────────────
+  // So NGUYÊN số (không so chuỗi con). Một nội dung khớp số của hai hoá đơn chưa dùng thì không chọn — để người xem.
   for (const c of chi) {
     if (chiDaDung.has(c.id)) continue;
-    const noi = phang(`${c.noiDung ?? ''} ${c.tenNguoiNhan ?? ''}`);
-    if (!noi) continue;
+    const khoaNoi = khoaTrongNoiDung(`${c.noiDung ?? ''} ${c.tenNguoiNhan ?? ''}`);
+    if (!khoaNoi.size) continue;
 
-    for (const h of hoaDon) {
-      if (hoaDonDaDung.has(h.id)) continue;
-      const so = h.soHoaDon ? phang(h.soHoaDon) : '';
-      // Số hoá đơn quá ngắn thì bỏ qua: "1" sẽ khớp với mọi nội dung có chữ số.
-      if (so.length < 4 || !noi.includes(so)) continue;
-
+    const ungVienSo = hoaDon.filter((h) => {
+      if (hoaDonDaDung.has(h.id) || !h.soHoaDon) return false;
+      const so = khoaSoHoaDon(h.soHoaDon);
+      // Số quá ngắn thì bỏ qua: "1" sẽ khớp với mọi nội dung có chữ số.
+      return so.length >= 4 && khoaNoi.has(so);
+    });
+    if (ungVienSo.length === 1) {
+      const h = ungVienSo[0];
       daGhep.push({ khoanChiId: c.id, hoaDonId: h.id, soTien: h.soTien, cach: 'so_hoa_don' });
       chiDaDung.add(c.id);
       hoaDonDaDung.add(h.id);
-      break;
+    } else if (ungVienSo.length > 1) {
+      canXem.push({ khoanChiId: c.id, hoaDonId: ungVienSo.map((h) => h.id), soTien: c.soTien });
+      chiDaDung.add(c.id);
     }
   }
 

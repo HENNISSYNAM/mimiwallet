@@ -210,3 +210,40 @@ describe('người duyệt: gắn tay và quyết định', () => {
     expect(r.khongCoChungTu[0]).toMatchObject({ khoan: { id: 'b' }, quyet: { ly_do: 'luong_bao_hiem' } });
   });
 });
+
+/** P1-3 (kiểm trước go-live 30/09/2026): so NGUYÊN số hoá đơn, không tìm chuỗi con. */
+describe('số hoá đơn không được đọc từ số tiền', () => {
+  it('"1.234.000" không chứa hoá đơn số 1234', () => {
+    const r = ghepChungTu(
+      [chi('c1', 5_000_000, '2026-08-10', 'CK 1.234.000 TIEN HANG')],
+      [hd('h1', 9_000_000, '2026-01-01', '1234')],
+    );
+    expect(r.daGhep).toHaveLength(0);
+  });
+
+  it('số tiền dính liền 12345000 không chứa hoá đơn 1234', () => {
+    const r = ghepChungTu([chi('c1', 5_000_000, '2026-08-10', 'CK 12345000')], [hd('h1', 9_000_000, '2026-01-01', '1234')]);
+    expect(r.daGhep).toHaveLength(0);
+  });
+
+  it('"00001234" khớp nội dung "HD 1234" và "hd-1234" (bỏ số 0 đầu và tiền tố)', () => {
+    for (const noi of ['TT HD 1234', 'hd-1234 abc', 'HD1234']) {
+      const r = ghepChungTu([chi('c1', 5_000_000, '2026-08-10', noi)], [hd('h1', 5_000_000, '2026-08-08', '00001234')]);
+      expect(r.daGhep[0]?.cach, noi).toBe('so_hoa_don');
+    }
+  });
+
+  it('số có ký hiệu "AA/24E/0001234" khớp "AA 24E 0001234"', () => {
+    const r = ghepChungTu([chi('c1', 1_000_000, '2026-08-10', 'TT AA 24E 0001234')], [hd('h1', 1_000_000, '2026-08-08', 'AA/24E/0001234')]);
+    expect(r.daGhep).toHaveLength(1);
+  });
+
+  it('một nội dung khớp số của hai hoá đơn thì để người xem, không chọn', () => {
+    const r = ghepChungTu(
+      [chi('c1', 1_000_000, '2026-08-10', 'TT 12345 12346')],
+      [hd('h1', 1_000_000, '2026-08-01', '12345'), hd('h2', 1_000_000, '2026-08-02', '12346')],
+    );
+    expect(r.daGhep).toHaveLength(0);
+    expect(r.canXem).toHaveLength(1);
+  });
+});
