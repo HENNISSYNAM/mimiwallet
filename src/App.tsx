@@ -9,6 +9,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Seo from "@/components/Seo";
+import { DANH_MUC_CHINH_SACH, TRANG_THONG_TIN } from "@/pages/chinh-sach/danhMuc";
 
 /** Gắn thẻ head riêng cho từng route mà không phải sửa từng trang. */
 function Page({
@@ -51,6 +52,8 @@ const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const XoaTaiKhoan = lazy(() => import("./pages/XoaTaiKhoan"));
 const Terms = lazy(() => import("./pages/Terms"));
+const TrangChinhSach = lazy(() => import("./pages/chinh-sach/TrangChinhSach"));
+const ThongTinDoanhNghiep = lazy(() => import("./pages/chinh-sach/TrangChinhSach").then((m) => ({ default: m.ThongTinDoanhNghiep })));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ThuongHieu = lazy(() => import("./pages/ThuongHieu"));
@@ -145,6 +148,13 @@ const App = () => (
                   Cài đặt; đây là đường thứ hai. Cố ý không đặt nút xoá trên trang công khai. */}
               <Route path="/xoa-tai-khoan" element={<Page path="/xoa-tai-khoan" title="Xoá tài khoản — MIMI WALLET" description="Cách xoá tài khoản MIMI Wallet và toàn bộ dữ liệu: giao dịch, hoá đơn, chứng từ, liên kết ngân hàng và hồ sơ doanh nghiệp."><XoaTaiKhoan /></Page>} />
               <Route path="/terms" element={<Page path="/terms" title="Điều khoản sử dụng — MIMI WALLET" description="Điều khoản và điều kiện khi sử dụng dịch vụ MIMI Wallet: quyền, nghĩa vụ và giới hạn trách nhiệm của các bên."><Terms /></Page>} />
+              {/* Trang công bố theo hồ sơ thông báo website/ứng dụng TMĐT bán hàng (online.gov.vn):
+                  mục 1 = Chính sách bảo mật (cùng nội dung /privacy), mục 2–7 = các chính sách,
+                  mục 8 = trang tổng hợp. Danh mục ở pages/chinh-sach/danhMuc.ts. Công khai, không cần đăng nhập. */}
+              <Route path={TRANG_THONG_TIN.duong} element={<Page path={TRANG_THONG_TIN.duong} title={`${TRANG_THONG_TIN.tieuDe} — MIMI WALLET`} description={TRANG_THONG_TIN.moTa}><ThongTinDoanhNghiep /></Page>} />
+              {DANH_MUC_CHINH_SACH.map((m) => (
+                <Route key={m.duong} path={m.duong} element={<Page path={m.duong} title={`${m.tieuDe} — MIMI WALLET`} description={m.moTa}>{m.slug === "bao-mat" ? <Privacy /> : <TrangChinhSach slug={m.slug} />}</Page>} />
+              ))}
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, khoản vay và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
               {/* Khôi phục mật khẩu. Trước đây KHÔNG có đường nào: chỉ có "Đổi

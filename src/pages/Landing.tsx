@@ -8,6 +8,7 @@ import DaiLogo from '@/components/landing/DaiLogo';
 import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
 import VideoBaoMat from '@/components/landing/VideoBaoMat';
 import VideoMeoMimi from '@/components/landing/VideoMeoMimi';
+import { CHO_TOI_THIEU_MS, ManHinhChoDemo } from '@/components/landing/ManHinhChoDemo';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
@@ -544,6 +545,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
       <Navbar />
       {dauTrang}
 
+      {demoLoading && <ManHinhChoDemo />}
       {hien('hero') && (<>
       {/* ═══ HERO ═══ */}
       {/*
@@ -617,9 +619,9 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               <button
                 onClick={async () => {
                   setDemoLoading(true);
-                  const { error } = await signInAsDemo();
-                  setDemoLoading(false);
-                  if (error) toast.error(error);
+                  // Màn chờ video hiện ít nhất CHO_TOI_THIEU_MS rồi mới vào demo (không chớp khi đăng nhập nhanh).
+                  const [{ error }] = await Promise.all([signInAsDemo(), new Promise((r) => setTimeout(r, CHO_TOI_THIEU_MS))]);
+                  if (error) { setDemoLoading(false); toast.error(error); }
                   else navigate('/dashboard');
                 }}
                 disabled={demoLoading}
