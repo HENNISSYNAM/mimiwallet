@@ -44,18 +44,18 @@ export const MODULE_TRO_LY: readonly ModuleTroLy[] = [
 ];
 
 /** Các trang còn lại, mở từ nút "…" — không trang nào bị gỡ, chỉ không chiếm chỗ trên thanh chính. */
-export const TRANG_THEM: readonly { ten: string; duong: string }[] = [
-  { ten: 'Việc cần làm', duong: '/dashboard/viec-can-lam' },
-  { ten: 'Kiểm trước khi chuyển tiền', duong: '/dashboard/kiem-truoc-khi-chuyen' },
-  { ten: 'Thư viện chứng từ', duong: '/dashboard/thu-vien' },
-  { ten: 'Tách chi cá nhân', duong: '/dashboard/chi-ca-nhan' },
-  { ten: 'Tờ khai thuế', duong: '/dashboard/to-khai' },
-  { ten: 'Giấy tờ', duong: '/dashboard/giay-to' },
-  { ten: 'Đọc báo cáo tài chính', duong: '/dashboard/doc-bao-cao' },
-  { ten: 'Kiểm soát chi của agent', duong: '/dashboard/tac-tu' },
-  { ten: 'Chính sách chi', duong: '/dashboard/chinh-sach' },
-  { ten: 'Ngân hàng & thanh toán', duong: '/dashboard/fintech' },
-  { ten: 'Ứng dụng & kết nối', duong: '/dashboard/ket-noi' },
+export const TRANG_THEM: readonly { ten: string; duong: string; khoa: string }[] = [
+  { ten: 'Việc cần làm', duong: '/dashboard/viec-can-lam', khoa: 'viec_can_lam' },
+  { ten: 'Kiểm trước khi chuyển tiền', duong: '/dashboard/kiem-truoc-khi-chuyen', khoa: 'kiem_truoc_khi_chuyen' },
+  { ten: 'Thư viện chứng từ', duong: '/dashboard/thu-vien', khoa: 'thu_vien' },
+  { ten: 'Tách chi cá nhân', duong: '/dashboard/chi-ca-nhan', khoa: 'chi_ca_nhan' },
+  { ten: 'Tờ khai thuế', duong: '/dashboard/to-khai', khoa: 'to_khai' },
+  { ten: 'Giấy tờ', duong: '/dashboard/giay-to', khoa: 'giay_to' },
+  { ten: 'Đọc báo cáo tài chính', duong: '/dashboard/doc-bao-cao', khoa: 'doc_bao_cao' },
+  { ten: 'Kiểm soát chi của agent', duong: '/dashboard/tac-tu', khoa: 'tac_tu' },
+  { ten: 'Chính sách chi', duong: '/dashboard/chinh-sach', khoa: 'chinh_sach' },
+  { ten: 'Ngân hàng & thanh toán', duong: '/dashboard/fintech', khoa: 'fintech' },
+  { ten: 'Ứng dụng & kết nối', duong: '/dashboard/ket-noi', khoa: 'ket_noi' },
 ];
 
 /** Đường dẫn của không gian Trợ lý (trang chính sau đăng nhập). */

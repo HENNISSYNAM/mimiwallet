@@ -29,15 +29,15 @@ export function MenuTaiKhoan({ tenCongTy, anhDaiDien, side = 'bottom', align = '
     <>
       <Popover open={mo} onOpenChange={setMo}>
         <PopoverTrigger asChild>
-          <button type="button" aria-label="Tài khoản và cài đặt" className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+          <button type="button" aria-label={t('kg.taiKhoan.nut')} className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
             {anhDaiDien}
           </button>
         </PopoverTrigger>
         <PopoverContent side={side} align={align} sideOffset={side === 'right' ? 10 : 4} className="w-64 rounded-2xl p-1.5">
           {tenCongTy && <p className="truncate px-2.5 pb-1.5 pt-1 text-xs font-medium text-muted-foreground">{tenCongTy}</p>}
-          <nav aria-label="Tài khoản" className="grid gap-0.5">
+          <nav aria-label={t('kg.taiKhoan.nhan')} className="grid gap-0.5">
             <NavLink to="/dashboard/ket-noi" data-mimi="nav:/dashboard/ket-noi" onClick={dong} className={DONG}>
-              <Puzzle size={16} className="text-muted-foreground" /> Ứng dụng & kết nối
+              <Puzzle size={16} className="text-muted-foreground" /> {t('kg.ben.ketNoi')}
             </NavLink>
             <NavLink to="/dashboard/settings" data-mimi="nav:/dashboard/settings" onClick={dong} className={DONG}>
               <Settings size={16} className="text-muted-foreground" /> {t('man.ten.caiDat')}

@@ -255,7 +255,7 @@ export default function DashboardLayout() {
           }`}
         >
           <div className="flex min-w-0 items-center gap-1.5">
-            <button type="button" onClick={() => setMoLichSu(true)} aria-label="Lịch sử hỏi MIMI"
+            <button type="button" onClick={() => setMoLichSu(true)} aria-label={t('kg.ben.lichSu')}
               className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden">
               <History size={20} />
             </button>
@@ -423,8 +423,8 @@ export default function DashboardLayout() {
         <Sheet open={moLichSu} onOpenChange={setMoLichSu}>
           <SheetContent side="left" className="flex w-[85vw] max-w-xs flex-col px-0 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
             <SheetHeader className="px-6 text-left">
-              <SheetTitle>Lịch sử hỏi MIMI</SheetTitle>
-              <SheetDescription className="sr-only">Các cuộc hỏi MIMI gần đây của bạn</SheetDescription>
+              <SheetTitle>{t('kg.ben.lichSu')}</SheetTitle>
+              <SheetDescription className="sr-only">{t('kg.ben.lichSuMoTa')}</SheetDescription>
             </SheetHeader>
             {moLichSu && <DanhSachLichSu luonHienXoa onDaChon={() => setMoLichSu(false)} />}
           </SheetContent>

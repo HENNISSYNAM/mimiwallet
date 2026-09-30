@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { congTyDangDung } from '@/lib/congTyDangDung';
@@ -88,32 +89,34 @@ function The({ ten, duong, so, dong, canhBao }: { ten: string; duong: string; so
   );
 }
 
-const CHUA_DOC = 'Chưa đọc được — mở để xem';
-
 export function TongQuanNhanh({ thue }: { thue: ThueManDau | null | undefined }) {
   const { gd, hd } = useSoLieuNhanh();
+  const { t } = useTranslation();
+  const CHUA_DOC = t('kg.tongQuan.chuaDoc');
+  const DANG_DOC = t('kg.tongQuan.dangDoc');
   const hanGan = (thue?.nghia_vu ?? []).filter((n) => n.han).sort((a, b) => String(a.han).localeCompare(String(b.han)))[0] ?? null;
 
   return (
     <section aria-labelledby="tong-quan-nhanh" className="mt-6">
-      <h2 id="tong-quan-nhanh" className="mb-3 text-base font-semibold text-foreground">Tổng quan nhanh</h2>
+      <h2 id="tong-quan-nhanh" className="mb-3 text-base font-semibold text-foreground">{t('kg.tongQuan.tieuDe')}</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <The ten="Dòng tiền tháng này" duong="/dashboard/cashflow"
+        <The ten={t('kg.tongQuan.dongTien')} duong="/dashboard/cashflow"
           so={gd === null ? '…' : gd === 'loi' ? '—' : dinhDangTien(gd.chenh)}
-          dong={gd === null ? 'Đang đọc…' : gd === 'loi' ? CHUA_DOC : `Vào ${dinhDangTien(gd.vao)} · Ra ${dinhDangTien(gd.ra)}`}
-          canhBao={gd && gd !== 'loi' && gd.ra > gd.vao ? 'Tiền ra nhiều hơn tiền vào' : null} />
-        <The ten="Công nợ phải thu" duong="/dashboard/invoices?filter=pending"
+          dong={gd === null ? DANG_DOC : gd === 'loi' ? CHUA_DOC : t('kg.tongQuan.vaoRa', { vao: dinhDangTien(gd.vao), ra: dinhDangTien(gd.ra) })}
+          canhBao={gd && gd !== 'loi' && gd.ra > gd.vao ? t('kg.tongQuan.raNhieuHon') : null} />
+        <The ten={t('kg.tongQuan.congNo')} duong="/dashboard/invoices?filter=pending"
           so={hd === null ? '…' : hd === 'loi' ? '—' : dinhDangTien(hd.chuaThu)}
-          dong={hd === null ? 'Đang đọc…' : hd === 'loi' ? CHUA_DOC : `${hd.soChuaThu} hoá đơn chưa thu`}
-          canhBao={hd && hd !== 'loi' && hd.quaHan > 0 ? `${hd.quaHan} hoá đơn quá hạn` : null} />
-        <The ten="Hoá đơn tháng này" duong="/dashboard/invoices"
+          dong={hd === null ? DANG_DOC : hd === 'loi' ? CHUA_DOC : t('kg.tongQuan.soChuaThu', { n: hd.soChuaThu })}
+          canhBao={hd && hd !== 'loi' && hd.quaHan > 0 ? t('kg.tongQuan.quaHan', { n: hd.quaHan }) : null} />
+        <The ten={t('kg.tongQuan.hoaDonThang')} duong="/dashboard/invoices"
           so={hd === null ? '…' : hd === 'loi' ? '—' : String(hd.phatHanh)}
-          dong={hd === null ? 'Đang đọc…' : hd === 'loi' ? CHUA_DOC : `Đã thu ${hd.daThuThang}/${hd.phatHanh}`} />
-        <The ten="Thuế & nghĩa vụ" duong="/dashboard/nhac-thue"
+          dong={hd === null ? DANG_DOC : hd === 'loi' ? CHUA_DOC : t('kg.tongQuan.daThu', { a: hd.daThuThang, b: hd.phatHanh })} />
+        <The ten={t('kg.tongQuan.thue')} duong="/dashboard/nhac-thue"
           so={thue?.doanh_thu_nam === null || thue?.doanh_thu_nam === undefined ? '—' : dinhDangTien(thue.doanh_thu_nam)}
-          dong={thue === undefined ? 'Đang đọc…' : thue === null ? CHUA_DOC
-            : hanGan ? `Hạn gần nhất: ${String(hanGan.han).slice(8, 10)}/${String(hanGan.han).slice(5, 7)} — ${hanGan.cau}` : `Doanh thu năm ${thue.nam}${thue.tam_tinh ? ' (tạm tính)' : ''}`}
-          canhBao={thue?.thieu?.length ? 'Hồ sơ thuế còn thiếu thông tin' : null} />
+          dong={thue === undefined ? DANG_DOC : thue === null ? CHUA_DOC
+            : hanGan ? t('kg.tongQuan.hanGan', { ngay: `${String(hanGan.han).slice(8, 10)}/${String(hanGan.han).slice(5, 7)}`, cau: hanGan.cau })
+              : t(thue.tam_tinh ? 'kg.tongQuan.doanhThuNamTamTinh' : 'kg.tongQuan.doanhThuNam', { nam: thue.nam })}
+          canhBao={thue?.thieu?.length ? t('kg.tongQuan.thieuHoSo') : null} />
       </div>
     </section>
   );

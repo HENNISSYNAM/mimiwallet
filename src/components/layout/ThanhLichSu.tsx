@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { HelpCircle, History, House, LibraryBig, Loader2, MoreHorizontal, PanelLeftClose, Puzzle, ScanLine, Search, SquarePen, Trash2, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -16,7 +17,7 @@ import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
 import { SU_KIEN_LENH_PET, datHienPet, docCaiDat, laPhimTat } from '@/lib/petMimi';
 import { MenuTaiKhoan } from './MenuTaiKhoan';
-import { TEN_NHOM_NGAY, docCuoc, docLichSu, gomCuoc, nhomTheoNgay, xoaCuoc, type CuocHoi, type DongLichSu } from '@/lib/lichSuHoiThoai';
+import { docCuoc, docLichSu, gomCuoc, nhomTheoNgay, xoaCuoc, type CuocHoi, type DongLichSu } from '@/lib/lichSuHoiThoai';
 
 const KHOA_MO_LICH_SU = 'mimi.thanhLichSu.mo';
 const docMoLichSu = () => { try { return localStorage.getItem(KHOA_MO_LICH_SU) !== '0'; } catch { return true; } };
@@ -36,6 +37,7 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
   const [tim, setTim] = useState('');
   const [dangMo, setDangMo] = useState<string | null>(null);
   const [canXoa, setCanXoa] = useState<CuocHoi | null>(null);
+  const { t } = useTranslation();
 
   /** Mã hội thoại của các lượt đang hiện trong khung trợ lý. */
   const idDangHien = useMemo(() => new Set(luot.map((l) => l.traLoi?.hoi_thoai_id).filter((x): x is string => !!x)), [luot]);
@@ -85,7 +87,7 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
       if (pathname !== DUONG_TRO_LY) navigate(DUONG_TRO_LY);
       onDaChon?.();
     } catch {
-      toast.error('Chưa mở được cuộc hỏi này. Thử lại sau.');
+      toast.error(t('kg.lichSu.chuaMo'));
     } finally {
       setDangMo(null);
     }
@@ -96,9 +98,9 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
       await xoaCuoc(c.ids);
       setDong((d) => d?.filter((x) => !c.ids.includes(x.id)) ?? d);
       if (c.ids.some((id) => idDangHien.has(id))) useNaoMimi.getState().xoaLuotDaXong();
-      toast.success('Đã xoá cuộc hỏi.');
+      toast.success(t('kg.lichSu.daXoa'));
     } catch {
-      toast.error('Chưa xoá được. Thử lại sau.');
+      toast.error(t('kg.lichSu.chuaXoa'));
     }
   };
 
@@ -106,21 +108,21 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="space-y-2 px-3 pb-2">
         <button type="button" onClick={moiCuoc} className="flex h-9 w-full items-center gap-2.5 rounded-xl px-2.5 text-sm font-medium text-foreground hover:bg-accent">
-          <SquarePen size={17} className="shrink-0" /> Cuộc hỏi mới
+          <SquarePen size={17} className="shrink-0" /> {t('kg.lichSu.moi')}
         </button>
         <label className="flex h-9 items-center gap-2 rounded-xl border border-border/70 bg-background/60 px-2.5 focus-within:ring-2 focus-within:ring-primary/25">
           <Search size={14} className="shrink-0 text-muted-foreground" aria-hidden />
           <input
             value={tim}
             onChange={(e) => setTim(e.target.value)}
-            placeholder="Tìm cuộc hỏi"
-            aria-label="Tìm trong lịch sử hỏi MIMI"
+            placeholder={t('kg.lichSu.tim')}
+            aria-label={t('kg.lichSu.timNhan')}
             className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
         </label>
       </div>
 
-      <nav aria-label="Lịch sử hỏi MIMI" className="mimi-cuon-an min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 pb-4">
+      <nav aria-label={t('kg.ben.lichSu')} className="mimi-cuon-an min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 pb-4">
         {dong === null && !loi && (
           <div className="space-y-2 px-2.5 pt-3" aria-hidden>
             {[70, 55, 80, 60].map((w) => <div key={w} className="h-3 animate-pulse rounded bg-muted" style={{ width: `${w}%` }} />)}
@@ -128,18 +130,18 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
         )}
         {loi && (
           <p className="px-2.5 pt-3 text-sm text-muted-foreground">
-            Chưa đọc được lịch sử.{' '}
-            <button type="button" onClick={() => void tai()} className="text-primary hover:underline">Thử lại</button>
+            {t('kg.lichSu.chuaDoc')}{' '}
+            <button type="button" onClick={() => void tai()} className="text-primary hover:underline">{t('kg.lichSu.thuLai')}</button>
           </p>
         )}
         {dong && !nhom.length && (
           <p className="px-2.5 pt-3 text-sm text-muted-foreground">
-            {tim.trim() ? 'Không có cuộc hỏi nào khớp.' : 'Chưa có cuộc hỏi nào. Câu bạn hỏi MIMI sẽ hiện ở đây.'}
+            {tim.trim() ? t('kg.lichSu.khongKhop') : t('kg.lichSu.trong')}
           </p>
         )}
         {nhom.map((g) => (
-          <section key={g.nhom} className="pt-3" aria-label={TEN_NHOM_NGAY[g.nhom]}>
-            <h3 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{TEN_NHOM_NGAY[g.nhom]}</h3>
+          <section key={g.nhom} className="pt-3" aria-label={t(`kg.lichSu.nhom.${g.nhom}`)}>
+            <h3 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{t(`kg.lichSu.nhom.${g.nhom}`)}</h3>
             <ul className="space-y-0.5">
               {g.cuoc.map((c) => {
                 const dangXem = c.ids.some((id) => idDangHien.has(id)) && pathname === DUONG_TRO_LY;
@@ -160,7 +162,7 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
                     <button
                       type="button"
                       onClick={() => setCanXoa(c)}
-                      aria-label={`Xoá cuộc hỏi: ${c.tieuDe}`}
+                      aria-label={t('kg.lichSu.xoaNhan', { ten: c.tieuDe })}
                       className={`absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 ${
                         luonHienXoa ? '' : 'opacity-0 group-hover:opacity-100'
                       }`}
@@ -178,18 +180,18 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
       <AlertDialog open={!!canXoa} onOpenChange={(o) => { if (!o) setCanXoa(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xoá cuộc hỏi này?</AlertDialogTitle>
+            <AlertDialogTitle>{t('kg.lichSu.xoaTieuDe')}</AlertDialogTitle>
             <AlertDialogDescription>
-              “{canXoa?.tieuDe}” và câu trả lời của MIMI sẽ bị xoá vĩnh viễn. Việc bạn đã xác nhận trước đó vẫn được giữ trong nhật ký.
+              {t('kg.lichSu.xoaMoTa', { ten: canXoa?.tieuDe ?? '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogCancel>{t('kg.lichSu.huy')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => { const c = canXoa; setCanXoa(null); if (c) void xoa(c); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Xoá
+              {t('kg.lichSu.xoa')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -256,52 +258,53 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
   const { pathname, search } = useLocation();
   const coMoHinh = useCoMoHinh();
   const [petHien, setPetHien] = usePetDangHien();
+  const { t } = useTranslation();
   const duongDay = `${pathname}${search}`;
   const trongThem = !laKhongGianTroLy(pathname) && pathname !== '/dashboard/thu-vien' && pathname !== '/dashboard/ket-noi';
 
   return (
     <div className="sticky top-0 hidden h-screen shrink-0 lg:flex">
-      <nav aria-label="Thanh công cụ MIMI" className="mimi-thanh-kinh flex w-16 flex-col items-center py-3">
+      <nav aria-label={t('kg.ben.thanhCongCu')} className="mimi-thanh-kinh flex w-16 flex-col items-center py-3">
         <div className="flex flex-col items-center gap-1">
-          <NutDi to={DUONG_TRO_LY} ten="Trang chủ — MIMI Trợ lý" icon={House} dangMo={laKhongGianTroLy(pathname)} />
-          <GoiY ten={moLichSu ? 'Đóng lịch sử' : 'Lịch sử hỏi MIMI'}>
-            <button type="button" onClick={() => doiLichSu(!moLichSu)} aria-label="Lịch sử hỏi MIMI" aria-expanded={moLichSu}
+          <NutDi to={DUONG_TRO_LY} ten={t('kg.ben.trangChu')} icon={House} dangMo={laKhongGianTroLy(pathname)} />
+          <GoiY ten={moLichSu ? t('kg.ben.dongLichSu') : t('kg.ben.lichSu')}>
+            <button type="button" onClick={() => doiLichSu(!moLichSu)} aria-label={t('kg.ben.lichSu')} aria-expanded={moLichSu}
               className={`${NUT} ${moLichSu ? NUT_MO : NUT_THUONG}`}>
               <History size={20} strokeWidth={moLichSu ? 2.2 : 1.9} />
             </button>
           </GoiY>
-          <NutDi to="/dashboard/thu-vien" ten="Thư viện chứng từ" icon={LibraryBig} dangMo={pathname === '/dashboard/thu-vien'} />
-          <NutDi to="/dashboard/ket-noi" ten="Ứng dụng & kết nối" icon={Puzzle} dangMo={pathname === '/dashboard/ket-noi'} />
+          <NutDi to="/dashboard/thu-vien" ten={t('kg.ben.thuVien')} icon={LibraryBig} dangMo={pathname === '/dashboard/thu-vien'} />
+          <NutDi to="/dashboard/ket-noi" ten={t('kg.ben.ketNoi')} icon={Puzzle} dangMo={pathname === '/dashboard/ket-noi'} />
           <Popover>
-            <GoiY ten="Tất cả công cụ">
+            <GoiY ten={t('kg.ben.tatCa')}>
               <PopoverTrigger asChild>
-                <button type="button" aria-label="Tất cả công cụ" className={`${NUT} ${trongThem ? NUT_MO : NUT_THUONG}`}>
+                <button type="button" aria-label={t('kg.ben.tatCa')} className={`${NUT} ${trongThem ? NUT_MO : NUT_THUONG}`}>
                   <MoreHorizontal size={20} />
                 </button>
               </PopoverTrigger>
             </GoiY>
             <PopoverContent side="right" align="start" sideOffset={10} className="max-h-[80vh] w-64 overflow-y-auto rounded-2xl p-1.5">
-              <p className="px-2.5 pb-1 pt-1.5 text-xs font-medium text-muted-foreground">Công cụ chính</p>
+              <p className="px-2.5 pb-1 pt-1.5 text-xs font-medium text-muted-foreground">{t('kg.ben.congCuChinh')}</p>
               {MODULE_TRO_LY.map((m) => (
                 <Link key={m.khoa} to={m.duong} aria-current={duongDay === m.duong ? 'page' : undefined}
                   className="flex rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent aria-[current=page]:bg-accent aria-[current=page]:font-medium">
-                  {m.ten}
+                  {t(`kg.module.${m.khoa}.ten`)}
                 </Link>
               ))}
-              <p className="mt-1 border-t border-border px-2.5 pb-1 pt-2.5 text-xs font-medium text-muted-foreground">Khác</p>
-              {TRANG_THEM.map((t) => (
-                <Link key={t.duong} to={t.duong} aria-current={pathname === t.duong ? 'page' : undefined}
+              <p className="mt-1 border-t border-border px-2.5 pb-1 pt-2.5 text-xs font-medium text-muted-foreground">{t('kg.ben.khac')}</p>
+              {TRANG_THEM.map((tr) => (
+                <Link key={tr.duong} to={tr.duong} aria-current={pathname === tr.duong ? 'page' : undefined}
                   className="flex rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-accent aria-[current=page]:bg-accent aria-[current=page]:font-medium">
-                  {t.ten}
+                  {t(`kg.trang.${tr.khoa}`)}
                 </Link>
               ))}
             </PopoverContent>
           </Popover>
 
           <span aria-hidden className="my-2 h-px w-7 bg-slate-900/10 dark:bg-white/10" />
-          <GoiY ten={coMoHinh === false ? 'Quét hoá đơn (chưa bật đọc ảnh)' : 'Quét hoá đơn'}>
+          <GoiY ten={coMoHinh === false ? t('kg.ben.quetChuaBat') : t('kg.ben.quet')}>
             <span className="inline-flex">
-              <NutQuetChungTu coMoHinh={coMoHinh} nhanAn="Quét hoá đơn" className={`${NUT} ${NUT_THUONG}`}>
+              <NutQuetChungTu coMoHinh={coMoHinh} nhanAn={t('kg.ben.quet')} className={`${NUT} ${NUT_THUONG}`}>
                 <ScanLine size={20} strokeWidth={1.9} />
               </NutQuetChungTu>
             </span>
@@ -313,15 +316,15 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
             Pet MIMI sống ngay trong biểu tượng: thở, ngủ khi rảnh, rê qua lại trên đầu là được xoa đầu.
             Bấm là gọi mèo ra màn hình (kéo thả, hỏi nhanh); bấm lần nữa là cất về đây.
           */}
-          <GoiY ten={petHien ? 'Xoa đầu MIMI · bấm để cất về (Alt+Shift+M)' : 'Xoa đầu MIMI · bấm để gọi ra màn hình (Alt+Shift+M)'}>
-            <button type="button" onClick={() => { const bat = !petHien; datHienPet(bat); setPetHien(bat); }} aria-label="Pet MIMI" aria-pressed={petHien}
+          <GoiY ten={petHien ? t('kg.ben.petCat') : t('kg.ben.petGoi')}>
+            <button type="button" onClick={() => { const bat = !petHien; datHienPet(bat); setPetHien(bat); }} aria-label={t('kg.ben.pet')} aria-pressed={petHien}
               className={`${NUT} ${petHien ? NUT_MO : NUT_THUONG}`}>
               <MeoSong size={34} />
               {petHien && <span aria-hidden className="absolute bottom-1.5 right-1.5 h-2 w-2 rounded-full bg-mimi-green ring-2 ring-white" />}
             </button>
           </GoiY>
-          <GoiY ten="Hỗ trợ">
-            <a href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet" aria-label="Hỗ trợ" className={`${NUT} ${NUT_THUONG}`}>
+          <GoiY ten={t('kg.ben.hoTro')}>
+            <a href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet" aria-label={t('kg.ben.hoTro')} className={`${NUT} ${NUT_THUONG}`}>
               <HelpCircle size={20} strokeWidth={1.9} />
             </a>
           </GoiY>
@@ -332,10 +335,10 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
       </nav>
 
       {moLichSu && (
-        <aside aria-label="Lịch sử hỏi MIMI" className="mimi-thanh-kinh flex w-[260px] flex-col border-l border-slate-900/[0.06] pt-3 dark:border-white/10">
+        <aside aria-label={t('kg.ben.lichSu')} className="mimi-thanh-kinh flex w-[260px] flex-col border-l border-slate-900/[0.06] pt-3 dark:border-white/10">
           <div className="flex items-center justify-between px-3 pb-2">
-            <span className="px-2.5 text-sm font-semibold text-foreground">Lịch sử</span>
-            <button type="button" onClick={() => doiLichSu(false)} aria-label="Đóng lịch sử" title="Đóng lịch sử"
+            <span className="px-2.5 text-sm font-semibold text-foreground">{t('kg.ben.lichSuNgan')}</span>
+            <button type="button" onClick={() => doiLichSu(false)} aria-label={t('kg.ben.dongLichSu')} title={t('kg.ben.dongLichSu')}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white/70 hover:text-foreground dark:hover:bg-white/10">
               <PanelLeftClose size={18} />
             </button>
