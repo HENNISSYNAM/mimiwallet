@@ -15,13 +15,11 @@ const CAU: Record<string, { chinh: string; phu: string }> = {
 };
 
 /**
- * Màn chờ khi bấm "Xem demo" (30/09/2026): video biển mây phủ kín màn hình, mèo MIMI ở giữa và một câu ngắn.
- * Video tắt tiếng, tự chạy, lặp; ảnh bìa hiện ngay trong lúc video tải. Không chặn đọc màn hình: vùng trạng thái
- * báo đang tải.
+ * MÀN CHỜ DÙNG CHUNG (30/09/2026): video biển mây toàn màn hình + mèo MIMI + một câu ngắn. Dùng cho mọi lúc phải chờ
+ * (mở app, chuyển trang tải chậm, vào demo). Video tắt tiếng, tự chạy, lặp; ảnh bìa hiện ngay trong lúc video tải.
+ * `noiTiep`: dùng như màn chờ trong trang (Suspense) thay vì phủ lên trên bằng portal.
  */
-export function ManHinhChoDemo() {
-  const { i18n } = useTranslation();
-  const cau = CAU[(i18n.resolvedLanguage ?? 'vi').slice(0, 2)] ?? CAU.vi;
+export function ManHinhChoVideo({ chinh, phu, phuLen = true }: { chinh: string; phu?: string; phuLen?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -30,19 +28,20 @@ export function ManHinhChoDemo() {
     v.muted = true;
     v.setAttribute('muted', '');
     void v.play().catch(() => {});
+    if (!phuLen) return;
     const cu = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = cu; };
-  }, []);
+  }, [phuLen]);
 
-  return createPortal(
+  const noiDung = (
     <motion.div
       role="status"
       aria-live="polite"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#0f3b46]"
+      className={`${phuLen ? 'fixed z-[100]' : 'relative min-h-screen'} inset-0 flex items-center justify-center overflow-hidden bg-[#0f3b46]`}
     >
       <video
         ref={ref}
@@ -66,8 +65,8 @@ export function ManHinhChoDemo() {
         <span className="rounded-full bg-white/15 p-3 shadow-lg ring-1 ring-white/30 backdrop-blur-md">
           <MeoSong size={64} />
         </span>
-        <p className="mt-5 font-display text-xl font-semibold drop-shadow sm:text-2xl">{cau.chinh}</p>
-        <p className="mt-2 text-sm text-white/80 drop-shadow">{cau.phu}</p>
+        <p className="mt-5 font-display text-xl font-semibold drop-shadow sm:text-2xl">{chinh}</p>
+        {phu && <p className="mt-2 text-sm text-white/80 drop-shadow">{phu}</p>}
         <span aria-hidden className="mt-6 flex gap-1.5">
           {[0, 1, 2].map((i) => (
             <motion.span key={i} className="h-1.5 w-1.5 rounded-full bg-white/80"
@@ -75,7 +74,14 @@ export function ManHinhChoDemo() {
           ))}
         </span>
       </motion.div>
-    </motion.div>,
-    document.body,
+    </motion.div>
   );
+  return phuLen ? createPortal(noiDung, document.body) : noiDung;
+}
+
+/** Màn chờ khi bấm "Xem demo": phủ toàn màn hình, câu theo ngôn ngữ đang chọn. */
+export function ManHinhChoDemo() {
+  const { i18n } = useTranslation();
+  const cau = CAU[(i18n.resolvedLanguage ?? 'vi').slice(0, 2)] ?? CAU.vi;
+  return <ManHinhChoVideo chinh={cau.chinh} phu={cau.phu} />;
 }

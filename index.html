@@ -42,13 +42,13 @@
       instead of a blank white page.
     -->
     <div id="root">
-      <div id="boot-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,system-ui,-apple-system,sans-serif;background:#FDF8F3;color:#1c1c1e">
+      <div id="boot-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,system-ui,-apple-system,sans-serif;background:#0f3b46 url(/video/mimi-cho-demo.jpg) center/cover no-repeat;color:#fff">
         <div style="max-width:320px;width:100%;text-align:center">
-          <div id="boot-spinner" style="width:36px;height:36px;margin:0 auto;border:3px solid rgba(0,0,0,.1);border-top-color:#F97316;border-radius:50%;animation:boot-spin .8s linear infinite"></div>
+          <div id="boot-spinner" style="width:36px;height:36px;margin:0 auto;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:boot-spin .8s linear infinite"></div>
           <div id="boot-failed" style="display:none">
             <div style="font-size:28px;margin-bottom:12px">🔄</div>
             <h1 style="font-size:17px;font-weight:700;margin:0">Ứng dụng cần tải lại</h1>
-            <p style="font-size:14px;line-height:1.5;color:#6b6b70;margin:8px 0 20px">
+            <p style="font-size:14px;line-height:1.5;color:rgba(255,255,255,.85);margin:8px 0 20px">
               Trình duyệt có thể đang giữ phiên bản cũ. Nhấn nút bên dưới để tải bản mới nhất.
             </p>
             <button id="boot-reload" type="button"
