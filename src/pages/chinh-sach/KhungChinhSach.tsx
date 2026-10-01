@@ -29,15 +29,12 @@ export function Dam({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Điểm chủ doanh nghiệp còn phải xác nhận. Hiện rõ trên trang để không ai tưởng đó là cam kết đã
- * chốt; gỡ nhãn khi đã xác nhận (xem docs/bo-cong-thuong/HUONG_DAN_NOP.md).
+ * Điểm kinh doanh do chủ doanh nghiệp quyết (thời hạn hoàn tiền, thời gian phản hồi…). 01/10/2026: chủ doanh nghiệp
+ * đã duyệt các mức mặc định, nên không còn nhãn "cần xác nhận" trên trang công bố. Giữ hàm để đánh dấu lại khi cần
+ * rà soát (trả về nhãn thay vì null); danh sách các điểm này ở docs/bo-cong-thuong/HUONG_DAN_NOP.md.
  */
 export function CanXacNhan() {
-  return (
-    <span className="ml-1 rounded bg-mimi-amber/15 px-1.5 py-0.5 text-[11px] font-semibold text-foreground">
-      [CHỦ DOANH NGHIỆP XÁC NHẬN]
-    </span>
-  );
+  return null;
 }
 
 export function LienKet({ to, children }: { to: string; children: React.ReactNode }) {

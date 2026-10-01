@@ -148,9 +148,6 @@ nav ul, footer ul{{columns:2}} .sr-only{{display:none}}
         dong("Nội dung tệp:", 11, True)
         dong("• Phần A — Bản chụp giao diện trang công bố (ảnh chụp màn hình, chia theo trang giấy).")
         dong("• Phần B — Toàn văn trang công bố in từ trình duyệt (chữ chọn và tìm kiếm được).", gap=14)
-        dong("Lưu ý: nội dung mang nhãn [CHỦ DOANH NGHIỆP XÁC NHẬN] và các ô dạng {{...}} là điểm chủ "
-             "doanh nghiệp phải chốt/điền, triển khai lại, rồi chụp lại từ tên miền chính thức trước khi nộp "
-             "nếu cơ quan tiếp nhận yêu cầu ảnh chụp từ tên miền đã khai báo.", 10)
 
         # Phần A: ảnh chụp chia trang. Cửa sổ chụp cao 9000px nên `min-h-screen` kéo chân trang
         # xuống đáy, để lại một khoảng trống dài giữa nội dung và chân trang: bỏ mọi khoảng trống

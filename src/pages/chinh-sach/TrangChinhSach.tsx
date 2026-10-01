@@ -200,9 +200,8 @@ function ThanhToan() {
           nhận thẻ, ví điện tử hay tiền mặt, và không lưu thông tin thẻ.
         </p>
         <p>
-          Tài khoản nhận là tài khoản của {COMPANY.legalName}: ngân hàng{' '}
-          {'{{NGAN_HANG_NHAN}}'}, số tài khoản {'{{SO_TAI_KHOAN_NHAN}}'}, chủ tài khoản{' '}
-          {'{{CHU_TAI_KHOAN_NHAN}}'}. Thông tin này luôn hiện trên màn hình thanh toán trong ứng dụng.
+          Tài khoản nhận là tài khoản của {COMPANY.legalName}. Ngân hàng, số tài khoản và chủ tài khoản
+          luôn hiện trên màn hình thanh toán trong ứng dụng, kèm mã tham chiếu riêng của từng hoá đơn.
           Chỉ chuyển tới tài khoản hiện trên màn hình đó.
         </p>
       </Muc>

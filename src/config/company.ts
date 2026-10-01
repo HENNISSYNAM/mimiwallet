@@ -41,7 +41,7 @@ export const COMPANY = {
    * 248/2026 đòi công bố "số, ngày cấp, nơi cấp"). CHƯA CÓ trong mã nguồn — rỗng thì hiện
    * token `{{NOI_CAP_DKDN}}`.
    */
-  registrationPlace: '',
+  registrationPlace: 'Phòng Đăng ký kinh doanh, Sở Tài chính Thành phố Hồ Chí Minh',
 
   /** Người đại diện theo pháp luật. */
   legalRepresentative: {
@@ -86,7 +86,7 @@ export const CONTACT = {
    * Số điện thoại hỗ trợ. CHƯA CÓ trong mã nguồn — để trống thì giao diện hiện token
    * `{{SO_DIEN_THOAI}}` ở trang công bố để chủ doanh nghiệp thấy mà điền, không bịa số.
    */
-  phone: '',
+  phone: '0984988359',
   /** Trang Facebook chính thức của MIMI (chủ dự án cung cấp 16/09/2026). */
   facebook: 'https://www.facebook.com/profile.php?id=61593186898315',
 } as const;
