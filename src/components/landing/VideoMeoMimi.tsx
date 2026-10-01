@@ -20,8 +20,17 @@ const SU_KIEN_CHAM = ['pointerdown', 'touchstart', 'keydown', 'scroll'] as const
  *   - Gọi play() ngay khi gắn; bị chặn (iPhone chế độ nguồn điện thấp…) thì chạy ở lần chạm/cuộn/bấm phím đầu tiên.
  *   - Ra khỏi màn hình thì dừng cho đỡ tốn pin, quay lại thì chạy tiếp; chuyển tab về cũng chạy tiếp.
  */
-export default function VideoMeoMimi({ className }: { className?: string }) {
+export default function VideoMeoMimi({ className, dung = false }: { className?: string; dung?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const dungRef = useRef(dung);
+  dungRef.current = dung;
+
+  // Người dùng bấm dừng (WCAG 2.2.2: chuyển động tự chạy quá 5 giây phải dừng được).
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (dung) v.pause(); else void v.play().catch(() => {});
+  }, [dung]);
 
   useEffect(() => {
     const v = ref.current;
@@ -33,7 +42,7 @@ export default function VideoMeoMimi({ className }: { className?: string }) {
     v.setAttribute('webkit-playsinline', '');
 
     let trongMan = true;
-    const chay = () => { if (trongMan && !document.hidden && v.paused) void v.play().catch(() => {}); };
+    const chay = () => { if (trongMan && !document.hidden && v.paused && !dungRef.current) void v.play().catch(() => {}); };
 
     const khiCham = () => { chay(); if (!v.paused) boCham(); };
     const boCham = () => SU_KIEN_CHAM.forEach((e) => window.removeEventListener(e, khiCham));

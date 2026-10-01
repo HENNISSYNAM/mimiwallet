@@ -26,7 +26,7 @@ export function HoiMimiTrongModule() {
     setDang(true);
     setNhap('');
     try {
-      const kq = await useNaoMimi.getState().hoi(cau, { phamVi: module?.nhom ?? null, nguon: 'pet' });
+      const kq = await useNaoMimi.getState().hoi(cau, { phamVi: module?.nhom ?? null, nguon: 'trang_chu' });
       if (kq.trangThai === 'xong') {
         toast.success(t('kg.hoiModule.daTraLoi'), { action: { label: t('kg.hoiModule.xem'), onClick: () => navigate(DUONG_TRO_LY) }, duration: 10_000 });
       } else if (kq.loi) {

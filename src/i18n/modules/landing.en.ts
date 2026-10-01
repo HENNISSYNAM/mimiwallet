@@ -1,5 +1,6 @@
 const m = {
   landing: {
+    video: { dung: 'Pause video', phat: 'Play video' },
     // See the note on the Vietnamese hero: the invoice-advance promise was
     // removed because MIMI cannot lend, and replaced with the 2026 tax change.
     hero: {

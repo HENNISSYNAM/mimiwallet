@@ -244,6 +244,7 @@ const zh = {
   },
 
   landing: {
+    video: { dung: '暂停视频', phat: '播放视频' },
     hero: {
       titleLine1: '智能体去花钱。',
       titleLine2: '决定权在你手里。',

@@ -24,7 +24,7 @@ import {
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Shield, Zap, Brain, Play, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, BarChart3, Globe } from 'lucide-react';
+import { Shield, Zap, Brain, Play, Pause, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, BarChart3, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { DUONG_MINH_HOA } from '@/lib/minhHoa';
 import { supabase } from '@/integrations/supabase/client';
@@ -534,6 +534,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [demoLoading, setDemoLoading] = useState(false);
+  const [dungVideo, setDungVideo] = useState(false);
   const { signInAsDemo, demoAvailable } = useAuthStore();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -556,11 +557,20 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
       <section ref={heroRef} className="relative overflow-hidden mimi-hero-warm">
         {/* Mép video tan bằng mask (không phủ màu) nên hoà vào đúng nền phía sau, không lộ đường kẻ. */}
         <div aria-hidden className="absolute inset-x-0 top-0 h-[52svh] [mask-image:linear-gradient(to_bottom,black_55%,transparent)] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[66%] lg:[mask-composite:intersect] lg:[mask-image:linear-gradient(to_right,transparent,black_30%),linear-gradient(to_bottom,black_72%,transparent)]">
-          <VideoMeoMimi />
+          <VideoMeoMimi dung={dungVideo} />
           {/* Mép trên nhạt đi cho thanh điều hướng đọc rõ. */}
           <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[hsl(36_44%_98%/0.75)] to-transparent" />
         </div>
 
+        <button
+          type="button"
+          onClick={() => setDungVideo((v) => !v)}
+          aria-label={dungVideo ? t('landing.video.phat') : t('landing.video.dung')}
+          aria-pressed={dungVideo}
+          className="absolute bottom-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        >
+          {dungVideo ? <Play size={16} /> : <Pause size={16} />}
+        </button>
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
           className="relative z-10 container mx-auto px-4 pt-[46svh] pb-4 text-center lg:flex lg:min-h-[100svh] lg:items-center lg:pt-28 lg:pb-44 lg:text-left"
