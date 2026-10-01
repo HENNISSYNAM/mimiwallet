@@ -104,7 +104,7 @@ bấm Ctrl+P trên trang chính sách sẽ ra **giấy trắng**. Script đã tr
 | Token | Hiện ở đâu | Điền vào |
 |---|---|---|
 | `{{NOI_CAP_DKDN}}` — nơi cấp giấy chứng nhận ĐKDN (vd "Phòng Đăng ký kinh doanh – Sở …TP.HCM") | chân trang, trang /chinh-sach | `COMPANY.registrationPlace` trong `src/config/company.ts` |
-| `{{SO_DIEN_THOAI}}` — số điện thoại hỗ trợ/liên hệ | chân trang, trang khiếu nại, hỗ trợ, /chinh-sach | `CONTACT.phone` trong `src/config/company.ts` |
+| ~~`{{SO_DIEN_THOAI}}`~~ — ĐÃ ĐIỀN 0984988359 (01/10/2026); chụp lại PDF sau khi deploy — số điện thoại hỗ trợ/liên hệ | chân trang, trang khiếu nại, hỗ trợ, /chinh-sach | `CONTACT.phone` trong `src/config/company.ts` |
 | `{{NGAN_HANG_NHAN}}`, `{{SO_TAI_KHOAN_NHAN}}`, `{{CHU_TAI_KHOAN_NHAN}}` — tài khoản nhận phí (phải khớp biến `MIMI_BANK_NAME`, `MIMI_BANK_ACCOUNT`, `MIMI_BANK_HOLDER` trên máy chủ; chủ tài khoản nên là tài khoản của công ty) | /chinh-sach/thanh-toan | sửa trực tiếp trong `ThanhToan()` ở `src/pages/chinh-sach/TrangChinhSach.tsx` |
 
 Đã có sẵn trong mã, không cần điền: tên công ty, tên quốc tế, MST 0319436143, ngày cấp 11/03/2026, địa
