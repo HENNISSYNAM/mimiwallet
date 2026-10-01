@@ -22,12 +22,12 @@ interface DongNhatKy {
 
 const DONG: DongNhatKy[] = [
   { icon: FileSearch, chu: 'agent-quang-cao xin chi 4.500.000đ cho CÔNG TY TNHH ABC — nạp ngân sách quảng cáo tháng 10.' },
-  { icon: ShieldCheck, chu: 'Đối chiếu chính sách: trong trần mỗi lần 5.000.000đ và trần ngày 20.000.000đ.' },
+  { icon: ShieldCheck, chu: 'Kiểm luật chi: dưới mức 5.000.000đ mỗi lần và 20.000.000đ mỗi ngày.' },
   { icon: Check, chu: 'Người nhận nằm trong danh sách được phép từ 30 ngày trước.' },
-  { icon: Clock, chu: 'Trên ngưỡng tự duyệt 2.000.000đ — dừng lại chờ chủ doanh nghiệp.', chip: { loai: 'cho', chu: 'TREN_NGUONG_DUYET' } },
+  { icon: Clock, chu: 'Trên mức tự duyệt 2.000.000đ, chờ chủ doanh nghiệp duyệt.', chip: { loai: 'cho', chu: 'Chờ duyệt' } },
   { icon: UserCheck, chu: 'Chủ doanh nghiệp bấm Duyệt.', chip: { loai: 'duyet', chu: 'Đã duyệt' } },
-  { icon: QrCode, chu: 'Dựng lệnh trả VietQR, nội dung chuyển khoản MIMI4KQ2P7.', chip: { loai: 'duyet', chu: 'Lệnh trả' } },
-  { icon: Landmark, chu: 'Sao kê về, khớp mã tham chiếu.', chip: { loai: 'chi', chu: 'Đã chi' } },
+  { icon: QrCode, chu: 'Tạo mã VietQR, nội dung chuyển khoản MIMI4KQ2P7.', chip: { loai: 'duyet', chu: 'Mã trả tiền' } },
+  { icon: Landmark, chu: 'Sao kê báo về, khớp đúng nội dung chuyển khoản.', chip: { loai: 'chi', chu: 'Đã chi' } },
 ];
 const NHIP_NHAT_KY = [700, 1000, 1000, 1000, 1300, 1100, 1000, 3200] as const;
 
@@ -39,7 +39,7 @@ function KhungNhatKy() {
       {/* Hai thẻ mờ phía sau: bối cảnh mà nhật ký đang đọc tới. */}
       <div aria-hidden className="pointer-events-none absolute left-4 top-12 hidden w-44 rounded-lg border border-border bg-card p-3 opacity-40 xl:block">
         <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Chính sách</p>
-        {['Mỗi lần · 5.000.000đ', 'Mỗi ngày · 20.000.000đ', 'Ngưỡng duyệt · 2.000.000đ'].map((d) => (
+        {['Mỗi lần · 5.000.000đ', 'Mỗi ngày · 20.000.000đ', 'Cần duyệt từ · 2.000.000đ'].map((d) => (
           <p key={d} className="mt-1.5 font-mono text-[10px] text-foreground">{d}</p>
         ))}
       </div>
@@ -53,7 +53,7 @@ function KhungNhatKy() {
       <div className="relative z-10 w-full max-w-md rounded-lg border border-primary/30 bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between border-b border-border pb-2">
           <p className="text-[13px] font-semibold text-foreground">Nhật ký · agent-quang-cao</p>
-          <span className="text-[10px] text-muted-foreground">chỉ thêm, không sửa</span>
+          <span className="text-[10px] text-muted-foreground">không sửa được</span>
         </div>
         <ol className="mt-3 grid min-h-[280px] content-start gap-2.5">
           {DONG.slice(0, buoc).map((d, i) => {
@@ -84,18 +84,18 @@ export default function NhatKyAgent() {
       <div className="container mx-auto px-4">
         <div className="max-w-2xl">
           <h2 className="font-serif font-normal text-foreground text-balance leading-[1.05] tracking-[-0.015em] text-[clamp(2rem,4.2vw,3.25rem)]">
-            Mỗi bước của agent đều để lại dấu vết
+            AI làm gì cũng có ghi lại
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            Agent xin gì, luật nào quyết, ai duyệt, sao kê xác nhận lúc nào — ghi vào nhật ký chỉ-thêm mà không ai sửa được.
+            AI xin chi khoản gì, luật nào cho qua, ai duyệt, sao kê báo về lúc nào. Tất cả vào nhật ký, không ai sửa được.
           </p>
         </div>
         <div className="mt-14 grid gap-x-8 gap-y-14 lg:grid-cols-2">
           <article>
             <KhungNhatKy />
-            <h3 className="mt-6 font-display text-xl font-semibold text-foreground text-balance">Mỗi quyết định truy được tới luật.</h3>
+            <h3 className="mt-6 font-display text-xl font-semibold text-foreground text-balance">Khoản nào cũng tìm lại được lý do.</h3>
             <p className="mt-2 max-w-lg leading-relaxed text-muted-foreground">
-              Không có bước nào "tự nhiên xảy ra": mỗi dòng mang mã lý do của bộ luật và thời điểm, để kế toán và kiểm toán đọc lại được.
+              Mỗi dòng ghi lý do và giờ giấc, để kế toán hay kiểm toán xem lại lúc nào cũng được.
             </p>
           </article>
         </div>

@@ -99,9 +99,9 @@ function CanhDungKhoan() {
         </div>
       </Khung>
       <figcaption className="mt-3 text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">Cảnh báo bất thường.</span> Khoản chi xin qua MIMI có dấu hiệu mức cao — người nhận đổi số
-        tài khoản, người nhận mới với số tiền lớn, nội dung giả danh cơ quan nhà nước — bị dừng ngay lúc bấm Duyệt, kèm lý do cụ thể. MIMI không
-        chặn được lệnh chuyển trong app ngân hàng; sao kê được quét lại sau mỗi lần đồng bộ.
+        <span className="font-semibold text-foreground">Báo khoản lạ.</span> Khoản chi xin qua MIMI mà có dấu hiệu nguy hiểm (người nhận đổi số
+        tài khoản, người nhận mới với số tiền lớn, nội dung giả danh cơ quan nhà nước) sẽ bị dừng ngay lúc bấm Duyệt, kèm lý do rõ ràng. MIMI không
+        chặn được lệnh chuyển bạn làm trong app ngân hàng, nhưng sẽ quét lại sao kê sau mỗi lần đồng bộ.
       </figcaption>
     </figure>
   );
@@ -126,7 +126,7 @@ function CanhMaHoa() {
         <div className="w-full max-w-sm space-y-1.5 font-mono text-[11px]">
           <Buoc hien={buoc >= 0}>
             <div className="rounded-md border border-border bg-card p-2.5">
-              <p className="flex items-center gap-1.5 font-sans text-[11px] text-muted-foreground"><KeyRound size={12} /> Token ngân hàng vừa nhận</p>
+              <p className="flex items-center gap-1.5 font-sans text-[11px] text-muted-foreground"><KeyRound size={12} /> Khoá ngân hàng vừa nhận</p>
               <p className="mt-1 truncate text-foreground">access_token: eyJhbGciOiJIUzI1NiJ9.vi-du…</p>
             </div>
           </Buoc>
@@ -134,20 +134,20 @@ function CanhMaHoa() {
           <Buoc hien={buoc >= 1}>
             <div className="rounded-md border border-primary/30 bg-card p-2.5 font-sans">
               <p className="text-[12px] font-semibold text-foreground">ML-KEM-768 <span className="font-normal text-muted-foreground">· FIPS 203</span></p>
-              <p className="text-[11px] text-muted-foreground">Đóng gói một khoá bí mật riêng cho từng bản ghi — kháng máy tính lượng tử.</p>
+              <p className="text-[11px] text-muted-foreground">Mỗi bản ghi có một khoá bí mật riêng, chống được máy tính lượng tử.</p>
             </div>
           </Buoc>
           <ArrowDown size={14} className="mx-auto text-muted-foreground" aria-hidden />
           <Buoc hien={buoc >= 2}>
             <div className="rounded-md border border-primary/30 bg-card p-2.5 font-sans">
               <p className="text-[12px] font-semibold text-foreground">HKDF-SHA256 → AES-256-GCM</p>
-              <p className="text-[11px] text-muted-foreground">Mã hoá nội dung token, có mã xác thực chống sửa.</p>
+              <p className="text-[11px] text-muted-foreground">Mã hoá nội dung. Ai sửa lén là bị phát hiện.</p>
             </div>
           </Buoc>
           <ArrowDown size={14} className="mx-auto text-muted-foreground" aria-hidden />
           <Buoc hien={buoc >= 3}>
             <div className="rounded-md border border-border bg-card p-2.5">
-              <p className="flex items-center gap-1.5 font-sans text-[11px] text-muted-foreground"><Lock size={12} /> Thứ được ghi vào cơ sở dữ liệu</p>
+              <p className="flex items-center gap-1.5 font-sans text-[11px] text-muted-foreground"><Lock size={12} /> Thứ thật sự được lưu</p>
               <p className="mt-1 break-all text-foreground">{'{ v: 1, kemCipherText: "q8Zf…", iv: "3kPa…", aesCipherText: "Hn0x…" }'}</p>
             </div>
           </Buoc>
@@ -155,8 +155,8 @@ function CanhMaHoa() {
         </div>
       </Khung>
       <figcaption className="mt-3 text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">Mã hoá kháng lượng tử.</span> Token ngân hàng và khoá quản trị AI được mã hoá lai ML-KEM-768
-        + AES-256-GCM trước khi ghi xuống. Khoá giải mã nằm trong biến bí mật của máy chủ, không nằm trong mã nguồn.
+        <span className="font-semibold text-foreground">Mã hoá chống máy tính lượng tử.</span> Khoá kết nối ngân hàng và khoá quản trị AI được mã hoá hai lớp (ML-KEM-768
+        + AES-256-GCM) trước khi lưu. Chìa giải mã cất riêng trên máy chủ, không nằm trong mã nguồn.
       </figcaption>
     </figure>
   );
@@ -169,10 +169,10 @@ export default function VideoBaoMat() {
         <div className="mx-auto mb-12 max-w-2xl text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Bảo mật</span>
           <h2 id="bao-mat-tieu-de" className="mt-4 font-display font-extrabold tracking-tight text-foreground" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.75rem)' }}>
-            Xem MIMI giữ tiền của bạn lại
+            MIMI dừng khoản chi lạ giúp bạn
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Dừng khoản chi đáng ngờ trước khi tiền rời tài khoản, và khoá bí mật ngân hàng bằng mã hoá kháng lượng tử.
+            Khoản chi đáng ngờ bị dừng trước khi tiền rời tài khoản. Khoá kết nối ngân hàng được mã hoá chống máy tính lượng tử.
           </p>
         </div>
         <div className="grid gap-8 md:grid-cols-2">

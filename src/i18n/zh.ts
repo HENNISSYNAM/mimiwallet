@@ -21,7 +21,7 @@ const zh = {
   loading: '加载中...',
 
   hero: {
-    badge: '面向以 AI 运营的企业的支出管控层',
+    badge: '给小店和小企业的支出助手',
     titleLine1: '按利润纳税，',
     titleLine2: '而不是按营业额',
     subtitle: '法律允许你选择计税方式 —— 但前提是能证明成本。MIMI 读取银行流水，替你把这套成本凭证准备好。',
@@ -91,7 +91,7 @@ const zh = {
   },
 
   footer: {
-    tagline: '为可持续未来而生的绿色钱包。',
+    tagline: '给店主和会计的记账助手。',
     products: '产品',
     productLinks: [],
     company: '公司',
@@ -103,7 +103,7 @@ const zh = {
 
   login: {
     title: '登录 MIMI WALLET',
-    tagline: '为可持续未来而生的绿色钱包',
+    tagline: '给店主和会计的记账助手',
     email: '邮箱',
     emailPlaceholder: 'email@company.vn',
     password: '密码',
@@ -119,7 +119,7 @@ const zh = {
     cashflow: '现金流',
     invoices: '发票',
     creditScore: '信用评分',
-    fintechHub: '金融科技中心',
+    fintechHub: '银行与支付',
     reports: '报告',
     settings: '设置',
     support: '支持',
@@ -144,7 +144,7 @@ const zh = {
     rankA: 'B 级 —— ↑ +12 分',
     veryGood: '良好',
     cashFlowTitle: '现金流',
-    aiInsights: 'AI 洞察',
+    aiInsights: 'MIMI 提醒',
     recentTx: '最近交易',
     viewAll: '查看全部',
     quickActions: '快捷操作',
@@ -529,7 +529,7 @@ const zh = {
       },
       toast: {
         fillRequired: '请填写客户、金额和到期日',
-        companyNotFound: '找不到你的企业',
+        companyNotFound: '还没找到你的公司信息。请刷新页面后再试。',
         createFailed: '新建发票失败：{{error}}',
         createSuccess: '已创建发票 {{number}}',
         advanceFailed: '预支失败：{{error}}',
@@ -594,8 +594,8 @@ const zh = {
       },
     },
     reports: {
-      title: '银行现金流汇总',
-      subtitle: '来自银行流水的资金流入与流出 — 并非财务报表',
+      title: '进账与出账',
+      subtitle: '数据取自银行流水，还不是财务报表。',
       export: '导出 CSV',
       revenueExpense: {
         title: '每月资金流入与流出',
@@ -604,7 +604,7 @@ const zh = {
         profit: '净现金流',
       },
       invoiceAging: {
-        title: '发票账龄分析',
+        title: '客户欠款多久了',
       },
       expenseBreakdown: {
         title: '按类别的资金流出',
@@ -614,12 +614,12 @@ const zh = {
 
   pg: {
     fintech: {
-      title: '金融科技中心',
-      subtitle: '银行、支付与合规',
+      title: '银行与支付',
+      subtitle: '连接银行、支付与法律文件',
       tabs: {
-        banking: '开放银行',
+        banking: '连接银行',
         payment: '支付',
-        compliance: '合规',
+        compliance: '法律文件',
       },
     },
   },

@@ -202,7 +202,7 @@ function CanhDoiTaiKhoan() {
           </div>
         ) : (
           <p className="mt-3 rounded-lg bg-muted/60 p-2.5 font-mono text-[11px] text-muted-foreground">
-            Agent nhận lý do: <span className="text-foreground">DOI_SO_TAI_KHOAN</span>
+            AI được báo lý do: <span className="text-foreground">người nhận đổi số tài khoản</span>
           </p>
         )}
       </div>
@@ -214,13 +214,13 @@ function CanhDoiTaiKhoan() {
 const CANH = [
   {
     Canh: CanhDuyet,
-    tieuDe: 'Duyệt trong một chạm, tiền đi khi bạn trả.',
-    mo: 'Agent gửi yêu cầu; bạn đọc số tiền bằng chữ và lý do rồi bấm Duyệt. Lệnh trả VietQR hiện ra, sao kê về thì tự thành "Đã chi".',
+    tieuDe: 'Một chạm để duyệt. Tiền chỉ đi khi bạn trả.',
+    mo: 'AI gửi yêu cầu chi. Bạn xem số tiền, lý do rồi bấm Duyệt. Mã VietQR hiện ra để bạn trả. Sao kê báo về là khoản đó tự chuyển sang "Đã chi".',
   },
   {
     Canh: CanhDoiTaiKhoan,
     tieuDe: 'Bắt được lúc "nhà cung cấp đổi số tài khoản".',
-    mo: 'Cùng tên người nhận nhưng khác tài khoản lần trước, MIMI dừng lại và cảnh báo đỏ — kiểu lừa đảo chuyển khoản hay gặp nhất.',
+    mo: 'Cùng người nhận mà số tài khoản khác lần trước? MIMI dừng lại và báo đỏ. Đây là chiêu lừa chuyển khoản rất hay gặp.',
   },
 ];
 
@@ -233,7 +233,7 @@ export default function DemoTuChay() {
             Xem MIMI làm việc
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            Các khung dưới đây tự chạy lại những việc bạn làm trong app — bằng dữ liệu ví dụ.
+            Các khung dưới đây diễn lại việc bạn làm trong app, bằng số liệu ví dụ.
           </p>
         </div>
         <div className="mt-14 grid gap-x-8 gap-y-14 md:grid-cols-2">

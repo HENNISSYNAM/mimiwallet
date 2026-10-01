@@ -10,38 +10,38 @@ const CAP_NHAT = [
   {
     ngay: '14/09/2026',
     nhom: 'Kiểm nghiệm',
-    tieuDe: 'Bộ kiểm nghiệm tự chạy',
-    mo: '49 tình huống chuẩn cho bộ luật chi, test cả vòng agent xin chi, và dò hệ thống đang chạy — một lệnh, có báo cáo.',
+    tieuDe: 'Bộ kiểm tra tự chạy',
+    mo: '49 tình huống mẫu để thử luật chi, thử luôn cả vòng AI xin chi và hệ thống đang chạy. Chạy một lệnh là có báo cáo.',
   },
   {
     ngay: '14/09/2026',
     nhom: 'Agent',
     tieuDe: 'Ba luật chống chuyển nhầm',
-    mo: 'Chặn agent chạy vòng lặp, giữ người nhận mới 24 giờ, cảnh báo đỏ khi cùng người nhận mà đổi số tài khoản.',
+    mo: 'Chặn AI xin chi lặp đi lặp lại, giữ người nhận mới 24 giờ, báo đỏ khi người nhận quen bỗng đổi số tài khoản.',
   },
   {
     ngay: '14/09/2026',
     nhom: 'Duyệt chi',
-    tieuDe: 'Màn duyệt hợp điện thoại',
-    mo: 'Số tiền đọc thêm bằng chữ; lệnh trả QR có nút lưu ảnh mã và chép từng dòng để trả ngay trên máy đang dùng.',
+    tieuDe: 'Duyệt chi dễ trên điện thoại',
+    mo: 'Số tiền ghi thêm bằng chữ. Mã QR có nút lưu ảnh và nút chép từng dòng để trả ngay trên máy.',
   },
   {
     ngay: '14/09/2026',
     nhom: 'Ngân hàng',
-    tieuDe: 'Hoàn tất nghiệm thu liên kết ngân hàng trên môi trường thử',
-    mo: '19/20 tình huống đạt, mỗi tình huống có mã yêu cầu làm bằng chứng.',
+    tieuDe: 'Xong vòng kiểm tra liên kết ngân hàng (bản thử)',
+    mo: '19/20 tình huống đạt, tình huống nào cũng có mã yêu cầu làm bằng chứng.',
   },
   {
     ngay: '10/09/2026',
     nhom: 'Agent',
-    tieuDe: 'MCP server cho agent',
+    tieuDe: 'Nối trợ lý AI của bạn vào MIMI',
     mo: 'Nối Claude, Cursor hay ứng dụng hỗ trợ MCP vào MIMI bằng một lệnh.',
   },
   {
     ngay: '10/09/2026',
     nhom: 'Agent',
-    tieuDe: 'Lớp kiểm soát chi cho agent',
-    mo: 'Hạn mức, người nhận được phép, duyệt, lệnh trả VietQR và đối soát sao kê, kèm nhật ký chỉ-thêm.',
+    tieuDe: 'Kiểm soát chi cho AI',
+    mo: 'Đặt hạn mức, chọn người được nhận, duyệt chi, tạo mã VietQR và dò sao kê. Nhật ký chỉ ghi thêm, không sửa được.',
   },
 ];
 
@@ -53,7 +53,7 @@ export default function CapNhatSanPham() {
           <h2 className="font-serif font-normal text-foreground text-balance leading-[1.05] tracking-[-0.015em] text-[clamp(2rem,4.2vw,3.25rem)]">
             Cập nhật sản phẩm
           </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted-foreground">Những gì vừa chạy thật trên MIMI, mới nhất trước.</p>
+          <p className="mt-5 text-lg leading-relaxed text-muted-foreground">Việc MIMI mới làm được, mới nhất ở trên.</p>
         </div>
         <ol className="mt-10 divide-y divide-border border-y border-border">
           {CAP_NHAT.map((c) => (

@@ -954,17 +954,17 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               */}
               <span className="text-xs text-primary font-mono uppercase tracking-widest">Minh bạch</span>
               <h2 className="font-serif font-normal text-[clamp(1.75rem,3.2vw,2.375rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3 mb-6">
-                Không phải hộp đen —{' '}
-                <span className="text-gradient">bạn xem được từng bước</span>
+                Bạn xem được MIMI làm gì,{' '}
+                <span className="text-gradient">từng bước một</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Mỗi việc MIMI nhắc đều ghi lại bằng chứng, và nói rõ bằng chứng đó do máy chủ đã kiểm trên dữ liệu hay do bạn tự xác nhận. Điều luật MIMI dẫn là câu trích nguyên văn, kèm số hiệu văn bản.
+                Việc nào MIMI nhắc cũng kèm bằng chứng, và ghi rõ đó là MIMI tự kiểm trên số liệu hay do bạn xác nhận. Khi dẫn luật, MIMI trích nguyên văn và ghi số hiệu văn bản.
               </p>
               <div className="space-y-4">
                 {[
-                  { label: 'Bằng chứng ghi rõ độ chắc', value: '"MIMI đã kiểm trên dữ liệu" khác với "theo xác nhận của bạn"', icon: <Brain size={16} /> },
-                  { label: 'Căn cứ trích nguyên văn', value: 'Số hiệu văn bản, điều, khoản — không diễn giải theo trí nhớ', icon: <TrendingUp size={16} /> },
-                  { label: 'Ai xác nhận khoản nào', value: 'Mỗi lần xác nhận phân loại đều ghi lại ai đã bấm', icon: <Shield size={16} /> },
+                  { label: 'Ghi rõ bằng chứng từ đâu', value: '"MIMI đã kiểm trên dữ liệu" khác với "theo xác nhận của bạn"', icon: <Brain size={16} /> },
+                  { label: 'Trích luật nguyên văn', value: 'Có số hiệu văn bản, điều, khoản. Không kể lại theo trí nhớ.', icon: <TrendingUp size={16} /> },
+                  { label: 'Ai xác nhận khoản nào', value: 'Ai bấm xác nhận khoản nào, MIMI đều ghi lại', icon: <Shield size={16} /> },
                 ].map((item, i) => (
                   <motion.div
                     key={item.label}
@@ -1037,7 +1037,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           <div className="mb-14" />
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" />
-            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['So sánh hai cách tính thuế', 'Không giới hạn tài khoản ngân hàng']} cta="Bắt đầu, nâng cấp khi cần" highlighted badge="Phổ biến nhất" />
+            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['So sánh hai cách tính thuế', 'Không giới hạn tài khoản ngân hàng']} cta="Chọn gói này" highlighted badge="MIMI gợi ý" />
             <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" />
           </div>
 
@@ -1056,7 +1056,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             work this product does, so they are the buyer who exists today.
           */}
           <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed">
-            MIMI dựng sổ chi phí và bảng kê để bạn kê khai. MIMI không nộp thuế thay bạn và không cấp vốn.
+            MIMI làm sẵn sổ chi phí và bảng kê để bạn tự kê khai. MIMI không nộp thuế thay bạn và không cho vay.
           </p>
         </div>
       </section>

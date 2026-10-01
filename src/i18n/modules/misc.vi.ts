@@ -1,12 +1,12 @@
 const m = {
   pg: {
     fintech: {
-      title: 'Fintech Hub',
-      subtitle: 'Ngân hàng, thanh toán & tuân thủ pháp lý',
+      title: 'Ngân hàng & thanh toán',
+      subtitle: 'Nối ngân hàng, thanh toán và giấy tờ pháp lý',
       tabs: {
-        banking: 'Open Banking',
+        banking: 'Nối ngân hàng',
         payment: 'Thanh toán',
-        compliance: 'Tuân thủ',
+        compliance: 'Giấy tờ pháp lý',
       },
     },
   },

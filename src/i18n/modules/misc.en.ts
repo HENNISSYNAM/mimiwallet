@@ -1,12 +1,12 @@
 const m = {
   pg: {
     fintech: {
-      title: 'Fintech Hub',
-      subtitle: 'Banking, payments & regulatory compliance',
+      title: 'Banks & payments',
+      subtitle: 'Bank connections, payments and legal documents',
       tabs: {
-        banking: 'Open Banking',
+        banking: 'Bank connections',
         payment: 'Payment',
-        compliance: 'Compliance',
+        compliance: 'Legal documents',
       },
     },
   },

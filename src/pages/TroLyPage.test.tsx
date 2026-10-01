@@ -123,14 +123,14 @@ describe('MIMI Assistant — màn đầu', () => {
     expect(within(screen.getByRole('list', { name: 'Các kết nối' })).getAllByRole('listitem')).toHaveLength(1);
     expect(screen.getByTestId('nen').getAttribute('aria-hidden')).toBe('true');
     // Chưa có mô hình thì nói thật cách MIMI đang hiểu câu hỏi.
-    expect(document.body.textContent).toContain('theo các mẫu có sẵn');
+    expect(document.body.textContent).toContain('MIMI chỉ hiểu những câu hỏi quen');
     // Ca đầu tiên của tệp gánh cả thời gian nạp module: chạy cả bộ test song song thì vượt 5 giây mặc định.
   }, 40_000);
 
   it('thẻ phân tích lấy số từ máy chủ; thẻ Chi phí AI / Tối ưu model đã đóng băng không còn hiện', async () => {
     dung();
     const canXacNhan = await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
-    expect(canXacNhan.textContent).toContain('1 khoản chi cần phê duyệt, tổng 2.000.000 ₫');
+    expect(canXacNhan.textContent).toContain('1 khoản chi chờ bạn duyệt, tổng 2.000.000 ₫');
     // Đóng băng 28/09/2026 (`lib/dongBang.ts`): máy chủ vẫn trả số, màn đầu không vẽ nữa.
     expect(screen.queryByRole('region', { name: 'Chi phí AI tháng này' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Đề xuất tối ưu' })).toBeNull();
@@ -144,7 +144,7 @@ describe('MIMI Assistant — màn đầu', () => {
   it('phê duyệt từ thẻ: hỏi xác nhận rồi mới gọi backend duyệt', async () => {
     gia.tacTu.mockResolvedValue({ yeu_cau: {} });
     dung();
-    const nut = await screen.findByRole('button', { name: 'Phê duyệt 2.000.000 ₫ cho CONG TY A' });
+    const nut = await screen.findByRole('button', { name: 'Duyệt chi 2.000.000 ₫ cho CONG TY A' });
     expect(nut.hasAttribute('data-mimi-khong-tu-bam')).toBe(true);
     fireEvent.click(nut);
     const hop = await screen.findByRole('alertdialog');
@@ -368,12 +368,12 @@ describe('MIMI Assistant — hỏi đáp', () => {
     });
     dung();
     hoiBangTay('chi phí tháng này');
-    fireEvent.click(await screen.findByRole('button', { name: /5 bản ghi/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Xem 5 dòng/ }));
     expect(await screen.findByText('CONG TY A')).toBeTruthy();
     expect(screen.getByText('Đối tác B')).toBeTruthy();
     // Nói thật là đang hiện 2 trong 5 dòng, và có mã băm để đối chiếu về sau.
-    expect(document.body.textContent).toContain('Hiện 2 trong 5 bản ghi');
-    expect(document.body.textContent).toContain('Mã băm lúc trả lời');
+    expect(document.body.textContent).toContain('Đang hiện 2 trong 5 dòng');
+    expect(document.body.textContent).toContain('Mã kiểm tra lúc trả lời');
   });
 
   it('P1-001: bản ghi của công ty khác thì chỉ nhận lỗi, không rò thông tin', async () => {
@@ -390,7 +390,7 @@ describe('MIMI Assistant — hỏi đáp', () => {
     });
     dung();
     hoiBangTay('chi phí tháng này');
-    fireEvent.click(await screen.findByRole('button', { name: /1 bản ghi/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Xem 1 dòng/ }));
     expect(await screen.findByText('Không có bản ghi này trong công ty của bạn.')).toBeTruthy();
     expect(document.body.textContent).not.toContain('cua-cong-ty-khac');
   });

@@ -98,8 +98,8 @@ export default function TeamSection() {
             <br className="hidden sm:block" /> một sản phẩm đang có người dùng
           </h2>
           <p className="mimi-doan-dan mt-5 text-muted-foreground">
-            Hai thành viên kỹ thuật đủ để xây và vận hành sản phẩm, hai thành viên kinh doanh và
-            tài chính đủ để kiểm tra giả định thị trường và làm việc với ngân hàng.
+            Hai người lo kỹ thuật, xây và vận hành sản phẩm. Hai người lo kinh doanh và
+            tài chính, đi hỏi khách hàng và làm việc với ngân hàng.
           </p>
         </motion.div>
 

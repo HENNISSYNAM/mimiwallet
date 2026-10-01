@@ -23,7 +23,7 @@ const ko = {
   loading: '불러오는 중...',
 
   hero: {
-    badge: 'AI로 운영되는 기업을 위한 지출 통제 레이어',
+    badge: '가게와 소규모 기업을 위한 지출 비서',
     titleLine1: '매출이 아니라',
     titleLine2: '이익에 대해 세금을 냅니다',
     subtitle: '법은 세금 계산 방식을 선택할 수 있게 해줍니다 — 비용을 증빙할 수 있을 때만. MIMI가 은행 거래내역을 읽어 그 비용 자료를 미리 만들어 둡니다.',
@@ -93,7 +93,7 @@ const ko = {
   },
 
   footer: {
-    tagline: '지속 가능한 미래를 위한 녹색 지갑.',
+    tagline: '사장님과 회계 담당자를 위한 장부 비서.',
     products: '제품',
     productLinks: [],
     company: '회사',
@@ -105,7 +105,7 @@ const ko = {
 
   login: {
     title: 'MIMI WALLET 로그인',
-    tagline: '지속 가능한 미래를 위한 녹색 지갑',
+    tagline: '사장님과 회계 담당자를 위한 장부 비서',
     email: '이메일',
     emailPlaceholder: 'email@company.vn',
     password: '비밀번호',
@@ -121,7 +121,7 @@ const ko = {
     cashflow: '현금흐름',
     invoices: '세금계산서',
     creditScore: '신용점수',
-    fintechHub: '핀테크 허브',
+    fintechHub: '은행 & 결제',
     reports: '보고서',
     settings: '설정',
     support: '지원',
@@ -146,7 +146,7 @@ const ko = {
     rankA: 'B등급 — ↑ +12점',
     veryGood: '양호',
     cashFlowTitle: '현금흐름',
-    aiInsights: 'AI 인사이트',
+    aiInsights: 'MIMI의 알림',
     recentTx: '최근 거래',
     viewAll: '전체 보기',
     quickActions: '빠른 작업',
@@ -531,7 +531,7 @@ const ko = {
       },
       toast: {
         fillRequired: '고객, 금액, 만기일을 모두 입력하세요',
-        companyNotFound: '귀사의 사업체를 찾을 수 없습니다',
+        companyNotFound: '회사 정보를 아직 찾지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.',
         createFailed: '세금계산서 생성 실패: {{error}}',
         createSuccess: '세금계산서 {{number}}을 만들었습니다',
         advanceFailed: '선지급 실패: {{error}}',
@@ -596,8 +596,8 @@ const ko = {
       },
     },
     reports: {
-      title: '은행 현금흐름 요약',
-      subtitle: '은행 거래내역의 입금·출금 — 재무보고서가 아닙니다',
+      title: '들어온 돈, 나간 돈',
+      subtitle: '은행 거래내역에서 가져왔어요. 아직 재무보고서는 아닙니다.',
       export: 'CSV 내보내기',
       revenueExpense: {
         title: '월별 입금 및 출금',
@@ -606,7 +606,7 @@ const ko = {
         profit: '순현금흐름',
       },
       invoiceAging: {
-        title: '세금계산서 연령 분석',
+        title: '고객이 얼마나 오래 미납 중인지',
       },
       expenseBreakdown: {
         title: '분류별 출금',
@@ -616,12 +616,12 @@ const ko = {
 
   pg: {
     fintech: {
-      title: '핀테크 허브',
-      subtitle: '은행, 결제 및 법규 준수',
+      title: '은행 & 결제',
+      subtitle: '은행 연결, 결제, 법적 서류',
       tabs: {
-        banking: '오픈뱅킹',
+        banking: '은행 연결',
         payment: '결제',
-        compliance: '준수',
+        compliance: '법적 서류',
       },
     },
   },

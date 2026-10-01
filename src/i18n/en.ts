@@ -19,7 +19,7 @@ const en = {
   // because MIMI cannot lend, and replaced with the 2026 tax change it can
   // actually act on.
   hero: {
-    badge: 'The spend control layer for AI-powered businesses',
+    badge: 'A spending assistant for shops and small businesses',
     titleLine1: 'Pay tax on profit,',
     titleLine2: 'not on revenue',
     subtitle: 'The law lets you choose how your tax is calculated — but only if you can document your costs. MIMI reads your bank statements and builds that cost record for you.',
@@ -95,7 +95,7 @@ const en = {
 
   // Footer
   footer: {
-    tagline: 'Green wallet for a sustainable future.',
+    tagline: 'A bookkeeping assistant for shop owners and accountants.',
     products: 'Products',
     // 'Invoice Financing' and 'Loans' listed products MIMI does not sell.
     productLinks: [],
@@ -112,15 +112,15 @@ const en = {
   // Login
   login: {
     title: 'Sign in to MIMI WALLET',
-    tagline: 'Green wallet for a sustainable future',
+    tagline: 'A bookkeeping assistant for shop owners and accountants',
     email: 'Email',
     emailPlaceholder: 'email@company.vn',
     password: 'Password',
     submit: 'Sign In',
     noAccount: 'Don\'t have an account?',
     register: 'Sign up for free',
-    errorEmpty: 'Please enter email and password',
-    errorInvalid: 'Invalid email or password',
+    errorEmpty: 'Please enter your email and password.',
+    errorInvalid: 'That email or password isn’t right. Please check and try again.',
   },
 
   // Dashboard Sidebar
@@ -129,7 +129,7 @@ const en = {
     cashflow: 'Cash Flow',
     invoices: 'Invoices',
     creditScore: 'Credit Score',
-    fintechHub: 'Fintech Hub',
+    fintechHub: 'Banks & payments',
     reports: 'Reports',
     settings: 'Settings',
     support: 'Support',
@@ -155,7 +155,7 @@ const en = {
     rankA: 'Rank B — ↑ +12 points',
     veryGood: 'Good',
     cashFlowTitle: 'Cash Flow',
-    aiInsights: 'AI Insights',
+    aiInsights: 'Notes from MIMI',
     recentTx: 'Recent transactions',
     viewAll: 'View all',
     quickActions: 'Quick actions',

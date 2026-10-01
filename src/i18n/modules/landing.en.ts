@@ -17,7 +17,7 @@ const m = {
     agentAi: {
       title: 'AI that spends by your rules.',
       subtitle:
-        'MIMI agents run inside the policy you set, record a reason for every decision, and stop to ask you exactly when it matters.',
+        'You set spending limits and who can be paid. Every AI spend request comes with a reason. For large amounts or new recipients, MIMI stops and asks you.',
       items: [
         {
           title: 'Always on, inside your caps.',
@@ -38,15 +38,15 @@ const m = {
         { prefix: '~', suffix: ' sec', label: 'Scoring time', sub: 'Runs on production infrastructure' },
         { prefix: 'ML-KEM-', suffix: '', label: 'Quantum-resistant encryption', sub: 'NIST FIPS 203 standard' },
         { prefix: '', suffix: ' months', label: 'Data per scoring run', sub: 'Real business transactions' },
-        { prefix: '', suffix: '/52', label: 'Automated tests', sub: 'All currently passing' },
+        { prefix: '', suffix: '/52', label: 'Automated tests', sub: 'Re-run on every update' },
       ],
     },
     tech: {
-      badge: 'Core technology',
-      title: 'Fast, transparent, secure to international standards',
-      subtitle: 'Two technology pillars, visible right inside the app.',
+      badge: 'Security',
+      title: 'Two layers that keep your data safe',
+      subtitle: 'You can see both right inside the app.',
       pillars: [
-        { title: 'Quantum-resistant encryption', tag: 'ML-KEM-768 · NIST FIPS 203', desc: 'Identity data stays secure even against future quantum computers.' },
+        { title: 'Quantum-resistant encryption', tag: 'ML-KEM-768 · NIST FIPS 203', desc: 'Bank connection keys are encrypted with an algorithm quantum computers have not broken.' },
         { title: 'Per-business security', tag: 'Row-Level Security', desc: 'Each business only sees its own data, enforced at the database layer.' },
       ],
     },

@@ -62,7 +62,7 @@ const m = {
       },
       toast: {
         fillRequired: 'Please fill in client, amount and due date',
-        companyNotFound: 'Could not find your company',
+        companyNotFound: 'MIMI can’t find your company details yet. Please reload the page and try again.',
         createFailed: 'Failed to create invoice: {{error}}',
         createSuccess: 'Invoice {{number}} created',
         advanceFailed: 'Advance failed: {{error}}',
@@ -129,8 +129,8 @@ const m = {
       },
     },
     reports: {
-      title: 'Bank cash-flow summary',
-      subtitle: 'Money in and out from bank statements — not financial statements',
+      title: 'Money in, money out',
+      subtitle: 'Taken from your bank statements. This is not a financial statement yet.',
       export: 'Export CSV',
       revenueExpense: {
         title: 'Money in and out by month',
@@ -139,7 +139,7 @@ const m = {
         profit: 'Net cash flow',
       },
       invoiceAging: {
-        title: 'Invoice aging analysis',
+        title: 'How long clients have owed you',
       },
       expenseBreakdown: {
         title: 'Money out by category',
