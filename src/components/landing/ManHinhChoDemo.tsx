@@ -1,11 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { MeoSong } from '@/components/mimi/MeoSong';
 
 /** Màn chờ hiện ít nhất ngần này, để không chớp một cái rồi tắt khi đăng nhập demo quá nhanh. */
-export const CHO_TOI_THIEU_MS = 2000;
+export const CHO_TOI_THIEU_MS = 0;
+
+/** Chờ ngắn thì không hiện video (tránh nháy một cảnh rồi mất); quá ngần này mới hiện. */
+export const CHO_LAU_MS = 900;
 
 const CAU: Record<string, { chinh: string; phu: string }> = {
   vi: { chinh: 'MIMI đang mở cửa hàng mẫu cho bạn…', phu: 'Số liệu trong bản demo là mẫu, không phải của doanh nghiệp nào.' },
@@ -21,8 +24,14 @@ const CAU: Record<string, { chinh: string; phu: string }> = {
  */
 export function ManHinhChoVideo({ chinh, phu, phuLen = true }: { chinh: string; phu?: string; phuLen?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [lau, setLau] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setLau(true), CHO_LAU_MS);
+    return () => window.clearTimeout(t);
+  }, []);
 
   useEffect(() => {
+    if (!lau) return;
     const v = ref.current;
     if (!v) return;
     v.muted = true;
@@ -32,7 +41,12 @@ export function ManHinhChoVideo({ chinh, phu, phuLen = true }: { chinh: string; 
     const cu = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = cu; };
-  }, [phuLen]);
+  }, [phuLen, lau]);
+
+  // Chưa chờ lâu: chỉ một nền kem yên lặng (cùng màu màn khởi động), không video, không chữ.
+  if (!lau) {
+    return phuLen ? createPortal(<div role="status" aria-live="polite" className="fixed inset-0 z-[100] bg-[#FDF8F3]" />, document.body) : <div role="status" aria-live="polite" className="min-h-screen bg-[#FDF8F3]" />;
+  }
 
   const noiDung = (
     <motion.div
@@ -40,7 +54,7 @@ export function ManHinhChoVideo({ chinh, phu, phuLen = true }: { chinh: string; 
       aria-live="polite"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
+      transition={{ duration: 0.6 }}
       className={`${phuLen ? 'fixed z-[100]' : 'relative min-h-screen'} inset-0 flex items-center justify-center overflow-hidden bg-[#0f3b46]`}
     >
       <video
