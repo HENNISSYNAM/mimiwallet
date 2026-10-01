@@ -65,8 +65,10 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
   // Đổi tài khoản / công ty (phamVi đổi) → đọc lại; không bao giờ hiện lịch sử của phạm vi cũ.
   useEffect(() => {
     setDong(null);
-    if (phamVi && !phamVi.endsWith(':?')) void tai();
-  }, [phamVi, tai]);
+    // Dải bên trái chỉ hiện từ màn rộng; trên điện thoại (bảng trượt tự gắn khi mở) thì đừng tải ngầm.
+    const manRong = typeof window.matchMedia !== 'function' || window.matchMedia('(min-width: 1024px)').matches || !!onDaChon;
+    if (manRong && phamVi && !phamVi.endsWith(':?')) void tai();
+  }, [phamVi, tai, onDaChon]);
 
   // Vừa có câu trả lời mới mà danh sách chưa có → đọc lại để cuộc hỏi hiện ngay trên thanh bên.
   // Mỗi bộ mã thiếu chỉ đọc lại một lần (mã đã bị xoá hay quá cũ sẽ không bao giờ có trong danh sách).

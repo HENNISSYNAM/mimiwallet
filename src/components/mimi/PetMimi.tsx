@@ -127,11 +127,13 @@ export default function PetMimi() {
       setViec(ds.filter((v) => v.can_ban).slice(0, 8).map((v) => ({ id: v.id, tieu_de: v.tieu_de, cau: v.hanh_dong?.tieu_de ?? v.tieu_de, duong_dan: v.duong_dan })));
     } catch { /* mạng lỗi: pet vẫn chạy; việc vẫn ở trang Việc cần làm — pet không phải nơi duy nhất */ }
   }, []);
+  // Pet đang ẩn (mặc định) thì không cần đọc việc — đỡ một lời gọi mỗi chu kỳ trên mọi trang (kiểm go-live 30/09, P2).
   useEffect(() => {
+    if (cd.an) return;
     void napViec();
     const id = window.setInterval(() => { if (typeof document === 'undefined' || !document.hidden) void napViec(); }, CHU_KY_VIEC);
     return () => window.clearInterval(id);
-  }, [napViec]);
+  }, [napViec, cd.an]);
 
   // Pet phản chiếu việc chung đang chờ bạn và các câu bạn hỏi ngầm từ pet (đang trả lời / xong chưa xem / lỗi).
   const lanHoi = useLanHoiPet();

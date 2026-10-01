@@ -51,6 +51,8 @@ describe('gom lượt thành cuộc hỏi', () => {
 
 describe('danh sách lịch sử', () => {
   beforeEach(() => {
+    // Màn rộng: dải bên trái tải lịch sử (trên điện thoại thì không tải ngầm).
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width: 1024px'), media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false }));
     datLaiNaoChoTest();
     useNaoMimi.setState({ phamVi: 'u1:c1' });
     const now = new Date().toISOString();

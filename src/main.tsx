@@ -3,12 +3,17 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import AppErrorBoundary from "./components/AppErrorBoundary.tsx";
 import "./index.css";
-import "./i18n";
+import i18n from "./i18n";
 import { batLoiToanCuc } from "./lib/ghiLoi";
 import { ganDatLaiKhiDoiNguoi } from "./lib/datLaiKhiDoiNguoi";
 
 // Lỗi người dùng gặp phải được ghi lại (first-party, đã xoá số và email) — trước đây không ai biết.
 batLoiToanCuc();
+
+// <html lang> theo ngôn ngữ đang chọn: trình đọc màn hình và dịch tự động của trình duyệt đọc đúng tiếng.
+const datLangHtml = () => { document.documentElement.lang = (i18n.resolvedLanguage ?? i18n.language ?? "vi").slice(0, 2); };
+datLangHtml();
+i18n.on("languageChanged", datLangHtml);
 // Đổi tài khoản trong cùng tab: xoá công ty đã nhớ và bộ não MIMI của người trước (P0-1, P0-2).
 ganDatLaiKhiDoiNguoi();
 
