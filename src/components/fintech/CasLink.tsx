@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+import i18n from 'i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 import { cauKetQuaDongBo } from '@/lib/ketQuaDongBo';
 import {
@@ -125,6 +127,7 @@ function maskAccount(n: string): string {
 }
 
 export default function CasLink({ onSynced }: { onSynced?: () => void }) {
+  const { t } = useTranslation();
   const { session } = useAuthStore();
   const [connections, setConnections] = useState<CasConnection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +163,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     const timer = setTimeout(() => {
       setLinking(false);
       setLastError(
-        'Việc liên kết mất nhiều thời gian hơn dự kiến và có thể đã không hoàn tất. Hãy thử lại — nếu vẫn treo, đó là điều đáng báo lại kèm bước bạn vừa làm trong Cas Link.',
+        i18n.t('app.casLink.treo'),
       );
     }, 4 * 60_000);
     return () => clearTimeout(timer);
@@ -214,7 +217,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
   const call = useCallback(
     async (action: string, body: Record<string, unknown> = {}) => {
       if (!session) {
-        toast.error('Vui lòng đăng nhập');
+        toast.error(i18n.t('app.casLink.dangNhap'));
         return null;
       }
       const res = await fetch(`${SUPABASE_URL}/functions/v1/bank-link?action=${action}`, {
@@ -257,10 +260,10 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         const phu = [
           result.detail,
           result.remedy,
-          result.errorCode ? `Mã lỗi ${result.errorCode}` : null,
+          result.errorCode ? i18n.t('app.casLink.maLoi', { ma: result.errorCode }) : null,
           result.requestId ? `requestId ${result.requestId}` : null,
         ].filter(Boolean);
-        toast.error(result.error ?? `Lỗi ${res.status}`, {
+        toast.error(result.error ?? i18n.t('app.casLink.loiHttp', { ma: res.status }), {
           description: phu.length ? phu.join(' · ') : undefined,
         });
         return null;
@@ -302,7 +305,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
     // Lỗi đọc KHÔNG được thành "chưa liên kết tài khoản nào": câu đó sai và có thể khiến người dùng
     // liên kết lại lần hai. Giữ danh sách cũ, nói lỗi, cho thử lại.
     if (error) {
-      setLoiTai('Chưa tải được danh sách tài khoản đã liên kết. Liên kết của bạn không bị ảnh hưởng.');
+      setLoiTai(i18n.t('app.casLink.loiTai'));
     } else {
       setLoiTai(null);
       setConnections((data as CasConnection[] | null) ?? []);
@@ -381,12 +384,12 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       const thuHoi = failed.filter((r) => r.revoked);
       if (thuHoi.length) {
         // Không phải "đăng nhập lại": grant đã mất, dòng đã được gỡ. Nói đúng việc đã xảy ra.
-        toast.warning(thuHoi[0].error ?? 'Quyền truy cập đã bị thu hồi trong app Cas.', {
+        toast.warning(thuHoi[0].error ?? i18n.t('app.casLink.thuHoiCas'), {
           description: thuHoi[0].remedy,
           duration: 10000,
         });
       } else if (failed.some((r) => r.needsRelink)) {
-        toast.error('Ngân hàng yêu cầu đăng nhập lại. Vui lòng liên kết lại tài khoản.');
+        toast.error(i18n.t('app.casLink.dangNhapLai'));
       } else if (failed.length) {
         // Cas allows roughly one call per grant per minute and answers RATE_LIMIT
         // above that. Passing their English sentence straight through tells a
@@ -395,8 +398,8 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         const msg = failed[0].error ?? '';
         toast.error(
           /rate limit/i.test(msg)
-            ? 'Cas giới hạn số lần gọi. Chờ khoảng 1 phút rồi đồng bộ lại.'
-            : `Đồng bộ lỗi: ${msg}`
+            ? i18n.t('app.casLink.gioiHan')
+            : i18n.t('app.casLink.dongBoLoi', { loi: msg })
         );
       } else {
         /* "Không có giao dịch mới" gộp ba tình huống rất khác nhau vào một câu:
@@ -453,7 +456,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
        */
       if (!publicToken) {
         setLastError(
-          'Chưa hoàn tất xác thực với ngân hàng. Nếu vừa đổi mật khẩu hoặc xác thực thiết bị, hãy thử lại và làm theo hết các bước Cas yêu cầu.',
+          i18n.t('app.casLink.chuaXacThuc'),
         );
         track('bank_link_failed', { feature: pendingFeature.current ?? 'bank', reason: 'empty_token' });
         setLinking(false);
@@ -465,7 +468,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       setLastError(null);
 
       if (receivedState !== undefined && !consumeLinkState(receivedState)) {
-        setLastError('Phiên liên kết không khớp — có thể đã hết hạn hoặc bị giả mạo. Hãy thử lại.');
+        setLastError(i18n.t('app.casLink.khongKhop'));
         track('bank_link_failed', { feature: pendingFeature.current ?? 'bank', reason: 'state_mismatch' });
         setLinking(false);
         return;
@@ -481,21 +484,21 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         if (exchanged) track('bank_link_succeeded', { feature: pendingFeature.current ?? 'bank' });
         if (!exchanged) {
           track('bank_link_failed', { feature: pendingFeature.current ?? 'bank' });
-          setLastError('Không lưu được liên kết. Thử lại hoặc gửi ảnh màn hình này.');
+          setLastError(i18n.t('app.casLink.khongLuu'));
           return;
         }
         // Định danh một lần: không có dòng liên kết nào được lưu, nên không
         // tải lại danh sách và không đồng bộ — chỉ hiện bằng chứng.
         if (exchanged.dinhDanh) {
           setDinhDanh({ ...exchanged.dinhDanh, thuHoi: exchanged.thuHoi ?? null });
-          toast.success('Đã đọc định danh một lần và thu hồi quyền');
+          toast.success(i18n.t('app.casLink.daDocDinhDanh'));
           return;
         }
-        toast.success(`Đã liên kết ${exchanged.accountCount} tài khoản`);
+        toast.success(i18n.t('app.casLink.daLienKet', { n: exchanged.accountCount }));
         await loadConnections();
         await runSync();
       } catch (e) {
-        setLastError((e as Error)?.message ?? 'Lỗi không xác định khi lưu liên kết');
+        setLastError((e as Error)?.message ?? i18n.t('app.casLink.loiLuu'));
       } finally {
         setLinking(false);
       }
@@ -530,7 +533,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       try {
         payload = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data as typeof payload);
       } catch {
-        setLastError(`Cas gửi dữ liệu không đọc được từ ${e.origin}`);
+        setLastError(i18n.t('app.casLink.dulieuLoi', { origin: e.origin }));
         return;
       }
       if (!payload || typeof payload !== 'object') return;
@@ -580,7 +583,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       const user = await nguoiDungHienTai();
       if (!user) {
         setLinking(false);
-        toast.error('Vui lòng đăng nhập');
+        toast.error(i18n.t('app.casLink.dangNhap'));
         return;
       }
       const { error: consentError } = await supabase
@@ -594,7 +597,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         });
       if (consentError) {
         setLinking(false);
-        toast.error('Không ghi nhận được sự đồng ý, chưa thể liên kết');
+        toast.error(i18n.t('app.casLink.khongDongY'));
         return;
       }
 
@@ -631,7 +634,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       );
     } catch (e) {
       setLinking(false);
-      const msg = (e as Error)?.message ?? 'Lỗi không xác định';
+      const msg = (e as Error)?.message ?? i18n.t('app.casLink.loiKhongRo');
       setLastError(msg);
       toast.error(msg);
     }
@@ -664,7 +667,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             delete next[connectionId];
             return next;
           });
-          toast.warning(grant.message ?? 'Quyền truy cập đã bị thu hồi trong app Cas.', {
+          toast.warning(grant.message ?? i18n.t('app.casLink.thuHoiCas'), {
             description: grant.remedy,
             duration: 10000,
           });
@@ -684,7 +687,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           // is the same contradiction the amber bank-note fix was written for:
           // the person cannot tell which of the two is describing right now.
           setLastError(null);
-          toast.success(grant.message ?? 'Liên kết vẫn hoạt động');
+          toast.success(grant.message ?? i18n.t('app.casLink.vanHoatDong'));
           setLinking(false);
           await loadConnections();
           return;
@@ -704,7 +707,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         );
       } catch (e) {
         setLinking(false);
-        const msg = (e as Error)?.message ?? 'Lỗi không xác định';
+        const msg = (e as Error)?.message ?? i18n.t('app.casLink.loiKhongRo');
 
         /*
          * Update Mode thất bại thì LUÔN có đúng một đường đi tiếp: liên kết lại
@@ -722,9 +725,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
          * mọi thất bại của Update Mode đều dẫn tới cùng một hành động kế tiếp,
          * nên gắn ghi chú đó vào đúng liên kết, bất kể mã lỗi là gì.
          */
-        const goiY =
-          'Không cập nhật được liên kết này. Hãy ngắt rồi liên kết lại từ đầu — ' +
-          'một số ngân hàng không cho phép cập nhật tại chỗ.';
+        const goiY = i18n.t('app.casLink.khongCapNhat');
 
         setBankNotes((prev) => ({ ...prev, [connectionId]: `${msg} ${goiY}` }));
         setLastError(msg);
@@ -749,7 +750,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
         error_code: errorCode,
       });
       if (!res) return;
-      toast.success(`Đã giả lập ${errorCode}. Đang đồng bộ để xem app phản ứng…`);
+      toast.success(i18n.t('app.casLink.giaLap', { ma: errorCode }));
       await runSync(connectionId);
       await loadConnections();
     },
@@ -779,13 +780,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
       // (case 3: gỡ thẳng, case 4: đòi OTP).
       const maYeuCau = (r: { thuHoi?: { requestId?: string | null; loi?: string | null } } | null) =>
         r?.thuHoi?.loi
-          ? ` · Cas báo lỗi ${r.thuHoi.loi}${r.thuHoi.requestId ? ` (${r.thuHoi.requestId})` : ''}`
+          ? `${i18n.t('app.casLink.casLoi', { loi: r.thuHoi.loi })}${r.thuHoi.requestId ? ` (${r.thuHoi.requestId})` : ''}`
           : r?.thuHoi?.requestId ? ` · requestId ${r.thuHoi.requestId}` : '';
 
       if (result.otp_required && result.grant_token) {
         try {
           toast.info(
-            `${result.message ?? 'Ngân hàng yêu cầu xác thực OTP để ngắt kết nối.'}${maYeuCau(result)}`,
+            `${result.message ?? i18n.t('app.casLink.otpYeuCau')}${maYeuCau(result)}`,
             { duration: 30000 },
           );
           viecDangCho.current = {
@@ -793,7 +794,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               // Confirmed at the bank. Ask again — this time Cas should let go.
               void call('disconnect', { connection_id: connectionId }).then(async (second) => {
                 if (second?.disconnected) {
-                  toast.success(`Đã ngắt liên kết sau OTP${maYeuCau(second)}`, { duration: 30000 });
+                  toast.success(`${i18n.t('app.casLink.ngatSauOtp')}${maYeuCau(second)}`, { duration: 30000 });
                 }
                 await loadConnections();
               });
@@ -801,7 +802,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             khiThoat: () => {
               // Abandoned mid-OTP: the grant is still live and the row still
               // says connected, which is the truth.
-              toast.message('Chưa ngắt kết nối — bạn chưa hoàn tất xác thực OTP.');
+              toast.message(i18n.t('app.casLink.chuaNgat'));
               void loadConnections();
             },
           };
@@ -816,15 +817,15 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           );
         } catch (e) {
           viecDangCho.current = null;
-          toast.error((e as Error)?.message ?? 'Không mở được bước xác thực OTP');
+          toast.error((e as Error)?.message ?? i18n.t('app.casLink.khongMoOtp'));
         }
         return;
       }
 
       if (result.thuHoi?.loi) {
-        toast.warning(`Đã ngắt phía MIMI${maYeuCau(result)}`, { duration: 30000 });
+        toast.warning(`${i18n.t('app.casLink.ngatMimi')}${maYeuCau(result)}`, { duration: 30000 });
       } else {
-        toast.success(`Đã ngắt liên kết${maYeuCau(result)}`, { duration: 30000 });
+        toast.success(`${i18n.t('app.casLink.daNgat')}${maYeuCau(result)}`, { duration: 30000 });
       }
       await loadConnections();
     },
@@ -842,10 +843,9 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               <Landmark size={20} className="text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Tài khoản ngân hàng thật</p>
+              <p className="text-sm font-semibold text-foreground">{t('app.casLink.tieuDe')}</p>
               <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
-                Liên kết qua Cas — đơn vị trung gian kết nối ngân hàng tại Việt Nam. Mimi chỉ
-                đọc lịch sử giao dịch, không thể chuyển tiền.
+                {t('app.casLink.moTa')}
               </p>
             </div>
           </div>
@@ -862,7 +862,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 ) : (
                   <RefreshCw size={14} />
                 )}
-                Đồng bộ
+                {t('app.casLink.dongBo')}
               </button>
             )}
             <button
@@ -871,7 +871,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {linking ? <Loader2 size={14} className="animate-spin" /> : <Landmark size={14} />}
-              {linking ? 'Đang liên kết…' : 'Liên kết ngân hàng'}
+              {linking ? t('app.casLink.dangLienKet') : t('app.casLink.lienKet')}
             </button>
             {/* Separate entry point, not a checkbox on the one above: it shows a
                 different, shorter list of banks, and someone linking to read
@@ -890,7 +890,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-border text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
             >
               <QrCode size={14} />
-              Liên kết để nhận tiền QR
+              {t('app.casLink.lienKetQr')}
             </button>
             {/* Nút "Kết nối Tổng Cục Thuế" gỡ 28/09/2026, nút tải hoá đơn điện tử gỡ 29/09/2026: Casso chưa
                 bật sản phẩm hoá đơn điện tử (GDT) cho app production — console chỉ có Transaction, Identity,
@@ -921,7 +921,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
           <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40">
             {/* Câu cũ nói "điểm tín dụng bên dưới đang tính trên dữ liệu demo" — không còn
                 điểm tín dụng nào bên dưới, và lưới ngân hàng demo đã gỡ 24/09/2026. */}
-            Chưa có tài khoản nào được liên kết. Bấm Liên kết ở trên để MIMI đọc sao kê thật.
+            {t('app.casLink.chuaCo')}
           </p>
         ) : (
           <div className="mt-4 pt-4 border-t border-border/40 space-y-2">
@@ -971,13 +971,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                         noi dung chuyen gi dang xay ra. */}
                     {phuDe(c, bankNotes[c.id])
                       ?? (c.last_synced_at
-                          ? `Đồng bộ lúc ${new Date(c.last_synced_at).toLocaleString('vi-VN', {
+                          ? t('app.casLink.dongBoLuc', { luc: new Date(c.last_synced_at).toLocaleString('vi-VN', {
                               hour: '2-digit',
                               minute: '2-digit',
                               day: '2-digit',
                               month: '2-digit',
-                            })}`
-                        : 'Chưa đồng bộ lần nào')}
+                            }) })
+                        : t('app.casLink.chuaDongBo'))}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -1005,7 +1005,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
                       {linking ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                      Cập nhật
+                      {t('app.casLink.capNhat')}
                     </button>
                   )}
                   {/* Lien ket QR khong cap nhat tai cho duoc — moi tao lai tu dau
@@ -1017,7 +1017,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
                       {linking ? <Loader2 size={12} className="animate-spin" /> : <QrCode size={12} />}
-                      Liên kết lại
+                      {t('app.casLink.lienKetLai')}
                     </button>
                   )}
                   {/* Khong hien nut Dong bo cho lien ket QR: grant `qrpay` khong
@@ -1030,7 +1030,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       onClick={() => runSync(c.id)}
                       disabled={syncing !== null}
                       className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-                      aria-label="Đồng bộ tài khoản này"
+                      aria-label={t('app.casLink.dongBoTk')}
                     >
                       {syncing === c.id ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -1042,7 +1042,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   <button
                     onClick={() => disconnect(c.id)}
                     className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    aria-label="Ngắt liên kết"
+                    aria-label={t('app.casLink.ngatAria')}
                   >
                     <Unlink size={14} />
                   </button>
@@ -1092,7 +1092,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
 
         {lastError && (
           <div className="mt-3 rounded-xl border border-mimi-red/25 bg-mimi-red/5 p-3">
-            <p className="text-xs text-mimi-red font-medium">Liên kết chưa hoàn tất</p>
+            <p className="text-xs text-mimi-red font-medium">{t('app.casLink.chuaHoanTat')}</p>
             <p className="text-xs text-muted-foreground mt-0.5 break-words">{lastError}</p>
           </div>
         )}
@@ -1131,7 +1131,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             >
               <div className="flex items-center gap-3 mb-4">
                 <Shield size={20} className="text-primary" />
-                <p className="text-base font-semibold text-foreground">Trước khi liên kết</p>
+                <p className="text-base font-semibold text-foreground">{t('app.casLink.truoc')}</p>
               </div>
 
               {linkFeature === 'identity' ? (
@@ -1163,35 +1163,31 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Mimi đọc <strong className="text-foreground">lịch sử giao dịch 12 tháng</strong> và
-                    tên chủ tài khoản, để chấm điểm tín dụng.
+                    <Trans i18nKey="app.casLink.c1" components={{ b: <strong className="text-foreground" /> }} />
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Mimi <strong className="text-foreground">không thể chuyển tiền</strong> — quyền
-                    truy cập chỉ ở mức đọc.
+                    <Trans i18nKey="app.casLink.c2" components={{ b: <strong className="text-foreground" /> }} />
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Mimi <strong className="text-foreground">không xin quyền đọc CCCD</strong>, ngày
-                    sinh hay địa chỉ của bạn — chỉ xin quyền giao dịch.
+                    <Trans i18nKey="app.casLink.c3" components={{ b: <strong className="text-foreground" /> }} />
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Bạn nhập thông tin đăng nhập ngân hàng trên giao diện của Cas.{' '}
-                    <strong className="text-foreground">Mimi không nhìn thấy mật khẩu</strong> của bạn.
+                    <Trans i18nKey="app.casLink.c4" components={{ b: <strong className="text-foreground" /> }} />
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Bạn có thể ngắt liên kết bất cứ lúc nào; khi đó mã truy cập bị xoá khỏi hệ thống.
+                    {t('app.casLink.c5')}
                   </span>
                 </li>
               </ul>
@@ -1200,7 +1196,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
               {linkFeature === 'qrpay' && qrServices.length > 0 && (
                 <div className="mt-5">
                   <p className="text-xs font-medium text-foreground mb-2">
-                    Chọn ngân hàng nhận tiền ({qrServices.length} ngân hàng hỗ trợ QR)
+                    {t('app.casLink.chonNh', { n: qrServices.length })}
                   </p>
                   <div className="max-h-44 overflow-y-auto rounded-xl border border-border divide-y divide-border/50">
                     {qrServices.map((svc) => (
@@ -1220,7 +1216,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                     ))}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-2">
-                    Bỏ qua cũng được — khi đó Cas Link sẽ hiện danh sách để bạn chọn.
+                    {t('app.casLink.boQua')}
                   </p>
                 </div>
               )}
@@ -1230,13 +1226,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                   onClick={() => setConsentOpen(false)}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-foreground hover:bg-muted/50 transition-colors"
                 >
-                  Huỷ
+                  {t('app.casLink.huy')}
                 </button>
                 <button
                   onClick={() => void startLink(linkFeature)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                 >
-                  Đồng ý và tiếp tục
+                  {t('app.casLink.dongY')}
                   <ArrowRight size={15} />
                 </button>
               </div>

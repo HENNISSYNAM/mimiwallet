@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Copy, Printer, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import {
-  LOAI_GIAY_TO, LY_DO_HUY, MO_TA_GIAY_TO, soanCongVanGiaiTrinh, soanCongVanHuyToKhai, soanDonTraSoat, vanBanThanhChu,
+  LOAI_GIAY_TO, LY_DO_HUY, soanCongVanGiaiTrinh, soanCongVanHuyToKhai, soanDonTraSoat, vanBanThanhChu,
   type GiaoDichTraSoat, type LoaiGiayTo, type LyDoHuy, type LyDoTraSoat, type ThongTinDonVi, type VanBan,
 } from '@/lib/giayTo';
 
@@ -20,6 +21,8 @@ import {
 
 const O = 'w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/10';
 
+// GIỮ TIẾNG VIỆT: bản nháp (GiayIn) và các ví dụ gợi ý trong ô nhập (chức vụ, địa danh, kỳ thuế…) là nội dung
+// công văn gửi ngân hàng/cơ quan thuế Việt Nam — luôn bằng tiếng Việt dù người dùng chọn ngôn ngữ nào.
 function Truong({ nhan, gia, doi, nhieuDong, goiY }: { nhan: string; gia: string; doi: (v: string) => void; nhieuDong?: boolean; goiY?: string }) {
   return (
     <label className="block text-sm">
@@ -36,6 +39,7 @@ function Truong({ nhan, gia, doi, nhieuDong, goiY }: { nhan: string; gia: string
 const laLoai = (v: string | null): v is LoaiGiayTo => !!v && (LOAI_GIAY_TO as readonly string[]).includes(v);
 
 export default function GiayToPage() {
+  const { t } = useTranslation();
   const [thamSo] = useSearchParams();
   const [loai, setLoai] = useState<LoaiGiayTo>(() => (laLoai(thamSo.get('loai')) ? (thamSo.get('loai') as LoaiGiayTo) : 'don_tra_soat'));
   const giaoDichId = thamSo.get('giao_dich');
@@ -83,7 +87,7 @@ export default function GiayToPage() {
         // Không soạn đơn gửi ngân hàng cho giao dịch thử: dòng `is_synthetic` không phải tiền thật.
         .eq('id', giaoDichId).eq('is_synthetic', false).maybeSingle();
       if (huy) return;
-      if (error || !data) { setLoiGd('Không đọc được giao dịch này. Bạn vẫn có thể tự điền thông tin giao dịch.'); return; }
+      if (error || !data) { setLoiGd(t('app.giayTo.loiGd')); return; }
       setGd({
         ngay: String(data.transaction_date ?? '').slice(0, 10),
         so_tien: Math.abs(Number(data.amount) || 0),
@@ -94,7 +98,7 @@ export default function GiayToPage() {
         noi_dung: data.payment_reference ?? '',
         ma_tham_chieu: data.reference_id ?? '',
       });
-    })().catch(() => { if (!huy) setLoiGd('Không đọc được giao dịch này. Bạn vẫn có thể tự điền thông tin giao dịch.'); });
+    })().catch(() => { if (!huy) setLoiGd(t('app.giayTo.loiGd')); });
     return () => { huy = true; };
   }, [giaoDichId]);
 
@@ -107,25 +111,25 @@ export default function GiayToPage() {
     return soanCongVanHuyToKhai({ donVi, coQuanThue, mauToKhai, kyTinhThue, ngayNop, maGiaoDich, lyDo: lyDoHuy, moTa, homNay });
   }, [loai, donVi, gd, lyDoTs, moTa, coQuanThue, soThongBao, ngayThongBao, noiDungYeuCau, giaiTrinh, soLieu, mauToKhai, kyTinhThue, ngayNop, maGiaoDich, lyDoHuy]);
 
-  const mt = MO_TA_GIAY_TO[loai];
+  const lk = `app.giayTo.loai.${loai}`;
   const dv = (k: keyof ThongTinDonVi) => (v: string) => setDonVi((d) => ({ ...d, [k]: v }));
   const g = (k: keyof GiaoDichTraSoat) => (v: string) => setGd((x) => ({ ...x, [k]: k === 'so_tien' ? Number(v.replace(/\D/g, '')) || 0 : v }));
 
   const saoChep = async () => {
     try {
       await navigator.clipboard.writeText(vanBanThanhChu(vanBan));
-      toast.success('Đã sao chép nội dung.');
+      toast.success(t('app.giayTo.daChep'));
     } catch {
-      toast.error('Trình duyệt không cho sao chép. Chọn chữ trong bản nháp rồi sao chép tay.');
+      toast.error(t('app.giayTo.khongChep'));
     }
   };
 
   return (
     <div className="space-y-6 pb-10">
       <div className="no-print">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Soạn giấy tờ</h1>
-        <p className="mt-1 text-sm text-muted-foreground">MIMI soạn bản nháp từ dữ liệu của bạn. Bạn đọc lại, ký và tự gửi — MIMI không gửi thay và không lưu bản nháp.</p>
-        <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Loại giấy tờ">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('app.giayTo.tieuDe')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t('app.giayTo.moTa')}</p>
+        <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label={t('app.giayTo.loaiAria')}>
           {LOAI_GIAY_TO.map((l) => (
             <button
               key={l}
@@ -134,97 +138,97 @@ export default function GiayToPage() {
               onClick={() => setLoai(l)}
               className={`rounded-full border px-3 py-1.5 text-sm ${l === loai ? 'border-primary bg-primary/10 text-primary' : 'border-border text-foreground'}`}
             >
-              {MO_TA_GIAY_TO[l].ten}
+              {t(`app.giayTo.loai.${l}.ten`)}
             </button>
           ))}
         </div>
         <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
-          <p className="font-medium text-foreground">Gửi tới: {mt.gui_toi}</p>
-          <p className="mt-1 text-muted-foreground">Dùng khi: {mt.khi_nao}</p>
-          <p className="mt-1 text-foreground">{mt.luu_y}</p>
+          <p className="font-medium text-foreground">{t('app.giayTo.guiToi', { x: t(`${lk}.guiToi`) })}</p>
+          <p className="mt-1 text-muted-foreground">{t('app.giayTo.khiNao', { x: t(`${lk}.khiNao`) })}</p>
+          <p className="mt-1 text-foreground">{t(`${lk}.luuY`)}</p>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <form className="no-print space-y-4" onSubmit={(e) => e.preventDefault()} aria-label="Thông tin để soạn">
+        <form className="no-print space-y-4" onSubmit={(e) => e.preventDefault()} aria-label={t('app.giayTo.formAria')}>
           <fieldset className="space-y-3 rounded-xl border border-border p-4">
-            <legend className="px-1 text-sm font-semibold text-foreground">Đơn vị</legend>
-            <Truong nhan="Tên đơn vị" gia={donVi.ten} doi={dv('ten')} />
-            <Truong nhan="Mã số thuế" gia={donVi.ma_so_thue} doi={dv('ma_so_thue')} />
-            <Truong nhan="Địa chỉ trụ sở" gia={donVi.dia_chi} doi={dv('dia_chi')} />
+            <legend className="px-1 text-sm font-semibold text-foreground">{t('app.giayTo.donVi')}</legend>
+            <Truong nhan={t('app.giayTo.f.tenDv')} gia={donVi.ten} doi={dv('ten')} />
+            <Truong nhan={t('app.giayTo.f.mst')} gia={donVi.ma_so_thue} doi={dv('ma_so_thue')} />
+            <Truong nhan={t('app.giayTo.f.diaChi')} gia={donVi.dia_chi} doi={dv('dia_chi')} />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Truong nhan="Người đại diện" gia={donVi.nguoi_dai_dien} doi={dv('nguoi_dai_dien')} />
-              <Truong nhan="Chức vụ" gia={donVi.chuc_vu} doi={dv('chuc_vu')} goiY="Giám đốc, Chủ hộ…" />
-              <Truong nhan="Số điện thoại" gia={donVi.dien_thoai} doi={dv('dien_thoai')} />
-              <Truong nhan="Địa danh" gia={donVi.dia_danh} doi={dv('dia_danh')} goiY="TP. Hồ Chí Minh" />
+              <Truong nhan={t('app.giayTo.f.daiDien')} gia={donVi.nguoi_dai_dien} doi={dv('nguoi_dai_dien')} />
+              <Truong nhan={t('app.giayTo.f.chucVu')} gia={donVi.chuc_vu} doi={dv('chuc_vu')} goiY="Giám đốc, Chủ hộ…" />
+              <Truong nhan={t('app.giayTo.f.dienThoai')} gia={donVi.dien_thoai} doi={dv('dien_thoai')} />
+              <Truong nhan={t('app.giayTo.f.diaDanh')} gia={donVi.dia_danh} doi={dv('dia_danh')} goiY="TP. Hồ Chí Minh" />
             </div>
           </fieldset>
 
           {loai === 'don_tra_soat' && (
             <fieldset className="space-y-3 rounded-xl border border-border p-4">
-              <legend className="px-1 text-sm font-semibold text-foreground">Giao dịch cần tra soát</legend>
+              <legend className="px-1 text-sm font-semibold text-foreground">{t('app.giayTo.giaoDich')}</legend>
               {loiGd && <p role="alert" className="text-sm text-destructive">{loiGd}</p>}
               <div className="grid gap-3 sm:grid-cols-2">
-                <Truong nhan="Ngân hàng và chi nhánh" gia={gd.ngan_hang} doi={g('ngan_hang')} />
-                <Truong nhan="Tài khoản chuyển" gia={gd.tai_khoan_chuyen} doi={g('tai_khoan_chuyen')} />
-                <Truong nhan="Ngày giao dịch" gia={gd.ngay} doi={g('ngay')} goiY="2026-09-14" />
-                <Truong nhan="Số tiền (đồng)" gia={gd.so_tien ? String(gd.so_tien) : ''} doi={g('so_tien')} />
-                <Truong nhan="Tài khoản nhận" gia={gd.tai_khoan_nhan} doi={g('tai_khoan_nhan')} />
-                <Truong nhan="Tên người nhận" gia={gd.ten_nguoi_nhan} doi={g('ten_nguoi_nhan')} />
-                <Truong nhan="Nội dung chuyển khoản" gia={gd.noi_dung} doi={g('noi_dung')} />
-                <Truong nhan="Mã giao dịch" gia={gd.ma_tham_chieu} doi={g('ma_tham_chieu')} />
+                <Truong nhan={t('app.giayTo.g.nganHang')} gia={gd.ngan_hang} doi={g('ngan_hang')} />
+                <Truong nhan={t('app.giayTo.g.tkChuyen')} gia={gd.tai_khoan_chuyen} doi={g('tai_khoan_chuyen')} />
+                <Truong nhan={t('app.giayTo.g.ngay')} gia={gd.ngay} doi={g('ngay')} goiY="2026-09-14" />
+                <Truong nhan={t('app.giayTo.g.soTien')} gia={gd.so_tien ? String(gd.so_tien) : ''} doi={g('so_tien')} />
+                <Truong nhan={t('app.giayTo.g.tkNhan')} gia={gd.tai_khoan_nhan} doi={g('tai_khoan_nhan')} />
+                <Truong nhan={t('app.giayTo.g.tenNhan')} gia={gd.ten_nguoi_nhan} doi={g('ten_nguoi_nhan')} />
+                <Truong nhan={t('app.giayTo.g.noiDung')} gia={gd.noi_dung} doi={g('noi_dung')} />
+                <Truong nhan={t('app.giayTo.g.ma')} gia={gd.ma_tham_chieu} doi={g('ma_tham_chieu')} />
               </div>
-              <div className="flex flex-wrap gap-4 text-sm" role="radiogroup" aria-label="Lý do tra soát">
-                {([['chuyen_nham', 'Chuyển nhầm'], ['nghi_lua_dao', 'Nghi bị lừa đảo']] as const).map(([k, t]) => (
+              <div className="flex flex-wrap gap-4 text-sm" role="radiogroup" aria-label={t('app.giayTo.lyDoAria')}>
+                {([['chuyen_nham', t('app.giayTo.chuyenNham')], ['nghi_lua_dao', t('app.giayTo.luaDao')]] as const).map(([k, ten]) => (
                   <label key={k} className="flex items-center gap-2">
-                    <input type="radio" name="ly-do-ts" checked={lyDoTs === k} onChange={() => setLyDoTs(k)} /> {t}
+                    <input type="radio" name="ly-do-ts" checked={lyDoTs === k} onChange={() => setLyDoTs(k)} /> {ten}
                   </label>
                 ))}
               </div>
-              <Truong nhan="Mô tả sự việc" gia={moTa} doi={setMoTa} nhieuDong goiY={lyDoTs === 'chuyen_nham' ? 'Gõ sai một chữ số tài khoản…' : 'Ai yêu cầu chuyển, qua kênh nào, lúc nào…'} />
+              <Truong nhan={t('app.giayTo.moTaSv')} gia={moTa} doi={setMoTa} nhieuDong goiY={lyDoTs === 'chuyen_nham' ? t('app.giayTo.ghiNham') : t('app.giayTo.ghiLua')} />
             </fieldset>
           )}
 
           {loai !== 'don_tra_soat' && (
             <fieldset className="space-y-3 rounded-xl border border-border p-4">
-              <legend className="px-1 text-sm font-semibold text-foreground">{loai === 'cong_van_giai_trinh' ? 'Nội dung giải trình' : 'Tờ khai cần huỷ'}</legend>
-              <Truong nhan="Cơ quan thuế quản lý" gia={coQuanThue} doi={setCoQuanThue} goiY="Thuế cơ sở …" />
+              <legend className="px-1 text-sm font-semibold text-foreground">{loai === 'cong_van_giai_trinh' ? t('app.giayTo.giaiTrinhTd') : t('app.giayTo.huyTd')}</legend>
+              <Truong nhan={t('app.giayTo.coQuan')} gia={coQuanThue} doi={setCoQuanThue} goiY="Thuế cơ sở …" />
               {loai === 'cong_van_giai_trinh' ? (
                 <>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Truong nhan="Số thông báo của cơ quan thuế" gia={soThongBao} doi={setSoThongBao} />
-                    <Truong nhan="Ngày của thông báo" gia={ngayThongBao} doi={setNgayThongBao} goiY="2026-09-01" />
+                    <Truong nhan={t('app.giayTo.soTb')} gia={soThongBao} doi={setSoThongBao} />
+                    <Truong nhan={t('app.giayTo.ngayTb')} gia={ngayThongBao} doi={setNgayThongBao} goiY="2026-09-01" />
                   </div>
-                  <Truong nhan="Cơ quan thuế yêu cầu giải trình về" gia={noiDungYeuCau} doi={setNoiDungYeuCau} goiY="doanh thu quý 2/2026" />
-                  <Truong nhan="Nội dung giải trình" gia={giaiTrinh} doi={setGiaiTrinh} nhieuDong />
+                  <Truong nhan={t('app.giayTo.yeuCauVe')} gia={noiDungYeuCau} doi={setNoiDungYeuCau} goiY="doanh thu quý 2/2026" />
+                  <Truong nhan={t('app.giayTo.noiDungGt')} gia={giaiTrinh} doi={setGiaiTrinh} nhieuDong />
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-foreground">Số liệu kèm theo (nếu có)</p>
+                    <p className="text-sm font-medium text-foreground">{t('app.giayTo.soLieu')}</p>
                     {soLieu.map((r, i) => (
                       <div key={i} className="grid grid-cols-2 gap-2">
-                        <input aria-label={`Nội dung số liệu ${i + 1}`} value={r.noi_dung} onChange={(e) => setSoLieu((ds) => ds.map((x, j) => (j === i ? { ...x, noi_dung: e.target.value } : x)))} className={O} />
-                        <input aria-label={`Giá trị số liệu ${i + 1}`} value={r.gia_tri} onChange={(e) => setSoLieu((ds) => ds.map((x, j) => (j === i ? { ...x, gia_tri: e.target.value } : x)))} className={O} />
+                        <input aria-label={t('app.giayTo.soLieuNd', { n: i + 1 })} value={r.noi_dung} onChange={(e) => setSoLieu((ds) => ds.map((x, j) => (j === i ? { ...x, noi_dung: e.target.value } : x)))} className={O} />
+                        <input aria-label={t('app.giayTo.soLieuGt', { n: i + 1 })} value={r.gia_tri} onChange={(e) => setSoLieu((ds) => ds.map((x, j) => (j === i ? { ...x, gia_tri: e.target.value } : x)))} className={O} />
                       </div>
                     ))}
                     <button type="button" onClick={() => setSoLieu((ds) => [...ds, { noi_dung: '', gia_tri: '' }])} className="text-xs font-medium text-primary hover:underline">
-                      Thêm dòng số liệu
+                      {t('app.giayTo.themDong')}
                     </button>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Truong nhan="Mẫu tờ khai" gia={mauToKhai} doi={setMauToKhai} goiY="01/CNKD" />
-                    <Truong nhan="Kỳ tính thuế" gia={kyTinhThue} doi={setKyTinhThue} goiY="Quý 2/2026" />
-                    <Truong nhan="Ngày nộp" gia={ngayNop} doi={setNgayNop} goiY="2026-07-20" />
-                    <Truong nhan="Mã giao dịch điện tử" gia={maGiaoDich} doi={setMaGiaoDich} />
+                    <Truong nhan={t('app.giayTo.mau')} gia={mauToKhai} doi={setMauToKhai} goiY="01/CNKD" />
+                    <Truong nhan={t('app.giayTo.ky')} gia={kyTinhThue} doi={setKyTinhThue} goiY="Quý 2/2026" />
+                    <Truong nhan={t('app.giayTo.ngayNop')} gia={ngayNop} doi={setNgayNop} goiY="2026-07-20" />
+                    <Truong nhan={t('app.giayTo.maGd')} gia={maGiaoDich} doi={setMaGiaoDich} />
                   </div>
                   <label className="block text-sm">
-                    <span className="mb-1 block font-medium text-foreground">Lý do</span>
+                    <span className="mb-1 block font-medium text-foreground">{t('app.giayTo.lyDo')}</span>
                     <select value={lyDoHuy} onChange={(e) => setLyDoHuy(e.target.value as LyDoHuy)} className={O}>
-                      {(Object.keys(LY_DO_HUY) as LyDoHuy[]).map((k) => <option key={k} value={k}>{LY_DO_HUY[k]}</option>)}
+                      {(Object.keys(LY_DO_HUY) as LyDoHuy[]).map((k) => <option key={k} value={k}>{t(`app.giayTo.lyDoHuy.${k}`)}</option>)}
                     </select>
                   </label>
-                  <Truong nhan="Giải thích thêm (nếu có)" gia={moTa} doi={setMoTa} nhieuDong />
+                  <Truong nhan={t('app.giayTo.giaiThich')} gia={moTa} doi={setMoTa} nhieuDong />
                 </>
               )}
             </fieldset>
@@ -234,16 +238,16 @@ export default function GiayToPage() {
         <div className="space-y-3">
           <div className="no-print flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => window.print()} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
-              <Printer size={14} /> In / lưu PDF
+              <Printer size={14} /> {t('app.giayTo.in')}
             </button>
             <button type="button" onClick={() => void saoChep()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground">
-              <Copy size={14} /> Sao chép nội dung
+              <Copy size={14} /> {t('app.giayTo.saoChep')}
             </button>
           </div>
           {vanBan.con_thieu.length > 0 && (
             <div role="status" className="no-print flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-foreground">
               <TriangleAlert size={16} className="mt-0.5 shrink-0 text-amber-600" aria-hidden />
-              <span>Còn {vanBan.con_thieu.length} chỗ trống trước khi in: {vanBan.con_thieu.join(', ')}.</span>
+              <span>{t('app.giayTo.conThieu', { n: vanBan.con_thieu.length, ds: vanBan.con_thieu.join(', ') })}</span>
             </div>
           )}
           <GiayIn v={vanBan} />
@@ -254,8 +258,9 @@ export default function GiayToPage() {
 }
 
 function GiayIn({ v }: { v: VanBan }) {
+  const { t } = useTranslation();
   return (
-    <article aria-label="Bản nháp" className="to-khai-giay rounded-lg border border-border bg-white p-8 font-serif text-[14px] leading-relaxed text-black shadow-sm">
+    <article aria-label={t('app.giayTo.banNhap')} className="to-khai-giay rounded-lg border border-border bg-white p-8 font-serif text-[14px] leading-relaxed text-black shadow-sm">
       <div className="flex justify-between gap-4 text-center">
         <div className="text-[13px]">
           {v.so_hieu && <p>{v.so_hieu}</p>}

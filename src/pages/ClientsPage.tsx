@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { formatDateShort } from '@/lib/formatters';
 import { Plus, Search, Loader2, Building2, Store, GitBranch, ShieldCheck, ShieldAlert, ShieldQuestion, Mail, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import i18n from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { chuanHoaMst, MST_HOP_LE } from '@/lib/maSoThue';
 import { GlassTabs } from '@/components/ui/glass-tabs';
 
@@ -67,20 +69,22 @@ function maGoc(taxCode: string): string {
   return taxCode.split('-')[0].replace(/\D/g, '');
 }
 
-const nhanLoai: Record<LoaiHinh, { icon: typeof Building2; label: string; cls: string }> = {
-  doanh_nghiep: { icon: Building2, label: 'Doanh nghiệp', cls: 'text-primary bg-primary/8' },
-  ho_kinh_doanh: { icon: Store, label: 'Hộ kinh doanh', cls: 'text-mimi-amber bg-mimi-amber/8' },
-  chi_nhanh: { icon: GitBranch, label: 'Chi nhánh', cls: 'text-muted-foreground bg-muted' },
-  khong_ro: { icon: ShieldQuestion, label: 'Chưa rõ', cls: 'text-muted-foreground bg-muted' },
+// Chữ nhãn lấy từ bộ dịch: app.khach.loai.<loại>, app.khach.tt.<trạng thái>.
+const nhanLoai: Record<LoaiHinh, { icon: typeof Building2; cls: string }> = {
+  doanh_nghiep: { icon: Building2, cls: 'text-primary bg-primary/8' },
+  ho_kinh_doanh: { icon: Store, cls: 'text-mimi-amber bg-mimi-amber/8' },
+  chi_nhanh: { icon: GitBranch, cls: 'text-muted-foreground bg-muted' },
+  khong_ro: { icon: ShieldQuestion, cls: 'text-muted-foreground bg-muted' },
 };
 
-const nhanTrangThai: Record<string, { label: string; cls: string; dot: string }> = {
-  prospect: { label: 'Đang tiếp cận', cls: 'bg-mimi-amber/8 text-mimi-amber', dot: 'bg-mimi-amber' },
-  active: { label: 'Đang giao dịch', cls: 'bg-mimi-green/8 text-mimi-green', dot: 'bg-mimi-green' },
-  inactive: { label: 'Ngừng', cls: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground' },
+const nhanTrangThai: Record<string, { cls: string; dot: string }> = {
+  prospect: { cls: 'bg-mimi-amber/8 text-mimi-amber', dot: 'bg-mimi-amber' },
+  active: { cls: 'bg-mimi-green/8 text-mimi-green', dot: 'bg-mimi-green' },
+  inactive: { cls: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground' },
 };
 
 export default function ClientsPage() {
+  const { t } = useTranslation();
   const session = useAuthStore((s) => s.session);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +110,7 @@ export default function ClientsPage() {
     const { data, error } = await supabase
       .from('clients').select('*').eq('company_id', companyId).order('name');
     if (error) {
-      setLoi('Không tải được danh bạ lúc này.');
+      setLoi(i18n.t('app.khach.loiTai'));
       setLoading(false);
       return;
     }
@@ -134,7 +138,7 @@ export default function ClientsPage() {
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
       if (!data?.found) {
-        toast.warning(`Không tìm thấy bản ghi nào cho mã ${c.tax_code}`);
+        toast.warning(t('app.khach.khongTim', { ma: c.tax_code }));
         return;
       }
       const trangThai: string = data.record?.status || '';
@@ -149,7 +153,7 @@ export default function ClientsPage() {
       if (data.conHoatDong) toast.success(`${c.name}: ${trangThai}`);
       else toast.warning(`${c.name}: ${trangThai}`);
     } catch (e) {
-      toast.error('Tra cứu thất bại: ' + ((e as Error)?.message ?? 'lỗi không xác định'));
+      toast.error(t('app.khach.traThatBai', { loi: (e as Error)?.message ?? t('app.khach.loiKhongRo') }));
     } finally {
       setDangTra((s) => { const n = new Set(s); n.delete(c.id); return n; });
     }
@@ -169,21 +173,21 @@ export default function ClientsPage() {
   const themKhach = async () => {
     const tenSach = ten.trim().replace(/\s+/g, ' ');
     const mstSach = mst.trim() ? chuanHoaMst(mst) : '';
-    if (!tenSach || tenSach.length > 200) { toast.error('Nhập tên khách (tối đa 200 ký tự).'); return; }
-    if (mstSach && !MST_HOP_LE(mstSach)) { toast.error('Mã số thuế gồm 10 hoặc 12 chữ số, có thể kèm -001 cho chi nhánh.'); return; }
+    if (!tenSach || tenSach.length > 200) { toast.error(t('app.khach.nhapTen')); return; }
+    if (mstSach && !MST_HOP_LE(mstSach)) { toast.error(t('app.khach.mstSai')); return; }
     if (mstSach && clients.some((c) => c.tax_code && chuanHoaMst(c.tax_code) === mstSach)) {
-      toast.error('Mã số thuế này đã có trong danh bạ.'); return;
+      toast.error(t('app.khach.mstTrung')); return;
     }
     setDangThem(true);
     try {
       const companyId = await idCongTyDangDung();
-      if (!companyId) { toast.error('Chưa chọn công ty.'); return; }
+      if (!companyId) { toast.error(t('app.khach.chuaChonCty')); return; }
       const { error } = await supabase.from('clients').insert({ company_id: companyId, name: tenSach, tax_code: mstSach || null });
       if (error) {
-        toast.error(error.code === '42501' ? 'Chỉ chủ công ty thêm được khách vào danh bạ.' : 'Chưa thêm được khách. Thử lại sau ít phút.');
+        toast.error(error.code === '42501' ? t('app.khach.chiChu') : t('app.khach.chuaThem'));
         return;
       }
-      toast.success(`Đã thêm ${tenSach} vào danh bạ.`);
+      toast.success(t('app.khach.daThem', { ten: tenSach }));
       setTen(''); setMst(''); setMoThem(false);
       await load();
     } finally {
@@ -213,9 +217,9 @@ export default function ClientsPage() {
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Danh bạ khách hàng</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('app.khach.tieuDe')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {dem.all} đối tác · {dem.prospect} đang tiếp cận · {dem.active} đang giao dịch
+            {t('app.khach.tomTat', { all: dem.all, prospect: dem.prospect, active: dem.active })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -223,13 +227,13 @@ export default function ClientsPage() {
           type="button" onClick={() => setMoThem((v) => !v)}
           className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110"
         >
-          <Plus className="w-4 h-4" /> Thêm khách
+          <Plus className="w-4 h-4" /> {t('app.khach.themKhach')}
         </button>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder="Tên, mã số thuế, mặt hàng…"
+            placeholder={t('app.khach.timPh')}
             className="pl-9 pr-3 h-10 w-72 rounded-xl bg-muted/50 border border-border text-sm outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
@@ -240,21 +244,21 @@ export default function ClientsPage() {
         <form
           onSubmit={(e) => { e.preventDefault(); void themKhach(); }}
           className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-end"
-          aria-label="Thêm khách vào danh bạ"
+          aria-label={t('app.khach.formAria')}
         >
           <label className="flex-1 text-sm">
-            <span className="mb-1 block text-muted-foreground">Tên khách</span>
+            <span className="mb-1 block text-muted-foreground">{t('app.khach.tenKhach')}</span>
             <input value={ten} onChange={(e) => setTen(e.target.value)} maxLength={200} required autoFocus
               className="h-10 w-full rounded-xl border border-border bg-muted/50 px-3 outline-none focus:ring-2 focus:ring-primary/30" />
           </label>
           <label className="text-sm sm:w-56">
-            <span className="mb-1 block text-muted-foreground">Mã số thuế (không bắt buộc)</span>
+            <span className="mb-1 block text-muted-foreground">{t('app.khach.mstLabel')}</span>
             <input value={mst} onChange={(e) => setMst(e.target.value)} inputMode="numeric" maxLength={20}
               className="h-10 w-full rounded-xl border border-border bg-muted/50 px-3 outline-none focus:ring-2 focus:ring-primary/30" />
           </label>
           <button type="submit" disabled={dangThem}
             className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50">
-            {dangThem && <Loader2 className="w-4 h-4 animate-spin" />} Lưu
+            {dangThem && <Loader2 className="w-4 h-4 animate-spin" />} {t('app.khach.luu')}
           </button>
         </form>
       )}
@@ -263,36 +267,36 @@ export default function ClientsPage() {
         <GlassTabs
           active={tab} onChange={setTab}
           tabs={[
-            { key: 'all', label: `Tất cả (${dem.all})` },
-            { key: 'prospect', label: `Đang tiếp cận (${dem.prospect})` },
-            { key: 'active', label: `Đang giao dịch (${dem.active})` },
-            { key: 'inactive', label: `Ngừng (${dem.inactive})` },
+            { key: 'all', label: t('app.khach.tabAll', { n: dem.all }) },
+            { key: 'prospect', label: t('app.khach.tabProspect', { n: dem.prospect }) },
+            { key: 'active', label: t('app.khach.tabActive', { n: dem.active }) },
+            { key: 'inactive', label: t('app.khach.tabInactive', { n: dem.inactive }) },
           ]}
         />
       </motion.div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground py-16 justify-center">
-          <Loader2 className="w-4 h-4 animate-spin" /> Đang tải danh bạ…
+          <Loader2 className="w-4 h-4 animate-spin" /> {t('app.khach.dangTai')}
         </div>
       ) : loi ? (
         <div role="alert" className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="text-sm text-destructive">{loi} Danh bạ của bạn vẫn còn — chỉ là chưa đọc được.</p>
-          <button type="button" onClick={() => void load()} className="h-10 rounded-xl border border-border px-4 text-sm hover:bg-accent">Thử lại</button>
+          <p className="text-sm text-destructive">{t('app.khach.loiMo', { loi })}</p>
+          <button type="button" onClick={() => void load()} className="h-10 rounded-xl border border-border px-4 text-sm hover:bg-accent">{t('app.chung.thuLai')}</button>
         </div>
       ) : hienThi.length === 0 ? (
         <motion.div variants={fadeUp} className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
           {clients.length === 0 ? (
             <>
-              <p>Chưa có khách hàng nào trong danh bạ.</p>
-              <p className="max-w-md text-sm">Thêm khách kèm mã số thuế để MIMI tra trạng thái người nộp thuế và khớp tiền về theo tên khách.</p>
+              <p>{t('app.khach.chuaCo')}</p>
+              <p className="max-w-md text-sm">{t('app.khach.chuaCoMo')}</p>
               {!moThem && (
                 <button type="button" onClick={() => setMoThem(true)} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground">
-                  <Plus className="w-4 h-4" /> Thêm khách đầu tiên
+                  <Plus className="w-4 h-4" /> {t('app.khach.themDau')}
                 </button>
               )}
             </>
-          ) : 'Không có khách nào khớp bộ lọc.'}
+          ) : t('app.khach.khongKhop')}
         </motion.div>
       ) : (
         <motion.div variants={stagger} className="grid gap-3">
@@ -309,10 +313,10 @@ export default function ClientsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{c.name}</span>
                       <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${lh.cls}`}>
-                        <LhIcon className="w-3 h-3" /> {lh.label}
+                        <LhIcon className="w-3 h-3" /> {t(`app.khach.loai.${loaiHinh(c.tax_code)}`)}
                       </span>
                       <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ${tt.cls}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${tt.dot}`} /> {tt.label}
+                        <span className={`w-1.5 h-1.5 rounded-full ${tt.dot}`} /> {t(`app.khach.tt.${nhanTrangThai[c.status] ? c.status : 'prospect'}`)}
                       </span>
                     </div>
                     <div className="mt-1.5 text-xs text-muted-foreground font-mono">{c.tax_code}</div>
@@ -333,9 +337,9 @@ export default function ClientsPage() {
                       value={c.status} onChange={(e) => void doiTrangThai(c, e.target.value)}
                       className="text-xs h-8 px-2 rounded-lg bg-muted/50 border border-border outline-none"
                     >
-                      <option value="prospect">Đang tiếp cận</option>
-                      <option value="active">Đang giao dịch</option>
-                      <option value="inactive">Ngừng</option>
+                      <option value="prospect">{t('app.khach.tt.prospect')}</option>
+                      <option value="active">{t('app.khach.tt.active')}</option>
+                      <option value="inactive">{t('app.khach.tt.inactive')}</option>
                     </select>
                     <button
                       onClick={() => void traCuu(c)}
@@ -343,7 +347,7 @@ export default function ClientsPage() {
                       className="text-xs h-8 px-3 rounded-lg bg-primary/8 text-primary hover:bg-primary/15 disabled:opacity-40 inline-flex items-center gap-1.5"
                     >
                       {dangTra.has(c.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
-                      Tra cứu thuế
+                      {t('app.khach.traCuu')}
                     </button>
                   </div>
                 </div>
@@ -354,7 +358,7 @@ export default function ClientsPage() {
                     <span>
                       {c.tax_status}
                       {c.tax_status_checked_at && (
-                        <span className="text-muted-foreground"> · tra ngày {formatDateShort(c.tax_status_checked_at)}</span>
+                        <span className="text-muted-foreground">{t('app.khach.traNgay', { ngay: formatDateShort(c.tax_status_checked_at) })}</span>
                       )}
                     </span>
                   </div>

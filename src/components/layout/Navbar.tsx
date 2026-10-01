@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Globe, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import mimiLogo from '@/assets/mimi-cat.png';
-import { CAC_MENU, MenuDiDong, TamMenu, ngonNguMenu, type KhoaMenu } from '@/components/layout/MenuXo';
+import { CAC_MENU, MenuDiDong, TamMenu, ch, ngonNguMenu, type KhoaMenu } from '@/components/layout/MenuXo';
 
 /*
  * "Giải pháp" và "Tính năng" từng là liên kết thẳng tới một khu trên trang chủ.
@@ -49,7 +49,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const nn = ngonNguMenu(i18n.language);
-  const vi = nn === 'vi';
 
   const [dongThongBao, setDongThongBao] = useState(daDongThongBao);
   // Dải chỉ đứng ở đầu trang; cuộn xuống thì nhường chỗ cho thanh điều hướng.
@@ -100,19 +99,19 @@ export default function Navbar() {
             style={{ height: CAO_THONG_BAO }}
           >
             <span className="truncate">
-              <strong className="font-semibold">{vi ? 'Mới:' : 'New:'}</strong>{' '}
-              {vi ? 'Ba luật chống chuyển nhầm cho agent' : 'Three transfer-safety rules for agents'}
+              <strong className="font-semibold">{t('app.navbar.moi')}</strong>{' '}
+              {t('app.navbar.ba')}
               <span className="hidden sm:inline">
-                {vi ? ' — giữ người nhận mới 24 giờ, bắt đổi số tài khoản.' : ' — 24-hour hold on new payees, account-swap alerts.'}
+                {t('app.navbar.giu')}
               </span>
             </span>
             <a href="/kham-pha/demo" className="shrink-0 font-medium underline underline-offset-4">
-              {vi ? 'Xem cách hoạt động' : 'See how it works'}
+              {t('app.navbar.xem')}
             </a>
             <button
               type="button"
               onClick={dongDaiThongBao}
-              aria-label={vi ? 'Đóng thông báo' : 'Dismiss'}
+              aria-label={t('app.navbar.dong')}
               className="absolute right-3 grid h-7 w-7 place-items-center rounded-md opacity-80 hover:opacity-100"
             >
               <X size={15} />
@@ -155,7 +154,7 @@ export default function Navbar() {
                     aria-controls="menu-xo"
                     className={`flex items-center gap-1 text-sm transition-colors ${dangMo ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                   >
-                    {m.ten[nn]}
+                    {ch(m.ten, nn)}
                     <ChevronDown size={14} className={`transition-transform duration-200 ${dangMo ? 'rotate-180' : ''}`} />
                   </button>
                 </div>

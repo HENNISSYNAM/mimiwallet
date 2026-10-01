@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Camera, Check, Download, FileText, ImageOff, Loader2, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import i18n from 'i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung } from '@/lib/congTyDangDung';
@@ -38,12 +40,14 @@ const TOI_DA_MUC = 20_000;
 /** `in('id', …)` dài quá thì URL vượt giới hạn của máy chủ — chia lô. */
 const LO_ID = 100;
 
-const LOC: { khoa: LocThuVien; nhan: string }[] = [
-  { khoa: 'tat_ca', nhan: 'Tất cả' },
-  { khoa: 'chua_gan', nhan: 'Chưa gắn khoản chi' },
+// Nhãn bộ lọc: app.thuVien.tatCa / app.thuVien.chuaGan.
+const LOC: { khoa: LocThuVien; nhan: 'tatCa' | 'chuaGan' }[] = [
+  { khoa: 'tat_ca', nhan: 'tatCa' },
+  { khoa: 'chua_gan', nhan: 'chuaGan' },
 ];
 
 export default function ThuVienChungTuPage() {
+  const { t } = useTranslation();
   const [ds, setDs] = useState<MucThuVien[] | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   /**
@@ -75,7 +79,7 @@ export default function ThuVienChungTuPage() {
       ]);
       if (q.loi) throw new Error(q.loi);
       setChuaHet(q.du ? null
-        : `Mới hiện ${q.dong.length.toLocaleString('vi-VN')} chứng từ — còn chứng từ chưa đọc tới (quá ${TOI_DA_MUC.toLocaleString('vi-VN')}). File CSV xuất ra cũng CHƯA đủ.`);
+        : i18n.t('app.thuVien.chuaHet', { n: q.dong.length.toLocaleString('vi-VN'), max: TOI_DA_MUC.toLocaleString('vi-VN') }));
       const quet = q.dong;
 
       const ids = [...new Set(quet.map((x) => x.giao_dich_id).filter(Boolean))] as string[];
@@ -100,7 +104,7 @@ export default function ThuVienChungTuPage() {
       }
       setLoi(null);
     } catch (e) {
-      setLoi(e instanceof Error ? e.message : 'Chưa đọc được thư viện chứng từ.');
+      setLoi(e instanceof Error ? e.message : i18n.t('app.thuVien.loiDoc'));
     }
   }, []);
 
@@ -126,15 +130,15 @@ export default function ThuVienChungTuPage() {
     try {
       const r = await goiDauThoiGian('bang_chung', { loai: 'chung_tu_quet', ban_ghi_id: m.id });
       if (r.trang_thai === 'chua_neo') {
-        toast.info('Chứng từ này đã ghi sổ, sẽ neo lên Bitcoin lúc 0 giờ đêm nay. Tải bằng chứng sau.');
+        toast.info(t('app.thuVien.chuaNeo'));
         return;
       }
       taiTepBase64(String(r.ots), `mimi-chung-tu-${m.id.slice(0, 8)}.ots`);
       toast.success(r.trang_thai === 'da_vao_bitcoin'
-        ? `Đã tải bằng chứng — nằm trong khối Bitcoin #${Number(r.khoi_bitcoin).toLocaleString('vi-VN')}.`
-        : 'Đã tải bằng chứng — đang chờ Bitcoin xác nhận; tải lại sau vài giờ để có bản đầy đủ.');
+        ? t('app.thuVien.daTaiKhoi', { khoi: Number(r.khoi_bitcoin).toLocaleString('vi-VN') })
+        : t('app.thuVien.daTaiCho'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chưa tải được bằng chứng.');
+      toast.error(e instanceof Error ? e.message : t('app.thuVien.loiTaiBc'));
     }
   };
 
@@ -143,11 +147,11 @@ export default function ThuVienChungTuPage() {
     setDangXoa(true);
     try {
       await goiTroLy('xoa_chung_tu', { id: xoa.id });
-      toast.success('Đã xoá chứng từ.');
+      toast.success(t('app.thuVien.daXoa'));
       setXoa(null);
       await tai();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chưa xoá được.');
+      toast.error(e instanceof Error ? e.message : t('app.thuVien.loiXoa'));
     } finally {
       setDangXoa(false);
     }
@@ -167,11 +171,11 @@ export default function ThuVienChungTuPage() {
         onDaLuu={() => void tai()}
         className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110"
       >
-        <Camera size={16} /> Chụp chứng từ
+        <Camera size={16} /> {t('app.thuVien.chup')}
       </NutQuetChungTu>
       {coMoHinh === false && (
         <p className="max-w-xs text-xs text-muted-foreground">
-          MIMI chưa bật đọc ảnh chứng từ — bấm để nhập tay các ô trên hoá đơn.
+          {t('app.thuVien.chuaBatDoc')}
         </p>
       )}
     </div>
@@ -181,8 +185,8 @@ export default function ThuVienChungTuPage() {
     <div className="mx-auto max-w-6xl space-y-5 pb-10">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Thư viện chứng từ</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Chứng từ bạn chụp, ở một chỗ để kế toán tra lại.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('app.thuVien.tieuDe')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('app.thuVien.moTa')}</p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
           {nutChup}
@@ -192,7 +196,7 @@ export default function ThuVienChungTuPage() {
             disabled={!hien.length}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50"
           >
-            <Download size={16} /> Xuất cho kế toán
+            <Download size={16} /> {t('app.thuVien.xuat')}
           </button>
         </div>
       </header>
@@ -201,8 +205,8 @@ export default function ThuVienChungTuPage() {
 
       {loi && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
-          <span>Chưa đọc được thư viện: {loi}</span>
-          <button type="button" onClick={() => void tai()} className="inline-flex items-center gap-1 font-medium underline underline-offset-4"><RefreshCw size={14} /> Thử lại</button>
+          <span>{t('app.thuVien.loiThuVien', { loi })}</span>
+          <button type="button" onClick={() => void tai()} className="inline-flex items-center gap-1 font-medium underline underline-offset-4"><RefreshCw size={14} /> {t('app.chung.thuLai')}</button>
         </div>
       )}
 
@@ -213,17 +217,17 @@ export default function ThuVienChungTuPage() {
       )}
 
       {!ds && !loi && (
-        <p className="flex items-center gap-2 py-12 text-sm text-muted-foreground" role="status"><Loader2 size={15} className="animate-spin" /> Đang mở thư viện…</p>
+        <p className="flex items-center gap-2 py-12 text-sm text-muted-foreground" role="status"><Loader2 size={15} className="animate-spin" /> {t('app.thuVien.dangMo')}</p>
       )}
 
       {ds && ds.length === 0 && (
         <section className="rounded-2xl border border-border bg-card p-6 text-center">
           <FileText size={28} className="mx-auto text-muted-foreground" aria-hidden />
-          <h2 className="mt-3 text-lg font-semibold text-foreground">Chưa có chứng từ nào</h2>
+          <h2 className="mt-3 text-lg font-semibold text-foreground">{t('app.thuVien.trongTd')}</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             {coMoHinh === false
-              ? 'MIMI chưa bật đọc ảnh chứng từ: bấm nút dưới để nhập tay số tiền, ngày, bên bán trên hoá đơn.'
-              : 'Chụp hoá đơn để MIMI đọc số tiền, ngày, bên bán và tự ghép với khoản chi.'}
+              ? t('app.thuVien.trongNhapTay')
+              : t('app.thuVien.trongChup')}
           </p>
           <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
             {nutChup}
@@ -234,7 +238,7 @@ export default function ThuVienChungTuPage() {
       {ds && ds.length > 0 && (
         <>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label="Lọc chứng từ">
+            <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label={t('app.thuVien.locAria')}>
               {LOC.map((l) => (
                 <button
                   key={l.khoa}
@@ -243,37 +247,37 @@ export default function ThuVienChungTuPage() {
                   onClick={() => setLoc(l.khoa)}
                   className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${loc === l.khoa ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-foreground hover:bg-accent'}`}
                 >
-                  {l.nhan} <span className="tabular-nums opacity-70">{dem[l.khoa]}</span>
+                  {t(`app.thuVien.${l.nhan}`)} <span className="tabular-nums opacity-70">{dem[l.khoa]}</span>
                 </button>
               ))}
             </div>
             <label className="flex h-11 items-center gap-2 rounded-lg border border-border bg-card px-3 md:w-72">
               <Search size={15} className="text-muted-foreground" aria-hidden />
-              <span className="sr-only">Tìm chứng từ</span>
+              <span className="sr-only">{t('app.thuVien.tim')}</span>
               <input
                 value={tuKhoa}
                 onChange={(e) => setTuKhoa(e.target.value)}
-                placeholder="Tìm bên bán, số hoá đơn, mã số thuế"
+                placeholder={t('app.thuVien.timPh')}
                 className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </label>
           </div>
 
           {hien.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Không có chứng từ khớp bộ lọc.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('app.thuVien.khongKhop')}</p>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Chứng từ">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label={t('app.thuVien.listAria')}>
               {hien.map((m) => (
                 <li key={m.khoa} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card">
                   <div className="flex aspect-[4/3] items-center justify-center bg-accent">
                     {m.anh_path && anh[m.anh_path] ? (
                       <a href={anh[m.anh_path]} target="_blank" rel="noreferrer" className="h-full w-full">
-                        <img src={anh[m.anh_path]} alt={`Ảnh chứng từ ${m.ben_ban}`} loading="lazy" className="h-full w-full object-cover" />
+                        <img src={anh[m.anh_path]} alt={t('app.thuVien.anhAlt', { ten: m.ben_ban })} loading="lazy" className="h-full w-full object-cover" />
                       </a>
                     ) : (
                       <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
                         <ImageOff size={26} aria-hidden />
-                        Không lưu ảnh
+                        {t('app.thuVien.khongAnh')}
                       </span>
                     )}
                   </div>
@@ -283,16 +287,16 @@ export default function ThuVienChungTuPage() {
                     </div>
                     <p className="font-display text-lg font-semibold tabular-nums text-foreground">{dinhDang(m.tong_tien, 'vnd')}</p>
                     <p className="text-xs text-muted-foreground">
-                      {[m.so ? `Số ${m.so}` : null, m.ngay ? dinhDang(m.ngay, 'ngay') : null, m.mst ? `MST ${m.mst}` : null].filter(Boolean).join(' · ') || '—'}
+                      {[m.so ? t('app.thuVien.so', { so: m.so }) : null, m.ngay ? dinhDang(m.ngay, 'ngay') : null, m.mst ? t('app.thuVien.mst', { mst: m.mst }) : null].filter(Boolean).join(' · ') || '—'}
                     </p>
                     {m.nguon === 'chup' && (
                       m.giao_dich ? (
                         <p className="mt-1 flex items-center gap-1 text-xs text-mimi-green">
-                          <Check size={13} aria-hidden /> Đã gắn khoản chi {dinhDang(m.giao_dich.transaction_date, 'ngay')} · {dinhDang(m.giao_dich.so_tien, 'vnd')}
+                          <Check size={13} aria-hidden /> {t('app.thuVien.daGan', { ngay: dinhDang(m.giao_dich.transaction_date, 'ngay'), tien: dinhDang(m.giao_dich.so_tien, 'vnd') })}
                         </p>
                       ) : (
                         <p className="mt-1 flex items-center gap-1 text-xs text-mimi-amber">
-                          <AlertTriangle size={13} aria-hidden /> Chưa gắn khoản chi
+                          <AlertTriangle size={13} aria-hidden /> {t('app.thuVien.chuaGanKc')}
                         </p>
                       )
                     )}
@@ -300,19 +304,19 @@ export default function ThuVienChungTuPage() {
                       <button
                         type="button"
                         onClick={() => void taiBangChung(m)}
-                        aria-label={`Tải bằng chứng chống sửa của ${m.ben_ban}`}
+                        aria-label={t('app.thuVien.bcAria', { ten: m.ben_ban })}
                         className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
-                        <Stamp size={14} /> Bằng chứng
+                        <Stamp size={14} /> {t('app.thuVien.bc')}
                       </button>
                     {m.nguon === 'chup' && (
                         <button
                           type="button"
                           onClick={() => setXoa(m)}
-                          aria-label={`Xoá chứng từ ${m.ben_ban}`}
+                          aria-label={t('app.thuVien.xoaAria', { ten: m.ben_ban })}
                           className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                         >
-                          <Trash2 size={14} /> Xoá
+                          <Trash2 size={14} /> {t('app.thuVien.xoa')}
                         </button>
                     )}
                     </div>
@@ -322,8 +326,7 @@ export default function ThuVienChungTuPage() {
             </ul>
           )}
           <p className="text-xs text-muted-foreground">
-            Chứng từ chụp giúp bạn biết khoản chi nào đã có giấy tờ.{' '}
-            <Link to="/dashboard/chung-tu" className="underline underline-offset-4">Xem khoản chi còn thiếu chứng từ</Link>
+            <Trans i18nKey="app.thuVien.chupGiup" components={{ l: <Link to="/dashboard/chung-tu" className="underline underline-offset-4" /> }} />
           </p>
         </>
       )}
@@ -331,19 +334,19 @@ export default function ThuVienChungTuPage() {
       <AlertDialog open={!!xoa} onOpenChange={(v) => { if (!v && !dangXoa) setXoa(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xoá chứng từ này?</AlertDialogTitle>
+            <AlertDialogTitle>{t('app.thuVien.xoaTd')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Xoá chứng từ {xoa?.ben_ban} {xoa ? dinhDang(xoa.tong_tien, 'vnd') : ''} và ảnh gốc. Không khôi phục được.
+              {t('app.thuVien.xoaMo', { ten: xoa?.ben_ban ?? '', tien: xoa ? dinhDang(xoa.tong_tien, 'vnd') : '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={dangXoa}>Giữ lại</AlertDialogCancel>
+            <AlertDialogCancel disabled={dangXoa}>{t('app.thuVien.giuLai')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); void xacNhanXoa(); }}
               disabled={dangXoa}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {dangXoa && <Loader2 size={14} className="mr-1 animate-spin" />} Xoá chứng từ
+              {dangXoa && <Loader2 size={14} className="mr-1 animate-spin" />} {t('app.thuVien.xoaNut')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

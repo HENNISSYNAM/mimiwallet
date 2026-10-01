@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { locTrungNguon, usd, type DongChiPhiAi } from '@/lib/chiPhiAi';
@@ -27,6 +28,7 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
   goi: Goi;
   dangLam: string | null;
 }) {
+  const { t } = useTranslation();
   const cacKy = useMemo(() => [...new Set(chiPhi.map((d) => d.ngay.slice(0, 7)))].sort().reverse(), [chiPhi]);
   const [ky, setKy] = useState<string>(() => cacKy[0] ?? new Date().toISOString().slice(0, 7));
   const bang = useMemo(() => tinhTheoQuyTrinh(locTrungNguon(chiPhi), quyTrinh, ketQua, ky), [chiPhi, quyTrinh, ketQua, ky]);
@@ -41,35 +43,34 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
   return (
     <section aria-labelledby="theo-quy-trinh" className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="theo-quy-trinh" className="text-sm font-semibold text-foreground">Chi phí theo quy trình</h2>
+        <h2 id="theo-quy-trinh" className="text-sm font-semibold text-foreground">{t('app.quyTrinh.tieuDe')}</h2>
         <div className="flex items-center gap-2">
           {cacKy.length > 1 && (
-            <select aria-label="Tháng" value={ky} onChange={(e) => setKy(e.target.value)} className="rounded-lg border border-border bg-card px-2 py-1 text-xs">
+            <select aria-label={t('app.quyTrinh.thang')} value={ky} onChange={(e) => setKy(e.target.value)} className="rounded-lg border border-border bg-card px-2 py-1 text-xs">
               {cacKy.map((k) => <option key={k} value={k}>{k.slice(5)}/{k.slice(0, 4)}</option>)}
             </select>
           )}
           <button type="button" onClick={() => setSua({ id: null, ten: '', don_vi_ket_qua: 'việc', khop_du_an: [] })} className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground">
-            <Plus size={12} /> Quy trình
+            <Plus size={12} /> {t('app.quyTrinh.them')}
           </button>
         </div>
       </div>
 
       {quyTrinh.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-          Chưa có quy trình nào. Tạo quy trình (ví dụ "Chatbot chăm sóc khách"), chọn các project AI thuộc về nó, rồi nhập số việc làm xong
-          mỗi tháng — MIMI tính ra chi phí cho mỗi việc thành công. Đây là con số để so hai model cho công bằng, không phải giá token.
+          {t('app.quyTrinh.trong')}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm" aria-label="Chi phí theo quy trình">
+          <table className="w-full text-sm" aria-label={t('app.quyTrinh.tieuDe')}>
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                <th className="px-3 py-2 font-medium">Quy trình</th>
-                <th className="px-3 py-2 text-right font-medium">Chi phí</th>
-                <th className="px-3 py-2 text-right font-medium">Thành công</th>
-                <th className="px-3 py-2 text-right font-medium">Tỷ lệ</th>
-                <th className="px-3 py-2 text-right font-medium">Mỗi việc thành công</th>
-                <th className="px-3 py-2"><span className="sr-only">Thao tác</span></th>
+                <th className="px-3 py-2 font-medium">{t('app.quyTrinh.cot.qt')}</th>
+                <th className="px-3 py-2 text-right font-medium">{t('app.quyTrinh.cot.chiPhi')}</th>
+                <th className="px-3 py-2 text-right font-medium">{t('app.quyTrinh.cot.thanhCong')}</th>
+                <th className="px-3 py-2 text-right font-medium">{t('app.quyTrinh.cot.tyLe')}</th>
+                <th className="px-3 py-2 text-right font-medium">{t('app.quyTrinh.cot.moiViec')}</th>
+                <th className="px-3 py-2"><span className="sr-only">{t('app.quyTrinh.cot.thaoTac')}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -77,7 +78,7 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
                 <tr key={d.quy_trinh.id} className="border-b border-border last:border-0">
                   <td className="px-3 py-2">
                     <p className="font-medium text-foreground">{d.quy_trinh.ten}</p>
-                    <p className="text-xs text-muted-foreground">{d.quy_trinh.khop_du_an.join(', ') || 'Chưa chọn project'}</p>
+                    <p className="text-xs text-muted-foreground">{d.quy_trinh.khop_du_an.join(', ') || t('app.quyTrinh.chuaChon')}</p>
                   </td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">{usd(d.chi_phi_usd)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{d.so_thanh_cong === null ? '—' : `${d.so_thanh_cong.toLocaleString('vi-VN')} ${d.quy_trinh.don_vi_ket_qua}`}</td>
@@ -86,10 +87,10 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
                   <td className="px-3 py-2">
                     <div className="flex justify-end gap-2 text-xs">
                       <button type="button" onClick={() => setNhap({ q: d.quy_trinh, tc: d.so_thanh_cong === null ? '' : String(d.so_thanh_cong), tb: d.so_that_bai === null ? '' : String(d.so_that_bai) })} className="font-medium text-primary hover:underline">
-                        Nhập số việc
+                        {t('app.quyTrinh.nhapSo')}
                       </button>
-                      <button type="button" aria-label={`Sửa ${d.quy_trinh.ten}`} onClick={() => setSua({ ...d.quy_trinh })} className="text-muted-foreground hover:text-foreground"><Pencil size={12} /></button>
-                      <button type="button" aria-label={`Xoá ${d.quy_trinh.ten}`} onClick={() => setXoa(d.quy_trinh)} className="text-muted-foreground hover:text-destructive"><Trash2 size={12} /></button>
+                      <button type="button" aria-label={t('app.quyTrinh.suaAria', { ten: d.quy_trinh.ten })} onClick={() => setSua({ ...d.quy_trinh })} className="text-muted-foreground hover:text-foreground"><Pencil size={12} /></button>
+                      <button type="button" aria-label={t('app.quyTrinh.xoaAria', { ten: d.quy_trinh.ten })} onClick={() => setXoa(d.quy_trinh)} className="text-muted-foreground hover:text-destructive"><Trash2 size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -97,7 +98,7 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
               {bang.chua_gan.chi_phi_usd > 0 && (
                 <tr className="text-muted-foreground">
                   <td className="px-3 py-2">
-                    <p>Chưa gán quy trình</p>
+                    <p>{t('app.quyTrinh.chuaGan')}</p>
                     <p className="text-xs">{bang.chua_gan.du_an.join(', ')}</p>
                   </td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">{usd(bang.chua_gan.chi_phi_usd)}</td>
@@ -112,23 +113,23 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
       <Dialog open={sua !== null} onOpenChange={(m) => { if (!m) setSua(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{sua?.id ? 'Sửa quy trình' : 'Quy trình mới'}</DialogTitle>
-            <DialogDescription>Mỗi project chỉ thuộc một quy trình, để chi phí không bị tính hai lần.</DialogDescription>
+            <DialogTitle>{sua?.id ? t('app.quyTrinh.suaTd') : t('app.quyTrinh.moiTd')}</DialogTitle>
+            <DialogDescription>{t('app.quyTrinh.mot')}</DialogDescription>
           </DialogHeader>
           {sua && (
             <div className="space-y-3">
               <label className="block text-sm">
-                <span className="mb-1 block font-medium">Tên quy trình</span>
-                <input value={sua.ten} onChange={(e) => setSua({ ...sua, ten: e.target.value })} placeholder="Chatbot chăm sóc khách" className={O} />
+                <span className="mb-1 block font-medium">{t('app.quyTrinh.ten')}</span>
+                <input value={sua.ten} onChange={(e) => setSua({ ...sua, ten: e.target.value })} placeholder={t('app.quyTrinh.tenPh')} className={O} />
               </label>
               <label className="block text-sm">
-                <span className="mb-1 block font-medium">Một việc thành công là gì</span>
-                <input value={sua.don_vi_ket_qua} onChange={(e) => setSua({ ...sua, don_vi_ket_qua: e.target.value })} placeholder="cuộc trò chuyện giải quyết xong" className={O} />
+                <span className="mb-1 block font-medium">{t('app.quyTrinh.viecTc')}</span>
+                <input value={sua.don_vi_ket_qua} onChange={(e) => setSua({ ...sua, don_vi_ket_qua: e.target.value })} placeholder={t('app.quyTrinh.viecTcPh')} className={O} />
               </label>
               <fieldset>
-                <legend className="text-sm font-medium">Project thuộc quy trình này</legend>
+                <legend className="text-sm font-medium">{t('app.quyTrinh.projectThuoc')}</legend>
                 {tatCaDuAn.length === 0 ? (
-                  <p className="mt-1 text-xs text-muted-foreground">Chưa có project nào trong dữ liệu chi phí.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('app.quyTrinh.khongProject')}</p>
                 ) : (
                   <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">
                     {tatCaDuAn.map((d) => {
@@ -141,7 +142,7 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
                             checked={sua.khop_du_an.includes(d)}
                             onChange={(e) => setSua({ ...sua, khop_du_an: e.target.checked ? [...sua.khop_du_an, d] : sua.khop_du_an.filter((x) => x !== d) })}
                           />
-                          {d}{khac && <span className="text-xs">(đã thuộc quy trình khác)</span>}
+                          {d}{khac && <span className="text-xs">{t('app.quyTrinh.daThuoc')}</span>}
                         </label>
                       );
                     })}
@@ -156,12 +157,12 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
               disabled={dangLam !== null || !sua || sua.ten.trim().length < 2}
               onClick={async () => {
                 if (!sua) return;
-                const kq = await goi('quy_trinh', 'quy_trinh_luu', { id: sua.id, ten: sua.ten, don_vi_ket_qua: sua.don_vi_ket_qua, khop_du_an: sua.khop_du_an }, 'Đã lưu quy trình.');
+                const kq = await goi('quy_trinh', 'quy_trinh_luu', { id: sua.id, ten: sua.ten, don_vi_ket_qua: sua.don_vi_ket_qua, khop_du_an: sua.khop_du_an }, t('app.quyTrinh.daLuuQt'));
                 if (kq) setSua(null);
               }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
-              Lưu
+              {t('app.quyTrinh.luu')}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -170,17 +171,17 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
       <Dialog open={nhap !== null} onOpenChange={(m) => { if (!m) setNhap(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Số việc tháng {ky.slice(5)}/{ky.slice(0, 4)} — {nhap?.q.ten}</DialogTitle>
-            <DialogDescription>Đếm theo đơn vị: {nhap?.q.don_vi_ket_qua}. Nhập lại sẽ ghi đè số cũ của tháng này.</DialogDescription>
+            <DialogTitle>{t('app.quyTrinh.soViecTd', { ky: `${ky.slice(5)}/${ky.slice(0, 4)}`, ten: nhap?.q.ten ?? '' })}</DialogTitle>
+            <DialogDescription>{t('app.quyTrinh.soViecMo', { dv: nhap?.q.don_vi_ket_qua ?? '' })}</DialogDescription>
           </DialogHeader>
           {nhap && (
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-sm">
-                <span className="mb-1 block font-medium">Thành công</span>
+                <span className="mb-1 block font-medium">{t('app.quyTrinh.thanhCong')}</span>
                 <input inputMode="numeric" value={nhap.tc} onChange={(e) => setNhap({ ...nhap, tc: e.target.value.replace(/\D/g, '') })} className={O} />
               </label>
               <label className="block text-sm">
-                <span className="mb-1 block font-medium">Thất bại</span>
+                <span className="mb-1 block font-medium">{t('app.quyTrinh.thatBai')}</span>
                 <input inputMode="numeric" value={nhap.tb} onChange={(e) => setNhap({ ...nhap, tb: e.target.value.replace(/\D/g, '') })} className={O} />
               </label>
             </div>
@@ -191,12 +192,12 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
               disabled={dangLam !== null || !nhap || nhap.tc === ''}
               onClick={async () => {
                 if (!nhap) return;
-                const kq = await goi('ket_qua', 'ket_qua_luu', { quy_trinh_id: nhap.q.id, ky, so_thanh_cong: Number(nhap.tc), so_that_bai: Number(nhap.tb || 0) }, 'Đã lưu số việc.');
+                const kq = await goi('ket_qua', 'ket_qua_luu', { quy_trinh_id: nhap.q.id, ky, so_thanh_cong: Number(nhap.tc), so_that_bai: Number(nhap.tb || 0) }, t('app.quyTrinh.daLuuSo'));
                 if (kq) setNhap(null);
               }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
-              Lưu
+              {t('app.quyTrinh.luu')}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -205,17 +206,17 @@ export default function ChiPhiTheoQuyTrinh({ chiPhi, quyTrinh, ketQua, goi, dang
       <Dialog open={xoa !== null} onOpenChange={(m) => { if (!m) setXoa(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Xoá quy trình "{xoa?.ten}"?</DialogTitle>
-            <DialogDescription>Số việc đã nhập của quy trình này cũng bị xoá. Chi phí AI không mất — chỉ về lại mục "Chưa gán quy trình".</DialogDescription>
+            <DialogTitle>{t('app.quyTrinh.xoaTd', { ten: xoa?.ten ?? '' })}</DialogTitle>
+            <DialogDescription>{t('app.quyTrinh.xoaMo')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <button type="button" onClick={() => setXoa(null)} className="rounded-lg border border-border px-4 py-2 text-sm">Huỷ</button>
+            <button type="button" onClick={() => setXoa(null)} className="rounded-lg border border-border px-4 py-2 text-sm">{t('app.quyTrinh.huy')}</button>
             <button
               type="button"
-              onClick={async () => { const q = xoa; setXoa(null); if (q) await goi('xoa_qt', 'quy_trinh_xoa', { id: q.id }, 'Đã xoá quy trình.'); }}
+              onClick={async () => { const q = xoa; setXoa(null); if (q) await goi('xoa_qt', 'quy_trinh_xoa', { id: q.id }, t('app.quyTrinh.daXoa')); }}
               className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground"
             >
-              Xoá quy trình
+              {t('app.quyTrinh.xoaNut')}
             </button>
           </DialogFooter>
         </DialogContent>

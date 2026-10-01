@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loader2, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react';
 import { goiTroLy } from '@/lib/goiTroLy';
+import i18n from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { track } from '@/lib/track';
 import { HOAN_CANH, type DauHieu, type MaHoanCanh, type MucDo } from '@/lib/batThuong';
 import { dinhDangTien } from '@/lib/tien';
@@ -23,18 +25,12 @@ import { dinhDangTien } from '@/lib/tien';
  * Việc cần làm theo TỪNG dấu hiệu (28/09/2026). Lời khuyên chung ("gọi lại người yêu cầu") vẫn giữ; đây là
  * bước cụ thể cho đúng khuôn mẫu bộ luật vừa thấy. Chỉ là hướng dẫn — MIMI không tự làm việc nào thay bạn.
  */
-const VIEC_THEO_DAU_HIEU: Partial<Record<DauHieu['ma'], string[]>> = {
-  doi_so_tai_khoan: [
-    'Gọi nhà cung cấp bằng số điện thoại trong hợp đồng hoặc đã lưu từ trước — hỏi thẳng họ có đổi tài khoản không.',
-    'Đề nghị văn bản thông báo đổi tài khoản có chữ ký, đóng dấu; email đổi tài khoản là kiểu giả mạo hay gặp nhất.',
-    'Khi chuyển, đọc tên chủ tài khoản ngân hàng hiện ra trong app — khác tên nhà cung cấp thì dừng.',
-  ],
-  nguoi_nhan_moi_so_lon: [
-    'Người nhận mới và số tiền lớn: chuyển thử một khoản nhỏ, gọi xác nhận đã nhận, rồi mới chuyển phần còn lại.',
-    'Đối chiếu số tài khoản với hợp đồng hoặc hoá đơn của người bán.',
-  ],
-  vuot_muc_quen: ['Số tiền lớn hơn hẳn các lần trước: đối chiếu với hoá đơn và hợp đồng trước khi chuyển.'],
-  tach_nho: ['Nhiều khoản nhỏ cùng người nhận trong một ngày: kiểm lại có phải một khoản bị tách ra để né bước duyệt không.'],
+// Số bước theo từng dấu hiệu; chữ ở bộ dịch app.kiemChuyen.viec.<mã>.<chỉ số>.
+const VIEC_THEO_DAU_HIEU: Partial<Record<DauHieu['ma'], number>> = {
+  doi_so_tai_khoan: 3,
+  nguoi_nhan_moi_so_lon: 2,
+  vuot_muc_quen: 1,
+  tach_nho: 1,
 };
 
 interface KetQua {
@@ -60,6 +56,7 @@ const O_NHAP = 'w-full rounded-lg border border-border bg-card px-3 py-2.5 text-
 export interface DienSanKiem { stk?: string; ten?: string; soTien?: string; tuDong?: boolean }
 
 export default function KiemChuyenTienPage() {
+  const { t } = useTranslation();
   const viTri = useLocation();
   const navigate = useNavigate();
   const dienSan = (viTri.state as { kiem?: DienSanKiem } | null)?.kiem ?? null;
@@ -78,8 +75,8 @@ export default function KiemChuyenTienPage() {
   const kiem = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const so = Number(chiSo(soTien));
-    if (chiSo(stk).length < 6) { setLoi('Số tài khoản cần ít nhất 6 chữ số.'); return; }
-    if (!so) { setLoi('Nhập số tiền sắp chuyển.'); return; }
+    if (chiSo(stk).length < 6) { setLoi(t('app.kiemChuyen.loiStk')); return; }
+    if (!so) { setLoi(t('app.kiemChuyen.loiTien')); return; }
     setLoi(null);
     setKq(null);
     setDangKiem(true);
@@ -90,7 +87,7 @@ export default function KiemChuyenTienPage() {
       setKq(r as unknown as KetQua);
       track('payment_check_run', { muc_do: String((r as { muc_do?: unknown }).muc_do ?? 'khong'), tu: dienSan?.tuDong ? 'kiem_nhanh' : 'trang' });
     } catch (e2) {
-      setLoi(e2 instanceof Error ? e2.message : 'Chưa kiểm được. Thử lại sau ít phút.');
+      setLoi(e2 instanceof Error ? e2.message : t('app.kiemChuyen.loiKiem'));
     } finally {
       setDangKiem(false);
     }
@@ -110,25 +107,24 @@ export default function KiemChuyenTienPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Kiểm tra trước khi chuyển tiền</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('app.kiemChuyen.tieuDe')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Nhập khoản bạn sắp chuyển — kể cả khoản không đi qua MIMI. MIMI so với lịch sử chi 180 ngày của công ty và danh sách người nhận
-          được phép. MIMI không chuyển tiền và không lưu thông tin bạn nhập ở đây.
+          {t('app.kiemChuyen.moTa')}
         </p>
       </div>
 
       <form noValidate onSubmit={kiem} className="space-y-4 rounded-2xl border border-border bg-card p-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-foreground">Số tài khoản người nhận</span>
+            <span className="mb-1 block font-medium text-foreground">{t('app.kiemChuyen.stk')}</span>
             <input value={stk} onChange={(e) => setStk(e.target.value)} inputMode="numeric" autoComplete="off" className={O_NHAP} />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-foreground">Tên người nhận <span className="font-normal text-muted-foreground">(nếu biết)</span></span>
+            <span className="mb-1 block font-medium text-foreground">{t('app.kiemChuyen.ten')} <span className="font-normal text-muted-foreground">{t('app.kiemChuyen.nuBiet')}</span></span>
             <input value={ten} onChange={(e) => setTen(e.target.value)} autoComplete="off" className={O_NHAP} />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-foreground">Số tiền (₫)</span>
+            <span className="mb-1 block font-medium text-foreground">{t('app.kiemChuyen.soTien')}</span>
             <input
               value={soTien}
               onChange={(e) => { const s = chiSo(e.target.value); setSoTien(s ? new Intl.NumberFormat('vi-VN').format(Number(s)) : ''); }}
@@ -138,13 +134,13 @@ export default function KiemChuyenTienPage() {
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-foreground">Nội dung chuyển khoản <span className="font-normal text-muted-foreground">(nếu có)</span></span>
+            <span className="mb-1 block font-medium text-foreground">{t('app.kiemChuyen.noiDung')} <span className="font-normal text-muted-foreground">{t('app.kiemChuyen.nuCo')}</span></span>
             <input value={noiDung} onChange={(e) => setNoiDung(e.target.value)} autoComplete="off" className={O_NHAP} />
           </label>
         </div>
 
         <fieldset>
-          <legend className="text-sm font-medium text-foreground">Khoản này có rơi vào tình huống nào dưới đây không?</legend>
+          <legend className="text-sm font-medium text-foreground">{t('app.kiemChuyen.tinhHuong')}</legend>
           <div className="mt-2 space-y-2">
             {(Object.keys(HOAN_CANH) as MaHoanCanh[]).map((m) => (
               <label key={m} className="flex items-start gap-2 text-sm text-foreground">
@@ -154,7 +150,7 @@ export default function KiemChuyenTienPage() {
                   onChange={(e) => doiHoanCanh(m, e.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-border"
                 />
-                <span>{HOAN_CANH[m]}</span>
+                <span>{t(`app.kiemChuyen.hoanCanh.${m}`)}</span>
               </label>
             ))}
           </div>
@@ -166,7 +162,7 @@ export default function KiemChuyenTienPage() {
           disabled={dangKiem}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
         >
-          {dangKiem && <Loader2 size={14} className="animate-spin" />} Kiểm tra
+          {dangKiem && <Loader2 size={14} className="animate-spin" />} {t('app.kiemChuyen.kiem')}
         </button>
       </form>
 
@@ -176,13 +172,14 @@ export default function KiemChuyenTienPage() {
 }
 
 function KetQuaKiem({ kq }: { kq: KetQua }) {
+  const { t } = useTranslation();
   const cao = kq.muc_do === 'cao';
   const Icon = cao ? ShieldAlert : kq.muc_do ? ShieldQuestion : ShieldCheck;
-  const tieuDe = cao ? 'Dừng lại — chưa nên chuyển' : kq.muc_do ? 'Cần để ý trước khi chuyển' : 'Không thấy dấu hiệu trong dữ liệu của MIMI';
+  const tieuDe = cao ? t('app.kiemChuyen.dung') : kq.muc_do ? t('app.kiemChuyen.canYTruoc') : t('app.kiemChuyen.khongThay');
 
   return (
     <section
-      aria-label="Kết quả kiểm tra"
+      aria-label={t('app.kiemChuyen.ketQua')}
       className={`rounded-2xl border p-5 ${cao ? 'border-destructive/40 bg-destructive/5' : kq.muc_do ? 'border-amber-500/40 bg-amber-500/5' : 'border-border bg-card'}`}
     >
       <p className="flex items-center gap-2 text-base font-semibold text-foreground">
@@ -191,11 +188,11 @@ function KetQuaKiem({ kq }: { kq: KetQua }) {
       </p>
 
       {kq.dau_hieu.length > 0 && (
-        <ul className="mt-3 space-y-2" aria-label="Dấu hiệu">
+        <ul className="mt-3 space-y-2" aria-label={t('app.kiemChuyen.dauHieu')}>
           {kq.dau_hieu.map((d) => (
             <li key={d.ma} className="rounded-md border border-border bg-card p-3 text-sm text-foreground">
               <span className={`mr-2 rounded px-1.5 py-0.5 text-xs font-medium ${d.muc_do === 'cao' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-foreground'}`}>
-                {d.muc_do === 'cao' ? 'Mức cao' : 'Cần để ý'}
+                {d.muc_do === 'cao' ? t('app.kiemChuyen.mucCao') : t('app.kiemChuyen.canY')}
               </span>
               {d.cau}
             </li>
@@ -204,33 +201,32 @@ function KetQuaKiem({ kq }: { kq: KetQua }) {
       )}
 
       <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-        {kq.trong_danh_sach_tin_cay && <li>Tài khoản này nằm trong danh sách người nhận được phép của công ty.</li>}
+        {kq.trong_danh_sach_tin_cay && <li>{t('app.kiemChuyen.trongDs')}</li>}
         {kq.lan_tra_truoc > 0 ? (
           <li>
-            Công ty đã trả tài khoản này {kq.lan_tra_truoc} lần trong 180 ngày{kq.lan_cuoi ? `, lần gần nhất ${ngay(kq.lan_cuoi)}` : ''}
-            {kq.lon_nhat_da_tra ? `, lớn nhất ${vnd(kq.lon_nhat_da_tra)}` : ''}.
+            {t('app.kiemChuyen.daTra', { n: kq.lan_tra_truoc })}{kq.lan_cuoi ? t('app.kiemChuyen.lanCuoi', { ngay: ngay(kq.lan_cuoi) }) : ''}
+            {kq.lon_nhat_da_tra ? t('app.kiemChuyen.lonNhat', { tien: vnd(kq.lon_nhat_da_tra) }) : ''}.
           </li>
         ) : (
-          <li>Công ty chưa từng trả tài khoản này trong 180 ngày qua.</li>
+          <li>{t('app.kiemChuyen.chuaTra')}</li>
         )}
-        {!kq.lich_su_du && <li>MIMI chỉ đọc được một phần lịch sử chi, nên có thể nói "chưa từng trả" với người bạn đã từng trả.</li>}
+        {!kq.lich_su_du && <li>{t('app.kiemChuyen.motPhan')}</li>}
       </ul>
 
       {kq.muc_do && (
         <div className="mt-4 rounded-md border border-border bg-card p-3 text-sm text-foreground">
-          <p className="font-medium">Việc nên làm</p>
-          <ul className="mt-1 list-disc space-y-1 pl-5" aria-label="Việc nên làm">
-            {[...new Set(kq.dau_hieu.flatMap((d) => VIEC_THEO_DAU_HIEU[d.ma] ?? []))].map((v) => <li key={v}>{v}</li>)}
-            <li>Gọi lại người yêu cầu qua số điện thoại bạn đã có từ trước — không dùng số trong tin nhắn hay email vừa nhận.</li>
-            <li>Không đưa mã OTP, không cài ứng dụng theo hướng dẫn của người lạ.</li>
-            <li>Nếu đã lỡ chuyển: gọi ngay tổng đài ngân hàng của bạn để yêu cầu tra soát, và báo cơ quan công an nơi gần nhất.</li>
+          <p className="font-medium">{t('app.kiemChuyen.viecNen')}</p>
+          <ul className="mt-1 list-disc space-y-1 pl-5" aria-label={t('app.kiemChuyen.viecNen')}>
+            {[...new Set(kq.dau_hieu.flatMap((d) => Array.from({ length: VIEC_THEO_DAU_HIEU[d.ma] ?? 0 }, (_, i) => `app.kiemChuyen.viec.${d.ma}.${i}`)))].map((k) => <li key={k}>{t(k)}</li>)}
+            <li>{t('app.kiemChuyen.goiLai')}</li>
+            <li>{t('app.kiemChuyen.khongOtp')}</li>
+            <li>{t('app.kiemChuyen.daLoChuyen')}</li>
           </ul>
         </div>
       )}
 
       <p className="mt-3 text-xs text-muted-foreground">
-        MIMI chỉ thấy lịch sử chi của công ty bạn. MIMI không tra được tài khoản người nhận có bị báo lừa đảo hay không, và không biết tên
-        chủ tài khoản thật — không có dấu hiệu không có nghĩa là an toàn.
+        {t('app.kiemChuyen.gioiHan')}
       </p>
     </section>
   );
