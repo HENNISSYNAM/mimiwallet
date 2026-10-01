@@ -831,8 +831,9 @@ Deno.serve(async (req) => {
             .in(
               "company_id",
               ((
-                await supabase.from("companies").select("id").eq("user_id", user.id)
-              ).data ?? []).map((c: { id: string }) => c.id),
+                // Công ty mà người này CÒN là chủ (bảng thành viên). `companies.user_id` chỉ là người tạo, không còn cấp quyền.
+                await supabase.from("thanh_vien_cong_ty").select("company_id").eq("user_id", user.id).eq("vai_tro", "chu_so_huu")
+              ).data ?? []).map((c: { company_id: string }) => c.company_id),
             );
 
           const cungCty = (moiDong ?? []).filter((d) => d.company_id === company.id);
@@ -1283,11 +1284,13 @@ Deno.serve(async (req) => {
          * theo người là đúng phạm vi; RLS vẫn chặn công ty của người khác vì
          * danh sách công ty lấy theo `user_id`.
          */
+        // Theo bảng thành viên (vai chủ), không theo người tạo: người đã bị loại không chạm được liên kết của công ty cũ.
         const { data: cacCty } = await supabase
-          .from("companies")
-          .select("id")
-          .eq("user_id", user.id);
-        const idCty = (cacCty ?? []).map((c: { id: string }) => c.id);
+          .from("thanh_vien_cong_ty")
+          .select("company_id")
+          .eq("user_id", user.id)
+          .eq("vai_tro", "chu_so_huu");
+        const idCty = (cacCty ?? []).map((c: { company_id: string }) => c.company_id);
 
         const { data: cu } = await supabase
           .from("bank_connections")
