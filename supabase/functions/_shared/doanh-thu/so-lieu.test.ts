@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { docSoLieuDoanhThu, tinhHoaDon, tinhTienVao } from './so-lieu';
+import { docSoLieuDoanhThu, phanTichTienVao, tinhHoaDon, tinhTienVao } from './so-lieu';
 import { docHet, QuaGioiHan } from '../doc-het';
 import { docDoanhThuQuy } from '../luat/doc-su-kien';
 
@@ -169,5 +169,21 @@ describe('docSoLieuDoanhThu — một nguồn cho Tổng quan và tờ khai', ()
     expect(q.ngan_hang).toEqual(s.uoc_tinh_theo_quy);
     expect(q.ngan_hang!.reduce((a, b) => a + b, 0)).toBe(s.uoc_tinh);
     expect(q.da_giai_trinh).toEqual({ so: 1, tong: 200_000_000 });
+  });
+});
+
+describe('phanTichTienVao — để giao diện không kết luận ngưỡng quá sớm', () => {
+  const t = (id: string, amount: number, payment_reference: string, type = 'income') =>
+    ({ id, amount, type, transaction_date: '2026-03-10', payment_reference, merchant_name: null, counter_account_name: null });
+  it('chỉ đếm khoản CHƯA xác nhận có gợi ý loại ra; bỏ nội bộ; cộng riêng tiền sàn', () => {
+    const r = phanTichTienVao(2026, [
+      t('a', 200_000_000, 'GIAI NGAN HDTD 0126'),
+      t('b', 50_000_000, 'GOP VON MUA MAY'),
+      t('c', 9_000_000, 'TIKTOK SHOP THANH TOAN DOI SOAT'),
+      t('d', 30_000_000, 'NHAN TIEN QUAN 2'),
+      t('e', 5_000_000, 'CK TIEN HANG'),
+    ], [{ transaction_id: 'b', revenue_effect: 'exclude' }], new Set(['d']));
+    expect(r.goi_y_loai_ra).toEqual({ so_tien: 200_000_000, so_khoan: 1 });
+    expect(r.tien_san_tmdt).toEqual({ so_tien: 9_000_000, so_khoan: 1 });
   });
 });
