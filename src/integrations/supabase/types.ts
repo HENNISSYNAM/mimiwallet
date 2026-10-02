@@ -16,6 +16,9 @@ export type Database = {
     Tables: {
       bank_connections: {
         Row: {
+          access_token_enc: Json | null
+          account_name: string | null
+          account_number: string | null
           accounts: Json | null
           bank_code: string
           bank_name: string
@@ -23,12 +26,21 @@ export type Database = {
           consent_expires_at: string | null
           consent_granted: boolean | null
           created_at: string
+          direction_convention: string | null
+          grant_id: string | null
           id: string
+          last_reference: string | null
           last_synced_at: string | null
+          provider: string | null
+          revoked_at: string | null
+          scopes: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          access_token_enc?: Json | null
+          account_name?: string | null
+          account_number?: string | null
           accounts?: Json | null
           bank_code: string
           bank_name: string
@@ -36,12 +48,21 @@ export type Database = {
           consent_expires_at?: string | null
           consent_granted?: boolean | null
           created_at?: string
+          direction_convention?: string | null
+          grant_id?: string | null
           id?: string
+          last_reference?: string | null
           last_synced_at?: string | null
+          provider?: string | null
+          revoked_at?: string | null
+          scopes?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          access_token_enc?: Json | null
+          account_name?: string | null
+          account_number?: string | null
           accounts?: Json | null
           bank_code?: string
           bank_name?: string
@@ -49,14 +70,136 @@ export type Database = {
           consent_expires_at?: string | null
           consent_granted?: boolean | null
           created_at?: string
+          direction_convention?: string | null
+          grant_id?: string | null
           id?: string
+          last_reference?: string | null
           last_synced_at?: string | null
+          provider?: string | null
+          revoked_at?: string | null
+          scopes?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "bank_connections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chinh_sach_chi: {
+        Row: {
+          chi_tra_nguoi_nhan_da_duyet: boolean
+          company_id: string
+          created_at: string
+          han_muc_moi_lan: number
+          han_muc_ngay: number
+          han_muc_thang: number
+          het_han: string | null
+          id: string
+          nguong_can_duyet: number
+          nhom_chi_duoc_phep: string[] | null
+          tac_tu_id: string
+          updated_at: string
+        }
+        Insert: {
+          chi_tra_nguoi_nhan_da_duyet?: boolean
+          company_id: string
+          created_at?: string
+          han_muc_moi_lan?: number
+          han_muc_ngay?: number
+          han_muc_thang?: number
+          het_han?: string | null
+          id?: string
+          nguong_can_duyet?: number
+          nhom_chi_duoc_phep?: string[] | null
+          tac_tu_id: string
+          updated_at?: string
+        }
+        Update: {
+          chi_tra_nguoi_nhan_da_duyet?: boolean
+          company_id?: string
+          created_at?: string
+          han_muc_moi_lan?: number
+          han_muc_ngay?: number
+          han_muc_thang?: number
+          het_han?: string | null
+          id?: string
+          nguong_can_duyet?: number
+          nhom_chi_duoc_phep?: string[] | null
+          tac_tu_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chinh_sach_chi_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chinh_sach_chi_tac_tu_id_fkey"
+            columns: ["tac_tu_id"]
+            isOneToOne: true
+            referencedRelation: "tac_tu"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          company_id: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+          status: string
+          tax_code: string | null
+          tax_status: string | null
+          tax_status_checked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          status?: string
+          tax_code?: string | null
+          tax_status?: string | null
+          tax_status_checked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          status?: string
+          tax_code?: string | null
+          tax_status?: string | null
+          tax_status_checked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -73,8 +216,10 @@ export type Database = {
           employee_count: string | null
           id: string
           industry: string | null
+          la_demo: boolean
           monthly_revenue: number | null
           name: string
+          onboarding_done_at: string | null
           province: string | null
           tax_id: string | null
           updated_at: string
@@ -89,8 +234,10 @@ export type Database = {
           employee_count?: string | null
           id?: string
           industry?: string | null
+          la_demo?: boolean
           monthly_revenue?: number | null
           name: string
+          onboarding_done_at?: string | null
           province?: string | null
           tax_id?: string | null
           updated_at?: string
@@ -105,13 +252,42 @@ export type Database = {
           employee_count?: string | null
           id?: string
           industry?: string | null
+          la_demo?: boolean
           monthly_revenue?: number | null
           name?: string
+          onboarding_done_at?: string | null
           province?: string | null
           tax_id?: string | null
           updated_at?: string
           user_id?: string
           years_operating?: string | null
+        }
+        Relationships: []
+      }
+      consents: {
+        Row: {
+          granted_at: string
+          id: string
+          kind: string
+          revoked_at: string | null
+          user_id: string
+          version: string
+        }
+        Insert: {
+          granted_at?: string
+          id?: string
+          kind: string
+          revoked_at?: string | null
+          user_id: string
+          version: string
+        }
+        Update: {
+          granted_at?: string
+          id?: string
+          kind?: string
+          revoked_at?: string | null
+          user_id?: string
+          version?: string
         }
         Relationships: []
       }
@@ -319,6 +495,133 @@ export type Database = {
           },
         ]
       }
+      gdt_invoices: {
+        Row: {
+          company_id: string
+          counterparty_name: string | null
+          counterparty_tax_code: string | null
+          created_at: string
+          currency: string
+          direction: string
+          gdt_id: string
+          id: string
+          invoice_auth_code: string | null
+          invoice_form_code: string | null
+          invoice_form_name: string | null
+          invoice_lookup_code: string | null
+          invoice_number: string | null
+          invoice_serial: string | null
+          invoice_status: number | null
+          issuance_period: number | null
+          issued_at: string | null
+          subtotal_amount: number
+          synced_at: string
+          tax_amount: number
+          tax_rate_breakdown: Json
+          total_amount: number
+        }
+        Insert: {
+          company_id: string
+          counterparty_name?: string | null
+          counterparty_tax_code?: string | null
+          created_at?: string
+          currency?: string
+          direction: string
+          gdt_id: string
+          id?: string
+          invoice_auth_code?: string | null
+          invoice_form_code?: string | null
+          invoice_form_name?: string | null
+          invoice_lookup_code?: string | null
+          invoice_number?: string | null
+          invoice_serial?: string | null
+          invoice_status?: number | null
+          issuance_period?: number | null
+          issued_at?: string | null
+          subtotal_amount?: number
+          synced_at?: string
+          tax_amount?: number
+          tax_rate_breakdown?: Json
+          total_amount?: number
+        }
+        Update: {
+          company_id?: string
+          counterparty_name?: string | null
+          counterparty_tax_code?: string | null
+          created_at?: string
+          currency?: string
+          direction?: string
+          gdt_id?: string
+          id?: string
+          invoice_auth_code?: string | null
+          invoice_form_code?: string | null
+          invoice_form_name?: string | null
+          invoice_lookup_code?: string | null
+          invoice_number?: string | null
+          invoice_serial?: string | null
+          invoice_status?: number | null
+          issuance_period?: number | null
+          issued_at?: string | null
+          subtotal_amount?: number
+          synced_at?: string
+          tax_amount?: number
+          tax_rate_breakdown?: Json
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gdt_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          company_id: string | null
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          role: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_id?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          role?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           advanced_amount: number | null
@@ -472,6 +775,54 @@ export type Database = {
           },
         ]
       }
+      legal_documents: {
+        Row: {
+          co_quan_ban_hanh: string
+          con_so_moc: number | null
+          created_at: string
+          doi_tuong_ap_dung: string[]
+          don_vi_moc: string | null
+          id: string
+          loai: string
+          ngay_hieu_luc: string | null
+          so_hieu: string
+          ten: string
+          tom_tat_chinh_thuc: string | null
+          tom_tat_de_hieu: string
+          url_nguon: string
+        }
+        Insert: {
+          co_quan_ban_hanh: string
+          con_so_moc?: number | null
+          created_at?: string
+          doi_tuong_ap_dung?: string[]
+          don_vi_moc?: string | null
+          id?: string
+          loai: string
+          ngay_hieu_luc?: string | null
+          so_hieu: string
+          ten: string
+          tom_tat_chinh_thuc?: string | null
+          tom_tat_de_hieu: string
+          url_nguon: string
+        }
+        Update: {
+          co_quan_ban_hanh?: string
+          con_so_moc?: number | null
+          created_at?: string
+          doi_tuong_ap_dung?: string[]
+          don_vi_moc?: string | null
+          id?: string
+          loai?: string
+          ngay_hieu_luc?: string | null
+          so_hieu?: string
+          ten?: string
+          tom_tat_chinh_thuc?: string | null
+          tom_tat_de_hieu?: string
+          url_nguon?: string
+        }
+        Relationships: []
+      }
       loan_applications: {
         Row: {
           amount: number
@@ -588,14 +939,172 @@ export type Database = {
           },
         ]
       }
+      macro_news: {
+        Row: {
+          fetched_at: string
+          id: string
+          impact: string | null
+          published_at: string | null
+          source: string
+          summary: string | null
+          title: string
+          topic: string | null
+          url: string
+        }
+        Insert: {
+          fetched_at?: string
+          id?: string
+          impact?: string | null
+          published_at?: string | null
+          source: string
+          summary?: string | null
+          title: string
+          topic?: string | null
+          url: string
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          impact?: string | null
+          published_at?: string | null
+          source?: string
+          summary?: string | null
+          title?: string
+          topic?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
+      nguoi_nhan_duoc_phep: {
+        Row: {
+          company_id: string
+          created_at: string
+          ghi_chu: string | null
+          id: string
+          ngan_hang_bin: string
+          so_tai_khoan: string
+          ten_chu_tai_khoan: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          ghi_chu?: string | null
+          id?: string
+          ngan_hang_bin: string
+          so_tai_khoan: string
+          ten_chu_tai_khoan: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          ghi_chu?: string | null
+          id?: string
+          ngan_hang_bin?: string
+          so_tai_khoan?: string
+          ten_chu_tai_khoan?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nguoi_nhan_duoc_phep_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nhat_ky_tac_tu: {
+        Row: {
+          chi_tiet: Json | null
+          company_id: string
+          created_at: string
+          id: string
+          nguoi: string
+          su_kien: string
+          tac_tu_id: string | null
+          user_id: string | null
+          yeu_cau_id: string | null
+        }
+        Insert: {
+          chi_tiet?: Json | null
+          company_id: string
+          created_at?: string
+          id?: string
+          nguoi: string
+          su_kien: string
+          tac_tu_id?: string | null
+          user_id?: string | null
+          yeu_cau_id?: string | null
+        }
+        Update: {
+          chi_tiet?: Json | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          nguoi?: string
+          su_kien?: string
+          tac_tu_id?: string | null
+          user_id?: string | null
+          yeu_cau_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nhat_ky_tac_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nhat_ky_tac_tu_tac_tu_id_fkey"
+            columns: ["tac_tu_id"]
+            isOneToOne: false
+            referencedRelation: "tac_tu"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nhat_ky_tac_tu_yeu_cau_id_fkey"
+            columns: ["yeu_cau_id"]
+            isOneToOne: false
+            referencedRelation: "yeu_cau_chi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_events: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          props: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          props?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          props?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          is_demo: boolean
           notification_prefs: Json
           phone: string | null
+          role: string
           updated_at: string
           user_id: string
         }
@@ -604,8 +1113,10 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_demo?: boolean
           notification_prefs?: Json
           phone?: string | null
+          role?: string
           updated_at?: string
           user_id: string
         }
@@ -614,49 +1125,335 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_demo?: boolean
           notification_prefs?: Json
           phone?: string | null
+          role?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
-      transactions: {
+      qr_payments: {
+        Row: {
+          account_number: string
+          amount: number
+          bin: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          invoice_id: string | null
+          paid_at: string | null
+          paid_transaction_id: string | null
+          qr_code: string | null
+          reference_number: string
+          status: string
+          updated_at: string
+          virtual_account_number: string | null
+        }
+        Insert: {
+          account_number: string
+          amount: number
+          bin?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          paid_at?: string | null
+          paid_transaction_id?: string | null
+          qr_code?: string | null
+          reference_number: string
+          status?: string
+          updated_at?: string
+          virtual_account_number?: string | null
+        }
+        Update: {
+          account_number?: string
+          amount?: number
+          bin?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoice_id?: string | null
+          paid_at?: string | null
+          paid_transaction_id?: string | null
+          qr_code?: string | null
+          reference_number?: string
+          status?: string
+          updated_at?: string
+          virtual_account_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_payments_paid_transaction_id_fkey"
+            columns: ["paid_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_invoices: {
         Row: {
           amount: number
-          category: string | null
           company_id: string
           created_at: string
           id: string
+          matched_transaction_id: string | null
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          plan: string
+          received_amount: number | null
+          reference_code: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          id?: string
+          matched_transaction_id?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan: string
+          received_amount?: number | null
+          reference_code: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          matched_transaction_id?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan?: string
+          received_amount?: number | null
+          reference_code?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_invoices_matched_transaction_id_fkey"
+            columns: ["matched_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_period_end: string | null
+          id: string
+          last_invoice_id: string | null
+          plan: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          last_invoice_id?: string | null
+          plan: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          last_invoice_id?: string | null
+          plan?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_last_invoice_id_fkey"
+            columns: ["last_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tac_tu: {
+        Row: {
+          company_id: string
+          created_at: string
+          dung_lan_cuoi: string | null
+          id: string
+          khoa_bam: string
+          khoa_hien: string
+          mo_ta: string | null
+          ten: string
+          trang_thai: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          dung_lan_cuoi?: string | null
+          id?: string
+          khoa_bam: string
+          khoa_hien: string
+          mo_ta?: string | null
+          ten: string
+          trang_thai?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          dung_lan_cuoi?: string | null
+          id?: string
+          khoa_bam?: string
+          khoa_hien?: string
+          mo_ta?: string | null
+          ten?: string
+          trang_thai?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tac_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      thanh_vien_cong_ty: {
+        Row: {
+          company_id: string
+          moi_boi: string | null
+          sua_luc: string | null
+          tao_luc: string
+          user_id: string
+          vai_tro: string
+        }
+        Insert: {
+          company_id: string
+          moi_boi?: string | null
+          sua_luc?: string | null
+          tao_luc?: string
+          user_id: string
+          vai_tro?: string
+        }
+        Update: {
+          company_id?: string
+          moi_boi?: string | null
+          sua_luc?: string | null
+          tao_luc?: string
+          user_id?: string
+          vai_tro?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thanh_vien_cong_ty_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          account_number: string | null
+          amount: number
+          category: string | null
+          company_id: string
+          counter_account_name: string | null
+          counter_account_number: string | null
+          created_at: string
+          id: string
+          is_synthetic: boolean
           merchant_name: string | null
+          payment_reference: string | null
           reference_id: string | null
           source_bank: string | null
           transaction_date: string
           type: string
+          virtual_account_number: string | null
         }
         Insert: {
+          account_number?: string | null
           amount: number
           category?: string | null
           company_id: string
+          counter_account_name?: string | null
+          counter_account_number?: string | null
           created_at?: string
           id?: string
+          is_synthetic?: boolean
           merchant_name?: string | null
+          payment_reference?: string | null
           reference_id?: string | null
           source_bank?: string | null
           transaction_date: string
           type: string
+          virtual_account_number?: string | null
         }
         Update: {
+          account_number?: string | null
           amount?: number
           category?: string | null
           company_id?: string
+          counter_account_name?: string | null
+          counter_account_number?: string | null
           created_at?: string
           id?: string
+          is_synthetic?: boolean
           merchant_name?: string | null
+          payment_reference?: string | null
           reference_id?: string | null
           source_bank?: string | null
           transaction_date?: string
           type?: string
+          virtual_account_number?: string | null
         }
         Relationships: [
           {
@@ -697,6 +1494,142 @@ export type Database = {
           utm_source?: string | null
         }
         Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          event_code: string | null
+          event_type: string | null
+          grant_id: string | null
+          id: string
+          note: string | null
+          outcome: string
+          payload: Json | null
+          provider: string
+          received_at: string
+        }
+        Insert: {
+          event_code?: string | null
+          event_type?: string | null
+          grant_id?: string | null
+          id?: string
+          note?: string | null
+          outcome?: string
+          payload?: Json | null
+          provider: string
+          received_at?: string
+        }
+        Update: {
+          event_code?: string | null
+          event_type?: string | null
+          grant_id?: string | null
+          id?: string
+          note?: string | null
+          outcome?: string
+          payload?: Json | null
+          provider?: string
+          received_at?: string
+        }
+        Relationships: []
+      }
+      yeu_cau_chi: {
+        Row: {
+          cach_quyet: string | null
+          company_id: string
+          created_at: string
+          da_chi_luc: string | null
+          giao_dich_id: string | null
+          het_han_luc: string | null
+          id: string
+          ly_do: Json | null
+          ma_tham_chieu: string | null
+          ma_yeu_cau: string | null
+          muc_dich: string | null
+          ngan_hang_bin: string
+          nguoi_quyet: string | null
+          nhom_chi: string
+          quyet_luc: string | null
+          so_hoa_don: string | null
+          so_tai_khoan: string
+          so_tien: number
+          so_tien_thuc_chi: number | null
+          tac_tu_id: string
+          ten_nguoi_nhan: string | null
+          trang_thai: string
+          updated_at: string
+        }
+        Insert: {
+          cach_quyet?: string | null
+          company_id: string
+          created_at?: string
+          da_chi_luc?: string | null
+          giao_dich_id?: string | null
+          het_han_luc?: string | null
+          id?: string
+          ly_do?: Json | null
+          ma_tham_chieu?: string | null
+          ma_yeu_cau?: string | null
+          muc_dich?: string | null
+          ngan_hang_bin: string
+          nguoi_quyet?: string | null
+          nhom_chi: string
+          quyet_luc?: string | null
+          so_hoa_don?: string | null
+          so_tai_khoan: string
+          so_tien: number
+          so_tien_thuc_chi?: number | null
+          tac_tu_id: string
+          ten_nguoi_nhan?: string | null
+          trang_thai?: string
+          updated_at?: string
+        }
+        Update: {
+          cach_quyet?: string | null
+          company_id?: string
+          created_at?: string
+          da_chi_luc?: string | null
+          giao_dich_id?: string | null
+          het_han_luc?: string | null
+          id?: string
+          ly_do?: Json | null
+          ma_tham_chieu?: string | null
+          ma_yeu_cau?: string | null
+          muc_dich?: string | null
+          ngan_hang_bin?: string
+          nguoi_quyet?: string | null
+          nhom_chi?: string
+          quyet_luc?: string | null
+          so_hoa_don?: string | null
+          so_tai_khoan?: string
+          so_tien?: number
+          so_tien_thuc_chi?: number | null
+          tac_tu_id?: string
+          ten_nguoi_nhan?: string | null
+          trang_thai?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yeu_cau_chi_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yeu_cau_chi_giao_dich_id_fkey"
+            columns: ["giao_dich_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yeu_cau_chi_tac_tu_id_fkey"
+            columns: ["tac_tu_id"]
+            isOneToOne: false
+            referencedRelation: "tac_tu"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
