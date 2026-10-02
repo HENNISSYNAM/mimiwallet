@@ -8,6 +8,13 @@
       "when": 1790940316432,
       "tag": "0000_create_missing_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790940398137,
+      "tag": "0001_notifications_labels_credits",
+      "breakpoints": true
     }
   ]
 }

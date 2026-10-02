@@ -91,6 +91,24 @@ export type Database = {
           },
         ]
       }
+      cai_dat_thong_bao: {
+        Row: {
+          cap_nhat_luc: string
+          loai_tat: string[]
+          user_id: string
+        }
+        Insert: {
+          cap_nhat_luc?: string
+          loai_tat?: string[]
+          user_id: string
+        }
+        Update: {
+          cap_nhat_luc?: string
+          loai_tat?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       chinh_sach_chi: {
         Row: {
           chi_tra_nguoi_nhan_da_duyet: boolean
@@ -103,6 +121,7 @@ export type Database = {
           id: string
           nguong_can_duyet: number
           nhom_chi_duoc_phep: string[] | null
+          so_yeu_cau_moi_gio: number | null
           tac_tu_id: string
           updated_at: string
         }
@@ -117,6 +136,7 @@ export type Database = {
           id?: string
           nguong_can_duyet?: number
           nhom_chi_duoc_phep?: string[] | null
+          so_yeu_cau_moi_gio?: number | null
           tac_tu_id: string
           updated_at?: string
         }
@@ -131,6 +151,7 @@ export type Database = {
           id?: string
           nguong_can_duyet?: number
           nhom_chi_duoc_phep?: string[] | null
+          so_yeu_cau_moi_gio?: number | null
           tac_tu_id?: string
           updated_at?: string
         }
@@ -209,55 +230,73 @@ export type Database = {
       }
       companies: {
         Row: {
+          co_quan_thue: string | null
           connected_banks: Json | null
           created_at: string
           credit_limit: number | null
           credit_score: number | null
+          dia_chi_theo_mst: string | null
           employee_count: string | null
           id: string
           industry: string | null
           la_demo: boolean
+          loai_theo_mst: string | null
           monthly_revenue: number | null
+          mst_tra_luc: string | null
           name: string
           onboarding_done_at: string | null
           province: string | null
           tax_id: string | null
+          ten_theo_mst: string | null
+          trang_thai_mst: string | null
           updated_at: string
           user_id: string
           years_operating: string | null
         }
         Insert: {
+          co_quan_thue?: string | null
           connected_banks?: Json | null
           created_at?: string
           credit_limit?: number | null
           credit_score?: number | null
+          dia_chi_theo_mst?: string | null
           employee_count?: string | null
           id?: string
           industry?: string | null
           la_demo?: boolean
+          loai_theo_mst?: string | null
           monthly_revenue?: number | null
+          mst_tra_luc?: string | null
           name: string
           onboarding_done_at?: string | null
           province?: string | null
           tax_id?: string | null
+          ten_theo_mst?: string | null
+          trang_thai_mst?: string | null
           updated_at?: string
           user_id: string
           years_operating?: string | null
         }
         Update: {
+          co_quan_thue?: string | null
           connected_banks?: Json | null
           created_at?: string
           credit_limit?: number | null
           credit_score?: number | null
+          dia_chi_theo_mst?: string | null
           employee_count?: string | null
           id?: string
           industry?: string | null
           la_demo?: boolean
+          loai_theo_mst?: string | null
           monthly_revenue?: number | null
+          mst_tra_luc?: string | null
           name?: string
           onboarding_done_at?: string | null
           province?: string | null
           tax_id?: string | null
+          ten_theo_mst?: string | null
+          trang_thai_mst?: string | null
           updated_at?: string
           user_id?: string
           years_operating?: string | null
@@ -634,6 +673,7 @@ export type Database = {
           due_date: string
           id: string
           invoice_number: string
+          is_synthetic: boolean
           issued_date: string
           status: string
           total: number
@@ -651,6 +691,7 @@ export type Database = {
           due_date: string
           id?: string
           invoice_number: string
+          is_synthetic?: boolean
           issued_date: string
           status?: string
           total: number
@@ -668,6 +709,7 @@ export type Database = {
           due_date?: string
           id?: string
           invoice_number?: string
+          is_synthetic?: boolean
           issued_date?: string
           status?: string
           total?: number
@@ -872,6 +914,54 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      luot_to_khai: {
+        Row: {
+          company_id: string
+          hoa_don_id: string | null
+          id: string
+          ky_khoa: string | null
+          ly_do: string
+          tao_luc: string
+          thay_doi: number
+          to_khai_nhap_id: string | null
+        }
+        Insert: {
+          company_id: string
+          hoa_don_id?: string | null
+          id?: string
+          ky_khoa?: string | null
+          ly_do: string
+          tao_luc?: string
+          thay_doi: number
+          to_khai_nhap_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          hoa_don_id?: string | null
+          id?: string
+          ky_khoa?: string | null
+          ly_do?: string
+          tao_luc?: string
+          thay_doi?: number
+          to_khai_nhap_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "luot_to_khai_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "luot_to_khai_hoa_don_id_fkey"
+            columns: ["hoa_don_id"]
+            isOneToOne: true
+            referencedRelation: "subscription_invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -1400,6 +1490,141 @@ export type Database = {
           },
         ]
       }
+      thong_bao: {
+        Row: {
+          company_id: string
+          da_day_luc: string | null
+          da_doc_luc: string | null
+          da_xu_ly_luc: string | null
+          duong_dan: string | null
+          hanh_dong: Json
+          id: string
+          khoa: string
+          loai: string
+          loi_thoi_luc: string | null
+          muc_do: string
+          noi_dung: string
+          tao_luc: string
+          tieu_de: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          da_day_luc?: string | null
+          da_doc_luc?: string | null
+          da_xu_ly_luc?: string | null
+          duong_dan?: string | null
+          hanh_dong?: Json
+          id?: string
+          khoa: string
+          loai: string
+          loi_thoi_luc?: string | null
+          muc_do?: string
+          noi_dung: string
+          tao_luc?: string
+          tieu_de: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          da_day_luc?: string | null
+          da_doc_luc?: string | null
+          da_xu_ly_luc?: string | null
+          duong_dan?: string | null
+          hanh_dong?: Json
+          id?: string
+          khoa?: string
+          loai?: string
+          loi_thoi_luc?: string | null
+          muc_do?: string
+          noi_dung?: string
+          tao_luc?: string
+          tieu_de?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thong_bao_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transaction_labels: {
+        Row: {
+          category: string | null
+          company_id: string
+          confidence: number | null
+          created_at: string
+          id: string
+          is_internal_transfer: boolean
+          is_personal: boolean
+          needs_review: boolean
+          paired_transaction_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          is_internal_transfer?: boolean
+          is_personal?: boolean
+          needs_review?: boolean
+          paired_transaction_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          is_internal_transfer?: boolean
+          is_personal?: boolean
+          needs_review?: boolean
+          paired_transaction_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_labels_paired_transaction_id_fkey"
+            columns: ["paired_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_labels_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: true
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_number: string | null
@@ -1636,7 +1861,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      danh_dau_thong_bao: {
+        Args: { p_da_xu_ly?: boolean; p_ids: string[] }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
