@@ -31,7 +31,7 @@ const tuB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 async function khoa(matKhau: string, muoi: Uint8Array, soVong: number, dung: KeyUsage[]) {
   const goc = await crypto.subtle.importKey('raw', new TextEncoder().encode(matKhau), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', hash: 'SHA-256', salt: muoi, iterations: soVong },
+    { name: 'PBKDF2', hash: 'SHA-256', salt: muoi as BufferSource, iterations: soVong },
     goc,
     { name: 'AES-GCM', length: 256 },
     false,

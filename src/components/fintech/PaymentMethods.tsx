@@ -105,7 +105,7 @@ export default function PaymentMethods() {
        * Nếu ngày nào `create-qr` đổi điều kiện, phải đổi cả ở đây. Chép luật ra
        * hai nơi vốn đã là nợ; ít nhất đừng để hai bản chép khác nhau.
        */
-      const { data: qr } = await supabase
+      const { data: qr } = await (supabase as any)
         .from('bank_connections')
         .select('account_name, bank_name')
         .eq('company_id', cid)

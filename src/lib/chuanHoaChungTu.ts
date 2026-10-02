@@ -62,6 +62,6 @@ export function noiDungChuanChungTu(c: ChungTuGoc): string {
 
 export async function bamHex(s: string | Uint8Array): Promise<string> {
   const du = typeof s === 'string' ? new TextEncoder().encode(s) : s;
-  const b = new Uint8Array(await crypto.subtle.digest('SHA-256', du));
+  const b = new Uint8Array(await crypto.subtle.digest('SHA-256', du as BufferSource));
   return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
 }
