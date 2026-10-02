@@ -18,7 +18,7 @@
  * Đổi `PHIEN_BAN` mỗi lần đổi danh sách VO — service worker cũ sẽ tự dọn.
  */
 
-const PHIEN_BAN = 'mimi-v3';
+const PHIEN_BAN = 'mimi-v2';
 const VO = [
   '/',
   '/manifest.webmanifest',
@@ -61,8 +61,6 @@ self.addEventListener('fetch', (e) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || laDuLieu(url)) return;
-  // Video tải từng đoạn (Range → 206): cache không lưu được, để trình duyệt tự lấy thẳng.
-  if (request.destination === 'video' || request.headers.has('range')) return;
 
   // Điều hướng: ưu tiên mạng để người dùng luôn nhận bản mới nhất; mất mạng thì
   // trả vỏ đã cache, và nếu cũng không có thì một câu nói thật.
@@ -86,9 +84,7 @@ self.addEventListener('fetch', (e) => {
     caches.match(request).then((cache) => {
       const mang = fetch(request)
         .then((res) => {
-          // Tệp tĩnh mà máy chủ trả HTML = tệp đã mất sau deploy (bị viết lại về index.html): không cache.
-          const laHtml = (res.headers.get('content-type') ?? '').includes('text/html');
-          if (res.ok && !laHtml) caches.open(PHIEN_BAN).then((c) => c.put(request, res.clone()));
+          if (res.ok) caches.open(PHIEN_BAN).then((c) => c.put(request, res.clone()));
           return res;
         })
         .catch(() => cache);

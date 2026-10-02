@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { QrPayDialog } from '@/components/fintech/QrPayDialog';
-import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 import { MO_TA_TOI_DA, kiemMoTa } from '@/lib/moTaQr';
 import logoVnpay from '@/assets/logos/pay-vnpay.webp';
 import logoZalopay from '@/assets/logos/pay-zalopay.png';
@@ -50,8 +49,6 @@ interface TrangThai {
   goi: string | null;
   hetHan: string | null;
   dangTai: boolean;
-  /** Đọc lỗi: KHÔNG hiện "chưa có QR / chưa có gói" — hai câu đó sai khi chỉ là lần đọc hỏng. */
-  loi?: boolean;
 }
 
 export default function PaymentMethods() {
@@ -108,7 +105,7 @@ export default function PaymentMethods() {
        * Nếu ngày nào `create-qr` đổi điều kiện, phải đổi cả ở đây. Chép luật ra
        * hai nơi vốn đã là nợ; ít nhất đừng để hai bản chép khác nhau.
        */
-      const { data: qr, error: loiQr } = await supabase
+      const { data: qr } = await (supabase as any)
         .from('bank_connections')
         .select('account_name, bank_name')
         .eq('company_id', cid)
@@ -137,12 +134,11 @@ export default function PaymentMethods() {
         .eq('co_token', true)
         .limit(1);
 
-      const { data: sub, error: loiSub } = await supabase
+      const { data: sub } = await supabase
         .from('subscriptions')
         .select('plan, current_period_end')
         .eq('company_id', cid).limit(1);
 
-      if (loiQr || loiSub) return setTt((p) => ({ ...p, dangTai: false, loi: true }));
       setTt({
         qrSan: !!qr?.length,
         qrTen: qr?.[0] ? `${qr[0].bank_name ?? ''} · ${qr[0].account_name ?? ''}`.trim() : null,
@@ -161,8 +157,6 @@ export default function PaymentMethods() {
           Cách MIMI nhận tiền từ khách của bạn, và cách bạn trả phí dịch vụ
         </p>
       </div>
-
-      {tt.loi && <LoiTaiLai cau="Chưa tải được trạng thái nhận tiền QR và gói dịch vụ. Tải lại trang để thử lại." />}
 
       {/* ── Đang dùng được ─────────────────────────────────────────────── */}
       <div className="space-y-3">

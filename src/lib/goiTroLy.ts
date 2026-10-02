@@ -9,19 +9,13 @@ async function phien() {
   return session;
 }
 
-/**
- * Gọi edge function `tro-ly` (MIMI Assistant) bằng phiên của chủ doanh nghiệp.
- *
- * `signal` (tuỳ chọn) để giao diện NGỪNG CHỜ. Huỷ phía máy khách không huỷ việc máy chủ đang làm —
- * nơi gọi phải nói đúng điều đó với người dùng, và không được tự gọi lại một việc làm thay đổi dữ liệu.
- */
-export async function goiTroLy(hanhDong: string, du: Record<string, unknown> = {}, tc: { signal?: AbortSignal } = {}) {
+/** Gọi edge function `tro-ly` (MIMI Assistant) bằng phiên của chủ doanh nghiệp. */
+export async function goiTroLy(hanhDong: string, du: Record<string, unknown> = {}) {
   const session = await phien();
   const res = await fetch(`${SUPABASE_URL}/functions/v1/tro-ly`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ hanh_dong: hanhDong, ...(await kemCongTy(du)) }),
-    ...(tc.signal ? { signal: tc.signal } : {}),
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok || body?.error) {

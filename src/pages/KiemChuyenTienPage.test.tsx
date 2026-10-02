@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import KiemChuyenTienPage from './KiemChuyenTienPage';
 
 /**
@@ -17,12 +16,12 @@ beforeEach(() => { gia.goiTroLy.mockReset(); });
 
 describe('Kiểm tra trước khi chuyển tiền', () => {
   it('nói rõ MIMI không chuyển tiền và không lưu thông tin nhập vào', () => {
-    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
+    render(<KiemChuyenTienPage />);
     expect(document.body.textContent).toContain('MIMI không chuyển tiền và không lưu thông tin bạn nhập ở đây');
   });
 
   it('thiếu số tài khoản hoặc số tiền: báo tại chỗ, không gọi máy chủ', () => {
-    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
+    render(<KiemChuyenTienPage />);
     nhap('Số tài khoản người nhận', '12');
     bam();
     expect(screen.getByRole('alert').textContent).toContain('ít nhất 6 chữ số');
@@ -34,7 +33,7 @@ describe('Kiểm tra trước khi chuyển tiền', () => {
 
   it('gửi đúng dữ liệu: chỉ chữ số, số tiền là số, kèm hoàn cảnh đã tích', async () => {
     gia.goiTroLy.mockResolvedValue({ muc_do: null, dau_hieu: [], lich_su_du: true, trong_danh_sach_tin_cay: false, lan_tra_truoc: 0, lan_cuoi: null, lon_nhat_da_tra: null });
-    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
+    render(<KiemChuyenTienPage />);
     nhap('Số tài khoản người nhận', '0123 456 789');
     nhap(/Tên người nhận/, ' Nguyen Van H ');
     nhap('Số tiền (₫)', '45.000.000');
@@ -51,7 +50,7 @@ describe('Kiểm tra trước khi chuyển tiền', () => {
       muc_do: 'cao', lich_su_du: true, trong_danh_sach_tin_cay: false, lan_tra_truoc: 0, lan_cuoi: null, lon_nhat_da_tra: null,
       dau_hieu: [{ ma: 'bi_ep_buoc', muc_do: 'cao', cau: 'Bạn đang gặp một tình huống hay gặp trong lừa đảo.', can_cu: [] }],
     });
-    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
+    render(<KiemChuyenTienPage />);
     nhap('Số tài khoản người nhận', '0123456789');
     nhap('Số tiền (₫)', '45000000');
     bam();
@@ -66,7 +65,7 @@ describe('Kiểm tra trước khi chuyển tiền', () => {
     gia.goiTroLy.mockResolvedValue({
       muc_do: null, dau_hieu: [], lich_su_du: true, trong_danh_sach_tin_cay: true, lan_tra_truoc: 4, lan_cuoi: '2026-09-05', lon_nhat_da_tra: 2_000_000,
     });
-    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
+    render(<KiemChuyenTienPage />);
     nhap('Số tài khoản người nhận', '0011223344');
     nhap('Số tiền (₫)', '1500000');
     bam();
@@ -80,28 +79,11 @@ describe('Kiểm tra trước khi chuyển tiền', () => {
 
   it('máy chủ lỗi: báo lỗi, không hiện kết quả nào', async () => {
     gia.goiTroLy.mockRejectedValue(new Error('Quá nhiều yêu cầu, thử lại sau.'));
-    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
+    render(<KiemChuyenTienPage />);
     nhap('Số tài khoản người nhận', '0123456789');
     nhap('Số tiền (₫)', '1000000');
     bam();
     expect((await screen.findByRole('alert')).textContent).toContain('Quá nhiều yêu cầu');
     expect(screen.queryByRole('region', { name: 'Kết quả kiểm tra' })).toBeNull();
-  });
-});
-
-describe('Kiểm tra trước khi chuyển — việc cần làm theo dấu hiệu', () => {
-  it('nhà cung cấp đổi số tài khoản → hướng dẫn xác minh cụ thể, cộng lời khuyên chung', async () => {
-    gia.goiTroLy.mockResolvedValue({
-      muc_do: 'cao', lich_su_du: true, trong_danh_sach_tin_cay: false, lan_tra_truoc: 0, lan_cuoi: null, lon_nhat_da_tra: null,
-      dau_hieu: [{ ma: 'doi_so_tai_khoan', muc_do: 'cao', cau: '7 lần trước trả vào ••••1234, lần này ••••8910.', can_cu: [] }],
-    });
-    render(<MemoryRouter><KiemChuyenTienPage /></MemoryRouter>);
-    nhap('Số tài khoản người nhận', '0123458910');
-    nhap('Số tiền (₫)', '80000000');
-    bam();
-    const viec = await screen.findByRole('list', { name: 'Việc nên làm' });
-    expect(viec.textContent).toContain('số điện thoại trong hợp đồng');
-    expect(viec.textContent).toContain('tên chủ tài khoản');
-    expect(viec.textContent).toContain('Không đưa mã OTP');
   });
 });

@@ -7,8 +7,6 @@ import TrustSection from '@/components/landing/TrustSection';
 import DaiLogo from '@/components/landing/DaiLogo';
 import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
 import VideoBaoMat from '@/components/landing/VideoBaoMat';
-import VideoMeoMimi from '@/components/landing/VideoMeoMimi';
-import { ManHinhChoDemo } from '@/components/landing/ManHinhChoDemo';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
@@ -24,13 +22,14 @@ import {
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Shield, Zap, Brain, Play, Pause, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, BarChart3, Globe } from 'lucide-react';
+import { Shield, Zap, Brain, CheckCircle, Play, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { DUONG_MINH_HOA } from '@/lib/minhHoa';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import mimiLogo from '@/assets/mimi-cat.png';
+import MimiCat from '@/components/brand/MimiCat';
 import { QuantumLockArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
@@ -38,6 +37,8 @@ import featureSteps from '@/assets/feature-steps.png';
 import aiAnalysis from '@/assets/ai-analysis.png';
 import aiGreenAnalysis from '@/assets/ai-green-analysis.png';
 import securityShield from '@/assets/security-shield.png';
+import greenFinanceDashboard from '@/assets/green-finance-dashboard.png';
+import carbonCreditsVisual from '@/assets/carbon-credits-visual.png';
 import AnimatedStepFlow from '@/components/onboarding/AnimatedStepFlow';
 import NetworkGraph from '@/components/onboarding/NetworkGraph';
 import { GOI_THANG, giaVND } from '../../supabase/functions/_shared/billing/bang-gia.ts';
@@ -423,8 +424,8 @@ function BentoCard({ title, desc, icon, badge, children, className = '', delay =
 }
 
 /* ─── Pricing ─── */
-function PricingCard({ name, price, features, cta, highlighted, badge }: {
-  name: string; price: string; features: string[]; cta: string; highlighted?: boolean; badge?: string;
+function PricingCard({ name, price, features, cta, highlighted, annual, badge }: {
+  name: string; price: string; features: string[]; cta: string; highlighted?: boolean; annual: boolean; badge?: string;
 }) {
   const navigate = useNavigate();
   return (
@@ -443,10 +444,10 @@ function PricingCard({ name, price, features, cta, highlighted, badge }: {
       )}
       <h3 className="font-display font-bold text-foreground text-xl">{name}</h3>
       <p className="font-mono text-3xl font-extrabold text-foreground mt-3">
-        {price}
+        {price === 'Liên hệ' ? price : annual && price !== 'Miễn phí' ? `${Math.round(parseInt(price.replace(/\D/g, '')) * 0.8).toLocaleString('vi-VN')}₫` : price}
       </p>
       {price !== 'Miễn phí' && price !== 'Liên hệ' && (
-        <p className="text-xs text-muted-foreground mt-1">/tháng</p>
+        <p className="text-xs text-muted-foreground mt-1">/tháng {annual && '(tiết kiệm 20%)'}</p>
       )}
       <div className="w-full h-px bg-border my-6" />
       <ul className="space-y-3 flex-1">
@@ -533,8 +534,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
   const hien = (k: KhoaKhoi) => khoi.includes(k);
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [annual, setAnnual] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-  const [dungVideo, setDungVideo] = useState(false);
   const { signInAsDemo, demoAvailable } = useAuthStore();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -546,36 +547,24 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
       <Navbar />
       {dauTrang}
 
-      {demoLoading && <ManHinhChoDemo />}
       {hien('hero') && (<>
       {/* ═══ HERO ═══ */}
-      {/*
-        29/09/2026: video mèo MIMI đuổi đồng xu làm NỀN phần đầu trang; tiêu đề và nút nằm ngay trên video.
-        Máy tính: video chiếm ~2/3 bên phải, mép trái tan dần vào nền kem nơi chữ đứng — mèo và đồng xu luôn lộ,
-        chữ luôn đọc được. Điện thoại: video ở nửa trên, tan xuống nền kem, chữ và nút ngay dưới.
-      */}
-      <section ref={heroRef} className="relative overflow-hidden mimi-hero-warm">
-        {/* Mép video tan bằng mask (không phủ màu) nên hoà vào đúng nền phía sau, không lộ đường kẻ. */}
-        <div aria-hidden className="absolute inset-x-0 top-0 h-[52svh] [mask-image:linear-gradient(to_bottom,black_55%,transparent)] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[66%] lg:[mask-composite:intersect] lg:[mask-image:linear-gradient(to_right,transparent,black_30%),linear-gradient(to_bottom,black_72%,transparent)]">
-          <VideoMeoMimi dung={dungVideo} />
-          {/* Mép trên nhạt đi cho thanh điều hướng đọc rõ. */}
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[hsl(36_44%_98%/0.75)] to-transparent" />
-        </div>
+      <section ref={heroRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden mimi-hero-warm">
+        {/*
+          Warm ground rather than plain white, the way MetaMask stages its fox:
+          the mark is orange, so a neutral background makes it look pasted on
+          while a cream field makes it look at home. Still a static wash — no
+          drifting orbs — so nothing competes with the headline.
+        */}
+        <div aria-hidden className="mimi-hero-glow" />
 
-        <button
-          type="button"
-          onClick={() => setDungVideo((v) => !v)}
-          aria-label={dungVideo ? t('landing.video.phat') : t('landing.video.dung')}
-          aria-pressed={dungVideo}
-          className="absolute bottom-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        >
-          {dungVideo ? <Play size={16} /> : <Pause size={16} />}
-        </button>
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
-          className="relative z-10 container mx-auto px-4 pt-[46svh] pb-4 text-center lg:flex lg:min-h-[100svh] lg:items-center lg:pt-28 lg:pb-44 lg:text-left"
+          className="relative z-10 container mx-auto px-4 pt-24 pb-12
+                     grid lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-6 items-center
+                     text-center lg:text-left"
         >
-          <div className="mx-auto max-w-xl lg:mx-0">
+          <div className="order-2 lg:order-1">
           {/* Eyebrow — states the category, makes no ranking claim. */}
           <motion.p {...fadeUp(0)} className="text-sm font-medium text-muted-foreground mb-6">
             {t('hero.badge')}
@@ -598,7 +587,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           */}
           <motion.h1
             {...fadeUp(0.1)}
-            className="font-serif font-normal text-foreground leading-[1.06] tracking-[-0.02em] mx-auto lg:mx-0 text-balance"
+            className="font-serif font-normal text-foreground leading-[1.06] tracking-[-0.02em] max-w-4xl mx-auto lg:mx-0 text-balance"
             style={{ fontSize: 'clamp(2.4rem, 3.6vw, 3.9rem)' }}
           >
             {/* Copy stays in i18n — that arrived from the other branch and is
@@ -608,7 +597,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             <br className="hidden sm:block" /> {t('landing.hero.titleLine2')}
           </motion.h1>
 
-          <motion.p {...fadeUp(0.2)} className="mt-6 text-slate-700 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed">
+          <motion.p {...fadeUp(0.2)} className="mt-6 text-muted-foreground text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed">
             {t('landing.hero.subtitle')}
           </motion.p>
 
@@ -629,14 +618,14 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               <button
                 onClick={async () => {
                   setDemoLoading(true);
-                  // Đăng nhập nhanh thì vào thẳng; quá ~1 giây mới hiện màn chờ video (xem ManHinhChoDemo).
                   const { error } = await signInAsDemo();
-                  if (error) { setDemoLoading(false); toast.error(error); }
+                  setDemoLoading(false);
+                  if (error) toast.error(error);
                   else navigate('/dashboard');
                 }}
                 disabled={demoLoading}
-                className="flex items-center gap-1.5 rounded-2xl border border-white/70 bg-white/60 px-5 text-[15px] font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white/80 disabled:opacity-60"
-                style={{ height: '52px' }}
+                className="text-[15px] font-medium text-primary hover:underline underline-offset-4 flex items-center gap-1.5 disabled:opacity-60"
+                style={{ minHeight: '44px' }}
               >
                 {demoLoading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
                 {t('hero.ctaSecondary')}
@@ -652,7 +641,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           */}
           <motion.div
             {...fadeUp(0.4)}
-            className="mt-9 flex flex-wrap items-center justify-center lg:justify-start gap-x-7 gap-y-3 text-[13px] text-slate-700"
+            className="mt-9 flex flex-wrap items-center justify-center lg:justify-start gap-x-7 gap-y-3 text-[13px] text-muted-foreground"
           >
             {[ScoringBolt, QuantumShield, InvoiceDoc, LearnCap].map((Icon, i) => {
               const text = (t('landing.hero.pills', { returnObjects: true }) as string[])[i];
@@ -666,12 +655,24 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           </motion.div>
           </div>
 
+          {/*
+            The mark, staged the way MetaMask stages its fox: large, on a warm
+            ground, turning toward the pointer. It sits second in the DOM so a
+            screen reader and a phone both reach the headline first, and the
+            grid puts it first visually only from `lg` up.
+          */}
+          <motion.div
+            {...fadeUp(0.15)}
+            className="order-1 lg:order-2 mx-auto w-[210px] sm:w-[260px] lg:w-full lg:max-w-[420px]"
+          >
+            <MimiCat variant="live" className="w-full" />
+          </motion.div>
+          {/* Spans both columns so the mockup keeps full width under the fold. */}
+          <div className="lg:col-span-2 order-3">
+            <HeroMockup />
+          </div>
         </motion.div>
       </section>
-      {/* Ảnh giao diện nổi lên từ mép dưới video. */}
-      <div className="relative z-10 container mx-auto px-4 lg:-mt-36">
-        <HeroMockup />
-      </div>
       </>)}
 
       {hien('dai_logo') && (<>
@@ -924,8 +925,124 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               </motion.div>
             </BentoCard>
 
-            {/* Gỡ 28/09/2026: thẻ "Tài chính xanh" (lộ trình, chưa có đối tác tín dụng xanh) và "Tín chỉ carbon"
-                (chưa triển khai) — trang chỉ nói thứ đang chạy thật. */}
+            {/* Green Finance Cards */}
+            <BentoCard
+              title={t('solutions.greenFinance')}
+              badge={t('landing.solutions.greenFinanceBadge')}
+              desc={t('landing.solutions.greenFinanceDesc')}
+              icon={<Leaf size={18} />}
+              delay={0.4}
+            >
+              <motion.div 
+                className="mt-4 relative overflow-hidden rounded-xl group/green cursor-pointer"
+                whileHover={{ scale: 1.03, y: -4 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                <motion.img 
+                  src={greenFinanceDashboard} 
+                  alt="Green Finance Dashboard" 
+                  className="w-full rounded-xl transition-all duration-700 group-hover/green:scale-110 group-hover/green:brightness-110"
+                  initial={{ scale: 1.15, opacity: 0, filter: 'blur(6px)' }}
+                  whileInView={{ scale: 1, opacity: 0.95, filter: 'blur(0px)' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                />
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(135deg, transparent 30%, hsla(158,100%,43%,0.08) 50%, transparent 70%)' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/20 to-transparent pointer-events-none" />
+              </motion.div>
+              {/* No rate or limit here: green lending is not live, so any number
+                  would be a promise we cannot honour. */}
+              <div className="mt-3 rounded-xl border border-mimi-green/10 bg-mimi-green/5 p-3">
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {t('landing.solutions.greenFinanceNote')}
+                </p>
+              </div>
+            </BentoCard>
+
+            <BentoCard
+              title={t('landing.solutions.carbonTitle')}
+              desc={t('landing.solutions.carbonDesc')}
+              icon={<TreePine size={18} />}
+              className="md:col-span-2"
+              delay={0.48}
+            >
+              <div className="mt-4 grid md:grid-cols-2 gap-4">
+                <motion.div 
+                  className="relative overflow-hidden rounded-xl group/carbon cursor-pointer"
+                  whileHover={{ scale: 1.04, rotate: 1, y: -4 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  <motion.img 
+                    src={carbonCreditsVisual} 
+                    alt="Carbon Credits" 
+                    className="w-full h-40 object-cover rounded-xl transition-all duration-700 group-hover/carbon:scale-110 group-hover/carbon:brightness-110"
+                    initial={{ opacity: 0, scale: 1.2, filter: 'blur(8px)' }}
+                    whileInView={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-foreground/15 to-transparent pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                  />
+                  {/* Shimmer effect */}
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(105deg, transparent 40%, hsla(158,100%,43%,0.1) 48%, hsla(158,100%,43%,0.2) 50%, hsla(158,100%,43%,0.1) 52%, transparent 60%)' }}
+                    initial={{ x: '-150%' }}
+                    whileInView={{ x: '250%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 2, delay: 1, ease: 'easeInOut' }}
+                  />
+                  <motion.div
+                    className="absolute bottom-3 left-3 right-3"
+                    initial={{ opacity: 0, y: 15 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <p className="text-white font-display font-bold text-sm drop-shadow-lg">{t('solutions.netZero')}</p>
+                    <p className="text-white/80 text-xs drop-shadow-md">{t('solutions.sustainableFuture')}</p>
+                  </motion.div>
+                </motion.div>
+                <div className="flex flex-col justify-center space-y-3">
+                  <div className="flex items-center justify-between bg-mimi-green/5 border border-mimi-green/10 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-mimi-green/15 flex items-center justify-center">
+                        <Recycle size={18} className="text-mimi-green" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{t('solutions.carbonCredits')}</p>
+                        <p className="text-xs text-muted-foreground">{t('landing.solutions.carbonNotDeployed')}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Capability outline, not measurements — the product has no
+                      emissions data yet, so any figure here would be invented. */}
+                  <div className="space-y-2">
+                    {(t('landing.solutions.carbonFeatures', { returnObjects: true }) as string[]).map((s, i) => (
+                      <motion.div
+                        key={s}
+                        className="flex items-start gap-2 bg-card/50 border border-border/50 rounded-lg p-2.5"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                      >
+                        <Leaf size={13} className="text-mimi-green shrink-0 mt-0.5" />
+                        <p className="text-[11px] leading-snug text-muted-foreground">{s}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </BentoCard>
           </div>
         </div>
       </section>
@@ -964,17 +1081,17 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               */}
               <span className="text-xs text-primary font-mono uppercase tracking-widest">Minh bạch</span>
               <h2 className="font-serif font-normal text-[clamp(1.75rem,3.2vw,2.375rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3 mb-6">
-                Bạn xem được MIMI làm gì,{' '}
-                <span className="text-gradient">từng bước một</span>
+                Không phải hộp đen —{' '}
+                <span className="text-gradient">bạn xem được từng bước</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Việc nào MIMI nhắc cũng kèm bằng chứng, và ghi rõ đó là MIMI tự kiểm trên số liệu hay do bạn xác nhận. Khi dẫn luật, MIMI trích nguyên văn và ghi số hiệu văn bản.
+                Mỗi việc MIMI nhắc đều ghi lại bằng chứng, và nói rõ bằng chứng đó do máy chủ đã kiểm trên dữ liệu hay do bạn tự xác nhận. Điều luật MIMI dẫn là câu trích nguyên văn, kèm số hiệu văn bản.
               </p>
               <div className="space-y-4">
                 {[
-                  { label: 'Ghi rõ bằng chứng từ đâu', value: '"MIMI đã kiểm trên dữ liệu" khác với "theo xác nhận của bạn"', icon: <Brain size={16} /> },
-                  { label: 'Trích luật nguyên văn', value: 'Có số hiệu văn bản, điều, khoản. Không kể lại theo trí nhớ.', icon: <TrendingUp size={16} /> },
-                  { label: 'Ai xác nhận khoản nào', value: 'Ai bấm xác nhận khoản nào, MIMI đều ghi lại', icon: <Shield size={16} /> },
+                  { label: 'Bằng chứng ghi rõ độ chắc', value: '"MIMI đã kiểm trên dữ liệu" khác với "theo xác nhận của bạn"', icon: <Brain size={16} /> },
+                  { label: 'Căn cứ trích nguyên văn', value: 'Số hiệu văn bản, điều, khoản — không diễn giải theo trí nhớ', icon: <TrendingUp size={16} /> },
+                  { label: 'Ai xác nhận khoản nào', value: 'Mỗi lần xác nhận phân loại đều ghi lại ai đã bấm', icon: <Shield size={16} /> },
                 ].map((item, i) => (
                   <motion.div
                     key={item.label}
@@ -1037,18 +1154,26 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             <span className="text-xs text-primary font-mono uppercase tracking-widest">Bảng giá</span>
             <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Chọn gói phù hợp</h2>
           </motion.div>
-          {/*
-            Gỡ nút gạt "Hàng tháng / Hàng năm" và dòng dùng thử 14 ngày (27/09/2026, trước Go-Live):
-            `subscription-billing` chỉ thu theo tháng và không có dùng thử, nên trang đang hứa một giá
-            và một quyền lợi hệ thống không làm được. Giá tháng giữ nguyên, lấy từ `GOI_THANG` — cùng
-            bảng giá máy chủ thu. Muốn bán gói năm hay cho dùng thử thì làm ở máy chủ TRƯỚC, rồi mới
-            đưa lên đây.
-          */}
-          <div className="mb-14" />
+          <div className="flex items-center justify-center gap-4 mb-14">
+            <span className={`text-sm font-medium ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>Hàng tháng</span>
+            <button
+              onClick={() => setAnnual(!annual)}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${annual ? 'bg-primary' : 'bg-accent border border-border'}`}
+            >
+              <motion.div
+                className="absolute top-1 w-5 h-5 rounded-full bg-primary-foreground shadow-sm"
+                animate={{ left: annual ? 30 : 4 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </button>
+            <span className={`text-sm font-medium ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Hàng năm <span className="text-mimi-green font-mono text-xs ml-1">-20%</span>
+            </span>
+          </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" />
-            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['So sánh hai cách tính thuế', 'Không giới hạn tài khoản ngân hàng']} cta="Chọn gói này" highlighted badge="MIMI gợi ý" />
-            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" />
+            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" annual={annual} />
+            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['Tự phân loại chi phí (đang xây)', 'So sánh hai cách tính thuế', 'Đối chiếu hoá đơn từ cơ quan thuế', 'Không giới hạn tài khoản ngân hàng', 'Bảng kê chi phí kèm nguồn từng dòng (đang xây)', '14 ngày dùng thử']} cta="Dùng thử 14 ngày" highlighted annual={annual} badge="Phổ biến nhất" />
+            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Xuất bảng kê hàng loạt (đang xây)', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" annual={annual} />
           </div>
 
           {/*
@@ -1066,7 +1191,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             work this product does, so they are the buyer who exists today.
           */}
           <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed">
-            MIMI làm sẵn sổ chi phí và bảng kê để bạn tự kê khai. MIMI không nộp thuế thay bạn và không cho vay.
+            MIMI dựng sổ chi phí và bảng kê để bạn kê khai. MIMI không nộp thuế thay bạn và không cấp vốn.
           </p>
         </div>
       </section>

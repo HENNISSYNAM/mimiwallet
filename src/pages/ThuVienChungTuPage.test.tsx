@@ -18,8 +18,6 @@ vi.mock('@/integrations/supabase/client', () => {
   const chuoi = (data: unknown) => {
     const p = Promise.resolve({ data, error: null }) as Promise<unknown> & Record<string, unknown>;
     for (const k of ['select', 'eq', 'order', 'limit', 'in', 'maybeSingle']) p[k] = () => p;
-    // Đọc theo trang như PostgREST: cắt đúng đoạn được xin.
-    p.range = (a: number, b: number) => chuoi(Array.isArray(data) ? data.slice(a, b + 1) : data);
     return p;
   };
   return {
@@ -39,6 +37,9 @@ beforeEach(() => {
       { id: 'q1', loai: 'hoa_don', so_hoa_don: '0001', ky_hieu: null, ngay: '2026-09-10', ben_ban: 'Công ty Đồng Tâm', ma_so_thue_ben_ban: null, tien_thue: null, tong_tien: 1_100_000, giao_dich_id: 'g1', anh_path: 'c1/q1.jpg', created_at: '2026-09-10T00:00:00Z' },
       { id: 'q2', loai: 'bien_lai', so_hoa_don: null, ky_hieu: null, ngay: '2026-09-12', ben_ban: 'Quán Ba Anh', ma_so_thue_ben_ban: null, tien_thue: null, tong_tien: 250_000, giao_dich_id: null, anh_path: null, created_at: '2026-09-12T00:00:00Z' },
     ],
+    gdt_invoices: [
+      { id: 'h1', invoice_number: '777', invoice_serial: 'K26', counterparty_name: 'Viettel', counterparty_tax_code: '0100109106', total_amount: 330_000, tax_amount: 30_000, issued_at: '2026-09-11T00:00:00Z' },
+    ],
     transactions: [{ id: 'g1', transaction_date: '2026-09-11', counter_account_name: 'DONG TAM', merchant_name: null, amount: 1_100_000, is_synthetic: false }],
   };
 });
@@ -46,12 +47,10 @@ beforeEach(() => {
 const dung = () => render(<MemoryRouter><ThuVienChungTuPage /></MemoryRouter>);
 
 describe('Thư viện chứng từ', () => {
-  it('chứng từ chụp, ảnh qua URL ký tạm, nói rõ chứng từ nào đã gắn khoản chi', async () => {
+  it('gộp hai nguồn, ảnh qua URL ký tạm, nói rõ chứng từ nào đã gắn khoản chi', async () => {
     dung();
     const ds = await screen.findByRole('list', { name: 'Chứng từ' });
-    expect(within(ds).getAllByRole('listitem')).toHaveLength(2);
-    // Đã gỡ hoá đơn điện tử: không còn bộ lọc hay nhãn cho nguồn đó.
-    expect(screen.queryByRole('button', { name: 'Hoá đơn điện tử' })).toBeNull();
+    expect(within(ds).getAllByRole('listitem')).toHaveLength(3);
     expect((screen.getByAltText('Ảnh chứng từ Công ty Đồng Tâm') as HTMLImageElement).src).toBe('https://ky/c1/q1.jpg');
     expect(ds.textContent).toContain('Đã gắn khoản chi 11/09/2026');
     expect(ds.textContent).toContain('Chưa gắn khoản chi');
@@ -81,24 +80,13 @@ describe('Thư viện chứng từ', () => {
    * ngay tại đó. Máy chủ đã trả lời `co_mo_hinh: false` từ trước khi hiện nút,
    * nên giấu tới sau cú bấm chỉ tốn của người dùng một lần tin tưởng.
    */
-  // 29/09/2026: chưa bật đọc ảnh thì NHẬP TAY (máy chủ `luu_chung_tu` không cần mô hình). Trước đây nút bị khoá
-  // nên cả production chưa ai thêm được chứng từ nào.
-  it('chưa bật đọc ảnh: nút mở form nhập tay, lưu gọi luu_chung_tu, không gọi quét ảnh', async () => {
+  it('chưa bật đọc ảnh thì nút chụp bị khoá và nói rõ lý do ngay trên trang', async () => {
     dung();
     await screen.findByRole('list', { name: 'Chứng từ' });
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('trang_thai'));
-    expect(screen.getByText(/chưa bật đọc ảnh chứng từ/i)).toBeTruthy();
 
     const nut = await screen.findByRole('button', { name: /Chụp chứng từ/ });
-    expect((nut as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(nut);
-    expect(await screen.findByText('Nhập chứng từ')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Tổng tiền (₫)'), { target: { value: '1.250.000' } });
-    fireEvent.change(screen.getByLabelText('Bên bán'), { target: { value: 'Cửa hàng Minh Phát' } });
-    fireEvent.click(screen.getByRole('button', { name: /Lưu chứng từ/ }));
-    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('luu_chung_tu', expect.objectContaining({
-      tong_tien: 1_250_000, ben_ban: 'Cửa hàng Minh Phát', loai: 'hoa_don', anh: null,
-    })));
-    expect(gia.troLy).not.toHaveBeenCalledWith('quet_chung_tu', expect.anything());
+    await waitFor(() => expect((nut as HTMLButtonElement).disabled).toBe(true));
+    expect(screen.getByText(/chưa bật đọc ảnh chứng từ/i)).toBeTruthy();
   });
 });

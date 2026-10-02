@@ -22,12 +22,6 @@ import { cauConLai, ngayMoc, useLichThue } from '@/lib/lichThue';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { ThresholdClock } from '@/components/fintech/ThresholdClock';
 import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from '@/components/illustrations/BrandIcons';
-import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
-import { KhoiDieuPhoi } from '@/components/nao/KhoiDieuPhoi';
-import { CauHoiSeanEllis } from '@/components/phan-hoi/CauHoiNhanh';
-import { KiemNhanh } from '@/components/thanh-toan/KiemNhanh';
-import { docHet } from '../../supabase/functions/_shared/doc-het';
-import { homNayVN } from '../../supabase/functions/_shared/viec/dong-co-viec';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
 /**
@@ -70,12 +64,12 @@ interface Tx {
 }
 interface Invoice { id: string; total: number; status: string; due_date: string; client_name: string; invoice_number: string; }
 
-/** Windows offered by the range selector, in days (nhãn dịch ở app.tongQuan.range.<days>). 365 là một năm. */
+/** Windows offered by the range selector, in days. 12T is a year. */
 const RANGES = [
-  { days: 7 },
-  { days: 30 },
-  { days: 90 },
-  { days: 365 },
+  { label: '7N', days: 7 },
+  { label: '30N', days: 30 },
+  { label: '90N', days: 90 },
+  { label: '12T', days: 365 },
 ];
 
 /**
@@ -158,8 +152,6 @@ export default function DashboardOverview() {
   const [laDemo, setLaDemo] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [hasBank, setHasBank] = useState(false);
-  const [loiTai, setLoiTai] = useState(false);
-  const [lanTai, setLanTai] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,35 +169,24 @@ export default function DashboardOverview() {
 
       const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
       const [txRes, invRes, bankRes] = await Promise.all([
-        // Đọc HẾT theo trang: PostgREST cắt ở 1000 dòng, và một năm giao dịch vượt mốc đó là tổng thu
-        // chi trên màn này sai mà không ai thấy lỗi.
-        docHet((a, b) => supabase.from('transactions')
+        supabase.from('transactions')
           .select('id, amount, type, category, merchant_name, transaction_date, is_synthetic')
           .eq('company_id', company.id).gte('transaction_date', iso(yearAgo))
-          .order('transaction_date', { ascending: false }).order('id', { ascending: false })
-          .range(a, b), 'giao dịch')
-          .then((data) => ({ data, error: null }), (e: unknown) => ({ data: null, error: e })),
-        // Cũng đọc HẾT theo trang: thẻ "Hoá đơn chờ thanh toán" cộng từ đây.
-        docHet((a, b) => supabase.from('invoices')
+          .order('transaction_date', { ascending: false }),
+        supabase.from('invoices')
           .select('id, total, status, due_date, client_name, invoice_number, is_synthetic')
           // Cùng quy ước với `transactions` ngay trên: màn hình này trình bày
           // tiền của công ty, nên hoá đơn demo không được góp vào con số nào
           // (trừ công ty demo, nơi cả sổ là minh hoạ — `_shared/minh-hoa.ts`).
           // Thiếu dòng này thì thẻ "Hoá đơn chờ thanh toán" đếm cả dòng seed
           // trong khi thẻ dòng tiền đã lọc — hai thẻ cạnh nhau nói ngược nhau.
-          .eq('company_id', company.id)
-          .order('due_date', { ascending: true }).order('id', { ascending: true })
-          .range(a, b), 'hoá đơn')
-          .then((data) => ({ data, error: null }), (e: unknown) => ({ data: null, error: e })),
+          .eq('company_id', company.id),
         supabase.from('bank_connections')
           .select('id').eq('company_id', company.id).eq('status', 'connected').limit(1),
       ]);
 
       if (cancelled) return;
       setCompanyName(company.name);
-      // Đọc lỗi thì nói là lỗi — không để màn hình hiện toàn số 0 như một doanh nghiệp chưa có giao dịch.
-      if (txRes.error || invRes.error || bankRes.error) { setLoiTai(true); setLoading(false); return; }
-      setLoiTai(false);
       setLaDemo(demo);
       setTxs((txRes.data as Tx[]) ?? []);
       setInvoices(((invRes.data ?? []) as (Invoice & { is_synthetic?: boolean })[]).filter(duocHien(demo)));
@@ -213,7 +194,7 @@ export default function DashboardOverview() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [lanTai]);
+  }, []);
 
   /** Chỉ tiền thật — mọi con số VÀ danh sách trên màn này đều dựa vào đây. */
   const giaoDichThat = useMemo(() => txs.filter(duocHien(laDemo)), [txs, laDemo]);
@@ -270,43 +251,39 @@ export default function DashboardOverview() {
     const out: { icon: any; color: string; bg: string; badge: string; msg: string; cta: string; action: () => void }[] = [];
     if (m.expense > m.income && m.income > 0) {
       out.push({
-        icon: AlertTriangle, color: 'text-mimi-red', bg: 'bg-mimi-red/5 border-mimi-red/10', badge: t('app.tongQuan.canhBao'),
-        msg: t('app.tongQuan.chiHon', { ngay: RANGES[rangeIdx].days, chi: formatVNDShort(m.expense), thu: formatVNDShort(m.income) }),
+        icon: AlertTriangle, color: 'text-mimi-red', bg: 'bg-mimi-red/5 border-mimi-red/10', badge: 'Cảnh báo',
+        msg: `Trong ${RANGES[rangeIdx].days} ngày qua bạn chi ${formatVNDShort(m.expense)} nhưng chỉ thu ${formatVNDShort(m.income)}.`,
         // Was '/dashboard/cashflow', which renders this very component — the
         // button sent you to the screen you were already reading it on.
         // Reports is where the transactions behind these two totals actually
         // are, so that is where "xem chi tiết" should land.
-        cta: t('app.tongQuan.xemGd'), action: () => navigate('/dashboard/reports'),
+        cta: 'Xem chi tiết giao dịch', action: () => navigate('/dashboard/reports'),
       });
     }
     if (m.lastMonth > 0 && m.thisMonth > m.lastMonth) {
       const pct = Math.round(((m.thisMonth - m.lastMonth) / m.lastMonth) * 100);
       out.push({
-        icon: Lightbulb, color: 'text-primary', bg: 'bg-primary/5 border-primary/10', badge: t('app.tongQuan.coHoi'),
+        icon: Lightbulb, color: 'text-primary', bg: 'bg-primary/5 border-primary/10', badge: 'Cơ hội',
         // Rising revenue used to end at "Xem hạn mức" and a loans page MIMI
         // cannot lend from. Revenue going up is a tax event before it is a
         // credit event: it moves you toward the thresholds, which is something
         // this product can actually do something about.
-        // Đây là TIỀN VÀO, không phải doanh thu (29/09/2026): một khoản giải ngân vay trong tháng từng hiện
-        // thành "Doanh thu tăng 900%". Nút dẫn tới Đồng hồ ngưỡng ngay trên trang này — trang Báo cáo chỉ
-        // có dòng tiền, không có ngưỡng.
-        msg: t('app.tongQuan.tienVaoTang', { pct }),
-        cta: t('app.tongQuan.xemNguong'),
-        action: () => document.getElementById('dong-ho-nguong')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+        msg: `Doanh thu tháng này đang cao hơn tháng trước ${pct}% — kiểm tra xem bạn đang ở đâu so với ngưỡng thuế.`,
+        cta: 'Xem ngưỡng thuế', action: () => navigate('/dashboard/reports'),
       });
     }
     if (m.overdue.length) {
       const i = m.overdue[0];
       out.push({
-        icon: Bell, color: 'text-mimi-amber', bg: 'bg-mimi-amber/5 border-mimi-amber/10', badge: t('app.tongQuan.nhacNho'),
-        msg: t('app.tongQuan.quaHan', { n: m.overdue.length, so: i.invoice_number, khach: i.client_name }),
-        cta: t('app.tongQuan.xemHd'), action: () => navigate('/dashboard/invoices'),
+        icon: Bell, color: 'text-mimi-amber', bg: 'bg-mimi-amber/5 border-mimi-amber/10', badge: 'Nhắc nhở',
+        msg: `${m.overdue.length} hoá đơn quá hạn, gần nhất là ${i.invoice_number} của ${i.client_name}.`,
+        cta: 'Xem hoá đơn', action: () => navigate('/dashboard/invoices'),
       });
     }
     return out;
-  }, [m, rangeIdx, navigate, t]);
+  }, [m, rangeIdx, navigate]);
 
-  const dateStr = new Date().toLocaleDateString({ vi: 'vi-VN', ko: 'ko-KR', zh: 'zh-CN' }[i18n.language?.slice(0, 2) as 'vi' | 'ko' | 'zh'] ?? 'en-US',
+  const dateStr = new Date().toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US',
     { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -327,14 +304,6 @@ export default function DashboardOverview() {
     return <div className="flex items-center justify-center py-24"><Loader2 className="animate-spin text-muted-foreground" size={28} /></div>;
   }
 
-  if (loiTai && txs.length === 0) {
-    return (
-      <div className="py-12 max-w-xl">
-        <LoiTaiLai cau={t('app.tongQuan.loiTai')} thuLai={() => { setLoading(true); setLanTai((n) => n + 1); }} />
-      </div>
-    );
-  }
-
   const noData = txs.length === 0;
 
   // Gương mặt Mimi mang ở lời chào, suy ra từ dữ liệu thật đang có trên trang
@@ -342,9 +311,7 @@ export default function DashboardOverview() {
   // tiên nằm trong `lib/mimiTamTrang.ts` cùng bộ test của nó; chỗ này chỉ dịch
   // state của trang sang các sự việc mà hàm đó nhận.
   const soQuaHan = invoices.filter(
-    // So NGÀY theo giờ VN: `new Date('2026-09-18')` là 07:00 sáng 18/09 giờ VN, nên cách cũ báo quá hạn
-    // ngay trong chính ngày đến hạn. Quá hạn = hạn trước hôm nay.
-    (i) => i.status !== 'paid' && !!i.due_date && i.due_date.slice(0, 10) < homNayVN(),
+    (i) => i.status !== 'paid' && i.due_date && new Date(i.due_date) < new Date(),
   ).length;
   const mimi = tamTrang({
     chuaCoDuLieu: noData && !hasBank,
@@ -364,7 +331,7 @@ export default function DashboardOverview() {
       <motion.div variants={fadeUp} className="flex items-start gap-3">
         <div className="min-w-0">
           <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">
-            {t('app.tongQuan.xinChao')}{companyName ? `, ${companyName}` : ''}
+            Xin chào{companyName ? `, ${companyName}` : ''}
           </h2>
           {/* Câu của Mimi thay cho ngày tháng KHI có việc đáng nói. Không có gì
               đáng nói thì `cau` là null và ngày tháng ở lại — im lặng là trạng
@@ -377,25 +344,19 @@ export default function DashboardOverview() {
         </div>
       </motion.div>
 
-      {/* Một cửa của bộ não dùng chung: thu nạp dữ liệu, chạy quy trình, báo cáo chung với pet và Trợ lý. */}
-      {/* Trọng tâm: kiểm một khoản TRƯỚC khi tiền đi — lối vào đầu tiên của Tổng quan. */}
-      <motion.div variants={fadeUp}><KiemNhanh /></motion.div>
-      <motion.div variants={fadeUp}><CauHoiSeanEllis /></motion.div>
-      <motion.div variants={fadeUp}><KhoiDieuPhoi /></motion.div>
-
       {/* Nothing to show yet is said plainly, with the one action that changes it. */}
       {noData && (
         <motion.div variants={fadeUp} className="bg-primary/5 border border-primary/10 rounded-2xl p-6 flex items-start gap-4">
           <Link2 size={20} className="text-primary shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-foreground">{t('app.tongQuan.chuaCoGd')}</p>
+            <p className="text-sm font-semibold text-foreground">Chưa có giao dịch nào</p>
             <p className="text-sm text-muted-foreground mt-1 max-w-lg">
               {hasBank
-                ? t('app.tongQuan.daLienKet')
-                : t('app.tongQuan.chuaLienKet')}
+                ? 'Tài khoản ngân hàng đã liên kết nhưng chưa đồng bộ giao dịch. Bấm đồng bộ ở Fintech Hub.'
+                : 'Liên kết tài khoản ngân hàng để MIMI đọc sao kê và dựng dòng tiền, hoặc tải lên file CSV giao dịch.'}
             </p>
             <button onClick={() => navigate('/dashboard/fintech')} className="text-xs text-primary hover:underline font-medium mt-2 inline-flex items-center gap-1">
-              {t('app.tongQuan.lienKet')} <ArrowRight size={10} />
+              Liên kết ngân hàng <ArrowRight size={10} />
             </button>
           </div>
         </motion.div>
@@ -427,10 +388,10 @@ export default function DashboardOverview() {
       <KPICard
         primary
         icon={Wallet}
-        label={t('app.tongQuan.dongTienRong', { ngay: RANGES[rangeIdx].days })}
+        label={`Dòng tiền ròng ${RANGES[rangeIdx].days} ngày`}
         value={noData ? '—' : formatVNDShort(m.net)}
         muted={noData}
-        sub={noData ? undefined : t('app.tongQuan.thuChi', { thu: formatVNDShort(m.income), chi: formatVNDShort(m.expense) })}
+        sub={noData ? undefined : `Thu ${formatVNDShort(m.income)} · Chi ${formatVNDShort(m.expense)}`}
         subColor={m.net >= 0 ? 'text-mimi-green' : 'text-mimi-red'}
       >
         {!noData && m.spark.length > 1 && (
@@ -477,8 +438,8 @@ export default function DashboardOverview() {
           sub={
             noData ? undefined
               : m.lastMonth > 0
-                ? t('app.tongQuan.soVoiThang', { dau: m.thisMonth >= m.lastMonth ? '+' : '', pct: Math.round(((m.thisMonth - m.lastMonth) / m.lastMonth) * 100) })
-                : t('app.tongQuan.chuaDuTruoc')
+                ? `${m.thisMonth >= m.lastMonth ? '+' : ''}${Math.round(((m.thisMonth - m.lastMonth) / m.lastMonth) * 100)}% so với tháng trước`
+                : 'Chưa đủ dữ liệu tháng trước để so sánh'
           }
           subColor={m.thisMonth >= m.lastMonth ? 'text-mimi-green' : 'text-mimi-red'}
         />
@@ -488,11 +449,11 @@ export default function DashboardOverview() {
           label={t('dashboard.pendingInvoices')}
           value={invoices.length === 0 ? '—' : formatVNDShort(m.unpaidTotal)}
           muted={invoices.length === 0}
-          sub={invoices.length === 0 ? undefined : t('app.tongQuan.sapDenHan', { n: m.dueSoonCount })}
+          sub={invoices.length === 0 ? undefined : `${m.dueSoonCount} sắp đến hạn`}
           subColor="text-mimi-amber"
         >
           {invoices.length === 0 ? (
-            <p className="text-xs text-muted-foreground mt-1">{t('app.tongQuan.chuaCoHd')}</p>
+            <p className="text-xs text-muted-foreground mt-1">Chưa có hoá đơn</p>
           ) : (
             /*
              * Bấm được để xem chính những hoá đơn đã tạo ra con số này.
@@ -511,7 +472,7 @@ export default function DashboardOverview() {
               onClick={() => navigate('/dashboard/invoices?filter=pending')}
               className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
-              {t('app.tongQuan.chuaThu', { n: m.unpaidCount })} <ArrowRight size={10} />
+              {m.unpaidCount} hoá đơn chưa thu — xem <ArrowRight size={10} />
             </button>
           )}
         </KPICard>
@@ -543,12 +504,12 @@ export default function DashboardOverview() {
         {(() => {
           const moc = lichThue?.mocKeTiep ?? null;
           return (
-            <KPICard icon={ShieldCheck} label={t('app.tongQuan.viecThue')}
-              value={moc ? ngayMoc(moc.han) : lichThue ? t('app.tongQuan.chuaCoHan') : t('app.tongQuan.dangTinh')}
+            <KPICard icon={ShieldCheck} label="Việc thuế kế tiếp"
+              value={moc ? ngayMoc(moc.han) : lichThue ? 'Chưa có hạn đã biết' : 'Đang tính…'}
               sub={moc ? `${moc.ten} · ${cauConLai(moc)}` : ''}
               subColor={moc && moc.con_lai !== null && moc.con_lai <= 5 ? 'text-mimi-amber' : 'text-muted-foreground'}>
               <button onClick={() => navigate('/dashboard/nhac-thue')} className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1">
-                {t('app.tongQuan.xemViec')} <ArrowRight size={10} />
+                Xem việc cần chuẩn bị <ArrowRight size={10} />
               </button>
             </KPICard>
           );
@@ -558,7 +519,7 @@ export default function DashboardOverview() {
       {/* Above the charts on purpose. For a household under 1 tỷ this is the
           only tax number that matters, and burying it below a cash-flow graph
           would put the decoration above the decision. */}
-      <motion.div id="dong-ho-nguong" variants={fadeUp}>
+      <motion.div variants={fadeUp}>
         <ThresholdClock />
       </motion.div>
 
@@ -568,15 +529,15 @@ export default function DashboardOverview() {
             <h3 className="font-display font-bold text-foreground text-lg">{t('dashboard.cashFlowTitle')}</h3>
             <div className="flex gap-1 bg-accent/50 rounded-xl p-1">
               {RANGES.map((r, i) => (
-                <button key={r.days} onClick={() => setRangeIdx(i)}
+                <button key={r.label} onClick={() => setRangeIdx(i)}
                   className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${i === rangeIdx ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {t(`app.tongQuan.range.${r.days}`)}
+                  {r.label}
                 </button>
               ))}
             </div>
           </div>
           {m.chart.length === 0 ? (
-            <Empty text={t('app.tongQuan.khongGdKhoang')} cta={t('app.tongQuan.lienKet')} onCta={() => navigate('/dashboard/fintech')} />
+            <Empty text="Chưa có giao dịch trong khoảng thời gian này." cta="Liên kết ngân hàng" onCta={() => navigate('/dashboard/fintech')} />
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -600,7 +561,7 @@ export default function DashboardOverview() {
             <InsightSpark size={17} className="text-primary" /> {t('dashboard.aiInsights')}
           </h3>
           {insights.length === 0 ? (
-            <Empty text={noData ? t('app.tongQuan.khongDuLieu') : t('app.tongQuan.khongLuuY')} />
+            <Empty text={noData ? 'Chưa có dữ liệu để nhận xét.' : 'Chưa phát hiện điểm nào cần lưu ý.'} />
           ) : (
             insights.map((ins, i) => (
               <div key={i} className={`${ins.bg} border rounded-xl p-4 transition-all hover:shadow-sm`}>
@@ -627,7 +588,7 @@ export default function DashboardOverview() {
           </div>
           {soDongThu > 0 && (
             <p className="mb-3 text-xs text-muted-foreground">
-              {t('app.tongQuan.boDemo', { n: soDongThu })}
+              Đã bỏ {soDongThu} giao dịch là dữ liệu thử — không tính vào con số nào trên trang này.
             </p>
           )}
           {giaoDichThat.length === 0 ? (
@@ -647,9 +608,9 @@ export default function DashboardOverview() {
                * bị loại được nói thẳng ra bên dưới.
                */
               text={soDongThu > 0
-                ? t('app.tongQuan.chuaCoGdThat')
-                : t('app.tongQuan.chuaCoGdNao')}
-              cta={t('app.tongQuan.lienKet')}
+                ? 'Chưa có giao dịch thật nào.'
+                : 'Chưa có giao dịch nào.'}
+              cta="Liên kết ngân hàng"
               onCta={() => navigate('/dashboard/fintech')}
             />
           ) : (
@@ -663,7 +624,7 @@ export default function DashboardOverview() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground font-medium truncate">
-                      {tx.merchant_name || t('app.tongQuan.khongMoTa')}
+                      {tx.merchant_name || 'Không có mô tả'}
                       {/* Labelled where it is read, not only excluded from the
                           maths. A row that is invisible in the totals but looks
                           identical in the list is still misleading. */}
@@ -673,7 +634,7 @@ export default function DashboardOverview() {
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground">{tx.category || (isIncome(tx) ? t('app.tongQuan.tienVao') : t('app.tongQuan.tienRa'))}</p>
+                    <p className="text-xs text-muted-foreground">{tx.category || (isIncome(tx) ? 'Tiền vào' : 'Tiền ra')}</p>
                   </div>
                   <div className="text-right">
                     <p className={`money text-sm font-semibold ${isIncome(tx) ? 'text-positive' : 'text-negative'}`}>
@@ -698,7 +659,7 @@ export default function DashboardOverview() {
               { icon: CashflowChart, label: t('dashboard.viewReports'), path: '/dashboard/reports' },
               // "Học Fintech" đã gỡ 10/09 — nội dung chung không gắn với việc
               // nào của khách. Thay bằng việc đang có hạn: chứng từ chi phí.
-              { icon: LearnCap, label: t('app.tongQuan.chungTu'), path: '/dashboard/chung-tu' },
+              { icon: LearnCap, label: 'Chứng từ chi phí', path: '/dashboard/chung-tu' },
             ].map((a) => (
               <motion.button key={a.label} whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }} onClick={() => navigate(a.path)}
                 className="bg-card/60 backdrop-blur-sm border border-border/60 rounded-2xl p-5 text-center hover:border-primary/20 hover:shadow-[0_8px_24px_hsla(var(--blue-500)/0.06)] transition-all duration-300">

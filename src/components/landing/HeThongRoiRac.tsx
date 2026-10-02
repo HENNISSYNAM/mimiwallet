@@ -85,7 +85,7 @@ export default function HeThongRoiRac() {
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-serif font-normal text-foreground text-balance leading-[1.05] tracking-[-0.015em] text-[clamp(2rem,4.2vw,3.25rem)]">
-            Mỗi thứ nằm một nơi
+            Những hệ thống chưa từng nói chuyện với nhau
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Một khoản chi phần mềm thường phải đi qua ngần này chỗ trước khi vào được sổ.
@@ -198,7 +198,7 @@ export default function HeThongRoiRac() {
         </div>
 
         <p className="mx-auto mt-10 max-w-xl text-center text-muted-foreground">
-          Mỗi nơi biết một chút. Không nơi nào cho bạn biết khoản chi đã trả chưa, có chứng từ chưa.
+          Mỗi chỗ giữ một mảnh sự thật. Không chỗ nào biết khoản chi đã thật sự đi chưa, và có chứng từ chưa.
         </p>
       </div>
     </section>

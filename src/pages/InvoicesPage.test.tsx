@@ -11,8 +11,7 @@ const HD = [
   { id: 'b2', invoice_number: 'HD-000777', client_name: 'Công ty Sông Hồng', amount: 2_000_000, vat_rate: 0, total: 2_000_000, issued_date: '2026-09-10', due_date: '2026-10-10', status: 'pending', advanced_amount: null, is_synthetic: false },
 ];
 
-const traVe = vi.hoisted(() => ({ loi: null as null | { message: string } }));
-const q = { select: () => q, eq: () => q, order: async () => (traVe.loi ? { data: null, error: traVe.loi } : { data: HD, error: null }) };
+const q = { select: () => q, eq: () => q, order: async () => ({ data: HD, error: null }) };
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => q } }));
 vi.mock('@/lib/congTyDangDung', () => ({ idCongTyDangDung: async () => 'cty-1' }));
 vi.mock('@/store/useAuthStore', () => ({
@@ -24,7 +23,7 @@ import InvoicesPage from './InvoicesPage';
 
 const dung = (url: string) => render(<MemoryRouter initialEntries={[url]}><InvoicesPage /></MemoryRouter>);
 
-beforeEach(() => { vi.clearAllMocks(); traVe.loi = null; });
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('trang Hoá đơn — tìm theo ?q=', () => {
   it('mở từ ô tìm kiếm đầu trang: chỉ hiện đúng hoá đơn được tìm', async () => {
@@ -61,18 +60,5 @@ describe('trang Hoá đơn — gốc lỗi 0 kết quả', () => {
     expect(screen.queryByText('MH-260903')).toBeNull();
     fireEvent.click(screen.getByText('tìm đầu trang'));
     expect(await screen.findByText('MH-260903')).toBeTruthy();
-  });
-});
-
-describe('trang Hoá đơn — đọc lỗi không được giả làm "chưa có hoá đơn"', () => {
-  it('máy chủ lỗi → báo chưa tải được, có nút thử lại; thử lại thành công thì hiện hoá đơn', async () => {
-    traVe.loi = { message: 'timeout' };
-    dung('/dashboard/invoices');
-    const bao = await screen.findByRole('alert');
-    expect(bao.textContent).toContain('Chưa tải được danh sách hoá đơn');
-    traVe.loi = null;
-    fireEvent.click(screen.getByRole('button', { name: /Thử lại/ }));
-    expect(await screen.findByText('HD-000777')).toBeTruthy();
-    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

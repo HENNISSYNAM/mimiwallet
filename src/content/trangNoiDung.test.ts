@@ -28,9 +28,8 @@ describe('trang sản phẩm và giải pháp', () => {
     }
   });
 
-  // 28/09/2026: gỡ trang Chi phí AI (đang xây) và Hoá đơn điện tử (Casso chưa bật trên production) → 10.
-  it('đủ 10 trang sản phẩm và 9 trang giải pháp, không trùng đường dẫn', () => {
-    expect(TRANG_SAN_PHAM).toHaveLength(10);
+  it('đủ 12 trang sản phẩm và 9 trang giải pháp, không trùng đường dẫn', () => {
+    expect(TRANG_SAN_PHAM).toHaveLength(12);
     expect(TRANG_GIAI_PHAP).toHaveLength(9);
     const duong = TAT_CA_TRANG.map(duongDanTrang);
     expect(new Set(duong).size).toBe(duong.length);

@@ -2,69 +2,21 @@
  * MIMI Assistant phía giao diện: kiểu dữ liệu (dùng chung với edge function `tro-ly`),
  * định dạng số, câu hỏi gợi ý, và chạy một đề xuất sau khi người dùng xác nhận.
  */
-import type { BoiCanh, DeXuat, DonVi, NhomNangLuc, O, TraLoi } from '../../supabase/functions/_shared/tro-ly/kieu.ts';
+import type { DeXuat, DonVi, NhomNangLuc, O } from '../../supabase/functions/_shared/tro-ly/kieu.ts';
 import { ngayHienThi } from '../../supabase/functions/_shared/ngay.ts';
-import { dinhDangTien } from '@/lib/tien';
 
 export * from '../../supabase/functions/_shared/tro-ly/kieu.ts';
 export { TEN_NHOM } from '../../supabase/functions/_shared/tro-ly/tra-loi.ts';
 
-/**
- * Số tiền VND chính xác gửi dưới dạng chuỗi số nguyên ('1000000000001'): định dạng bằng BigInt, KHÔNG qua
- * Number — trên Number.MAX_SAFE_INTEGER (~9 triệu tỷ) Number làm tròn mất đồng lẻ mà không báo gì.
- */
-const SO_NGUYEN = /^-?\d+$/;
-const dinhDangVndChuoi = (s: string) => dinhDangTien(s);
-
-// ── Đàn agent (hợp đồng Codex đang thêm vào `kieu.ts`) ──────────────────────────────────────────────
-/*
- * TƯƠNG THÍCH NGƯỢC, KHÔNG PHẢI BỘ KIỂU THỨ HAI. Khi `kieu.ts` có `TraLoi.dan_agent` / `BoiCanh.danh_sach_agent`,
- * `DanAgent` và `AgentMimi` TỰ lấy đúng kiểu đó (nhánh `infer`). Hai kiểu `…Cho` dưới đây chỉ dùng tới khi máy
- * chủ chưa gửi — chép từ hợp đồng đã chốt, và bị bỏ qua ngay khi kiểu thật có mặt.
- */
-interface DanAgentCho {
-  lan_chay_id: string;
-  cong_ty_id: string;
-  bat_dau: string;
-  ket_thuc: string;
-  trang_thai: 'hoan_tat' | 'mot_phan' | 'can_bo_sung';
-  tac_vu: Array<{
-    agent_id: string; nang_luc: string; ten: string;
-    trang_thai: 'hoan_tat' | 'loi' | 'can_bo_sung';
-    thoi_gian_ms: number; tai_su_dung: boolean; cau: string;
-  }>;
-  tai_nguyen: {
-    so_agent: number; so_tac_vu: number; so_nguon_doc: number;
-    so_luot_mo_hinh: number; so_luot_tai_su_dung: number; gioi_han_song_song: number;
-  };
-  gioi_han: string[];
-}
-interface AgentMimiCho {
-  id: string; ten: string; mo_ta: string; nang_luc: string[];
-  trang_thai: 'san_sang' | 'can_ket_noi'; quyen: 'chi_doc_va_soan_nhap';
-}
-type Lay<T, K extends string, Cho> = T extends { [k in K]?: infer D } ? (NonNullable<D> extends Array<infer P> ? P : NonNullable<D>) : Cho;
-export type DanAgent = TraLoi extends { dan_agent?: infer D } ? NonNullable<D> : DanAgentCho;
-export type AgentMimi = Lay<BoiCanh, 'danh_sach_agent', AgentMimiCho>;
-/** Câu trả lời có thể kèm đàn agent (máy chủ cũ không gửi — giao diện vẫn chạy). */
-export type TraLoiNao = TraLoi & { dan_agent?: DanAgent | null };
-export type BoiCanhNao = BoiCanh & { danh_sach_agent?: AgentMimi[] | null };
-
-/** Ba quy trình máy chủ cho phép chạy bằng đàn agent. */
-export const QUY_TRINH_AGENT = ['ke_toan_hang_ngay', 'thu_hoi_cong_no', 'kiem_tra_so_sach'] as const;
-export type QuyTrinhAgent = (typeof QUY_TRINH_AGENT)[number];
-
 export function dinhDang(v: O | undefined, donVi: DonVi): string {
-  // Thiếu dữ liệu là "—", không bao giờ là 0.
   if (v === null || v === undefined || v === '') return '—';
   if (typeof v === 'string') {
     // Ngày giữ chỗ (01/01/1900), chuỗi rỗng, ngày sai → "Chưa xác định", không in một ngày bịa.
     if (donVi === 'ngay') return ngayHienThi(v);
-    if (donVi === 'vnd' && SO_NGUYEN.test(v)) return dinhDangVndChuoi(v);
     return v;
   }
   switch (donVi) {
-    case 'vnd': return dinhDangTien(v);
+    case 'vnd': return `${new Intl.NumberFormat('vi-VN').format(Math.round(v))} ₫`;
     case 'usd': return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     case 'phan_tram': return `${v}%`;
     default: return new Intl.NumberFormat('vi-VN').format(v);

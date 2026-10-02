@@ -21,7 +21,7 @@ const zh = {
   loading: '加载中...',
 
   hero: {
-    badge: '给小店和小企业的支出助手',
+    badge: '面向以 AI 运营的企业的支出管控层',
     titleLine1: '按利润纳税，',
     titleLine2: '而不是按营业额',
     subtitle: '法律允许你选择计税方式 —— 但前提是能证明成本。MIMI 读取银行流水，替你把这套成本凭证准备好。',
@@ -77,8 +77,8 @@ const zh = {
     loanDesc: '按营业额比例纳税，还是按利润的 15% —— 两个数字都显示出来供你选择',
     security: '抗量子加密',
     securityDesc: '银行令牌用 ML-KEM-768（NIST FIPS 203）加密，数据通过 Row-Level Security 按公司隔离',
-    dashboard: '到账与发票核对',
-    dashboardDesc: '客户扫码付款后，对应的销售发票自动匹配——一眼看出谁已付款、谁仍欠款',
+    dashboard: '核对税务机关发票',
+    dashboardDesc: '读取税务系统中已有的电子发票，与实际到账资金核对',
     greenFinance: '绿色金融',
     greenFinanceDesc: '用你自己的交易生成排放档案，用于绿色信贷申请',
     interestRate: '利率',
@@ -91,7 +91,7 @@ const zh = {
   },
 
   footer: {
-    tagline: '给店主和会计的记账助手。',
+    tagline: '为可持续未来而生的绿色钱包。',
     products: '产品',
     productLinks: [],
     company: '公司',
@@ -103,7 +103,7 @@ const zh = {
 
   login: {
     title: '登录 MIMI WALLET',
-    tagline: '给店主和会计的记账助手',
+    tagline: '为可持续未来而生的绿色钱包',
     email: '邮箱',
     emailPlaceholder: 'email@company.vn',
     password: '密码',
@@ -119,7 +119,7 @@ const zh = {
     cashflow: '现金流',
     invoices: '发票',
     creditScore: '信用评分',
-    fintechHub: '银行与支付',
+    fintechHub: '金融科技中心',
     reports: '报告',
     settings: '设置',
     support: '支持',
@@ -144,7 +144,7 @@ const zh = {
     rankA: 'B 级 —— ↑ +12 分',
     veryGood: '良好',
     cashFlowTitle: '现金流',
-    aiInsights: 'MIMI 提醒',
+    aiInsights: 'AI 洞察',
     recentTx: '最近交易',
     viewAll: '查看全部',
     quickActions: '快捷操作',
@@ -244,7 +244,6 @@ const zh = {
   },
 
   landing: {
-    video: { dung: '暂停视频', phat: '播放视频' },
     hero: {
       titleLine1: '智能体去花钱。',
       titleLine2: '决定权在你手里。',
@@ -371,6 +370,7 @@ const zh = {
       { label: '设备投资', desc: '机器、技术' },
       { label: '现金流备用', desc: '财务安全' },
     ],
+    connectingIntegrationToast: '{{name}} 的连接正在开发，很快上线',
     dataModelAI: 'AI 数据模型',
     networkLabels: ['银行', '发票', '现金流', '信用'],
     estimatedCreditScore: '预计信用评分',
@@ -530,7 +530,7 @@ const zh = {
       },
       toast: {
         fillRequired: '请填写客户、金额和到期日',
-        companyNotFound: '还没找到你的公司信息。请刷新页面后再试。',
+        companyNotFound: '找不到你的企业',
         createFailed: '新建发票失败：{{error}}',
         createSuccess: '已创建发票 {{number}}',
         advanceFailed: '预支失败：{{error}}',
@@ -595,8 +595,8 @@ const zh = {
       },
     },
     reports: {
-      title: '进账与出账',
-      subtitle: '数据取自银行流水，还不是财务报表。',
+      title: '银行现金流汇总',
+      subtitle: '来自银行流水的资金流入与流出 — 并非财务报表',
       export: '导出 CSV',
       revenueExpense: {
         title: '每月资金流入与流出',
@@ -605,7 +605,7 @@ const zh = {
         profit: '净现金流',
       },
       invoiceAging: {
-        title: '客户欠款多久了',
+        title: '发票账龄分析',
       },
       expenseBreakdown: {
         title: '按类别的资金流出',
@@ -615,12 +615,12 @@ const zh = {
 
   pg: {
     fintech: {
-      title: '银行与支付',
-      subtitle: '连接银行、支付与法律文件',
+      title: '金融科技中心',
+      subtitle: '银行、支付与合规',
       tabs: {
-        banking: '连接银行',
+        banking: '开放银行',
         payment: '支付',
-        compliance: '法律文件',
+        compliance: '合规',
       },
     },
   },

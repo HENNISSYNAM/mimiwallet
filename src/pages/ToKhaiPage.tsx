@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, ExternalLink, FileDown, Info, Loader2, Save, ScrollText } from 'lucide-react';
 
 import { toast } from 'sonner';
-import i18n from 'i18next';
-import { Trans, useTranslation } from 'react-i18next';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type DongPhuLucGiaiTrinh, type KetQuaPhanTich, type ThanhToanToKhai } from '@/lib/goiToKhai';
 import { TEN_VAI_TRO } from '../../supabase/functions/_shared/quyen/vai-tro.ts';
@@ -15,7 +13,6 @@ import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
   type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
 } from '@/lib/heLuat';
-import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Tờ khai thuế — chỗ công nghệ lõi của MIMI hiện ra thành giấy tờ hành chính.
@@ -38,15 +35,10 @@ import { dinhDangTien } from '@/lib/tien';
 
 const so = (n: number | null | undefined) => (n === null || n === undefined ? '' : new Intl.NumberFormat('vi-VN').format(n));
 const ngay = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
-const nhanKy = (ky: KyToKhai) => (ky.loai === 'quy'
-  ? i18n.t('app.toKhai.ky.quy', { quy: ky.quy, nam: ky.nam })
-  : ky.loai === '6_thang_dau' ? i18n.t('app.toKhai.ky.sauThang', { nam: ky.nam }) : i18n.t('app.toKhai.ky.nam', { nam: ky.nam }));
+const nhanKy = (ky: KyToKhai) => (ky.loai === 'quy' ? `Quý ${ky.quy}/${ky.nam}` : ky.loai === '6_thang_dau' ? `6 tháng đầu ${ky.nam}` : `Năm ${ky.nam}`);
 const cungKy = (a: KyToKhai, b: KyToKhai) => a.loai === b.loai && a.nam === b.nam && (a.loai !== 'quy' || b.loai !== 'quy' || a.quy === b.quy);
 
 /**
- * GIỮ TIẾNG VIỆT, KHÔNG DỊCH: phụ lục in kèm tờ khai nộp cho cơ quan thuế Việt Nam — là giấy tờ hành chính,
- * không phải giao diện, nên dù người dùng chọn ngôn ngữ nào bản in vẫn phải bằng tiếng Việt.
- *
  * Phụ lục giải trình — in cùng tờ khai. Các khoản tiền vào người nộp thuế đã xác nhận không phải
  * doanh thu (qua thông báo của MIMI), kèm nguyên văn nội dung chuyển khoản và ai xác nhận, lúc nào.
  */
@@ -91,26 +83,20 @@ function PhuLucGiaiTrinh({ ds, nam }: { ds: DongPhuLucGiaiTrinh[]; nam: number }
 
 /** Nói trước giá trên chính cái nút — không để người dùng bấm rồi mới biết mất tiền. */
 function nhanNutXuat(t: ThanhToanToKhai): string {
-  if (t.goi) return i18n.t('app.toKhai.xuat.goi');
-  if (t.da_tra_ky_nay) return i18n.t('app.toKhai.xuat.daTra');
-  if (t.con_luot > 0) return i18n.t('app.toKhai.xuat.luot', { n: t.con_luot });
-  return i18n.t('app.toKhai.xuat.gia', { gia: dinhDangTien(t.gia_mot_to) });
+  if (t.goi) return 'Xuất tờ khai · gói còn hạn';
+  if (t.da_tra_ky_nay) return 'Xuất lại · kỳ này đã trả';
+  if (t.con_luot > 0) return `Xuất tờ khai · dùng 1 lượt (còn ${t.con_luot})`;
+  return `Xuất tờ khai · ${t.gia_mot_to.toLocaleString('vi-VN')}đ`;
 }
 
-/**
- * GIỮ TIẾNG VIỆT, KHÔNG DỊCH: đây là mẫu tờ khai theo Thông tư (quốc hiệu, lời cam đoan, chỗ ký, căn cứ pháp lý)
- * để in và nộp cho cơ quan thuế — nguyên văn pháp lý, dịch ra là mất giá trị. Chỉ chữ phụ trợ trên màn hình
- * (dấu "bản xem trước", dòng no-print, chữ cho trình đọc màn hình) đi theo ngôn ngữ đã chọn.
- */
 function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[]; xemTruoc: boolean }) {
-  const { t } = useTranslation();
   const oCot = (khoa: string) => tk.cot.find((c) => c.khoa === khoa);
   return (
     <div className="to-khai-giay relative overflow-hidden rounded-2xl border border-border bg-white p-5 text-[13px] text-slate-900 shadow-sm sm:p-8">
       {xemTruoc && (
         <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="-rotate-[24deg] select-none whitespace-nowrap text-4xl font-bold tracking-widest text-slate-900/[0.07] sm:text-6xl">
-            {t('app.toKhai.giay.xemTruoc')}
+            BẢN XEM TRƯỚC — CHƯA XUẤT
           </span>
         </div>
       )}
@@ -130,7 +116,7 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
           <li key={d.nhan} className="flex gap-2">
             <span aria-hidden>{d.chon ? '☑' : '☐'}</span>
             <span className="flex-1">{d.nhan}</span>
-            <span className="sr-only">{d.chon ? t('app.toKhai.giay.daChon') : t('app.toKhai.giay.khongChon')}</span>
+            <span className="sr-only">{d.chon ? 'đã chọn' : 'không chọn'}</span>
           </li>
         ))}
       </ul>
@@ -176,7 +162,7 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
                   {d.nhan}
                   {d.nguon_khoan && (
                     <span className="no-print block text-[10px] text-slate-500">
-                      {t(d.nguon_khoan.nguon === 'hoa_don' ? 'app.toKhai.giay.gomHoaDon' : d.nguon_khoan.nguon === 'tu_nhap' ? 'app.toKhai.giay.gomTuNhap' : 'app.toKhai.giay.gomTienVao', { n: d.nguon_khoan.so_khoan })}
+                      gồm {d.nguon_khoan.so_khoan} {d.nguon_khoan.nguon === 'hoa_don' ? 'hoá đơn' : d.nguon_khoan.nguon === 'tu_nhap' ? 'quý tự nhập' : 'khoản tiền vào'} bạn đã xếp vào nhóm này
                     </span>
                   )}
                 </td>
@@ -223,29 +209,28 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
   );
 }
 
-const tenLoai = (l: LoaiNguoiNop) => i18n.t(`app.toKhai.loai.${l}`);
+const TEN_LOAI: Record<LoaiNguoiNop, string> = { ho_kinh_doanh: 'Hộ kinh doanh', doanh_nghiep: 'Doanh nghiệp' };
 
 /**
  * Điều Tổng cục Thuế ghi cho mã số thuế — hiện ra để người dùng thấy MIMI đã biết, thay vì hỏi.
  * Mã không còn hoạt động thì nói thẳng: khai bằng một mã đã đóng là khai cho người không tồn tại.
  */
 function TheoDangKyThue({ ct }: { ct: CongTyTheoMst }) {
-  const { t: tr } = useTranslation();
   const t = ct.theo_mst;
-  if (!ct.mst) return <p className="mt-1 text-sm text-muted-foreground"><Trans i18nKey="app.toKhai.dk.chuaCoMst" components={{ l: <Link to="/dashboard/settings" className="font-medium text-primary hover:underline" /> }} /></p>;
+  if (!ct.mst) return <p className="mt-1 text-sm text-muted-foreground">Chưa có mã số thuế — <Link to="/dashboard/settings" className="font-medium text-primary hover:underline">thêm trong Cài đặt</Link> để MIMI tự điền tên và loại hình.</p>;
   return (
     <div className="mt-1 space-y-1 text-sm">
       <p className="text-muted-foreground">
-        {ct.ten ?? tr('app.toKhai.dk.congTyBan')} · {tr('app.toKhai.dk.mst', { mst: ct.mst })}
-        {ct.loai_theo_mst ? ` · ${tenLoai(ct.loai_theo_mst)}` : ''}
+        {ct.ten ?? 'Công ty của bạn'} · MST {ct.mst}
+        {ct.loai_theo_mst ? ` · ${TEN_LOAI[ct.loai_theo_mst]}` : ''}
         {t?.co_quan_thue ? ` · ${t.co_quan_thue}` : ''}
       </p>
       {t?.dia_chi && <p className="text-xs text-muted-foreground">{t.dia_chi}</p>}
       <p className="text-xs text-muted-foreground/80">
-        {t ? tr('app.toKhai.dk.theoTct') : ct.loai_theo_mst ? tr('app.toKhai.dk.ma12') : ''}
+        {t ? 'Theo dữ liệu đăng ký thuế của Tổng cục Thuế.' : ct.loai_theo_mst ? 'Mã 12 số là số định danh cá nhân — dành cho hộ kinh doanh, cá nhân.' : ''}
       </p>
       {t && !t.con_hoat_dong && (
-        <p className="flex gap-2 text-sm text-destructive"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden /> {tr('app.toKhai.dk.ngungHd', { tt: t.trang_thai ?? tr('app.toKhai.dk.khongRo') })}</p>
+        <p className="flex gap-2 text-sm text-destructive"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden /> Tổng cục Thuế ghi mã này: “{t.trang_thai ?? 'không rõ trạng thái'}”. Kiểm lại mã số thuế trong Cài đặt trước khi khai.</p>
       )}
     </div>
   );
@@ -253,7 +238,6 @@ function TheoDangKyThue({ ct }: { ct: CongTyTheoMst }) {
 
 function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu: (h: HoSoThue) => void; dangLuu: boolean; loaiTheoMst: LoaiNguoiNop | null }) {
   const [v, setV] = useState<HoSoThue>(hoSo);
-  const { t } = useTranslation();
   useEffect(() => setV(hoSo), [hoSo]);
   const doi = (p: Partial<HoSoThue>) => setV((x) => ({ ...x, ...p }));
   const doiNganh = (n: NhomNganh) =>
@@ -266,9 +250,9 @@ function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu
     >
       {/* Mã số thuế đã trả lời câu này thì không hỏi lại. */}
       {!loaiTheoMst && <fieldset>
-        <legend className="text-sm font-medium text-foreground">{t('app.toKhai.hs.tuCach')}</legend>
+        <legend className="text-sm font-medium text-foreground">Bạn nộp thuế với tư cách</legend>
         <div className="mt-2 flex flex-wrap gap-2">
-          {([['ho_kinh_doanh', t('app.toKhai.hs.hoKd')], ['doanh_nghiep', t('app.toKhai.hs.dn')]] as const).map(([k, ten]) => (
+          {([['ho_kinh_doanh', 'Hộ kinh doanh / cá nhân kinh doanh'], ['doanh_nghiep', 'Doanh nghiệp']] as const).map(([k, ten]) => (
             <label key={k} className={`cursor-pointer rounded-xl border px-3 py-2 text-sm ${v.loai_nguoi_nop === k ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground'}`}>
               <input type="radio" name="loai" className="sr-only" checked={v.loai_nguoi_nop === k} onChange={() => doi({ loai_nguoi_nop: k })} />
               {ten}
@@ -280,8 +264,8 @@ function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu
       {v.loai_nguoi_nop !== 'doanh_nghiep' && (
         <>
           <fieldset>
-            <legend className="text-sm font-medium text-foreground">{t('app.toKhai.hs.nganh')}</legend>
-            <p className="text-xs text-muted-foreground">{t('app.toKhai.hs.nganhMo')}</p>
+            <legend className="text-sm font-medium text-foreground">Nhóm ngành kinh doanh</legend>
+            <p className="text-xs text-muted-foreground">Tỷ lệ thuế và dòng trên tờ khai theo nhóm ngành. Chọn đúng nhóm bạn có doanh thu.</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {NHOM_NGANH.map((n) => (
                 <label key={n} className={`flex cursor-pointer items-start gap-2 rounded-xl border px-3 py-2 text-sm ${v.nhom_nganh.includes(n) ? 'border-primary bg-primary/10' : 'border-border'}`}>
@@ -293,7 +277,7 @@ function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu
           </fieldset>
 
           <fieldset>
-            <legend className="text-sm font-medium text-foreground">{t('app.toKhai.hs.banODau')}</legend>
+            <legend className="text-sm font-medium text-foreground">Bạn bán ở đâu</legend>
             <div className="mt-2 space-y-2">
               {KENH.map((k: Kenh) => (
                 <label key={k} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm ${v.kenh === k ? 'border-primary bg-primary/10' : 'border-border'}`}>
@@ -305,24 +289,24 @@ function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu
           </fieldset>
 
           <fieldset>
-            <legend className="text-sm font-medium text-foreground">{t('app.toKhai.hs.tncn')}</legend>
-            <p className="text-xs text-muted-foreground">{t('app.toKhai.hs.tncnMo')}</p>
+            <legend className="text-sm font-medium text-foreground">Cách tính thuế thu nhập cá nhân</legend>
+            <p className="text-xs text-muted-foreground">Chỉ cần chọn khi doanh thu năm trên 01 tỷ đến 03 tỷ đồng; trên 03 tỷ thì luật buộc tính trên thu nhập.</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {([['doanh_thu', t('app.toKhai.hs.theoDt')], ['thu_nhap', t('app.toKhai.hs.theoTn')]] as const).map(([k, ten]) => (
+              {([['doanh_thu', 'Theo tỷ lệ trên doanh thu'], ['thu_nhap', 'Theo thu nhập (doanh thu trừ chi phí)']] as const).map(([k, ten]) => (
                 <label key={k} className={`cursor-pointer rounded-xl border px-3 py-2 text-sm ${v.phuong_phap_tncn === k ? 'border-primary bg-primary/10' : 'border-border text-muted-foreground'}`}>
                   <input type="radio" name="pp" className="sr-only" checked={v.phuong_phap_tncn === k} onChange={() => doi({ phuong_phap_tncn: k })} />
                   {ten}
                 </label>
               ))}
               <button type="button" onClick={() => doi({ phuong_phap_tncn: null })} className="rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent">
-                {t('app.toKhai.hs.chuaChon')}
+                Chưa chọn
               </button>
             </div>
           </fieldset>
 
           <label className="flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" checked={!!v.da_nop_thue_trong_nam} onChange={(e) => doi({ da_nop_thue_trong_nam: e.target.checked })} />
-            {t('app.toKhai.hs.daNop')}
+            Trong năm tôi đã nộp thuế GTGT hoặc TNCN (hoặc bị khấu trừ, nộp thay)
           </label>
         </>
       )}
@@ -330,7 +314,7 @@ function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu
       {v.loai_nguoi_nop === 'doanh_nghiep' && (
         <>
           <label className="block text-sm">
-            <span className="font-medium text-foreground">{t('app.toKhai.hs.dtNamTruoc')}</span>
+            <span className="font-medium text-foreground">Tổng doanh thu năm trước (theo quyết toán thuế TNDN)</span>
             <input
               type="number"
               min={0}
@@ -338,24 +322,24 @@ function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu
               value={v.doanh_thu_nam_truoc ?? ''}
               onChange={(e) => doi({ doanh_thu_nam_truoc: e.target.value === '' ? null : Math.max(0, Math.floor(Number(e.target.value))) })}
               className="mt-1 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm tabular-nums"
-              aria-label={t('app.toKhai.hs.dtNamTruocAria')}
+              aria-label="Tổng doanh thu năm trước"
             />
           </label>
           <label className="flex items-center gap-2 text-sm text-foreground">
             <input type="checkbox" checked={!!v.co_quan_he_lien_ket} onChange={(e) => doi({ co_quan_he_lien_ket: e.target.checked })} />
-            {t('app.toKhai.hs.lienKet')}
+            Công ty là công ty con hoặc có quan hệ liên kết với doanh nghiệp khác
           </label>
         </>
       )}
 
       <label className="block text-sm">
-        <span className="font-medium text-foreground">{t('app.toKhai.hs.batDau')}</span>
+        <span className="font-medium text-foreground">Ngày bắt đầu kinh doanh (nếu mới ra kinh doanh)</span>
         <input
           type="date"
           value={v.bat_dau_kinh_doanh ?? ''}
           onChange={(e) => doi({ bat_dau_kinh_doanh: e.target.value || null })}
           className="mt-1 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm sm:w-56"
-          aria-label={t('app.toKhai.hs.batDauAria')}
+          aria-label="Ngày bắt đầu kinh doanh"
         />
       </label>
 
@@ -364,14 +348,13 @@ function FormHoSo({ hoSo, onLuu, dangLuu, loaiTheoMst }: { hoSo: HoSoThue; onLuu
         disabled={dangLuu}
         className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110 disabled:opacity-50"
       >
-        {dangLuu ? <Loader2 size={15} className="animate-spin" /> : null} {t('app.toKhai.hs.luu')}
+        {dangLuu ? <Loader2 size={15} className="animate-spin" /> : null} Lưu hồ sơ thuế
       </button>
     </form>
   );
 }
 
 export default function ToKhaiPage() {
-  const { t } = useTranslation();
   const [kq, setKq] = useState<KetQuaPhanTich | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [dangTai, setDangTai] = useState(true);
@@ -389,7 +372,7 @@ export default function ToKhaiPage() {
       setKq(await goiToKhai('phan_tich', du) as unknown as KetQuaPhanTich);
       setLoi(null);
     } catch (e) {
-      setLoi(e instanceof Error ? e.message : i18n.t('app.toKhai.toast.loiDoc'));
+      setLoi(e instanceof Error ? e.message : 'Chưa đọc được dữ liệu thuế.');
     } finally {
       setDangTai(false);
     }
@@ -401,10 +384,10 @@ export default function ToKhaiPage() {
     setDangLuuHoSo(true);
     try {
       await goiToKhai('luu_ho_so', { ho_so });
-      toast.success(t('app.toKhai.toast.daLuuHs'));
+      toast.success('Đã lưu hồ sơ thuế.');
       await tai(kq ? { nam: kq.nam, ky: kq.ky } : {});
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('app.toKhai.toast.loiLuuHs'));
+      toast.error(e instanceof Error ? e.message : 'Chưa lưu được hồ sơ thuế.');
     } finally {
       setDangLuuHoSo(false);
     }
@@ -427,16 +410,16 @@ export default function ToKhaiPage() {
       setCanMua(false);
       setMuaLuot(null);
       toast.success(
-        r.cach_tra === 'goi' ? t('app.toKhai.toast.xuatGoi')
-          : r.cach_tra === 'da_tra_ky_nay' ? t('app.toKhai.toast.xuatLai')
-            : t('app.toKhai.toast.xuatLuot', { n: r.con_luot }),
+        r.cach_tra === 'goi' ? 'Đã xuất tờ khai (gói tháng còn hạn).'
+          : r.cach_tra === 'da_tra_ky_nay' ? 'Đã xuất lại — kỳ này bạn đã trả, không tính thêm.'
+            : `Đã xuất tờ khai. Còn ${r.con_luot} lượt.`,
       );
       await tai(thamSoKy());
       // Đợi dấu "bản xem trước" rời khỏi trang rồi mới in.
       setTimeout(() => window.print(), 300);
     } catch (e) {
       if (e instanceof LoiGoiHam && e.status === 402) setCanMua(true);
-      else toast.error(e instanceof Error ? e.message : t('app.toKhai.toast.loiXuat'));
+      else toast.error(e instanceof Error ? e.message : 'Chưa xuất được tờ khai.');
     } finally {
       setDangXuat(false);
     }
@@ -451,9 +434,9 @@ export default function ToKhaiPage() {
         ky: kq.ky,
         ...(kq.doanh_thu.nguon === 'tu_khai' && suaDoanhThu ? { doanh_thu_quy: suaDoanhThu.map((x) => Math.max(0, Math.floor(Number(x) || 0))) } : {}),
       });
-      toast.success(t('app.toKhai.toast.daLuuNhap', { ma: String(r.ma_bam).slice(0, 8) }));
+      toast.success(`Đã lưu bản nháp (mã ${String(r.ma_bam).slice(0, 8)}…).`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('app.toKhai.toast.loiLuuNhap'));
+      toast.error(e instanceof Error ? e.message : 'Chưa lưu được bản nháp.');
     } finally {
       setDangLuuNhap(false);
     }
@@ -466,21 +449,22 @@ export default function ToKhaiPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-12">
       <header className="no-print">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('app.toKhai.tieuDe')}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tờ khai thuế</h1>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          {t('app.toKhai.moTa')}
+          MIMI đọc hoá đơn điện tử và sao kê của bạn, áp quy định trong kho văn bản Công báo, rồi điền đúng mẫu tờ khai.
+          Bạn kiểm lại và tự nộp trên Cổng dịch vụ công — MIMI không nộp thay bạn.
         </p>
       </header>
 
       {dangTai && !kq && (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={15} className="animate-spin" /> {t('app.toKhai.dangDoc')}</p>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={15} className="animate-spin" /> Đang đọc dữ liệu thuế…</p>
       )}
       {loi && <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{loi}</p>}
 
       {kq && (
         <>
           <section aria-labelledby="ho-so-thue" className="no-print rounded-2xl border border-border bg-card p-5">
-            <h2 id="ho-so-thue" className="text-lg font-semibold text-foreground">{t('app.toKhai.hoSo')}</h2>
+            <h2 id="ho-so-thue" className="text-lg font-semibold text-foreground">Hồ sơ thuế</h2>
             <TheoDangKyThue ct={kq.cong_ty} />
             {!!kq.suy_luan.thieu.length && (
               <ul className="mt-3 space-y-1">
@@ -495,28 +479,32 @@ export default function ToKhaiPage() {
           </section>
 
           <section aria-labelledby="doanh-thu" className="no-print rounded-2xl border border-border bg-card p-5">
-            <h2 id="doanh-thu" className="text-lg font-semibold text-foreground">{t('app.toKhai.dt.tieuDe', { nam: kq.nam })}</h2>
+            <h2 id="doanh-thu" className="text-lg font-semibold text-foreground">Doanh thu năm {kq.nam}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {kq.suy_luan.doanh_thu_nam === null
-                ? t('app.toKhai.dt.chuaCo')
-                : `${t('app.toKhai.dt.tong', { so: so(kq.suy_luan.doanh_thu_nam) })}${kq.doanh_thu.nguon ? ` — ${TEN_NGUON_DOANH_THU[kq.doanh_thu.nguon]}` : ''}${kq.suy_luan.tam_tinh ? t('app.toKhai.dt.luyKe', { ngay: ngay(kq.hom_nay) }) : ''}.`}
+                ? 'Chưa có doanh thu nào đọc được.'
+                : `${so(kq.suy_luan.doanh_thu_nam)} đồng${kq.doanh_thu.nguon ? ` — ${TEN_NGUON_DOANH_THU[kq.doanh_thu.nguon]}` : ''}${kq.suy_luan.tam_tinh ? `, lũy kế tới ${ngay(kq.hom_nay)}` : ''}.`}
             </p>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[420px] text-sm">
-                <caption className="sr-only">{t('app.toKhai.dt.caption')}</caption>
+                <caption className="sr-only">Doanh thu từng quý theo từng nguồn</caption>
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th scope="col" className="py-1 font-medium">{t('app.toKhai.dt.nguon')}</th>
-                    {[1, 2, 3, 4].map((q) => <th key={q} scope="col" className="py-1 text-right font-medium">{t('app.toKhai.dt.quy', { q })}</th>)}
+                    <th scope="col" className="py-1 font-medium">Nguồn</th>
+                    {[1, 2, 3, 4].map((q) => <th key={q} scope="col" className="py-1 text-right font-medium">Quý {q}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   <tr>
-                    <th scope="row" className="py-2 text-left font-normal text-muted-foreground">{t('app.toKhai.dt.nganHang')}</th>
+                    <th scope="row" className="py-2 text-left font-normal text-muted-foreground">Hoá đơn điện tử ({kq.doanh_thu.so_hoa_don})</th>
+                    {[0, 1, 2, 3].map((i) => <td key={i} className="py-2 text-right tabular-nums">{kq.doanh_thu.hoa_don ? so(kq.doanh_thu.hoa_don[i]) : '—'}</td>)}
+                  </tr>
+                  <tr>
+                    <th scope="row" className="py-2 text-left font-normal text-muted-foreground">Tiền về ngân hàng</th>
                     {[0, 1, 2, 3].map((i) => <td key={i} className="py-2 text-right tabular-nums">{kq.doanh_thu.ngan_hang ? so(kq.doanh_thu.ngan_hang[i]) : '—'}</td>)}
                   </tr>
                   <tr className="font-medium">
-                    <th scope="row" className="py-2 text-left">{t('app.toKhai.dt.mimiDung')}</th>
+                    <th scope="row" className="py-2 text-left">MIMI dùng để khai</th>
                     {[0, 1, 2, 3].map((i) => <td key={i} className="py-2 text-right tabular-nums">{kq.doanh_thu.quy ? so(kq.doanh_thu.quy[i]) : '—'}</td>)}
                   </tr>
                 </tbody>
@@ -533,7 +521,7 @@ export default function ToKhaiPage() {
                 onClick={() => setSuaDoanhThu((kq.doanh_thu.quy ?? [0, 0, 0, 0]).map(String))}
                 className="mt-3 text-sm font-medium text-primary hover:underline"
               >
-                {t('app.toKhai.dt.sua')}
+                Sửa doanh thu từng quý
               </button>
             ) : (
               <form
@@ -546,13 +534,13 @@ export default function ToKhaiPage() {
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {suaDoanhThu.map((v, i) => (
                     <label key={i} className="block text-xs text-muted-foreground">
-                      {t('app.toKhai.dt.quy', { q: i + 1 })}
+                      Quý {i + 1}
                       <input
                         type="number"
                         min={0}
                         step={1}
                         value={v}
-                        aria-label={t('app.toKhai.dt.quyAria', { q: i + 1 })}
+                        aria-label={`Doanh thu quý ${i + 1}`}
                         onChange={(e) => setSuaDoanhThu((ds) => (ds ?? []).map((x, j) => (j === i ? e.target.value : x)))}
                         className="mt-1 h-10 w-full rounded-xl border border-border bg-card px-2 text-sm tabular-nums"
                       />
@@ -560,9 +548,9 @@ export default function ToKhaiPage() {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" className="h-10 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110">{t('app.toKhai.dt.dung')}</button>
+                  <button type="submit" className="h-10 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110">Dùng số này</button>
                   <button type="button" onClick={() => { setSuaDoanhThu(null); void tai({ nam: kq.nam, ky: kq.ky }); }} className="h-10 rounded-xl border border-border px-4 text-sm text-foreground hover:bg-accent">
-                    {t('app.toKhai.dt.bo')}
+                    Bỏ, dùng số MIMI đọc được
                   </button>
                 </div>
               </form>
@@ -571,8 +559,8 @@ export default function ToKhaiPage() {
 
           <section aria-labelledby="ban-nhap" className="space-y-3">
             <div className="no-print flex flex-wrap items-center justify-between gap-2">
-              <h2 id="ban-nhap" className="text-lg font-semibold text-foreground">{t('app.toKhai.nhap.tieuDe')}</h2>
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('app.toKhai.nhap.kyAria')}>
+              <h2 id="ban-nhap" className="text-lg font-semibold text-foreground">Bản nháp tờ khai</h2>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Kỳ tính thuế">
                 {kyDs.map((k) => (
                   <button
                     key={nhanKy(k)}
@@ -599,7 +587,7 @@ export default function ToKhaiPage() {
                     >
                       <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                         <AlertTriangle size={15} className="text-mimi-amber" aria-hidden />
-                        {kq.to_khai.san_sang.trang_thai === 'bi_chan' ? t('app.toKhai.nhap.biChan') : t('app.toKhai.nhap.nenXem')}
+                        {kq.to_khai.san_sang.trang_thai === 'bi_chan' ? 'Chưa xuất được tờ khai này' : 'Nên xem lại trước khi xuất'}
                       </h3>
                       <ul className="mt-2 space-y-1.5">
                         {kq.to_khai.san_sang.vuong.map((v) => (
@@ -614,7 +602,7 @@ export default function ToKhaiPage() {
                     </div>
                   )}
                   <div className="no-print rounded-2xl border border-border bg-card p-5">
-                    <h3 className="text-sm font-semibold text-foreground">{t('app.toKhai.nhap.cachTinh')}</h3>
+                    <h3 className="text-sm font-semibold text-foreground">MIMI tính từng số thế nào</h3>
                     <ul className="mt-2 space-y-1.5">
                       {kq.to_khai.cach_tinh.map((c) => (
                         <li key={c} className="flex gap-2 text-sm leading-relaxed text-muted-foreground"><ScrollText size={14} className="mt-1 shrink-0" aria-hidden /> {c}</li>
@@ -632,13 +620,13 @@ export default function ToKhaiPage() {
                         type="button"
                         onClick={() => void xuat()}
                         disabled={dangXuat || kq.to_khai.san_sang.trang_thai === 'bi_chan'}
-                        title={kq.to_khai.san_sang.trang_thai === 'bi_chan' ? t('app.toKhai.nhap.goVuong') : undefined}
+                        title={kq.to_khai.san_sang.trang_thai === 'bi_chan' ? 'Gỡ các vướng mắc ở trên trước' : undefined}
                         className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
                       >
                         {dangXuat ? <Loader2 size={15} className="animate-spin" /> : <FileDown size={15} />} {nhanNutXuat(kq.thanh_toan)}
                       </button>
                       <button type="button" onClick={() => void luuNhap()} disabled={dangLuuNhap} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50">
-                        {dangLuuNhap ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} {t('app.toKhai.nhap.luuNhap')}
+                        {dangLuuNhap ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} Lưu bản nháp
                       </button>
                       <a
                         href={DUONG_DAN_NOP_TO_KHAI}
@@ -646,17 +634,18 @@ export default function ToKhaiPage() {
                         rel="noopener noreferrer"
                         className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110"
                       >
-                        <img src={logoDichVuCong} alt="" className="h-4 w-4 object-contain" /> {t('app.toKhai.nhap.nop')} <ExternalLink size={14} />
+                        <img src={logoDichVuCong} alt="" className="h-4 w-4 object-contain" /> Nộp trên Cổng dịch vụ công <ExternalLink size={14} />
                       </a>
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {t('app.toKhai.nhap.hanNop', { ngay: ngay(kq.to_khai.han_nop) })}
+                      Hạn nộp kỳ này: {ngay(kq.to_khai.han_nop)}. MIMI không nộp và không ký thay bạn.
                     </p>
                     {canMua && (
                       <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-                        <p className="text-sm font-medium text-foreground">{t('app.toKhai.nhap.xuatGia', { gia: dinhDangTien(kq.thanh_toan.gia_mot_to) })}</p>
+                        <p className="text-sm font-medium text-foreground">Xuất tờ khai này: {kq.thanh_toan.gia_mot_to.toLocaleString('vi-VN')}đ</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {t('app.toKhai.nhap.quetMa')}
+                          Quét mã chuyển khoản. Tiền về là MIMI tự cộng lượt và xuất tờ khai ngay — không phải bấm lại.
+                          Sửa số rồi xuất lại cùng kỳ thì không tính thêm.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {[1, 4].map((n) => (
@@ -667,11 +656,11 @@ export default function ToKhaiPage() {
                               aria-pressed={muaLuot === n}
                               className={`h-9 rounded-xl px-3 text-sm ${muaLuot === n ? 'bg-primary text-primary-foreground' : 'border border-border text-foreground hover:bg-accent'}`}
                             >
-                              {n === 1 ? t('app.toKhai.nhap.toNay') : t('app.toKhai.nhap.bonQuy')} · {dinhDangTien(n * kq.thanh_toan.gia_mot_to)}
+                              {n === 1 ? 'Tờ này' : '4 quý trong năm'} · {(n * kq.thanh_toan.gia_mot_to).toLocaleString('vi-VN')}đ
                             </button>
                           ))}
                           <Link to="/dashboard/settings" className="inline-flex h-9 items-center rounded-xl px-3 text-sm text-primary hover:underline">
-                            {t('app.toKhai.nhap.goiThang')}
+                            Hoặc dùng gói tháng — xuất không giới hạn
                           </Link>
                         </div>
                         {muaLuot && (
@@ -686,14 +675,14 @@ export default function ToKhaiPage() {
               )
               : (
                 <div className="rounded-2xl border border-border bg-card p-5">
-                  <p className="flex gap-2 text-sm leading-relaxed text-foreground"><Info size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden /> {kq.ly_do_khong_soan ?? t('app.toKhai.nhap.chuaSoan')}</p>
+                  <p className="flex gap-2 text-sm leading-relaxed text-foreground"><Info size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden /> {kq.ly_do_khong_soan ?? 'Chưa soạn được tờ khai cho kỳ này.'}</p>
                   {!cungKy(kq.ky, kq.ky_goi_y) && (
                     <button type="button" onClick={() => doiKy(kq.ky_goi_y)} className="mt-3 text-sm font-medium text-primary hover:underline">
-                      {t('app.toKhai.nhap.soanCho', { ky: nhanKy(kq.ky_goi_y) })}
+                      Soạn cho {nhanKy(kq.ky_goi_y)}
                     </button>
                   )}
                   <p className="mt-3 text-xs text-muted-foreground">
-                    {t('app.toKhai.nhap.canMoc')} <Link to="/dashboard/nhac-thue" className="font-medium text-primary hover:underline">{t('app.toKhai.nhap.moNhac')}</Link>.
+                    Cần xem các mốc hạn? <Link to="/dashboard/nhac-thue" className="font-medium text-primary hover:underline">Mở Nhắc thuế</Link>.
                   </p>
                 </div>
               )}

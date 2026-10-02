@@ -41,7 +41,7 @@ export default function MoTaiKhoan() {
     const em = email.trim();
     const ct = congTy.trim();
     if (!LA_EMAIL.test(em)) {
-      setLoi('Email chưa đúng. Ví dụ: ten@congty.vn');
+      setLoi('Email chưa đúng, ví dụ ten@congty.vn.');
       return;
     }
     setLoi(null);
@@ -94,7 +94,7 @@ export default function MoTaiKhoan() {
       </form>
       {loi && <p role="alert" className="mt-3 text-sm text-destructive">{loi}</p>}
       <p className="mt-4 text-sm text-muted-foreground">
-        MIMI sẽ gửi link vào email này. Bấm link là vào, không cần mật khẩu.
+        MIMI gửi một link vào email này — bấm link là vào làm việc, không cần mật khẩu.
       </p>
     </>
   );

@@ -24,11 +24,6 @@ async function docCongTy(): Promise<CongTy | null> {
   return { id: ct?.id ?? null, ten: ct?.ten ?? null };
 }
 
-/** Đổi người dùng: bỏ công ty đã nhớ của người trước (xem lib/datLaiKhiDoiNguoi.ts). */
-export function xoaBoNhoCongTy() {
-  boNho = null;
-}
-
 export function baoCongTyDoi() {
   // Xoá bộ nhớ của lớp chung rồi báo mọi nơi đọc lại (cùng tên sự kiện).
   lamMoiCongTy();
@@ -41,8 +36,7 @@ export function useCongTy(): CongTy | null {
     const tai = async () => {
       const v = await docCongTy().catch(() => null);
       if (v) boNho = v;
-      // Đã đăng xuất (v = null) thì cũng xoá khỏi màn hình, không giữ tên công ty của người trước.
-      if (!huy) setCt(v);
+      if (!huy && v) setCt(v);
     };
     void tai();
     window.addEventListener(SU_KIEN, tai);

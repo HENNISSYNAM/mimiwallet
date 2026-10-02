@@ -22,8 +22,6 @@ import run from '@/assets/mimi/run.png';
 const DAI_CHAY = Object.values(import.meta.glob('/src/assets/mimi/run-sprite.png', { eager: true, import: 'default' }))[0] as string | undefined;
 import stretch from '@/assets/mimi/stretch.png';
 import sit from '@/assets/mimi/sit.png';
-import type { TraLoiNao } from '@/lib/troLy';
-import { CAU_NGUNG_CHO } from '@/store/naoMimi';
 
 /**
  * Pet MIMI — mèo nổi trên trang, theo đúng cơ chế "Pets" của ChatGPT (xem `lib/petMimi.ts`).
@@ -127,13 +125,11 @@ export default function PetMimi() {
       setViec(ds.filter((v) => v.can_ban).slice(0, 8).map((v) => ({ id: v.id, tieu_de: v.tieu_de, cau: v.hanh_dong?.tieu_de ?? v.tieu_de, duong_dan: v.duong_dan })));
     } catch { /* mạng lỗi: pet vẫn chạy; việc vẫn ở trang Việc cần làm — pet không phải nơi duy nhất */ }
   }, []);
-  // Pet đang ẩn (mặc định) thì không cần đọc việc — đỡ một lời gọi mỗi chu kỳ trên mọi trang (kiểm go-live 30/09, P2).
   useEffect(() => {
-    if (cd.an) return;
     void napViec();
     const id = window.setInterval(() => { if (typeof document === 'undefined' || !document.hidden) void napViec(); }, CHU_KY_VIEC);
     return () => window.clearInterval(id);
-  }, [napViec, cd.an]);
+  }, [napViec]);
 
   // Pet phản chiếu việc chung đang chờ bạn và các câu bạn hỏi ngầm từ pet (đang trả lời / xong chưa xem / lỗi).
   const lanHoi = useLanHoiPet();
@@ -258,18 +254,12 @@ export default function PetMimi() {
   const moKetQua = (h: LanHoiPet) => {
     daXemLanHoi(h.id);
     setMoKhay(false);
-    // Lượt này đã nằm trong bộ não dùng chung — Trợ lý MIMI hiện đúng nó (luotId), không hỏi lại.
-    if (h.trang_thai === 'xong' && h.tra_loi) navigate('/dashboard/tro-ly', { state: { luotId: h.id, luotPet: { cau: h.cau, traLoi: h.tra_loi } } });
+    if (h.trang_thai === 'xong' && h.tra_loi) navigate('/dashboard/tro-ly', { state: { luotPet: { cau: h.cau, traLoi: h.tra_loi } } });
     else { boLanHoi(h.id); moTroLy(h.cau); } // lỗi: hỏi lại ngay trong Trợ lý MIMI
   };
-  /** Đàn agent đã chạy cho lượt này (máy chủ cũ không gửi → không thêm gì). */
-  const soAgent = (h: LanHoiPet) => {
-    const d = (h.tra_loi as TraLoiNao | null)?.dan_agent;
-    return d ? ` · ${d.tai_nguyen.so_agent} agent đã chạy` : '';
-  };
   const theHoi = (h: LanHoiPet): TheHoatDong => ({
-    khoa: `hoi-${h.id}`, tieu: h.cau,
-    phu: h.trang_thai === 'dang' ? 'MIMI đang trả lời…' : h.trang_thai === 'loi' ? (h.loi === CAU_NGUNG_CHO ? 'Đã ngừng chờ — máy chủ có thể vẫn xong; bấm để hỏi lại trong Trợ lý MIMI' : 'Chưa xong — bấm để thử lại trong Trợ lý MIMI') : `${trichTraLoi(h.tra_loi) || 'Xong — bấm để xem'}${soAgent(h)}`,
+    khoa: h.id, tieu: h.cau,
+    phu: h.trang_thai === 'dang' ? 'MIMI đang trả lời…' : h.trang_thai === 'loi' ? 'Chưa xong — bấm để thử lại trong Trợ lý MIMI' : trichTraLoi(h.tra_loi) || 'Xong — bấm để xem',
     mau: h.trang_thai === 'loi' ? 'text-destructive' : h.trang_thai === 'xong' ? 'text-primary' : 'text-muted-foreground',
     dang: h.trang_thai === 'dang',
     bam: () => moKetQua(h),

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import TroLyPage from './TroLyPage';
-import { datLaiNaoChoTest } from '@/store/naoMimi';
 import type { BoiCanh, TraLoi } from '@/lib/troLy';
 
 /**
@@ -95,8 +94,6 @@ const hoiBangTay = (cau: string) => {
 };
 
 beforeEach(() => {
-  // Bộ não dùng chung sống ở cấp mô-đun: mỗi ca bắt đầu từ kho trống (ứng dụng thật xoá khi đổi phạm vi).
-  datLaiNaoChoTest();
   gia.toKhai.mockReset();
   gia.datLai.mockReset();
   gia.troLy.mockReset();
@@ -114,7 +111,7 @@ describe('MIMI Assistant — màn đầu', () => {
     // Kết nối gọn một nút; bấm mới mở danh sách.
     // Ca đầu tiên của tệp gánh cả phần biên dịch trang lớn nhất; khi cả bộ chạy song song, 8 giây
     // không đủ (21/09/2026 hỏng một lần, chạy riêng thì đạt). Nới chờ, không nới điều kiện.
-    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
+    await screen.findByRole('region', { name: 'Chi phí AI tháng này' }, { timeout: 20_000 });
     expect(screen.queryByRole('list', { name: 'Các kết nối' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Kết nối/ }));
     const ketNoi = await screen.findByRole('list', { name: 'Các kết nối' });
@@ -123,20 +120,20 @@ describe('MIMI Assistant — màn đầu', () => {
     expect(within(screen.getByRole('list', { name: 'Các kết nối' })).getAllByRole('listitem')).toHaveLength(1);
     expect(screen.getByTestId('nen').getAttribute('aria-hidden')).toBe('true');
     // Chưa có mô hình thì nói thật cách MIMI đang hiểu câu hỏi.
-    expect(document.body.textContent).toContain('MIMI chỉ hiểu những câu hỏi quen');
+    expect(document.body.textContent).toContain('theo các mẫu có sẵn');
     // Ca đầu tiên của tệp gánh cả thời gian nạp module: chạy cả bộ test song song thì vượt 5 giây mặc định.
   }, 40_000);
 
-  it('thẻ phân tích lấy số từ máy chủ; thẻ Chi phí AI / Tối ưu model đã đóng băng không còn hiện', async () => {
+  it('ba thẻ phân tích lấy số từ máy chủ; tháng chưa có số không vẽ thành 0', async () => {
     dung();
-    const canXacNhan = await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
-    expect(canXacNhan.textContent).toContain('1 khoản chi chờ bạn duyệt, tổng 2.000.000 ₫');
-    // Đóng băng 28/09/2026 (`lib/dongBang.ts`): máy chủ vẫn trả số, màn đầu không vẽ nữa.
-    expect(screen.queryByRole('region', { name: 'Chi phí AI tháng này' })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Đề xuất tối ưu' })).toBeNull();
+    const chiPhi = await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
+    expect(chiPhi.textContent).toContain('$50.00');
+    expect(chiPhi.textContent).toContain('25% so với cùng kỳ tháng trước');
+    expect(within(chiPhi).getByRole('table', { hidden: true }).textContent).toContain('T5Chưa có số liệu');
+    expect(screen.getByRole('region', { name: 'Đề xuất tối ưu' }).textContent).toContain('Đặt ngân sách AI tháng');
+    expect(screen.getByRole('region', { name: 'Cần bạn xác nhận' }).textContent).toContain('1 khoản chi cần phê duyệt, tổng 2.000.000 ₫');
     // Việc đã có thẻ riêng không lặp lại thành chip; việc khác vẫn hiện.
-    // 29/09/2026: việc cần để ý là khung "Việc cần chú ý hôm nay" của Không gian Trợ lý.
-    const deY = screen.getByRole('region', { name: 'Việc cần chú ý hôm nay' });
+    const deY = screen.getByRole('region', { name: 'Cũng cần để ý' });
     expect(deY.textContent).toContain('hoá đơn bán ra quá hạn');
     expect(deY.textContent).not.toContain('chờ bạn duyệt');
   });
@@ -144,7 +141,7 @@ describe('MIMI Assistant — màn đầu', () => {
   it('phê duyệt từ thẻ: hỏi xác nhận rồi mới gọi backend duyệt', async () => {
     gia.tacTu.mockResolvedValue({ yeu_cau: {} });
     dung();
-    const nut = await screen.findByRole('button', { name: 'Duyệt chi 2.000.000 ₫ cho CONG TY A' });
+    const nut = await screen.findByRole('button', { name: 'Phê duyệt 2.000.000 ₫ cho CONG TY A' });
     expect(nut.hasAttribute('data-mimi-khong-tu-bam')).toBe(true);
     fireEvent.click(nut);
     const hop = await screen.findByRole('alertdialog');
@@ -155,16 +152,13 @@ describe('MIMI Assistant — màn đầu', () => {
     await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBe(2));
   });
 
-  // 29/09/2026: "Thử yêu cầu MIMI" thay mẹo nhanh — ĐIỀN SẴN câu và phạm vi (không tự chạy), gửi thì mang phạm vi.
-  it('bấm "Thử yêu cầu MIMI": điền sẵn câu hỏi, gửi kèm phạm vi', async () => {
+  it('chọn nhóm việc rồi bấm mẹo nhanh: câu hỏi gửi kèm phạm vi', async () => {
     dung();
-    await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
-    fireEvent.click(screen.getByRole('button', { name: 'Nghĩa vụ thuế năm nay' }));
-    const o = screen.getByLabelText(/./, { selector: '#o-hoi-mimi' }) as HTMLTextAreaElement;
-    expect(o.value).toBe('Năm nay tôi có phải nộp thuế không?');
-    expect(gia.troLy).not.toHaveBeenCalledWith('hoi', expect.anything(), expect.anything());
-    fireEvent.click(screen.getByRole('button', { name: /Gửi câu hỏi|Send/ }));
-    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Năm nay tôi có phải nộp thuế không?', pham_vi: 'chung_tu' }), expect.anything()));
+    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
+    fireEvent.click(screen.getByRole('button', { name: /Nhóm việc/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'AI & token' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.' }));
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ pham_vi: 'ai_token' })));
   });
 });
 
@@ -175,7 +169,7 @@ describe('MIMI Assistant — công cụ', () => {
         <TroLyPage />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khách nào đang nợ quá hạn?', pham_vi: null, lich_su: [], ngon_ngu: expect.any(String) }, { signal: expect.any(AbortSignal) }));
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khách nào đang nợ quá hạn?', pham_vi: null, lich_su: [] }));
     expect(gia.troLy.mock.calls.filter((c) => c[0] === 'hoi')).toHaveLength(1);
   });
 
@@ -207,7 +201,7 @@ describe('MIMI Assistant — hỏi đáp', () => {
     try {
       dung();
       fireEvent.click(await screen.findByRole('button', { name: 'Nói câu hỏi' }));
-      await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Khoản chi nào đang chờ tôi duyệt' }), expect.anything()));
+      await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Khoản chi nào đang chờ tôi duyệt' })));
       await waitFor(() => expect(doc.join(' ')).toContain('Có 1 khoản đang chờ bạn duyệt'));
       expect(doc.join(' ')).toContain('đồng'); // "₫" đọc thành "đồng"
       fireEvent.click(await screen.findByRole('button', { name: /Đọc to câu trả lời|Dừng đọc/ }));
@@ -236,10 +230,10 @@ describe('MIMI Assistant — hỏi đáp', () => {
 
   it('hỏi → gửi đúng câu, hiện bước làm, bảng số, nguồn và nút việc', async () => {
     dung();
-    await screen.findByRole('region', { name: 'Cần bạn xác nhận' });
+    await screen.findByRole('region', { name: 'Chi phí AI tháng này' });
     hoiBangTay('Khoản nào đang chờ tôi duyệt?');
 
-    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?', pham_vi: null, lich_su: [], ngon_ngu: expect.any(String) }, { signal: expect.any(AbortSignal) }));
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', { cau: 'Khoản nào đang chờ tôi duyệt?', pham_vi: null, lich_su: [] }));
     const bang = await screen.findByRole('table');
     expect(within(bang).getByText('2.000.000 ₫')).toBeTruthy();
     expect(within(bang).getByText('14/09/2026')).toBeTruthy();
@@ -368,12 +362,12 @@ describe('MIMI Assistant — hỏi đáp', () => {
     });
     dung();
     hoiBangTay('chi phí tháng này');
-    fireEvent.click(await screen.findByRole('button', { name: /Xem 5 dòng/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /5 bản ghi/ }));
     expect(await screen.findByText('CONG TY A')).toBeTruthy();
     expect(screen.getByText('Đối tác B')).toBeTruthy();
     // Nói thật là đang hiện 2 trong 5 dòng, và có mã băm để đối chiếu về sau.
-    expect(document.body.textContent).toContain('Đang hiện 2 trong 5 dòng');
-    expect(document.body.textContent).toContain('Mã kiểm tra lúc trả lời');
+    expect(document.body.textContent).toContain('Hiện 2 trong 5 bản ghi');
+    expect(document.body.textContent).toContain('Mã băm lúc trả lời');
   });
 
   it('P1-001: bản ghi của công ty khác thì chỉ nhận lỗi, không rò thông tin', async () => {
@@ -390,7 +384,7 @@ describe('MIMI Assistant — hỏi đáp', () => {
     });
     dung();
     hoiBangTay('chi phí tháng này');
-    fireEvent.click(await screen.findByRole('button', { name: /Xem 1 dòng/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /1 bản ghi/ }));
     expect(await screen.findByText('Không có bản ghi này trong công ty của bạn.')).toBeTruthy();
     expect(document.body.textContent).not.toContain('cua-cong-ty-khac');
   });
@@ -407,7 +401,7 @@ describe('MIMI Assistant — hỏi đáp', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Hỏi lại/ }));
     expect(await screen.findByRole('table')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Cuộc hỏi mới/ }));
-    expect(await screen.findByRole('region', { name: 'Cần bạn xác nhận' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Chi phí AI tháng này' })).toBeTruthy();
   });
 });
 
@@ -436,8 +430,7 @@ describe('MIMI Assistant — khảo sát đầu vào và thuế cá nhân hoá',
       }),
     }));
     // Người dùng chưa tự chọn công cụ nên MIMI chọn theo ngành.
-    // Vòng chính đứng đầu; Khách hàng (CRM) đã đóng băng nên không được gợi ý.
-    expect(gia.datLai).toHaveBeenCalledWith(['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu', 'hoa_don_ban']);
+    expect(gia.datLai).toHaveBeenCalledWith(['soan_to_khai', 'thieu_chung_tu', 'lien_ket_ngan_hang', 'hoa_don_ban', 'khach_hang']);
     await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBeGreaterThanOrEqual(2));
   });
 
@@ -480,33 +473,5 @@ describe('MIMI Assistant — khảo sát đầu vào và thuế cá nhân hoá',
     expect(screen.queryByRole('heading', { name: 'Bạn nộp thuế với tư cách nào?' })).toBeNull();
     fireEvent.click(within(the).getByRole('button', { name: /Sửa câu trả lời/ }));
     expect(await screen.findByRole('heading', { name: 'Bạn nộp thuế với tư cách nào?' })).toBeTruthy();
-  });
-});
-
-describe('MIMI Assistant — bộ não dùng chung', () => {
-  it('câu trả lời kèm đàn agent → hiện agent đã chạy; đang chờ thì "Ngừng chờ" nói đúng là máy chủ có thể vẫn xong', async () => {
-    const DAN = {
-      lan_chay_id: 'lc-1', cong_ty_id: 'cty-1', bat_dau: '', ket_thuc: '', trang_thai: 'hoan_tat',
-      tac_vu: [{ agent_id: 'a-1', nang_luc: 'doc_sao_ke', ten: 'Đọc sao kê', trang_thai: 'hoan_tat', thoi_gian_ms: 300, tai_su_dung: false, cau: 'Đọc 12 giao dịch.' }],
-      tai_nguyen: { so_agent: 1, so_tac_vu: 1, so_nguon_doc: 1, so_luot_mo_hinh: 2, so_luot_tai_su_dung: 0, gioi_han_song_song: 3 },
-      gioi_han: [],
-    };
-    let xong!: (v: unknown) => void;
-    let lan = 0;
-    gia.troLy.mockImplementation((hanhDong: string) => {
-      if (hanhDong === 'boi_canh') return Promise.resolve(BOI_CANH);
-      lan++;
-      return lan === 1 ? new Promise((r) => { xong = r; }) : Promise.resolve({ ...TRA_LOI, dan_agent: DAN });
-    });
-    render(<MemoryRouter initialEntries={['/dashboard/tro-ly?hoi=B%C3%A1o%20c%C3%A1o%20thu%20chi']}><TroLyPage /></MemoryRouter>);
-    const ngung = await screen.findByRole('button', { name: 'Ngừng chờ' }, { timeout: 20_000 });
-    fireEvent.click(ngung);
-    expect(await screen.findByText(/Đã ngừng chờ trên máy này\. Máy chủ có thể vẫn xử lý xong/)).toBeTruthy();
-    xong(TRA_LOI); // phản hồi đến muộn sau khi đã ngừng chờ: không đè lên
-    fireEvent.click(screen.getByRole('button', { name: /Hỏi lại/ }));
-    const dan = await screen.findByRole('region', { name: 'Đàn agent đã chạy' });
-    expect(dan.textContent).toContain('Đọc sao kê');
-    expect(dan.textContent).toContain('2 lượt gọi mô hình');
-    expect(gia.troLy.mock.calls.filter((c) => c[0] === 'hoi')).toHaveLength(2);
   });
 });

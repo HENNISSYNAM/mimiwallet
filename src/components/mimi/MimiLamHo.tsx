@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import meoDi from '@/assets/mimi/walk.png';
 import meoBam from '@/assets/mimi/paw.png';
-import { SU_KIEN_KET_QUA, kiemKichBan, type KetQuaTrang, type KichBan } from '@/lib/mimiLamHo';
+import { kiemKichBan, type KichBan } from '@/lib/mimiLamHo';
 
 /**
  * Con trỏ mèo MIMI — thực hiện một `KichBan` ngay trên giao diện, cho người dùng xem.
@@ -19,24 +19,10 @@ import { SU_KIEN_KET_QUA, kiemKichBan, type KetQuaTrang, type KichBan } from '@/
  * đến từ một nguồn khác sau này.
  */
 
-/**
- * `xong` CHỈ true khi việc thật sự xong: mọi bước đã chạy, hoặc người dùng đã tự bấm nút cuối.
- * Dừng giữa chừng, hết giờ chờ người bấm, không thấy đích → `xong: false` kèm `ketThuc` nói đúng lý do.
- * (Lỗi cũ: bấm "Dừng" hoặc bỏ đi lúc mèo chờ bấm vẫn trả `xong: true` — pet báo hoàn tất việc đã huỷ.)
- *
- * Người dùng bấm nút nhường mới là GỬI yêu cầu. `xong` chỉ true khi trang báo yêu cầu đó thành công
- * (`baoKetQua`); trang báo lỗi → `loi`; không báo gì → `chua_ro`. (Lỗi cũ: báo xong ngay lúc bấm, trong
- * khi yêu cầu còn đang chạy rồi thất bại.)
- */
-export type KetThucLamHo = 'xong' | 'da_dung' | 'cho_ban_bam' | 'khong_thay' | 'tu_choi' | 'loi' | 'chua_ro';
-
 export interface KetQuaLamHo {
   xong: boolean;
-  ketThuc: KetThucLamHo;
   cau: string;
 }
-
-const DA_DUNG: KetQuaLamHo = { xong: false, ketThuc: 'da_dung', cau: 'Đã dừng. Phần còn lại bạn làm tiếp nhé.' };
 
 interface NguCanh {
   chay: (kb: KichBan) => Promise<KetQuaLamHo>;
@@ -71,9 +57,6 @@ function datGiaTri(el: HTMLElement, gia: string) {
 }
 
 const CO_MEO = 48;
-
-/** Chờ trang báo kết quả sau khi người dùng bấm nút nhường. */
-export const CHO_KET_QUA_MS = 20_000;
 
 export function MimiLamHoProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -146,8 +129,8 @@ export function MimiLamHoProvider({ children }: { children: ReactNode }) {
   const chay = useCallback(
     async (kb: KichBan): Promise<KetQuaLamHo> => {
       const loi = kiemKichBan(kb);
-      if (loi.length) return { xong: false, ketThuc: 'tu_choi', cau: `Mình không làm việc này: ${loi.join(' ')}` };
-      if (dangChayRef.current) return { xong: false, ketThuc: 'tu_choi', cau: 'Mình đang làm dở một việc khác.' };
+      if (loi.length) return { xong: false, cau: `Mình không làm việc này: ${loi.join(' ')}` };
+      if (dangChayRef.current) return { xong: false, cau: 'Mình đang làm dở một việc khác.' };
 
       dangChayRef.current = true;
       biDung.current = false;
@@ -162,7 +145,7 @@ export function MimiLamHoProvider({ children }: { children: ReactNode }) {
 
       try {
         for (const b of kb.buoc) {
-          if (biDung.current) return DA_DUNG;
+          if (biDung.current) return { xong: false, cau: 'Đã dừng. Phần còn lại bạn làm tiếp nhé.' };
 
           if (b.loai === 'di_toi') {
             setNoi(b.noi);
@@ -180,23 +163,19 @@ export function MimiLamHoProvider({ children }: { children: ReactNode }) {
           if (!tuyChon) setNoi((cu) => cu || 'Đang chờ trang tải xong…');
           const el = await choDich(b.dich, tuyChon ? 700 : 8000);
           if (!el) {
-            if (biDung.current) return DA_DUNG;
+            if (biDung.current) return { xong: false, cau: 'Đã dừng. Phần còn lại bạn làm tiếp nhé.' };
             if (b.loai === 'chi' && b.neuKhongThay !== undefined) {
               if (b.neuKhongThay === '') continue;
               setVong(null);
               setNoi(b.neuKhongThay);
               await ngu(2200);
-              // Kịch bản khai sẵn "không có đích thì nói câu này" (vd. không có khoản chờ duyệt): đó là câu
-              // trả lời đúng, nhưng việc được nhờ KHÔNG được làm — không báo hoàn tất.
-              return { xong: false, ketThuc: 'khong_thay', cau: b.neuKhongThay };
+              return { xong: true, cau: b.neuKhongThay };
             }
-            return { xong: false, ketThuc: 'khong_thay', cau: 'Mình không thấy chỗ cần tới trên trang này, nên dừng ở đây.' };
+            return { xong: false, cau: 'Mình không thấy chỗ cần tới trên trang này, nên dừng ở đây.' };
           }
 
           setNoi(b.noi);
           await diToi(el);
-          // Mèo đi mất gần một giây; người dùng bấm Esc trong lúc đó thì không được gõ hay bấm tiếp.
-          if (biDung.current) return DA_DUNG;
 
           if (b.loai === 'chi') {
             await ngu(1800);
@@ -210,67 +189,38 @@ export function MimiLamHoProvider({ children }: { children: ReactNode }) {
             await ngu(350);
           } else if (b.loai === 'bam') {
             if (el.closest('[data-mimi-khong-tu-bam]')) {
-              return { xong: false, ketThuc: 'tu_choi', cau: 'Nút này phải do bạn tự bấm — mình đã dừng trước nó.' };
+              return { xong: false, cau: 'Nút này phải do bạn tự bấm — mình đã dừng trước nó.' };
             }
             setDangBam(true);
             await ngu(260);
-            // Kiểm lần cuối NGAY trước cú bấm (lỗi cũ: Esc trong lúc mèo nhấn xuống vẫn bấm một lần).
-            if (biDung.current) return DA_DUNG;
             el.click();
             await ngu(360);
             setDangBam(false);
           } else if (b.loai === 'nhuong') {
             choNguoiBam.current = true;
-            // Nghe kết quả từ trước khi người dùng bấm: yêu cầu hỏng ngay (mất mạng) có thể báo về rất nhanh.
-            const nhan: { kq: KetQuaTrang | null } = { kq: null };
-            const ghiKetQua = (e: Event) => {
-              const d = (e as CustomEvent<KetQuaTrang>).detail;
-              if (d?.dich === b.dich) nhan.kq = d;
-            };
-            window.addEventListener(SU_KIEN_KET_QUA, ghiKetQua);
-            try {
-              // Một lối ra duy nhất: bấm, dừng, hoặc hết giờ — dọn cả hai bộ hẹn giờ và trình nghe ở mọi lối.
-              const ketThuc = await new Promise<'bam' | 'dung' | 'het_gio'>((xong) => {
-                let daXong = false;
-                const ra = (kq: 'bam' | 'dung' | 'het_gio') => {
-                  if (daXong) return;
-                  daXong = true;
+            const daBam = await new Promise<boolean>((xong) => {
+              const khiBam = () => xong(true);
+              el.addEventListener('click', khiBam, { once: true });
+              const hen = window.setInterval(() => {
+                if (biDung.current) {
                   window.clearInterval(hen);
-                  window.clearTimeout(hetGio);
                   el.removeEventListener('click', khiBam);
-                  xong(kq);
-                };
-                const khiBam = () => ra('bam');
-                const hen = window.setInterval(() => { if (biDung.current) ra('dung'); }, 150);
-                const hetGio = window.setTimeout(() => ra('het_gio'), 30_000);
-                el.addEventListener('click', khiBam, { once: true });
-              });
-              if (ketThuc === 'dung') return DA_DUNG;
-              if (ketThuc === 'het_gio') {
-                return { xong: false, ketThuc: 'cho_ban_bam', cau: `Mình đã chỉ đúng chỗ nhưng bạn chưa bấm, nên việc này CHƯA xong. ${b.noi}` };
-              }
-
-              // Bấm rồi thì yêu cầu đã đi — Esc lúc này chỉ ngừng theo dõi, không huỷ được yêu cầu.
-              setVong(null);
-              setNoi('Bạn đã bấm. Mình chờ trang báo kết quả…');
-              const han = Date.now() + CHO_KET_QUA_MS;
-              while (!nhan.kq && !biDung.current && Date.now() < han) await ngu(120);
-              const kq = nhan.kq;
-              if (kq?.ok) return { xong: true, ketThuc: 'xong', cau: kq.cau ?? 'Trang đã báo xong.' };
-              if (kq) return { xong: false, ketThuc: 'loi', cau: kq.cau ?? 'Trang báo việc này không thành công.' };
-              return {
-                xong: false,
-                ketThuc: 'chua_ro',
-                cau: 'Bạn đã bấm nên yêu cầu đã gửi đi, nhưng trang chưa báo kết quả — xem thông báo trên trang để biết việc đã xong chưa.',
-              };
-            } finally {
-              window.removeEventListener(SU_KIEN_KET_QUA, ghiKetQua);
-              choNguoiBam.current = false;
-            }
+                  xong(false);
+                }
+              }, 150);
+              window.setTimeout(() => {
+                window.clearInterval(hen);
+                el.removeEventListener('click', khiBam);
+                xong(false);
+              }, 30_000);
+            });
+            choNguoiBam.current = false;
+            return daBam
+              ? { xong: true, cau: 'Bạn đã bấm. Xong việc này rồi.' }
+              : { xong: true, cau: `Mình đã chỉ đúng chỗ. ${b.noi}` };
           }
         }
-        if (biDung.current) return DA_DUNG;
-        return { xong: true, ketThuc: 'xong', cau: 'Xong rồi.' };
+        return { xong: true, cau: 'Xong rồi.' };
       } finally {
         await ngu(biDung.current ? 0 : 600);
         setVong(null);

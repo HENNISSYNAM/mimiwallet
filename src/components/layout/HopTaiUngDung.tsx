@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Monitor, Smartphone } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 /**
@@ -18,47 +17,18 @@ interface SuKienCai extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-/*
- * Trình duyệt bắn `beforeinstallprompt` vào lúc nó chọn — có khi SAU khi hộp đã mở. Giữ sự kiện ở cấp module và báo
- * cho mọi hộp đang mở, để nút "Cài MIMI" hiện ngay khi trình duyệt cho phép (01/10/2026).
- */
 let suKienCai: SuKienCai | null = null;
-let daCaiTrenMay = false;
-const nguoiNghe = new Set<() => void>();
-const bao = () => nguoiNghe.forEach((f) => f());
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     suKienCai = e as SuKienCai;
-    bao();
-  });
-  window.addEventListener('appinstalled', () => {
-    suKienCai = null;
-    daCaiTrenMay = true;
-    bao();
   });
 }
 
-/** Đang chạy như app đã cài (cửa sổ riêng) thì không cần mời cài nữa. */
-const dangChayNhuApp = () => {
-  try {
-    return window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: window-controls-overlay)').matches;
-  } catch {
-    return false;
-  }
-};
-
 export function HopTaiUngDung({ mo, onDong, tab = 'dien_thoai' }: { mo: boolean; onDong: () => void; tab?: 'dien_thoai' | 'may_tinh' }) {
   const [dangXem, setDangXem] = useState(tab);
-  const [daCai, setDaCai] = useState(() => daCaiTrenMay || dangChayNhuApp());
-  const [, lamMoi] = useState(0);
-  const { t } = useTranslation();
+  const [daCai, setDaCai] = useState(false);
   useEffect(() => { if (mo) setDangXem(tab); }, [mo, tab]);
-  useEffect(() => {
-    const f = () => { setDaCai(daCaiTrenMay || dangChayNhuApp()); lamMoi((n) => n + 1); };
-    nguoiNghe.add(f);
-    return () => { nguoiNghe.delete(f); };
-  }, []);
 
   const cai = async () => {
     if (!suKienCai) return;
@@ -72,12 +42,12 @@ export function HopTaiUngDung({ mo, onDong, tab = 'dien_thoai' }: { mo: boolean;
     <Dialog open={mo} onOpenChange={(v) => { if (!v) onDong(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('kg.caiApp.tieuDe')}</DialogTitle>
-          <DialogDescription>{t('kg.caiApp.moTa')}</DialogDescription>
+          <DialogTitle>Dùng MIMI như ứng dụng</DialogTitle>
+          <DialogDescription>MIMI chưa có trên App Store hay Google Play. Cài bản web vào máy để mở nhanh từ màn hình chính — cùng tài khoản, cùng dữ liệu.</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-accent p-1" role="group" aria-label={t('kg.caiApp.thietBi')}>
-          {([['dien_thoai', t('kg.caiApp.dienThoai'), Smartphone], ['may_tinh', t('kg.caiApp.mayTinh'), Monitor]] as const).map(([khoa, nhan, Icon]) => (
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-accent p-1" role="group" aria-label="Thiết bị">
+          {([['dien_thoai', 'Điện thoại', Smartphone], ['may_tinh', 'Máy tính', Monitor]] as const).map(([khoa, nhan, Icon]) => (
             <button
               key={khoa}
               type="button"
@@ -92,37 +62,37 @@ export function HopTaiUngDung({ mo, onDong, tab = 'dien_thoai' }: { mo: boolean;
 
         {suKienCai && !daCai && (
           <button type="button" onClick={() => void cai()} className="h-11 w-full rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:brightness-110">
-            {t('kg.caiApp.cai')}
+            Cài MIMI vào máy này
           </button>
         )}
-        {daCai && <p className="text-sm text-mimi-green">{t('kg.caiApp.daCai')}</p>}
+        {daCai && <p className="text-sm text-mimi-green">Đã cài. Mở MIMI từ màn hình chính hoặc danh sách ứng dụng.</p>}
 
         {dangXem === 'dien_thoai' ? (
           <div className="space-y-3 text-sm text-foreground">
             <div>
               <p className="font-medium">iPhone (Safari)</p>
               <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-muted-foreground">
-                <li>{t('kg.caiApp.ios1')}</li>
-                <li>{t('kg.caiApp.ios2')}</li>
-                <li>{t('kg.caiApp.ios3')}</li>
+                <li>Mở MIMI bằng Safari.</li>
+                <li>Bấm nút Chia sẻ ở thanh dưới.</li>
+                <li>Chọn "Thêm vào Màn hình chính".</li>
               </ol>
             </div>
             <div>
               <p className="font-medium">Android (Chrome)</p>
               <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-muted-foreground">
-                <li>{t('kg.caiApp.and1')}</li>
-                <li>{t('kg.caiApp.and2')}</li>
-                <li>{t('kg.caiApp.and3')}</li>
+                <li>Mở MIMI bằng Chrome.</li>
+                <li>Bấm dấu ba chấm ở góc trên.</li>
+                <li>Chọn "Cài đặt ứng dụng" hoặc "Thêm vào màn hình chính".</li>
               </ol>
             </div>
           </div>
         ) : (
           <div className="space-y-1 text-sm text-foreground">
-            <p className="font-medium">{t('kg.caiApp.pcTieuDe')}</p>
+            <p className="font-medium">Chrome hoặc Edge trên máy tính</p>
             <ol className="list-decimal space-y-0.5 pl-5 text-muted-foreground">
-              <li>{t('kg.caiApp.pc1')}</li>
-              <li>{t('kg.caiApp.pc2')}</li>
-              <li>{t('kg.caiApp.pc3')}</li>
+              <li>Mở MIMI trong trình duyệt.</li>
+              <li>Bấm biểu tượng cài đặt ở cuối thanh địa chỉ (hình màn hình có mũi tên).</li>
+              <li>Chọn "Cài đặt". MIMI mở thành cửa sổ riêng, có trong menu Start hoặc Dock.</li>
             </ol>
           </div>
         )}

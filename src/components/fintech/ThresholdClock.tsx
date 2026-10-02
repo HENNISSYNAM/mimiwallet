@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Landmark, AlertTriangle, Info, Check, ChevronDown, Scale } from 'lucide-react';
-import i18n from 'i18next';
-import { Trans, useTranslation } from 'react-i18next';
+import { Landmark, FileText, AlertTriangle, Info, Check, ChevronDown, Scale } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
@@ -10,10 +8,6 @@ import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { Coin, Chest } from '@/components/illustrations/GamifyObjects';
 import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
-import { dinhDangTien } from '@/lib/tien';
-import { goiToKhai } from '@/lib/goiToKhai';
-import { CauHoiNhanh } from '@/components/phan-hoi/CauHoiNhanh';
-import { nhanDinhNguong, type TienMat } from '@/lib/nhanDinhNguong';
 
 /**
  * The two revenue milestones a Vietnamese household business meets, and where
@@ -74,45 +68,41 @@ interface Summary {
   /* Từ 24/09/2026 — cùng nguồn với tờ khai nháp (`_shared/doanh-thu/so-lieu.ts`). Tuỳ chọn để bản
      máy chủ cũ vẫn hiện được. */
   unclassifiedAmount?: number;
-  /* Từ 29/09/2026 — để không kết luận ngưỡng quá sớm (`lib/nhanDinhNguong.ts`). */
-  suggestedExclusion?: { so_tien: number; so_khoan: number } | null;
-  marketplacePayout?: { so_tien: number; so_khoan: number } | null;
-  cashShare?: TienMat | null;
   unclassifiedCount?: number;
   excludedByPerson?: number;
   coverage?: number | null;
   notCovered?: string;
 }
 
-/**
- * What each milestone means, and the document that says so. `law` là tên văn bản pháp luật — GIỮ NGUYÊN tiếng Việt
- * (trích dẫn nguyên văn, dịch ra mất giá trị đối chiếu); `label/below/above` dịch ở app.nguong.<khoá>.
- */
+/** What each milestone means, and the document that says so. */
 const MILESTONE: Partial<Record<
   string,
-  { khoa: string; law: string }
+  { label: string; below: string; above: string; law: string }
 >> & Record<
   MilestoneKey,
-  { khoa: string; law: string }
+  { label: string; below: string; above: string; law: string }
 > = {
   tax_exemption: {
-    khoa: 'mocMienThue',
+    label: 'Ngưỡng miễn thuế',
+    below: 'Chưa phải nộp GTGT và TNCN · vẫn phải thông báo doanh thu',
+    above: 'Phải nộp GTGT, TNCN và xuất hoá đơn điện tử có mã của cơ quan thuế',
     law: 'Nghị định 68/2026/NĐ-CP, sửa bởi Nghị định 141/2026/NĐ-CP · áp dụng từ 01/01/2026',
   },
   profit_method_required: {
-    khoa: 'mocChonCach',
+    label: 'Trần được chọn cách tính',
+    below: 'Còn được chọn tính theo tỷ lệ doanh thu hoặc theo thu nhập',
+    above: 'Chỉ còn cách tính theo thu nhập (doanh thu trừ chi phí), thuế suất 17%',
     law: 'Luật Thuế thu nhập cá nhân số 109/2025/QH15',
   },
 };
 
-const dong = dinhDangTien;
+const dong = (n: number) => `₫${Math.round(n).toLocaleString('vi-VN')}`;
 
 /** ₫1.234.567.890 is unreadable at a glance; "1,23 tỷ" is not. */
 function short(n: number): string {
   const v = Math.abs(n);
-  const phanThapPhan = i18n.language?.startsWith('vi') ? ',' : '.';
-  if (v >= 1_000_000_000) return i18n.t('app.nguong.ty', { n: (n / 1_000_000_000).toFixed(2).replace('.', phanThapPhan) });
-  if (v >= 1_000_000) return i18n.t('app.nguong.trieu', { n: Math.round(n / 1_000_000) });
+  if (v >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2).replace('.', ',')} tỷ`;
+  if (v >= 1_000_000) return `${Math.round(n / 1_000_000)} triệu`;
   return dong(n);
 }
 
@@ -126,7 +116,6 @@ function goToLawPanel() {
 }
 
 function MilestoneBar({ m }: { m: Milestone }) {
-  const { t } = useTranslation();
   const [showLaw, setShowLaw] = useState(false);
   const meta = MILESTONE[m.key];
   // A key from a server newer or older than this file: draw nothing, not a crash.
@@ -138,10 +127,10 @@ function MilestoneBar({ m }: { m: Milestone }) {
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-xs font-medium text-foreground">
-          {t(`app.nguong.${meta.khoa}.label`)} · {short(m.threshold)}
+          {meta.label} · {short(m.threshold)}
         </p>
         <p className="text-xs text-muted-foreground tabular-nums shrink-0">
-          {m.crossed ? t('app.nguong.daVuot') : t('app.nguong.conLai', { x: short(m.remaining) })}
+          {m.crossed ? 'đã vượt' : `còn ${short(m.remaining)}`}
         </p>
       </div>
 
@@ -167,7 +156,7 @@ function MilestoneBar({ m }: { m: Milestone }) {
           ) : (
             <Check size={11} className="mt-0.5 shrink-0" />
           )}
-          {m.crossed ? t(`app.nguong.${meta.khoa}.above`) : t(`app.nguong.${meta.khoa}.below`)}
+          {m.crossed ? meta.above : meta.below}
         </p>
 
         {/* Citation is one tap away, not printed under every bar — the same
@@ -176,7 +165,7 @@ function MilestoneBar({ m }: { m: Milestone }) {
           onClick={() => setShowLaw((v) => !v)}
           className="text-[10px] text-muted-foreground/70 hover:text-primary transition-colors flex items-center gap-0.5 shrink-0"
         >
-          {t('app.nguong.canCu')} <ChevronDown size={9} className={`transition-transform ${showLaw ? 'rotate-180' : ''}`} />
+          Căn cứ <ChevronDown size={9} className={`transition-transform ${showLaw ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
@@ -201,7 +190,7 @@ function MilestoneBar({ m }: { m: Milestone }) {
           onClick={goToLawPanel}
           className="mt-1.5 text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
         >
-          <Scale size={10} /> {t('app.nguong.xemLuat')}
+          <Scale size={10} /> Xem chi tiết ở mục Luật &amp; Thuế
         </button>
       )}
     </div>
@@ -210,7 +199,6 @@ function MilestoneBar({ m }: { m: Milestone }) {
 
 /** Dòng giải thích dưới con số ước tính từ ngân hàng. Xuất ra để kiểm riêng. */
 export function GiaiThichUocTinh({ data }: { data: Pick<Summary, 'unclassifiedAmount' | 'unclassifiedCount' | 'excludedByPerson' | 'coverage'> }) {
-  const { t } = useTranslation();
   const chuaRo = data.unclassifiedAmount ?? 0;
   const daTru = data.excludedByPerson ?? 0;
   const phanTram = typeof data.coverage === 'number' ? Math.floor(data.coverage * 100) : null;
@@ -220,16 +208,17 @@ export function GiaiThichUocTinh({ data }: { data: Pick<Summary, 'unclassifiedAm
       {phanTram !== null && (
         <p className="flex items-start gap-1.5">
           <Info size={12} className="mt-0.5 shrink-0" />
-          <span>{t('app.nguong.daGiaiThich', { p: phanTram })}</span>
+          <span>Đã giải thích {phanTram}% giá trị tiền vào.</span>
         </p>
       )}
       {chuaRo > 0 && (
         <p className="flex items-start gap-1.5">
           <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500" />
           <span>
-            {t('app.nguong.chuaXacNhan', { tien: short(chuaRo), n: data.unclassifiedCount ?? 0 })}{' '}
+            {short(chuaRo)} ({data.unclassifiedCount ?? 0} khoản) chưa ai xác nhận là tiền bán hàng —
+            MIMI đang tạm tính là doanh thu, không tự trừ.{' '}
             <a href="#tien-vao" className="font-medium text-foreground underline underline-offset-2">
-              {t('app.nguong.xacNhan')}
+              Xác nhận
             </a>
           </span>
         </p>
@@ -237,57 +226,14 @@ export function GiaiThichUocTinh({ data }: { data: Pick<Summary, 'unclassifiedAm
       {daTru > 0 && (
         <p className="flex items-start gap-1.5">
           <Check size={12} className="mt-0.5 shrink-0" />
-          <span>{t('app.nguong.daTru', { tien: short(daTru) })}</span>
+          <span>Đã trừ {short(daTru)} bạn xác nhận không phải doanh thu (tiền vay, tiền người nhà…).</span>
         </p>
       )}
     </div>
   );
 }
 
-const TIEN_MAT: TienMat[] = ['gan_nhu_khong', 'mot_phan', 'phan_lon'];
-
-/**
- * Câu kết luận về mốc 1 tỷ, đặt ngay dưới con số (29/09/2026). Thanh mốc bên dưới chỉ đo tiền vào tài
- * khoản; câu này nói con số đó đủ để kết luận chưa — tiền mặt, khoản chưa xác nhận, tiền sàn trả ròng.
- */
-function NhanDinhMocMotTy({ data, daLuu }: { data: Summary; daLuu: () => void }) {
-  const { t } = useTranslation();
-  const [dangLuu, setDangLuu] = useState(false);
-  const [loi, setLoi] = useState<string | null>(null);
-  const nd = nhanDinhNguong({
-    doanhThu: data.revenue, nguong: 1_000_000_000,
-    goiYLoaiRa: data.suggestedExclusion, tienSan: data.marketplacePayout, tienMat: data.cashShare ?? null,
-  });
-  const mau = nd.muc === 'da_vuot' || nd.muc === 'co_the_vuot'
-    ? 'border-mimi-amber/40 bg-mimi-amber/10'
-    : nd.muc === 'chua_vuot' ? 'border-border/60 bg-card/40' : 'border-primary/30 bg-primary/5';
-  const tra = async (tienMat: TienMat) => {
-    setDangLuu(true); setLoi(null);
-    try { await goiToKhai('luu_tien_mat', { tien_mat: tienMat }); daLuu(); }
-    catch (e) { setLoi(e instanceof Error ? e.message : t('app.nguong.chuaLuu')); }
-    finally { setDangLuu(false); }
-  };
-  return (
-    <div className={`mt-4 rounded-xl border px-3 py-2.5 text-xs text-foreground ${mau}`} data-muc-nguong={nd.muc}>
-      <p>{nd.cau}</p>
-      {nd.hoiTienMat && (
-        <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={t('app.nguong.khachTienMat')}>
-          {TIEN_MAT.map((g) => (
-            <button key={g} type="button" disabled={dangLuu} onClick={() => void tra(g)}
-              className="rounded-full border border-border bg-card px-3 py-1 font-medium hover:bg-accent disabled:opacity-50">
-              {t(`app.nguong.tienMat.${g}`)}
-            </button>
-          ))}
-        </div>
-      )}
-      {nd.ghiChuSan && <p className="mt-1.5 text-muted-foreground">{nd.ghiChuSan}</p>}
-      {loi && <p role="alert" className="mt-1.5 text-destructive">{loi}</p>}
-    </div>
-  );
-}
-
 export function ThresholdClock() {
-  const { t } = useTranslation();
   const { session } = useAuthStore();
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -309,7 +255,7 @@ export function ThresholdClock() {
       });
       const body = await res.json();
       if (!res.ok || body?.error) {
-        setError(body?.error ?? i18n.t('app.nguong.loiHttp', { ma: res.status }));
+        setError(body?.error ?? `Lỗi ${res.status}`);
         return;
       }
       const summary = body as Summary;
@@ -324,7 +270,7 @@ export function ThresholdClock() {
         hasGdt: summary.gdtRevenue !== null,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : i18n.t('app.nguong.khongTai'));
+      setError(e instanceof Error ? e.message : 'Không tải được số liệu');
     } finally {
       setLoading(false);
     }
@@ -340,13 +286,13 @@ export function ThresholdClock() {
   if (error || !data) {
     return (
       <div className="card-base p-5">
-        <p className="text-sm text-muted-foreground">{error ?? t('app.nguong.chuaSoLieu')}</p>
+        <p className="text-sm text-muted-foreground">{error ?? 'Chưa có số liệu.'}</p>
       </div>
     );
   }
 
   const nothingToMeasure =
-    !data.hasBankConnection && data.transactionsCounted === 0;
+    !data.hasBankConnection && data.gdtRevenue === null && data.transactionsCounted === 0;
 
   if (nothingToMeasure) {
     return (
@@ -357,9 +303,11 @@ export function ThresholdClock() {
         <div className="absolute -right-2 -top-2 opacity-[0.14] rotate-6 pointer-events-none" aria-hidden="true">
           <Chest size={72} />
         </div>
-        <h3 className="text-sm font-semibold text-foreground relative">{t('app.nguong.tieuDeTrong')}</h3>
+        <h3 className="text-sm font-semibold text-foreground relative">Doanh thu và nghĩa vụ thuế</h3>
         <p className="text-sm text-muted-foreground mt-2 relative max-w-[85%]">
-          <Trans i18nKey="app.nguong.chuaCoDl" components={{ b: <span className="font-medium text-foreground" /> }} />
+          Chưa có dữ liệu để tính. Kết nối ngân hàng hoặc Tổng Cục Thuế ở{' '}
+          <span className="font-medium text-foreground">Fintech Hub</span>, doanh thu sẽ tự cộng
+          từ đó.
         </p>
       </div>
     );
@@ -370,13 +318,18 @@ export function ThresholdClock() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">
-            {t('app.nguong.dtNam', { nam: data.year })}
+            Doanh thu năm {data.year}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {/* 29/09/2026: bỏ nhánh "theo hoá đơn điện tử" — MIMI không đọc được hoá đơn từ cơ quan thuế. */}
-            <span className="inline-flex items-center gap-1">
-              <Landmark size={11} /> {t('app.nguong.uocTinh')}
-            </span>
+            {data.basis === 'gdt' ? (
+              <span className="inline-flex items-center gap-1">
+                <FileText size={11} /> Theo hoá đơn điện tử (Tổng Cục Thuế)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                <Landmark size={11} /> Ước tính từ tiền vào tài khoản
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -389,32 +342,28 @@ export function ThresholdClock() {
         </div>
       </div>
 
-      <NhanDinhMocMotTy data={data} daLuu={() => void load()} />
-      {/* Đo đúng giả thuyết cốt lõi "tiền vào ≠ doanh thu": con số MIMI đưa ra có khớp điều chủ doanh nghiệp biết. */}
-      {data.revenue > 0 && (
-        <CauHoiNhanh
-          cauHoi="doanh_thu_dung"
-          className="mt-3"
-          cau={t('app.nguong.cauHoi')}
-          luaChon={[
-            { gia: 'dung', nhan: t('app.nguong.dung') },
-            { gia: 'cao_hon_thuc_te', nhan: t('app.nguong.cao'), hoiThem: true },
-            { gia: 'thap_hon_thuc_te', nhan: t('app.nguong.thap'), hoiThem: true },
-          ]}
-        />
-      )}
-
       <div className="mt-5 space-y-4">
         {(data.milestones ?? []).map((m) => (
           <MilestoneBar key={m.key} m={m} />
         ))}
       </div>
 
+      {/* A gap between money received and invoices issued is a fact worth
+          seeing, not noise to average away. */}
+      {data.gap !== null && Math.abs(data.gap) > 1_000_000 && (
+        <p className="mt-4 text-xs text-muted-foreground flex items-start gap-1.5">
+          <Info size={12} className="mt-0.5 shrink-0" />
+          Hoá đơn điện tử {short(data.gdtRevenue ?? 0)}, tiền về tài khoản {short(data.bankRevenue)}.
+          Chênh {short(Math.abs(data.gap))} — thường là bán thu tiền mặt chưa xuất hoá đơn, hoặc
+          hoá đơn đã xuất mà chưa thu tiền.
+        </p>
+      )}
 
       {data.needsReview > 0 && (
         <p className="mt-2 text-xs text-amber-600 dark:text-amber-500 flex items-start gap-1.5">
           <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-          {t('app.nguong.canRa', { n: data.needsReview })}
+          {data.needsReview} cặp giao dịch được đoán là chuyển khoản nội bộ và đã trừ khỏi doanh
+          thu. Nên rà lại — đoán sai là lệch doanh thu.
         </p>
       )}
 

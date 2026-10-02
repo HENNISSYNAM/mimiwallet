@@ -51,11 +51,9 @@ export interface HoaDonVao {
   soHoaDon: string | null;
   tenBenBan: string | null;
   maSoThueBenBan: string | null;
-  /** Người dùng đã GẮN chứng từ này vào một khoản chi (chung_tu_quet.giao_dich_id) — thắng mọi phỏng đoán. */
-  giaoDichId?: string | null;
 }
 
-export type CachGhep = 'gan_tay' | 'so_hoa_don' | 'so_tien_va_ngay';
+export type CachGhep = 'so_hoa_don' | 'so_tien_va_ngay';
 
 export interface CapDaGhep {
   khoanChiId: string;
@@ -100,7 +98,10 @@ function soNgayCach(a: string, b: string): number {
   return Math.abs(Math.round((x - y) / 86_400_000));
 }
 
-/** Bỏ dấu, viết hoa, bỏ ký tự lạ. Ngân hàng hay viết hoa toàn bộ và chèn dấu gạch. */
+/**
+ * Bỏ dấu, viết thường, bỏ ký tự lạ — để dò số hoá đơn trong nội dung chuyển
+ * khoản. Ngân hàng hay viết hoa toàn bộ và chèn dấu gạch.
+ */
 function phang(s: string): string {
   return s
     .normalize('NFD')
@@ -108,41 +109,6 @@ function phang(s: string): string {
     .replace(/đ/gi, 'd')
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '');
-}
-
-/**
- * Khoá so sánh của một số hoá đơn: bỏ tiền tố "HD/HDON/INV/SO" và số 0 đứng đầu — "00001234", "HD 1234",
- * "hd-1234" cùng ra "1234".
- */
-function khoaSoHoaDon(s: string): string {
-  return phang(s).replace(/^(HDON|INVOICE|INV|HD|SO)(?=[A-Z0-9])/, '').replace(/^0+(?=[A-Z0-9])/, '');
-}
-
-/**
- * Các khoá số hoá đơn có thể có trong một nội dung chuyển khoản.
- *
- * TÁCH TỪ trước rồi mới so, không tìm chuỗi con trong chuỗi đã dính liền (30/09/2026, sửa P1-3 của đợt kiểm trước
- * go-live): "1.234.000" không được chứa hoá đơn "1234" chỉ vì các chữ số nằm cạnh nhau sau khi bỏ dấu chấm.
- * Cho phép ghép 2–3 từ liền nhau ("AA 24E 0001234") nhưng KHÔNG ghép các từ toàn chữ số — đó chính là cách
- * một số tiền bị đọc thành số hoá đơn.
- */
-function khoaTrongNoiDung(noi: string): Set<string> {
-  const tu = noi
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/gi, 'd')
-    .toUpperCase()
-    .split(/[^A-Z0-9]+/)
-    .filter(Boolean);
-  const ra = new Set<string>();
-  for (let i = 0; i < tu.length; i++) {
-    for (let n = 1; n <= 3 && i + n <= tu.length; n++) {
-      const nhom = tu.slice(i, i + n);
-      if (n > 1 && nhom.every((t) => /^\d+$/.test(t))) continue;
-      ra.add(khoaSoHoaDon(nhom.join('')));
-    }
-  }
-  return ra;
 }
 
 /**
@@ -168,37 +134,22 @@ export function ghepChungTu(
   const chiDaDung = new Set<string>();
   const hoaDonDaDung = new Set<string>();
 
-  // ── Vòng 0: người dùng đã gắn tay (29/09/2026) ──────────────────────────
-  // Quyết định của người thắng mọi phỏng đoán của máy, kể cả khi số tiền lệch (trả góp, trả một phần).
-  const idChi = new Set(chi.map((c) => c.id));
-  for (const h of hoaDon) {
-    if (!h.giaoDichId || !idChi.has(h.giaoDichId) || hoaDonDaDung.has(h.id)) continue;
-    daGhep.push({ khoanChiId: h.giaoDichId, hoaDonId: h.id, soTien: h.soTien, cach: 'gan_tay' });
-    chiDaDung.add(h.giaoDichId);
-    hoaDonDaDung.add(h.id);
-  }
-
   // ── Vòng 1: số hoá đơn nằm trong nội dung chuyển khoản ──────────────────
-  // So NGUYÊN số (không so chuỗi con). Một nội dung khớp số của hai hoá đơn chưa dùng thì không chọn — để người xem.
   for (const c of chi) {
     if (chiDaDung.has(c.id)) continue;
-    const khoaNoi = khoaTrongNoiDung(`${c.noiDung ?? ''} ${c.tenNguoiNhan ?? ''}`);
-    if (!khoaNoi.size) continue;
+    const noi = phang(`${c.noiDung ?? ''} ${c.tenNguoiNhan ?? ''}`);
+    if (!noi) continue;
 
-    const ungVienSo = hoaDon.filter((h) => {
-      if (hoaDonDaDung.has(h.id) || !h.soHoaDon) return false;
-      const so = khoaSoHoaDon(h.soHoaDon);
-      // Số quá ngắn thì bỏ qua: "1" sẽ khớp với mọi nội dung có chữ số.
-      return so.length >= 4 && khoaNoi.has(so);
-    });
-    if (ungVienSo.length === 1) {
-      const h = ungVienSo[0];
+    for (const h of hoaDon) {
+      if (hoaDonDaDung.has(h.id)) continue;
+      const so = h.soHoaDon ? phang(h.soHoaDon) : '';
+      // Số hoá đơn quá ngắn thì bỏ qua: "1" sẽ khớp với mọi nội dung có chữ số.
+      if (so.length < 4 || !noi.includes(so)) continue;
+
       daGhep.push({ khoanChiId: c.id, hoaDonId: h.id, soTien: h.soTien, cach: 'so_hoa_don' });
       chiDaDung.add(c.id);
       hoaDonDaDung.add(h.id);
-    } else if (ungVienSo.length > 1) {
-      canXem.push({ khoanChiId: c.id, hoaDonId: ungVienSo.map((h) => h.id), soTien: c.soTien });
-      chiDaDung.add(c.id);
+      break;
     }
   }
 
@@ -258,37 +209,4 @@ export function ghepChungTu(
     tongCoGiay,
     tongChuaCoGiay,
   };
-}
-
-/* ── Ngoại lệ đã có người quyết (29/09/2026) ───────────────────────────────── */
-
-/** Lý do người duyệt chấp nhận một khoản chi KHÔNG có chứng từ (khớp CHECK của bảng quyet_dinh_chung_tu). */
-export const LY_DO_KHONG_CHUNG_TU = {
-  luong_bao_hiem: 'Lương, bảo hiểm',
-  thue_phi_nha_nuoc: 'Thuế, phí nộp nhà nước',
-  phi_lai_ngan_hang: 'Phí, lãi ngân hàng',
-  nguoi_ban_khong_xuat: 'Người bán không xuất hoá đơn',
-  khac: 'Lý do khác',
-} as const;
-export type LyDoKhongChungTu = keyof typeof LY_DO_KHONG_CHUNG_TU;
-
-export interface QuyetDinhChungTu { id: string; transaction_id: string; ly_do: LyDoKhongChungTu; ghi_chu: string | null; tao_luc: string }
-
-/**
- * Tách khoản chi CẦN chứng từ khỏi khoản người duyệt đã quyết: chi cá nhân (nhãn người chọn) và "không có
- * chứng từ" kèm lý do. Trang Chứng từ chi phí và trợ lý dùng CÙNG hàm này để ra cùng một con số.
- */
-export function locKhoanCanChungTu<T extends KhoanChi>(chi: T[], o: { caNhan: ReadonlySet<string>; quyetDinh: readonly QuyetDinhChungTu[] }): {
-  canChungTu: T[];
-  caNhan: T[];
-  khongCoChungTu: { khoan: T; quyet: QuyetDinhChungTu }[];
-} {
-  const theoGd = new Map(o.quyetDinh.map((q) => [q.transaction_id, q]));
-  const canChungTu: T[] = [], caNhan: T[] = [], khongCoChungTu: { khoan: T; quyet: QuyetDinhChungTu }[] = [];
-  for (const c of chi) {
-    if (o.caNhan.has(c.id)) caNhan.push(c);
-    else if (theoGd.has(c.id)) khongCoChungTu.push({ khoan: c, quyet: theoGd.get(c.id)! });
-    else canChungTu.push(c);
-  }
-  return { canChungTu, caNhan, khongCoChungTu };
 }

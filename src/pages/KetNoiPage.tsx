@@ -16,16 +16,17 @@ import { DauKetNoi } from '@/components/tro-ly/DauKetNoi';
 const MO_TA: Record<string, string> = {
   ngan_hang: 'Đọc sao kê để MIMI biết tiền đã vào, ra ở đâu — nền của mọi báo cáo và đối soát.',
   casso: 'Nhận tiền bằng mã QR VietQR; tiền về thì hoá đơn tương ứng tự khớp.',
+  tong_cuc_thue: 'Lấy hoá đơn điện tử đầu vào, đầu ra từ cổng thuế vào Thư viện chứng từ.',
   openai: 'Chi phí và số token OpenAI, để so với ngân sách AI.',
   anthropic: 'Chi phí và số token Claude, để so với ngân sách AI.',
   gemini: 'Chi phí Gemini qua file xuất từ Google Cloud.',
   openrouter: 'Chi phí và token khi gọi model qua OpenRouter; kèm bảng giá để tìm model rẻ hơn.',
 };
 
-// 28/09/2026: chỉ giữ nhóm đang chạy thật. "Thuế" (hoá đơn điện tử qua Cas) gỡ vì Casso chưa bật sản phẩm
-// đó cho app production; "Nhà cung cấp AI" phục vụ Chi phí AI, đã đóng băng (`lib/dongBang.ts`).
 const NHOM: { loai: KetNoiHienThi['loai']; ten: string }[] = [
   { loai: 'ngan_hang', ten: 'Ngân hàng & thanh toán' },
+  { loai: 'thue', ten: 'Thuế' },
+  { loai: 'ai', ten: 'Nhà cung cấp AI' },
 ];
 
 const TRANG_THAI: Record<KetNoiHienThi['trang_thai'], { nhan: string; lop: string }> = {

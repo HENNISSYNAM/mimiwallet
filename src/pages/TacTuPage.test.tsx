@@ -120,9 +120,9 @@ describe('màn Kiểm soát chi', () => {
     await choTai();
     const kpi = container.querySelector('[data-mimi="tac-tu.kpi"]')!.textContent!;
     expect(kpi).toContain('Yêu cầu cần duyệt2');
-    expect(kpi).toContain('850.000 ₫');
+    expect(kpi).toContain('850.000đ');
     // 20.000.000 − (500.000 + 12.800.000 + 850.000) đang giữ hạn mức.
-    expect(kpi).toContain('5.850.000 ₫');
+    expect(kpi).toContain('5.850.000đ');
     expect(kpi).toContain('Khoản chi cần xem xét1');
   });
 
@@ -133,8 +133,8 @@ describe('màn Kiểm soát chi', () => {
     expect(nutDuyet.length).toBeGreaterThan(0);
     for (const n of nutDuyet) {
       const dong = n.closest('tr, li')!.textContent!;
-      expect(dong).toContain('500.000 ₫');
-      expect(dong).not.toContain('12.800.000 ₫');
+      expect(dong).toContain('500.000đ');
+      expect(dong).not.toContain('12.800.000đ');
     }
     fireEvent.click(nutDuyet[0]);
     await waitFor(() => expect(gia.goi).toHaveBeenCalledWith('duyet', { yeu_cau_id: 'A', them_nguoi_nhan: false }));
@@ -218,7 +218,7 @@ describe('màn Kiểm soát chi', () => {
     const form = await screen.findByRole('dialog');
 
     const soTien = within(form).getByLabelText('Số tiền');
-    // Hôm nay đã giữ 14.150.000 ₫ trên trần ngày 20.000.000 ₫.
+    // Hôm nay đã giữ 14.150.000đ trên trần ngày 20.000.000đ.
     fireEvent.change(soTien, { target: { value: '9000000' } });
     expect(form.textContent).toContain('Sẽ bị từ chối');
     expect(form.textContent).toContain('Vượt hạn mức ngày');

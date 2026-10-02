@@ -10,8 +10,7 @@ import { docSoTienBangChu } from '@/lib/soTienBangChu';
  *
  * PHẢN CHIẾU APP, KHÔNG PHẢI APP. Mỗi khung dựng lại một màn hình có thật trong
  * MIMI (thẻ chờ duyệt, sổ chi phí, cảnh báo đổi số tài khoản) bằng dữ liệu ví dụ,
- * và ghi rõ "Minh hoạ". 28/09/2026: gỡ hai khung chức năng chưa chạy (phân loại sao kê, chi phí AI) —
- * chỉ minh hoạ thứ đang chạy thật.
+ * và ghi rõ "Minh hoạ". Khung chi phí AI là chức năng đang xây nên ghi "Đang xây".
  * Con trỏ dùng đúng hình mèo của "MIMI làm hộ" trong app.
  *
  * MÃ QR LÀ HOẠ TIẾT, KHÔNG QUÉT ĐƯỢC. Dựng VietQR thật từ số tài khoản ví dụ thì
@@ -168,6 +167,48 @@ function CanhDuyet() {
   );
 }
 
+/* ── 2. Phân loại sao kê ────────────────────────────────────────────── */
+const DONG_SAO_KE = [
+  ['OPENAI API', 'Hạ tầng AI', '520.000'],
+  ['Quảng cáo Facebook', 'Quảng cáo', '3.200.000'],
+  ['Viettel IDC · máy chủ', 'Hạ tầng AI', '1.150.000'],
+  ['Grab · đi gặp khách', 'Đi lại', '96.000'],
+  ['In ấn ABC', 'Nhà cung cấp', '2.400.000'],
+] as const;
+const NHIP_PHAN_LOAI = [900, 900, 900, 900, 900, 2600] as const;
+
+function CanhPhanLoai() {
+  const { khung, buoc, coConTro } = useCanh(NHIP_PHAN_LOAI, 5);
+  const o = useRef<Array<HTMLSpanElement | null>>([]);
+  const dich = useRef<HTMLSpanElement | null>(null);
+  dich.current = o.current[Math.min(buoc, DONG_SAO_KE.length - 1)] ?? null;
+  const vt = useViTri(khung, dich, buoc);
+
+  return (
+    <Khung khungRef={khung} nen="bg-primary/5" nhan="Đang xây · minh hoạ">
+      <div className="w-full max-w-md overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <div className="grid grid-cols-[1.4fr_1fr_auto] border-b border-border bg-muted/50 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+          <span>Sao kê · tiền ra</span><span>Nhóm chi</span><span className="text-right">Số tiền</span>
+        </div>
+        {DONG_SAO_KE.map(([ten, nhom, tien], i) => (
+          <div key={ten} className="grid grid-cols-[1.4fr_1fr_auto] items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
+            <span className="truncate text-[13px] text-foreground">{ten}</span>
+            <span ref={(el) => { o.current[i] = el; }} className="min-w-0">
+              {i < buoc ? (
+                <span className="inline-flex items-center gap-1 text-[12px] font-medium text-foreground"><Check size={12} className="text-emerald-600" />{nhom}</span>
+              ) : (
+                <span className={`block h-2.5 rounded-full ${i === buoc ? 'animate-pulse bg-primary/40' : 'bg-muted'}`} style={{ width: `${60 + ((i * 17) % 30)}%` }} />
+              )}
+            </span>
+            <span className="text-right font-mono text-[12px] tabular-nums text-muted-foreground">{tien}</span>
+          </div>
+        ))}
+      </div>
+      {coConTro && buoc < DONG_SAO_KE.length && <ConTro x={vt.x} y={vt.y} bam={false} />}
+    </Khung>
+  );
+}
+
 /* ── 3. Bắt đổi số tài khoản ────────────────────────────────────────── */
 const NHIP_DOI_TK = [1400, 1300, 1000, 2800] as const;
 
@@ -202,7 +243,7 @@ function CanhDoiTaiKhoan() {
           </div>
         ) : (
           <p className="mt-3 rounded-lg bg-muted/60 p-2.5 font-mono text-[11px] text-muted-foreground">
-            AI được báo lý do: <span className="text-foreground">người nhận đổi số tài khoản</span>
+            Agent nhận lý do: <span className="text-foreground">DOI_SO_TAI_KHOAN</span>
           </p>
         )}
       </div>
@@ -211,16 +252,73 @@ function CanhDoiTaiKhoan() {
   );
 }
 
+/* ── 4. Chi phí AI (đang xây) ───────────────────────────────────────── */
+const DU_AN_AI = [
+  ['Chatbot chăm sóc khách', 58, '4.180.000đ'],
+  ['Tóm tắt hợp đồng', 27, '1.940.000đ'],
+  ['Viết nội dung quảng cáo', 15, '1.080.000đ'],
+] as const;
+const NHIP_AI = [700, 1400, 3200] as const;
+
+function CanhChiPhiAi() {
+  const { khung, buoc, coConTro } = useCanh(NHIP_AI, 2);
+  const cotDau = useRef<HTMLSpanElement>(null);
+  const vt = useViTri(khung, buoc === 2 ? cotDau : null, buoc);
+
+  return (
+    <Khung khungRef={khung} nen="bg-secondary/60" nhan="Đang xây · minh hoạ">
+      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-4 shadow-sm">
+        <p className="text-[11px] text-muted-foreground">Chi phí AI tháng 9</p>
+        <p className="font-mono text-2xl font-bold tabular-nums text-foreground">7.200.000đ</p>
+        <div className="mt-4 grid gap-3">
+          {DU_AN_AI.map(([ten, phanTram, tien], i) => (
+            <div key={ten}>
+              <div className="flex justify-between text-[12px]">
+                <span className="text-foreground">{ten}</span>
+                <span className="font-mono tabular-nums text-muted-foreground">{tien}</span>
+              </div>
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+                <motion.span
+                  ref={i === 0 ? cotDau : undefined}
+                  className="block h-full rounded-full bg-primary"
+                  initial={false}
+                  animate={{ width: buoc >= 1 ? `${phanTram}%` : '0%' }}
+                  transition={{ duration: 0.9, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className={`mt-4 rounded-lg p-2 text-[11px] ${buoc === 2 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-muted/60 text-muted-foreground'}`}>
+          Ngân sách AI tháng: 8.000.000đ · đã dùng 90%
+        </p>
+      </div>
+      {coConTro && <ConTro x={vt.x} y={vt.y} bam={false} />}
+    </Khung>
+  );
+}
+
 const CANH = [
   {
     Canh: CanhDuyet,
-    tieuDe: 'Một chạm để duyệt. Tiền chỉ đi khi bạn trả.',
-    mo: 'AI gửi yêu cầu chi. Bạn xem số tiền, lý do rồi bấm Duyệt. Mã VietQR hiện ra để bạn trả. Sao kê báo về là khoản đó tự chuyển sang "Đã chi".',
+    tieuDe: 'Duyệt trong một chạm, tiền đi khi bạn trả.',
+    mo: 'Agent gửi yêu cầu; bạn đọc số tiền bằng chữ và lý do rồi bấm Duyệt. Lệnh trả VietQR hiện ra, sao kê về thì tự thành "Đã chi".',
+  },
+  {
+    Canh: CanhPhanLoai,
+    tieuDe: 'Sao kê tự vào đúng nhóm chi.',
+    // Chưa có code tự phân loại sao kê (sepay-map ghi category: null) — nên khung ghi "Đang xây".
+    mo: 'Mỗi dòng tiền ra được xếp vào nhóm chi phí, để cuối kỳ có sẵn sổ chi phí kèm nguồn từng dòng. Chức năng đang xây.',
   },
   {
     Canh: CanhDoiTaiKhoan,
     tieuDe: 'Bắt được lúc "nhà cung cấp đổi số tài khoản".',
-    mo: 'Cùng người nhận mà số tài khoản khác lần trước? MIMI dừng lại và báo đỏ. Đây là chiêu lừa chuyển khoản rất hay gặp.',
+    mo: 'Cùng tên người nhận nhưng khác tài khoản lần trước, MIMI dừng lại và cảnh báo đỏ — kiểu lừa đảo chuyển khoản hay gặp nhất.',
+  },
+  {
+    Canh: CanhChiPhiAi,
+    tieuDe: 'Biết mỗi đồng chi cho AI đi vào đâu.',
+    mo: 'Chi phí AI theo dự án, kèm ngân sách tháng và cảnh báo khi gần chạm. Chức năng đang xây.',
   },
 ];
 
@@ -233,7 +331,7 @@ export default function DemoTuChay() {
             Xem MIMI làm việc
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            Các khung dưới đây diễn lại việc bạn làm trong app, bằng số liệu ví dụ.
+            Các khung dưới đây tự chạy lại những việc bạn làm trong app — bằng dữ liệu ví dụ.
           </p>
         </div>
         <div className="mt-14 grid gap-x-8 gap-y-14 md:grid-cols-2">

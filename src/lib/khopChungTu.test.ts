@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ghepChungTu, LECH_TIEN, locKhoanCanChungTu, type HoaDonVao, type KhoanChi } from './khopChungTu';
+import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from './khopChungTu';
 
 const chi = (
   id: string,
@@ -177,73 +177,5 @@ describe('chữ dùng phải đúng', () => {
     expect(r.hoaDonChuaThayTien).toHaveLength(1);
     // Vẫn được cộng vào chi phí chứng minh được.
     expect(r.tongCoGiay).toBe(1_000_000);
-  });
-});
-
-// 29/09/2026 — quy trình đối soát: người duyệt xử lý ngoại lệ.
-describe('người duyệt: gắn tay và quyết định', () => {
-  it('chứng từ gắn tay thắng phỏng đoán, kể cả khi số tiền lệch (trả một phần)', () => {
-    const r = ghepChungTu(
-      [chi('c1', 3_000_000, '2026-08-10'), chi('c2', 5_000_000, '2026-08-10')],
-      [{ ...hd('h1', 5_000_000, '2026-08-09'), giaoDichId: 'c1' }],
-    );
-    expect(r.daGhep).toEqual([{ khoanChiId: 'c1', hoaDonId: 'h1', soTien: 5_000_000, cach: 'gan_tay' }]);
-    // Không đem h1 đi ghép lại với c2 dù đúng số tiền.
-    expect(r.chuaCoGiay.map((c) => c.id)).toEqual(['c2']);
-  });
-
-  it('khoản ghép mơ hồ hết mơ hồ khi người duyệt chọn một chứng từ', () => {
-    const truoc = ghepChungTu([chi('c1', 1_000_000, '2026-08-10')], [hd('h1', 1_000_000, '2026-08-09'), hd('h2', 1_000_000, '2026-08-11')]);
-    expect(truoc.canXem).toHaveLength(1);
-    const sau = ghepChungTu([chi('c1', 1_000_000, '2026-08-10')], [hd('h1', 1_000_000, '2026-08-09'), { ...hd('h2', 1_000_000, '2026-08-11'), giaoDichId: 'c1' }]);
-    expect(sau.canXem).toHaveLength(0);
-    expect(sau.daGhep[0]).toMatchObject({ khoanChiId: 'c1', hoaDonId: 'h2', cach: 'gan_tay' });
-  });
-
-  it('chi cá nhân và "không có chứng từ" rời danh sách cần chứng từ', () => {
-    const r = locKhoanCanChungTu([chi('a', 1, '2026-08-01'), chi('b', 2, '2026-08-01'), chi('c', 3, '2026-08-01')], {
-      caNhan: new Set(['a']),
-      quyetDinh: [{ id: 'q1', transaction_id: 'b', ly_do: 'luong_bao_hiem', ghi_chu: null, tao_luc: '2026-09-29T00:00:00Z' }],
-    });
-    expect(r.canChungTu.map((c) => c.id)).toEqual(['c']);
-    expect(r.caNhan.map((c) => c.id)).toEqual(['a']);
-    expect(r.khongCoChungTu[0]).toMatchObject({ khoan: { id: 'b' }, quyet: { ly_do: 'luong_bao_hiem' } });
-  });
-});
-
-/** P1-3 (kiểm trước go-live 30/09/2026): so NGUYÊN số hoá đơn, không tìm chuỗi con. */
-describe('số hoá đơn không được đọc từ số tiền', () => {
-  it('"1.234.000" không chứa hoá đơn số 1234', () => {
-    const r = ghepChungTu(
-      [chi('c1', 5_000_000, '2026-08-10', 'CK 1.234.000 TIEN HANG')],
-      [hd('h1', 9_000_000, '2026-01-01', '1234')],
-    );
-    expect(r.daGhep).toHaveLength(0);
-  });
-
-  it('số tiền dính liền 12345000 không chứa hoá đơn 1234', () => {
-    const r = ghepChungTu([chi('c1', 5_000_000, '2026-08-10', 'CK 12345000')], [hd('h1', 9_000_000, '2026-01-01', '1234')]);
-    expect(r.daGhep).toHaveLength(0);
-  });
-
-  it('"00001234" khớp nội dung "HD 1234" và "hd-1234" (bỏ số 0 đầu và tiền tố)', () => {
-    for (const noi of ['TT HD 1234', 'hd-1234 abc', 'HD1234']) {
-      const r = ghepChungTu([chi('c1', 5_000_000, '2026-08-10', noi)], [hd('h1', 5_000_000, '2026-08-08', '00001234')]);
-      expect(r.daGhep[0]?.cach, noi).toBe('so_hoa_don');
-    }
-  });
-
-  it('số có ký hiệu "AA/24E/0001234" khớp "AA 24E 0001234"', () => {
-    const r = ghepChungTu([chi('c1', 1_000_000, '2026-08-10', 'TT AA 24E 0001234')], [hd('h1', 1_000_000, '2026-08-08', 'AA/24E/0001234')]);
-    expect(r.daGhep).toHaveLength(1);
-  });
-
-  it('một nội dung khớp số của hai hoá đơn thì để người xem, không chọn', () => {
-    const r = ghepChungTu(
-      [chi('c1', 1_000_000, '2026-08-10', 'TT 12345 12346')],
-      [hd('h1', 1_000_000, '2026-08-01', '12345'), hd('h2', 1_000_000, '2026-08-02', '12346')],
-    );
-    expect(r.daGhep).toHaveLength(0);
-    expect(r.canXem).toHaveLength(1);
   });
 });

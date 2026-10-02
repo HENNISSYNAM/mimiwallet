@@ -65,7 +65,7 @@ export function dungCacBuoc(t: TinhTrang): Buoc[] {
       ma: 'xem_dong_tien',
       tieuDe: 'Xem dòng tiền của bạn',
       moTa: 'Giao dịch được phân loại thu – chi, lọc bỏ chuyển khoản nội bộ.',
-      duongDan: '/dashboard/cashflow',
+      duongDan: '/dashboard',
       xong: t.soGiaoDich > 0,
       moKhoa: daLienKet,
     },

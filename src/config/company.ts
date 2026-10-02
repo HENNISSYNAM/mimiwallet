@@ -36,13 +36,6 @@ export const COMPANY = {
    */
   address: '829 Huỳnh Tấn Phát, Phường Phú Thuận, Thành phố Hồ Chí Minh, Việt Nam',
 
-  /**
-   * Nơi cấp giấy chứng nhận đăng ký doanh nghiệp (Nghị định 52/2013 Điều 29 và Nghị định
-   * 248/2026 đòi công bố "số, ngày cấp, nơi cấp"). CHƯA CÓ trong mã nguồn — rỗng thì hiện
-   * token `{{NOI_CAP_DKDN}}`.
-   */
-  registrationPlace: 'Phòng Đăng ký kinh doanh, Sở Tài chính Thành phố Hồ Chí Minh',
-
   /** Người đại diện theo pháp luật. */
   legalRepresentative: {
     name: 'ĐINH VĂN NAM',
@@ -73,20 +66,8 @@ export const COMPANY = {
  * Giao diện tự ẩn dòng liên hệ khi trường còn rỗng.
  */
 export const CONTACT = {
-  /**
-   * 30/09/2026 — điền cho hồ sơ thông báo TMĐT (Bộ Công Thương / online.gov.vn): trang công bố
-   * phải có ít nhất một phương thức liên hệ trực tuyến. Đây là địa chỉ hỗ trợ ĐÃ dùng trong app
-   * (menu tài khoản, `mailto:` ở DashboardLayout) — không phải địa chỉ đoán ra. Nên thay bằng
-   * email theo tên miền công ty khi có (xem docs/bo-cong-thuong/HUONG_DAN_NOP.md).
-   */
-  email: 'hoc.qk2@gmail.com',
-  /** Tên miền chạy thật — cũng là `HTTP-Referer` máy chủ gửi cổng mô hình (`_shared/ai/nha-cung-cap.ts`). */
-  website: 'https://www.mimiwallet.online',
-  /**
-   * Số điện thoại hỗ trợ. CHƯA CÓ trong mã nguồn — để trống thì giao diện hiện token
-   * `{{SO_DIEN_THOAI}}` ở trang công bố để chủ doanh nghiệp thấy mà điền, không bịa số.
-   */
-  phone: '0984988359',
+  email: '',
+  website: '',
   /** Trang Facebook chính thức của MIMI (chủ dự án cung cấp 16/09/2026). */
   facebook: 'https://www.facebook.com/profile.php?id=61593186898315',
 } as const;
@@ -115,17 +96,4 @@ export const hasContact = (): boolean => Boolean(CONTACT.email || CONTACT.websit
 export const coKenhLienHeVanBan = (): boolean => Boolean(CONTACT.email || CONTACT.website);
 
 /** Ngày ban hành/cập nhật gần nhất của bộ văn bản pháp lý trong ứng dụng. */
-export const LEGAL_UPDATED_ON = '30/09/2026';
-
-/** Giá trị còn thiếu thì hiện token để chủ doanh nghiệp điền — không bao giờ tự bịa. */
-export const hoacToken = (giaTri: string, token: string): string => giaTri.trim() || `{{${token}}}`;
-
-/**
- * Logo "Đã thông báo Bộ Công Thương". Chỉ điền SAU KHI hồ sơ được xác nhận: `url` là đường dẫn
- * xác nhận do online.gov.vn cấp cho website, `anh` là địa chỉ ảnh logo trong đoạn mã họ gửi.
- * Gắn logo khi chưa được xác nhận là công bố sai — nên cả hai rỗng thì chân trang không hiện gì.
- */
-export const THONG_BAO_BCT = {
-  url: '',
-  anh: '',
-} as const;
+export const LEGAL_UPDATED_ON = '19/08/2026';

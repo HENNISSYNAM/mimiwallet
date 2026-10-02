@@ -1,6 +1,5 @@
 const m = {
   landing: {
-    video: { dung: 'Tạm dừng video', phat: 'Phát video' },
     /*
      * This is the headline the page actually renders (`landing.hero.*`); the
      * root `hero.*` block only supplies the badge and secondary CTA.
@@ -18,52 +17,52 @@ const m = {
     // 14/09/2026: đổi chữ phần đầu theo định vị mới (docs/CHIEN_LUOC_MIMI.md mục 2);
     // hình ảnh và hiệu ứng của trang giữ nguyên theo yêu cầu chủ dự án.
     hero: {
-      titleLine1: 'AI xin chi tiền.',
-      titleLine2: 'Bạn là người quyết.',
+      titleLine1: 'Agent được chi.',
+      titleLine2: 'Bạn giữ quyền quyết.',
       subtitle:
-        'MIMI kiểm từng khoản chi theo mức bạn đặt, soạn sẵn mã VietQR để bạn trả, rồi dò sao kê và hoá đơn xem tiền đã đi đâu. MIMI không giữ tiền của bạn.',
+        'MIMI xét từng khoản chi theo chính sách của bạn, dựng lệnh trả VietQR, rồi đối chiếu sao kê và hoá đơn điện tử để biết tiền đã thật sự đi đâu. MIMI không giữ tiền của bạn.',
       pills: [
         'Duyệt trước khi tiền đi',
         'Chặn người nhận lạ',
-        'Khớp sao kê với hoá đơn',
-        'Mã hoá chống máy tính lượng tử',
+        'Đối chiếu sao kê và hoá đơn',
+        'Mã hóa kháng lượng tử',
       ],
     },
     // Mục ba nguyên tắc agent — src/components/landing/AgentAiSection.tsx.
     agentAi: {
-      title: 'AI chi theo luật bạn đặt.',
+      title: 'AI chi tiêu theo luật của bạn.',
       subtitle:
-        'Bạn đặt mức chi và danh sách người được nhận tiền. Khoản nào AI xin chi cũng có ghi lý do. Gặp khoản lớn hay người nhận mới, MIMI dừng lại hỏi bạn.',
+        'Agent của MIMI chạy trong chính sách bạn đặt, ghi lý do cho mọi quyết định, và dừng lại hỏi bạn đúng lúc cần.',
       items: [
         {
-          title: 'Chạy cả ngày, không vượt mức bạn đặt.',
-          desc: 'AI gửi yêu cầu chi lúc nào cũng được. MIMI xét ngay theo mức mỗi lần, mỗi ngày, mỗi tháng. Vượt mức là từ chối.',
+          title: 'Làm việc liên tục, trong trần bạn đặt.',
+          desc: 'Agent gửi yêu cầu chi bất kỳ lúc nào qua MCP hoặc API. Mỗi khoản được xét ngay theo trần mỗi lần, mỗi ngày, mỗi tháng — vượt trần là bị từ chối.',
         },
         {
-          title: 'Làm đúng luật bạn đặt.',
-          desc: 'Bạn chọn nhóm chi được phép, người được nhận tiền và mức tự duyệt, sửa lúc nào cũng được. Khoản nào cũng ghi lý do để bạn xem lại.',
+          title: 'Chạy đúng chính sách của bạn.',
+          desc: 'Nhóm chi được phép, người nhận trong danh sách, ngưỡng tự duyệt — bạn đặt và sửa bất cứ lúc nào. Mọi quyết định kèm mã lý do để bạn đọc lại.',
         },
         {
           title: 'Biết khi nào tự làm, khi nào hỏi bạn.',
-          desc: 'Khoản nhỏ, đúng luật thì tự duyệt. Khoản lớn hơn mức, hoặc gửi cho người nhận mới, thì chờ bạn. Tiền chỉ đi khi bạn trả trong app ngân hàng.',
+          desc: 'Khoản nhỏ trong chính sách được tự duyệt. Khoản trên ngưỡng hoặc tới người nhận mới luôn chờ bạn — và tiền chỉ đi khi bạn trả trong app ngân hàng.',
         },
       ],
     },
     metrics: {
       items: [
-        { prefix: '~', suffix: ' giây', label: 'Thời gian chấm điểm', sub: 'Đo trên máy chủ đang chạy' },
+        { prefix: '~', suffix: ' giây', label: 'Thời gian chấm điểm', sub: 'Đo trên máy chủ thật' },
         { prefix: 'ML-KEM-', suffix: '', label: 'Mã hóa kháng lượng tử', sub: 'Chuẩn NIST FIPS 203' },
         { prefix: '', suffix: ' tháng', label: 'Dữ liệu mỗi lần chấm', sub: 'Sao kê của chính doanh nghiệp' },
-        { prefix: '', suffix: '/52', label: 'Bài kiểm tra tự động', sub: 'Tự chạy lại mỗi lần cập nhật' },
+        { prefix: '', suffix: '/52', label: 'Kiểm thử tự động', sub: 'Chạy lại mỗi lần sửa mã' },
       ],
     },
     tech: {
-      badge: 'Bảo mật',
-      title: 'Hai lớp giữ dữ liệu an toàn',
-      subtitle: 'Bạn xem được ngay trong ứng dụng.',
+      badge: 'Công nghệ lõi',
+      title: 'Hai thứ chạy bên dưới',
+      subtitle: 'Xem được ngay trong ứng dụng, không phải nghe kể.',
       pillars: [
-        { title: 'Mã hoá chống máy tính lượng tử', tag: 'ML-KEM-768 · chuẩn NIST FIPS 203', desc: 'Khoá kết nối ngân hàng được mã hoá bằng thuật toán mà máy tính lượng tử chưa phá được.' },
-        { title: 'Dữ liệu mỗi công ty để riêng', tag: 'Row-Level Security ở tầng CSDL', desc: 'Công ty này không đọc được dữ liệu của công ty khác. Chặn ngay trong cơ sở dữ liệu.' },
+        { title: 'Mã hoá kháng lượng tử', tag: 'ML-KEM-768 · chuẩn NIST FIPS 203', desc: 'Token ngân hàng mã hoá bằng thuật toán máy tính lượng tử chưa giải được.' },
+        { title: 'Tách dữ liệu từng công ty', tag: 'Row-Level Security ở tầng CSDL', desc: 'Chặn ngay trong cơ sở dữ liệu, không phải bằng câu lệnh lọc trong mã.' },
       ],
     },
     process: {

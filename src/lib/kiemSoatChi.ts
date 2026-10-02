@@ -2,13 +2,6 @@ import type { Database } from '@/integrations/supabase/types';
 import {
   GIU_NGUOI_NHAN_MOI_MS, TRANG_THAI_GIU_HAN_MUC, chuanHoaTen, dauNgayVN, dauThangVN, type MaLyDo,
 } from './tacTu';
-import { dinhDangTien, laTien, sangBigInt, tuBigInt, type TienVND } from '@/lib/tien';
-
-/**
- * Tiền trong hạn mức cộng/trừ/so sánh bằng BigInt (29/09/2026): cộng bằng Number thì tổng vượt
- * Number.MAX_SAFE_INTEGER lệch đồng lẻ mà không báo. Dòng thiếu số tiền không giữ hạn mức (0).
- */
-const B = (v: unknown): bigint => (laTien(v) ? sangBigInt(v) : 0n);
 
 /**
  * Mọi con số và nhãn của màn Kiểm soát chi, suy ra từ đúng dữ liệu màn đó đã đọc.
@@ -143,21 +136,21 @@ export function ketQuaDanhGia(y: Pick<YeuCau, 'cach_quyet' | 'trang_thai' | 'ly_
 
 /* ── Ngân sách và KPI ────────────────────────────────────────────────── */
 
-export type SuDung = Record<string, { ngay: TienVND; thang: TienVND }>;
+export type SuDung = Record<string, { ngay: number; thang: number }>;
 
 /** Hạn mức đã giữ theo agent, chia ngày/tháng theo giờ Việt Nam như máy chủ. */
 export function tinhSuDung(giu: DongGiu[], now: Date): SuDung {
   const dauNgay = dauNgayVN(now).getTime();
   const dauThang = dauThangVN(now).getTime();
-  const m: Record<string, { ngay: bigint; thang: bigint }> = {};
+  const m: SuDung = {};
   for (const r of giu) {
     const t = new Date(r.created_at).getTime();
     if (t < dauThang) continue;
-    if (!m[r.tac_tu_id]) m[r.tac_tu_id] = { ngay: 0n, thang: 0n };
-    m[r.tac_tu_id].thang += B(r.so_tien);
-    if (t >= dauNgay) m[r.tac_tu_id].ngay += B(r.so_tien);
+    if (!m[r.tac_tu_id]) m[r.tac_tu_id] = { ngay: 0, thang: 0 };
+    m[r.tac_tu_id].thang += Number(r.so_tien);
+    if (t >= dauNgay) m[r.tac_tu_id].ngay += Number(r.so_tien);
   }
-  return Object.fromEntries(Object.entries(m).map(([id, s]) => [id, { ngay: tuBigInt(s.ngay), thang: tuBigInt(s.thang) }]));
+  return m;
 }
 
 export interface Kpi {
@@ -165,11 +158,11 @@ export interface Kpi {
   canDuyet: number;
   canXemXet: number;
   /** Tiền đã rời tài khoản hôm nay — chỉ khoản sao kê đã xác nhận. */
-  daChiHomNay: { tong: TienVND; soKhoan: number };
+  daChiHomNay: { tong: number; soKhoan: number };
   /** Hạn mức đã giữ hôm nay: chờ duyệt, đã duyệt, đã chi. */
-  daGiuHomNay: TienVND;
+  daGiuHomNay: number;
   /** `null` khi không có agent đang hoạt động có chính sách — không cộng ra số 0 giả. */
-  nganSachThang: { conLai: TienVND; tran: TienVND; soAgent: number } | null;
+  nganSachThang: { conLai: number; tran: number; soAgent: number } | null;
 }
 
 export function tinhKpi(v: {
@@ -192,19 +185,19 @@ export function tinhKpi(v: {
     canDuyet: choDuyet.length,
     canXemXet: choDuyet.filter((y) => trangThaiHienThi(y) === 'can_xem_xet').length,
     daChiHomNay: {
-      tong: tuBigInt(daChi.reduce((s, y) => s + B(y.so_tien_thuc_chi ?? y.so_tien), 0n)),
+      tong: daChi.reduce((s, y) => s + Number(y.so_tien_thuc_chi ?? y.so_tien), 0),
       soKhoan: daChi.length,
     },
-    daGiuHomNay: tuBigInt(v.giu
+    daGiuHomNay: v.giu
       .filter((r) => new Date(r.created_at).getTime() >= dauNgay)
-      .reduce((s, r) => s + B(r.so_tien), 0n)),
+      .reduce((s, r) => s + Number(r.so_tien), 0),
     nganSachThang: hoatDong.length
       ? {
-          conLai: tuBigInt(hoatDong.reduce((s, t) => {
-            const con = B((v.chinhSach[t.id] as ChinhSachRow).han_muc_thang) - B(suDung[t.id]?.thang ?? 0);
-            return s + (con > 0n ? con : 0n);
-          }, 0n)),
-          tran: tuBigInt(hoatDong.reduce((s, t) => s + B((v.chinhSach[t.id] as ChinhSachRow).han_muc_thang), 0n)),
+          conLai: hoatDong.reduce(
+            (s, t) => s + Math.max(0, (v.chinhSach[t.id] as ChinhSachRow).han_muc_thang - (suDung[t.id]?.thang ?? 0)),
+            0,
+          ),
+          tran: hoatDong.reduce((s, t) => s + (v.chinhSach[t.id] as ChinhSachRow).han_muc_thang, 0),
           soAgent: hoatDong.length,
         }
       : null,
@@ -213,11 +206,11 @@ export function tinhKpi(v: {
 
 export interface DongNganSach {
   nhan: string;
-  tran: TienVND;
+  tran: number;
   /** Đã dùng, không tính khoản đang xem. */
-  khongTinh: TienVND;
+  khongTinh: number;
   /** Đã dùng, tính cả khoản đang xem. */
-  tinhCa: TienVND;
+  tinhCa: number;
 }
 
 /**
@@ -228,20 +221,20 @@ export interface DongNganSach {
 export function nganSachQuanhKhoan(
   y: Pick<YeuCau, 'so_tien' | 'trang_thai' | 'created_at'>,
   cs: Pick<ChinhSachRow, 'han_muc_ngay' | 'han_muc_thang'> | undefined,
-  su: { ngay: TienVND; thang: TienVND } | undefined,
+  su: { ngay: number; thang: number } | undefined,
   now: Date,
 ): { dong: DongNganSach[]; daTinh: boolean } | null {
   if (!cs) return null;
   const t = new Date(y.created_at).getTime();
   if (t < dauThangVN(now).getTime()) return null;
   const daTinh = (TRANG_THAI_GIU_HAN_MUC as readonly string[]).includes(y.trang_thai);
-  const so = B(y.so_tien);
+  const so = Number(y.so_tien);
   const dung = su ?? { ngay: 0, thang: 0 };
-  const tao = (nhan: string, tran: TienVND, daDung: TienVND): DongNganSach => ({
+  const tao = (nhan: string, tran: number, daDung: number): DongNganSach => ({
     nhan,
     tran,
-    khongTinh: tuBigInt(daTinh ? B(daDung) - so : B(daDung)),
-    tinhCa: tuBigInt(daTinh ? B(daDung) : B(daDung) + so),
+    khongTinh: daTinh ? daDung - so : daDung,
+    tinhCa: daTinh ? daDung : daDung + so,
   });
   const dong: DongNganSach[] = [];
   if (t >= dauNgayVN(now).getTime()) dong.push(tao('Hôm nay', cs.han_muc_ngay, dung.ngay));
@@ -324,7 +317,7 @@ export const yeuCauDoiTaiKhoan = (ds: YeuCau[]) => ds.filter((y) => lyDoCua(y).s
 
 /* ── Cần chú ý và biểu đồ ────────────────────────────────────────────── */
 
-const dongTien = dinhDangTien;
+const dongTien = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
 
 /** Agent dùng từ mức này của hạn mức tháng thì đưa vào "Cần chú ý" — cùng mốc thanh hạn mức đổi màu. */
 export const MOC_GAN_CHAM_HAN_MUC = 0.9;
@@ -380,8 +373,7 @@ export function canChuY(v: {
     const cs = v.chinhSach[t.id];
     if (t.trang_thai !== 'hoat_dong' || !cs || cs.han_muc_thang <= 0) continue;
     const da = v.suDung[t.id]?.thang ?? 0;
-    // Tỉ lệ chỉ để so với mốc cảnh báo — sai số thập phân không đổi kết luận.
-    const tiLe = Number(da) / cs.han_muc_thang;
+    const tiLe = da / cs.han_muc_thang;
     if (tiLe < MOC_GAN_CHAM_HAN_MUC) continue;
     ds.push({
       khoa: `han-muc-${t.id}`,
@@ -476,7 +468,7 @@ export function kiemTruocYeuCau(
   nhap: NhapYeuCau,
   t: Pick<TacTu, 'trang_thai'>,
   cs: ChinhSachRow | undefined,
-  su: { ngay: TienVND; thang: TienVND } | undefined,
+  su: { ngay: number; thang: number } | undefined,
   nguoiNhan: NguoiNhan[],
   now: Date,
 ): { ketLuan: KetLuanKiemTruoc; dong: DongKiemTruoc[] } {
@@ -495,12 +487,11 @@ export function kiemTruocYeuCau(
     if (nhap.soTien > cs.han_muc_moi_lan) {
       d.push({ muc: 'chan', cau: `Vượt hạn mức mỗi khoản ${dongTien(cs.han_muc_moi_lan)}.` });
     }
-    const conLai = (tran: TienVND, daDung: TienVND) => { const c = B(tran) - B(daDung); return c > 0n ? c : 0n; };
-    if (B(dung.ngay) + B(nhap.soTien) > B(cs.han_muc_ngay)) {
-      d.push({ muc: 'chan', cau: `Vượt hạn mức ngày — hôm nay còn ${dongTien(tuBigInt(conLai(cs.han_muc_ngay, dung.ngay)))}.` });
+    if (dung.ngay + nhap.soTien > cs.han_muc_ngay) {
+      d.push({ muc: 'chan', cau: `Vượt hạn mức ngày — hôm nay còn ${dongTien(Math.max(0, cs.han_muc_ngay - dung.ngay))}.` });
     }
-    if (B(dung.thang) + B(nhap.soTien) > B(cs.han_muc_thang)) {
-      d.push({ muc: 'chan', cau: `Vượt hạn mức tháng — tháng này còn ${dongTien(tuBigInt(conLai(cs.han_muc_thang, dung.thang)))}.` });
+    if (dung.thang + nhap.soTien > cs.han_muc_thang) {
+      d.push({ muc: 'chan', cau: `Vượt hạn mức tháng — tháng này còn ${dongTien(Math.max(0, cs.han_muc_thang - dung.thang))}.` });
     }
     if (cs.nhom_chi_duoc_phep && !cs.nhom_chi_duoc_phep.includes(nhap.nhomChi)) {
       d.push({ muc: 'chan', cau: 'Nhóm chi này không được phép cho agent.' });

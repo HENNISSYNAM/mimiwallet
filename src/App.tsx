@@ -9,7 +9,6 @@ import { lazy, Suspense, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Seo from "@/components/Seo";
-import { DANH_MUC_CHINH_SACH, TRANG_THONG_TIN } from "@/pages/chinh-sach/danhMuc";
 
 /** Gắn thẻ head riêng cho từng route mà không phải sửa từng trang. */
 function Page({
@@ -52,8 +51,6 @@ const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const XoaTaiKhoan = lazy(() => import("./pages/XoaTaiKhoan"));
 const Terms = lazy(() => import("./pages/Terms"));
-const TrangChinhSach = lazy(() => import("./pages/chinh-sach/TrangChinhSach"));
-const ThongTinDoanhNghiep = lazy(() => import("./pages/chinh-sach/TrangChinhSach").then((m) => ({ default: m.ThongTinDoanhNghiep })));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ThuongHieu = lazy(() => import("./pages/ThuongHieu"));
@@ -65,7 +62,6 @@ const TacTuPage = lazy(() => import("./pages/TacTuPage"));
 const ChinhSachChiPage = lazy(() => import("./pages/ChinhSachChiPage"));
 const ChiPhiAiPage = lazy(() => import("./pages/ChiPhiAiPage"));
 const TroLyPage = lazy(() => import("./pages/TroLyPage"));
-const ChuyenVeKhongGian = lazy(() => import("./components/khong-gian/ChuyenVeKhongGian"));
 const ThuVienChungTuPage = lazy(() => import("./pages/ThuVienChungTuPage"));
 const NhacThuePage = lazy(() => import("./pages/NhacThuePage"));
 const KiemChuyenTienPage = lazy(() => import("./pages/KiemChuyenTienPage"));
@@ -73,9 +69,6 @@ const GiayToPage = lazy(() => import("./pages/GiayToPage"));
 const ViecCanLamPage = lazy(() => import("./pages/ViecCanLamPage"));
 const TaiLieuPage = lazy(() => import("./pages/TaiLieuPage"));
 const TachChiCaNhanPage = lazy(() => import("./pages/TachChiCaNhanPage"));
-const DocBaoCaoPage = lazy(() => import("./pages/DocBaoCaoPage"));
-// Tính năng đóng băng 28/09/2026 (`lib/dongBang.ts`): route giữ lại, hiện trang giải thích.
-const TamDungPage = lazy(() => import("./pages/TamDungPage"));
 const ToKhaiPage = lazy(() => import("./pages/ToKhaiPage"));
 const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -148,13 +141,6 @@ const App = () => (
                   Cài đặt; đây là đường thứ hai. Cố ý không đặt nút xoá trên trang công khai. */}
               <Route path="/xoa-tai-khoan" element={<Page path="/xoa-tai-khoan" title="Xoá tài khoản — MIMI WALLET" description="Cách xoá tài khoản MIMI Wallet và toàn bộ dữ liệu: giao dịch, hoá đơn, chứng từ, liên kết ngân hàng và hồ sơ doanh nghiệp."><XoaTaiKhoan /></Page>} />
               <Route path="/terms" element={<Page path="/terms" title="Điều khoản sử dụng — MIMI WALLET" description="Điều khoản và điều kiện khi sử dụng dịch vụ MIMI Wallet: quyền, nghĩa vụ và giới hạn trách nhiệm của các bên."><Terms /></Page>} />
-              {/* Trang công bố theo hồ sơ thông báo website/ứng dụng TMĐT bán hàng (online.gov.vn):
-                  mục 1 = Chính sách bảo mật (cùng nội dung /privacy), mục 2–7 = các chính sách,
-                  mục 8 = trang tổng hợp. Danh mục ở pages/chinh-sach/danhMuc.ts. Công khai, không cần đăng nhập. */}
-              <Route path={TRANG_THONG_TIN.duong} element={<Page path={TRANG_THONG_TIN.duong} title={`${TRANG_THONG_TIN.tieuDe} — MIMI WALLET`} description={TRANG_THONG_TIN.moTa}><ThongTinDoanhNghiep /></Page>} />
-              {DANH_MUC_CHINH_SACH.map((m) => (
-                <Route key={m.duong} path={m.duong} element={<Page path={m.duong} title={`${m.tieuDe} — MIMI WALLET`} description={m.moTa}>{m.slug === "bao-mat" ? <Privacy /> : <TrangChinhSach slug={m.slug} />}</Page>} />
-              ))}
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, khoản vay và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
               {/* Khôi phục mật khẩu. Trước đây KHÔNG có đường nào: chỉ có "Đổi
@@ -176,24 +162,22 @@ const App = () => (
                   </ProtectedRoute>
                 }
               >
-                {/* 29/09/2026: sau đăng nhập vào thẳng Không gian MIMI Trợ lý. Tổng quan cũ = module Dòng tiền (/dashboard/cashflow). */}
-                <Route index element={<Page noIndex path="/dashboard" title="MIMI Trợ lý — MIMI WALLET" description="Hỏi MIMI về tiền, hoá đơn, thuế và chứng từ của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
-                <Route path="tro-ly" element={<ChuyenVeKhongGian />} />
-                <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
+                <Route index element={<Page noIndex path="/dashboard" title="Tổng quan dòng tiền — MIMI WALLET" description="Theo dõi dòng tiền, số dư ngân hàng và dự báo 90 ngày của doanh nghiệp bạn trong một màn hình duy nhất."><DashboardOverview /></Page>} />
+                <Route path="tro-ly" element={<Page noIndex path="/dashboard/tro-ly" title="MIMI Assistant — MIMI WALLET" description="Hỏi MIMI về tiền, chứng từ, chi phí AI và kết nối của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
+                <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Hoá đơn điện tử và chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
                 <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Kiểm tra trước khi chuyển tiền — MIMI WALLET" description="Nhập khoản sắp chuyển, MIMI so với lịch sử chi của công ty để tìm dấu hiệu đổi tài khoản, người nhận lạ hoặc kịch bản lừa đảo."><KiemChuyenTienPage /></Page>} />
                 <Route path="chi-ca-nhan" element={<Page noIndex path="/dashboard/chi-ca-nhan" title="Tách chi cá nhân — MIMI WALLET" description="Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi hộ kinh doanh dùng chung một tài khoản ngân hàng."><TachChiCaNhanPage /></Page>} />
-                <Route path="doc-bao-cao" element={<Page noIndex path="/dashboard/doc-bao-cao" title="Đọc báo cáo tài chính & tờ khai — MIMI WALLET" description="Tải báo cáo tài chính hoặc tờ khai thuế (Excel/CSV): MIMI nhận dạng, xếp từng chỉ tiêu và kiểm đẳng thức kế toán, ngay trên máy bạn."><DocBaoCaoPage /></Page>} />
                 <Route path="viec-can-lam" element={<Page noIndex path="/dashboard/viec-can-lam" title="Việc cần làm — MIMI WALLET" description="Việc nhiều bước: tạm ngừng, hoá đơn sai, trả lời giải trình — MIMI hỏi từng câu, chuẩn bị giấy tờ, bạn tự nộp."><ViecCanLamPage /></Page>} />
                 <Route path="tai-lieu" element={<Page noIndex path="/dashboard/tai-lieu" title="Tài liệu & Chứng từ — MIMI WALLET" description="Báo cáo, gói bằng chứng và công văn MIMI soạn, có phiên bản, nguồn và mã băm."><TaiLieuPage /></Page>} />
                 <Route path="giay-to" element={<Page noIndex path="/dashboard/giay-to" title="Soạn giấy tờ — MIMI WALLET" description="Bản nháp đơn tra soát chuyển nhầm, công văn giải trình và công văn đề nghị huỷ tờ khai, điền sẵn từ dữ liệu của công ty."><GiayToPage /></Page>} />
                 <Route path="nhac-thue" element={<Page noIndex path="/dashboard/nhac-thue" title="Nhắc thuế — MIMI WALLET" description="Hạn nộp tờ khai theo quý và ngưỡng doanh thu năm, tính từ lịch kê khai và doanh thu thật."><NhacThuePage /></Page>} />
-                <Route path="to-khai" element={<Page noIndex path="/dashboard/to-khai" title="Tờ khai thuế — MIMI WALLET" description="MIMI đọc sao kê và hồ sơ thuế của bạn, áp quy định trong kho văn bản Công báo rồi điền đúng mẫu tờ khai để bạn tự nộp."><ToKhaiPage /></Page>} />
-                <Route path="ket-noi" element={<Page noIndex path="/dashboard/ket-noi" title="Kết nối — MIMI WALLET" description="Nối ngân hàng qua Cas hoặc SePay để MIMI đọc số liệu thật."><KetNoiPage /></Page>} />
+                <Route path="to-khai" element={<Page noIndex path="/dashboard/to-khai" title="Tờ khai thuế — MIMI WALLET" description="MIMI đọc hoá đơn điện tử, sao kê và hồ sơ thuế của bạn, áp quy định trong kho văn bản Công báo rồi điền đúng mẫu tờ khai để bạn tự nộp."><ToKhaiPage /></Page>} />
+                <Route path="ket-noi" element={<Page noIndex path="/dashboard/ket-noi" title="Kết nối — MIMI WALLET" description="Nối ngân hàng, Casso, Tổng cục Thuế và nhà cung cấp AI để MIMI đọc số liệu thật."><KetNoiPage /></Page>} />
                 <Route path="tac-tu" element={<Page noIndex path="/dashboard/tac-tu" title="Kiểm soát chi của agent — MIMI WALLET" description="Đặt hạn mức, duyệt và đối soát mọi khoản chi do agent AI của doanh nghiệp xin — MIMI không giữ và không chuyển tiền."><TacTuPage /></Page>} />
                 <Route path="chinh-sach" element={<Page noIndex path="/dashboard/chinh-sach" title="Chính sách chi — MIMI WALLET" description="Đặt ngưỡng duyệt, hạn mức, nhóm chi và người nhận cho từng agent, rồi đọc lại toàn bộ thành văn bản chính sách."><ChinhSachChiPage /></Page>} />
-                <Route path="chi-phi-ai" element={<Page noIndex path="/dashboard/chi-phi-ai" title="Tạm dừng — MIMI WALLET" description="Tính năng đang tạm dừng."><TamDungPage /></Page>} />
+                <Route path="chi-phi-ai" element={<Page noIndex path="/dashboard/chi-phi-ai" title="Chi phí AI — MIMI WALLET" description="Chi phí thật của OpenAI, Anthropic và Gemini theo ngày, từ file xuất của nhà cung cấp hoặc Admin API key, kèm ngân sách tháng."><ChiPhiAiPage /></Page>} />
                 <Route path="invoices" element={<Page noIndex path="/dashboard/invoices" title="Hoá đơn — MIMI WALLET" description="Quản lý hoá đơn đầu ra, đối soát công nợ và theo dõi khoản phải thu của doanh nghiệp bạn theo thời gian thực."><InvoicesPage /></Page>} />
-                <Route path="clients" element={<Page noIndex path="/dashboard/clients" title="Tạm dừng — MIMI WALLET" description="Tính năng đang tạm dừng."><TamDungPage /></Page>} />
+                <Route path="clients" element={<Page noIndex path="/dashboard/clients" title="Khách hàng — MIMI WALLET" description="Danh sách khách hàng, lịch sử giao dịch và tình trạng công nợ của từng đối tác trong hệ thống MIMI Wallet."><ClientsPage /></Page>} />
                 <Route path="reports" element={<Page noIndex path="/dashboard/reports" title="Tổng hợp dòng tiền — MIMI WALLET" description="Tiền vào, tiền ra theo tháng từ sao kê ngân hàng của doanh nghiệp bạn — chưa phải báo cáo tài chính."><ReportsPage /></Page>} />
                 <Route path="chung-tu" element={<Page noIndex path="/dashboard/chung-tu" title="Chứng từ chi phí — MIMI WALLET" description="Khoản chi nào đã có hoá đơn, khoản nào chưa, và còn thiếu bao nhiêu để tính thuế theo lợi nhuận."><ChungTuPage /></Page>} />
                 <Route path="settings" element={<Page noIndex path="/dashboard/settings" title="Cài đặt tài khoản — MIMI WALLET" description="Quản lý thông tin doanh nghiệp, bảo mật, gói dịch vụ và tuỳ chọn thông báo trong MIMI Wallet."><SettingsPage /></Page>} />

@@ -207,23 +207,6 @@ export interface SuKienThue {
    * chia, mọi đồng là "chưa rõ nhóm". Xem `doanh-thu/theo-hoat-dong.ts`.
    */
   hoatDong?: ChiaHoatDong | null;
-  /**
-   * Doanh thu ước tính từ ngân hàng CÒN CHƯA CHẮC: khoảng doanh thu thật (do `doanh-thu/do-chac-chan.ts`
-   * tính) CẮT một ngưỡng luật. Có trường này thì hệ luật KHÔNG kết luận vượt / không vượt ngưỡng đó —
-   * nó hỏi đúng câu hỏi kèm theo. Thiếu / null = chắc chắn (hoặc nguồn khác ngân hàng).
-   * "MIMI không chắc → không tự kết luận → Needs Review → hỏi đúng 1 câu."
-   */
-  doanhThuChuaChac?: {
-    /** Khoảng cắt ngưỡng 01 tỷ: không biết phải khai theo quý hay chỉ thông báo doanh thu năm. */
-    nguong_1_ty: boolean;
-    /** Khoảng cắt ngưỡng 03 tỷ: không biết có bắt buộc tính TNCN trên thu nhập không. */
-    nguong_3_ty: boolean;
-    /** Khoảng cắt ngưỡng 50 tỷ: không biết khai GTGT theo quý hay theo tháng. */
-    nguong_50_ty: boolean;
-    /** Chắc chắn trên 01 tỷ nhưng quý vượt ngưỡng (quý bắt đầu khai) chưa chắc. */
-    quy_vuot: boolean;
-    cau_hoi: { khoa: string; cau: string; vi_sao: string };
-  } | null;
 }
 
 // ── Ngưỡng và tỷ lệ (mỗi con số trỏ về căn cứ) ──────────────────────────────────
@@ -278,7 +261,7 @@ export interface KetLuan {
 }
 
 export type TruongThieu =
-  | 'loai' | 'doanh_thu' | 'nhom_nganh' | 'kenh' | 'phuong_phap_tncn' | 'doanh_thu_nam_truoc' | 'co_quan_he_lien_ket' | 'tach_doanh_thu_nganh' | 'doanh_thu_chua_chac';
+  | 'loai' | 'doanh_thu' | 'nhom_nganh' | 'kenh' | 'phuong_phap_tncn' | 'doanh_thu_nam_truoc' | 'co_quan_he_lien_ket' | 'tach_doanh_thu_nganh';
 
 export interface ThieuThongTin {
   truong: TruongThieu;
@@ -362,14 +345,6 @@ export function suyLuan(sk: SuKienThue): SuyLuan {
   if (!sk.nhomNganh.length) thieu.push({ truong: 'nhom_nganh', cau: 'Bạn kinh doanh nhóm ngành nào? Tỷ lệ thuế và dòng trên tờ khai tính theo nhóm ngành.' });
   if (!sk.kenh) thieu.push({ truong: 'kenh', cau: 'Bạn bán ở địa điểm cố định hay trên nền tảng số? Tờ khai tách hai phần này.' });
 
-  // Doanh thu ước tính cắt ngưỡng 01 tỷ: mọi kết luận phía dưới (miễn hay chịu GTGT, TNCN; khai quý hay
-  // chỉ thông báo; hoá đơn có mã) phụ thuộc phần chưa rõ. Không kết luận — hỏi đúng một câu.
-  const chuaChac = sk.doanhThuChuaChac ?? null;
-  if (dt !== null && chuaChac?.nguong_1_ty) {
-    thieu.push({ truong: 'doanh_thu_chua_chac', cau: chuaChac.cau_hoi.cau });
-    return ketQua(dt, null, null);
-  }
-
   let quyVuot: number | null = null;
   let pp: PhuongPhapTncn | null = null;
 
@@ -408,45 +383,36 @@ export function suyLuan(sk: SuKienThue): SuyLuan {
       if (luyKe > NGUONG_DOANH_THU) quyVuot = q;
     }
     const qv = quyVuot as number;
-    const quyChuaChac = chuaChac?.quy_vuot === true;
-    them({ id: 'tren_nguong', loai: 'su_kien', cau: quyChuaChac ? 'Doanh thu năm vượt 01 tỷ đồng (quý bắt đầu vượt chưa chắc chắn).' : `Doanh thu năm vượt 01 tỷ đồng, bắt đầu từ quý ${qv}/${sk.nam}.`, vi: ['doanh_thu_nam'], can_cu: ['nd141_d1_k1'] });
+    them({ id: 'tren_nguong', loai: 'su_kien', cau: `Doanh thu năm vượt 01 tỷ đồng, bắt đầu từ quý ${qv}/${sk.nam}.`, vi: ['doanh_thu_nam'], can_cu: ['nd141_d1_k1'] });
     them({ id: 'chiu_gtgt', loai: 'nghia_vu', cau: 'Chịu thuế giá trị gia tăng, tính trực tiếp: tỷ lệ % nhân doanh thu.', vi: ['tren_nguong'], can_cu: ['nd68_d3_k2', 'nd141_d1_k1'] });
     them({ id: 'nop_tncn', loai: 'nghia_vu', cau: 'Phải nộp thuế thu nhập cá nhân.', vi: ['tren_nguong'], can_cu: ['nd68_d4_k1', 'nd141_d1_k1'] });
     them({
       id: 'giai_thich_hai_thue', loai: 'giai_thich', vi: ['chiu_gtgt', 'nop_tncn'], can_cu: [],
       cau: 'GTGT và TNCN cùng phát sinh vì cùng một điều kiện: doanh thu năm vượt 01 tỷ đồng. Ghi số thuế GTGT bằng 0 không làm mất nghĩa vụ TNCN.',
     });
-    if (quyChuaChac || chuaChac?.nguong_50_ty) {
-      // Quý bắt đầu khai, hoặc khai theo quý / theo tháng, phụ thuộc phần chưa rõ: không nêu hạn, không nêu mẫu.
-      thieu.push({ truong: 'doanh_thu_chua_chac', cau: (chuaChac as NonNullable<typeof chuaChac>).cau_hoi.cau });
+    them({
+      id: 'khai_tu_quy_vuot', loai: 'nghia_vu', vi: ['chiu_gtgt', 'nop_tncn'], can_cu: ['nd68_d8_k1a_vuot', 'nd141_d1_k1'],
+      cau: `Khai thuế, nộp thuế kể từ quý ${qv}/${sk.nam} — quý doanh thu lũy kế vượt 01 tỷ đồng.`,
+    });
+    if (dt <= NGUONG_KHAI_THANG) {
+      const han: string[] = [];
+      for (let q = qv; q <= 4; q++) han.push(hanNopQuy(q, sk.nam));
+      them({
+        id: 'khai_theo_quy', loai: 'nghia_vu', mau: '01/CNKD', han, vi: ['khai_tu_quy_vuot'],
+        can_cu: ['nd68_d10_k1a', 'tt18_d4_k1b', 'tt50_d3', 'tt50_mau_cnkd', 'nd68_d8_k3a', 'nd68_d8_k3e'],
+        cau: 'Khai GTGT, TNCN theo quý trên Tờ khai mẫu 01/CNKD. Hạn nộp tờ khai và nộp tiền: ngày cuối tháng đầu của quý sau.',
+      });
     } else {
-      them({
-        id: 'khai_tu_quy_vuot', loai: 'nghia_vu', vi: ['chiu_gtgt', 'nop_tncn'], can_cu: ['nd68_d8_k1a_vuot', 'nd141_d1_k1'],
-        cau: `Khai thuế, nộp thuế kể từ quý ${qv}/${sk.nam} — quý doanh thu lũy kế vượt 01 tỷ đồng.`,
-      });
-      if (dt <= NGUONG_KHAI_THANG) {
-        const han: string[] = [];
-        for (let q = qv; q <= 4; q++) han.push(hanNopQuy(q, sk.nam));
-        them({
-          id: 'khai_theo_quy', loai: 'nghia_vu', mau: '01/CNKD', han, vi: ['khai_tu_quy_vuot'],
-          can_cu: ['nd68_d10_k1a', 'tt18_d4_k1b', 'tt50_d3', 'tt50_mau_cnkd', 'nd68_d8_k3a', 'nd68_d8_k3e'],
-          cau: 'Khai GTGT, TNCN theo quý trên Tờ khai mẫu 01/CNKD. Hạn nộp tờ khai và nộp tiền: ngày cuối tháng đầu của quý sau.',
-        });
-      } else {
-        them({ id: 'khai_theo_thang', loai: 'chua_ho_tro', vi: ['khai_tu_quy_vuot'], can_cu: ['nd68_d10_k1b'], cau: 'Doanh thu năm trên 50 tỷ đồng: khai GTGT theo tháng. MIMI chưa soạn tờ khai tháng.' });
-      }
-      them({
-        id: 'hoa_don_co_ma', loai: 'nghia_vu', vi: ['tren_nguong'], can_cu: ['nd141_d1_k2a', 'nd141_d1_k2c'],
-        han: [congNgayLich(cuoiQuy(qv, sk.nam), 30)],
-        cau: 'Phải dùng hoá đơn điện tử có mã của cơ quan thuế (hoặc khởi tạo từ máy tính tiền nối với cơ quan thuế); đăng ký trong 30 ngày kể từ cuối kỳ doanh thu lũy kế vượt 01 tỷ đồng.',
-      });
+      them({ id: 'khai_theo_thang', loai: 'chua_ho_tro', vi: ['khai_tu_quy_vuot'], can_cu: ['nd68_d10_k1b'], cau: 'Doanh thu năm trên 50 tỷ đồng: khai GTGT theo tháng. MIMI chưa soạn tờ khai tháng.' });
     }
+    them({
+      id: 'hoa_don_co_ma', loai: 'nghia_vu', vi: ['tren_nguong'], can_cu: ['nd141_d1_k2a', 'nd141_d1_k2c'],
+      han: [congNgayLich(cuoiQuy(qv, sk.nam), 30)],
+      cau: 'Phải dùng hoá đơn điện tử có mã của cơ quan thuế (hoặc khởi tạo từ máy tính tiền nối với cơ quan thuế); đăng ký trong 30 ngày kể từ cuối kỳ doanh thu lũy kế vượt 01 tỷ đồng.',
+    });
 
     // Phương pháp tính TNCN.
-    if (chuaChac?.nguong_3_ty) {
-      // Doanh thu ước tính cắt ngưỡng 03 tỷ: chưa biết được chọn phương pháp hay bắt buộc tính trên thu nhập.
-      thieu.push({ truong: 'doanh_thu_chua_chac', cau: chuaChac.cau_hoi.cau });
-    } else if (dt > NGUONG_THU_NHAP) {
+    if (dt > NGUONG_THU_NHAP) {
       if (sk.phuongPhapTncn === 'doanh_thu' && tamTinh) {
         pp = 'doanh_thu';
         them({

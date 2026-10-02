@@ -30,7 +30,7 @@ const vi = {
    * this year.
    */
   hero: {
-    badge: 'Trợ lý chi tiêu cho shop và doanh nghiệp nhỏ',
+    badge: 'Lớp kiểm soát chi tiêu cho doanh nghiệp chạy bằng AI',
     titleLine1: 'Đóng thuế trên lợi nhuận,',
     titleLine2: 'không phải trên doanh thu',
     subtitle: 'Luật cho bạn chọn cách tính thuế — nhưng chỉ khi chứng minh được chi phí. MIMI đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó cho bạn.',
@@ -45,10 +45,10 @@ const vi = {
 
   // Process
   process: {
-    sectionLabel: 'Cách dùng',
-    title: 'Từ sao kê đến bộ chứng từ trong',
+    sectionLabel: 'Quy trình',
+    title: 'Từ sao kê đến bộ chứng từ —',
     titleHighlight: '3 bước',
-    subtitle: 'Nối ngân hàng (chỉ đọc), MIMI xếp từng khoản, bạn xem lại trước khi kê khai.',
+    subtitle: 'Nối ngân hàng chỉ đọc, MIMI xếp từng khoản, bạn duyệt trước khi kê khai',
     step: 'Bước',
     steps: [
       /*
@@ -68,12 +68,12 @@ const vi = {
       {
         title: 'Tách chi phí',
         desc: 'Mỗi khoản chi được gắn đúng loại',
-        detail: 'Bạn chọn một lần, lần sau MIMI tự làm',
+        detail: 'Bạn xác nhận một lần, lần sau MIMI tự áp',
       },
       {
         title: 'Kê khai',
         desc: 'Bộ chứng từ sẵn cho kỳ thuế',
-        detail: 'Xem hai cách tính, chọn cách có lợi',
+        detail: 'So sánh hai cách tính, chọn cách có lợi',
       },
     ],
     riskLevel: 'Thấp',
@@ -103,18 +103,18 @@ const vi = {
    */
   solutions: {
     sectionLabel: 'Giải pháp',
-    title: 'Sổ sách gọn gàng',
-    titleHighlight: 'trước hạn kê khai',
+    title: 'Sổ sách sạch',
+    titleHighlight: 'trước kỳ kê khai',
     cashFlow: 'Đọc sao kê tự động',
-    cashFlowDesc: 'Nối tài khoản ngân hàng là giao dịch tự vào sổ. Tiền bạn chuyển qua lại giữa các tài khoản của mình không bị tính là doanh thu.',
+    cashFlowDesc: 'Nối tài khoản ngân hàng, giao dịch về thẳng sổ, tách sẵn chuyển khoản nội bộ khỏi doanh thu',
     invoice: 'Phân loại chi phí',
-    invoiceDesc: 'Mỗi ngày vài chạm để chọn khoản nào là chi phí kinh doanh. Chọn một lần cho mỗi đối tác, lần sau MIMI tự làm.',
+    invoiceDesc: 'Mỗi ngày vài chạm để xác nhận khoản nào là chi phí kinh doanh. Trả lời một lần cho một đối tác, lần sau tự áp.',
     loan: 'So sánh hai cách tính thuế',
-    loanDesc: 'Nộp theo % doanh thu hay 15% trên lợi nhuận? MIMI tính sẵn cả hai để bạn chọn.',
+    loanDesc: 'Nộp theo tỷ lệ doanh thu hay 15% trên lợi nhuận — hiện cả hai con số để bạn chọn',
     security: 'Mã hoá kháng lượng tử',
-    securityDesc: 'Khoá kết nối ngân hàng được mã hoá theo chuẩn NIST FIPS 203. Dữ liệu mỗi công ty để riêng, công ty khác không xem được.',
-    dashboard: 'Khớp tiền về với hoá đơn',
-    dashboardDesc: 'Khách trả qua mã QR là hoá đơn tự khớp. Biết ngay ai đã trả, ai còn nợ.',
+    securityDesc: 'Token ngân hàng mã hoá bằng ML-KEM-768 (NIST FIPS 203), dữ liệu tách theo từng công ty bằng Row-Level Security',
+    dashboard: 'Đối chiếu hoá đơn cơ quan thuế',
+    dashboardDesc: 'Đọc hoá đơn điện tử đã có trên hệ thống thuế để đối chiếu với tiền thật về tài khoản',
     greenFinance: 'Tài chính xanh',
     greenFinanceDesc: 'Hồ sơ phát thải dựng từ chính giao dịch của bạn, dùng khi làm hồ sơ tín dụng xanh',
     interestRate: 'Lãi suất',
@@ -128,7 +128,7 @@ const vi = {
 
   // Footer
   footer: {
-    tagline: 'Trợ lý sổ sách cho chủ shop và kế toán.',
+    tagline: 'Ví xanh cho tương lai bền vững.',
     products: 'Sản phẩm',
     // 'Invoice Financing' and 'Vay vốn' listed products MIMI does not sell.
     // Danh sách nhãn này không còn được Footer dùng: chân trang giờ chỉ liệt kê
@@ -147,15 +147,15 @@ const vi = {
   // Login
   login: {
     title: 'Đăng nhập MIMI WALLET',
-    tagline: 'Trợ lý sổ sách cho chủ shop và kế toán',
+    tagline: 'Ví xanh cho tương lai bền vững',
     email: 'Email',
     emailPlaceholder: 'email@company.vn',
     password: 'Mật khẩu',
     submit: 'Đăng nhập',
     noAccount: 'Chưa có tài khoản?',
     register: 'Đăng ký miễn phí',
-    errorEmpty: 'Bạn nhập email và mật khẩu nhé.',
-    errorInvalid: 'Email hoặc mật khẩu chưa đúng. Bạn kiểm tra lại nhé.',
+    errorEmpty: 'Vui lòng nhập email và mật khẩu',
+    errorInvalid: 'Email hoặc mật khẩu không đúng',
   },
 
   // Dashboard Sidebar
@@ -164,7 +164,7 @@ const vi = {
     cashflow: 'Dòng tiền',
     invoices: 'Hóa đơn',
     creditScore: 'Điểm tín dụng',
-    fintechHub: 'Ngân hàng & thanh toán',
+    fintechHub: 'Fintech Hub',
     reports: 'Báo cáo',
     settings: 'Cài đặt',
     support: 'Hỗ trợ',
@@ -193,7 +193,7 @@ const vi = {
     rankA: 'Hạng B — ↑ +12 điểm',
     veryGood: 'Tốt',
     cashFlowTitle: 'Dòng tiền',
-    aiInsights: 'MIMI nhắc bạn',
+    aiInsights: 'Insights từ AI',
     recentTx: 'Giao dịch gần đây',
     viewAll: 'Xem tất cả',
     quickActions: 'Thao tác nhanh',
@@ -245,8 +245,8 @@ const vi = {
   // 404
   notFound: {
     title: '404',
-    heading: 'Không tìm thấy trang này',
-    desc: 'Có thể đường dẫn bị sai, hoặc trang đã được gỡ.',
+    heading: 'Trang không tồn tại',
+    desc: 'Trang bạn tìm kiếm không có hoặc đã bị xóa.',
     back: '← Về trang chủ',
   },
 
@@ -294,9 +294,9 @@ const vi = {
   // AI Chat Widget
   aiChat: {
     title: 'Trợ lý MIMI',
-    placeholder: 'Hỏi MIMI về tiền vào, tiền ra…',
+    placeholder: 'Hỏi về tài chính...',
     // Was "tư vấn vay vốn". The assistant should offer what the product does.
-    greeting: 'Chào bạn, MIMI đây! MIMI giúp bạn phân loại chi phí, xem ngưỡng thuế và xem dòng tiền.',
+    greeting: 'Xin chào! Tôi là trợ lý AI MIMI WALLET. Tôi có thể giúp phân loại chi phí, đối chiếu ngưỡng thuế và phân tích dòng tiền.',
   },
 };
 

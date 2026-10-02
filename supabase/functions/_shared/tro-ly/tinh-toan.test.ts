@@ -152,8 +152,7 @@ describe('chi phí tháng', () => {
 });
 
 describe('thiếu chứng từ', () => {
-  // 29/09/2026: giấy tờ = chứng từ chụp (đã gỡ hoá đơn điện tử) — cùng nguồn, cùng hàm với màn Chứng từ chi phí.
-  it('cùng con số với hàm ghép của màn Chứng từ, trên chứng từ chụp', () => {
+  it('cùng con số với hàm ghép của màn Chứng từ; chứng từ quét chỉ ghi chú, không đổi tổng', () => {
     const chi = [
       gd({ id: 'c1', amount: 1_000_000, transaction_date: '2026-08-01' }),
       gd({ id: 'c2', amount: 2_000_000, transaction_date: '2026-08-05', payment_reference: 'TT HD 00012345' }),
@@ -161,18 +160,20 @@ describe('thiếu chứng từ', () => {
     ];
     const d = moi({
       giaoDich: chi,
-      chungTuQuet: [{ id: 'q1', tong_tien: 2_000_000, ngay: '2026-08-03', giao_dich_id: null, so_hoa_don: '00012345', ben_ban: 'X', ma_so_thue_ben_ban: null }],
+      hoaDonVao: [{ id: 'h1', total_amount: 2_000_000, issued_at: '2026-08-03T00:00:00Z', invoice_number: '00012345', counterparty_name: 'X', counterparty_tax_code: null }],
+      chungTuQuet: [{ id: 'q1', tong_tien: 1_000_000, ngay: '2026-08-02', giao_dich_id: null }],
     });
     const r = thieuChungTu(d);
     const g = ghepChungTu(
       [{ id: 'c1', soTien: 1_000_000, ngay: '2026-08-01', noiDung: null, tenNguoiNhan: 'CONG TY A' }, { id: 'c2', soTien: 2_000_000, ngay: '2026-08-05', noiDung: 'TT HD 00012345', tenNguoiNhan: 'CONG TY A' }],
-      [{ id: 'q1', soTien: 2_000_000, ngay: '2026-08-03', soHoaDon: '00012345', tenBenBan: 'X', maSoThueBenBan: null }],
+      [{ id: 'h1', soTien: 2_000_000, ngay: '2026-08-03', soHoaDon: '00012345', tenBenBan: 'X', maSoThueBenBan: null }],
     );
     const soLieu = r.the[0];
-    expect(soLieu.loai === 'so_lieu' && soLieu.muc.find((m) => m.nhan === 'Chưa có chứng từ')?.gia_tri).toBe(g.tongChuaCoGiay);
+    expect(soLieu.loai === 'so_lieu' && soLieu.muc.find((m) => m.nhan === 'Chưa có hoá đơn điện tử')?.gia_tri).toBe(g.tongChuaCoGiay);
     expect(g.tongChuaCoGiay).toBe(1_000_000);
-    expect(r.tom_tat).toContain('chưa có chứng từ');
-    expect(r.tom_tat).not.toContain('hoá đơn điện tử');
+    expect(r.tom_tat).toContain('1 khoản đã có chứng từ quét');
+    // Khoản đã có chứng từ quét không nằm trong bảng "chưa có giấy tờ".
+    expect(r.the.some((t) => t.loai === 'bang')).toBe(false);
   });
 });
 
@@ -227,8 +228,7 @@ describe('kết nối', () => {
     const ds = danhSachKetNoi(d);
     expect(ds.find((k) => k.khoa === 'gemini')?.trang_thai).toBe('chi_nhap_file');
     expect(ds.find((k) => k.khoa === 'ngan_hang')?.trang_thai).toBe('can_xu_ly');
-    // 29/09/2026: đã gỡ hoá đơn điện tử — không còn dòng kết nối Tổng cục Thuế.
-    expect(ds.find((k) => k.khoa === 'tong_cuc_thue')).toBeUndefined();
+    expect(ds.find((k) => k.khoa === 'tong_cuc_thue')?.trang_thai).toBe('chua_ket_noi');
     expect(viecHomNay(d)[0].khoa).toBe('dang_nhap_lai');
   });
 });

@@ -27,7 +27,6 @@ vi.mock('@/integrations/supabase/client', () => ({
       q.gte = () => q;
       q.order = () => q;
       q.limit = () => q;
-      q.range = () => q;
       q.eq = (cot: string, v: unknown) => { gia.loc.push({ bang, cot, v }); return q; };
       q.then = (ok: (v: unknown) => unknown) => Promise.resolve(
         bang === 'transactions'

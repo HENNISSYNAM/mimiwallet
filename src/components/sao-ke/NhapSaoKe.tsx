@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
-import { CauHoiNhanh } from '@/components/phan-hoi/CauHoiNhanh';
 import { Link } from 'react-router-dom';
 import { FileSpreadsheet, Loader2, Upload } from 'lucide-react';
 import {
   docDong, docTep, doanTaiKhoan, goiSaoKe, nhanCot, TEN_COT,
   type BanDoCot, type Cot, type O,
 } from '@/lib/saoKe';
-import { congTien, dinhDangTien } from '@/lib/tien';
 
 /**
  * Tải sao kê lên — đường vào dữ liệu cho người chưa liên kết được ngân hàng.
@@ -108,16 +106,8 @@ export function NhapSaoKe() {
       {ketQua && (
         <div className="mt-3 rounded-xl border border-mimi-green/30 bg-mimi-green/5 p-3 text-sm text-foreground">
           Đã thêm {so(ketQua.moi)} giao dịch mới{ketQua.trung ? `, bỏ qua ${so(ketQua.trung)} dòng đã có` : ''}{ketQua.hong ? `, ${so(ketQua.hong)} dòng không dùng được` : ''}.{' '}
-          <Link to="/dashboard/cashflow" className="font-medium text-primary hover:underline">Xem tiền vào cần xem</Link>
+          <Link to="/dashboard" className="font-medium text-primary hover:underline">Xem tiền vào cần xem</Link>
         </div>
-      )}
-      {ketQua && ketQua.moi > 0 && (
-        <CauHoiNhanh
-          cauHoi="sao_ke_khop"
-          className="mt-3"
-          cau="Số giao dịch MIMI vừa đọc có khớp sao kê của bạn không?"
-          luaChon={[{ gia: 'khop', nhan: 'Khớp' }, { gia: 'khong_khop', nhan: 'Không khớp', hoiThem: true }]}
-        />
       )}
 
       {bang && (
@@ -125,7 +115,7 @@ export function NhapSaoKe() {
           {xem && xem.dong.length > 0 && (
             <p className="text-sm text-foreground">
               MIMI đọc được <span className="font-medium">{so(xem.dong.length)} giao dịch</span> từ {ngay(ngays[0])} đến {ngay(ngays[ngays.length - 1])}:
-              {' '}{so(vao.length)} khoản tiền vào ({dinhDangTien(congTien(vao.map((d) => d.amount)))}), {so(ra.length)} khoản tiền ra ({dinhDangTien(congTien(ra.map((d) => d.amount)))}).
+              {' '}{so(vao.length)} khoản tiền vào ({so(vao.reduce((s, d) => s + d.amount, 0))}đ), {so(ra.length)} khoản tiền ra ({so(ra.reduce((s, d) => s + d.amount, 0))}đ).
               {xem.loi.length > 0 && <span className="text-mimi-amber"> {xem.loi.length} dòng không đọc được (dòng {xem.loi.slice(0, 3).map((l) => l.dong).join(', ')}…).</span>}
             </p>
           )}

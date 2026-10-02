@@ -16,12 +16,10 @@ describe('Kết nối', () => {
       ],
     });
     render(<MemoryRouter><KetNoiPage /></MemoryRouter>);
-    const nganHang = await screen.findByRole('region', { name: 'Ngân hàng & thanh toán' });
-    expect(within(nganHang).getByRole('link', { name: /Xử lý/ }).getAttribute('href')).toBe('/dashboard/fintech');
-    // 28/09/2026: nhóm Thuế (hoá đơn điện tử qua Cas, chưa bật trên production) và Nhà cung cấp AI (Chi phí AI
-    // đóng băng) không hiện nữa, dù máy chủ vẫn trả về.
-    expect(screen.queryByRole('region', { name: 'Thuế' })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Nhà cung cấp AI' })).toBeNull();
+    const thue = await screen.findByRole('region', { name: 'Thuế' });
+    expect(within(thue).getByRole('link', { name: /Kết nối/ }).getAttribute('href')).toBe('/dashboard/fintech');
+    expect(within(screen.getByRole('region', { name: 'Ngân hàng & thanh toán' })).getByRole('link', { name: /Xử lý/ })).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Nhà cung cấp AI' })).getByRole('link', { name: /Quản lý/ }).getAttribute('href')).toBe('/dashboard/chi-phi-ai');
     expect(gia.troLy).toHaveBeenCalledWith('boi_canh');
   });
 });

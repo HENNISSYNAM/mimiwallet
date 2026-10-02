@@ -68,7 +68,6 @@ const KICH_THUOC_THAN_TOI_DA = 100_000;
 const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   ho_so: { cuaSoGiay: 60, toiDa: 60 },
   luu_ho_so: { cuaSoGiay: 60, toiDa: 20 },
-  luu_tien_mat: { cuaSoGiay: 60, toiDa: 20 },
   phan_tich: { cuaSoGiay: 60, toiDa: 30 },
   luu_nhap: { cuaSoGiay: 60, toiDa: 20 },
   xuat: { cuaSoGiay: 60, toiDa: 20 },
@@ -305,7 +304,6 @@ async function docHoatDong(db: Db, companyId: string, body: Row) {
 /** MIMI-P1-003: sửa hồ sơ thuế và lưu bản nháp tờ khai là việc của kế toán trở lên. */
 const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   luu_ho_so: "sua_ho_so_thue",
-  luu_tien_mat: "sua_ho_so_thue",
   luu_nhap: "soan_to_khai",
   xuat: "soan_to_khai",
   xoa_nhap: "soan_to_khai",
@@ -347,19 +345,6 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       }, { onConflict: "company_id" });
       if (error) throw error;
       return json({ ok: true, ho_so: r.ho_so });
-    }
-
-    // Một câu hỏi riêng, không ghi đè cả hồ sơ: đồng hồ ngưỡng hỏi ngay trên Tổng quan.
-    case "luu_tien_mat": {
-      const tienMat = body.tien_mat;
-      if (tienMat !== "gan_nhu_khong" && tienMat !== "mot_phan" && tienMat !== "phan_lon") {
-        return loi("TIEN_MAT", "Chọn: gần như không, một phần, hoặc phần lớn.", 400);
-      }
-      const { error } = await db.from("ho_so_thue").upsert({
-        company_id: company.id, tien_mat: tienMat, updated_by: userId, updated_at: new Date().toISOString(),
-      }, { onConflict: "company_id" });
-      if (error) throw error;
-      return json({ ok: true, tien_mat: tienMat });
     }
 
     case "phan_tich": {

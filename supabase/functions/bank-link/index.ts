@@ -10,6 +10,7 @@ import {
   exchangePublicToken,
   fetchTransactions,
   fetchFiServices,
+  fetchGdtInvoices,
   fetchIdentity,
   fetchQrPayIdentity,
   removeGrant,
@@ -17,7 +18,7 @@ import {
 } from "../_shared/bank/bankhub.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { describeBankError } from "../_shared/bank/errors.ts";
-import { dongBoHoaDonThue } from "../_shared/tax/dong-bo-gdt.ts";
+import { mapGdtInvoices, revenueFromInvoices } from "../_shared/tax/gdt-invoice-map.ts";
 import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { timNganHang } from "../_shared/bank/ngan-hang.ts";
@@ -201,11 +202,6 @@ Deno.serve(async (req) => {
         if (!allowedRedirects.length) return json({ error: "BANKHUB_REDIRECT_URIS is not set" }, 503);
         const forQrPay = body.feature === "qrpay";
         const forGdt = body.feature === "gdt";
-        // 29/09/2026: đã gỡ hoá đơn điện tử — Casso chưa bật sản phẩm hoá đơn điện tử cho app production. Chặn trước khi Cas Link mở,
-        // để không ai cấp một quyền không đọc được gì.
-        if (forGdt) {
-          return json({ error: "MIMI chưa đọc được hoá đơn điện tử: Casso chưa mở sản phẩm này.", code: "GDT_DA_GO" }, 410);
-        }
         // Case 18: grant chỉ dùng một lần để gọi /identity rồi thu hồi — xem nhánh `exchange`.
         const forIdentity = body.feature === "identity";
         // Refused here rather than at `exchange`, so the customer is stopped
@@ -831,9 +827,8 @@ Deno.serve(async (req) => {
             .in(
               "company_id",
               ((
-                // Công ty mà người này CÒN là chủ (bảng thành viên). `companies.user_id` chỉ là người tạo, không còn cấp quyền.
-                await supabase.from("thanh_vien_cong_ty").select("company_id").eq("user_id", user.id).eq("vai_tro", "chu_so_huu")
-              ).data ?? []).map((c: { company_id: string }) => c.company_id),
+                await supabase.from("companies").select("id").eq("user_id", user.id)
+              ).data ?? []).map((c: { id: string }) => c.id),
             );
 
           const cungCty = (moiDong ?? []).filter((d) => d.company_id === company.id);
@@ -1284,13 +1279,11 @@ Deno.serve(async (req) => {
          * theo người là đúng phạm vi; RLS vẫn chặn công ty của người khác vì
          * danh sách công ty lấy theo `user_id`.
          */
-        // Theo bảng thành viên (vai chủ), không theo người tạo: người đã bị loại không chạm được liên kết của công ty cũ.
         const { data: cacCty } = await supabase
-          .from("thanh_vien_cong_ty")
-          .select("company_id")
-          .eq("user_id", user.id)
-          .eq("vai_tro", "chu_so_huu");
-        const idCty = (cacCty ?? []).map((c: { company_id: string }) => c.company_id);
+          .from("companies")
+          .select("id")
+          .eq("user_id", user.id);
+        const idCty = (cacCty ?? []).map((c: { id: string }) => c.id);
 
         const { data: cu } = await supabase
           .from("bank_connections")
@@ -1536,38 +1529,153 @@ Deno.serve(async (req) => {
 
       // ── 8. Pull e-invoices from the tax authority ─────────────────────────
       case "gdt-sync": {
-        // 29/09/2026: đã gỡ hoá đơn điện tử (Casso chưa bật sản phẩm hoá đơn điện tử cho app production). Giao diện không còn gọi
-        // đường này; trả 410 thay vì gọi Cas. Lõi `_shared/tax/dong-bo-gdt.ts` ĐÓNG BĂNG, giữ để bật lại.
-        if (true as boolean) {
-          return json({ error: "MIMI chưa đọc được hoá đơn điện tử: Casso chưa mở sản phẩm này.", code: "GDT_DA_GO" }, 410);
-        }
-        const kq = await dongBoHoaDonThue(supabase, cfg, privateKey, company.id, {
-          ...(typeof body.from_date === "string" ? { fromDate: body.from_date } : {}),
-        });
-        switch (kq.loai) {
-          case "thieu_mst":
-            return json({
+        const { data: comp } = await supabase
+          .from("companies")
+          .select("tax_id")
+          .eq("id", company.id)
+          .maybeSingle();
+        const companyTaxCode = comp?.tax_id ?? "";
+        if (!companyTaxCode) {
+          // Without it, an invoice cannot be told from a purchase. Better to
+          // ask for the tax code than to book money on a guess.
+          return json(
+            {
               error: "Chưa có mã số thuế của doanh nghiệp.",
               action: "need_tax_id",
               remedy: "Vào Cài đặt và điền mã số thuế — thiếu nó thì không phân biệt được hoá đơn bán ra và mua vào.",
-            }, 400);
-          case "chua_ket_noi":
-            return json({ error: "Chưa kết nối Tổng Cục Thuế.", action: "relink", remedy: 'Vào Fintech Hub và bấm "Kết nối Tổng Cục Thuế".' }, 404);
-          case "thu_hoi":
-            return json({
-              revoked: true, errorCode: kq.errorCode, requestId: kq.requestId,
-              message: "Quyền đọc hoá đơn từ Tổng Cục Thuế đã bị thu hồi trong app Cas.", remedy: kq.remedy,
-            });
-          case "loi_cas":
-            return json({ error: kq.message, errorCode: kq.errorCode, action: kq.action, remedy: kq.remedy, requestId: kq.requestId }, kq.canDangNhapLai ? 409 : 502);
-          case "loi_ghi":
-            return json({ error: "could not store invoices" }, 500);
-          case "xong": {
-            const { loai: _loai, ...ketQua } = kq;
-            return json(ketQua);
-          }
+            },
+            400,
+          );
         }
-        break;
+
+        const { data: conn } = await supabase
+          .from("bank_connections")
+          .select("id, access_token_enc")
+          .eq("company_id", company.id)
+          .eq("provider", "bankhub")
+          .eq("scopes", "gdt")
+          .eq("status", "connected")
+          .is("revoked_at", null)
+          // Xem ghi chú về `received_at` ở nhánh create-qr. Lỗi này làm màn
+          // hình báo "chưa kết nối Tổng Cục Thuế" cho cả liên kết đang sống.
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!conn?.access_token_enc) {
+          return json(
+            {
+              error: "Chưa kết nối Tổng Cục Thuế.",
+              action: "relink",
+              remedy: 'Vào Fintech Hub và bấm "Kết nối Tổng Cục Thuế".',
+            },
+            404,
+          );
+        }
+
+        const accessToken = await decryptField(
+          conn.access_token_enc as unknown as EncryptedBlob,
+          privateKey,
+        );
+
+        const toDate = isoDate(new Date());
+        const from = new Date();
+        from.setMonth(from.getMonth() - BACKFILL_MONTHS);
+        const fromDate = typeof body.from_date === "string" ? body.from_date : isoDate(from);
+
+        /*
+         * GRANT HỎNG THÌ PHẢI ĐÁNH DẤU, KHÔNG CHỈ BÁO MỘT CÂU RỒI THÔI.
+         *
+         * Nhánh đọc sao kê (`ingest.ts`) đã làm đúng từ lâu: Cas trả
+         * `GRANT_LOGIN_REQUIRED` thì đổi dòng sang `needs_relink` để giao diện
+         * mời người dùng xác thực lại. Nhánh này thì không — nó để lỗi ném lên
+         * và trả về một câu.
+         *
+         * Hậu quả quan sát ngày 08/09: Cas nói grant cần đăng nhập lại, mà dòng
+         * Tổng Cục Thuế vẫn hiện dấu tích xanh "Đã kết nối". Bấm đồng bộ lần
+         * nữa thì lại đúng câu đó, mãi mãi, vì không gì trong cơ sở dữ liệu
+         * thay đổi. Cùng họ với ba lỗi đã gỡ hôm nay: màn hình mô tả một trạng
+         * thái không còn đúng.
+         *
+         * KHUYÊN "CẬP NHẬT", KHÔNG KHUYÊN "LIÊN KẾT LẠI". Bài học từ sự cố
+         * 04/09 với liên kết QR: chỉ grant `qrpay` mới bắt buộc làm lại từ đầu.
+         * Liên kết `gdt` dùng Update Mode được, và mời sai là dẫn người dùng đi
+         * bấm một nút không cần bấm.
+         */
+        let payload;
+        try {
+          payload = await fetchGdtInvoices(cfg, accessToken, { fromDate, toDate });
+        } catch (e) {
+          if (!(e instanceof BankhubError)) throw e;
+
+          // Grant thuế bị thu hồi trên Cas ID: ngắt như mọi liên kết khác, không mời "Cập nhật".
+          if (xuLyLoiGrant(e.errorCode, e.needsRelink) === "ngat") {
+            await supabase.from("bank_connections").update(truongNgatGrant(new Date())).eq("id", conn.id);
+            return json({
+              revoked: true,
+              errorCode: e.errorCode,
+              requestId: e.requestId ?? null,
+              message: "Quyền đọc hoá đơn từ Tổng Cục Thuế đã bị thu hồi trong app Cas.",
+              remedy: loiNhacLienKetLai("gdt"),
+            });
+          }
+
+          if (e.needsRelink) {
+            await supabase
+              .from("bank_connections")
+              .update({ status: "needs_relink", revoked_at: new Date().toISOString() })
+              .eq("id", conn.id);
+          }
+
+          const { action } = describeBankError(e.errorCode);
+          return json(
+            {
+              error: e.message,
+              errorCode: e.errorCode,
+              action,
+              remedy: e.needsRelink
+                ? 'Bấm "Cập nhật" ở dòng Tổng Cục Thuế để đăng nhập lại. Không phải kết nối lại từ đầu.'
+                : describeBankError(e.errorCode).remedy,
+              requestId: e.requestId,
+            },
+            e.needsRelink ? 409 : 502,
+          );
+        }
+        const { rows, rejected } = mapGdtInvoices(
+          (payload.gdtInvoices ?? []) as never[],
+          { companyTaxCode },
+        );
+
+        if (rejected.length) {
+          console.warn(`gdt sync ${company.id}: skipped ${rejected.length}`, rejected.slice(0, 10));
+        }
+
+        let stored = 0;
+        if (rows.length) {
+          const { error: writeError } = await supabase
+            .from("gdt_invoices")
+            .upsert(
+              rows.map((r) => ({ ...r, company_id: company.id, synced_at: new Date().toISOString() })),
+              { onConflict: "company_id,gdt_id" },
+            );
+          if (writeError) {
+            console.error("gdt invoice write failed:", writeError.message);
+            return json({ error: "could not store invoices" }, 500);
+          }
+          stored = rows.length;
+        }
+
+        const issued = rows.filter((r) => r.direction === "issued");
+        return json({
+          fetched: payload.gdtInvoices?.length ?? 0,
+          stored,
+          skipped: rejected.length,
+          issued: issued.length,
+          received: rows.length - issued.length,
+          // The figure the 1 tỷ threshold is measured against — now from the tax
+          // authority's own record rather than inferred from bank descriptions.
+          revenueFromInvoices: revenueFromInvoices(rows),
+          window: { fromDate, toDate },
+        });
       }
 
       // ── 4. Stop ───────────────────────────────────────────────────────────

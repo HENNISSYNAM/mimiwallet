@@ -94,7 +94,7 @@ describe('buocTiepTheo — chỉ trỏ vào thứ bấm được', () => {
 
 describe('mọi bước đều dẫn tới một nơi thật', () => {
   it('đường dẫn khớp bảng route trong App.tsx', () => {
-    const hopLe = ['/dashboard', '/dashboard/cashflow', '/dashboard/fintech', '/dashboard/clients'];
+    const hopLe = ['/dashboard', '/dashboard/fintech', '/dashboard/clients'];
     for (const b of dungCacBuoc(tt())) {
       expect(hopLe).toContain(b.duongDan);
     }

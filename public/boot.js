@@ -1,14 +1,6 @@
 // Màn khởi động: sau 10 giây mà React chưa thay màn này thì gói JS không chạy được — hiện nút tải lại.
 // Tách khỏi index.html (26/09/2026) để CSP cấm được mọi script nội tuyến.
 (function () {
-  // Chờ lâu hơn 1,5 giây mới đổi sang nền biển mây (ảnh bìa video); chờ ngắn thì giữ nền kem yên lặng.
-  setTimeout(function () {
-    var b = document.getElementById('boot-screen');
-    if (b && document.body.contains(b)) {
-      b.style.background = '#0f3b46 url(/video/mimi-cho-demo.jpg) center/cover no-repeat';
-      b.style.color = '#fff';
-    }
-  }, 1500);
   setTimeout(function () {
     var s = document.getElementById('boot-spinner');
     var f = document.getElementById('boot-failed');

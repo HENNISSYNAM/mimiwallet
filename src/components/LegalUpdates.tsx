@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ExternalLink, Scale, Landmark as LandmarkIcon, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 
 /**
  * Law and tax reference, read for a person — not a citation dump.
@@ -181,29 +180,25 @@ function DocCard({ doc, index }: { doc: LegalDoc; index: number }) {
 export default function LegalUpdates({ wide = false }: { wide?: boolean } = {}) {
   const [docs, setDocs] = useState<LegalDoc[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loiTai, setLoiTai] = useState(false);
-  const [lanTai, setLanTai] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('legal_documents')
         .select(
           'id, so_hieu, ten, loai, co_quan_ban_hanh, ngay_hieu_luc, tom_tat_de_hieu, tom_tat_chinh_thuc, doi_tuong_ap_dung, con_so_moc, don_vi_moc, url_nguon',
         )
         .order('ngay_hieu_luc', { ascending: false });
       if (!cancelled) {
-        // Lỗi đọc không được thành "Chưa có văn bản nào" — kho luật không rỗng.
-        setLoiTai(!!error);
-        if (!error) setDocs((data ?? []) as LegalDoc[]);
+        setDocs((data ?? []) as LegalDoc[]);
         setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [lanTai]);
+  }, []);
 
   // Upcoming and just-effective dates surface first — that is the moment a
   // reader needs to act, not the moment a law was merely passed.
@@ -224,10 +219,6 @@ export default function LegalUpdates({ wide = false }: { wide?: boolean } = {}) 
         ))}
       </div>
     );
-  }
-
-  if (loiTai && sorted.length === 0) {
-    return <LoiTaiLai cau="Chưa tải được danh sách văn bản pháp luật." thuLai={() => { setLoading(true); setLanTai((n) => n + 1); }} />;
   }
 
   if (sorted.length === 0) {

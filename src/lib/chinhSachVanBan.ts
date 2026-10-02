@@ -1,5 +1,4 @@
 import { GIU_NGUOI_NHAN_MOI_MS, TEN_NHOM_CHI, type NhomChi } from './tacTu';
-import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Viết chính sách chi thành chữ, từ đúng các trường mà `xetYeuCau` đọc.
@@ -22,7 +21,7 @@ export interface ChinhSachDoc {
   so_yeu_cau_moi_gio: number | null;
 }
 
-export const dong = dinhDangTien;
+export const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
 
 const ngayVN = (iso: string) =>
   new Date(iso).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric' });

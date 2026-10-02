@@ -25,7 +25,7 @@ describe('PhanLoaiHoatDong', () => {
   it('nói rõ số chưa rõ nhóm, và ngành đăng ký chỉ là gợi ý', async () => {
     goi.mockResolvedValueOnce(duLieu());
     render(<PhanLoaiHoatDong nam={2026} />);
-    expect(await screen.findByText(/954\.293\.000 ₫ \(880 khoản\) chưa xác định nhóm hoạt động/)).toBeTruthy();
+    expect(await screen.findByText(/954\.293\.000đ \(880 khoản\) chưa xác định nhóm hoạt động/)).toBeTruthy();
     expect(screen.getByText(/đăng ký là việc được phép làm/)).toBeTruthy();
   });
 

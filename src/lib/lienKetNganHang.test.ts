@@ -20,8 +20,8 @@ describe('cachSua — nút nào được mời bấm', () => {
     expect(cachSua(lk({ status: 'needs_relink', scopes: 'transaction' }))).toBe('cap_nhat');
   });
 
-  it('liên kết thuế hỏng: không mời sửa — Casso chưa mở hoá đơn điện tử (29/09/2026)', () => {
-    expect(cachSua(lk({ status: 'needs_relink', scopes: 'gdt' }))).toBe('khong_can');
+  it('liên kết thuế hỏng cũng dùng cập nhật', () => {
+    expect(cachSua(lk({ status: 'needs_relink', scopes: 'gdt' }))).toBe('cap_nhat');
   });
 
   it('dòng cũ chưa có scopes thì mặc định cập nhật, không đoán bừa là QR', () => {
@@ -137,8 +137,8 @@ describe('phuDe — ghi chú cụ thể phải thắng câu chung', () => {
  * màn hình gọi nó là "Tài khoản ngân hàng", kèm một chuỗi bốn ký tự trông như
  * số tài khoản, và phụ đề "Chưa đồng bộ lần nào" — một câu hứa việc đang chờ.
  *
- * 29/09/2026: Casso chưa bật hoá đơn điện tử cho app production, nên giao diện gỡ hẳn phần tải hoá
- * đơn. Liên kết thuế còn sót chỉ được nói đúng là không dùng được.
+ * Nhưng không nơi nào trong giao diện gọi `gdt-sync`, và nút Đồng bộ chung thì
+ * bỏ qua grant `gdt`. Nối xong là bảng hoá đơn trống vĩnh viễn.
  */
 describe('liên kết Tổng Cục Thuế', () => {
   const thue = { id: 'g', status: 'connected', scopes: 'gdt' };
@@ -163,13 +163,14 @@ describe('liên kết Tổng Cục Thuế', () => {
     expect(tenDong({ ...nh, account_name: null, bank_name: 'MB Bank' })).toBe('MB Bank');
   });
 
-  it('phụ đề nói thật: chưa dùng được, có thể ngắt — không mời đồng bộ', () => {
-    expect(phuDe(thue)).toBe('Chưa dùng được — Casso chưa mở hoá đơn điện tử. Có thể ngắt liên kết này.');
-    expect(phuDe({ ...thue, status: 'needs_relink' })).toBe('Chưa dùng được — Casso chưa mở hoá đơn điện tử. Có thể ngắt liên kết này.');
+  it('phụ đề nói việc bấm được, không nói "chưa đồng bộ lần nào"', () => {
+    // Câu dự phòng cũ gợi ý một việc đang chờ mà nút chung không làm được.
+    expect(phuDe(thue)).toBe('Đã kết nối · bấm đồng bộ để tải hoá đơn điện tử');
   });
 
-  it('liên kết thuế hỏng: không mời Cập nhật (sửa xong cũng không đọc được hoá đơn nào)', () => {
-    expect(cachSua({ ...thue, status: 'needs_relink' })).toBe('khong_can');
+  it('liên kết thuế hỏng thì vẫn dùng Update Mode như liên kết đọc sao kê', () => {
+    // Chỉ `qrpay` mới bắt buộc liên kết lại từ đầu — xem ghi chú đầu file.
+    expect(cachSua({ ...thue, status: 'needs_relink' })).toBe('cap_nhat');
   });
 });
 

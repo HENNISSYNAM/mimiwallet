@@ -96,7 +96,7 @@ export async function batDay(): Promise<TrangThaiDay> {
   const dk = await navigator.serviceWorker.ready;
   const sub = await dk.pushManager.getSubscription() ?? await dk.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: khoaThanhByte(khoa),
+    applicationServerKey: khoaThanhByte(khoa) as BufferSource,
   });
   await goiThongBao('dang_ky', { subscription: sub.toJSON(), thiet_bi: navigator.userAgent.slice(0, 120) });
   return 'da_bat';

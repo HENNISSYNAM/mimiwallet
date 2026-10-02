@@ -7,7 +7,6 @@ import {
   LOAI_KHONG_PHAI_DOANH_THU, TEN_PHAN_LOAI,
   type BangTienVao, type DongTienVao, type LoaiPhanLoai, type NhomGoiY,
 } from '../../../supabase/functions/_shared/doanh-thu/phan-loai.ts';
-import { dinhDangTien } from '@/lib/tien';
 
 /**
  * Hàng đợi tiền vào — nằm ngay trên Tổng quan, không phải một trang riêng.
@@ -111,7 +110,7 @@ export function HangDoiTienVao() {
 
   const dongNhom = (g: NhomGoiY) => (
     <li key={g.khoa} className="space-y-2 p-3">
-      <p className="text-sm text-foreground"><span className="font-medium">{g.mo_ta}</span> · {dinhDangTien(g.tong)}</p>
+      <p className="text-sm text-foreground"><span className="font-medium">{g.mo_ta}</span> · {so(g.tong)}đ</p>
       <p className="text-xs text-muted-foreground">Áp dụng cùng một cách cho cả {g.so} khoản — hoàn tác được.</p>
       {nut(`nhom:${g.khoa}`, g.transaction_ids, g.goi_y)}
     </li>
@@ -119,7 +118,7 @@ export function HangDoiTienVao() {
 
   const dongKhoan = (d: DongTienVao) => (
     <li key={d.id} className="space-y-2 p-3">
-      <p className="text-sm text-foreground"><span className="font-medium tabular-nums">{dinhDangTien(d.so_tien)}</span> <span className="text-muted-foreground">· {ngay(d.ngay)}</span></p>
+      <p className="text-sm text-foreground"><span className="font-medium tabular-nums">{so(d.so_tien)}đ</span> <span className="text-muted-foreground">· {ngay(d.ngay)}</span></p>
       <p className="break-words font-mono text-xs text-muted-foreground">{d.noi_dung}</p>
       {d.goi_y && <p className="text-xs text-mimi-amber">Trông giống {TEN_PHAN_LOAI[d.goi_y.loai].toLowerCase()}: {d.goi_y.ly_do}</p>}
       {nut(d.id, [d.id], d.goi_y?.loai ?? null)}
@@ -132,9 +131,9 @@ export function HangDoiTienVao() {
         <div>
           <h2 id="tien-vao" className="text-base font-semibold text-foreground">Tiền vào năm {bang.nam}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Đã đọc {so(bang.so_giao_dich)} khoản tiền vào · {dinhDangTien(bang.tong_vao)}.
-            {' '}Bạn đã xác nhận {dinhDangTien(bang.doanh_thu_da_xac_nhan)} là tiền bán hàng, {dinhDangTien(bang.khong_phai_doanh_thu)} không phải.
-            {' '}<span className="text-foreground">{dinhDangTien(bang.chua_ro)} chưa ai xác nhận</span> — MIMI đang tạm tính là doanh thu.
+            Đã đọc {so(bang.so_giao_dich)} khoản tiền vào · {so(bang.tong_vao)}đ.
+            {' '}Bạn đã xác nhận {so(bang.doanh_thu_da_xac_nhan)}đ là tiền bán hàng, {so(bang.khong_phai_doanh_thu)}đ không phải.
+            {' '}<span className="text-foreground">{so(bang.chua_ro)}đ chưa ai xác nhận</span> — MIMI đang tạm tính là doanh thu.
           </p>
         </div>
         {(canXem.length > 0 || bang.nhom.length > 0) && (

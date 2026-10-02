@@ -52,26 +52,6 @@ export const DICH_KHONG_TU_BAM: ReadonlySet<string> = new Set([
 
 export const SO_BUOC_TOI_DA = 12;
 
-/**
- * Trang báo kết quả của việc mà nút nhường vừa khởi động (29/09/2026).
- *
- * Người dùng bấm "Thêm agent" mới là GỬI yêu cầu — máy chủ còn có thể từ chối. Trước đây con trỏ mèo
- * báo "Xong việc này rồi" ngay lúc bấm, trong khi yêu cầu còn đang chạy và sau đó thất bại. Giờ trang
- * bắn sự kiện này khi yêu cầu kết thúc; không có sự kiện thì mèo nói là chưa rõ, không nói là xong.
- */
-export const SU_KIEN_KET_QUA = 'mimi:ket-qua';
-
-export interface KetQuaTrang {
-  /** Đích `data-mimi` của nút đã khởi động việc này. */
-  dich: string;
-  ok: boolean;
-  cau?: string;
-}
-
-export function baoKetQua(kq: KetQuaTrang): void {
-  window.dispatchEvent(new CustomEvent<KetQuaTrang>(SU_KIEN_KET_QUA, { detail: kq }));
-}
-
 const DICH_HOP_LE = /^(nav:\/dashboard(\/[a-z0-9-]+)*|[a-z0-9-]+(\.[a-z0-9-]+)+)$/;
 const DUONG_DAN_HOP_LE = /^\/dashboard(\/[a-z0-9-]+)*$/;
 

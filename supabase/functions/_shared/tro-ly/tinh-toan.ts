@@ -12,7 +12,7 @@
  */
 import type { BangChung, DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, LoaiBangChung, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
-import { ghepChungTu, locKhoanCanChungTu, type HoaDonVao, type KhoanChi, type QuyetDinhChungTu } from '../chung-tu/khop-chung-tu.ts';
+import { ghepChungTu, LECH_TIEN, type HoaDonVao, type KhoanChi } from '../chung-tu/khop-chung-tu.ts';
 import { CAN_DO_TRUOC_KHI_DOI, chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
 import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH, type SuKienThue } from '../luat/he-luat.ts';
 import { HOAT_DONG } from '../doanh-thu/theo-hoat-dong.ts';
@@ -96,10 +96,7 @@ export interface TokenAiTL {
   token_ra: number;
   so_lan_goi: number;
 }
-export interface ChungTuQuetTL {
-  id: string; tong_tien: number; ngay: string | null; giao_dich_id: string | null;
-  so_hoa_don?: string | null; ben_ban?: string | null; ma_so_thue_ben_ban?: string | null;
-}
+export interface ChungTuQuetTL { id: string; tong_tien: number; ngay: string | null; giao_dich_id: string | null }
 
 export interface DuLieu {
   /** YYYY-MM-DD theo giờ Việt Nam. */
@@ -122,10 +119,6 @@ export interface DuLieu {
   bangGia: GiaModel[];
   bangGiaLuc: string | null;
   chungTuQuet: ChungTuQuetTL[];
-  /** Khoản chi người dùng đánh dấu chi cá nhân (nhãn người chọn) — không cần chứng từ kinh doanh. */
-  chiCaNhan?: string[];
-  /** Quyết định "không có chứng từ" còn hiệu lực. */
-  quyetDinhChungTu?: QuyetDinhChungTu[];
   /**
    * Hồ sơ thuế + doanh thu đã chọn nguồn, cho hệ luật thuế. `canCuDaKiem` là kết quả đối chiếu
    * từng câu trích với kho Công báo (`luat/doc-can-cu.ts`) — năng lực chỉ nói "đã đối chiếu"
@@ -474,36 +467,40 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
       noiDung: [t.merchant_name, t.payment_reference].filter(Boolean).join(' ') || null,
       tenNguoiNhan: t.counter_account_name ?? null,
     }));
-  /*
-   * 29/09/2026: giấy tờ = chứng từ người dùng chụp (`chung_tu_quet`), đúng nguồn và đúng hàm ghép của màn
-   * Chứng từ chi phí — hai nơi phải ra cùng một con số. Trước đó nguồn chính là hoá đơn điện tử đầu vào
-   * (`gdt_invoices`), đã gỡ vì Casso chưa bật sản phẩm hoá đơn điện tử cho app production.
-   */
-  const hoaDon: HoaDonVao[] = d.chungTuQuet
-    .filter((c) => c.ngay && c.ngay.slice(0, 10) >= tu && c.ngay.slice(0, 10) <= den)
-    .map((c) => ({
-      id: c.id,
-      soTien: Number(c.tong_tien),
-      ngay: String(c.ngay).slice(0, 10),
-      soHoaDon: c.so_hoa_don ?? null,
-      tenBenBan: c.ben_ban ?? null,
-      maSoThueBenBan: c.ma_so_thue_ben_ban ?? null,
-      giaoDichId: c.giao_dich_id,
+  const hoaDon: HoaDonVao[] = d.hoaDonVao
+    .filter((h) => h.issued_at && h.issued_at.slice(0, 10) >= tu && h.issued_at.slice(0, 10) <= den)
+    .map((h) => ({
+      id: h.id,
+      soTien: Number(h.total_amount),
+      ngay: String(h.issued_at).slice(0, 10),
+      soHoaDon: h.invoice_number,
+      tenBenBan: h.counterparty_name,
+      maSoThueBenBan: h.counterparty_tax_code,
     }));
-  // Cùng bộ lọc với màn Chứng từ chi phí: bỏ chi cá nhân và khoản người duyệt đã quyết "không có chứng từ".
-  const loc = locKhoanCanChungTu(chi, { caNhan: new Set(d.chiCaNhan ?? []), quyetDinh: d.quyetDinhChungTu ?? [] });
-  const g = ghepChungTu(loc.canChungTu, hoaDon);
-  const conThieu = g.chuaCoGiay;
+  const g = ghepChungTu(chi, hoaDon);
+
+  // Chứng từ quét KHÔNG đổi con số "chưa có hoá đơn điện tử" (để khớp màn Chứng từ chi phí);
+  // nó chỉ cho biết khoản nào trong đó đã có giấy tờ khác.
+  const quetDaGan = new Set(d.chungTuQuet.map((c) => c.giao_dich_id).filter(Boolean));
+  const quetTuDo = d.chungTuQuet.filter((c) => !c.giao_dich_id && c.ngay);
+  const coQuet = new Set<string>();
+  for (const c of g.chuaCoGiay) {
+    if (quetDaGan.has(c.id)) { coQuet.add(c.id); continue; }
+    const khop = quetTuDo.filter((q) => Math.abs(q.tong_tien - c.soTien) <= LECH_TIEN && Math.abs(soNgayGiua(q.ngay as string, c.ngay)) <= 7);
+    if (khop.length === 1) coQuet.add(c.id);
+  }
+  const conThieu = g.chuaCoGiay.filter((c) => !coQuet.has(c.id));
 
   if (!chi.length) {
     return kq('thieu_chung_tu', 'chung_tu', `Không có khoản chi ngân hàng nào trong ${nhan} (${ngayVN(tu)}–${ngayVN(den)}).`, {
-      nguon: [N.giaoDich, N.chungTuQuet], trang: [T.chungTu],
+      nguon: [N.giaoDich, N.hoaDonVao], trang: [T.chungTu],
     });
   }
 
-  let cau = `${nhan[0].toUpperCase()}${nhan.slice(1)} (${ngayVN(tu)}–${ngayVN(den)}) bạn đã chi ${vnd(g.tongDaChi)}; ${g.chuaCoGiay.length} khoản, tổng ${vnd(g.tongChuaCoGiay)}, chưa có chứng từ.`;
-  if (g.canXem.length) cau += ` ${g.canXem.length} khoản khớp nhiều chứng từ cùng lúc — cần bạn chọn.`;
-  if (!g.chuaCoGiay.length) cau = `${nhan[0].toUpperCase()}${nhan.slice(1)}: mọi khoản chi ngân hàng đều đã có chứng từ.`;
+  let cau = `${nhan[0].toUpperCase()}${nhan.slice(1)} (${ngayVN(tu)}–${ngayVN(den)}) bạn đã chi ${vnd(g.tongDaChi)}; ${g.chuaCoGiay.length} khoản, tổng ${vnd(g.tongChuaCoGiay)}, chưa có hoá đơn điện tử.`;
+  if (coQuet.size) cau += ` Trong đó ${coQuet.size} khoản đã có chứng từ quét.`;
+  if (g.canXem.length) cau += ` ${g.canXem.length} khoản khớp nhiều hoá đơn cùng lúc — cần bạn chọn.`;
+  if (!g.chuaCoGiay.length) cau = `${nhan[0].toUpperCase()}${nhan.slice(1)}: mọi khoản chi ngân hàng đều đã có hoá đơn điện tử.`;
 
   const tenChi = new Map(d.giaoDich.map((t) => [t.id, tenNguoiNhan(t)]));
   return kq('thieu_chung_tu', 'chung_tu', cau, {
@@ -513,9 +510,10 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
         tieu_de: `Chứng từ ${nhan}`,
         muc: [
           { nhan: 'Đã chi', gia_tri: g.tongDaChi, don_vi: 'vnd', bang_chung: bangChung('giao_dich', chi) },
-          { nhan: 'Có chứng từ', gia_tri: g.tongCoGiay, don_vi: 'vnd', bang_chung: bangChung('chung_tu_quet', hoaDon) },
+          { nhan: 'Hoá đơn điện tử đầu vào', gia_tri: g.tongCoGiay, don_vi: 'vnd', bang_chung: bangChung('hoa_don_vao', hoaDon) },
           {
-            nhan: 'Chưa có chứng từ', gia_tri: g.tongChuaCoGiay, don_vi: 'vnd', can_chu_y: g.tongChuaCoGiay > 0,
+            nhan: 'Chưa có hoá đơn điện tử', gia_tri: g.tongChuaCoGiay, don_vi: 'vnd', can_chu_y: g.tongChuaCoGiay > 0,
+            ghi_chu: coQuet.size ? `${coQuet.size} khoản đã có chứng từ quét` : undefined,
             /*
              * Bằng chứng phải là ĐÚNG những khoản đã cộng vào con số này, tức `g.chuaCoGiay`.
              * Trước đây nó trỏ vào `conThieu` — tập đã trừ đi khoản có chứng từ quét. Khi mọi
@@ -524,7 +522,7 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
              */
             bang_chung: bangChung('giao_dich', g.chuaCoGiay),
           },
-          { nhan: 'Cần bạn chọn chứng từ', gia_tri: g.canXem.length, don_vi: 'so', bang_chung: bangChung('giao_dich', g.canXem.map((x) => ({ id: x.khoanChiId }))) },
+          { nhan: 'Cần bạn chọn hoá đơn', gia_tri: g.canXem.length, don_vi: 'so', bang_chung: bangChung('giao_dich', g.canXem.map((x) => ({ id: x.khoanChiId }))) },
         ],
       },
       ...(conThieu.length ? [{
@@ -536,7 +534,7 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
         con_lai: Math.max(0, conThieu.length - 8),
       }] : []),
     ],
-    nguon: [N.giaoDich, N.chungTuQuet],
+    nguon: [N.giaoDich, N.hoaDonVao, ...(d.chungTuQuet.length ? [N.chungTuQuet] : [])],
     trang: [T.chungTu],
   });
 }
@@ -1039,6 +1037,7 @@ export function danhSachKetNoi(d: DuLieu): KetNoiHienThi[] {
 
   const sao = theoMucDich('transaction');
   const qr = theoMucDich('qrpay');
+  const gdt = theoMucDich('gdt');
   const ds: KetNoiHienThi[] = [
     {
       khoa: 'ngan_hang', ten: 'Ngân hàng', loai: 'ngan_hang', trang_thai: trangThaiNH(sao), duong_dan: T.ketNoi.duong_dan,
@@ -1048,7 +1047,10 @@ export function danhSachKetNoi(d: DuLieu): KetNoiHienThi[] {
       khoa: 'casso', ten: 'Casso', loai: 'ngan_hang', trang_thai: trangThaiNH(qr), duong_dan: T.ketNoi.duong_dan,
       cau: !qr.length ? 'Chưa bật nhận tiền bằng mã QR.' : `${qr.length} tài khoản nhận tiền QR.`,
     },
-    // 29/09/2026: bỏ dòng "Tổng cục Thuế" — đã gỡ hoá đơn điện tử (Casso chưa bật sản phẩm hoá đơn điện tử cho app production).
+    {
+      khoa: 'tong_cuc_thue', ten: 'Tổng cục Thuế', loai: 'thue', trang_thai: trangThaiNH(gdt), duong_dan: T.ketNoi.duong_dan,
+      cau: !gdt.length ? 'Chưa kết nối — chưa lấy được hoá đơn điện tử.' : 'Đang lấy hoá đơn điện tử.',
+    },
   ];
   const ai = (ncc: string, ten: string, coApi: boolean): KetNoiHienThi => {
     const kn = d.ketNoiAi.find((k) => k.nha_cung_cap === ncc && k.trang_thai !== 'da_go');
@@ -1254,18 +1256,13 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
         // Ngưỡng là con số của pháp luật: bằng chứng là chính điều khoản, không phải bản ghi của công ty.
         { nhan: 'Ngưỡng phải nộp thuế', gia_tri: NGUONG_THUE, don_vi: 'vnd', ghi_chu: 'NĐ 68/2026 sửa bởi NĐ 141/2026', bang_chung: [{ loai: 'van_ban_luat', id: ['nd68_d3_k1', 'nd141_d1_k1'], so_ban_ghi: 2 }] },
         {
-          // Khoảng doanh thu thật cắt ngưỡng: KHÔNG nói "đã vượt" hay "còn cách" — con số ước tính chưa đủ chắc.
-          nhan: suKien.doanhThuChuaChac?.nguong_1_ty ? 'Chưa chắc: ước tính đang sát ngưỡng' : sl.doanh_thu_nam > NGUONG_THUE ? 'Đã vượt' : 'Còn cách ngưỡng',
+          nhan: sl.doanh_thu_nam > NGUONG_THUE ? 'Đã vượt' : 'Còn cách ngưỡng',
           gia_tri: Math.abs(NGUONG_THUE - sl.doanh_thu_nam),
           don_vi: 'vnd',
-          can_chu_y: suKien.doanhThuChuaChac?.nguong_1_ty ? true : sl.doanh_thu_nam > NGUONG_THUE,
+          can_chu_y: sl.doanh_thu_nam > NGUONG_THUE,
         },
       ],
     });
-    // Đúng MỘT câu hỏi để gỡ — do `doanh-thu/do-chac-chan.ts` chọn (khoản chưa rõ lớn nhất trước).
-    if (suKien.doanhThuChuaChac) {
-      the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `MIMI chưa kết luận được nghĩa vụ: ${suKien.doanhThuChuaChac.cau_hoi.cau} ${suKien.doanhThuChuaChac.cau_hoi.vi_sao}` });
-    }
   }
   if (chinh.length) {
     the.push({
@@ -1326,7 +1323,7 @@ export function nghiaVuThue(d: DuLieu): KetQuaNangLuc {
       mo_ta: 'Xem bản nháp tờ khai MIMI soạn từ doanh thu thật, in hoặc lưu lại.',
       tham_so: { duong_dan: '/dashboard/to-khai' },
     }],
-    nguon: [N.khoLuat, N.giaoDich],
+    nguon: [N.khoLuat, N.hoaDonVao, N.giaoDich],
     trang: [T.toKhai],
   });
 }
@@ -1473,13 +1470,6 @@ export function chuanBiHanThue(d: DuLieu): KetQuaNangLuc {
     ] });
     for (const g of ss.giay_to_thieu) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `Còn thiếu: ${g}` });
     the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Độ tin cậy: ${ss.do_tin_cay === 'cao' ? 'cao' : ss.do_tin_cay === 'trung_binh' ? 'trung bình' : 'thấp'}.` });
-    // Kết luận về ngưỡng phụ thuộc phần chưa rõ: nói khoảng và hỏi ĐÚNG MỘT câu, không nói nghĩa vụ.
-    if (ss.ket_luan_phu_thuoc && ss.cau_hoi_can_xem) {
-      the.push({
-        loai: 'ghi_chu', muc_do: 'can_chu_y',
-        cau: `Doanh thu thật nằm trong khoảng ${vnd(Number(ss.khoang_doanh_thu.can_duoi))} – ${vnd(Number(ss.khoang_doanh_thu.can_tren))}, cắt ngưỡng thuế nên MIMI chưa kết luận nghĩa vụ. ${ss.cau_hoi_can_xem.cau}`,
-      });
-    }
   }
   return kq('chuan_bi_han_thue', 'chung_tu', tom, {
     the, nguon: [N.lichThue], trang: [T.nhacThue, T.toKhai],
@@ -2143,7 +2133,7 @@ export const NANG_LUC: Record<string, NangLuc> = {
   yeu_cau_cho_duyet: { nhom: 'tro_ly', can: ['yeu_cau'], chay: yeuCauChoDuyet, mo_ta: 'Các khoản chi agent hoặc người dùng xin, đang chờ chủ doanh nghiệp duyệt; kèm đề xuất duyệt/từ chối.' },
   tinh_hinh_agent: { nhom: 'tro_ly', can: ['yeu_cau'], chay: tinhHinhAgent, mo_ta: 'Các agent AI được phép xin chi: trạng thái, đã dùng bao nhiêu hạn mức tháng, agent bị từ chối nhiều.' },
   chi_phi_thang: { nhom: 'chi_phi', can: ['giao_dich'], chay: chiPhiThang, mo_ta: 'Tổng chi qua ngân hàng tháng này so với cùng kỳ tháng trước, và chi nhiều nhất cho ai.' },
-  thieu_chung_tu: { nhom: 'chung_tu', can: ['giao_dich', 'chung_tu_quet'], chay: thieuChungTu, mo_ta: 'Khoản chi trong kỳ kê khai thuế đang tới hạn chưa có hoá đơn điện tử đầu vào.' },
+  thieu_chung_tu: { nhom: 'chung_tu', can: ['giao_dich', 'hoa_don_vao', 'chung_tu_quet'], chay: thieuChungTu, mo_ta: 'Khoản chi trong kỳ kê khai thuế đang tới hạn chưa có hoá đơn điện tử đầu vào.' },
   hoa_don_qua_han: { nhom: 'chung_tu', can: ['hoa_don_ban'], chay: hoaDonQuaHan, mo_ta: 'Hoá đơn bán ra quá hạn thanh toán và chưa tới hạn (công nợ phải thu).' },
   dong_tien: { nhom: 'ngan_hang', can: ['giao_dich'], chay: dongTien, mo_ta: 'Tiền vào, tiền ra và chênh lệch theo tháng, 6 tháng gần nhất.' },
   doi_soat: { nhom: 'ngan_hang', can: ['giao_dich', 'hoa_don_ban', 'ket_noi_ngan_hang'], chay: doiSoat, mo_ta: 'Tiền về 30 ngày qua có thể khớp với hoá đơn bán ra nào đang chờ thu.' },

@@ -7,7 +7,6 @@ import {
   trangThaiDay, type LoaiThongBao, type ThongBao, type TrangThaiDay,
 } from '@/lib/thongBao';
 import { DanhSachThongBao } from './DanhSachThongBao';
-import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 
 /**
  * Bật thông báo — đặt ở trang Nhắc thuế, nơi người dùng đã đến để không lỡ hạn.
@@ -29,24 +28,16 @@ export function CaiDatThongBao() {
   const [dang, setDang] = useState(false);
   const [tat, setTat] = useState<LoaiThongBao[]>([]);
   const [ds, setDs] = useState<ThongBao[]>([]);
-  const [loiDs, setLoiDs] = useState(false);
-  // null = đang đọc, false = đọc lỗi. Chưa đọc được thì KHOÁ công tắc: bật/tắt lúc đó sẽ lưu đè và xoá mất
-  // những loại người dùng đã tắt trước đây.
-  const [daDocTat, setDaDocTat] = useState<boolean | null>(null);
 
-  const taiDs = useCallback(() => { void docThongBao(30).then((d) => { setDs(d); setLoiDs(false); }).catch(() => setLoiDs(true)); }, []);
-  const taiTat = useCallback(() => {
-    setDaDocTat(null);
-    void docLoaiTat().then((t) => { setTat(t); setDaDocTat(true); }).catch(() => setDaDocTat(false));
-  }, []);
+  const taiDs = useCallback(() => { void docThongBao(30).then(setDs).catch(() => {}); }, []);
 
   useEffect(() => {
     void trangThaiDay().then(setTt).catch(() => setTt('khong_ho_tro'));
-    taiTat();
+    void docLoaiTat().then(setTat).catch(() => {});
     taiDs();
     window.addEventListener(SU_KIEN_THONG_BAO, taiDs);
     return () => window.removeEventListener(SU_KIEN_THONG_BAO, taiDs);
-  }, [taiDs, taiTat]);
+  }, [taiDs]);
 
   const doiDay = async (bat: boolean) => {
     setDang(true);
@@ -67,7 +58,6 @@ export function CaiDatThongBao() {
   };
 
   const doiLoai = async (loai: LoaiThongBao, bat: boolean) => {
-    if (daDocTat !== true) return;
     const moi = bat ? tat.filter((x) => x !== loai) : [...tat, loai];
     setTat(moi);
     try { await luuLoaiTat(moi); } catch { setTat(tat); toast.error('Chưa lưu được.'); }
@@ -103,16 +93,11 @@ export function CaiDatThongBao() {
         </div>
       </div>
 
-      {daDocTat === false && (
-        <div className="border-t border-border px-5 pt-4">
-          <LoiTaiLai cau="Chưa tải được lựa chọn thông báo của bạn, nên tạm khoá các công tắc để không ghi đè." thuLai={taiTat} />
-        </div>
-      )}
       <div className="grid gap-2 border-t border-border px-5 py-4 sm:grid-cols-2">
         {LOAI_THONG_BAO.filter((l) => l !== 'khac').map((l) => (
           <label key={l} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 text-sm text-foreground">
             {TEN_LOAI_THONG_BAO[l]}
-            <Switch checked={!tat.includes(l)} disabled={daDocTat !== true} onCheckedChange={(v) => void doiLoai(l, v)} aria-label={`Đẩy thông báo: ${TEN_LOAI_THONG_BAO[l]}`} />
+            <Switch checked={!tat.includes(l)} onCheckedChange={(v) => void doiLoai(l, v)} aria-label={`Đẩy thông báo: ${TEN_LOAI_THONG_BAO[l]}`} />
           </label>
         ))}
         {tt === 'da_bat' && (
@@ -123,7 +108,7 @@ export function CaiDatThongBao() {
       </div>
 
       <div className="border-t border-border">
-        <DanhSachThongBao ds={ds} onDoi={taiDs} loi={loiDs} />
+        <DanhSachThongBao ds={ds} onDoi={taiDs} />
       </div>
     </section>
   );

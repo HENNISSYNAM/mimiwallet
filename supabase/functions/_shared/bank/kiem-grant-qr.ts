@@ -98,8 +98,7 @@ export function truongNgatGrant(luc: Date) {
 /** Việc người dùng làm tiếp, theo đúng nút trên màn hình Fintech Hub cho từng loại liên kết. */
 export function loiNhacLienKetLai(scopes: string | null | undefined): string {
   if (scopes === 'qrpay') return 'MIMI đã gỡ liên kết này. Bấm "Liên kết để nhận tiền QR" rồi quét lại mã trong app Cas nếu vẫn cần.';
-  // 29/09/2026: không còn nút kết nối thuế — Casso chưa bật sản phẩm hoá đơn điện tử cho app production.
-  if (scopes === 'gdt') return 'MIMI đã gỡ liên kết này. MIMI chưa đọc được hoá đơn điện tử, nên không cần cấp lại.';
+  if (scopes === 'gdt') return 'MIMI đã gỡ liên kết này. Bấm "Kết nối Tổng Cục Thuế" để cấp quyền mới nếu vẫn cần.';
   return 'MIMI đã gỡ liên kết này. Bấm "Liên kết ngân hàng" để cấp quyền mới nếu vẫn cần đọc sao kê.';
 }
 

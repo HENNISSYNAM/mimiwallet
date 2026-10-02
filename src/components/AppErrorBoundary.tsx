@@ -1,6 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { ghiLoi } from '@/lib/ghiLoi';
 
 /**
  * Last line of defence against a blank white screen.
@@ -27,7 +26,6 @@ export default class AppErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('App crashed:', error, info.componentStack);
-    ghiLoi('boundary', error);
   }
 
   private reload = () => {

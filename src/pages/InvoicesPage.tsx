@@ -14,8 +14,6 @@ import { InsightSpark } from '@/components/illustrations/BrandIcons';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { GlassTabs } from '@/components/ui/glass-tabs';
-import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
-import { homNayVN } from '../../supabase/functions/_shared/viec/dong-co-viec';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp = {
@@ -93,8 +91,7 @@ function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClo
       amount: amountNum,
       vat_rate: vat,
       total,
-      // Ngày theo giờ VN: ngày UTC làm hoá đơn tạo lúc 00:00–07:00 mang ngày hôm trước.
-      issued_date: homNayVN(),
+      issued_date: new Date().toISOString().slice(0, 10),
       due_date: dueDate,
       status: 'pending',
     });
@@ -179,7 +176,6 @@ export default function InvoicesPage() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [invoiceList, setInvoiceList] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loiTai, setLoiTai] = useState(false);
   /*
    * Đọc bộ lọc từ địa chỉ để thẻ "Hoá đơn chờ thanh toán" ở Tổng quan mở thẳng
    * ra đúng những dòng đã tạo ra con số của nó. Giá trị lạ thì bỏ qua, không
@@ -207,12 +203,10 @@ export default function InvoicesPage() {
       // Liệt kê cột thay cho `*`: trang này cố ý hiện CẢ hoá đơn demo (có gắn
       // nhãn), nên `is_synthetic` phải xuất hiện rõ trong câu lệnh — đọc mã là
       // thấy ngay trang nào đã nghĩ tới cờ đó, trang nào quên.
-      const { data, error } = await supabase.from('invoices')
+      const { data } = await supabase.from('invoices')
         .select('id, invoice_number, client_name, amount, vat_rate, total, issued_date, due_date, status, advanced_amount, is_synthetic')
         .eq('company_id', cId).order('issued_date', { ascending: false });
-      // Lỗi đọc không được hiện thành "Chưa có hoá đơn" — giữ danh sách cũ, nói lỗi.
-      setLoiTai(!!error);
-      if (!error) setInvoiceList((data as Invoice[]) ?? []);
+      setInvoiceList((data as Invoice[]) ?? []);
     }
     setLoading(false);
   };
@@ -358,8 +352,6 @@ export default function InvoicesPage() {
           <div className="flex items-center justify-center py-16">
             <Loader2 size={20} className="animate-spin text-primary" />
           </div>
-        ) : loiTai && invoiceList.length === 0 ? (
-          <div className="p-6"><LoiTaiLai cau="Chưa tải được danh sách hoá đơn. Hoá đơn của bạn vẫn còn nguyên." thuLai={() => void loadInvoices()} /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 px-6">
             <FileText size={28} className="text-muted-foreground mx-auto mb-3" />

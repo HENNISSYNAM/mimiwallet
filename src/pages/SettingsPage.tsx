@@ -12,8 +12,6 @@ import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection
 import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
-import { DangXuatMoiThietBi } from '@/components/settings/DangXuatMoiThietBi';
-import { dinhDangTien } from '@/lib/tien';
 
 /*
  * `disbursement` đã rời khỏi đây 24/09/2026.
@@ -131,7 +129,7 @@ function SubscriptionSection() {
                 {key === 'growth' && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{t('settings.popular')}</span>}
               </div>
               <p className="text-2xl font-mono font-bold text-foreground">
-                {dinhDangTien(tier.price)}
+                {tier.price.toLocaleString('vi-VN')}₫
                 <span className="text-xs text-muted-foreground font-normal">/tháng</span>
               </p>
               <ul className="mt-3 space-y-1.5">
@@ -144,8 +142,7 @@ function SubscriptionSection() {
                   ? ['Xuất tờ khai không giới hạn (thay vì 10.000đ mỗi tờ)', 'Sửa số, xuất lại bao nhiêu lần cũng được']
                   // Xác nhận tiền vào là MIỄN PHÍ cho mọi người (docs/KIEM_TOAN_RA_MAT.md, P-4) — không
                   // bán nó trong gói. Growth chờ tới khi có thứ riêng thật sự.
-                  // "Sắp có…" gỡ 28/09/2026: không bán thứ chưa chạy.
-                  : ['Tất cả Starter']
+                  : ['Tất cả Starter', 'Sắp có: theo dõi liên tục, xuất bộ đối chiếu cả năm']
                 ).map(f => (
                   <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Check size={12} className="text-primary shrink-0" /> {f}
@@ -330,10 +327,10 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // Bỏ "Xác thực 2 lớp" và "Quản lý thiết bị" (27/09/2026): hai nút chỉ hiện "sẽ ra mắt sớm". Thay bằng
-  // "Đăng xuất khỏi mọi thiết bị" — có thật ở máy chủ (DangXuatMoiThietBi).
   const securityItems = [
     { label: t('settings.changePassword'), onClick: () => setShowPasswordModal(true) },
+    { label: t('settings.twoFactor'), onClick: () => toast('Tính năng xác thực 2 lớp đang được phát triển, sẽ ra mắt sớm') },
+    { label: t('settings.manageDevices'), onClick: () => toast('Tính năng quản lý thiết bị đang được phát triển, sẽ ra mắt sớm') },
   ];
 
   return (
@@ -385,7 +382,6 @@ export default function SettingsPage() {
               <ChevronRight size={14} />
             </button>
           ))}
-          <DangXuatMoiThietBi sauKhiXong={() => navigate('/')} />
         </div>
       </SettingsSection>
 

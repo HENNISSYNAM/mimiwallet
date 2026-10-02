@@ -50,19 +50,6 @@ describe('theoThang', () => {
     expect(r[0]).toMatchObject({ tienVao: 700, tienRa: 500 });
   });
 
-  // Hồi quy 29/09/2026: cộng bằng Number thì 9.007.199.254.740.991 + 2 ra ...992 — lệch 1 đồng không báo.
-  it('tổng vượt MAX_SAFE_INTEGER: cộng chính xác, trả chuỗi số nguyên', () => {
-    const r = theoThang([gd(Number.MAX_SAFE_INTEGER, 'income', '2026-09-01'), gd(2, 'income', '2026-09-02')]);
-    expect(r[0]).toMatchObject({ tienVao: '9007199254740993', tienRa: 0, chenhLech: '9007199254740993' });
-  });
-
-  it('số tiền dạng chuỗi (cột numeric) không đi qua Number', () => {
-    const r = theoThang([{ amount: '9007199254740993', type: 'income', transaction_date: '2026-09-01', category: null }]);
-    expect(r[0].tienVao).toBe('9007199254740993');
-    expect(phanBoChiPhi([{ amount: '9007199254740995', type: 'expense', transaction_date: '2026-09-01', category: 'X' }]))
-      .toEqual([{ ten: 'X', tien: '9007199254740995' }]);
-  });
-
   it('HỒI QUY 15/09/2026: khoản chi ngân hàng mang số dương là chi phí, không phải doanh thu', () => {
     // Đúng hình dạng bankhub-map/sepay-map ghi: số dương, chiều trong type.
     const r = theoThang([gd(10_000_000, 'income', '2026-09-01'), gd(2_000_000, 'expense', '2026-09-02')]);
@@ -84,8 +71,8 @@ describe('tuoiHoaDon', () => {
       ],
       luc,
     );
-    expect(r.map((x) => x.tien)).toEqual([0, 1_000_000, 2_000_000, 3_000_000, 4_000_000]);
-    expect(r.slice(1).every((x) => x.soHoaDon === 1)).toBe(true);
+    expect(r.map((x) => x.tien)).toEqual([1_000_000, 2_000_000, 3_000_000, 4_000_000]);
+    expect(r.every((x) => x.soHoaDon === 1)).toBe(true);
   });
 
   /*
@@ -100,20 +87,9 @@ describe('tuoiHoaDon', () => {
     expect(tuoiHoaDon([hd(9_000_000, 'pending', null)], luc)).toEqual([]);
   });
 
-  // Hồi quy 29/09/2026: hoá đơn chưa tới hạn từng nằm chung cột "0–30 ngày" với khoản đã quá hạn.
-  it('chưa tới hạn (kể cả hạn là hôm nay) nằm nhóm "Chưa đến hạn", không tính là quá hạn', () => {
-    const r = tuoiHoaDon([hd(1_000_000, 'pending', '2026-12-31'), hd(500_000, 'pending', '2026-09-10')], luc);
-    expect(r[0]).toEqual({ nhan: 'Chưa đến hạn', tien: 1_500_000, soHoaDon: 2 });
-    expect(r.slice(1).every((x) => x.tien === 0)).toBe(true);
-  });
-
-  it('quá hạn đúng 1 ngày và đúng 30 ngày cùng nhóm 1–30; 31 ngày sang nhóm sau', () => {
-    const r = tuoiHoaDon([hd(1, 'pending', '2026-09-09'), hd(2, 'pending', '2026-08-11'), hd(4, 'pending', '2026-08-10')], luc);
-    expect(r.map((x) => x.tien)).toEqual([0, 3, 4, 0, 0]);
-  });
-
-  it('hạn hỏng không được xếp nhóm', () => {
-    expect(tuoiHoaDon([hd(9_000_000, 'pending', 'không rõ')], luc)).toEqual([]);
+  it('hoá đơn chưa tới hạn vẫn nằm nhóm đầu, không ra số âm', () => {
+    const r = tuoiHoaDon([hd(1_000_000, 'pending', '2026-12-31')], luc);
+    expect(r[0].tien).toBe(1_000_000);
   });
 
   it('không có hoá đơn nào thì trả mảng rỗng', () => {

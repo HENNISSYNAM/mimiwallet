@@ -5,7 +5,6 @@
  * Không tự suy thêm nghĩa vụ nào: mọi mốc lấy từ lịch; ở đây chỉ trả lời "đã đủ để khai chưa, thiếu gì".
  */
 import { mocKeTiep, type MocThue } from './lich-thue.ts';
-import { khongXetNguong, nhanDoTinCay, tinhDoChacChan, type CauHoiCanXem, type KetQuaDoChacChan, type TrangThaiDoChacChan } from '../doanh-thu/do-chac-chan.ts';
 
 export type TrangThaiSanSang = 'san_sang' | 'bi_chan' | 'thieu_du_lieu' | 'can_xac_minh' | 'khong_co_viec';
 
@@ -27,20 +26,7 @@ export interface SanSangThue {
   chan: string[];
   du_kien_thieu: string[];
   viec_tiep: string[];
-  /**
-   * Nhãn cũ, giữ để nơi đang đọc không vỡ: suy từ `do_chac_chan` (chac→cao, can_xem→trung_binh,
-   * chua_du_du_lieu→thap). Không còn là tỷ lệ khoản chưa rõ — xem `doanh-thu/do-chac-chan.ts`.
-   */
   do_tin_cay: 'cao' | 'trung_binh' | 'thap';
-  /** Trạng thái độ chắc chắn của doanh thu năm: khoảng có cắt ngưỡng luật không, phần chưa rõ lớn không. */
-  do_chac_chan: TrangThaiDoChacChan;
-  /** Doanh thu thật nằm trong [can_duoi, can_tren] với mọi cách người dùng có thể trả lời. */
-  khoang_doanh_thu: { can_duoi: number | string; can_tren: number | string };
-  /** true = kết luận về ngưỡng (phải khai hay chỉ thông báo, khai từ quý nào) PHỤ THUỘC phần chưa rõ: KHÔNG được nói nghĩa vụ. */
-  ket_luan_phu_thuoc: boolean;
-  /** Đúng MỘT câu hỏi làm khoảng hẹp nhất (khoản chưa rõ lớn nhất trước), khoá ổn định. null khi đã chắc. */
-  cau_hoi_can_xem: CauHoiCanXem | null;
-  chi_tiet_do_chac_chan: KetQuaDoChacChan;
   nguon: string[];
 }
 
@@ -51,8 +37,6 @@ export interface SoLieuSanSang {
   so_chua_ro: number;
   co_ket_noi_ngan_hang: boolean;
   so_giao_dich: number;
-  /** Khoảng và câu hỏi đã tính sẵn từ dữ liệu từng khoản (`SoLieuDoanhThu.do_chac_chan`). Thiếu thì tính từ tổng. */
-  do_chac_chan?: KetQuaDoChacChan;
 }
 
 const GIAY_TO: Partial<Record<MocThue['loai'], string[]>> = {
@@ -67,11 +51,7 @@ export interface HoatDongChuaRo { so_tien: number; so_khoan: number }
 
 const tienGon = (n: number) => `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ`;
 
-export function sanSangThue(
-  lich: MocThue[], s: SoLieuSanSang, hoatDongChuaRo: HoatDongChuaRo | null = null,
-  /** Doanh nghiệp không chịu ngưỡng doanh thu năm nay của hộ kinh doanh — xem `khongXetNguong`. */
-  loai: 'ho_kinh_doanh' | 'doanh_nghiep' | null = null,
-): SanSangThue {
+export function sanSangThue(lich: MocThue[], s: SoLieuSanSang, hoatDongChuaRo: HoatDongChuaRo | null = null): SanSangThue {
   const moc = mocKeTiep(lich);
   const giay_to_can = moc ? GIAY_TO[moc.loai] ?? [] : [];
   const giay_to_thieu: string[] = [];
@@ -90,38 +70,18 @@ export function sanSangThue(
   if (giay_to_thieu.some((g) => g.startsWith('Sao kê'))) viec_tiep.push('Kết nối ngân hàng hoặc nhập file sao kê');
   if (moc && !viec_tiep.length) viec_tiep.push('Mở Tờ khai thuế, kiểm bản nháp rồi xác nhận trước khi nộp');
 
-  // Khoảng doanh thu: đủ dữ liệu từng khoản thì dùng nguyên; chỉ có tổng thì dựng khoảng từ tổng (mọi
-  // khoản chưa rõ là một ứng viên gộp — vẫn ra đúng một câu hỏi).
-  const dc0 = s.do_chac_chan ?? tinhDoChacChan({
-    gia_tri: s.uoc_tinh, co_the_giam: s.chua_ro, co_du_lieu: s.so_giao_dich > 0,
-    ung_vien: s.chua_ro > 0 ? [{ khoa: 'tong_chua_ro', loai: 'tong_chua_ro', so_tien: s.chua_ro, so_khoan: s.so_chua_ro, mo_ta: 'các khoản tiền vào chưa rõ' }] : [],
-  });
-  const dc = loai === 'doanh_nghiep' ? khongXetNguong(dc0) : dc0;
-  // Kết luận về ngưỡng phụ thuộc phần chưa rõ: MIMI không nói nghĩa vụ, chỉ hỏi đúng một câu.
-  const phuThuoc = dc.ket_luan_phu_thuoc && !!dc.cau_hoi;
-  if (phuThuoc && dc.cau_hoi) {
-    viec_tiep.unshift(`Trả lời: ${dc.cau_hoi.cau}`);
-    // Câu hỏi này đã bao gồm việc xác nhận khoản chưa rõ — không hỏi lại hai lần.
-    const i = viec_tiep.findIndex((v) => v.startsWith('Xác nhận ') && v.endsWith('khoản tiền vào chưa rõ'));
-    if (i >= 0) viec_tiep.splice(i, 1);
-  }
-
-  // Khi kết luận phụ thuộc phần chưa rõ, lịch chỉ có mốc "cần xác minh" không hạn — `mocKeTiep` không
-  // chọn nó, nên KHÔNG được đọc "không có mốc" thành "không có việc": việc lúc này chính là câu hỏi.
-  const trang_thai: TrangThaiSanSang = chan.length && moc ? 'bi_chan'
-    : phuThuoc ? 'can_xac_minh'
-      : !moc ? 'khong_co_viec'
-        : moc.trang_thai === 'can_xac_minh' ? 'can_xac_minh'
-          : giay_to_thieu.length ? 'thieu_du_lieu' : 'san_sang';
-  const do_tin_cay = nhanDoTinCay(dc.trang_thai);
+  const trang_thai: TrangThaiSanSang = !moc ? 'khong_co_viec'
+    : chan.length ? 'bi_chan'
+    : moc.trang_thai === 'can_xac_minh' ? 'can_xac_minh'
+      : giay_to_thieu.length ? 'thieu_du_lieu' : 'san_sang';
+  const tong = s.da_xac_nhan + s.chua_ro;
+  const do_tin_cay = !s.so_giao_dich ? 'thap' : tong > 0 && s.chua_ro / tong <= 0.1 ? 'cao' : 'trung_binh';
 
   return {
     ky: moc?.khoa ?? null, loai_nghia_vu: moc?.loai ?? null, ten_viec: moc?.ten ?? null, trang_thai,
     han: moc?.han ?? null, con_lai: moc?.con_lai ?? null,
     doanh_thu_biet: s.uoc_tinh, doanh_thu_da_phan_loai: s.da_xac_nhan, doanh_thu_chua_phan_loai: s.chua_ro,
     so_khoan_chua_phan_loai: s.so_chua_ro, giay_to_can, giay_to_thieu, chan, du_kien_thieu, viec_tiep, do_tin_cay,
-    do_chac_chan: dc.trang_thai, khoang_doanh_thu: { can_duoi: dc.can_duoi, can_tren: dc.can_tren },
-    ket_luan_phu_thuoc: dc.ket_luan_phu_thuoc, cau_hoi_can_xem: dc.cau_hoi, chi_tiet_do_chac_chan: dc,
     nguon: ['Lịch thuế của công ty (hệ luật MIMI, NĐ 252/2026)', 'Tiền vào ngân hàng đã kết nối, đã bỏ dữ liệu thử', 'Phân loại tiền vào người dùng đã xác nhận'],
   };
 }

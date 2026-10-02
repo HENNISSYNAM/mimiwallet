@@ -1,5 +1,4 @@
 import { chieuTien } from './chieuTien';
-import { soSanhTien, tuBigInt, type TienVND } from './tien';
 
 /**
  * Gộp giao dịch và hoá đơn thành số liệu cho trang Báo cáo.
@@ -22,26 +21,18 @@ import { soSanhTien, tuBigInt, type TienVND } from './tien';
  *     diện nói được "chưa có dữ liệu".
  *  2. Chỉ đếm giao dịch thật. Người gọi lọc `is_synthetic` trước khi truyền
  *     vào — và có test cho việc một dòng thử lọt vào sẽ làm sai con số.
- *
- * CỘNG BẰNG BIGINT (29/09/2026). Cộng bằng `number` thì tổng vượt Number.MAX_SAFE_INTEGER (~9 triệu
- * tỷ đồng) lệch vài đồng mà không báo, trong khi `tro-ly` trả đúng — hai màn hình cùng dữ liệu ra hai
- * số. Tổng trả về theo hợp đồng `TienVND`: còn an toàn thì là số, vượt thì là chuỗi số nguyên.
- *
- * "TIỀN VÀO" KHÔNG PHẢI DOANH THU. Khoản giải ngân vay 100 tỷ là 100 tỷ tiền vào tài khoản — đúng,
- * và phải hiện như vậy — nhưng không phải doanh thu, và chênh lệch không phải lợi nhuận. Module này
- * chỉ tả dòng tiền; doanh thu tính thuế đi qua phân loại tiền vào + xác nhận của người dùng (Tờ khai).
  */
 
 export interface GiaoDich {
-  amount: number | string;
+  amount: number;
   type: string;
   transaction_date: string;
   category: string | null;
 }
 
 export interface HoaDon {
-  total: number | string | null;
-  amount: number | string | null;
+  total: number | null;
+  amount: number | null;
   status: string;
   due_date: string | null;
 }
@@ -52,36 +43,22 @@ export interface ThangTaiChinh {
   /** Khoá sắp xếp, dạng YYYY-MM. */
   khoa: string;
   /** Tiền vào tài khoản ngân hàng — KHÔNG phải doanh thu (P0-004, xem TU_DIEN_CHI_SO). */
-  tienVao: TienVND;
+  tienVao: number;
   /** Tiền ra khỏi tài khoản ngân hàng — không phải chi phí kế toán. */
-  tienRa: TienVND;
+  tienRa: number;
   /** Tiền vào trừ tiền ra — không phải lợi nhuận. */
-  chenhLech: TienVND;
+  chenhLech: number;
 }
 
 export interface NhomTuoi {
   nhan: string;
-  tien: TienVND;
+  tien: number;
   soHoaDon: number;
 }
 
 export interface NhomChiPhi {
   ten: string;
-  tien: TienVND;
-}
-
-/**
- * Độ lớn của một khoản, tính tới đồng, dạng BigInt. Không đọc được thì `null` (bỏ dòng, không cộng 0).
- * Chuỗi số nguyên đi thẳng vào BigInt — không qua Number, để khoản rất lớn không mất đồng lẻ.
- */
-function doLon(v: unknown): bigint | null {
-  if (typeof v === 'string' && /^-?\d+$/.test(v.trim())) {
-    const b = BigInt(v.trim());
-    return b < 0n ? -b : b;
-  }
-  const n = Number(v);
-  if (!Number.isFinite(n)) return null;
-  return BigInt(Math.round(Math.abs(n)));
+  tien: number;
 }
 
 /** Ngưỡng chia nhóm tuổi hoá đơn, tính theo ngày quá hạn. */
@@ -94,17 +71,17 @@ export const MOC_TUOI = [30, 60, 90] as const;
  * vẽ ra những tháng không có tiền vào chưa từng xảy ra.
  */
 export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
-  const gom = new Map<string, { thu: bigint; chi: bigint }>();
+  const gom = new Map<string, { thu: number; chi: number }>();
 
   for (const t of gd) {
     const khoa = String(t.transaction_date).slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(khoa)) continue;
-    const tien = doLon(t.amount);
+    const o = gom.get(khoa) ?? { thu: 0, chi: 0 };
+    const tien = Math.abs(Number(t.amount));
     // Chiều tiền dùng chung với mọi màn: `type` quyết định, dấu chỉ khi thiếu `type`.
     // Bản cũ coi `amount > 0` là tiền vào, nên khoản chi ngân hàng (số dương) bị tính thành tiền vào.
     const chieu = chieuTien(t);
-    if (tien === null || chieu === null) continue;
-    const o = gom.get(khoa) ?? { thu: 0n, chi: 0n };
+    if (!Number.isFinite(tien) || chieu === null) continue;
     if (chieu === 'vao') o.thu += tien;
     else o.chi += tien;
     gom.set(khoa, o);
@@ -115,9 +92,9 @@ export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
     .map(([khoa, o]) => ({
       khoa,
       thang: `T${khoa.slice(5)}`,
-      tienVao: tuBigInt(o.thu),
-      tienRa: tuBigInt(o.chi),
-      chenhLech: tuBigInt(o.thu - o.chi),
+      tienVao: o.thu,
+      tienRa: o.chi,
+      chenhLech: o.thu - o.chi,
     }));
 }
 
@@ -127,41 +104,36 @@ export function theoThang(gd: GiaoDich[]): ThangTaiChinh[] {
  * CHỈ TÍNH HOÁ ĐƠN CHƯA THU. Hoá đơn đã thu không còn là khoản phải đòi, nên
  * gộp vào sẽ thổi phồng số tiền đang bị nợ.
  *
- * "CHƯA ĐẾN HẠN" LÀ NHÓM RIÊNG (29/09/2026). Bản trước dồn hoá đơn chưa tới hạn vào nhóm "0–30
- * ngày" — cùng cột với khoản đã quá hạn 29 ngày — nên người dùng thấy tiền "đang bị nợ quá hạn"
- * nhiều hơn thật. Hạn là hôm nay thì chưa quá hạn.
- *
- * Hạn đọc theo NGÀY LỊCH (YYYY-MM-DD), không qua `new Date(chuỗi)` — chuỗi ngày đó được hiểu là nửa đêm
- * UTC, lệch sang ngày trước ở múi giờ âm. Hoá đơn không có hạn (hoặc hạn hỏng) thì không xếp nhóm được
- * — bỏ ra, chứ không dồn vào nhóm gần nhất.
+ * Hoá đơn không có hạn thì không xếp nhóm được — bỏ ra và đếm riêng, chứ không
+ * dồn vào nhóm gần nhất.
  */
 export function tuoiHoaDon(hd: HoaDon[], luc: Date = new Date()): NhomTuoi[] {
-  const nhan = ['Chưa đến hạn', 'Quá hạn 1–30 ngày', 'Quá hạn 31–60 ngày', 'Quá hạn 61–90 ngày', 'Quá hạn trên 90 ngày'];
-  const tong = nhan.map(() => 0n);
-  const dem = nhan.map(() => 0);
+  const nhom: NhomTuoi[] = [
+    { nhan: '0–30 ngày', tien: 0, soHoaDon: 0 },
+    { nhan: '31–60 ngày', tien: 0, soHoaDon: 0 },
+    { nhan: '61–90 ngày', tien: 0, soHoaDon: 0 },
+    { nhan: 'Trên 90 ngày', tien: 0, soHoaDon: 0 },
+  ];
 
-  const homNay = Date.UTC(luc.getFullYear(), luc.getMonth(), luc.getDate());
+  const homNay = new Date(luc.getFullYear(), luc.getMonth(), luc.getDate()).getTime();
   let coDuLieu = false;
 
   for (const h of hd) {
     if (h.status === 'paid' || !h.due_date) continue;
-    const goc = h.total ?? h.amount;
-    if (goc === null || goc === undefined || Number(goc) <= 0) continue;
-    const tien = doLon(goc);
-    if (tien === null) continue;
+    const tien = Number(h.total ?? h.amount ?? 0);
+    if (!Number.isFinite(tien) || tien <= 0) continue;
 
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(h.due_date);
-    if (!m) continue;
-    const han = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    const quaHan = Math.round((homNay - han) / 86_400_000);
+    const d = new Date(h.due_date);
+    const han = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const quaHan = Math.max(0, Math.round((homNay - han) / 86_400_000));
 
-    const i = quaHan <= 0 ? 0 : quaHan <= MOC_TUOI[0] ? 1 : quaHan <= MOC_TUOI[1] ? 2 : quaHan <= MOC_TUOI[2] ? 3 : 4;
-    tong[i] += tien;
-    dem[i] += 1;
+    const i = quaHan <= MOC_TUOI[0] ? 0 : quaHan <= MOC_TUOI[1] ? 1 : quaHan <= MOC_TUOI[2] ? 2 : 3;
+    nhom[i].tien += tien;
+    nhom[i].soHoaDon += 1;
     coDuLieu = true;
   }
 
-  return coDuLieu ? nhan.map((n, i) => ({ nhan: n, tien: tuBigInt(tong[i]), soHoaDon: dem[i] })) : [];
+  return coDuLieu ? nhom : [];
 }
 
 /**
@@ -171,17 +143,17 @@ export function tuoiHoaDon(hd: HoaDon[], luc: Date = new Date()): NhomTuoi[] {
  * tổng của biểu đồ nhỏ hơn tổng chi phí thật, và không ai biết vì sao.
  */
 export function phanBoChiPhi(gd: GiaoDich[]): NhomChiPhi[] {
-  const gom = new Map<string, bigint>();
+  const gom = new Map<string, number>();
 
   for (const t of gd) {
     if (chieuTien(t) !== 'ra') continue;
-    const tien = doLon(t.amount);
-    if (tien === null || tien <= 0n) continue;
+    const tien = Math.abs(Number(t.amount));
+    if (!Number.isFinite(tien) || tien <= 0) continue;
     const ten = t.category?.trim() || 'Chưa phân loại';
-    gom.set(ten, (gom.get(ten) ?? 0n) + tien);
+    gom.set(ten, (gom.get(ten) ?? 0) + tien);
   }
 
   return [...gom.entries()]
-    .map(([ten, tien]) => ({ ten, tien: tuBigInt(tien) }))
-    .sort((a, b) => soSanhTien(b.tien, a.tien));
+    .map(([ten, tien]) => ({ ten, tien }))
+    .sort((a, b) => b.tien - a.tien);
 }

@@ -19,7 +19,7 @@ const en = {
   // because MIMI cannot lend, and replaced with the 2026 tax change it can
   // actually act on.
   hero: {
-    badge: 'A spending assistant for shops and small businesses',
+    badge: 'The spend control layer for AI-powered businesses',
     titleLine1: 'Pay tax on profit,',
     titleLine2: 'not on revenue',
     subtitle: 'The law lets you choose how your tax is calculated — but only if you can document your costs. MIMI reads your bank statements and builds that cost record for you.',
@@ -80,8 +80,8 @@ const en = {
     loanDesc: 'A percentage of revenue, or 15% of profit — both figures shown side by side so you can choose',
     security: 'Quantum-resistant encryption',
     securityDesc: 'Bank tokens encrypted with ML-KEM-768 (NIST FIPS 203); each company’s data isolated by Row-Level Security',
-    dashboard: 'Match payments to invoices',
-    dashboardDesc: 'When a customer pays by QR, the matching sales invoice is marked paid — see at once who has paid and who still owes',
+    dashboard: 'Tax-authority invoice matching',
+    dashboardDesc: 'Reads the e-invoices already held by the tax authority and reconciles them against money actually received',
     greenFinance: 'Green Finance',
     greenFinanceDesc: 'An emissions record built from your own transactions, for use in green credit applications',
     interestRate: 'Interest rate',
@@ -95,7 +95,7 @@ const en = {
 
   // Footer
   footer: {
-    tagline: 'A bookkeeping assistant for shop owners and accountants.',
+    tagline: 'Green wallet for a sustainable future.',
     products: 'Products',
     // 'Invoice Financing' and 'Loans' listed products MIMI does not sell.
     productLinks: [],
@@ -112,15 +112,15 @@ const en = {
   // Login
   login: {
     title: 'Sign in to MIMI WALLET',
-    tagline: 'A bookkeeping assistant for shop owners and accountants',
+    tagline: 'Green wallet for a sustainable future',
     email: 'Email',
     emailPlaceholder: 'email@company.vn',
     password: 'Password',
     submit: 'Sign In',
     noAccount: 'Don\'t have an account?',
     register: 'Sign up for free',
-    errorEmpty: 'Please enter your email and password.',
-    errorInvalid: 'That email or password isn’t right. Please check and try again.',
+    errorEmpty: 'Please enter email and password',
+    errorInvalid: 'Invalid email or password',
   },
 
   // Dashboard Sidebar
@@ -129,7 +129,7 @@ const en = {
     cashflow: 'Cash Flow',
     invoices: 'Invoices',
     creditScore: 'Credit Score',
-    fintechHub: 'Banks & payments',
+    fintechHub: 'Fintech Hub',
     reports: 'Reports',
     settings: 'Settings',
     support: 'Support',
@@ -155,7 +155,7 @@ const en = {
     rankA: 'Rank B — ↑ +12 points',
     veryGood: 'Good',
     cashFlowTitle: 'Cash Flow',
-    aiInsights: 'Notes from MIMI',
+    aiInsights: 'AI Insights',
     recentTx: 'Recent transactions',
     viewAll: 'View all',
     quickActions: 'Quick actions',

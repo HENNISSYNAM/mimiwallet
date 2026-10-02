@@ -107,13 +107,9 @@ export default function Terms() {
 
         <Muc so={6} tieuDe="Phí dịch vụ">
           <p>
-            Một số tính năng có thu phí theo gói thuê bao hoặc theo lượt, mức phí hiển thị trong ứng
-            dụng trước khi bạn chuyển tiền và công bố tại{' '}
-            <Link to="/chinh-sach/gia" className="text-primary hover:underline">Chính sách giá</Link>. Cách trả
-            và các trường hợp được hoàn tiền xem ở{' '}
-            <Link to="/chinh-sach/thanh-toan" className="text-primary hover:underline">Chính sách thanh toán</Link> và{' '}
-            <Link to="/chinh-sach/cung-cap-cham-dut-hoan-tien" className="text-primary hover:underline">chính sách hoàn tiền</Link>.
-            Không có trừ tiền tự động; bạn có thể ngừng gia hạn bất cứ lúc nào.
+            Một số tính năng có thu phí theo gói thuê bao, mức phí hiển thị trong ứng dụng trước
+            khi bạn xác nhận. Phí đã thanh toán cho kỳ đang dùng không hoàn lại, trừ khi pháp luật
+            quy định khác. Bạn có thể ngừng gia hạn bất cứ lúc nào.
           </p>
         </Muc>
 
@@ -140,8 +136,7 @@ export default function Terms() {
           <p>
             Bạn có thể xoá tài khoản bất cứ lúc nào trong Cài đặt. Chúng tôi có thể tạm ngừng hoặc
             chấm dứt tài khoản nếu phát hiện hành vi vi phạm pháp luật hoặc gây tổn hại tới hệ thống
-            và người dùng khác. Chi tiết ở{' '}
-            <Link to="/chinh-sach/cung-cap-cham-dut-hoan-tien" className="text-primary hover:underline">chính sách chấm dứt dịch vụ</Link>.
+            và người dùng khác.
           </p>
         </Muc>
 
@@ -149,8 +144,7 @@ export default function Terms() {
           <p>
             Các điều khoản này được điều chỉnh bởi pháp luật Việt Nam. Tranh chấp trước hết được
             giải quyết bằng thương lượng; nếu không đạt kết quả, sẽ do toà án có thẩm quyền tại
-            Việt Nam giải quyết. Cách gửi khiếu nại xem ở{' '}
-            <Link to="/chinh-sach/khieu-nai" className="text-primary hover:underline">trang tiếp nhận khiếu nại</Link>.
+            Việt Nam giải quyết.
           </p>
         </Muc>
       </main>

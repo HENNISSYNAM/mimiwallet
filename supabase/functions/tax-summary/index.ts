@@ -106,8 +106,6 @@ Deno.serve(async (req) => {
     // ledger is illustrative (_shared/minh-hoa.ts).
     const laDemo = await congTyLaDemo(supabase, company.id);
     const s = await docSoLieuDoanhThu(supabase, company.id, year, laDemo);
-    // Khách trả tiền mặt nhiều hay ít (NULL = chưa hỏi) — xem migration 20260929120000.
-    const { data: hoSo } = await supabase.from("ho_so_thue").select("tien_mat, kenh").eq("company_id", company.id).maybeSingle();
 
     /*
      * LỊCH THUẾ CỦA CHÍNH CÔNG TY NÀY (25/09/2026) — một nguồn cho Tổng quan, Nhắc thuế, trợ lý.
@@ -145,21 +143,7 @@ Deno.serve(async (req) => {
       // Both present and disagreeing is worth surfacing rather than hiding.
       gap: s.hoa_don !== null ? s.hoa_don - s.uoc_tinh : null,
       ...status,
-      // 30/09/2026 — `crossed` ở trên là phép so ƯỚC TÍNH với ngưỡng. `crossedCertain` chỉ có giá trị khi
-      // khoảng doanh thu thật nằm trọn một phía ngưỡng 01 tỷ; null = phụ thuộc phần chưa rõ, ĐỪNG nói
-      // "đã vượt / chưa vượt". Khi hoá đơn của cơ quan thuế là nguồn (`basis: gdt`) thì là bằng chứng.
-      crossedCertain: basis === "gdt" ? status.crossed : (() => {
-        const n = s.do_chac_chan.nguong.find((x) => x.ma === "mien_thue_1_ty");
-        return !n || n.phia === "chua_chac" ? null : n.phia === "tren";
-      })(),
-      // Khoảng doanh thu thật, độ chắc chắn và ĐÚNG MỘT câu hỏi (xem `_shared/doanh-thu/do-chac-chan.ts`).
-      revenueUncertainty: s.do_chac_chan,
       internalTransfersExcluded: s.so_giao_dich_noi_bo,
-      // 29/09/2026 — để giao diện không kết luận ngưỡng quá sớm (docs/PHAN_HOI_GIA_LAP_WTP.md).
-      suggestedExclusion: s.goi_y_loai_ra,
-      marketplacePayout: s.tien_san_tmdt,
-      cashShare: hoSo?.tien_mat ?? null,
-      salesChannel: hoSo?.kenh ?? null,
       // Pairs inferred rather than proved. They reduce revenue, so anyone
       // relying on this figure deserves to know how many were guesses.
       needsReview: s.can_xem_lai,

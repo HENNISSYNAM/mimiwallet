@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MA_LY_DO } from './tacTu';
 import {
   NHAN_MA, canChuY, cauTomTatKiemSoat, giuTheoNgay, ketQuaDanhGia, kiemTruocYeuCau, locYeuCau, luatDaKhop, nganSachQuanhKhoan, nhomTrungTen, thoiGianGiu, tienTrinh, tinhKpi,
-  tinhSuDung, tomTatLuat, trangThaiHienThi, type ChinhSachRow, type NguoiNhan, type TacTu, type YeuCau,
+  tomTatLuat, trangThaiHienThi, type ChinhSachRow, type NguoiNhan, type TacTu, type YeuCau,
 } from './kiemSoatChi';
 
 /** 12:00 ngày 15/09/2026 giờ Việt Nam. */
@@ -27,7 +27,7 @@ const tacTu = (x: Partial<TacTu>): TacTu => ({
 const cs = (x: Partial<ChinhSachRow> = {}): ChinhSachRow => ({
   chi_tra_nguoi_nhan_da_duyet: true, company_id: 'c', han_muc_moi_lan: 5_000_000, han_muc_ngay: 5_000_000,
   han_muc_thang: 20_000_000, het_han: null, nguong_can_duyet: 0, nhom_chi_duoc_phep: null, so_yeu_cau_moi_gio: 30,
-  tac_tu_id: 't1', updated_at: THANG_TRUOC, ...x,
+  tac_tu_id: 't1', updated_at: THANG_TRUOC, id: 'cs1', created_at: THANG_TRUOC, ...x,
 });
 
 describe('trạng thái hiển thị', () => {
@@ -111,8 +111,8 @@ describe('câu trợ lý màn Kiểm soát chi', () => {
     });
     expect(cau).toBe(
       'Có 2 khoản chờ bạn duyệt, trong đó 1 khoản cần xem kỹ vì người nhận mới hoặc đổi số tài khoản. ' +
-      '1 khoản đã duyệt đang chờ bạn chuyển tiền. Hôm nay ngân hàng đã xác nhận 1 khoản, tổng 850.000 ₫. ' +
-      'Hạn mức tháng của các agent còn 5.850.000 ₫.',
+      '1 khoản đã duyệt đang chờ bạn chuyển tiền. Hôm nay ngân hàng đã xác nhận 1 khoản, tổng 850.000đ. ' +
+      'Hạn mức tháng của các agent còn 5.850.000đ.',
     );
     expect(cau).not.toMatch(/[A-Z]{3,}_[A-Z]/);
   });
@@ -255,7 +255,7 @@ describe('kiểm tra trước khi tạo yêu cầu', () => {
   it('vượt hạn mức ngày: sẽ bị từ chối, nói còn bao nhiêu', () => {
     const r = kiemTruocYeuCau(nhap(), agent, cs({ nguong_can_duyet: 1_000_000 }), { ngay: 4_800_000, thang: 4_800_000 }, [nn({})], NOW);
     expect(r.ketLuan).toBe('tu_choi');
-    expect(r.dong.map((d) => d.cau).join(' ')).toContain('hôm nay còn 200.000 ₫');
+    expect(r.dong.map((d) => d.cau).join(' ')).toContain('hôm nay còn 200.000đ');
   });
 
   it('người nhận lạ: từ chối nếu chính sách chặn, cần duyệt nếu chính sách hỏi', () => {
@@ -285,23 +285,5 @@ describe('lọc yêu cầu', () => {
     expect(locYeuCau(ds, { trangThai: 'tu_choi', tim: '' }, {}).map((y) => y.id)).toEqual(['D']);
     expect(locYeuCau(ds, { trangThai: 'tat_ca', tim: 'in an' }, {}).map((y) => y.id)).toEqual(['A']);
     expect(locYeuCau(ds, { trangThai: 'tat_ca', tim: 'bot-a' }, { t1: 'bot-a' }).map((y) => y.id)).toEqual(['A', 'D']);
-  });
-});
-
-// Hồi quy 29/09/2026: cộng hạn mức bằng Number thì tổng vượt MAX_SAFE_INTEGER lệch đồng lẻ không báo.
-describe('hạn mức cộng chính xác tới đồng', () => {
-  const lon = { tac_tu_id: 'a', so_tien: Number.MAX_SAFE_INTEGER, created_at: HOM_NAY };
-  const nho = { tac_tu_id: 'a', so_tien: 2, created_at: HOM_NAY };
-
-  it('đã dùng trong ngày/tháng: 9.007.199.254.740.991 + 2 = …993, không phải …992', () => {
-    expect(tinhSuDung([lon, nho], NOW).a).toEqual({ ngay: '9007199254740993', thang: '9007199254740993' });
-  });
-
-  it('KPI "đã giữ hôm nay" cũng chính xác', () => {
-    expect(tinhKpi({ yeuCau: [], dsTacTu: [], chinhSach: {}, giu: [lon, nho], now: NOW }).daGiuHomNay).toBe('9007199254740993');
-  });
-
-  it('số nhỏ vẫn là number như cũ', () => {
-    expect(tinhSuDung([nho, nho], NOW).a).toEqual({ ngay: 4, thang: 4 });
   });
 });

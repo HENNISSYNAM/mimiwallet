@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { MimiLamHoProvider, useMimiLamHo, type KetQuaLamHo } from './MimiLamHo';
-import { baoKetQua, type KichBan } from '@/lib/mimiLamHo';
+import type { KichBan } from '@/lib/mimiLamHo';
 
 /**
  * Chạy thật con trỏ mèo trên một trang giả — không chỉ test phần nhận việc.
@@ -14,9 +14,6 @@ import { baoKetQua, type KichBan } from '@/lib/mimiLamHo';
 
 const demThem = vi.fn();
 const demNguyHiem = vi.fn();
-const demTab = vi.fn();
-/** Trang giả trả lời yêu cầu "Thêm agent" ra sao: báo thành công, báo lỗi, hay im lặng (yêu cầu còn chạy). */
-let traLoiThem: 'ok' | 'loi' | 'im' = 'ok';
 let chay: ((kb: KichBan) => Promise<KetQuaLamHo>) | null = null;
 
 function Trang() {
@@ -25,22 +22,7 @@ function Trang() {
     <div>
       <input data-mimi="tac-tu.ten" value={ten} onChange={(e) => setTen(e.target.value)} />
       <p data-testid="ten">{ten}</p>
-      <button
-        data-mimi="tac-tu.them"
-        data-mimi-khong-tu-bam
-        onClick={() => {
-          demThem();
-          // Như trang thật: yêu cầu chạy bất đồng bộ, xong mới báo.
-          if (traLoiThem !== 'im') {
-            setTimeout(() => baoKetQua(traLoiThem === 'ok'
-              ? { dich: 'tac-tu.them', ok: true, cau: 'Đã thêm agent.' }
-              : { dich: 'tac-tu.them', ok: false, cau: 'Máy chủ từ chối.' }), 200);
-          }
-        }}
-      >
-        Thêm agent
-      </button>
-      <button data-mimi="thu.tab" onClick={demTab}>Tab</button>
+      <button data-mimi="tac-tu.them" data-mimi-khong-tu-bam onClick={demThem}>Thêm agent</button>
       <button data-mimi="thu.nut-nguy-hiem" data-mimi-khong-tu-bam onClick={demNguyHiem}>Nguy hiểm</button>
     </div>
   );
@@ -67,8 +49,6 @@ function dung() {
 beforeEach(() => {
   demThem.mockReset();
   demNguyHiem.mockReset();
-  demTab.mockReset();
-  traLoiThem = 'ok';
   chay = null;
   // jsdom không bố cục: cho mọi phần tử một kích thước để mèo "thấy" được.
   HTMLElement.prototype.getBoundingClientRect = () =>
@@ -145,7 +125,7 @@ describe('con trỏ mèo', () => {
     expect(kq.cau).toContain('không được tự bấm');
   });
 
-  it('ở bước nhường, người dùng bấm và trang báo thành công → xong', async () => {
+  it('ở bước nhường, người dùng bấm thì mèo nhận ra và kết thúc', async () => {
     dung();
     const dangChay = chay!({
       ten: 'x',
@@ -158,76 +138,8 @@ describe('con trỏ mèo', () => {
     fireEvent.click(screen.getByText('Thêm agent'));
     const kq = await dangChay;
     expect(demThem).toHaveBeenCalledTimes(1);
-    expect(kq).toMatchObject({ xong: true, ketThuc: 'xong', cau: 'Đã thêm agent.' });
+    expect(kq.cau).toContain('Bạn đã bấm');
   }, 15_000);
-
-  // Hồi quy 29/09/2026: bấm nút nhường mới là gửi yêu cầu. Mèo từng báo "Xong" ngay lúc bấm, rồi
-  // yêu cầu thất bại — người dùng tin là đã có agent.
-  it('người dùng bấm nhưng yêu cầu thất bại → KHÔNG báo xong, nói đúng lỗi', async () => {
-    traLoiThem = 'loi';
-    dung();
-    const dangChay = chay!({ ten: 'x', moTa: 'x', buoc: [{ loai: 'nhuong', dich: 'tac-tu.them', noi: 'Bạn bấm nhé.' }] });
-    await screen.findByText('Bạn bấm nhé.');
-    await new Promise((r) => setTimeout(r, 300));
-    fireEvent.click(screen.getByText('Thêm agent'));
-    // Trong lúc yêu cầu còn chạy, mèo nói đang chờ — không nói xong.
-    expect(await screen.findByText(/chờ trang báo kết quả/)).toBeTruthy();
-    const kq = await dangChay;
-    expect(kq).toMatchObject({ xong: false, ketThuc: 'loi', cau: 'Máy chủ từ chối.' });
-  }, 15_000);
-
-  it('bấm rồi nhưng trang chưa báo gì, người dùng thôi theo dõi → chưa rõ, KHÔNG báo xong', async () => {
-    traLoiThem = 'im';
-    dung();
-    const dangChay = chay!({ ten: 'x', moTa: 'x', buoc: [{ loai: 'nhuong', dich: 'tac-tu.them', noi: 'Bạn bấm nhé.' }] });
-    await screen.findByText('Bạn bấm nhé.');
-    await new Promise((r) => setTimeout(r, 300));
-    fireEvent.click(screen.getByText('Thêm agent'));
-    await screen.findByText(/chờ trang báo kết quả/);
-    fireEvent.keyDown(window, { key: 'Escape' });
-    const kq = await dangChay;
-    expect(kq).toMatchObject({ xong: false, ketThuc: 'chua_ro' });
-    expect(kq.cau).toContain('chưa báo kết quả');
-  }, 15_000);
-
-  // Hồi quy 29/09/2026: Esc trong lúc mèo đang đi tới nút vẫn để mèo bấm một lần.
-  it('Esc lúc mèo đang đi tới nút → không bấm', async () => {
-    dung();
-    const dangChay = chay!({ ten: 'x', moTa: 'x', buoc: [{ loai: 'bam', dich: 'thu.tab', noi: 'Mở tab.' }] });
-    await screen.findByText('Mở tab.');
-    fireEvent.keyDown(window, { key: 'Escape' });
-    const kq = await dangChay;
-    expect(kq).toMatchObject({ xong: false, ketThuc: 'da_dung' });
-    await new Promise((r) => setTimeout(r, 500));
-    expect(demTab).not.toHaveBeenCalled();
-  }, 15_000);
-
-  // Hồi quy 29/09/2026: bấm "Dừng" (hoặc Esc) lúc mèo đang chờ người bấm từng trả `xong: true`
-  // "Mình đã chỉ đúng chỗ…" — pet báo hoàn tất một việc người dùng vừa huỷ.
-  it('dừng lúc đang chờ người bấm → KHÔNG báo xong, nút không bị bấm', async () => {
-    dung();
-    const dangChay = chay!({
-      ten: 'x',
-      moTa: 'x',
-      buoc: [{ loai: 'nhuong', dich: 'tac-tu.them', noi: 'Bạn bấm "Thêm agent" nhé.' }],
-    });
-    await screen.findByText('Bạn bấm "Thêm agent" nhé.');
-    fireEvent.click(screen.getByRole('button', { name: 'Dừng' }));
-    const kq = await dangChay;
-    expect(kq).toMatchObject({ xong: false, ketThuc: 'da_dung' });
-    expect(kq.cau).toContain('Đã dừng');
-    expect(demThem).not.toHaveBeenCalled();
-  }, 15_000);
-
-  it('không thấy đích, kịch bản có câu thay thế → nói câu đó nhưng KHÔNG báo xong', async () => {
-    dung();
-    const kq = await chay!({
-      ten: 'x',
-      moTa: 'x',
-      buoc: [{ loai: 'chi', dich: 'khong.co-that', noi: 'Ở đây.', neuKhongThay: 'Không có khoản nào chờ duyệt.' }],
-    });
-    expect(kq).toMatchObject({ xong: false, ketThuc: 'khong_thay', cau: 'Không có khoản nào chờ duyệt.' });
-  }, 20_000);
 
   it('Esc dừng giữa chừng, bước sau không chạy', async () => {
     dung();
@@ -242,7 +154,7 @@ describe('con trỏ mèo', () => {
     await screen.findByText('Ô tên ở đây.');
     fireEvent.keyDown(window, { key: 'Escape' });
     const kq = await dangChay;
-    expect(kq).toMatchObject({ xong: false, ketThuc: 'da_dung' });
+    expect(kq.xong).toBe(false);
     expect(kq.cau).toContain('Đã dừng');
     await waitFor(() => expect(screen.getByTestId('ten')).toHaveTextContent(''));
   }, 15_000);

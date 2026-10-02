@@ -6,7 +6,6 @@ import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { toast } from 'sonner';
 import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
 import { goiToKhai, type CongTyTheoMst } from '@/lib/goiToKhai';
-import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 
 /**
  * Thông tin doanh nghiệp thật, và sửa được.
@@ -60,7 +59,6 @@ function Dong({ nhan, giaTri }: { nhan: string; giaTri: string | null }) {
 export function ThongTinDoanhNghiep() {
   const [dn, setDn] = useState<DoanhNghiep | null>(null);
   const [dangTai, setDangTai] = useState(true);
-  const [loiTai, setLoiTai] = useState(false);
   const [mst, setMst] = useState('');
   const [dangLuu, setDangLuu] = useState(false);
   const [theoMst, setTheoMst] = useState<CongTyTheoMst | null>(null);
@@ -81,14 +79,11 @@ export function ThongTinDoanhNghiep() {
     if (!user) { setDangTai(false); return; }
     const id = await idCongTyDangDung();
     if (!id) { setDangTai(false); return; }
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('companies')
       .select('id, name, tax_id, industry, province')
       .eq('id', id)
       .maybeSingle();
-    // Lỗi đọc KHÁC "chưa có hồ sơ": câu kia khuyên đăng xuất để tạo hồ sơ mới — sai khi hồ sơ vẫn còn.
-    setLoiTai(!!error);
-    if (error) { setDangTai(false); return; }
     setDn((data as DoanhNghiep | null) ?? null);
     setMst(data?.tax_id ?? '');
     setDangTai(false);
@@ -124,10 +119,6 @@ export function ThongTinDoanhNghiep() {
         <Loader2 size={14} className="animate-spin" /> Đang tải…
       </div>
     );
-  }
-
-  if (!dn && loiTai) {
-    return <LoiTaiLai className="my-2" cau="Chưa tải được thông tin doanh nghiệp. Hồ sơ của bạn vẫn còn." thuLai={() => { setDangTai(true); void tai(); }} />;
   }
 
   if (!dn) {
@@ -183,7 +174,8 @@ export function ThongTinDoanhNghiep() {
           </div>
         </label>
         <p className="mt-2 text-xs text-muted-foreground">
-          Cần mã số thuế để MIMI phân biệt hoá đơn bán ra và mua vào, và để điền tờ khai.
+          Cần mã số thuế để tải hoá đơn điện tử từ Tổng Cục Thuế — thiếu nó thì không
+          phân biệt được hoá đơn bán ra và mua vào.
         </p>
       </div>
     </div>

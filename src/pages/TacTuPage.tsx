@@ -7,8 +7,6 @@ import {
   UserPlus, Wallet, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import i18n from 'i18next';
-import { Trans, useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
@@ -20,10 +18,10 @@ import HopXacMinh from '@/components/canh-bao/HopXacMinh';
 import { docSoTienBangChu } from '@/lib/soTienBangChu';
 import { taoChuoiVietQr } from '@/lib/vietqr';
 import { DANH_SACH_NGAN_HANG } from '@/lib/nganHang';
-import { NHOM_CHI, TRANG_THAI_GIU_HAN_MUC, dauThangVN } from '@/lib/tacTu';
+import { NHOM_CHI, TEN_NHOM_CHI, TRANG_THAI_GIU_HAN_MUC, dauThangVN, type NhomChi } from '@/lib/tacTu';
 import { tomTatChinhSach } from '@/lib/chinhSachVanBan';
 import {
-  MOC_GAN_CHAM_HAN_MUC, THU_TU_TRANG_THAI, canChuY, cauTomTatKiemSoat, giaiDoan, giuTheoNgay, ketQuaDanhGia, khopTuKhoa, kiemTruocYeuCau,
+  MOC_GAN_CHAM_HAN_MUC, NHAN_TRANG_THAI, THU_TU_TRANG_THAI, canChuY, cauTomTatKiemSoat, giaiDoan, giuTheoNgay, ketQuaDanhGia, khopTuKhoa, kiemTruocYeuCau,
   locYeuCau, luatDaKhop, lyDoCua, nganSachQuanhKhoan, nhanMa, nhomTrungTen, thoiGianGiu, tienTrinh, tinhKpi, tinhSuDung,
   tomTatLuat, trangThaiHienThi, yeuCauDoiTaiKhoan,
   type ChinhSachRow, type DongGiu, type Kpi, type MucChuY, type NguoiNhan, type TacTu, type TrangThaiBuoc,
@@ -39,9 +37,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LoiTroLy } from '@/components/tro-ly/LoiTroLy';
-import { dinhDangTien, soSanhTien, truTien, type TienVND } from '@/lib/tien';
-import { baoKetQua } from '@/lib/mimiLamHo';
-import { nhanTrangThaiYc, tenNhomChi } from '@/lib/nhanDich';
 
 /**
  * Kiểm soát chi — trung tâm điều hành chi tiêu của agent.
@@ -63,22 +58,43 @@ import { nhanTrangThaiYc, tenNhomChi } from '@/lib/nhanDich';
 
 type NhatKy = Database['public']['Tables']['nhat_ky_tac_tu']['Row'];
 
-const dong = dinhDangTien;
+const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
 const tenNganHang = (bin: string) => DANH_SACH_NGAN_HANG.find((n) => n.bin === bin)?.ten ?? bin;
 const luc = (s: string | null) =>
   s ? new Date(s).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
 const chuCai = (email: string | null) => (email?.split('@')[0] ?? '').slice(0, 2).toUpperCase() || '—';
 
-/** Nhãn trạng thái agent theo ngôn ngữ đang chọn; mã lạ hiện nguyên mã. */
-const tenTrangThaiTacTu = (tt: string) => i18n.t(`app.tacTu.ttAgent.${tt}`, { defaultValue: tt });
+const TRANG_THAI_TAC_TU: Record<string, string> = {
+  hoat_dong: 'Đang hoạt động',
+  tam_dung: 'Tạm dừng',
+  thu_hoi: 'Đã thu hồi',
+};
 
 /**
  * Nhật ký lưu mã sự kiện cho máy (`them_nguoi_nhan`), nhưng người đọc cần một
  * câu. Mã lạ — ví dụ sự kiện máy chủ mới thêm mà trang chưa biết — hiện nguyên
  * mã thay vì biến mất.
  */
-const tenSuKien = (ma: string) => i18n.t(`app.tacTu.suKien.${ma}`, { defaultValue: ma });
-const ketQuaXin = (ma: string | undefined) => (ma ? i18n.t(`app.tacTu.ketQuaXin.${ma}`, { defaultValue: '' }) : '');
+const SU_KIEN: Record<string, string> = {
+  tao_tac_tu: 'Tạo agent',
+  xoay_khoa: 'Cấp khoá mới',
+  doi_trang_thai: 'Đổi trạng thái agent',
+  luu_chinh_sach: 'Sửa chính sách chi',
+  them_nguoi_nhan: 'Thêm người nhận',
+  xoa_nguoi_nhan: 'Bỏ người nhận',
+  xin_chi: 'Agent xin chi',
+  xin_chi_sai_khuon: 'Agent gửi yêu cầu thiếu thông tin',
+  duyet: 'Duyệt khoản chi',
+  tu_choi: 'Từ chối khoản chi',
+  huy: 'Huỷ khoản chi',
+  da_chi: 'Sao kê xác nhận đã chi',
+};
+
+const KET_QUA_XIN: Record<string, string> = {
+  tu_dong_duyet: 'tự duyệt',
+  cho_duyet: 'chờ bạn duyệt',
+  tu_choi: 'bị từ chối',
+};
 
 function chiTietNhatKy(n: NhatKy): string {
   const c = (n.chi_tiet && typeof n.chi_tiet === 'object' && !Array.isArray(n.chi_tiet)
@@ -94,9 +110,9 @@ function chiTietNhatKy(n: NhatKy): string {
       return [ten, bin ? tenNganHang(bin) : null, c.so_tai_khoan as string | undefined].filter(Boolean).join(' · ');
     }
     case 'xin_chi':
-      return [tien, ketQuaXin(c.ket_qua as string | undefined)].filter(Boolean).join(' · ');
+      return [tien, KET_QUA_XIN[c.ket_qua as string]].filter(Boolean).join(' · ');
     case 'doi_trang_thai':
-      return `${tenTrangThaiTacTu(String(c.tu))} → ${tenTrangThaiTacTu(String(c.sang))}`;
+      return `${TRANG_THAI_TAC_TU[c.tu as string] ?? c.tu} → ${TRANG_THAI_TAC_TU[c.sang as string] ?? c.sang}`;
     case 'tu_choi':
       return [tien, c.ghi_chu as string | undefined].filter(Boolean).join(' · ');
     default:
@@ -125,14 +141,13 @@ const nhanNho = 'text-[11px] font-medium uppercase tracking-wide text-muted-fore
 const lienKet = `rounded text-xs font-medium text-muted-foreground hover:text-foreground ${vien}`;
 
 /* ── Tab ───────────────────────────────────────────────────────────── */
-// Tên tab lấy từ bộ dịch (app.tacTu.tab.<khoa>).
 const CAC_TAB = [
-  { khoa: 'tong-quan' },
-  { khoa: 'yeu-cau' },
-  { khoa: 'agents' },
-  { khoa: 'chinh-sach' },
-  { khoa: 'nguoi-nhan' },
-  { khoa: 'nhat-ky' },
+  { khoa: 'tong-quan', ten: 'Tổng quan' },
+  { khoa: 'yeu-cau', ten: 'Yêu cầu chi' },
+  { khoa: 'agents', ten: 'Agents' },
+  { khoa: 'chinh-sach', ten: 'Chính sách' },
+  { khoa: 'nguoi-nhan', ten: 'Người nhận' },
+  { khoa: 'nhat-ky', ten: 'Nhật ký' },
 ] as const;
 type KhoaTab = (typeof CAC_TAB)[number]['khoa'];
 
@@ -145,7 +160,6 @@ interface XacNhan {
 }
 
 export default function TacTuPage() {
-  const { t: tr } = useTranslation();
   const [thamSo, datThamSo] = useSearchParams();
   const [dangTai, setDangTai] = useState(true);
   const [emailChu, setEmailChu] = useState<string | null>(null);
@@ -158,12 +172,6 @@ export default function TacTuPage() {
   const [yeuCau, setYeuCau] = useState<YeuCau[]>([]);
   const [giuThang, setGiuThang] = useState<DongGiu[]>([]);
   const [nhatKy, setNhatKy] = useState<NhatKy[]>([]);
-  /**
-   * Đọc lỗi (29/09/2026): trước đây bật thông báo rồi ghi mảng rỗng — trang nói "Chưa có agent nào" và
-   * "Không có khoản nào chờ" trong khi có khoản đang chờ duyệt. Giờ giữ dữ liệu lần đọc trước và nói rõ.
-   */
-  const [loiTai, setLoiTai] = useState<string | null>(null);
-  const [daDocDuoc, setDaDocDuoc] = useState(false);
   const [khoaMoi, setKhoaMoi] = useState<{ ten: string; khoa: string } | null>(null);
   const [dangLam, setDangLam] = useState<string | null>(null);
   const [yeuCauMo, setYeuCauMo] = useState<string | null>(null);
@@ -196,15 +204,11 @@ export default function TacTuPage() {
       if (!id) return;
       const cty = { id };
 
-      const [tt, cs, nn, yc, dang, giu, nk, tao] = await Promise.all([
+      const [tt, cs, nn, yc, giu, nk, tao] = await Promise.all([
         supabase.from('tac_tu').select('*').eq('company_id', cty.id).order('created_at', { ascending: true }),
         supabase.from('chinh_sach_chi').select('*').eq('company_id', cty.id),
         supabase.from('nguoi_nhan_duoc_phep').select('*').eq('company_id', cty.id).order('created_at', { ascending: true }),
         supabase.from('yeu_cau_chi').select('*').eq('company_id', cty.id).order('created_at', { ascending: false }).limit(100),
-        // Khoản còn chờ quyết/chờ trả đọc RIÊNG, không giới hạn 100 dòng mới nhất: một khoản chờ duyệt cũ
-        // hơn 100 yêu cầu gần đây từng biến mất khỏi "Cần duyệt" — đúng khoản người dùng phải quyết.
-        supabase.from('yeu_cau_chi').select('*').eq('company_id', cty.id).in('trang_thai', ['cho_duyet', 'da_duyet'])
-          .order('created_at', { ascending: false }),
         supabase.from('yeu_cau_chi').select('tac_tu_id, so_tien, created_at').eq('company_id', cty.id)
           .in('trang_thai', [...TRANG_THAI_GIU_HAN_MUC])
           .gte('created_at', dauThangVN(new Date()).toISOString()),
@@ -215,21 +219,13 @@ export default function TacTuPage() {
       ]);
 
       // Không nuốt lỗi: bảng chưa có (migration chưa chạy) trông y hệt "chưa có agent nào".
-      const loi = [tt, cs, nn, yc, dang, giu, nk, tao].find((r) => r.error)?.error;
-      if (loi) {
-        toast.error(tr('app.tacTu.toast.loiDoc', { loi: loi.message }));
-        setLoiTai(loi.message);
-        return;
-      }
-      setLoiTai(null);
-      setDaDocDuoc(true);
+      const loi = [tt, cs, nn, yc, giu, nk, tao].find((r) => r.error)?.error;
+      if (loi) toast.error(`Không đọc được dữ liệu agent: ${loi.message}`);
 
       setDsTacTu(tt.data ?? []);
       setChinhSach(Object.fromEntries((cs.data ?? []).map((r) => [r.tac_tu_id, r])));
       setNguoiNhan(nn.data ?? []);
-      const gan = yc.data ?? [];
-      const daCo = new Set(gan.map((y) => y.id));
-      setYeuCau([...gan, ...(dang.data ?? []).filter((y) => !daCo.has(y.id))]);
+      setYeuCau(yc.data ?? []);
       setGiuThang(giu.data ?? []);
       setNhatKy(nk.data ?? []);
       setNguoiTao(Object.fromEntries(
@@ -260,7 +256,7 @@ export default function TacTuPage() {
       await tai();
       return kq;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : tr('app.chung.khongThucHienDuoc'));
+      toast.error(e instanceof Error ? e.message : 'Không thực hiện được');
       return null;
     } finally {
       setDangLam(null);
@@ -290,50 +286,50 @@ export default function TacTuPage() {
   }, [yeuCau]);
   const canhBaoNguoiNhan = yeuCauDoiTaiKhoan(yeuCau).length + nhomTrungTen(nguoiNhan).length;
   const yMo = yeuCau.find((y) => y.id === yeuCauMo) ?? null;
-  const chuSoHuu = emailChu ?? tr('app.tacTu.chuDn');
+  const chuSoHuu = emailChu ?? 'Chủ doanh nghiệp';
 
   /* ── Hành động (cùng API như trước) ─────────────────────────────── */
   const duyet = async (y: YeuCau, themNguoiNhan: boolean, daXacMinh = false) => {
     setDangLam(y.id);
     try {
       const kq = await goi('duyet', { yeu_cau_id: y.id, them_nguoi_nhan: themNguoiNhan, ...(daXacMinh ? { da_xac_minh: true } : {}) });
-      toast.success(tr('app.tacTu.toast.daDuyet'));
+      toast.success('Đã duyệt. Mã QR để trả nằm trong khung chi tiết.');
       await tai();
       return kq;
     } catch (e) {
       // Khoản có dấu hiệu bất thường: không báo lỗi, mở hộp xác minh.
       const cx = canXacMinh(e);
       if (cx) setXacMinh({ y, themNguoiNhan, ...cx });
-      else toast.error(e instanceof Error ? e.message : tr('app.chung.khongThucHienDuoc'));
+      else toast.error(e instanceof Error ? e.message : 'Không thực hiện được');
       return null;
     } finally {
       setDangLam(null);
     }
   };
   const tuChoi = (y: YeuCau, ghiChu: string) =>
-    lam(y.id, 'tu_choi', { yeu_cau_id: y.id, ghi_chu: ghiChu }, tr('app.tacTu.toast.daTuChoi'));
+    lam(y.id, 'tu_choi', { yeu_cau_id: y.id, ghi_chu: ghiChu }, 'Đã từ chối.');
   const huy = (y: YeuCau) =>
     setXacNhan({
-      tieuDe: tr('app.tacTu.xn.huyTieuDe', { tien: dong(y.so_tien) }),
-      mo: tr('app.tacTu.xn.huyMo'),
-      nut: tr('app.tacTu.xn.huyNut'),
-      lam: () => { void lam(y.id, 'huy', { yeu_cau_id: y.id }, tr('app.tacTu.toast.daHuyLenh')); },
+      tieuDe: `Huỷ lệnh trả ${dong(y.so_tien)}?`,
+      mo: 'Khoản này sẽ không còn được trả. Agent cần gửi yêu cầu mới nếu vẫn cần chi.',
+      nut: 'Huỷ lệnh',
+      lam: () => { void lam(y.id, 'huy', { yeu_cau_id: y.id }, 'Đã huỷ lệnh trả.'); },
     });
   const doiTrangThai = (t: TacTu, tt: 'hoat_dong' | 'tam_dung') =>
-    void lam(t.id, 'doi_trang_thai', { tac_tu_id: t.id, trang_thai: tt }, tr('app.tacTu.toast.daDoiTrangThai'));
+    void lam(t.id, 'doi_trang_thai', { tac_tu_id: t.id, trang_thai: tt }, 'Đã đổi trạng thái.');
   const thuHoi = (t: TacTu) =>
     setXacNhan({
-      tieuDe: tr('app.tacTu.xn.thuHoiTieuDe', { ten: t.ten }),
-      mo: tr('app.tacTu.xn.thuHoiMo'),
-      nut: tr('app.tacTu.xn.thuHoiNut'),
+      tieuDe: `Thu hồi "${t.ten}"?`,
+      mo: 'Khoá mất hiệu lực vĩnh viễn và mọi khoản chưa trả của agent này bị huỷ. Không hoàn tác được.',
+      nut: 'Thu hồi agent',
       nguyHiem: true,
-      lam: () => { void lam(t.id, 'doi_trang_thai', { tac_tu_id: t.id, trang_thai: 'thu_hoi' }, tr('app.tacTu.toast.daThuHoi')); },
+      lam: () => { void lam(t.id, 'doi_trang_thai', { tac_tu_id: t.id, trang_thai: 'thu_hoi' }, 'Đã thu hồi agent.'); },
     });
   const xoayKhoa = (t: TacTu) =>
     setXacNhan({
-      tieuDe: tr('app.tacTu.xn.khoaTieuDe', { ten: t.ten }),
-      mo: tr('app.tacTu.xn.khoaMo'),
-      nut: tr('app.tacTu.xn.khoaNut'),
+      tieuDe: `Cấp khoá mới cho "${t.ten}"?`,
+      mo: 'Khoá cũ ngừng hoạt động ngay. Khoá mới chỉ hiện đúng một lần.',
+      nut: 'Cấp khoá mới',
       lam: async () => {
         const kq = await lam(t.id, 'xoay_khoa', { tac_tu_id: t.id });
         if (kq?.khoa) setKhoaMoi({ ten: t.ten, khoa: kq.khoa });
@@ -341,11 +337,11 @@ export default function TacTuPage() {
     });
   const boNguoiNhan = (n: NguoiNhan) =>
     setXacNhan({
-      tieuDe: tr('app.tacTu.xn.boTieuDe', { ten: n.ten_chu_tai_khoan }),
-      mo: tr('app.tacTu.xn.boMo'),
-      nut: tr('app.tacTu.xn.boNut'),
+      tieuDe: `Bỏ ${n.ten_chu_tai_khoan} khỏi danh sách?`,
+      mo: 'Từ giờ tài khoản này bị coi là người nhận ngoài danh sách, theo chính sách của từng agent.',
+      nut: 'Bỏ người nhận',
       nguyHiem: true,
-      lam: () => { void lam(n.id, 'xoa_nguoi_nhan', { id: n.id }, tr('app.tacTu.toast.daBoNguoiNhan')); },
+      lam: () => { void lam(n.id, 'xoa_nguoi_nhan', { id: n.id }, 'Đã bỏ khỏi danh sách.'); },
     });
   /**
    * Chủ doanh nghiệp tạo khoản chi. Máy chủ chạy đúng `xinChi` của agent được chọn,
@@ -358,11 +354,11 @@ export default function TacTuPage() {
     if (!y) return;
     setMoTao(false);
     if (kq.trung_lap) {
-      toast.info(tr('app.tacTu.toast.trungLap'));
+      toast.info('Yêu cầu này đã được gửi trước đó — mở lại khoản cũ.');
     } else if (y.trang_thai === 'tu_choi') {
-      toast.warning(tr('app.tacTu.toast.luatTuChoi'));
+      toast.warning('Luật từ chối khoản này. Lý do nằm trong khung chi tiết.');
     } else {
-      toast.success(y.trang_thai === 'da_duyet' ? tr('app.tacTu.toast.trongChinhSach') : tr('app.tacTu.toast.daTaoChoDuyet'));
+      toast.success(y.trang_thai === 'da_duyet' ? 'Trong chính sách — đã duyệt. Trả bằng mã QR trong khung chi tiết.' : 'Đã tạo, đang chờ duyệt.');
     }
     setYeuCauMo(y.id);
   };
@@ -370,26 +366,12 @@ export default function TacTuPage() {
   if (dangTai) {
     return (
       <p className="flex items-center gap-2 py-16 text-sm text-muted-foreground" role="status">
-        <Loader2 size={15} className="animate-spin" /> {tr('app.tacTu.dangDoc')}
+        <Loader2 size={15} className="animate-spin" /> Đang đọc agent và yêu cầu chi…
       </p>
     );
   }
 
-  if (loiTai && !daDocDuoc) {
-    return (
-      <div role="alert" className="mx-auto max-w-3xl rounded-2xl border border-destructive/40 bg-card p-6">
-        <p className="text-sm font-semibold text-foreground">{tr('app.tacTu.loiTieuDe')}</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {tr('app.tacTu.loiMo', { loi: loiTai })}
-        </p>
-        <button onClick={() => void tai()} className="mt-3 rounded-xl border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent">
-          {tr('app.chung.thuLai')}
-        </button>
-      </div>
-    );
-  }
-
-  const nguoiYeuCau = (y: YeuCau) => (nguoiTao[y.id] ? (nguoiTao[y.id] === userId ? tr('app.tacTu.nguoiYc.ban') : tr('app.tacTu.nguoiYc.nguoiDung')) : tr('app.tacTu.nguoiYc.agent'));
+  const nguoiYeuCau = (y: YeuCau) => (nguoiTao[y.id] ? (nguoiTao[y.id] === userId ? 'Bạn' : 'Người dùng') : 'Agent');
   const hanhDongBang = {
     tenTacTu,
     nguoiYeuCau,
@@ -401,41 +383,35 @@ export default function TacTuPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 pb-16">
-      {loiTai && (
-        <p role="alert" className="rounded-lg border border-mimi-amber/40 bg-mimi-amber/10 px-3 py-2 text-sm text-foreground">
-          {tr('app.tacTu.loiCu', { loi: loiTai })}{' '}
-          <button onClick={() => void tai()} className="font-medium underline">{tr('app.chung.thuLai')}</button>
-        </p>
-      )}
       {/* ── Đầu trang ─────────────────────────────────────────────── */}
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <nav aria-label={tr('app.chung.duongDan')}>
+          <nav aria-label="Đường dẫn">
             <ol className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <li>{tr('app.tacTu.dau.agent')}</li>
+              <li>Agent</li>
               <li aria-hidden>/</li>
-              <li aria-current="page" className="text-foreground">{tr('app.tacTu.dau.tieuDe')}</li>
+              <li aria-current="page" className="text-foreground">Kiểm soát chi</li>
             </ol>
           </nav>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{tr('app.tacTu.dau.tieuDe')}</h1>
-          <p className="mt-1 truncate text-sm text-muted-foreground" title={tr('app.tacTu.dau.moTa')}>
-            {tr('app.tacTu.dau.moTa')}
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Kiểm soát chi</h1>
+          <p className="mt-1 truncate text-sm text-muted-foreground" title="Agent xin chi, MIMI xét theo chính sách của bạn. MIMI không giữ và không chuyển tiền.">
+            Agent xin chi, MIMI xét theo chính sách của bạn. MIMI không giữ và không chuyển tiền.
           </p>
         </div>
         <div className="grid grid-cols-[auto_1fr_1fr] gap-2 sm:flex sm:shrink-0">
-          <button onClick={() => void tai()} aria-label={tr('app.chung.taiLai')} title={tr('app.chung.taiLai')} className={`${nutPhu} px-2.5`}>
+          <button onClick={() => void tai()} aria-label="Tải lại" title="Tải lại" className={`${nutPhu} px-2.5`}>
             <RefreshCw size={15} />
           </button>
           {/* Nhãn ngắn trên điện thoại: ba nút chung một hàng 375px mà nhãn dài thì xuống dòng lởm chởm. */}
-          <Link to="/dashboard/chinh-sach" aria-label={tr('app.tacTu.dau.caiDatCs')} className={nutPhu}>
+          <Link to="/dashboard/chinh-sach" aria-label="Cài đặt chính sách" className={nutPhu}>
             <SlidersHorizontal size={15} aria-hidden />
-            <span className="sm:hidden" aria-hidden>{tr('app.tacTu.dau.chinhSach')}</span>
-            <span className="hidden sm:inline" aria-hidden>{tr('app.tacTu.dau.caiDatCs')}</span>
+            <span className="sm:hidden" aria-hidden>Chính sách</span>
+            <span className="hidden sm:inline" aria-hidden>Cài đặt chính sách</span>
           </Link>
-          <button onClick={() => setMoTao(true)} aria-label={tr('app.tacTu.dau.taoYc')} className={nutChinh}>
+          <button onClick={() => setMoTao(true)} aria-label="Tạo yêu cầu chi" className={nutChinh}>
             <Plus size={15} aria-hidden />
-            <span className="sm:hidden" aria-hidden>{tr('app.tacTu.dau.taoYcNgan')}</span>
-            <span className="hidden sm:inline" aria-hidden>{tr('app.tacTu.dau.taoYc')}</span>
+            <span className="sm:hidden" aria-hidden>Tạo yêu cầu</span>
+            <span className="hidden sm:inline" aria-hidden>Tạo yêu cầu chi</span>
           </button>
         </div>
       </header>
@@ -451,7 +427,7 @@ export default function TacTuPage() {
         chon={chonTab}
         dem={{
           'yeu-cau': kpi.canDuyet > 0 ? <Dem so={kpi.canDuyet} /> : null,
-          'nguoi-nhan': canhBaoNguoiNhan > 0 ? <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label={tr('app.tacTu.coCanhBao')} /> : null,
+          'nguoi-nhan': canhBaoNguoiNhan > 0 ? <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label="có cảnh báo" /> : null,
         }}
       />
 
@@ -462,26 +438,26 @@ export default function TacTuPage() {
             <section data-mimi={choDuyet.length > 0 ? 'tac-tu.cho-duyet' : undefined} aria-labelledby="tq-cho-duyet">
               <DauKhu
                 id="tq-cho-duyet"
-                tieuDe={tr('app.tacTu.tq.canDuyet')}
+                tieuDe="Cần bạn duyệt"
                 dem={choDuyet.length}
-                phai={<button onClick={() => { setLocTrangThai('tat_ca'); chonTab('yeu-cau'); }} className={lienKet}>{tr('app.tacTu.tq.tatCaYc')} <ChevronRight size={12} className="inline" /></button>}
+                phai={<button onClick={() => { setLocTrangThai('tat_ca'); chonTab('yeu-cau'); }} className={lienKet}>Tất cả yêu cầu <ChevronRight size={12} className="inline" /></button>}
               />
               {choDuyet.length > 0
                 ? <BangYeuCau rows={choDuyet} {...hanhDongBang} />
-                : <Trong>{tr('app.tacTu.tq.khongChoDuyet')}</Trong>}
+                : <Trong>Không có khoản nào chờ bạn duyệt.</Trong>}
             </section>
 
             {choTra.length > 0 && (
               <section aria-labelledby="tq-cho-tra">
-                <DauKhu id="tq-cho-tra" tieuDe={tr('app.tacTu.tq.choTra')} dem={choTra.length} />
+                <DauKhu id="tq-cho-tra" tieuDe="Đã duyệt · chờ bạn trả" dem={choTra.length} />
                 <BangYeuCau rows={choTra} {...hanhDongBang} />
               </section>
             )}
 
             <section aria-labelledby="tq-bieu-do" className={`${khoi} p-4`}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 id="tq-bieu-do" className="text-sm font-semibold text-foreground">{tr('app.tacTu.tq.bieuDo')}</h2>
-                <p className="text-xs text-muted-foreground">{tr('app.tacTu.tq.bieuDoMo')}</p>
+                <h2 id="tq-bieu-do" className="text-sm font-semibold text-foreground">Hạn mức đã dùng theo ngày</h2>
+                <p className="text-xs text-muted-foreground">Tháng này · tính cả khoản đang chờ duyệt</p>
               </div>
               <BieuDoGiu ds={bieuDo} />
             </section>
@@ -489,14 +465,14 @@ export default function TacTuPage() {
             <section data-mimi="tac-tu.danh-sach" aria-labelledby="tq-agent">
               <DauKhu
                 id="tq-agent"
-                tieuDe={tr('app.tacTu.tq.hoatDong')}
+                tieuDe="Hoạt động của agent"
                 dem={dsDangDung.length}
-                phai={<button onClick={() => chonTab('agents')} className={lienKet}>{tr('app.tacTu.tq.quanLy')} <ChevronRight size={12} className="inline" /></button>}
+                phai={<button onClick={() => chonTab('agents')} className={lienKet}>Quản lý agent <ChevronRight size={12} className="inline" /></button>}
               />
               {dsDangDung.length === 0 ? (
                 <Trong>
-                  {tr('app.tacTu.tq.chuaCoAgent')}{' '}
-                  <button onClick={() => chonTab('agents')} className={`${lienKet} text-foreground underline underline-offset-4`}>{tr('app.tacTu.tq.themDau')}</button>
+                  Chưa có agent nào.{' '}
+                  <button onClick={() => chonTab('agents')} className={`${lienKet} text-foreground underline underline-offset-4`}>Thêm agent đầu tiên</button>
                 </Trong>
               ) : (
                 <BangAgent
@@ -514,13 +490,13 @@ export default function TacTuPage() {
             </section>
           </div>
 
-          <aside className="space-y-5" aria-label={tr('app.tacTu.tq.aside')}>
+          <aside className="space-y-5" aria-label="Cần chú ý và thao tác nhanh">
             <section aria-labelledby="tq-chu-y" className={khoi}>
               <h2 id="tq-chu-y" className="flex items-center justify-between border-b border-border px-4 py-3 text-sm font-semibold text-foreground">
-                {tr('app.tacTu.tq.chuY')} {chuY.length > 0 && <Dem so={chuY.length} />}
+                Cần chú ý {chuY.length > 0 && <Dem so={chuY.length} />}
               </h2>
               {chuY.length === 0 ? (
-                <p className="px-4 py-5 text-sm text-muted-foreground">{tr('app.tacTu.tq.khongGi')}</p>
+                <p className="px-4 py-5 text-sm text-muted-foreground">Không có gì cần xử lý.</p>
               ) : (
                 <ul className="divide-y divide-border">
                   {chuY.map((m) => (
@@ -536,13 +512,13 @@ export default function TacTuPage() {
             </section>
 
             <section aria-labelledby="tq-nhanh" className={khoi}>
-              <h2 id="tq-nhanh" className="border-b border-border px-4 py-3 text-sm font-semibold text-foreground">{tr('app.tacTu.tq.nhanh')}</h2>
+              <h2 id="tq-nhanh" className="border-b border-border px-4 py-3 text-sm font-semibold text-foreground">Thao tác nhanh</h2>
               <ul className="divide-y divide-border">
-                <li><ThaoTacNhanh icon={SlidersHorizontal} ten={tr('app.tacTu.tq.nhanhCs')} mo={tr('app.tacTu.tq.nhanhCsMo')} to="/dashboard/chinh-sach" /></li>
-                <li><ThaoTacNhanh icon={Plus} ten={tr('app.tacTu.tq.nhanhAgent')} mo={tr('app.tacTu.tq.nhanhAgentMo')} bam={() => chonTab('agents')} /></li>
-                <li><ThaoTacNhanh icon={UserPlus} ten={tr('app.tacTu.tq.nhanhNn')} mo={tr('app.tacTu.tq.nhanhNnMo')} bam={() => chonTab('nguoi-nhan')} /></li>
-                <li><ThaoTacNhanh icon={Plug} ten={tr('app.tacTu.tq.nhanhYc')} mo={tr('app.tacTu.tq.nhanhYcMo')} bam={() => setMoTao(true)} /></li>
-                <li><ThaoTacNhanh icon={BookOpen} ten={tr('app.tacTu.tq.nhanhNk')} mo={tr('app.tacTu.tq.nhanhNkMo')} bam={() => chonTab('nhat-ky')} /></li>
+                <li><ThaoTacNhanh icon={SlidersHorizontal} ten="Cài đặt chính sách" mo="Ngưỡng duyệt, hạn mức, nhóm chi" to="/dashboard/chinh-sach" /></li>
+                <li><ThaoTacNhanh icon={Plus} ten="Thêm agent" mo="Mỗi agent một khoá, một chính sách" bam={() => chonTab('agents')} /></li>
+                <li><ThaoTacNhanh icon={UserPlus} ten="Thêm người nhận" mo="Tài khoản agent được phép trả" bam={() => chonTab('nguoi-nhan')} /></li>
+                <li><ThaoTacNhanh icon={Plug} ten="Tạo yêu cầu chi" mo="Tính vào hạn mức của một agent" bam={() => setMoTao(true)} /></li>
+                <li><ThaoTacNhanh icon={BookOpen} ten="Xem nhật ký" mo="Mọi thay đổi, chỉ thêm không sửa" bam={() => chonTab('nhat-ky')} /></li>
               </ul>
             </section>
           </aside>
@@ -553,7 +529,7 @@ export default function TacTuPage() {
       {tab === 'yeu-cau' && (
         <div id="khu-yeu-cau" role="tabpanel" aria-labelledby="tab-yeu-cau" className="space-y-3">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div role="group" aria-label={tr('app.tacTu.yc.loc')} className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:pb-0">
+            <div role="group" aria-label="Lọc theo trạng thái" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:pb-0">
               {(['tat_ca', ...THU_TU_TRANG_THAI] as const).map((k) => {
                 const so = k === 'tat_ca' ? yeuCau.length : yeuCau.filter((y) => trangThaiHienThi(y) === k).length;
                 const dang = locTrangThai === k;
@@ -564,24 +540,24 @@ export default function TacTuPage() {
                     onClick={() => setLocTrangThai(k)}
                     className={`${nutNho} shrink-0 border ${dang ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-foreground hover:bg-accent'}`}
                   >
-                    {k === 'tat_ca' ? tr('app.chung.tatCa') : nhanTrangThaiYc(k)}
+                    {k === 'tat_ca' ? 'Tất cả' : NHAN_TRANG_THAI[k]}
                     <span className="tabular-nums opacity-60">{so}</span>
                   </button>
                 );
               })}
             </div>
             <label className="relative block lg:w-80">
-              <span className="sr-only">{tr('app.tacTu.yc.tim')}</span>
+              <span className="sr-only">Tìm yêu cầu</span>
               <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <input type="search" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={tr('app.tacTu.yc.timPh')} className={`${o} pl-8`} />
+              <input type="search" value={tim} onChange={(e) => setTim(e.target.value)} placeholder="Tìm agent, người nhận, mục đích…" className={`${o} pl-8`} />
             </label>
           </div>
           {(() => {
-            if (yeuCau.length === 0) return <Trong>{tr('app.tacTu.yc.trong')}</Trong>;
+            if (yeuCau.length === 0) return <Trong>Chưa có yêu cầu nào. Yêu cầu hiện ở đây khi agent xin chi, hoặc khi bạn bấm "Tạo yêu cầu chi".</Trong>;
             const ds = locYeuCau(yeuCau, { trangThai: locTrangThai, tim }, tenTacTu);
-            return ds.length === 0 ? <Trong>{tr('app.tacTu.yc.khongKhop')}</Trong> : <BangYeuCau rows={ds} {...hanhDongBang} />;
+            return ds.length === 0 ? <Trong>Không có yêu cầu nào khớp bộ lọc.</Trong> : <BangYeuCau rows={ds} {...hanhDongBang} />;
           })()}
-          <p className="text-xs text-muted-foreground">{tr('app.tacTu.yc.toiDa')}</p>
+          <p className="text-xs text-muted-foreground">Hiện tối đa 100 yêu cầu gần nhất.</p>
         </div>
       )}
 
@@ -589,24 +565,20 @@ export default function TacTuPage() {
       {tab === 'agents' && (
         <div id="khu-agents" role="tabpanel" aria-labelledby="tab-agents" className="space-y-4">
           <section className={`${khoi} p-4`} aria-labelledby="ag-them">
-            <h2 id="ag-them" className="text-sm font-semibold text-foreground">{tr('app.tacTu.ag.them')}</h2>
+            <h2 id="ag-them" className="text-sm font-semibold text-foreground">Thêm agent</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {tr('app.tacTu.ag.themMo')}
+              Agent mới mặc định phải xin duyệt mọi khoản và chỉ được chi cho người nhận trong danh sách — nới ra khi bạn đã tin nó.
             </p>
             <ThemTacTu
               dangLam={dangLam === 'tao'}
               tao={async (ten, moTa) => {
                 const kq = await lam('tao', 'tao_tac_tu', { ten, mo_ta: moTa || null });
                 if (kq?.khoa) setKhoaMoi({ ten, khoa: kq.khoa });
-                // Báo cho con trỏ mèo (nếu nó đang chờ nút này) kết quả THẬT của yêu cầu, không phải cú bấm.
-                baoKetQua(kq
-                  ? { dich: 'tac-tu.them', ok: true, cau: tr('app.tacTu.mimi.themAgentOk', { ten }) }
-                  : { dich: 'tac-tu.them', ok: false, cau: tr('app.tacTu.mimi.themAgentLoi') });
               }}
             />
           </section>
           {dsDangDung.length === 0 ? (
-            <Trong>{tr('app.tacTu.ag.trong')}</Trong>
+            <Trong>Chưa có agent nào. Thêm một agent ở trên — ví dụ "Bot mua quảng cáo" hay "Trợ lý mua hàng" — rồi dán khoá vào cấu hình của nó.</Trong>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {dsDangDung.map((t) => (
@@ -627,12 +599,12 @@ export default function TacTuPage() {
           )}
           {dsThuHoi.length > 0 && (
             <details className={`${khoi} px-4 py-3`}>
-              <summary className={`cursor-pointer rounded text-sm text-muted-foreground ${vien}`}>{tr('app.tacTu.ag.daThuHoi', { n: dsThuHoi.length })}</summary>
+              <summary className={`cursor-pointer rounded text-sm text-muted-foreground ${vien}`}>Đã thu hồi ({dsThuHoi.length})</summary>
               <ul className="mt-2 divide-y divide-border text-sm">
                 {dsThuHoi.map((t) => (
                   <li key={t.id} className="flex justify-between gap-3 py-2">
                     <span className="truncate text-foreground">{t.ten}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{tr('app.tacTu.ag.lanCuoi', { luc: luc(t.dung_lan_cuoi) })}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">hoạt động lần cuối {luc(t.dung_lan_cuoi)}</span>
                   </li>
                 ))}
               </ul>
@@ -645,13 +617,13 @@ export default function TacTuPage() {
       {tab === 'chinh-sach' && (
         <div id="khu-chinh-sach" role="tabpanel" aria-labelledby="tab-chinh-sach" className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">{tr('app.tacTu.cs.mo')}</p>
-            <Link to="/dashboard/chinh-sach" className={`${nutPhu} shrink-0`}><SlidersHorizontal size={15} /> {tr('app.tacTu.dau.caiDatCs')}</Link>
+            <p className="text-sm text-muted-foreground">Mỗi agent một chính sách. Sửa từng luật và đọc văn bản chính sách ở trang cài đặt.</p>
+            <Link to="/dashboard/chinh-sach" className={`${nutPhu} shrink-0`}><SlidersHorizontal size={15} /> Cài đặt chính sách</Link>
           </div>
           <BangChinhSach ds={dsDangDung} chinhSach={chinhSach} soNguoiNhan={nguoiNhan.length} />
           <p className={`${khoi} flex items-start gap-2 p-3 text-xs text-muted-foreground`}>
             <ShieldCheck size={14} className="mt-0.5 shrink-0 text-foreground" />
-            {tr('app.tacTu.cs.luonBat')}
+            Luôn bật cho mọi agent: người nhận mới thêm chưa đủ 24 giờ không được tự duyệt; cùng tên người nhận mà khác số tài khoản so với 180 ngày qua thì phải có người duyệt.
           </p>
         </div>
       )}
@@ -663,12 +635,7 @@ export default function TacTuPage() {
             nguoiNhan={nguoiNhan}
             yeuCau={yeuCau}
             dangLam={dangLam}
-            them={async (du) => {
-              const kq = await lam('nguoi_nhan', 'them_nguoi_nhan', du, tr('app.tacTu.toast.daThemNguoiNhan'));
-              baoKetQua(kq !== null
-                ? { dich: 'tac-tu.nguoi-nhan.them', ok: true, cau: tr('app.tacTu.mimi.themNnOk') }
-                : { dich: 'tac-tu.nguoi-nhan.them', ok: false, cau: tr('app.tacTu.mimi.themNnLoi') });
-            }}
+            them={(du) => lam('nguoi_nhan', 'them_nguoi_nhan', du, 'Đã thêm người nhận.')}
             bo={boNguoiNhan}
             xem={(id) => setYeuCauMo(id)}
           />
@@ -679,20 +646,20 @@ export default function TacTuPage() {
       {tab === 'nhat-ky' && (
         <div id="khu-nhat-ky" role="tabpanel" aria-labelledby="tab-nhat-ky" className={khoi}>
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-4 py-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground"><ShieldCheck size={15} /> {tr('app.tacTu.nk.tieuDe')}</h2>
-            <p className="text-xs text-muted-foreground">{tr('app.tacTu.nk.mo')}</p>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground"><ShieldCheck size={15} /> Nhật ký</h2>
+            <p className="text-xs text-muted-foreground">Chỉ thêm, không sửa được — kể cả bởi MIMI. 30 sự kiện gần nhất.</p>
           </div>
           {nhatKy.length === 0 ? (
-            <p className="px-4 py-5 text-sm text-muted-foreground">{tr('app.tacTu.nk.trong')}</p>
+            <p className="px-4 py-5 text-sm text-muted-foreground">Chưa có sự kiện nào.</p>
           ) : (
             <ul className="divide-y divide-border text-sm">
               {nhatKy.map((n) => (
                 <li key={n.id} className="grid gap-0.5 px-4 py-2.5 sm:grid-cols-[120px_70px_minmax(0,1fr)] sm:gap-3">
                   <span className="font-mono text-xs text-muted-foreground tabular-nums">{luc(n.created_at)}</span>
-                  <span className="text-xs text-muted-foreground">{n.nguoi === 'tac_tu' ? tr('app.tacTu.nk.agent') : n.nguoi === 'he_thong' ? tr('app.tacTu.nk.saoKe') : tr('app.tacTu.nk.ban')}</span>
+                  <span className="text-xs text-muted-foreground">{n.nguoi === 'tac_tu' ? 'agent' : n.nguoi === 'he_thong' ? 'sao kê' : 'bạn'}</span>
                   <span className="min-w-0 text-foreground">
                     <span className="font-medium">
-                      {n.su_kien === 'xin_chi' && n.nguoi === 'nguoi_dung' ? tr('app.tacTu.nk.taoYc') : tenSuKien(n.su_kien)}
+                      {n.su_kien === 'xin_chi' && n.nguoi === 'nguoi_dung' ? 'Tạo yêu cầu chi' : SU_KIEN[n.su_kien] ?? n.su_kien}
                     </span>
                     {n.tac_tu_id && tenTacTu[n.tac_tu_id] ? ` · ${tenTacTu[n.tac_tu_id]}` : ''}
                     {chiTietNhatKy(n) && <span className="text-muted-foreground"> · {chiTietNhatKy(n)}</span>}
@@ -711,7 +678,7 @@ export default function TacTuPage() {
             <PanelQuyetDinh
               key={yMo.id}
               y={yMo}
-              tenTacTu={tenTacTu[yMo.tac_tu_id] ?? tr('app.tacTu.nguoiYc.agent')}
+              tenTacTu={tenTacTu[yMo.tac_tu_id] ?? 'Agent'}
               nguoiYeuCau={nguoiYeuCau(yMo)}
               cs={chinhSach[yMo.tac_tu_id]}
               suDung={suDung[yMo.tac_tu_id]}
@@ -768,7 +735,7 @@ export default function TacTuPage() {
             <AlertDialogDescription>{xacNhan?.mo}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-lg">{tr('app.chung.huy')}</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-lg">Huỷ</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => { void xacNhan?.lam(); }}
               className={`rounded-lg ${xacNhan?.nguyHiem ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : 'bg-foreground text-background hover:bg-foreground/85'}`}
@@ -804,7 +771,6 @@ function DauKhu({ id, tieuDe, dem, phai }: { id: string; tieuDe: string; dem?: n
 }
 
 function ThanhTab({ tab, chon, dem }: { tab: KhoaTab; chon: (k: KhoaTab) => void; dem: Partial<Record<KhoaTab, ReactNode>> }) {
-  const { t: tr } = useTranslation();
   const nut = useRef<Array<HTMLButtonElement | null>>([]);
   // Mũi tên trái/phải, Home, End — cách di chuyển giữa tab mà người dùng bàn phím chờ đợi.
   const khiPhim = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
@@ -816,7 +782,7 @@ function ThanhTab({ tab, chon, dem }: { tab: KhoaTab; chon: (k: KhoaTab) => void
     nut.current[toi]?.focus();
   };
   return (
-    <div role="tablist" aria-label={tr('app.tacTu.tabList')} className="-mx-4 flex overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0">
+    <div role="tablist" aria-label="Khu kiểm soát chi" className="-mx-4 flex overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0">
       {CAC_TAB.map((t, i) => {
         const dang = t.khoa === tab;
         return (
@@ -835,7 +801,7 @@ function ThanhTab({ tab, chon, dem }: { tab: KhoaTab; chon: (k: KhoaTab) => void
               dang ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            {tr(`app.tacTu.tab.${t.khoa}`)}
+            {t.ten}
             {dem[t.khoa]}
           </button>
         );
@@ -846,28 +812,27 @@ function ThanhTab({ tab, chon, dem }: { tab: KhoaTab; chon: (k: KhoaTab) => void
 
 /* ── KPI ───────────────────────────────────────────────────────────── */
 function HangKpi({ kpi, moXemXet }: { kpi: Kpi; moXemXet: () => void }) {
-  const { t: tr } = useTranslation();
-  const chuaCo = kpi.coAgent ? null : tr('app.tacTu.kpi.chuaCoAgent');
+  const chuaCo = kpi.coAgent ? null : 'Chưa có agent';
   const ns = kpi.nganSachThang;
-  const daDungPct = ns && Number(ns.tran) > 0 ? Math.min(100, Math.round((Number(truTien(ns.tran, ns.conLai)) / Number(ns.tran)) * 100)) : 0;
+  const daDungPct = ns && ns.tran > 0 ? Math.min(100, Math.round(((ns.tran - ns.conLai) / ns.tran) * 100)) : 0;
   return (
     <section
-      aria-label={tr('app.tacTu.kpi.nhom')}
+      aria-label="Chỉ số chi tiêu"
       data-mimi="tac-tu.kpi"
       className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4"
     >
-      <TheKpi icon={ListChecks} nhan={tr('app.tacTu.kpi.canDuyet')} trong={chuaCo}
-        gia={String(kpi.canDuyet)} phu={kpi.canDuyet > 0 ? tr('app.tacTu.kpi.choQuyet') : tr('app.tacTu.kpi.khongCho')} />
-      <TheKpi icon={Receipt} nhan={tr('app.tacTu.kpi.chiHomNay')} trong={chuaCo}
+      <TheKpi icon={ListChecks} nhan="Yêu cầu cần duyệt" trong={chuaCo}
+        gia={String(kpi.canDuyet)} phu={kpi.canDuyet > 0 ? 'Chờ bạn quyết' : 'Không có khoản nào chờ'} />
+      <TheKpi icon={Receipt} nhan="Tổng chi hôm nay" trong={chuaCo}
         gia={dong(kpi.daChiHomNay.tong)}
-        phu={tr('app.tacTu.kpi.chiHomNayPhu', { n: kpi.daChiHomNay.soKhoan, giu: dong(kpi.daGiuHomNay) })} />
-      <TheKpi icon={Wallet} nhan={tr('app.tacTu.kpi.nganSach')}
-        trong={ns ? null : kpi.coAgent ? tr('app.tacTu.kpi.chuaCoAgentHd') : tr('app.tacTu.kpi.chuaCoAgent')}
+        phu={`${kpi.daChiHomNay.soKhoan} khoản ngân hàng đã xác nhận · ${dong(kpi.daGiuHomNay)} đã duyệt hoặc đang chờ`} />
+      <TheKpi icon={Wallet} nhan="Ngân sách còn lại"
+        trong={ns ? null : kpi.coAgent ? 'Chưa có agent đang hoạt động' : 'Chưa có agent'}
         gia={ns ? dong(ns.conLai) : ''}
-        phu={ns ? tr('app.tacTu.kpi.nganSachPhu', { pct: daDungPct, tran: dong(ns.tran), n: ns.soAgent }) : undefined}
+        phu={ns ? `Đã dùng ${daDungPct}% của ${dong(ns.tran)} · tháng này · ${ns.soAgent} agent` : undefined}
         thanh={ns ? daDungPct : undefined} />
-      <TheKpi icon={AlertTriangle} nhan={tr('app.tacTu.kpi.canXem')} trong={chuaCo}
-        gia={String(kpi.canXemXet)} phu={tr('app.tacTu.kpi.canXemPhu')}
+      <TheKpi icon={AlertTriangle} nhan="Khoản chi cần xem xét" trong={chuaCo}
+        gia={String(kpi.canXemXet)} phu="Người nhận mới hoặc đổi số tài khoản"
         nhan_chu_y={kpi.canXemXet > 0} bam={kpi.coAgent ? moXemXet : undefined} />
     </section>
   );
@@ -885,7 +850,6 @@ function TheKpi({
   nhan_chu_y?: boolean;
   bam?: () => void;
 }) {
-  const { t: tr } = useTranslation();
   const noiDung = (
     <>
       <span className="flex items-center justify-between gap-2">
@@ -894,7 +858,7 @@ function TheKpi({
             <Icon size={14} />
           </span>
           {nhan}
-          {nhan_chu_y && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label={tr('app.tacTu.kpi.deMat')} />}
+          {nhan_chu_y && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label="cần để mắt" />}
         </span>
         {bam && <ChevronRight size={16} className="text-muted-foreground" aria-hidden />}
       </span>
@@ -930,12 +894,11 @@ const LOP_TRANG_THAI: Record<TrangThaiHienThi, string> = {
 };
 
 function NhanTrangThai({ y }: { y: YeuCau }) {
-  useTranslation();
   const tt = trangThaiHienThi(y);
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${LOP_TRANG_THAI[tt]}`}>
       {tt === 'can_xem_xet' && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-hidden />}
-      {nhanTrangThaiYc(tt)}
+      {NHAN_TRANG_THAI[tt]}
     </span>
   );
 }
@@ -951,21 +914,20 @@ interface HanhDongBang {
 }
 
 function BangYeuCau({ rows, ...hd }: { rows: YeuCau[] } & HanhDongBang) {
-  const { t: tr } = useTranslation();
   return (
     <>
       <div className={`hidden overflow-x-auto md:block ${khoi}`}>
         <table className="w-full min-w-[860px] text-sm">
           <thead className="border-b border-border bg-accent/50 text-left text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.bang.nguoiYc')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.bang.agent')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.bang.ncc')}</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">{tr('app.tacTu.bang.soTien')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.bang.chinhSach')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.bang.trangThai')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.bang.thoiGian')}</th>
-              <th scope="col" className="px-3 py-2"><span className="sr-only">{tr('app.tacTu.bang.hanhDong')}</span></th>
+              <th scope="col" className="px-3 py-2 font-medium">Người yêu cầu</th>
+              <th scope="col" className="px-3 py-2 font-medium">Agent</th>
+              <th scope="col" className="px-3 py-2 font-medium">Nhà cung cấp</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Số tiền</th>
+              <th scope="col" className="px-3 py-2 font-medium">Chính sách</th>
+              <th scope="col" className="px-3 py-2 font-medium">Trạng thái</th>
+              <th scope="col" className="px-3 py-2 font-medium">Thời gian</th>
+              <th scope="col" className="px-3 py-2"><span className="sr-only">Hành động</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -976,7 +938,7 @@ function BangYeuCau({ rows, ...hd }: { rows: YeuCau[] } & HanhDongBang) {
                   <span className="block max-w-[150px] truncate text-foreground">{hd.tenTacTu[y.tac_tu_id] ?? '—'}</span>
                 </td>
                 <td className="px-3 py-2.5">
-                  <span className="block max-w-[220px] truncate text-foreground">{y.ten_nguoi_nhan ?? tr('app.chung.chuaRoTen')}</span>
+                  <span className="block max-w-[220px] truncate text-foreground">{y.ten_nguoi_nhan ?? 'Chưa rõ tên'}</span>
                   <span className="block max-w-[220px] truncate text-xs text-muted-foreground">{y.muc_dich}</span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono font-semibold tabular-nums text-foreground">{dong(y.so_tien)}</td>
@@ -1000,14 +962,14 @@ function BangYeuCau({ rows, ...hd }: { rows: YeuCau[] } & HanhDongBang) {
           <li key={y.id} className={`${khoi} p-3`}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">{y.ten_nguoi_nhan ?? tr('app.chung.chuaRoTen')}</p>
-                <p className="truncate text-xs text-muted-foreground">{hd.nguoiYeuCau(y)} · {hd.tenTacTu[y.tac_tu_id] ?? tr('app.tacTu.nguoiYc.agent')} · {luc(y.created_at)}</p>
+                <p className="truncate text-sm font-medium text-foreground">{y.ten_nguoi_nhan ?? 'Chưa rõ tên'}</p>
+                <p className="truncate text-xs text-muted-foreground">{hd.nguoiYeuCau(y)} · {hd.tenTacTu[y.tac_tu_id] ?? 'Agent'} · {luc(y.created_at)}</p>
               </div>
               <NhanTrangThai y={y} />
             </div>
             <p className="mt-2 font-mono text-xl font-semibold tabular-nums text-foreground">{dong(y.so_tien)}</p>
             <p className="truncate text-xs text-muted-foreground">{y.muc_dich}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{tr('app.tacTu.bang.chinhSachDong', { luat: tomTatLuat(y), giai: giaiDoan(y) })}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Chính sách: {tomTatLuat(y)} · {giaiDoan(y)}</p>
             <div className="mt-3"><NutHang y={y} diDong {...hd} /></div>
           </li>
         ))}
@@ -1025,7 +987,6 @@ function NutHang({ y, diDong, dangLam, xem, duyet, tuChoi }: { y: YeuCau; diDong
   const phu = diDong ? nutPhu : nutNhoPhu;
   const dang = dangLam === y.id;
   const lop = diDong ? 'grid grid-cols-3 gap-2' : 'flex justify-end gap-1.5';
-  const { t: tr } = useTranslation();
 
   if (y.trang_thai === 'cho_duyet') {
     const canXem = trangThaiHienThi(y) === 'can_xem_xet';
@@ -1033,47 +994,46 @@ function NutHang({ y, diDong, dangLam, xem, duyet, tuChoi }: { y: YeuCau; diDong
       <div className={lop}>
         {canXem ? (
           <button onClick={() => xem(y.id)} className={`${chinh} ${diDong ? 'col-span-2' : ''}`}>
-            <AlertTriangle size={13} /> {tr('app.tacTu.nut.xemXet')}
+            <AlertTriangle size={13} /> Xem xét
           </button>
         ) : (
           <button data-mimi="tac-tu.duyet" data-mimi-khong-tu-bam disabled={dang} onClick={() => duyet(y)} className={chinh}>
-            {dang ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {tr('app.tacTu.nut.duyet')}
+            {dang ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Duyệt
           </button>
         )}
         <button data-mimi="tac-tu.tu-choi" data-mimi-khong-tu-bam disabled={dang} onClick={() => tuChoi(y)} className={phu}>
-          {tr('app.tacTu.nut.tuChoi')}
+          Từ chối
         </button>
-        {!canXem && <button onClick={() => xem(y.id)} className={phu}>{tr('app.chung.xem')}</button>}
+        {!canXem && <button onClick={() => xem(y.id)} className={phu}>Xem</button>}
       </div>
     );
   }
   if (y.trang_thai === 'da_duyet') {
     return (
       <div className={lop}>
-        <button onClick={() => xem(y.id)} className={`${chinh} ${diDong ? 'col-span-3' : ''}`}><QrCode size={13} /> {tr('app.tacTu.nut.tra')}</button>
+        <button onClick={() => xem(y.id)} className={`${chinh} ${diDong ? 'col-span-3' : ''}`}><QrCode size={13} /> Trả</button>
       </div>
     );
   }
   return (
     <div className={lop}>
-      <button onClick={() => xem(y.id)} className={`${phu} ${diDong ? 'col-span-3' : ''}`}>{tr('app.chung.xem')}</button>
+      <button onClick={() => xem(y.id)} className={`${phu} ${diDong ? 'col-span-3' : ''}`}>Xem</button>
     </div>
   );
 }
 
 /* ── Biểu đồ ───────────────────────────────────────────────────────── */
 function BieuDoGiu({ ds }: { ds: Array<{ ngay: number; tong: number }> }) {
-  const { t: tr } = useTranslation();
   const max = Math.max(0, ...ds.map((d) => d.tong));
-  if (max === 0) return <p className="mt-4 text-sm text-muted-foreground">{tr('app.tacTu.bd.trong')}</p>;
+  if (max === 0) return <p className="mt-4 text-sm text-muted-foreground">Tháng này chưa có khoản nào dùng hạn mức.</p>;
   return (
     <figure className="mt-3">
-      <p className="text-[11px] text-muted-foreground">{tr('app.tacTu.bd.caoNhat')} <span className="font-mono tabular-nums text-foreground">{dong(max)}</span></p>
+      <p className="text-[11px] text-muted-foreground">Cao nhất <span className="font-mono tabular-nums text-foreground">{dong(max)}</span></p>
       <div className="mt-2 flex h-32 items-end gap-[3px] border-b border-border" aria-hidden>
         {ds.map((d) => (
           <div
             key={d.ngay}
-            title={tr('app.tacTu.bd.ngayTien', { ngay: d.ngay, tien: dong(d.tong) })}
+            title={`Ngày ${d.ngay}: ${dong(d.tong)}`}
             className={`flex-1 rounded-t-sm ${d.tong > 0 ? 'bg-foreground/70 hover:bg-foreground' : 'bg-accent'}`}
             style={{ height: d.tong > 0 ? `${Math.max(3, (d.tong / max) * 100)}%` : '2px' }}
           />
@@ -1084,10 +1044,10 @@ function BieuDoGiu({ ds }: { ds: Array<{ ngay: number; tong: number }> }) {
         <span>{String(ds.length).padStart(2, '0')}</span>
       </div>
       <table className="sr-only">
-        <caption>{tr('app.tacTu.bd.caption')}</caption>
+        <caption>Hạn mức đã dùng theo ngày trong tháng này</caption>
         <tbody>
           {ds.filter((d) => d.tong > 0).map((d) => (
-            <tr key={d.ngay}><th scope="row">{tr('app.tacTu.bd.ngay', { ngay: d.ngay })}</th><td>{dong(d.tong)}</td></tr>
+            <tr key={d.ngay}><th scope="row">Ngày {d.ngay}</th><td>{dong(d.tong)}</td></tr>
           ))}
         </tbody>
       </table>
@@ -1140,35 +1100,33 @@ function ChamTrangThaiAgent({ tt }: { tt: string }) {
 
 function NhanTrangThaiAgent({ tt }: { tt: string }) {
   const lop = tt === 'hoat_dong' ? 'bg-mimi-green/10 text-mimi-green' : 'bg-accent text-muted-foreground';
-  useTranslation();
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${lop}`}>
-      <ChamTrangThaiAgent tt={tt} /> {tenTrangThaiTacTu(tt)}
+      <ChamTrangThaiAgent tt={tt} /> {TRANG_THAI_TAC_TU[tt] ?? tt}
     </span>
   );
 }
 
 function MenuTacTu({ t, dangLam, doiTrangThai, xoayKhoa, thuHoi }: { t: TacTu; dangLam: boolean } & HanhDongAgent) {
-  const { t: tr } = useTranslation();
   return (
     // modal={false}: menu mở hộp xác nhận; menu modal để lại khoá con trỏ trên trang sau khi hộp đóng.
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <button aria-label={tr('app.tacTu.menu.hanhDongCho', { ten: t.ten })} disabled={dangLam} className={`${nutNho} w-8 px-0 text-muted-foreground hover:bg-accent hover:text-foreground`}>
+        <button aria-label={`Hành động cho ${t.ten}`} disabled={dangLam} className={`${nutNho} w-8 px-0 text-muted-foreground hover:bg-accent hover:text-foreground`}>
           {dangLam ? <Loader2 size={15} className="animate-spin" /> : <MoreHorizontal size={16} />}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52 rounded-lg">
         {t.trang_thai === 'hoat_dong' ? (
-          <DropdownMenuItem onSelect={() => doiTrangThai(t, 'tam_dung')}><Pause size={14} className="mr-2" /> {tr('app.tacTu.menu.tamDung')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => doiTrangThai(t, 'tam_dung')}><Pause size={14} className="mr-2" /> Tạm dừng</DropdownMenuItem>
         ) : (
-          <DropdownMenuItem onSelect={() => doiTrangThai(t, 'hoat_dong')}><Play size={14} className="mr-2" /> {tr('app.tacTu.menu.batLai')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => doiTrangThai(t, 'hoat_dong')}><Play size={14} className="mr-2" /> Bật lại</DropdownMenuItem>
         )}
         <DropdownMenuItem data-mimi="tac-tu.khoa-moi" data-mimi-khong-tu-bam onSelect={() => xoayKhoa(t)}>
-          <KeyRound size={14} className="mr-2" /> {tr('app.tacTu.menu.khoaMoi')}
+          <KeyRound size={14} className="mr-2" /> Cấp khoá mới
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to={`/dashboard/chinh-sach?agent=${t.id}`}><SlidersHorizontal size={14} className="mr-2" /> {tr('app.tacTu.menu.suaCs')}</Link>
+          <Link to={`/dashboard/chinh-sach?agent=${t.id}`}><SlidersHorizontal size={14} className="mr-2" /> Sửa chính sách</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -1177,23 +1135,15 @@ function MenuTacTu({ t, dangLam, doiTrangThai, xoayKhoa, thuHoi }: { t: TacTu; d
           onSelect={() => thuHoi(t)}
           className="text-destructive focus:bg-destructive/10 focus:text-destructive"
         >
-          <Trash2 size={14} className="mr-2" /> {tr('app.tacTu.menu.thuHoi')}
+          <Trash2 size={14} className="mr-2" /> Thu hồi
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-/** Hạn mức còn lại, không âm, chính xác tới đồng. */
-const conLaiTien = (tran: TienVND, daDung: TienVND): TienVND => {
-  const c = truTien(tran, daDung);
-  return soSanhTien(c, 0) > 0 ? c : 0;
-};
-
-function ThanhDung({ nhan, da, tran }: { nhan: string; da: TienVND; tran: TienVND }) {
-  // Độ dài thanh chỉ cần gần đúng; số in ra lấy giá trị chính xác.
-  const pct = Number(tran) > 0 ? Math.min(100, (Number(da) / Number(tran)) * 100) : 100;
-  const { t: tr } = useTranslation();
+function ThanhDung({ nhan, da, tran }: { nhan: string; da: number; tran: number }) {
+  const pct = tran > 0 ? Math.min(100, (da / tran) * 100) : 100;
   return (
     <div>
       <div className="flex justify-between gap-2 text-xs">
@@ -1203,7 +1153,7 @@ function ThanhDung({ nhan, da, tran }: { nhan: string; da: TienVND; tran: TienVN
       <div
         className="mt-1 h-1.5 overflow-hidden rounded-full bg-accent"
         role="progressbar"
-        aria-label={tr('app.tacTu.thanhDung', { nhan, da: dong(da), tran: dong(tran) })}
+        aria-label={`${nhan}: đã dùng ${dong(da)} trên ${dong(tran)}`}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(pct)}
@@ -1219,26 +1169,25 @@ function BangAgent({
 }: {
   ds: TacTu[];
   chinhSach: Record<string, ChinhSachRow>;
-  suDung: Record<string, { ngay: TienVND; thang: TienVND }>;
+  suDung: Record<string, { ngay: number; thang: number }>;
   soCho: Record<string, number>;
   chuSoHuu: string;
   dangLam: string | null;
 } & HanhDongAgent) {
-  const { t: tr } = useTranslation();
   return (
     <>
       <div className={`hidden overflow-x-auto md:block ${khoi}`}>
         <table className="w-full min-w-[860px] text-sm">
           <thead className="border-b border-border bg-accent/50 text-left text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.agentBang.agent')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.agentBang.chuSoHuu')}</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">{tr('app.tacTu.agentBang.dangCho')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.agentBang.homNay')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.agentBang.thangNay')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.agentBang.ganNhat')}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{tr('app.tacTu.agentBang.trangThai')}</th>
-              <th scope="col" className="px-3 py-2"><span className="sr-only">{tr('app.tacTu.bang.hanhDong')}</span></th>
+              <th scope="col" className="px-3 py-2 font-medium">Agent</th>
+              <th scope="col" className="px-3 py-2 font-medium">Người sở hữu</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Đang chờ</th>
+              <th scope="col" className="px-3 py-2 font-medium">Hôm nay</th>
+              <th scope="col" className="px-3 py-2 font-medium">Tháng này</th>
+              <th scope="col" className="px-3 py-2 font-medium">Hoạt động gần nhất</th>
+              <th scope="col" className="px-3 py-2 font-medium">Trạng thái</th>
+              <th scope="col" className="px-3 py-2"><span className="sr-only">Hành động</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -1249,7 +1198,7 @@ function BangAgent({
                 <tr key={t.id} className="align-middle">
                   <td className="px-3 py-2.5">
                     <span className="block max-w-[180px] truncate font-medium text-foreground">{t.ten}</span>
-                    <span className="block max-w-[180px] truncate text-xs text-muted-foreground">{t.mo_ta ?? tr('app.tacTu.agentBang.chuaMoTa')}</span>
+                    <span className="block max-w-[180px] truncate text-xs text-muted-foreground">{t.mo_ta ?? 'Chưa có mô tả'}</span>
                   </td>
                   <td className="px-3 py-2.5">
                     <span className="flex items-center gap-2">
@@ -1259,8 +1208,8 @@ function BangAgent({
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums text-foreground">{soCho[t.id] ?? 0}</td>
                   <td className="px-3 py-2.5 font-mono text-xs tabular-nums text-foreground">{cs ? `${dong(su.ngay)} / ${dong(cs.han_muc_ngay)}` : '—'}</td>
-                  <td className="w-44 px-3 py-2.5">{cs ? <ThanhDung nhan="" da={su.thang} tran={cs.han_muc_thang} /> : <span className="text-xs text-muted-foreground">{tr('app.tacTu.agentBang.chuaCs')}</span>}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-muted-foreground tabular-nums">{t.dung_lan_cuoi ? luc(t.dung_lan_cuoi) : tr('app.tacTu.agentBang.chuaGoi')}</td>
+                  <td className="w-44 px-3 py-2.5">{cs ? <ThanhDung nhan="" da={su.thang} tran={cs.han_muc_thang} /> : <span className="text-xs text-muted-foreground">Chưa có chính sách</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-muted-foreground tabular-nums">{t.dung_lan_cuoi ? luc(t.dung_lan_cuoi) : 'Chưa gọi'}</td>
                   <td className="px-3 py-2.5"><NhanTrangThaiAgent tt={t.trang_thai} /></td>
                   <td className="px-3 py-2.5 text-right"><MenuTacTu t={t} dangLam={dangLam === t.id} {...hd} /></td>
                 </tr>
@@ -1292,38 +1241,37 @@ function TheTacTu({
 }: {
   t: TacTu;
   cs: ChinhSachRow | undefined;
-  suDung: { ngay: TienVND; thang: TienVND };
+  suDung: { ngay: number; thang: number };
   soCho: number;
   chuSoHuu: string;
   dangLam: boolean;
 } & HanhDongAgent) {
-  const { t: tr } = useTranslation();
   const tomTat = cs ? tomTatChinhSach(cs, 0) : null;
   return (
-    <article className={`${khoi} p-4`} aria-label={tr('app.tacTu.the.aria', { ten: t.ten })}>
+    <article className={`${khoi} p-4`} aria-label={`Agent ${t.ten}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate text-sm font-semibold text-foreground">{t.ten}</h3>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
             <ChamTrangThaiAgent tt={t.trang_thai} />
-            {tenTrangThaiTacTu(t.trang_thai)}
+            {TRANG_THAI_TAC_TU[t.trang_thai] ?? t.trang_thai}
           </p>
         </div>
         <MenuTacTu t={t} dangLam={dangLam} {...hd} />
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-        <div className="min-w-0"><dt className="text-muted-foreground">{tr('app.tacTu.agentBang.chuSoHuu')}</dt><dd className="truncate text-foreground" title={chuSoHuu}>{chuSoHuu}</dd></div>
-        <div><dt className="text-muted-foreground">{tr('app.tacTu.the.choDuyet')}</dt><dd className="text-foreground"><Trans i18nKey="app.tacTu.the.soYc" values={{ n: soCho }} components={{ s: <span className="font-mono tabular-nums" /> }} /></dd></div>
+        <div className="min-w-0"><dt className="text-muted-foreground">Người sở hữu</dt><dd className="truncate text-foreground" title={chuSoHuu}>{chuSoHuu}</dd></div>
+        <div><dt className="text-muted-foreground">Đang chờ duyệt</dt><dd className="text-foreground"><span className="font-mono tabular-nums">{soCho}</span> yêu cầu</dd></div>
         <div className="min-w-0">
-          <dt className="text-muted-foreground">{tr('app.tacTu.the.chinhSach')}</dt>
-          <dd className="truncate text-foreground">{tomTat ? tr('app.tacTu.the.duyet', { duyet: tomTat.duyet }) : tr('app.tacTu.the.chuaCo')}</dd>
+          <dt className="text-muted-foreground">Chính sách</dt>
+          <dd className="truncate text-foreground">{tomTat ? `Duyệt: ${tomTat.duyet}` : 'Chưa có'}</dd>
         </div>
-        <div><dt className="text-muted-foreground">{tr('app.tacTu.agentBang.ganNhat')}</dt><dd className="font-mono tabular-nums text-foreground">{t.dung_lan_cuoi ? luc(t.dung_lan_cuoi) : tr('app.tacTu.agentBang.chuaGoi')}</dd></div>
+        <div><dt className="text-muted-foreground">Hoạt động gần nhất</dt><dd className="font-mono tabular-nums text-foreground">{t.dung_lan_cuoi ? luc(t.dung_lan_cuoi) : 'Chưa gọi'}</dd></div>
       </dl>
       {cs && (
         <div className="mt-3 space-y-2 border-t border-border pt-3">
-          <ThanhDung nhan={tr('app.tacTu.agentBang.homNay')} da={suDung.ngay} tran={cs.han_muc_ngay} />
-          <ThanhDung nhan={tr('app.tacTu.agentBang.thangNay')} da={suDung.thang} tran={cs.han_muc_thang} />
+          <ThanhDung nhan="Hôm nay" da={suDung.ngay} tran={cs.han_muc_ngay} />
+          <ThanhDung nhan="Tháng này" da={suDung.thang} tran={cs.han_muc_thang} />
         </div>
       )}
     </article>
@@ -1333,7 +1281,6 @@ function TheTacTu({
 function ThemTacTu({ tao, dangLam }: { tao: (ten: string, moTa: string) => void; dangLam: boolean }) {
   const [ten, setTen] = useState('');
   const [moTa, setMoTa] = useState('');
-  const { t: tr } = useTranslation();
   return (
     <form
       onSubmit={(e) => {
@@ -1345,15 +1292,15 @@ function ThemTacTu({ tao, dangLam }: { tao: (ten: string, moTa: string) => void;
       className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
     >
       <label className="block">
-        <span className="sr-only">{tr('app.tacTu.themAg.ten')}</span>
-        <input data-mimi="tac-tu.ten" value={ten} onChange={(e) => setTen(e.target.value)} placeholder={tr('app.tacTu.themAg.ten')} maxLength={80} className={o} />
+        <span className="sr-only">Tên agent</span>
+        <input data-mimi="tac-tu.ten" value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên agent" maxLength={80} className={o} />
       </label>
       <label className="block">
-        <span className="sr-only">{tr('app.tacTu.themAg.lamGi')}</span>
-        <input value={moTa} onChange={(e) => setMoTa(e.target.value)} placeholder={tr('app.tacTu.themAg.lamGiPh')} maxLength={300} className={o} />
+        <span className="sr-only">Agent làm gì</span>
+        <input value={moTa} onChange={(e) => setMoTa(e.target.value)} placeholder="Nó làm gì (không bắt buộc)" maxLength={300} className={o} />
       </label>
       <button data-mimi="tac-tu.them" data-mimi-khong-tu-bam disabled={dangLam || ten.trim().length < 2} className={nutChinh}>
-        {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} {tr('app.tacTu.themAg.nut')}
+        {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Thêm agent
       </button>
     </form>
   );
@@ -1361,21 +1308,20 @@ function ThemTacTu({ tao, dangLam }: { tao: (ten: string, moTa: string) => void;
 
 /* ── Chính sách ────────────────────────────────────────────────────── */
 function BangChinhSach({ ds, chinhSach, soNguoiNhan }: { ds: TacTu[]; chinhSach: Record<string, ChinhSachRow>; soNguoiNhan: number }) {
-  const { t: tr } = useTranslation();
   const coCs = ds.filter((t) => chinhSach[t.id]);
-  if (coCs.length === 0) return <Trong>{tr('app.tacTu.bangCs.trong')}</Trong>;
+  if (coCs.length === 0) return <Trong>Chưa có agent nào có chính sách.</Trong>;
   const tenNhom = (cs: ChinhSachRow) =>
-    cs.nhom_chi_duoc_phep === null ? tr('app.tacTu.bangCs.moiNhom') : cs.nhom_chi_duoc_phep.map((n) => tenNhomChi(n)).join(', ');
+    cs.nhom_chi_duoc_phep === null ? 'Mọi nhóm' : cs.nhom_chi_duoc_phep.map((n) => TEN_NHOM_CHI[n as NhomChi] ?? n).join(', ');
   return (
     <>
       <div className={`hidden overflow-x-auto md:block ${khoi}`}>
         <table className="w-full min-w-[900px] text-sm">
           <thead className="border-b border-border bg-accent/50 text-left text-xs text-muted-foreground">
             <tr>
-              {(['agent', 'phaiDuyet', 'moiKhoan', 'moiNgay', 'moiThang', 'nhomChi', 'nguoiLa', 'tanSuat', 'hetHan'] as const).map((c) => (
-                <th key={c} scope="col" className="px-3 py-2 font-medium">{tr(`app.tacTu.bangCs.cot.${c}`)}</th>
+              {['Agent', 'Phải duyệt', 'Mỗi khoản', 'Mỗi ngày', 'Mỗi tháng', 'Nhóm chi', 'Người nhận lạ', 'Tần suất', 'Hết hạn'].map((c) => (
+                <th key={c} scope="col" className="px-3 py-2 font-medium">{c}</th>
               ))}
-              <th scope="col" className="px-3 py-2"><span className="sr-only">{tr('app.chung.sua')}</span></th>
+              <th scope="col" className="px-3 py-2"><span className="sr-only">Sửa</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -1394,7 +1340,7 @@ function BangChinhSach({ ds, chinhSach, soNguoiNhan }: { ds: TacTu[]; chinhSach:
                   <td className="px-3 py-2.5">{tt['tan-suat']}</td>
                   <td className="px-3 py-2.5">{tt['het-han']}</td>
                   <td className="px-3 py-2.5 text-right">
-                    <Link to={`/dashboard/chinh-sach?agent=${t.id}`} className={nutNhoPhu}>{tr('app.chung.sua')}</Link>
+                    <Link to={`/dashboard/chinh-sach?agent=${t.id}`} className={nutNhoPhu}>Sửa</Link>
                   </td>
                 </tr>
               );
@@ -1410,15 +1356,15 @@ function BangChinhSach({ ds, chinhSach, soNguoiNhan }: { ds: TacTu[]; chinhSach:
             <li key={t.id} className={`${khoi} p-3`}>
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-sm font-semibold text-foreground">{t.ten}</p>
-                <Link to={`/dashboard/chinh-sach?agent=${t.id}`} className={nutPhu}>{tr('app.chung.sua')}</Link>
+                <Link to={`/dashboard/chinh-sach?agent=${t.id}`} className={nutPhu}>Sửa</Link>
               </div>
               <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                <dt className="text-muted-foreground">{tr('app.tacTu.bangCs.cot.phaiDuyet')}</dt><dd>{tt.duyet}</dd>
-                <dt className="text-muted-foreground">{tr('app.tacTu.bangCs.moiKhoanNgay')}</dt><dd className="font-mono tabular-nums">{dong(cs.han_muc_moi_lan)} / {dong(cs.han_muc_ngay)}</dd>
-                <dt className="text-muted-foreground">{tr('app.tacTu.bangCs.cot.moiThang')}</dt><dd className="font-mono tabular-nums">{dong(cs.han_muc_thang)}</dd>
-                <dt className="text-muted-foreground">{tr('app.tacTu.bangCs.cot.nhomChi')}</dt><dd>{tenNhom(cs)}</dd>
-                <dt className="text-muted-foreground">{tr('app.tacTu.bangCs.cot.nguoiLa')}</dt><dd>{tt['nguoi-la']}</dd>
-                <dt className="text-muted-foreground">{tr('app.tacTu.bangCs.tanSuatHetHan')}</dt><dd>{tt['tan-suat']} · {tt['het-han']}</dd>
+                <dt className="text-muted-foreground">Phải duyệt</dt><dd>{tt.duyet}</dd>
+                <dt className="text-muted-foreground">Mỗi khoản / ngày</dt><dd className="font-mono tabular-nums">{dong(cs.han_muc_moi_lan)} / {dong(cs.han_muc_ngay)}</dd>
+                <dt className="text-muted-foreground">Mỗi tháng</dt><dd className="font-mono tabular-nums">{dong(cs.han_muc_thang)}</dd>
+                <dt className="text-muted-foreground">Nhóm chi</dt><dd>{tenNhom(cs)}</dd>
+                <dt className="text-muted-foreground">Người nhận lạ</dt><dd>{tt['nguoi-la']}</dd>
+                <dt className="text-muted-foreground">Tần suất · hết hạn</dt><dd>{tt['tan-suat']} · {tt['het-han']}</dd>
               </dl>
             </li>
           );
@@ -1442,7 +1388,6 @@ function KhuNguoiNhan({
   const [tim, setTim] = useState('');
   const [nganHang, setNganHang] = useState('tat_ca');
   const [giu, setGiu] = useState<'tat_ca' | 'moi' | 'du'>('tat_ca');
-  const { t: tr } = useTranslation();
   const now = new Date();
   const doiTk = yeuCauDoiTaiKhoan(yeuCau);
   const trungTen = nhomTrungTen(nguoiNhan);
@@ -1458,7 +1403,7 @@ function KhuNguoiNhan({
   });
   const nhanGiu = (n: NguoiNhan) => {
     const g = thoiGianGiu(n, now);
-    return g.moi ? tr('app.tacTu.nn.moiThem', { gio: g.conGio }) : tr('app.tacTu.nn.du24');
+    return g.moi ? `Mới thêm · chưa tự duyệt (còn ~${g.conGio} giờ)` : 'Đủ 24 giờ';
   };
 
   return (
@@ -1466,20 +1411,21 @@ function KhuNguoiNhan({
       {doiTk.length > 0 && (
         <section aria-labelledby="nn-doi-tk" className="rounded-lg border border-destructive/40 bg-card p-4">
           <h2 id="nn-doi-tk" className="flex items-center gap-2 text-sm font-semibold text-destructive">
-            <AlertTriangle size={15} /> {tr('app.tacTu.nn.doiTk')}
+            <AlertTriangle size={15} /> Tài khoản nhận thay đổi
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {tr('app.tacTu.nn.doiTkMo')}
+            Các yêu cầu dưới đây dùng số tài khoản khác lần trả trước cho cùng người nhận — dấu hiệu thường gặp của lừa đảo
+            giả danh nhà cung cấp. Gọi xác nhận qua số điện thoại bạn lưu từ trước.
           </p>
           <ul className="mt-2 divide-y divide-border">
             {doiTk.map((y) => (
               <li key={y.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                 <span className="min-w-0 text-foreground">
-                  {y.ten_nguoi_nhan ?? tr('app.chung.chuaRoTen')} <span className="text-muted-foreground">· {tenNganHang(y.ngan_hang_bin)} · <span className="font-mono">{y.so_tai_khoan}</span> · {dong(y.so_tien)}</span>
+                  {y.ten_nguoi_nhan ?? 'Chưa rõ tên'} <span className="text-muted-foreground">· {tenNganHang(y.ngan_hang_bin)} · <span className="font-mono">{y.so_tai_khoan}</span> · {dong(y.so_tien)}</span>
                 </span>
                 <span className="flex items-center gap-2">
                   <NhanTrangThai y={y} />
-                  <button onClick={() => xem(y.id)} className={nutNhoPhu}>{tr('app.chung.xem')}</button>
+                  <button onClick={() => xem(y.id)} className={nutNhoPhu}>Xem</button>
                 </span>
               </li>
             ))}
@@ -1490,9 +1436,9 @@ function KhuNguoiNhan({
       {trungTen.length > 0 && (
         <section aria-labelledby="nn-trung-ten" className={`${khoi} p-4`}>
           <h2 id="nn-trung-ten" className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <span className="h-2 w-2 rounded-full bg-mimi-amber" aria-hidden /> {tr('app.tacTu.nn.trungTen')}
+            <span className="h-2 w-2 rounded-full bg-mimi-amber" aria-hidden /> Cùng tên, nhiều số tài khoản trong danh sách
           </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{tr('app.tacTu.nn.trungTenMo')}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Có thể đúng (một người dùng hai tài khoản), nhưng nên kiểm lại tài khoản nào còn dùng.</p>
           <ul className="mt-2 space-y-1 text-sm">
             {trungTen.map((g) => (
               <li key={g[0].id} className="text-foreground">
@@ -1504,50 +1450,50 @@ function KhuNguoiNhan({
       )}
 
       <section aria-labelledby="nn-them" className={`${khoi} p-4`}>
-        <h2 id="nn-them" className="text-sm font-semibold text-foreground">{tr('app.tacTu.nn.them')}</h2>
+        <h2 id="nn-them" className="text-sm font-semibold text-foreground">Thêm người nhận được phép</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {tr('app.tacTu.nn.themMo')}
+          Agent chỉ chi được cho những tài khoản này (trừ khi chính sách của nó cho phép hỏi bạn khi gặp người lạ).
         </p>
         <ThemNguoiNhan dangLam={dangLam === 'nguoi_nhan'} them={them} />
       </section>
 
       <div className="flex flex-col gap-2 md:flex-row">
         <label className="relative block md:flex-1">
-          <span className="sr-only">{tr('app.tacTu.nn.tim')}</span>
+          <span className="sr-only">Tìm người nhận</span>
           <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <input type="search" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={tr('app.tacTu.nn.timPh')} className={`${o} pl-8`} />
+          <input type="search" value={tim} onChange={(e) => setTim(e.target.value)} placeholder="Tìm tên, số tài khoản, ghi chú…" className={`${o} pl-8`} />
         </label>
         <label className="block md:w-56">
-          <span className="sr-only">{tr('app.tacTu.nn.locNh')}</span>
+          <span className="sr-only">Lọc ngân hàng</span>
           <select value={nganHang} onChange={(e) => setNganHang(e.target.value)} className={o}>
-            <option value="tat_ca">{tr('app.tacTu.nn.moiNh')}</option>
+            <option value="tat_ca">Mọi ngân hàng</option>
             {binCo.map((b) => <option key={b} value={b}>{tenNganHang(b)}</option>)}
           </select>
         </label>
         <label className="block md:w-56">
-          <span className="sr-only">{tr('app.tacTu.nn.locGiu')}</span>
+          <span className="sr-only">Lọc thời gian giữ</span>
           <select value={giu} onChange={(e) => setGiu(e.target.value as typeof giu)} className={o}>
-            <option value="tat_ca">{tr('app.tacTu.nn.moiTt')}</option>
-            <option value="moi">{tr('app.tacTu.nn.moi')}</option>
-            <option value="du">{tr('app.tacTu.nn.du24')}</option>
+            <option value="tat_ca">Mọi trạng thái</option>
+            <option value="moi">Mới thêm (dưới 24 giờ)</option>
+            <option value="du">Đủ 24 giờ</option>
           </select>
         </label>
       </div>
 
       {nguoiNhan.length === 0 ? (
-        <Trong>{tr('app.tacTu.nn.trong')}</Trong>
+        <Trong>Danh sách đang trống.</Trong>
       ) : ds.length === 0 ? (
-        <Trong>{tr('app.tacTu.nn.khongKhop')}</Trong>
+        <Trong>Không có người nhận nào khớp bộ lọc.</Trong>
       ) : (
         <>
           <div className={`hidden overflow-x-auto md:block ${khoi}`}>
             <table className="w-full min-w-[760px] text-sm">
               <thead className="border-b border-border bg-accent/50 text-left text-xs text-muted-foreground">
                 <tr>
-                  {(['chuTk', 'nganHang', 'stk', 'ghiChu', 'trangThai', 'themLuc'] as const).map((c) => (
-                    <th key={c} scope="col" className="px-3 py-2 font-medium">{tr(`app.tacTu.nn.cot.${c}`)}</th>
+                  {['Chủ tài khoản', 'Ngân hàng', 'Số tài khoản', 'Ghi chú', 'Trạng thái', 'Thêm lúc'].map((c) => (
+                    <th key={c} scope="col" className="px-3 py-2 font-medium">{c}</th>
                   ))}
-                  <th scope="col" className="px-3 py-2"><span className="sr-only">{tr('app.tacTu.nn.bo')}</span></th>
+                  <th scope="col" className="px-3 py-2"><span className="sr-only">Bỏ</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1555,7 +1501,7 @@ function KhuNguoiNhan({
                   <tr key={n.id}>
                     <td className="px-3 py-2.5 font-medium text-foreground">
                       <span className="flex items-center gap-1.5">
-                        {idTrungTen.has(n.id) && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label={tr('app.tacTu.nn.trungTenAria')} />}
+                        {idTrungTen.has(n.id) && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label="cùng tên với tài khoản khác" />}
                         {n.ten_chu_tai_khoan}
                       </span>
                     </td>
@@ -1565,7 +1511,7 @@ function KhuNguoiNhan({
                     <td className="px-3 py-2.5 text-xs text-muted-foreground">{nhanGiu(n)}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-muted-foreground tabular-nums">{luc(n.created_at)}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <button data-mimi="tac-tu.nguoi-nhan.xoa" data-mimi-khong-tu-bam onClick={() => bo(n)} aria-label={tr('app.tacTu.nn.boTen', { ten: n.ten_chu_tai_khoan })} className={`${nutNho} w-8 px-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive`}>
+                      <button data-mimi="tac-tu.nguoi-nhan.xoa" data-mimi-khong-tu-bam onClick={() => bo(n)} aria-label={`Bỏ ${n.ten_chu_tai_khoan}`} className={`${nutNho} w-8 px-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive`}>
                         <Trash2 size={14} />
                       </button>
                     </td>
@@ -1579,13 +1525,13 @@ function KhuNguoiNhan({
               <li key={n.id} className={`${khoi} flex items-start justify-between gap-3 p-3`}>
                 <div className="min-w-0">
                   <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                    {idTrungTen.has(n.id) && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label={tr('app.tacTu.nn.trungTenAria')} />}
+                    {idTrungTen.has(n.id) && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-label="cùng tên với tài khoản khác" />}
                     <span className="truncate">{n.ten_chu_tai_khoan}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">{tenNganHang(n.ngan_hang_bin)} · <span className="font-mono">{n.so_tai_khoan}</span></p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{nhanGiu(n)}{n.ghi_chu ? ` · ${n.ghi_chu}` : ''}</p>
                 </div>
-                <button data-mimi="tac-tu.nguoi-nhan.xoa" data-mimi-khong-tu-bam onClick={() => bo(n)} aria-label={tr('app.tacTu.nn.boTen', { ten: n.ten_chu_tai_khoan })} className={`${nutPhu} w-11 shrink-0 px-0 text-muted-foreground hover:text-destructive`}>
+                <button data-mimi="tac-tu.nguoi-nhan.xoa" data-mimi-khong-tu-bam onClick={() => bo(n)} aria-label={`Bỏ ${n.ten_chu_tai_khoan}`} className={`${nutPhu} w-11 shrink-0 px-0 text-muted-foreground hover:text-destructive`}>
                   <Trash2 size={15} />
                 </button>
               </li>
@@ -1602,7 +1548,6 @@ function ThemNguoiNhan({ them, dangLam }: { them: (du: Record<string, unknown>) 
   const [stk, setStk] = useState('');
   const [ten, setTen] = useState('');
   const [ghiChu, setGhiChu] = useState('');
-  const { t: tr } = useTranslation();
   return (
     <form
       onSubmit={(e) => {
@@ -1614,34 +1559,33 @@ function ThemNguoiNhan({ them, dangLam }: { them: (du: Record<string, unknown>) 
       }}
       className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]"
     >
-      <label className="block"><span className="sr-only">{tr('app.tacTu.nn.form.nganHang')}</span>
+      <label className="block"><span className="sr-only">Ngân hàng</span>
         <select data-mimi="tac-tu.nguoi-nhan.ngan-hang" value={bin} onChange={(e) => setBin(e.target.value)} className={o}>
           {DANH_SACH_NGAN_HANG.map((n) => <option key={n.bin} value={n.bin}>{n.ten}</option>)}
         </select>
       </label>
-      <label className="block"><span className="sr-only">{tr('app.tacTu.nn.form.stk')}</span>
-        <input data-mimi="tac-tu.nguoi-nhan.stk" value={stk} onChange={(e) => setStk(e.target.value)} placeholder={tr('app.tacTu.nn.form.stk')} inputMode="numeric" className={o} />
+      <label className="block"><span className="sr-only">Số tài khoản</span>
+        <input data-mimi="tac-tu.nguoi-nhan.stk" value={stk} onChange={(e) => setStk(e.target.value)} placeholder="Số tài khoản" inputMode="numeric" className={o} />
       </label>
-      <label className="block"><span className="sr-only">{tr('app.tacTu.nn.form.tenChu')}</span>
-        <input data-mimi="tac-tu.nguoi-nhan.ten" value={ten} onChange={(e) => setTen(e.target.value)} placeholder={tr('app.tacTu.nn.form.tenChu')} className={o} />
+      <label className="block"><span className="sr-only">Tên chủ tài khoản</span>
+        <input data-mimi="tac-tu.nguoi-nhan.ten" value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên chủ tài khoản" className={o} />
       </label>
-      <label className="block"><span className="sr-only">{tr('app.tacTu.nn.form.ghiChu')}</span>
-        <input value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} placeholder={tr('app.tacTu.nn.form.ghiChu')} className={o} />
+      <label className="block"><span className="sr-only">Ghi chú</span>
+        <input value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} placeholder="Ghi chú" className={o} />
       </label>
       <button data-mimi="tac-tu.nguoi-nhan.them" data-mimi-khong-tu-bam disabled={dangLam || stk.length < 6 || ten.trim().length < 2} className={nutChinh}>
-        <Plus size={14} /> {tr('app.tacTu.nn.form.them')}
+        <Plus size={14} /> Thêm
       </button>
     </form>
   );
 }
 
 /* ── Panel quyết định ──────────────────────────────────────────────── */
-// Chữ đọc cho trình đọc màn hình lấy từ bộ dịch: app.tacTu.buoc.<trạng thái>.
-const KIEU_BUOC: Record<TrangThaiBuoc, { cham: string }> = {
-  xong: { cham: 'border-mimi-green bg-mimi-green' },
-  dang: { cham: 'border-foreground bg-card' },
-  cho: { cham: 'border-border bg-card' },
-  dung: { cham: 'border-border bg-accent' },
+const KIEU_BUOC: Record<TrangThaiBuoc, { cham: string; doc: string }> = {
+  xong: { cham: 'border-mimi-green bg-mimi-green', doc: 'đã xong' },
+  dang: { cham: 'border-foreground bg-card', doc: 'đang ở bước này' },
+  cho: { cham: 'border-border bg-card', doc: 'chưa tới' },
+  dung: { cham: 'border-border bg-accent', doc: 'không áp dụng' },
 };
 
 function PanelQuyetDinh({
@@ -1651,7 +1595,7 @@ function PanelQuyetDinh({
   tenTacTu: string;
   nguoiYeuCau: string;
   cs: ChinhSachRow | undefined;
-  suDung: { ngay: TienVND; thang: TienVND } | undefined;
+  suDung: { ngay: number; thang: number } | undefined;
   dangLam: boolean;
   duyet: (themNguoiNhan: boolean) => void;
   tuChoi: () => void;
@@ -1659,7 +1603,6 @@ function PanelQuyetDinh({
 }) {
   const [themNguoiNhan, setThemNguoiNhan] = useState(false);
   const [hienQr, setHienQr] = useState(false);
-  const { t: tr } = useTranslation();
   const luat = luatDaKhop(y);
   const ghiChuNguoi = lyDoCua(y).find((l) => l.ma === 'NGUOI_DUYET_TU_CHOI');
   const kq = ketQuaDanhGia(y);
@@ -1670,16 +1613,16 @@ function PanelQuyetDinh({
   const quaHan = y.trang_thai === 'da_duyet' && y.het_han_luc ? new Date(y.het_han_luc).getTime() < Date.now() : false;
 
   const ketQua = {
-    duyet: { chu: tr('app.tacTu.pq.duyet'), mo: tr('app.tacTu.pq.duyetMo'), lop: 'text-mimi-green', icon: <Check size={16} /> },
-    tu_choi: { chu: tr('app.tacTu.pq.tuChoi'), mo: tr('app.tacTu.pq.tuChoiMo'), lop: 'text-destructive', icon: <X size={16} /> },
+    duyet: { chu: 'Duyệt', mo: 'Trong chính sách — MIMI tự duyệt.', lop: 'text-mimi-green', icon: <Check size={16} /> },
+    tu_choi: { chu: 'Từ chối', mo: 'Luật chặn khoản này. Không ai duyệt lại được — agent phải gửi yêu cầu mới.', lop: 'text-destructive', icon: <X size={16} /> },
     can_nguoi: {
-      chu: tr('app.tacTu.pq.canNguoi'),
-      mo: y.cach_quyet === 'nguoi_duyet' ? (y.trang_thai === 'tu_choi' ? tr('app.tacTu.pq.canNguoiTuChoi') : tr('app.tacTu.pq.canNguoiDuyet')) : tr('app.tacTu.pq.canNguoiCho'),
+      chu: 'Cần người xem',
+      mo: y.cach_quyet === 'nguoi_duyet' ? (y.trang_thai === 'tu_choi' ? 'Luật đưa lên hỏi, và bạn đã từ chối.' : 'Luật đưa lên hỏi, và bạn đã duyệt.') : 'Luật không cho tự duyệt — chờ bạn quyết.',
       lop: 'text-foreground',
       icon: <span className="h-2.5 w-2.5 rounded-full bg-mimi-amber" />,
     },
   };
-  const k = kq ? ketQua[kq] : { chu: tr('app.tacTu.pq.chuaXet'), mo: tr('app.tacTu.pq.chuaXetMo'), lop: 'text-muted-foreground', icon: <CircleDot size={16} /> };
+  const k = kq ? ketQua[kq] : { chu: 'Chưa xét', mo: 'MIMI chưa xét khoản này theo chính sách.', lop: 'text-muted-foreground', icon: <CircleDot size={16} /> };
 
   return (
     <>
@@ -1690,21 +1633,22 @@ function PanelQuyetDinh({
         </div>
         <SheetTitle className="font-mono text-3xl font-semibold tabular-nums">{dong(y.so_tien)}</SheetTitle>
         {/* Đọc lại bằng chữ: một số 0 thừa là chuyển gấp mười lần. Xem lib/soTienBangChu.ts. */}
-        <SheetDescription>{tr('app.tacTu.pq.bangChu')} <span className="text-foreground">{docSoTienBangChu(Math.round(y.so_tien))}</span></SheetDescription>
+        <SheetDescription>Bằng chữ: <span className="text-foreground">{docSoTienBangChu(Math.round(y.so_tien))}</span></SheetDescription>
       </SheetHeader>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
         <section aria-labelledby="pq-ket-qua" className={`${khoi} p-3`}>
-          <h3 id="pq-ket-qua" className={nhanNho}>{tr('app.tacTu.pq.ketQua')}</h3>
+          <h3 id="pq-ket-qua" className={nhanNho}>Kết quả đánh giá</h3>
           <p className={`mt-1 flex items-center gap-2 text-lg font-semibold ${k.lop}`}>{k.icon} {k.chu}</p>
           <p className="text-xs text-muted-foreground">{k.mo}</p>
         </section>
 
         {doiTk && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs">
-            <p className="font-semibold text-destructive">{tr('app.tacTu.pq.doiTk')}</p>
+            <p className="font-semibold text-destructive">Số tài khoản khác lần trả trước cho cùng người nhận</p>
             <p className="mt-1 text-muted-foreground">
-              {tr('app.tacTu.pq.doiTkMo')}
+              Đây là dấu hiệu thường gặp của lừa đảo giả danh nhà cung cấp. Chỉ duyệt sau khi đã gọi xác nhận qua số điện
+              thoại bạn lưu từ trước.
             </p>
           </div>
         )}
@@ -1716,21 +1660,22 @@ function PanelQuyetDinh({
         */}
         {nguoiLa && choDuyet && (
           <div className="rounded-lg border border-border bg-card p-3 text-xs">
-            <p className="flex items-center gap-2 font-semibold text-foreground"><span className="h-2 w-2 rounded-full bg-mimi-amber" aria-hidden /> {tr('app.tacTu.pq.lanDau')}</p>
+            <p className="flex items-center gap-2 font-semibold text-foreground"><span className="h-2 w-2 rounded-full bg-mimi-amber" aria-hidden /> Lần đầu chi cho tài khoản này</p>
             <p className="mt-1 text-muted-foreground">
-              {tr('app.tacTu.pq.lanDauMo')}
+              Kẻ gian thường giả làm nhà cung cấp và gửi số tài khoản mới. Gọi xác nhận qua số điện thoại bạn đã lưu từ
+              trước — không dùng số nằm trong tin nhắn đề nghị chuyển tiền.
             </p>
             <label className="mt-2 flex items-start gap-2 text-foreground">
               <input type="checkbox" className="mt-0.5" checked={themNguoiNhan} onChange={(e) => setThemNguoiNhan(e.target.checked)} />
-              {tr('app.tacTu.pq.daKiem')}
+              Tôi đã kiểm đúng tài khoản — thêm vào danh sách người nhận được phép
             </label>
           </div>
         )}
 
         <section aria-labelledby="pq-luat">
-          <h3 id="pq-luat" className={nhanNho}>{tr('app.tacTu.pq.viSao')}</h3>
+          <h3 id="pq-luat" className={nhanNho}>Vì sao</h3>
           {luat.length === 0 ? (
-            <p className="mt-1 text-sm text-muted-foreground">{tr('app.tacTu.pq.chuaCo')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Chưa có.</p>
           ) : (
             <ul className="mt-2 divide-y divide-border rounded-lg border border-border">
               {luat.map((l) => (
@@ -1742,50 +1687,49 @@ function PanelQuyetDinh({
               ))}
             </ul>
           )}
-          {ghiChuNguoi && <p className="mt-2 text-xs text-muted-foreground">{tr('app.tacTu.pq.ghiChuTuChoi')} <span className="text-foreground">{ghiChuNguoi.cau}</span></p>}
+          {ghiChuNguoi && <p className="mt-2 text-xs text-muted-foreground">Ghi chú khi bạn từ chối: <span className="text-foreground">{ghiChuNguoi.cau}</span></p>}
         </section>
 
         <section aria-labelledby="pq-chi-tiet">
-          <h3 id="pq-chi-tiet" className={nhanNho}>{tr('app.tacTu.pq.chiTiet')}</h3>
+          <h3 id="pq-chi-tiet" className={nhanNho}>Chi tiết</h3>
           <dl className="mt-2 grid grid-cols-[110px_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
-            <dt className="text-muted-foreground">{tr('app.tacTu.pq.nguoiYc')}</dt>
-            <dd className="text-foreground">{nguoiYeuCau === tr('app.tacTu.nguoiYc.agent') ? tr('app.tacTu.pq.agentTen', { ten: tenTacTu }) : tr('app.tacTu.pq.tinhVao', { nguoi: nguoiYeuCau, ten: tenTacTu })}</dd>
-            <dt className="text-muted-foreground">{tr('app.tacTu.pq.mucDich')}</dt><dd className="text-foreground">{y.muc_dich}</dd>
-            <dt className="text-muted-foreground">{tr('app.tacTu.pq.nguoiNhan')}</dt>
-            <dd className="text-foreground">{y.ten_nguoi_nhan ?? tr('app.tacTu.pq.chuaRoTen')} <span className="text-muted-foreground">· {tenNganHang(y.ngan_hang_bin)} · <span className="font-mono">{y.so_tai_khoan}</span></span></dd>
-            <dt className="text-muted-foreground">{tr('app.tacTu.pq.nhomChi')}</dt><dd className="text-foreground">{tenNhomChi(y.nhom_chi)}</dd>
-            <dt className="text-muted-foreground">{tr('app.tacTu.pq.noiDungCk')}</dt><dd className="font-mono text-foreground">{y.ma_tham_chieu}</dd>
+            <dt className="text-muted-foreground">Người yêu cầu</dt>
+            <dd className="text-foreground">{nguoiYeuCau === 'Agent' ? `Agent ${tenTacTu}` : `${nguoiYeuCau} · tính vào ngân sách của ${tenTacTu}`}</dd>
+            <dt className="text-muted-foreground">Mục đích</dt><dd className="text-foreground">{y.muc_dich}</dd>
+            <dt className="text-muted-foreground">Người nhận</dt>
+            <dd className="text-foreground">{y.ten_nguoi_nhan ?? 'chưa rõ tên'} <span className="text-muted-foreground">· {tenNganHang(y.ngan_hang_bin)} · <span className="font-mono">{y.so_tai_khoan}</span></span></dd>
+            <dt className="text-muted-foreground">Nhóm chi</dt><dd className="text-foreground">{TEN_NHOM_CHI[y.nhom_chi as NhomChi] ?? y.nhom_chi}</dd>
+            <dt className="text-muted-foreground">Nội dung chuyển khoản</dt><dd className="font-mono text-foreground">{y.ma_tham_chieu}</dd>
           </dl>
         </section>
 
         <section aria-labelledby="pq-ngan-sach">
-          <h3 id="pq-ngan-sach" className={nhanNho}>{tr('app.tacTu.pq.nganSach')}</h3>
+          <h3 id="pq-ngan-sach" className={nhanNho}>Ngân sách của agent</h3>
           {!cs ? (
-            <p className="mt-1 text-sm text-muted-foreground">{tr('app.tacTu.pq.chuaCs')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Agent chưa có chính sách.</p>
           ) : !ns ? (
-            <p className="mt-1 text-sm text-muted-foreground">{tr('app.tacTu.pq.thangTruoc')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Chỉ tính cho khoản tạo trong tháng này — hạn mức của tháng trước đã quay vòng.</p>
           ) : (
             <>
               <div className="mt-2 overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-xs">
                   <thead className="bg-accent/50 text-left text-muted-foreground">
                     <tr>
-                      <th scope="col" className="px-3 py-1.5 font-medium"><span className="sr-only">{tr('app.tacTu.pq.ky')}</span></th>
-                      <th scope="col" className="px-3 py-1.5 text-right font-medium">{tr('app.tacTu.pq.hanMuc')}</th>
-                      <th scope="col" className="px-3 py-1.5 text-right font-medium">{tr('app.tacTu.pq.conLaiKhong')}</th>
-                      <th scope="col" className="px-3 py-1.5 text-right font-medium">{tr('app.tacTu.pq.conLaiCa')}</th>
+                      <th scope="col" className="px-3 py-1.5 font-medium"><span className="sr-only">Kỳ</span></th>
+                      <th scope="col" className="px-3 py-1.5 text-right font-medium">Hạn mức</th>
+                      <th scope="col" className="px-3 py-1.5 text-right font-medium">Còn lại, không tính khoản này</th>
+                      <th scope="col" className="px-3 py-1.5 text-right font-medium">Còn lại, tính cả khoản này</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border font-mono tabular-nums">
                     {ns.dong.map((d) => {
-                      const sau = truTien(d.tran, d.tinhCa);
-                      const vuot = soSanhTien(sau, 0) < 0;
+                      const sau = d.tran - d.tinhCa;
                       return (
                         <tr key={d.nhan}>
                           <th scope="row" className="px-3 py-1.5 text-left font-sans font-medium text-foreground">{d.nhan}</th>
                           <td className="px-3 py-1.5 text-right">{dong(d.tran)}</td>
-                          <td className="px-3 py-1.5 text-right">{dong(truTien(d.tran, d.khongTinh))}</td>
-                          <td className={`px-3 py-1.5 text-right ${vuot ? 'text-destructive' : ''}`}>{vuot ? tr('app.tacTu.pq.vuot', { tien: dong(truTien(d.tinhCa, d.tran)) }) : dong(sau)}</td>
+                          <td className="px-3 py-1.5 text-right">{dong(d.tran - d.khongTinh)}</td>
+                          <td className={`px-3 py-1.5 text-right ${sau < 0 ? 'text-destructive' : ''}`}>{sau < 0 ? `Vượt ${dong(-sau)}` : dong(sau)}</td>
                         </tr>
                       );
                     })}
@@ -1793,37 +1737,37 @@ function PanelQuyetDinh({
                 </table>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {ns.daTinh ? tr('app.tacTu.pq.daTinh') : tr('app.tacTu.pq.khongTinh')} {tr('app.tacTu.pq.soDaDung')}
+                {ns.daTinh ? 'Khoản này đang được tính vào hạn mức.' : 'Khoản này không trừ vào hạn mức; cột cuối cho biết nếu nó được tính.'} Số đã dùng tính tới hiện tại, gồm cả khoản chờ duyệt.
               </p>
             </>
           )}
         </section>
 
         <section aria-labelledby="pq-chung-tu">
-          <h3 id="pq-chung-tu" className={nhanNho}>{tr('app.tacTu.pq.chungTu')}</h3>
+          <h3 id="pq-chung-tu" className={nhanNho}>Chứng từ</h3>
           <ul className="mt-2 space-y-1.5 text-sm">
             <li className="flex items-start gap-2">
               {y.so_hoa_don ? <Check size={14} className="mt-0.5 shrink-0 text-mimi-green" /> : <CircleDot size={14} className="mt-0.5 shrink-0 text-muted-foreground" />}
-              <span>{tr('app.tacTu.pq.soHd')} <span className="font-mono text-foreground">{y.so_hoa_don ?? tr('app.tacTu.pq.chuaGui')}</span></span>
+              <span>Số hoá đơn agent gửi kèm: <span className="font-mono text-foreground">{y.so_hoa_don ?? 'chưa gửi'}</span></span>
             </li>
             <li className="flex items-start gap-2">
               {y.trang_thai === 'da_chi' ? <Check size={14} className="mt-0.5 shrink-0 text-mimi-green" /> : <CircleDot size={14} className="mt-0.5 shrink-0 text-muted-foreground" />}
               <span>
-                {tr('app.tacTu.pq.saoKe')}{' '}
+                Sao kê xác nhận đã chi:{' '}
                 {y.trang_thai === 'da_chi'
                   ? <span className="font-mono text-foreground">{dong(y.so_tien_thuc_chi ?? y.so_tien)} · {luc(y.da_chi_luc)}</span>
-                  : <span className="text-foreground">{tr('app.tacTu.pq.chua')}</span>}
+                  : <span className="text-foreground">chưa</span>}
               </span>
             </li>
             <li className="flex items-start gap-2">
               <Info size={14} className="mt-0.5 shrink-0 text-muted-foreground" />
-              <span>{tr('app.tacTu.pq.hdDauVao')} <Link to="/dashboard/chung-tu" className={`font-medium text-foreground underline underline-offset-4 ${vien}`}>{tr('app.tacTu.pq.doiChieu')}</Link></span>
+              <span>Hoá đơn điện tử đầu vào: <Link to="/dashboard/chung-tu" className={`font-medium text-foreground underline underline-offset-4 ${vien}`}>đối chiếu ở Chứng từ chi phí</Link></span>
             </li>
           </ul>
         </section>
 
         <section aria-labelledby="pq-tien-trinh">
-          <h3 id="pq-tien-trinh" className={nhanNho}>{tr('app.tacTu.pq.tienTrinh')}</h3>
+          <h3 id="pq-tien-trinh" className={nhanNho}>Tiến trình</h3>
           <ol className="mt-3">
             {tienTrinh(y).map((b, i, ds) => (
               <li key={b.ten} className="relative flex gap-3 pb-4 last:pb-0">
@@ -1831,7 +1775,7 @@ function PanelQuyetDinh({
                 <span aria-hidden className={`relative mt-1 h-[13px] w-[13px] shrink-0 rounded-full border-2 ${KIEU_BUOC[b.trangThai].cham}`} />
                 <div className="min-w-0">
                   <p className={`text-sm font-medium ${b.trangThai === 'dung' ? 'text-muted-foreground' : 'text-foreground'}`}>
-                    {b.ten} <span className="sr-only">— {tr(`app.tacTu.buoc.${b.trangThai}`)}</span>
+                    {b.ten} <span className="sr-only">— {KIEU_BUOC[b.trangThai].doc}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {b.mo}{b.luc && <span className="font-mono tabular-nums"> · {luc(b.luc)}</span>}
@@ -1844,13 +1788,14 @@ function PanelQuyetDinh({
 
         {y.trang_thai === 'da_duyet' && (
           <section aria-labelledby="pq-tra">
-            <h3 id="pq-tra" className={nhanNho}>{tr('app.tacTu.pq.thanhToan')}</h3>
+            <h3 id="pq-tra" className={nhanNho}>Thanh toán</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              <Trans i18nKey="app.tacTu.pq.noiDungCkGiu" values={{ ma: y.ma_tham_chieu }} components={{ c: <code className="font-semibold text-foreground" /> }} />
-              {quaHan && <span className="text-destructive"> {tr('app.tacTu.pq.quaHan')}</span>}
+              Nội dung chuyển khoản: <code className="font-semibold text-foreground">{y.ma_tham_chieu}</code> — giữ nguyên để sao kê
+              tự xác nhận đã chi.
+              {quaHan && <span className="text-destructive"> Lệnh đã quá 72 giờ — kiểm lại trước khi trả.</span>}
             </p>
             <button data-mimi="tac-tu.tra-qr" data-mimi-khong-tu-bam onClick={() => setHienQr((v) => !v)} className={`${nutChinh} mt-2 w-full`}>
-              <QrCode size={14} /> {hienQr ? tr('app.tacTu.pq.anQr') : tr('app.tacTu.pq.traQr')}
+              <QrCode size={14} /> {hienQr ? 'Ẩn mã QR' : 'Trả bằng mã QR'}
             </button>
             {hienQr && <MaQrTra y={y} />}
           </section>
@@ -1858,24 +1803,25 @@ function PanelQuyetDinh({
 
         <p className="flex items-start gap-2 rounded-lg bg-accent/60 p-3 text-xs text-muted-foreground">
           <ShieldCheck size={14} className="mt-0.5 shrink-0 text-foreground" />
-          {tr('app.tacTu.pq.baoVe')}
+          Agent không tự vượt được hạn mức hay quyền duyệt: khoản bị luật từ chối không có nút duyệt, chỉ khoản đang chờ mới
+          duyệt được và chỉ bằng phiên đăng nhập của bạn. MIMI không chuyển tiền.
         </p>
       </div>
 
       {choDuyet && (
         <div className="grid grid-cols-2 gap-2 border-t border-border bg-card px-5 py-3">
           <button data-mimi="tac-tu.tu-choi" data-mimi-khong-tu-bam disabled={dangLam} onClick={tuChoi} className={nutPhu}>
-            <X size={14} /> {tr('app.tacTu.nut.tuChoi')}
+            <X size={14} /> Từ chối
           </button>
           <button data-mimi="tac-tu.duyet" data-mimi-khong-tu-bam disabled={dangLam} onClick={() => duyet(themNguoiNhan)} className={nutChinh}>
-            {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {tr('app.tacTu.nut.duyet')}
+            {dangLam ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Duyệt
           </button>
         </div>
       )}
       {y.trang_thai === 'da_duyet' && (
         <div className="border-t border-border bg-card px-5 py-3">
           <button data-mimi="tac-tu.huy" data-mimi-khong-tu-bam disabled={dangLam} onClick={huy} className={`${nutPhu} w-full`}>
-            <X size={14} /> {tr('app.tacTu.pq.huyLenh')}
+            <X size={14} /> Huỷ lệnh trả
           </button>
         </div>
       )}
@@ -1892,25 +1838,24 @@ function HopTuChoi({
   xacNhan: (ghiChu: string) => void;
 }) {
   const [ghiChu, setGhiChu] = useState('');
-  const { t: tr } = useTranslation();
   return (
     <Dialog open={y !== null} onOpenChange={(m) => { if (!m) dongLai(); }}>
       <DialogContent className="rounded-lg sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{tr('app.tacTu.tuChoi.tieuDe', { tien: y ? dong(y.so_tien) : '' })}</DialogTitle>
-          <DialogDescription>{tr('app.tacTu.tuChoi.mo')}</DialogDescription>
+          <DialogTitle>Từ chối {y ? dong(y.so_tien) : ''}</DialogTitle>
+          <DialogDescription>Agent sẽ đọc được lý do. Để trống thì ghi "Chủ doanh nghiệp từ chối."</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={(e) => { e.preventDefault(); xacNhan(ghiChu); }}
           className="space-y-4"
         >
           <label className="block">
-            <span className="mb-1 block text-xs text-muted-foreground">{tr('app.tacTu.tuChoi.lyDo')}</span>
+            <span className="mb-1 block text-xs text-muted-foreground">Lý do từ chối</span>
             <textarea value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} maxLength={200} rows={3} className={o} />
           </label>
           <DialogFooter className="gap-2 sm:gap-2">
-            <button type="button" onClick={dongLai} className={nutPhu}>{tr('app.chung.huy')}</button>
-            <button type="submit" disabled={dangLam} className={nutChinh}>{tr('app.tacTu.tuChoi.nut')}</button>
+            <button type="button" onClick={dongLai} className={nutPhu}>Huỷ</button>
+            <button type="submit" disabled={dangLam} className={nutChinh}>Từ chối khoản này</button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -1918,11 +1863,10 @@ function HopTuChoi({
   );
 }
 
-// Chữ kết luận lấy từ bộ dịch: app.tacTu.ketLuan.<mã>.
-const KET_LUAN_KIEM: Record<'tu_choi' | 'cho_duyet' | 'tu_dong_duyet', { lop: string }> = {
-  tu_dong_duyet: { lop: 'bg-mimi-green/10 text-mimi-green' },
-  cho_duyet: { lop: 'border border-foreground/20 bg-card text-foreground' },
-  tu_choi: { lop: 'bg-destructive/10 text-destructive' },
+const KET_LUAN_KIEM: Record<'tu_choi' | 'cho_duyet' | 'tu_dong_duyet', { chu: string; lop: string }> = {
+  tu_dong_duyet: { chu: 'Sẽ tự duyệt', lop: 'bg-mimi-green/10 text-mimi-green' },
+  cho_duyet: { chu: 'Cần duyệt', lop: 'border border-foreground/20 bg-card text-foreground' },
+  tu_choi: { chu: 'Sẽ bị từ chối', lop: 'bg-destructive/10 text-destructive' },
 };
 
 /** Mã chống trùng cho một lần mở form: bấm Gửi hai lần hay mạng chập thì máy chủ trả lại đúng khoản cũ. */
@@ -1942,7 +1886,7 @@ function FormTaoYeuCau({
 }: {
   ds: TacTu[];
   chinhSach: Record<string, ChinhSachRow>;
-  suDung: Record<string, { ngay: TienVND; thang: TienVND }>;
+  suDung: Record<string, { ngay: number; thang: number }>;
   nguoiNhan: NguoiNhan[];
   dangGui: boolean;
   gui: (du: Record<string, unknown>) => void;
@@ -1959,14 +1903,14 @@ function FormTaoYeuCau({
   const [nhomChi, setNhomChi] = useState<string>(NHOM_CHI[0]);
   const [mucDich, setMucDich] = useState('');
   const [soHoaDon, setSoHoaDon] = useState('');
-  const { t: tr } = useTranslation();
 
-  const lenhMcp = `claude mcp add --transport http mimi ${DIEM_MCP} --header "x-mimi-agent-key: ${tr('app.tacTu.form.khoaCuaAgent')}"`;
+  const lenhMcp = `claude mcp add --transport http mimi ${DIEM_MCP} --header "x-mimi-agent-key: <khoá của agent>"`;
   const dauForm = (
     <SheetHeader className="text-left">
-      <SheetTitle>{tr('app.tacTu.form.tieuDe')}</SheetTitle>
+      <SheetTitle>Tạo yêu cầu chi</SheetTitle>
       <SheetDescription>
-        {tr('app.tacTu.form.mo')}
+        Tính vào ngân sách của một agent và đi qua đúng chính sách của agent đó — kể cả bạn cũng không có lối tắt qua luật.
+        MIMI không chuyển tiền.
       </SheetDescription>
     </SheetHeader>
   );
@@ -1976,9 +1920,9 @@ function FormTaoYeuCau({
       <>
         {dauForm}
         <div className={`${khoi} mt-5 p-4`}>
-          <p className="text-sm text-foreground">{tr('app.tacTu.form.chuaCoAgent')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{tr('app.tacTu.form.chuaCoAgentMo')}</p>
-          <button onClick={moAgents} className={`${nutChinh} mt-3`}><Plus size={14} /> {tr('app.tacTu.form.themAgent')}</button>
+          <p className="text-sm text-foreground">Chưa có agent nào để tính ngân sách.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Mỗi khoản chi thuộc về một agent và chính sách của nó. Thêm agent trước.</p>
+          <button onClick={moAgents} className={`${nutChinh} mt-3`}><Plus size={14} /> Thêm agent</button>
         </div>
       </>
     );
@@ -2023,31 +1967,25 @@ function FormTaoYeuCau({
         }}
       >
         <div>
-          <label htmlFor="tyc-agent" className={nhanTruong}>{tr('app.tacTu.form.tinhVao')}</label>
+          <label htmlFor="tyc-agent" className={nhanTruong}>Tính vào ngân sách của agent</label>
           <select id="tyc-agent" value={tacTuId} onChange={(e) => setTacTuId(e.target.value)} className={o}>
             {ds.map((x) => (
-              <option key={x.id} value={x.id}>{x.ten}{x.trang_thai === 'tam_dung' ? tr('app.tacTu.form.tamDung') : ''}</option>
+              <option key={x.id} value={x.id}>{x.ten}{x.trang_thai === 'tam_dung' ? ' (tạm dừng)' : ''}</option>
             ))}
           </select>
           {cs && (
             <p className="mt-1 text-xs text-muted-foreground">
-              <Trans
-                i18nKey="app.tacTu.form.conLai"
-                values={{
-                  ngay: dong(conLaiTien(cs.han_muc_ngay, su?.ngay ?? 0)),
-                  thang: dong(conLaiTien(cs.han_muc_thang, su?.thang ?? 0)),
-                  moiKhoan: dong(cs.han_muc_moi_lan),
-                }}
-                components={{ s: <span className="font-mono tabular-nums text-foreground" /> }}
-              />
+              Hôm nay còn <span className="font-mono tabular-nums text-foreground">{dong(Math.max(0, cs.han_muc_ngay - (su?.ngay ?? 0)))}</span>
+              {' · '}tháng này còn <span className="font-mono tabular-nums text-foreground">{dong(Math.max(0, cs.han_muc_thang - (su?.thang ?? 0)))}</span>
+              {' · '}mỗi khoản tối đa <span className="font-mono tabular-nums text-foreground">{dong(cs.han_muc_moi_lan)}</span>
             </p>
           )}
         </div>
 
         <fieldset>
-          <legend className={nhanTruong}>{tr('app.tacTu.form.nguoiNhan')}</legend>
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-accent p-1" role="group" aria-label={tr('app.tacTu.form.cachChon')}>
-            {([['danh_sach', tr('app.tacTu.form.trongDs')], ['khac', tr('app.tacTu.form.tkKhac')]] as const).map(([k, chu]) => (
+          <legend className={nhanTruong}>Người nhận</legend>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-accent p-1" role="group" aria-label="Cách chọn người nhận">
+            {([['danh_sach', 'Trong danh sách'], ['khac', 'Tài khoản khác']] as const).map(([k, chu]) => (
               <button
                 key={k}
                 type="button"
@@ -2061,27 +1999,27 @@ function FormTaoYeuCau({
           </div>
           {cachNhan === 'danh_sach' ? (
             nguoiNhan.length ? (
-              <select aria-label={tr('app.tacTu.form.chonNn')} value={nguoiNhanId} onChange={(e) => setNguoiNhanId(e.target.value)} className={`${o} mt-2`}>
+              <select aria-label="Chọn người nhận" value={nguoiNhanId} onChange={(e) => setNguoiNhanId(e.target.value)} className={`${o} mt-2`}>
                 {nguoiNhan.map((n) => (
                   <option key={n.id} value={n.id}>{n.ten_chu_tai_khoan} · {tenNganHang(n.ngan_hang_bin)} · {n.so_tai_khoan}</option>
                 ))}
               </select>
             ) : (
-              <p className="mt-2 text-xs text-muted-foreground">{tr('app.tacTu.form.dsTrong')}</p>
+              <p className="mt-2 text-xs text-muted-foreground">Danh sách người nhận đang trống — chọn "Tài khoản khác".</p>
             )
           ) : (
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <select aria-label={tr('app.tacTu.form.nhNn')} value={bin} onChange={(e) => setBin(e.target.value)} className={o}>
+              <select aria-label="Ngân hàng người nhận" value={bin} onChange={(e) => setBin(e.target.value)} className={o}>
                 {DANH_SACH_NGAN_HANG.map((n) => <option key={n.bin} value={n.bin}>{n.ten}</option>)}
               </select>
-              <input aria-label={tr('app.tacTu.form.stkNn')} value={stk} onChange={(e) => setStk(e.target.value)} placeholder={tr('app.tacTu.form.stk')} inputMode="numeric" className={`${o} font-mono`} />
-              <input aria-label={tr('app.tacTu.form.tenChu')} value={tenNhan} onChange={(e) => setTenNhan(e.target.value)} placeholder={tr('app.tacTu.form.tenChu')} className={`${o} sm:col-span-2`} />
+              <input aria-label="Số tài khoản người nhận" value={stk} onChange={(e) => setStk(e.target.value)} placeholder="Số tài khoản" inputMode="numeric" className={`${o} font-mono`} />
+              <input aria-label="Tên chủ tài khoản" value={tenNhan} onChange={(e) => setTenNhan(e.target.value)} placeholder="Tên chủ tài khoản" className={`${o} sm:col-span-2`} />
             </div>
           )}
         </fieldset>
 
         <div>
-          <label htmlFor="tyc-so-tien" className={nhanTruong}>{tr('app.tacTu.form.soTien')}</label>
+          <label htmlFor="tyc-so-tien" className={nhanTruong}>Số tiền</label>
           <div className="relative">
             <input
               id="tyc-so-tien"
@@ -2094,34 +2032,34 @@ function FormTaoYeuCau({
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground" aria-hidden>đ</span>
           </div>
           {/* Đọc lại bằng chữ: một số 0 thừa là chuyển gấp mười lần. */}
-          {soTien > 0 && <p className="mt-1 text-xs text-muted-foreground">{tr('app.tacTu.form.bangChu')} <span className="text-foreground">{docSoTienBangChu(soTien)}</span></p>}
+          {soTien > 0 && <p className="mt-1 text-xs text-muted-foreground">Bằng chữ: <span className="text-foreground">{docSoTienBangChu(soTien)}</span></p>}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="tyc-nhom" className={nhanTruong}>{tr('app.tacTu.form.nhomChi')}</label>
+            <label htmlFor="tyc-nhom" className={nhanTruong}>Nhóm chi</label>
             <select id="tyc-nhom" value={nhomChi} onChange={(e) => setNhomChi(e.target.value)} className={o}>
-              {NHOM_CHI.map((n) => <option key={n} value={n}>{tenNhomChi(n)}</option>)}
+              {NHOM_CHI.map((n) => <option key={n} value={n}>{TEN_NHOM_CHI[n]}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="tyc-hoa-don" className={nhanTruong}>{tr('app.tacTu.form.soHd')} <span className="font-normal">{tr('app.tacTu.form.neuCo')}</span></label>
+            <label htmlFor="tyc-hoa-don" className={nhanTruong}>Số hoá đơn <span className="font-normal">(nếu có)</span></label>
             <input id="tyc-hoa-don" value={soHoaDon} onChange={(e) => setSoHoaDon(e.target.value)} maxLength={60} className={`${o} font-mono`} />
           </div>
         </div>
 
         <div>
-          <label htmlFor="tyc-muc-dich" className={nhanTruong}>{tr('app.tacTu.form.mucDich')}</label>
-          <textarea id="tyc-muc-dich" value={mucDich} onChange={(e) => setMucDich(e.target.value)} maxLength={300} rows={2} placeholder={tr('app.tacTu.form.mucDichPh')} className={o} />
+          <label htmlFor="tyc-muc-dich" className={nhanTruong}>Mục đích</label>
+          <textarea id="tyc-muc-dich" value={mucDich} onChange={(e) => setMucDich(e.target.value)} maxLength={300} rows={2} placeholder="Ví dụ: Gia hạn phần mềm kế toán tháng 9" className={o} />
         </div>
 
         {kiem && (
           <section aria-labelledby="tyc-kiem" aria-live="polite" className={`${khoi} p-3`}>
             <div className="flex items-center justify-between gap-2">
-              <h3 id="tyc-kiem" className={nhanNho}>{tr('app.tacTu.form.kiemTruoc')}</h3>
+              <h3 id="tyc-kiem" className={nhanNho}>Kiểm tra trước</h3>
               <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ${KET_LUAN_KIEM[kiem.ketLuan].lop}`}>
                 {kiem.ketLuan === 'cho_duyet' && <span className="h-1.5 w-1.5 rounded-full bg-mimi-amber" aria-hidden />}
-                {tr(`app.tacTu.ketLuan.${kiem.ketLuan}`)}
+                {KET_LUAN_KIEM[kiem.ketLuan].chu}
               </span>
             </div>
             <ul className="mt-2 space-y-1 text-xs">
@@ -2135,7 +2073,7 @@ function FormTaoYeuCau({
               ))}
             </ul>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              {tr('app.tacTu.form.uocTinh')}
+              Ước tính theo chính sách hiện tại. Khi gửi, MIMI xét đầy đủ — gồm cả tần suất và đổi số tài khoản.
             </p>
           </section>
         )}
@@ -2147,31 +2085,30 @@ function FormTaoYeuCau({
           disabled={!hopLe || dangGui}
           className={`${nutChinh} w-full`}
         >
-          {dangGui ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {tr('app.tacTu.form.gui')}
+          {dangGui ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Gửi yêu cầu
         </button>
         <p className="text-xs text-muted-foreground">
-          {tr('app.tacTu.form.sauDuyet')}
+          Được duyệt thì khoản chuyển sang "Chờ bạn trả" — bạn vẫn trả bằng app ngân hàng, và nó chỉ thành "Đã chi" khi sao kê xác nhận.
         </p>
       </form>
 
       <details className="mt-6 border-t border-border pt-4">
-        <summary className={`cursor-pointer rounded text-sm font-medium text-foreground ${vien}`}>{tr('app.tacTu.form.kyThuat')}</summary>
+        <summary className={`cursor-pointer rounded text-sm font-medium text-foreground ${vien}`}>Để agent tự xin chi — dành cho người phụ trách kỹ thuật</summary>
         <ol className="mt-3 space-y-3 text-xs text-muted-foreground">
-          <li>{tr('app.tacTu.form.b1')}</li>
+          <li>1. Mỗi agent một khoá, chỉ hiện một lần lúc tạo agent hoặc cấp khoá mới.</li>
           <li>
-            {tr('app.tacTu.form.b2')}
+            2. Dán vào Terminal, thay phần trong ngoặc nhọn bằng khoá của agent:
             <pre className="mt-1.5 overflow-x-auto rounded-lg bg-accent p-3 font-mono text-[11px] text-foreground">{lenhMcp}</pre>
           </li>
-          <li>{tr('app.tacTu.form.b3')}</li>
+          <li>3. Agent gửi yêu cầu chi; khoản cần bạn quyết hiện ở Tổng quan và tab Yêu cầu chi.</li>
         </ol>
-        <button type="button" onClick={moAgents} className={`${nutPhu} mt-3`}>{tr('app.tacTu.form.moTab')}</button>
+        <button type="button" onClick={moAgents} className={`${nutPhu} mt-3`}>Mở tab Agents</button>
       </details>
     </>
   );
 }
 
 function KhoaMoi({ ten, khoa, dongLai }: { ten: string; khoa: string; dongLai: () => void }) {
-  const { t: tr } = useTranslation();
   const viDu = `curl -X POST ${DIEM_GOI} \\
   -H "x-mimi-agent-key: ${khoa}" \\
   -H "Content-Type: application/json" \\
@@ -2183,42 +2120,43 @@ function KhoaMoi({ ten, khoa, dongLai }: { ten: string; khoa: string; dongLai: (
     2,
   );
   const chep = (s: string) =>
-    navigator.clipboard.writeText(s).then(() => toast.success(tr('app.chung.daChep')), () => toast.error(tr('app.chung.khongChepDuoc')));
+    navigator.clipboard.writeText(s).then(() => toast.success('Đã chép.'), () => toast.error('Không chép được — bôi đen rồi chép tay.'));
 
   return (
     <section aria-labelledby="khoa-moi" className="rounded-lg border border-foreground/25 bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="flex items-start justify-between gap-3">
-        <h2 id="khoa-moi" className="flex items-center gap-2 text-sm font-semibold text-foreground"><KeyRound size={15} /> {tr('app.tacTu.khoa.tieuDe', { ten })}</h2>
-        <button onClick={dongLai} aria-label={tr('app.chung.dong')} className={`${nutNho} w-8 px-0 text-muted-foreground hover:bg-accent`}><X size={16} /></button>
+        <h2 id="khoa-moi" className="flex items-center gap-2 text-sm font-semibold text-foreground"><KeyRound size={15} /> Khoá của "{ten}" — gửi cho người cài đặt agent</h2>
+        <button onClick={dongLai} aria-label="Đóng" className={`${nutNho} w-8 px-0 text-muted-foreground hover:bg-accent`}><X size={16} /></button>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        <Trans i18nKey="app.tacTu.khoa.motLan" components={{ b: <strong className="text-foreground" /> }} />
+        Khoá chỉ hiện <strong className="text-foreground">một lần</strong>. MIMI chỉ lưu bản băm nên không xem lại được — mất thì cấp khoá mới.
       </p>
       <div className="mt-3 flex items-center gap-2">
         <code className="flex-1 overflow-x-auto rounded-lg bg-accent px-3 py-2 font-mono text-xs">{khoa}</code>
-        <button onClick={() => chep(khoa)} className={nutPhu}><Copy size={14} /> {tr('app.chung.chep')}</button>
+        <button onClick={() => chep(khoa)} className={nutPhu}><Copy size={14} /> Chép</button>
       </div>
       {/* Lệnh cài đặt là việc của người phụ trách kỹ thuật: thu gọn, chủ doanh nghiệp chỉ cần chép khoá. */}
       <details className="mt-4 rounded-lg border border-border p-4">
-        <summary className={`cursor-pointer rounded text-xs font-semibold text-foreground ${vien}`}>{tr('app.tacTu.khoa.huongDan')}</summary>
+        <summary className={`cursor-pointer rounded text-xs font-semibold text-foreground ${vien}`}>Hướng dẫn cài đặt cho người phụ trách kỹ thuật</summary>
         <p className="mt-1 text-xs text-muted-foreground">
-          {tr('app.tacTu.khoa.danMotDong')}
+          Dán một dòng dưới đây vào công cụ AI. Trợ lý sẽ tự thấy các việc "xem hạn mức", "xin chi", "xem yêu cầu".
         </p>
-        <p className="mt-3 text-[11px] font-medium text-muted-foreground">{tr('app.tacTu.khoa.claude')}</p>
+        <p className="mt-3 text-[11px] font-medium text-muted-foreground">Claude Code — dán vào Terminal</p>
         <div className="mt-1 flex items-start gap-2">
           <pre className="flex-1 overflow-x-auto rounded-lg bg-accent p-2 text-[11px]">{lenhClaude}</pre>
-          <button onClick={() => chep(lenhClaude)} aria-label={tr('app.tacTu.khoa.chepClaude')} className={`${nutPhu} px-2.5`}><Copy size={13} /></button>
+          <button onClick={() => chep(lenhClaude)} aria-label="Chép lệnh Claude Code" className={`${nutPhu} px-2.5`}><Copy size={13} /></button>
         </div>
-        <p className="mt-3 text-[11px] font-medium text-muted-foreground">{tr('app.tacTu.khoa.cursor')}</p>
+        <p className="mt-3 text-[11px] font-medium text-muted-foreground">Cursor — dán vào file mcp.json</p>
         <div className="mt-1 flex items-start gap-2">
           <pre className="flex-1 overflow-x-auto rounded-lg bg-accent p-2 text-[11px]">{cauHinhCursor}</pre>
-          <button onClick={() => chep(cauHinhCursor)} aria-label={tr('app.tacTu.khoa.chepCursor')} className={`${nutPhu} px-2.5`}><Copy size={13} /></button>
+          <button onClick={() => chep(cauHinhCursor)} aria-label="Chép cấu hình Cursor" className={`${nutPhu} px-2.5`}><Copy size={13} /></button>
         </div>
         <details className="mt-3">
-          <summary className={`cursor-pointer rounded text-xs text-muted-foreground ${vien}`}>{tr('app.tacTu.khoa.api')}</summary>
+          <summary className={`cursor-pointer rounded text-xs text-muted-foreground ${vien}`}>Gọi API trực tiếp</summary>
         <pre className="mt-2 overflow-x-auto rounded-lg bg-accent p-3 text-[11px] leading-relaxed">{viDu}</pre>
         <p className="mt-2 text-xs text-muted-foreground">
-          <Trans i18nKey="app.tacTu.khoa.hanhDong" components={{ c: <code /> }} />
+          Hành động của agent: <code>xem_chinh_sach</code>, <code>xin_chi</code>, <code>xem_yeu_cau</code>. Gửi cùng{' '}
+          <code>ma_yeu_cau</code> khi thử lại để không sinh khoản chi thứ hai.
         </p>
         </details>
       </details>
@@ -2229,7 +2167,6 @@ function KhoaMoi({ ten, khoa, dongLai }: { ten: string; khoa: string; dongLai: (
 function MaQrTra({ y }: { y: YeuCau }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [loi, setLoi] = useState<string | null>(null);
-  const { t: tr } = useTranslation();
 
   useEffect(() => {
     if (!ref.current) return;
@@ -2241,10 +2178,10 @@ function MaQrTra({ y }: { y: YeuCau }) {
         addInfo: y.ma_tham_chieu,
       });
       QRCode.toCanvas(ref.current, chuoi, { width: 220, margin: 1 }, (e) => {
-        if (e) setLoi(i18n.t('app.tacTu.qr.loiVe'));
+        if (e) setLoi('Không vẽ được mã QR.');
       });
     } catch (e) {
-      setLoi(e instanceof Error ? e.message : i18n.t('app.tacTu.qr.loiDung'));
+      setLoi(e instanceof Error ? e.message : 'Không dựng được mã VietQR.');
     }
   }, [y]);
 
@@ -2270,31 +2207,30 @@ function MaQrTra({ y }: { y: YeuCau }) {
       <div className="flex flex-col items-start gap-2">
         <canvas ref={ref} className="rounded-lg border border-border bg-white p-2" />
         <button type="button" disabled={Boolean(loi)} onClick={luuAnh} className={nutPhu}>
-          <Download size={14} /> {tr('app.tacTu.qr.luuAnh')}
+          <Download size={14} /> Lưu ảnh mã QR
         </button>
       </div>
       <p className="text-xs text-muted-foreground">
-        {loi ?? tr('app.tacTu.qr.huongDan')}
+        {loi ?? 'Trả trên máy tính: quét mã bằng app ngân hàng. Trả ngay trên điện thoại này: lưu ảnh mã rồi mở từ thư viện ảnh trong app ngân hàng, hoặc chép từng dòng dưới đây.'}
       </p>
       <div className="rounded-lg border border-border px-3">
-        <DongChep nhan={tr('app.tacTu.qr.nganHang')} giaTri={tenNganHang(y.ngan_hang_bin)} />
-        <DongChep nhan={tr('app.tacTu.qr.stk')} giaTri={y.so_tai_khoan} />
-        <DongChep nhan={tr('app.tacTu.qr.soTien')} giaTri={String(Math.round(y.so_tien))} hien={dong(y.so_tien)} />
-        <DongChep nhan={tr('app.tacTu.qr.noiDung')} giaTri={y.ma_tham_chieu ?? ''} />
+        <DongChep nhan="Ngân hàng" giaTri={tenNganHang(y.ngan_hang_bin)} />
+        <DongChep nhan="Số tài khoản" giaTri={y.so_tai_khoan} />
+        <DongChep nhan="Số tiền" giaTri={String(Math.round(y.so_tien))} hien={dong(y.so_tien)} />
+        <DongChep nhan="Nội dung chuyển khoản — giữ nguyên" giaTri={y.ma_tham_chieu ?? ''} />
       </div>
       <p className="text-xs text-muted-foreground">
-        {tr('app.tacTu.qr.kiemTen')}
+        Kiểm tên người nhận app ngân hàng hiện ra trước khi xác nhận. Sao kê về tới MIMI thì khoản này tự chuyển sang "Đã chi".
       </p>
     </div>
   );
 }
 
 function DongChep({ nhan, giaTri, hien }: { nhan: string; giaTri: string; hien?: string }) {
-  const { t: tr } = useTranslation();
   const chep = () =>
     navigator.clipboard.writeText(giaTri).then(
-      () => toast.success(tr('app.tacTu.qr.daChep', { muc: nhan.split(' — ')[0].toLowerCase() })),
-      () => toast.error(tr('app.chung.khongChepDuoc')),
+      () => toast.success(`Đã chép ${nhan.split(' — ')[0].toLowerCase()}.`),
+      () => toast.error('Không chép được — bôi đen rồi chép tay.'),
     );
   return (
     <div className="flex items-center justify-between gap-3 border-t border-border py-2 first:border-t-0">
@@ -2303,7 +2239,7 @@ function DongChep({ nhan, giaTri, hien }: { nhan: string; giaTri: string; hien?:
         <p className="truncate font-mono text-sm text-foreground">{hien ?? giaTri}</p>
       </div>
       <button type="button" onClick={() => void chep()} disabled={!giaTri} className={`${nutPhu} shrink-0`}>
-        <Copy size={14} /> {tr('app.chung.chep')}
+        <Copy size={14} /> Chép
       </button>
     </div>
   );

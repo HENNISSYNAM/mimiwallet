@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Scale } from 'lucide-react';
 import { soSanhThue, NGUONG_MIEN, TY_LE_TREN_LAI } from '@/lib/soSanhThue';
-import { dinhDangTien } from '@/lib/tien';
 
 /**
  * "Tôi nên tính thuế theo cách nào?" — trả lời bằng số của chính họ.
@@ -38,7 +37,7 @@ const NGANH = [
   { ma: 'dich_vu', ten: 'Dịch vụ, xây dựng không bao thầu vật liệu', tyLe: 0.02 },
 ] as const;
 
-const dong = dinhDangTien;
+const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
 
 /** "1 tỷ" — đọc từ hằng số, để lần sau luật đổi ngưỡng thì chữ trên màn hình đổi theo. */
 const NGUONG_CHU = `${(NGUONG_MIEN / 1_000_000_000).toString().replace('.', ',')} tỷ`;

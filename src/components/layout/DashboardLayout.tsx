@@ -1,8 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { MenuTaiKhoan } from './MenuTaiKhoan';
-import { MeoSong } from '@/components/mimi/MeoSong';
-import ThanhBen, { DanhSachLichSu } from './ThanhLichSu';
-import { ChevronRight, Clock, HelpCircle, History, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, X } from 'lucide-react';
+import DashboardSidebar from './DashboardSidebar';
+import { ChevronRight, Clock, HelpCircle, Images, LayoutDashboard, LogOut, Menu, Puzzle, Search, Settings, Store, Users, X } from 'lucide-react';
 import { IconMeo } from '@/components/brand/IconMeo';
 import { HopTaiUngDung } from './HopTaiUngDung';
 import { NhanMinhHoa } from './NhanMinhHoa';
@@ -20,7 +18,6 @@ import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
 import { ScanLine } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import PetMimi from '@/components/mimi/PetMimi';
-import { HuongDanPet } from '@/components/mimi/HuongDanPet';
 import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
 import { toast } from 'sonner';
 import { useScrolled } from '@/hooks/useScrolled';
@@ -30,11 +27,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { layDichSauDangNhap } from '@/lib/sauDangNhap';
-import { ghiMoUngDung } from '@/lib/track';
-import { ganPhamViNao } from '@/store/naoMimi';
-import { ThanhCongCuNguCanh } from '@/components/khong-gian/ThanhCongCuNguCanh';
-import { HoiMimiTrongModule } from '@/components/khong-gian/HoiMimiTrongModule';
-import { laKhongGianTroLy } from '@/lib/nguCanhModule';
 
 /**
  * Two initials for the avatar, from whatever real name we actually have.
@@ -73,11 +65,13 @@ function initialsOf(name: string | null): string {
  * bảng "Thêm".
  */
 const mobileNav = [
-  { icon: IconMeo, khoa: 'man.ten.troLyNgan', path: '/dashboard' },
+  { icon: IconMeo, khoa: 'man.ten.troLyNgan', path: '/dashboard/tro-ly' },
   { icon: Images, khoa: 'man.ten.thuVienNgan', path: '/dashboard/thu-vien' },
   { icon: Clock, khoa: 'man.ten.nhacThue', path: '/dashboard/nhac-thue' },
 ];
 
+/** Trang chi tiết mở từ MIMI Assistant: tiêu đề kèm đường quay về trợ lý. */
+const TRANG_CHI_TIET_CUA_TRO_LY = new Set(TRANG_CHI_TIET.map((t) => t.duong_dan));
 
 /**
  * Header title per route, keyed to the same i18n strings the sidebar uses.
@@ -88,7 +82,7 @@ const mobileNav = [
  * two ways on one screen. One source of truth for the name of a place.
  */
 const pageTitleKeys: Record<string, string> = {
-  '/dashboard': 'man.ten.troLy',
+  '/dashboard': 'sidebar.overview',
   '/dashboard/cashflow': 'sidebar.cashflow',
   '/dashboard/invoices': 'sidebar.invoices',
   '/dashboard/fintech': 'sidebar.fintechHub',
@@ -139,11 +133,6 @@ export default function DashboardLayout() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [moThem, setMoThem] = useState(false);
-  const [moLichSu, setMoLichSu] = useState(false);
-  // Đo "quay lại": một lần mỗi ngày mỗi công ty (ghiMoUngDung tự chặn trùng).
-  useEffect(() => { void ghiMoUngDung(); }, []);
-  // Bộ não dùng chung tách theo tài khoản + công ty: đổi một trong hai (hay đăng xuất) là xoá sạch.
-  useEffect(() => ganPhamViNao(), []);
   const [moTaiApp, setMoTaiApp] = useState(false);
   const [moKho, setMoKho] = useState(false);
   const congTy = useCongTy();
@@ -220,33 +209,9 @@ export default function DashboardLayout() {
     setMobileSearch(false);
   };
 
-  const anhDaiDien = (
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
-              {avatarUrl && !avatarFailed ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  aria-hidden="true"
-                  // Google serves these cross-origin; without this the request
-                  // carries no credentials and stays a plain public fetch.
-                  referrerPolicy="no-referrer"
-                  onError={() => setAvatarFailed(true)}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-bold text-white">{initials}</span>
-              )}
-            </div>
-  );
-
   return (
-    /*
-      Bên trái (máy tính): dải biểu tượng — trang chủ, lịch sử, thư viện, kết nối, mọi công cụ, quét hoá đơn, pet MIMI,
-      hỗ trợ, tài khoản — và bảng lịch sử hỏi MIMI mở cạnh nó (29/09/2026). Điện thoại: nút đồng hồ ở đầu trang mở
-      lịch sử trong bảng trượt; thanh dưới giữ nguyên.
-    */
     <div className="flex min-h-screen bg-background">
-      <ThanhBen tenCongTy={congTy?.ten ?? null} anhDaiDien={anhDaiDien} />
+      <DashboardSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header
@@ -255,23 +220,15 @@ export default function DashboardLayout() {
           }`}
         >
           <div className="flex min-w-0 items-center gap-1.5">
-            <button type="button" onClick={() => setMoLichSu(true)} aria-label={t('kg.ben.lichSu')}
-              className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden">
-              <History size={20} />
-            </button>
-            {/* Tên MIMI luôn đưa về Không gian Trợ lý; ở trang module thì thành đường dẫn "MIMI › Hoá đơn". */}
-            <NavLink to="/dashboard" end data-mimi="nav:/dashboard" className="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-1 font-display text-[19px] font-bold tracking-tight text-foreground hover:opacity-80">
-              <MeoSong size={28} />
-              <span className={laKhongGianTroLy(location.pathname) ? '' : 'hidden sm:inline'}>MIMI</span>
-            </NavLink>
-            {laKhongGianTroLy(location.pathname) ? (
-              <h1 className="sr-only">{title}</h1>
-            ) : (
+            {TRANG_CHI_TIET_CUA_TRO_LY.has(location.pathname) && (
               <>
-                <ChevronRight size={16} className="shrink-0 text-muted-foreground" aria-hidden />
-                <h1 className="truncate font-display text-[17px] font-semibold tracking-tight text-foreground">{title}</h1>
+                <NavLink to="/dashboard/tro-ly" className="hidden shrink-0 text-sm text-muted-foreground hover:text-foreground sm:inline">
+                  {t('man.ten.troLy')}
+                </NavLink>
+                <ChevronRight size={14} className="hidden shrink-0 text-muted-foreground sm:inline" aria-hidden />
               </>
             )}
+            <h1 className="truncate font-display font-bold text-[19px] text-foreground tracking-tight">{title}</h1>
           </div>
           <div className="flex items-center gap-3">
             <form
@@ -304,8 +261,22 @@ export default function DashboardLayout() {
             {/* The gradient stays as the backing layer, so it shows through
                 while the photo is still loading and remains the whole avatar
                 when there is no photo — no empty circle, no layout shift. */}
-            {/* Máy tính: tài khoản ở đáy dải biểu tượng bên trái; đầu trang chỉ còn trên điện thoại. */}
-            <div className="lg:hidden"><MenuTaiKhoan tenCongTy={congTy?.ten ?? null} anhDaiDien={anhDaiDien} /></div>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-mimi-green flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+              {avatarUrl && !avatarFailed ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  aria-hidden="true"
+                  // Google serves these cross-origin; without this the request
+                  // carries no credentials and stays a plain public fetch.
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarFailed(true)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-bold text-white">{initials}</span>
+              )}
+            </div>
           </div>
         </header>
 
@@ -336,16 +307,6 @@ export default function DashboardLayout() {
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6">
           <NhanMinhHoa />
-          {/*
-            Module mở ngay trong khung của MIMI Trợ lý (29/09/2026): thanh công cụ và ô hỏi MIMI luôn ở đầu trang,
-            nên người dùng không phải quay lại trang chính để hỏi hay đổi module.
-          */}
-          {!laKhongGianTroLy(location.pathname) && (
-            <div className="mx-auto mb-5 max-w-6xl space-y-2">
-              <ThanhCongCuNguCanh />
-              <HoiMimiTrongModule />
-            </div>
-          )}
           <Outlet />
         </main>
 
@@ -384,7 +345,8 @@ export default function DashboardLayout() {
             <nav className="mt-4 grid gap-1" aria-label="Thêm">
               {[
                 { icon: Puzzle, khoa: 'man.ten.ketNoi', duong: '/dashboard/ket-noi' },
-                { icon: LayoutDashboard, khoa: 'man.ten.tongQuanGiaoDich', duong: '/dashboard/cashflow' },
+                { icon: LayoutDashboard, khoa: 'man.ten.tongQuanGiaoDich', duong: '/dashboard' },
+                { icon: Users, khoa: 'man.ten.khachHang', duong: '/dashboard/clients' },
                 { icon: Settings, khoa: 'man.ten.caiDat', duong: '/dashboard/settings' },
               ].map((m) => (
                 <NavLink key={m.duong} to={m.duong} end onClick={() => setMoThem(false)} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
@@ -420,26 +382,14 @@ export default function DashboardLayout() {
             </nav>
           </SheetContent>
         </Sheet>
-        <Sheet open={moLichSu} onOpenChange={setMoLichSu}>
-          <SheetContent side="left" className="flex w-[85vw] max-w-xs flex-col px-0 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
-            <SheetHeader className="px-6 text-left">
-              <SheetTitle>{t('kg.ben.lichSu')}</SheetTitle>
-              <SheetDescription className="sr-only">{t('kg.ben.lichSuMoTa')}</SheetDescription>
-            </SheetHeader>
-            {moLichSu && <DanhSachLichSu luonHienXoa onDaChon={() => setMoLichSu(false)} />}
-          </SheetContent>
-        </Sheet>
         <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} tab="dien_thoai" />
         <KhoCongCu mo={moKho} onDong={() => setMoKho(false)} />
 
         {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
         {/* Trên màn MIMI Assistant đã có ô hỏi ở giữa; nút chat nổi chỉ là ô hỏi thứ hai. */}
         <MimiLamHoProvider>
-          {/* Pet bật/tắt ở dải biểu tượng bên trái; đã bật thì hiện ở mọi trang, kể cả trang Trợ lý. */}
-          <PetMimi />
+          {location.pathname !== '/dashboard/tro-ly' && <PetMimi />}
         </MimiLamHoProvider>
-        {/* Người mới: pet ẩn mặc định nên phải nói cho họ biết nó có và dùng thế nào. */}
-        <HuongDanPet />
       </div>
     </div>
   );
