@@ -246,6 +246,7 @@ const ko = {
   },
 
   landing: {
+    video: { dung: '영상 일시정지', phat: '영상 재생' },
     hero: {
       titleLine1: '에이전트가 지출합니다.',
       titleLine2: '결정권은 당신에게 있습니다.',

@@ -1,5 +1,6 @@
 const m = {
   landing: {
+    video: { dung: 'Tạm dừng video', phat: 'Phát video' },
     /*
      * This is the headline the page actually renders (`landing.hero.*`); the
      * root `hero.*` block only supplies the badge and secondary CTA.
