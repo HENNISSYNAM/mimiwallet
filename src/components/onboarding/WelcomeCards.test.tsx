@@ -51,14 +51,15 @@ describe('thẻ chào mừng — mã số thuế trả lời thay người dùng
     expect(screen.queryByPlaceholderText('0319436143')).toBeNull();
   });
 
-  it('bỏ qua ở bước sau vẫn lưu tên đăng ký, loại hình và mã', async () => {
+  it('bỏ qua ở bước sau vẫn lưu tên đăng ký và mã', async () => {
     gia.traMst.mockResolvedValue({ trang_thai: 'thay', ten: 'CÔNG TY CỔ PHẦN SỮA VIỆT NAM', loai: 'doanh_nghiep', trang_thai_nnt: 'NNT đang hoạt động', con_hoat_dong: true });
     await goMa('0300588569');
     fireEvent.click(await screen.findByRole('button', { name: 'Đúng, tiếp tục' }));
     await screen.findByText('Bạn đang kinh doanh ngành gì?');
     fireEvent.click(screen.getAllByRole('button', { name: /Bỏ qua/ })[0]);
     await waitFor(() => expect(gia.capNhat).toHaveBeenCalled());
-    expect(gia.capNhat.mock.calls[0][0]).toMatchObject({ name: 'CÔNG TY CỔ PHẦN SỮA VIỆT NAM', account_type: 'business', tax_id: '0300588569' });
+    expect(gia.capNhat.mock.calls[0][0]).toMatchObject({ name: 'CÔNG TY CỔ PHẦN SỮA VIỆT NAM', tax_id: '0300588569' });
+    expect(gia.capNhat.mock.calls[0][0]).not.toHaveProperty('account_type');
     // Và nhờ máy chủ ghi phần còn lại (địa chỉ, cơ quan thuế) vào hồ sơ.
     await waitFor(() => expect(gia.goiToKhai).toHaveBeenCalledWith('ho_so'));
   });
