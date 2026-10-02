@@ -24,11 +24,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Cài phụ thuộc
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Kiểm kiểu (giao diện)
         run: npx tsc --noEmit -p tsconfig.app.json

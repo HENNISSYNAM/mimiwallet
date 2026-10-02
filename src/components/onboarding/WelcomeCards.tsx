@@ -151,11 +151,9 @@ export default function WelcomeCards() {
         // Only fields the person actually touched — a skip must not wipe an
         // industry or a name set during an earlier sign-up.
         ...(name.trim() ? { name: name.trim() } : {}),
-        ...(final.account_type ? { account_type: final.account_type } : {}),
         ...(TAX_ID_OK(taxId) ? { tax_id: chuanHoaMst(taxId) } : {}),
         ...(final.industry ? { industry: final.industry } : {}),
         ...(final.size ? { employee_count: final.size } : {}),
-        ...(final.goal ? { primary_goal: final.goal } : {}),
         onboarding_done_at: new Date().toISOString(),
       })
       .eq('id', companyId);

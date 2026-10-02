@@ -7,6 +7,8 @@ import TrustSection from '@/components/landing/TrustSection';
 import DaiLogo from '@/components/landing/DaiLogo';
 import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
 import VideoBaoMat from '@/components/landing/VideoBaoMat';
+import VideoMeoMimi from '@/components/landing/VideoMeoMimi';
+import { ManHinhChoDemo } from '@/components/landing/ManHinhChoDemo';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
 import DemoTuChay from '@/components/landing/DemoTuChay';
@@ -22,14 +24,13 @@ import {
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { Shield, Zap, Brain, CheckCircle, Play, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
+import { Shield, Zap, Brain, CheckCircle, Play, Pause, Loader2, ArrowRight, Check, TrendingUp, CreditCard, FileText, Lock, BarChart3, Globe, Clock, Leaf, TreePine, Recycle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { DUONG_MINH_HOA } from '@/lib/minhHoa';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import mimiLogo from '@/assets/mimi-cat.png';
-import MimiCat from '@/components/brand/MimiCat';
 import { QuantumLockArt, RLSArt } from '@/components/illustrations/TechPillars';
 import heroIllustration from '@/assets/hero-illustration.png';
 import dashboardPreview from '@/assets/dashboard-preview.png';
@@ -536,6 +537,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
   const navigate = useNavigate();
   const [annual, setAnnual] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [dungVideo, setDungVideo] = useState(false);
   const { signInAsDemo, demoAvailable } = useAuthStore();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -547,24 +549,29 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
       <Navbar />
       {dauTrang}
 
+      {demoLoading && <ManHinhChoDemo />}
       {hien('hero') && (<>
       {/* ═══ HERO ═══ */}
-      <section ref={heroRef} className="relative min-h-[100vh] flex items-center justify-center overflow-hidden mimi-hero-warm">
-        {/*
-          Warm ground rather than plain white, the way MetaMask stages its fox:
-          the mark is orange, so a neutral background makes it look pasted on
-          while a cream field makes it look at home. Still a static wash — no
-          drifting orbs — so nothing competes with the headline.
-        */}
-        <div aria-hidden className="mimi-hero-glow" />
+      <section ref={heroRef} className="relative overflow-hidden mimi-hero-warm">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[52svh] [mask-image:linear-gradient(to_bottom,black_55%,transparent)] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[66%] lg:[mask-composite:intersect] lg:[mask-image:linear-gradient(to_right,transparent,black_30%),linear-gradient(to_bottom,black_72%,transparent)]">
+          <VideoMeoMimi dung={dungVideo} />
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[hsl(36_44%_98%/0.75)] to-transparent" />
+        </div>
+        <button
+          type="button"
+          onClick={() => setDungVideo((v) => !v)}
+          aria-label={dungVideo ? t('landing.video.phat') : t('landing.video.dung')}
+          aria-pressed={dungVideo}
+          className="absolute bottom-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        >
+          {dungVideo ? <Play size={16} /> : <Pause size={16} />}
+        </button>
 
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
-          className="relative z-10 container mx-auto px-4 pt-24 pb-12
-                     grid lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-6 items-center
-                     text-center lg:text-left"
+          className="relative z-10 container mx-auto px-4 pt-[46svh] pb-4 text-center lg:flex lg:min-h-[100svh] lg:items-center lg:pt-28 lg:pb-44 lg:text-left"
         >
-          <div className="order-2 lg:order-1">
+          <div className="mx-auto max-w-xl lg:mx-0">
           {/* Eyebrow — states the category, makes no ranking claim. */}
           <motion.p {...fadeUp(0)} className="text-sm font-medium text-muted-foreground mb-6">
             {t('hero.badge')}
@@ -655,24 +662,11 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           </motion.div>
           </div>
 
-          {/*
-            The mark, staged the way MetaMask stages its fox: large, on a warm
-            ground, turning toward the pointer. It sits second in the DOM so a
-            screen reader and a phone both reach the headline first, and the
-            grid puts it first visually only from `lg` up.
-          */}
-          <motion.div
-            {...fadeUp(0.15)}
-            className="order-1 lg:order-2 mx-auto w-[210px] sm:w-[260px] lg:w-full lg:max-w-[420px]"
-          >
-            <MimiCat variant="live" className="w-full" />
-          </motion.div>
-          {/* Spans both columns so the mockup keeps full width under the fold. */}
-          <div className="lg:col-span-2 order-3">
-            <HeroMockup />
-          </div>
         </motion.div>
       </section>
+      <div className="relative z-10 container mx-auto px-4 lg:-mt-36">
+        <HeroMockup />
+      </div>
       </>)}
 
       {hien('dai_logo') && (<>
