@@ -2,6 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { duocGoi, qua429 } from "../_shared/an-ninh/gioi-han.ts";
 import { bankhubConfigFromEnv, removeGrant } from "../_shared/bank/bankhub.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
+import { tuSupabase, xoaKhoTep } from "../_shared/xoa-tai-khoan/kho-tep.ts";
+import { lapKeHoachXoaTaiKhoan, thuMucCanDon } from "../_shared/xoa-tai-khoan/ke-hoach.ts";
 
 /**
  * Người dùng tự xoá tài khoản và toàn bộ dữ liệu.
@@ -14,9 +16,17 @@ import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
  *
  * THỨ TỰ XOÁ, và vì sao thứ tự lại quan trọng:
  *
- *   1. Thu hồi uỷ quyền đọc sao kê ở phía nhà cung cấp ngân hàng — TRƯỚC.
+ *   0. Xoá tệp trong Storage (chung-tu, tai-lieu, secure-documents) — TRƯỚC HẾT, và nếu lỗi thì DỪNG.
+ *   1. Thu hồi uỷ quyền đọc sao kê ở phía nhà cung cấp ngân hàng.
  *   2. Xoá các bản ghi giữ dữ liệu bên thứ ba mà khoá ngoại không cuốn theo.
+ *   2b. Công ty còn thành viên khác: chuyển `companies.user_id` cho người ở lại (không thì CASCADE xoá
+ *      luôn công ty của họ).
  *   3. Xoá người dùng trong auth, để khoá ngoại CASCADE dọn phần còn lại.
+ *
+ * Vì sao Storage đứng đầu: tệp nằm dưới `{company_id}/…` và không có khoá ngoại nào cuốn theo.
+ * Đợi CASCADE xoá dòng công ty xong thì không còn id nào để liệt kê, tệp mồ côi vĩnh viễn. Và vì lỗi
+ * Storage thì dừng ngay khi tài khoản còn nguyên, người dùng bấm lại được (mỗi bước chạy lại an toàn);
+ * không bao giờ trả "đã xoá" khi còn tệp.
  *
  * Nếu làm ngược, tức xoá người dùng trước, thì mã truy cập ngân hàng biến mất
  * cùng dữ liệu và KHÔNG CÒN CÁCH NÀO thu hồi uỷ quyền nữa. Uỷ quyền đó sẽ sống
@@ -90,7 +100,30 @@ Deno.serve(async (req) => {
       .from("companies")
       .select("id")
       .eq("user_id", user.id);
-    const companyIds = (companies ?? []).map((c: { id: string }) => c.id);
+    const congTyDoNguoiTao = (companies ?? []).map((c: { id: string }) => c.id);
+
+    // ---- Kế hoạch: công ty nào chết theo, công ty nào còn người khác ----------
+    const { data: tvRows, error: tvErr } = congTyDoNguoiTao.length
+      ? await supabase.from("thanh_vien_cong_ty").select("company_id, user_id, vai_tro, tao_luc").in("company_id", congTyDoNguoiTao)
+      : { data: [], error: null };
+    if (tvErr) {
+      console.error("delete-account: không đọc được thành viên công ty", tvErr);
+      return json({ deleted: false, error: "Không đọc được danh sách thành viên công ty. Tài khoản CHƯA bị xoá, vui lòng thử lại." }, 500);
+    }
+    const keHoach = lapKeHoachXoaTaiKhoan({ userId: user.id, congTyDoNguoiTao, thanhVien: tvRows ?? [] });
+    // Chỉ những công ty chết theo mới bị thu hồi ngân hàng: công ty còn người khác vẫn dùng liên kết đó.
+    const companyIds = keHoach.cong_ty_xoa;
+
+    // ---- Bước 0: xoá tệp Storage, lỗi thì dừng ---------------------------------
+    const baoCaoKho = await xoaKhoTep(tuSupabase(supabase), { thuMuc: thuMucCanDon(user.id, keHoach) });
+    if (!baoCaoKho.ok) {
+      console.error("delete-account: xoá Storage chưa xong", JSON.stringify(baoCaoKho.that_bai));
+      return json({
+        deleted: false,
+        error: "Chưa xoá hết tệp đã tải lên nên tài khoản CHƯA bị xoá. Vui lòng thử lại; phần đã xoá được giữ nguyên.",
+        storage: { ok: false, files_deleted: baoCaoKho.so_tep_da_xoa, failed: baoCaoKho.that_bai },
+      }, 502);
+    }
 
     // ---- Bước 1: thu hồi uỷ quyền ngân hàng -------------------------------
     const chuaThuHoi: { connection_id: string; ly_do: string }[] = [];
@@ -147,16 +180,34 @@ Deno.serve(async (req) => {
     await supabase.from("invites").delete().eq("invited_by", user.id);
     await supabase.from("invites").delete().eq("accepted_by", user.id);
 
+    // ---- Bước 2b: công ty còn người khác thì đổi người tạo, để CASCADE không cuốn công ty đi -------
+    for (const c of keHoach.chuyen_nguoi_tao) {
+      const { error: chuyenErr } = await supabase
+        .from("companies")
+        .update({ user_id: c.user_id_moi })
+        .eq("id", c.company_id)
+        .eq("user_id", user.id);
+      if (chuyenErr) {
+        console.error("delete-account: không chuyển được người tạo công ty", chuyenErr);
+        return json({ deleted: false, error: "Không chuyển được quyền sở hữu công ty còn người khác. Tài khoản CHƯA bị xoá, vui lòng thử lại." }, 500);
+      }
+    }
+
     // ---- Bước 3: xoá người dùng, CASCADE dọn phần còn lại ------------------
     const { error: delErr } = await supabase.auth.admin.deleteUser(user.id);
     if (delErr) {
       console.error("delete-account: không xoá được auth user", delErr);
-      return json({ error: "Không xoá được tài khoản. Vui lòng thử lại." }, 500);
+      return json({ deleted: false, error: "Không xoá được tài khoản. Vui lòng thử lại.", storage: { ok: true, files_deleted: baoCaoKho.so_tep_da_xoa } }, 500);
     }
 
     return json({
       deleted: true,
-      companies_removed: companyIds.length,
+      companies_removed: keHoach.cong_ty_xoa.length,
+      /* Công ty còn người khác: giữ nguyên, quyền tạo chuyển cho người ở lại. */
+      companies_kept: keHoach.chuyen_nguoi_tao.length,
+      /* Trong số đó, công ty không còn chủ doanh nghiệp nào — cần người ở lại được trao quyền chủ. */
+      companies_without_owner: keHoach.can_chu_moi,
+      storage: { ok: true, files_deleted: baoCaoKho.so_tep_da_xoa },
       /* Rỗng nghĩa là đã thu hồi sạch. Có phần tử nghĩa là còn việc người dùng
          phải tự làm trong ứng dụng ngân hàng. */
       bank_grants_not_revoked: chuaThuHoi,

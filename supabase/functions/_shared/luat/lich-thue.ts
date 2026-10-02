@@ -88,6 +88,17 @@ export function lichThue(dk: DuKienLich): MocThue[] {
         cau_hoi: 'Kết nối ngân hàng, hoá đơn điện tử, hoặc nhập doanh thu từng quý để MIMI biết bạn thuộc nhóm nào.',
       }));
     }
+    // Doanh thu ước tính còn cắt một ngưỡng luật (hệ luật đã dừng, không kết luận): một mốc "cần xác minh"
+    // với ĐÚNG MỘT câu hỏi — không hiện mốc khai quý hay thông báo doanh thu như thể đã biết.
+    const cc = sk.doanhThuChuaChac;
+    if (cc && sl.doanh_thu_nam !== null && (cc.nguong_1_ty || cc.quy_vuot || cc.nguong_50_ty)) {
+      ra.push(moc({
+        khoa: 'hkd_doanh_thu_chua_chac',
+        ten: cc.nguong_1_ty ? 'Chưa chắc phải khai theo quý hay chỉ thông báo doanh thu năm' : 'Chưa chắc khai thuế từ quý nào',
+        loai: 'khai_thue', trang_thai: 'can_xac_minh', han: null, vi_sao: cc.cau_hoi.vi_sao,
+        can_cu: ['nd68_d8_k1a', 'nd141_d1_k1'], cau_hoi: cc.cau_hoi.cau,
+      }));
+    }
     // Mọi nghĩa vụ có hạn của hệ luật — nguồn duy nhất về "có phải làm không".
     for (const k of sl.ket_luan) {
       if (k.loai !== 'nghia_vu' || !k.han?.length) continue;
