@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconMeo } from '@/components/brand/IconMeo';
+import { MeoSong } from '@/components/mimi/MeoSong';
 import { HopTaiUngDung } from './HopTaiUngDung';
 import { useCongCuGhim } from '@/hooks/useCongCuGhim';
 import { duongDanCongCu } from '@/lib/congCu';
@@ -100,7 +101,7 @@ export default function DashboardSidebar() {
               title={collapsed ? m.label : undefined}
               className={({ isActive }) => `${lop(isActive)} ${!collapsed && m === dau ? 'min-w-0 flex-1' : ''}`}
             >
-              <m.icon size={18} className="shrink-0" />
+              {m === dau ? <MeoSong size={18} className="shrink-0" /> : <m.icon size={18} className="shrink-0" />}
               {!collapsed && <span className="truncate">{m.label}</span>}
             </NavLink>
           );

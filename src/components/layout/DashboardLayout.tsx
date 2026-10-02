@@ -18,6 +18,8 @@ import { useCoMoHinh } from '@/hooks/useTrangThaiTroLy';
 import { ScanLine } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import PetMimi from '@/components/mimi/PetMimi';
+import { MeoSong } from '@/components/mimi/MeoSong';
+import { HuongDanPet } from '@/components/mimi/HuongDanPet';
 import { MimiLamHoProvider } from '@/components/mimi/MimiLamHo';
 import { toast } from 'sonner';
 import { useScrolled } from '@/hooks/useScrolled';
@@ -220,6 +222,7 @@ export default function DashboardLayout() {
           }`}
         >
           <div className="flex min-w-0 items-center gap-1.5">
+            <MeoSong size={28} className="shrink-0 lg:hidden" />
             {TRANG_CHI_TIET_CUA_TRO_LY.has(location.pathname) && (
               <>
                 <NavLink to="/dashboard/tro-ly" className="hidden shrink-0 text-sm text-muted-foreground hover:text-foreground sm:inline">
@@ -388,8 +391,9 @@ export default function DashboardLayout() {
         {/* AI Chat Widget — bọc trong con trỏ mèo để trợ lý làm hộ được trên giao diện. */}
         {/* Trên màn MIMI Assistant đã có ô hỏi ở giữa; nút chat nổi chỉ là ô hỏi thứ hai. */}
         <MimiLamHoProvider>
-          {location.pathname !== '/dashboard/tro-ly' && <PetMimi />}
+          <PetMimi />
         </MimiLamHoProvider>
+        <HuongDanPet />
       </div>
     </div>
   );
