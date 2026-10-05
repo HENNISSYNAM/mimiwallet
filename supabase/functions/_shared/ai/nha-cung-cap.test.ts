@@ -34,3 +34,14 @@ describe('tầng nhà cung cấp', () => {
     ]);
   });
 });
+
+/** 05/10/2026: cổng mô hình treo không được giữ cả hàm tới 504. */
+describe('hết giờ chờ cổng mô hình', () => {
+  it('quá han_ms thì ném LoiNhaCungCap 504', async () => {
+    const goi = (_u: string, init: RequestInit) => new Promise<Response>((_, reject) => {
+      init.signal?.addEventListener('abort', () => reject(Object.assign(new Error('timeout'), { name: 'TimeoutError' })));
+    });
+    const ncc = congKieuOpenAI({ ten: 'thu', url: 'https://x', khoa: 'k', goi });
+    await expect(ncc.hoi({ mo_hinh: 'm', tin: [{ vai: 'nguoi_dung', noi_dung: 'a' }], han_ms: 1000 })).rejects.toMatchObject({ status: 504 });
+  });
+});

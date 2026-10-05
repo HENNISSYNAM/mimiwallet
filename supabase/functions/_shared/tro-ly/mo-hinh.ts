@@ -17,6 +17,8 @@ import { congKieuOpenAI, DIEM_GOI_LOVABLE, LoiNhaCungCap, MO_HINH_MAC_DINH, type
 export const DIEM_GOI_MO_HINH = DIEM_GOI_LOVABLE;
 export const MO_HINH = MO_HINH_MAC_DINH;
 export const SO_VONG_TOI_DA = 4;
+/** Tổng thời gian cho mọi vòng gọi mô hình của một câu hỏi — dư chỗ cho phần tính toán trước khi cổng trả 504. */
+export const TONG_THOI_GIAN_MO_HINH_MS = 50_000;
 export const SO_NANG_LUC_MOT_CAU = 3;
 
 export class LoiMoHinh extends Error {
@@ -100,9 +102,13 @@ export async function hoiMoHinh(o: {
   const ketQua: KetQuaNangLuc[] = [];
   const daChay = new Map<string, KetQuaNangLuc>();
 
+  const batDau = Date.now();
   const hoi = async (cuoi: boolean) => {
+    const conLai = TONG_THOI_GIAN_MO_HINH_MS - (Date.now() - batDau);
+    // Hết giờ thì dừng hẳn để trợ lý trả lời bằng bộ luật thay vì để người dùng chờ tới lỗi 504.
+    if (conLai < 3000) throw new LoiMoHinh(504, 'Mô hình trả lời quá chậm.');
     try {
-      return await ncc.hoi({ mo_hinh: moHinh, tin, cong_cu: cuoi ? undefined : congCu });
+      return await ncc.hoi({ mo_hinh: moHinh, tin, cong_cu: cuoi ? undefined : congCu, han_ms: conLai });
     } catch (e) {
       if (e instanceof LoiNhaCungCap) throw new LoiMoHinh(e.status, e.message);
       throw e;

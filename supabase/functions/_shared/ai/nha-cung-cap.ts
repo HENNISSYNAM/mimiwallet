@@ -27,23 +27,38 @@ export class LoiNhaCungCap extends Error {
 
 export interface NhaCungCap {
   ten: string;
-  hoi(o: { mo_hinh: string; tin: TinNhan[]; cong_cu?: CongCu[] }): Promise<PhanHoi>;
+  /** `han_ms`: chờ cổng mô hình tối đa ngần này mili giây (mặc định THOI_GIAN_CHO_MAC_DINH). */
+  hoi(o: { mo_hinh: string; tin: TinNhan[]; cong_cu?: CongCu[]; han_ms?: number }): Promise<PhanHoi>;
 }
 
 type Goi = (url: string, init: RequestInit) => Promise<Response>;
+
+/**
+ * Không có giới hạn thì một lần cổng mô hình treo giữ cả hàm tới trần 150 giây, và người dùng thấy "Lỗi 504"
+ * (05/10/2026: "tạo tờ khai quý 3" mất 125 giây). Hết giờ thì ném LoiNhaCungCap(504) để trợ lý quay về bộ luật.
+ */
+export const THOI_GIAN_CHO_MAC_DINH = 25_000;
 
 /** Bộ chuyển cho cổng dạng OpenAI Chat Completions (Lovable AI gateway, OpenRouter…). */
 export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?: Goi; dauThem?: Record<string, string> }): NhaCungCap {
   const goi = o.goi ?? ((u, i) => fetch(u, i));
   return {
     ten: o.ten,
-    async hoi({ mo_hinh, tin, cong_cu }) {
+    async hoi({ mo_hinh, tin, cong_cu, han_ms }) {
       const messages = tin.map((m) =>
         m.vai === 'cong_cu' ? { role: 'tool', tool_call_id: m.id_goi, content: m.noi_dung ?? '' }
           : m.vai === 'tro_ly' && m.goi_cong_cu?.length
             ? { role: 'assistant', content: m.noi_dung, tool_calls: m.goi_cong_cu.map((g) => ({ id: g.id, type: 'function', function: { name: g.ten, arguments: '{}' } })) }
             : { role: m.vai === 'he_thong' ? 'system' : m.vai === 'tro_ly' ? 'assistant' : 'user', content: m.noi_dung ?? '' });
-      const res = await goi(o.url, {
+      const han = Math.max(1000, han_ms ?? THOI_GIAN_CHO_MAC_DINH);
+      // AbortController + setTimeout thay vì AbortSignal.timeout: chạy được cả Deno lẫn môi trường test.
+      const ctrl = new AbortController();
+      let hetGio = false;
+      const hen = setTimeout(() => { hetGio = true; ctrl.abort(); }, han);
+      let res: Response;
+      try {
+        res = await goi(o.url, {
+        signal: ctrl.signal,
         method: 'POST',
         headers: { ...(o.dauThem ?? {}), Authorization: `Bearer ${o.khoa}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -53,7 +68,14 @@ export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?
             tool_choice: 'auto',
           } : {}),
         }),
-      });
+        });
+      } catch (e) {
+        const ten = (e as { name?: string })?.name;
+        if (hetGio || ten === 'TimeoutError' || ten === 'AbortError') throw new LoiNhaCungCap(504, 'Cổng mô hình phản hồi quá chậm.');
+        throw e;
+      } finally {
+        clearTimeout(hen);
+      }
       if (!res.ok) {
         const cau = res.status === 429 ? 'Cổng mô hình đang giới hạn tần suất.'
           : res.status === 402 ? 'Cổng mô hình hết hạn mức sử dụng.'
