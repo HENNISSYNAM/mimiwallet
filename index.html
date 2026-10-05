@@ -2,8 +2,11 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
+    <!-- Google hiện biểu tượng cạnh kết quả tìm kiếm: cần ảnh vuông, cạnh là bội số của 48px, ở đúng tên miền. -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/png" href="/mimi-favicon.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/mimi-cat-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Cho cài MIMI vào màn hình chính / thành cửa sổ riêng. Xem HopTaiUngDung.tsx. -->
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -28,7 +31,46 @@
     <meta property="og:title" content="MIMI WALLET — Kiểm soát chi tiêu cho doanh nghiệp chạy bằng AI" />
     <meta property="og:description" content="Đọc sao kê ngân hàng, dựng bộ chứng từ chi phí, đối soát công nợ. Dành cho doanh nghiệp và hộ kinh doanh Việt Nam." />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MIMI Wallet" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:url" content="https://www.mimiwallet.online/" />
+    <meta property="og:image" content="https://www.mimiwallet.online/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Mèo MIMI, linh vật của MIMI Wallet" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://www.mimiwallet.online/og-image.jpg" />
+    <link rel="canonical" href="https://www.mimiwallet.online/" />
+    <!-- Dữ liệu có cấu trúc: Google dùng `logo` của Organization cho bảng tri thức, và WebSite cho tên trang trong
+         kết quả. Thẻ ld+json là dữ liệu, không chạy như mã, nên CSP `script-src 'self'` không chặn. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://www.mimiwallet.online/#to-chuc",
+          "name": "MIMI Wallet",
+          "legalName": "Công ty Cổ phần CLI Nutrix",
+          "url": "https://www.mimiwallet.online/",
+          "logo": "https://www.mimiwallet.online/mimi-cat-512.png",
+          "taxID": "0319436143",
+          "email": "hoc.qk2@gmail.com",
+          "address": { "@type": "PostalAddress", "streetAddress": "829 Huỳnh Tấn Phát, Phường Phú Thuận", "addressLocality": "Thành phố Hồ Chí Minh", "addressCountry": "VN" },
+          "sameAs": ["https://www.facebook.com/profile.php?id=61593186898315"]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.mimiwallet.online/#web",
+          "name": "MIMI Wallet",
+          "alternateName": "MIMI",
+          "url": "https://www.mimiwallet.online/",
+          "inLanguage": "vi",
+          "publisher": { "@id": "https://www.mimiwallet.online/#to-chuc" }
+        }
+      ]
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
