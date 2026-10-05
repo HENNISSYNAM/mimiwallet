@@ -1,0 +1,192 @@
+diff --git a/supabase/functions/_shared/thong-bao/gui.ts b/supabase/functions/_shared/thong-bao/gui.ts
+index 4aa7540..8ed1b8d 100644
+--- a/supabase/functions/_shared/thong-bao/gui.ts
++++ b/supabase/functions/_shared/thong-bao/gui.ts
+@@ -7,6 +7,9 @@
+  * lên điện thoại. Thiếu cấu hình không được làm hỏng luồng thu tiền hay luồng quét.
+  */
+ import type { BanNhapThongBao } from './sinh.ts';
++import type { MocThue } from '../luat/lich-thue.ts';
++import type { SanSangThue } from '../luat/san-sang-thue.ts';
++import { thongBaoNhacLoiThoi } from './muc-nhac.ts';
+ 
+ // deno-lint-ignore no-explicit-any
+ type Db = any;
+@@ -36,6 +39,15 @@ export async function ghiThongBao(db: Db, companyId: string, nhap: BanNhapThongB
+   return (data ?? []).length;
+ }
+ 
++/**
++ * `tag` của thông báo đẩy. Hạn thuế (`han:<mốc>:<hạn>:<số ngày>`): bỏ số ngày còn lại. Trước 02/10/2026 mọi hạn
++ * đều là `han` nên hai hạn cùng lúc thay nhau trên màn hình khoá và người dùng chỉ thấy cái sau.
++ */
++export function theThongBao(khoa: string): string {
++  if (khoa.startsWith('han:')) return khoa.replace(/:\d+$/, '');
++  return khoa.split(':')[0];
++}
++
+ export interface MayDay {
+   /** Đẩy một chuỗi JSON tới một thiết bị. Ném lỗi có `isGone()` khi thiết bị đã huỷ đăng ký. */
+   day(dk: { endpoint: string; p256dh: string; auth: string }, noiDung: string): Promise<void>;
+@@ -48,24 +60,27 @@ export interface MayDay {
+ export async function dayThongBao(db: Db, may: MayDay | null, bayGio: Date = new Date()): Promise<{ da_day: number; go_thiet_bi: number }> {
+   const tu = new Date(bayGio.getTime() - 2 * 86_400_000).toISOString();
+   const { data: cho, error } = await db.from('thong_bao')
+-    .select('id, user_id, loai, tieu_de, noi_dung, duong_dan, khoa')
++    .select('id, user_id, company_id, loai, tieu_de, noi_dung, duong_dan, khoa')
+     .is('da_day_luc', null).gte('tao_luc', tu).order('tao_luc', { ascending: true }).limit(500);
+   if (error) throw new Error(`đọc thông báo chờ đẩy: ${error.message}`);
+   if (!cho?.length) return { da_day: 0, go_thiet_bi: 0 };
+ 
+   const nguoi = [...new Set(cho.map((t: { user_id: string }) => t.user_id))];
+-  const [{ data: dks }, { data: caiDat }] = await Promise.all([
++  const [{ data: dks }, { data: caiDat }, { data: tv }] = await Promise.all([
+     db.from('dang_ky_day').select('id, user_id, endpoint, p256dh, auth').in('user_id', nguoi),
+     db.from('cai_dat_thong_bao').select('user_id, loai_tat').in('user_id', nguoi),
++    db.from('thanh_vien_cong_ty').select('user_id, company_id').in('user_id', nguoi),
+   ]);
++  // Người đã bị gỡ khỏi công ty không được nhận push có số liệu công ty (dòng có thể đã ghi trước khi bị gỡ).
++  const conLaThanhVien = new Set<string>((tv ?? []).map((r: { user_id: string; company_id: string }) => `${r.user_id}:${r.company_id}`));
+   const tat = new Map<string, Set<string>>((caiDat ?? []).map((c: { user_id: string; loai_tat: string[] }) => [c.user_id, new Set(c.loai_tat)]));
+   let daDay = 0;
+   const goBo = new Set<string>();
+ 
+   for (const t of cho) {
+-    if (!may || tat.get(t.user_id)?.has(t.loai)) continue;
+-    // Gom theo loại trên thông báo hệ thống: nhắc hạn quý 3 mới thay cái cũ, không chồng chất.
+-    const noiDung = JSON.stringify({ tieu_de: t.tieu_de, noi_dung: t.noi_dung, duong_dan: t.duong_dan ?? '/dashboard/nhac-thue', the: t.khoa.split(':')[0] });
++    if (!may || tat.get(t.user_id)?.has(t.loai) || !conLaThanhVien.has(`${t.user_id}:${t.company_id}`)) continue;
++    // Gom theo mốc: nhắc 14 -> 10 -> 5 ngày của CÙNG một hạn thay nhau, còn hai hạn khác nhau thì cùng hiện.
++    const noiDung = JSON.stringify({ tieu_de: t.tieu_de, noi_dung: t.noi_dung, duong_dan: t.duong_dan ?? '/dashboard/nhac-thue', the: theThongBao(t.khoa) });
+     for (const dk of (dks ?? []).filter((d: { user_id: string; id: string }) => d.user_id === t.user_id && !goBo.has(d.id))) {
+       try {
+         await may.day(dk, noiDung);
+@@ -82,3 +97,35 @@ export async function dayThongBao(db: Db, may: MayDay | null, bayGio: Date = new
+   await db.from('thong_bao').update({ da_day_luc: bayGio.toISOString() }).in('id', cho.map((t: { id: string }) => t.id));
+   return { da_day: daDay, go_thiet_bi: goBo.size };
+ }
++
++/**
++ * Đánh dấu LỖI THỜI (không xoá) các thông báo không còn đúng, để chuông không hiện lại một điều đã khác:
++ *   - hạn thuế: đã qua, mốc đã "không áp dụng"/biến mất khỏi lịch, hoặc kết luận lại phụ thuộc phần chưa rõ;
++ *   - "cần xem": câu hỏi đó không còn được hỏi;
++ *   - theo dõi phản hồi: việc đã xong/huỷ hoặc không còn chờ phản hồi.
++ * Chỉ gọi khi lịch đã đọc THÀNH CÔNG (đọc hỏng thì không được coi mọi mốc là biến mất). Thông báo đã xử lý
++ * giữ nguyên. Trả số dòng đã đánh dấu.
++ */
++export async function danhDauNhacLoiThoi(
++  db: Db, companyId: string, o: { lich: readonly MocThue[]; sanSang: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_can_xem'> | null; homNay: string },
++): Promise<number> {
++  const { data, error } = await db.from('thong_bao').select('id, khoa, loai')
++    .eq('company_id', companyId).is('loi_thoi_luc', null).is('da_xu_ly_luc', null).in('loai', ['han_thue', 'viec']).limit(1000);
++  if (error) throw new Error(`đọc thông báo nhắc: ${error.message}`);
++  const dong = (data ?? []) as { id: string; khoa: string; loai: string }[];
++  const ids = new Set<string>();
++  for (const t of dong) if (t.loai === 'han_thue' && thongBaoNhacLoiThoi(t.khoa, o.lich, o.sanSang, o.homNay)) ids.add(t.id);
++
++  const theoDoi = dong.filter((t) => t.loai === 'viec' && t.khoa.startsWith('theo_doi:'));
++  if (theoDoi.length) {
++    const vid = [...new Set(theoDoi.map((t) => t.khoa.split(':')[1]))];
++    const { data: cho, error: e2 } = await db.from('ho_so_viec').select('id').eq('company_id', companyId).eq('trang_thai', 'waiting_external').in('id', vid);
++    if (e2) throw new Error(`đọc việc chờ phản hồi: ${e2.message}`);
++    const conCho = new Set<string>((cho ?? []).map((r: { id: string }) => r.id));
++    for (const t of theoDoi) if (!conCho.has(t.khoa.split(':')[1])) ids.add(t.id);
++  }
++  if (!ids.size) return 0;
++  const { error: e3 } = await db.from('thong_bao').update({ loi_thoi_luc: new Date().toISOString() }).in('id', [...ids]);
++  if (e3) throw new Error(`đánh dấu thông báo lỗi thời: ${e3.message}`);
++  return ids.size;
++}
+diff --git a/supabase/functions/_shared/thong-bao/sinh.ts b/supabase/functions/_shared/thong-bao/sinh.ts
+index b68f4b0..a5919ed 100644
+--- a/supabase/functions/_shared/thong-bao/sinh.ts
++++ b/supabase/functions/_shared/thong-bao/sinh.ts
+@@ -10,6 +10,8 @@
+ import { goiYTienVao, TEN_LOAI_TIEN_VAO, type KhoanTienVao, type LoaiTienVao } from '../phan-loai/tien-vao.ts';
+ import { TU_GOI_Y } from '../doanh-thu/phan-loai.ts';
+ import type { MocThue } from '../luat/lich-thue.ts';
++import type { SanSangThue } from '../luat/san-sang-thue.ts';
++import { MOC_NHAC_HAN, mucNhacTuLich } from './muc-nhac.ts';
+ 
+ export type LoaiThongBao = 'han_thue' | 'luat_moi' | 'tien_vao' | 'goi' | 'thanh_toan' | 'viec' | 'khac';
+ export const LOAI_THONG_BAO: LoaiThongBao[] = ['han_thue', 'luat_moi', 'tien_vao', 'goi', 'thanh_toan', 'viec', 'khac'];
+@@ -44,12 +46,8 @@ export interface BanNhapThongBao {
+ 
+ const so = (n: number) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
+ 
+-/**
+- * Báo trước hạn vào đúng các mốc này (số ngày còn lại). Có mốc 5 ngày theo yêu cầu người dùng
+- * (25/09/2026: "thuế nhắc trước 5 ngày") — đủ để gom chứng từ và hỏi kế toán trước khi nộp.
+- * Thêm mốc 10 ngày (26/09/2026: "nhắc sớm hơn 5 ngày ra").
+- */
+-export const MOC_NHAC_HAN = [14, 10, 5, 1, 0];
++/** Mốc nhắc và cách dựng câu nằm ở `muc-nhac.ts` — một nguồn cho chuông, push, Việc cần làm, trợ lý. */
++export { MOC_NHAC_HAN };
+ 
+ /**
+  * Nhắc hạn theo LỊCH CỦA CHÍNH CÔNG TY (`_shared/luat/lich-thue.ts`), không theo lịch chung cả nước.
+@@ -57,25 +55,23 @@ export const MOC_NHAC_HAN = [14, 10, 5, 1, 0];
+  * khai quý. Giờ:
+  *   - `khong_ap_dung` không bao giờ được nhắc;
+  *   - `can_xac_minh` được nhắc kèm ĐÚNG câu hỏi còn thiếu, không nói như việc bắt buộc;
+- *   - mốc không có hạn (thiếu dữ kiện) không được nhắc — không bịa ngày.
++ *   - mốc không có hạn (thiếu dữ kiện) không được nhắc — không bịa ngày;
++ *   - (02/10/2026) khi doanh thu còn cắt ngưỡng luật (`sanSang.ket_luan_phu_thuoc`) có thêm MỘT thông báo
++ *     "cần xem" với đúng một câu hỏi, thay cho mọi lời nói về nghĩa vụ.
+  * Khoá gồm cả hạn: năm sau cùng loại mốc là một thông báo mới, còn cùng mốc cùng ngày chỉ một lần.
+  */
+-export function thongBaoHanThue(lich: MocThue[]): BanNhapThongBao[] {
++export function thongBaoHanThue(lich: MocThue[], sanSang?: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_can_xem'> | null): BanNhapThongBao[] {
+   const ra: BanNhapThongBao[] = [];
+-  for (const m of lich) {
+-    if (m.trang_thai === 'khong_ap_dung' || !m.han || m.con_lai === null) continue;
+-    if (!MOC_NHAC_HAN.includes(m.con_lai)) continue;
+-    const han = m.han.split('-').reverse().join('/');
+-    const xacMinh = m.trang_thai === 'can_xac_minh';
++  for (const m of mucNhacTuLich(lich, sanSang)) {
++    // Mục "cần xem" không có số ngày: báo một lần mỗi câu hỏi (khoá theo câu hỏi); mốc hạn: đúng các mốc nhắc.
++    if (m.trang_thai !== 'can_xem' && !MOC_NHAC_HAN.includes(m.con_lai as number)) continue;
+     ra.push({
+-      khoa: `han:${m.khoa}:${m.han}:${m.con_lai}`,
++      khoa: m.trang_thai === 'can_xem' ? m.khoa : `han:${m.khoa}:${m.con_lai}`,
+       loai: 'han_thue',
+-      muc_do: m.con_lai <= 1 ? 'gap' : 'can_chu_y',
+-      tieu_de: (m.con_lai === 0 ? `Hôm nay là hạn: ${m.ten}` : `Còn ${m.con_lai} ngày: ${m.ten}`).slice(0, 200),
+-      noi_dung: (xacMinh
+-        ? `Hạn ${han}, nếu việc này áp dụng cho bạn. MIMI chưa chắc: ${m.cau_hoi ?? 'còn thiếu một dữ kiện'} Trả lời để MIMI biết có phải làm không.`
+-        : `Hạn ${han}. ${m.vi_sao} Mở Tờ khai thuế để xem bản nháp MIMI đã soạn, kiểm lại rồi mới nộp.`).slice(0, 1000),
+-      duong_dan: '/dashboard/nhac-thue',
++      muc_do: m.muc_do,
++      tieu_de: m.tieu_de,
++      noi_dung: m.noi_dung,
++      duong_dan: m.duong_dan,
+       hanh_dong: [],
+     });
+   }
+diff --git a/supabase/functions/thong-bao/index.ts b/supabase/functions/thong-bao/index.ts
+index 0940647..5736483 100644
+--- a/supabase/functions/thong-bao/index.ts
++++ b/supabase/functions/thong-bao/index.ts
+@@ -19,7 +19,7 @@ import { congTyLaDemo } from "../_shared/minh-hoa.ts";
+ import {
+   thongBaoGoi, thongBaoHanThue, thongBaoLuatMoi, trongGioYenLang, type BanNhapThongBao,
+ } from "../_shared/thong-bao/sinh.ts";
+-import { dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
++import { danhDauNhacLoiThoi, dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
+ import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
+ import { nhapTienVaoGanDay, tuPhanLoaiNamNay } from "../_shared/thong-bao/quet-tien-vao.ts";
+ import { daNhacTheoDoi, dongBoViecDoanhThu, nhapTheoDoiDenHan, type HoSoViecDong } from "../_shared/viec/luu.ts";
+@@ -93,7 +93,12 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
+         // Prompt 4B: việc "Phân loại … doanh thu" luôn khớp số mới nhất (mở / cập nhật / tự đóng) — cùng lịch vừa đọc.
+         await dongBoViecDoanhThu(db, { companyId, nam: lucVN.getFullYear(), homNay, laDemo, boi: null, lich: l })
+           .catch((e) => console.error("việc phân loại doanh thu:", e instanceof Error ? e.message : e));
+-        return thongBaoHanThue(l.lich);
++        // 02/10/2026: gỡ khỏi chuông những nhắc không còn đúng (hạn đã qua, mốc đã không áp dụng, kết luận lại phụ
++        // thuộc phần chưa rõ, việc chờ đã xong) TRƯỚC khi ghi nhắc mới. Lỗi ở đây không chặn nhắc mới.
++        await danhDauNhacLoiThoi(db, companyId, { lich: l.lich, sanSang: l.sanSang, homNay })
++          .catch((e) => console.error("đánh dấu nhắc lỗi thời:", e instanceof Error ? e.message : e));
++        // Cùng `sanSang` với màn Nhắc thuế: doanh thu còn cắt ngưỡng thì chuông hỏi MỘT câu, không nói nghĩa vụ.
++        return thongBaoHanThue(l.lich, l.sanSang);
+       })
+       .catch((e) => { console.error("lịch thuế cho nhắc hạn:", e instanceof Error ? e.message : e); return [] as BanNhapThongBao[]; })
+     : [];

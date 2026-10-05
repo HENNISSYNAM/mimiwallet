@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FileSpreadsheet, Folder, Lock, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * "Những hệ thống chưa từng nói chuyện với nhau" — vấn đề trước khi có MIMI.
@@ -67,6 +68,7 @@ const DUONG_NOI = [
 ];
 
 export default function HeThongRoiRac() {
+  const { t } = useTranslation();
   const ngoai = useRef<HTMLDivElement>(null);
   const [tiLe, setTiLe] = useState(1);
 
@@ -85,10 +87,10 @@ export default function HeThongRoiRac() {
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-serif font-normal text-foreground text-balance leading-[1.05] tracking-[-0.015em] text-[clamp(2rem,4.2vw,3.25rem)]">
-            Mỗi thứ nằm một nơi
+            {t('app.heThongRoiRac.tieuDe')}
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Một khoản chi phần mềm thường phải đi qua ngần này chỗ trước khi vào được sổ.
+            {t('app.heThongRoiRac.moTa')}
           </p>
         </div>
 
@@ -100,38 +102,38 @@ export default function HeThongRoiRac() {
 
             {/* Tin nhắn nhóm */}
             <The trai={40} tren={30} rong={290}>
-              <div className="border-b border-border px-3 py-2 text-[12px] font-semibold text-foreground">Nhóm "Kế toán + Sếp"</div>
+              <div className="border-b border-border px-3 py-2 text-[12px] font-semibold text-foreground">{t('app.heThongRoiRac.nhom')}</div>
               <div className="grid gap-2 p-3 text-[12px]">
-                <p className="max-w-[85%] rounded-md bg-muted px-2.5 py-1.5 text-foreground">Em ơi tiền máy chủ tháng này chuyển chưa?</p>
-                <p className="ml-auto max-w-[85%] rounded-md bg-primary/10 px-2.5 py-1.5 text-foreground">Sếp duyệt chưa chị? Em chưa thấy tin</p>
-                <p className="max-w-[85%] rounded-md bg-muted px-2.5 py-1.5 text-foreground">Sếp bảo gửi lại số tài khoản mới 🙏</p>
+                <p className="max-w-[85%] rounded-md bg-muted px-2.5 py-1.5 text-foreground">{t('app.heThongRoiRac.c1')}</p>
+                <p className="ml-auto max-w-[85%] rounded-md bg-primary/10 px-2.5 py-1.5 text-foreground">{t('app.heThongRoiRac.c2')}</p>
+                <p className="max-w-[85%] rounded-md bg-muted px-2.5 py-1.5 text-foreground">{t('app.heThongRoiRac.c3')}</p>
               </div>
             </The>
 
             {/* Hoá đơn giấy */}
             <The trai={370} tren={10} rong={160} xoay={-4}>
               <div className="p-3 font-mono text-[9px] leading-relaxed text-foreground/80">
-                <p className="text-center text-[11px] font-bold">HOÁ ĐƠN BÁN LẺ</p>
-                <p className="text-center">Cửa hàng văn phòng phẩm</p>
+                <p className="text-center text-[11px] font-bold">{t('app.heThongRoiRac.hdBanLe')}</p>
+                <p className="text-center">{t('app.heThongRoiRac.cuaHang')}</p>
                 <div className="my-2 border-t border-dashed border-border" />
-                <p className="flex justify-between"><span>Giấy A4 x5</span><span>325.000</span></p>
-                <p className="flex justify-between"><span>Mực in</span><span>480.000</span></p>
+                <p className="flex justify-between"><span>{t('app.heThongRoiRac.giay')}</span><span>325.000</span></p>
+                <p className="flex justify-between"><span>{t('app.heThongRoiRac.muc')}</span><span>480.000</span></p>
                 <div className="my-2 border-t border-dashed border-border" />
-                <p className="flex justify-between font-bold"><span>Tổng</span><span>805.000</span></p>
-                <p className="mt-2 text-center text-muted-foreground">(bị ướt góc, mờ chữ)</p>
+                <p className="flex justify-between font-bold"><span>{t('app.heThongRoiRac.tong')}</span><span>805.000</span></p>
+                <p className="mt-2 text-center text-muted-foreground">{t('app.heThongRoiRac.uot')}</p>
               </div>
             </The>
 
             {/* OTP ngân hàng */}
             <The trai={600} tren={60} rong={250}>
               <div className="p-4">
-                <p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground"><Lock size={13} /> Nhập mã OTP</p>
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground"><Lock size={13} /> {t('app.heThongRoiRac.otp')}</p>
                 <div className="mt-3 flex gap-1.5">
                   {[4, 8, 1, 0, '', ''].map((s, i) => (
                     <span key={i} className="grid h-8 w-8 place-items-center rounded-md border border-destructive/50 font-mono text-sm text-foreground">{s}</span>
                   ))}
                 </div>
-                <p className="mt-2 text-[11px] text-destructive">Mã OTP đã hết hạn. Vui lòng thực hiện lại giao dịch.</p>
+                <p className="mt-2 text-[11px] text-destructive">{t('app.heThongRoiRac.otpHet')}</p>
               </div>
             </The>
 
@@ -139,11 +141,11 @@ export default function HeThongRoiRac() {
             <The trai={880} tren={20} rong={190}>
               <div className="p-3">
                 <p className="flex items-center justify-between text-[12px] font-semibold text-foreground">
-                  <span className="flex items-center gap-1.5"><Mail size={13} /> Hộp thư</span>
+                  <span className="flex items-center gap-1.5"><Mail size={13} /> {t('app.heThongRoiRac.hopThu')}</span>
                   <span className="rounded-full bg-destructive px-1.5 text-[10px] font-bold text-white">1.284</span>
                 </p>
-                <p className="mt-2 text-[11px] text-foreground">[Nhắc] Hoá đơn điện tử tháng 9 chưa nhận</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Fwd: Fwd: ủy nhiệm chi bản scan</p>
+                <p className="mt-2 text-[11px] text-foreground">{t('app.heThongRoiRac.mail1')}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('app.heThongRoiRac.mail2')}</p>
               </div>
             </The>
 
@@ -155,50 +157,47 @@ export default function HeThongRoiRac() {
               <table className="w-full font-mono text-[10px] text-foreground">
                 <thead>
                   <tr className="bg-muted text-muted-foreground">
-                    {['Ngày', 'Nội dung', 'Số tiền', 'Có HĐ?', 'Đã trả?'].map((h) => <th key={h} className="border border-border px-1.5 py-1 text-left font-medium">{h}</th>)}
+                    {[0, 1, 2, 3, 4].map((h) => <th key={h} className="border border-border px-1.5 py-1 text-left font-medium">{t(`app.heThongRoiRac.cot.${h}`)}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    ['02/09', 'Máy chủ', '1.150.000', 'Chưa', 'Rồi?'],
-                    ['05/09', 'Quảng cáo', '3.200.000', 'Có', 'Rồi'],
-                    ['09/09', 'Phần mềm', '249.000', '', '?'],
-                    ['12/09', 'In ấn', '2.400.000', 'Chưa', 'Chưa'],
-                    ['14/09', 'API AI', '520.000', '', ''],
-                  ].map((r) => (
-                    <tr key={r[0] + r[1]}>
+                  {[0, 1, 2, 3, 4].map((ri) => {
+                    const r = [0, 1, 2, 3, 4].map((ci) => t(`app.heThongRoiRac.dong.${ri}.${ci}`));
+                    return (
+                    <tr key={ri}>
                       {r.map((c, i) => <td key={i} className={`border border-border px-1.5 py-1 ${c.includes('?') ? 'bg-amber-500/15' : ''}`}>{c}</td>)}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </The>
 
-            <ThuMuc trai={520} tren={330} nhan="Chứng từ T9 (thiếu hoá đơn)" />
+            <ThuMuc trai={520} tren={330} nhan={t('app.heThongRoiRac.thuMuc')} />
 
             {/* Cổng tra cứu hoá đơn */}
             <The trai={640} tren={300} rong={270}>
               <div className="p-4 text-[12px]">
-                <p className="font-semibold text-foreground">Tra cứu hoá đơn điện tử</p>
+                <p className="font-semibold text-foreground">{t('app.heThongRoiRac.traCuu')}</p>
                 <div className="mt-3 grid gap-2">
-                  <span className="rounded-md border border-border px-2 py-1.5 text-muted-foreground">Mã số thuế người bán</span>
-                  <span className="rounded-md border border-border px-2 py-1.5 text-muted-foreground">Mã tra cứu</span>
+                  <span className="rounded-md border border-border px-2 py-1.5 text-muted-foreground">{t('app.heThongRoiRac.mst')}</span>
+                  <span className="rounded-md border border-border px-2 py-1.5 text-muted-foreground">{t('app.heThongRoiRac.maTra')}</span>
                   <span className="flex items-center justify-between rounded-md border border-border px-2 py-1.5 text-muted-foreground">
-                    Mã xác nhận <span className="font-mono tracking-[0.3em] text-foreground line-through">x7Qk</span>
+                    {t('app.heThongRoiRac.maXn')} <span className="font-mono tracking-[0.3em] text-foreground line-through">x7Qk</span>
                   </span>
                 </div>
-                <p className="mt-2 text-[11px] text-destructive">Không tìm thấy hoá đơn.</p>
+                <p className="mt-2 text-[11px] text-destructive">{t('app.heThongRoiRac.khongTim')}</p>
               </div>
             </The>
 
-            <BongChat trai={900} tren={430} ten="Chị Lan · kế toán" loi="Khoản 4.500.000 này chi cho gì vậy em?" />
+            <BongChat trai={900} tren={430} ten={t('app.heThongRoiRac.chiLan')} loi={t('app.heThongRoiRac.chiLanLoi')} />
             <ThuMuc trai={330} tren={570} nhan="Uy_nhiem_chi_scan.pdf" />
-            <BongChat trai={660} tren={590} ten="Minh · marketing" loi="Anh ơi duyệt giúp em khoản quảng cáo" />
+            <BongChat trai={660} tren={590} ten={t('app.heThongRoiRac.minh')} loi={t('app.heThongRoiRac.minhLoi')} />
           </div>
         </div>
 
         <p className="mx-auto mt-10 max-w-xl text-center text-muted-foreground">
-          Mỗi nơi biết một chút. Không nơi nào cho bạn biết khoản chi đã trả chưa, có chứng từ chưa.
+          {t('app.heThongRoiRac.cuoi')}
         </p>
       </div>
     </section>

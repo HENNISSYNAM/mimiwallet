@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import meoDi from '@/assets/mimi/walk.png';
 import meoBam from '@/assets/mimi/paw.png';
 import { docSoTienBangChu } from '@/lib/soTienBangChu';
@@ -122,42 +123,43 @@ export function useCanh(thoiGian: readonly number[], buocTinh: number) {
 const NHIP_DUYET = [1500, 900, 1800, 2800] as const;
 
 function CanhDuyet() {
+  const { t } = useTranslation();
   const { khung, buoc, coConTro } = useCanh(NHIP_DUYET, 3);
   const nutDuyet = useRef<HTMLSpanElement>(null);
   const chip = useRef<HTMLSpanElement>(null);
   const vt = useViTri(khung, buoc === 0 ? null : buoc === 1 ? nutDuyet : chip, buoc);
 
   return (
-    <Khung khungRef={khung} nen="bg-secondary/60" nhan="Minh hoạ">
+    <Khung khungRef={khung} nen="bg-secondary/60" nhan={t('app.demoTuChay.minhHoa')}>
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">agent-quang-cao</span>
-          {buoc < 2 && <Chip loai="cho" chipRef={chip}>Chờ duyệt</Chip>}
-          {buoc === 2 && <Chip loai="duyet" chipRef={chip}>Đã duyệt · chờ trả</Chip>}
-          {buoc === 3 && <Chip loai="chi" chipRef={chip}>Đã chi · sao kê xác nhận</Chip>}
+          {buoc < 2 && <Chip loai="cho" chipRef={chip}>{t('app.demoTuChay.choDuyet')}</Chip>}
+          {buoc === 2 && <Chip loai="duyet" chipRef={chip}>{t('app.demoTuChay.daDuyet')}</Chip>}
+          {buoc === 3 && <Chip loai="chi" chipRef={chip}>{t('app.demoTuChay.daChi')}</Chip>}
         </div>
         <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">4.500.000đ</p>
-        <p className="text-[11px] text-muted-foreground">Bằng chữ: <span className="text-foreground">{docSoTienBangChu(4_500_000)}</span></p>
-        <p className="mt-2 text-[13px] text-foreground">CÔNG TY TNHH ABC <span className="text-muted-foreground">· MB Bank · ••••6789</span></p>
-        <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">• Khoản trên 2.000.000đ phải có người duyệt.</p>
+        <p className="text-[11px] text-muted-foreground">{t('app.demoTuChay.bangChu')} <span className="text-foreground">{docSoTienBangChu(4_500_000)}</span></p>
+        <p className="mt-2 text-[13px] text-foreground">{t('app.demoTuChay.congTy')} <span className="text-muted-foreground">{t('app.demoTuChay.mb')}</span></p>
+        <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">{t('app.demoTuChay.tren2tr')}</p>
 
         {buoc < 2 ? (
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <span className="grid h-9 place-items-center rounded-lg border border-border text-[13px] text-foreground">Từ chối</span>
+            <span className="grid h-9 place-items-center rounded-lg border border-border text-[13px] text-foreground">{t('app.demoTuChay.tuChoi')}</span>
             <span ref={nutDuyet} className={`grid h-9 place-items-center rounded-lg bg-primary text-[13px] font-semibold text-primary-foreground transition-shadow ${buoc === 1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-card' : ''}`}>
-              Duyệt
+              {t('app.demoTuChay.duyet')}
             </span>
           </div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3 flex items-center gap-3 rounded-lg border border-border bg-background p-2.5">
             <HoaTietQr />
             <div className="min-w-0 text-[11px]">
-              <p className="text-muted-foreground">Nội dung chuyển khoản</p>
+              <p className="text-muted-foreground">{t('app.demoTuChay.noiDungCk')}</p>
               <p className="font-mono font-semibold text-foreground">MIMI4KQ2P7</p>
               {buoc === 3 ? (
-                <p className="mt-1 flex items-center gap-1 text-emerald-700 dark:text-emerald-400"><Check size={12} /> Sao kê khớp mã tham chiếu</p>
+                <p className="mt-1 flex items-center gap-1 text-emerald-700 dark:text-emerald-400"><Check size={12} /> {t('app.demoTuChay.khop')}</p>
               ) : (
-                <p className="mt-1 text-muted-foreground">Trả trong app ngân hàng của bạn</p>
+                <p className="mt-1 text-muted-foreground">{t('app.demoTuChay.traApp')}</p>
               )}
             </div>
           </motion.div>
@@ -172,37 +174,38 @@ function CanhDuyet() {
 const NHIP_DOI_TK = [1400, 1300, 1000, 2800] as const;
 
 function CanhDoiTaiKhoan() {
+  const { t } = useTranslation();
   const { khung, buoc, coConTro } = useCanh(NHIP_DOI_TK, 3);
   const nutTuChoi = useRef<HTMLSpanElement>(null);
   const vt = useViTri(khung, buoc >= 2 ? nutTuChoi : null, buoc);
 
   return (
-    <Khung khungRef={khung} nen="bg-destructive/5" nhan="Minh hoạ">
+    <Khung khungRef={khung} nen="bg-destructive/5" nhan={t('app.demoTuChay.minhHoa')}>
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">agent-nha-cung-cap</span>
-          {buoc < 3 ? <Chip loai="cho">Chờ duyệt</Chip> : <Chip loai="chan">Đã từ chối</Chip>}
+          {buoc < 3 ? <Chip loai="cho">{t('app.demoTuChay.choDuyet')}</Chip> : <Chip loai="chan">{t('app.demoTuChay.daTuChoi')}</Chip>}
         </div>
         <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">12.800.000đ</p>
-        <p className="mt-2 text-[13px] text-foreground">CÔNG TY TNHH ABC <span className="text-muted-foreground">· Vietcombank · ••••1188</span></p>
+        <p className="mt-2 text-[13px] text-foreground">{t('app.demoTuChay.congTy')} <span className="text-muted-foreground">{t('app.demoTuChay.vcb')}</span></p>
 
         {buoc >= 1 && (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3 rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-[11px]">
-            <p className="font-semibold text-destructive">Số tài khoản khác lần trả trước cho cùng người nhận</p>
-            <p className="mt-0.5 text-muted-foreground">Lần trước: MB Bank ••••6789. Gọi xác nhận qua số đã lưu trước khi duyệt.</p>
+            <p className="font-semibold text-destructive">{t('app.demoTuChay.doiTk')}</p>
+            <p className="mt-0.5 text-muted-foreground">{t('app.demoTuChay.lanTruoc')}</p>
           </motion.div>
         )}
 
         {buoc < 3 ? (
           <div className="mt-3 grid grid-cols-2 gap-2">
             <span ref={nutTuChoi} className={`grid h-9 place-items-center rounded-lg border border-border text-[13px] font-medium text-foreground ${buoc === 2 ? 'ring-2 ring-destructive ring-offset-2 ring-offset-card' : ''}`}>
-              Từ chối
+              {t('app.demoTuChay.tuChoi')}
             </span>
-            <span className="grid h-9 place-items-center rounded-lg bg-primary/50 text-[13px] font-semibold text-primary-foreground">Duyệt</span>
+            <span className="grid h-9 place-items-center rounded-lg bg-primary/50 text-[13px] font-semibold text-primary-foreground">{t('app.demoTuChay.duyet')}</span>
           </div>
         ) : (
           <p className="mt-3 rounded-lg bg-muted/60 p-2.5 font-mono text-[11px] text-muted-foreground">
-            AI được báo lý do: <span className="text-foreground">người nhận đổi số tài khoản</span>
+            <Trans i18nKey="app.demoTuChay.aiBao" components={{ s: <span className="text-foreground" /> }} />
           </p>
         )}
       </div>
@@ -211,37 +214,31 @@ function CanhDoiTaiKhoan() {
   );
 }
 
+// Tiêu đề và mô tả mỗi khung: app.demoTuChay.c1 / c2.
 const CANH = [
-  {
-    Canh: CanhDuyet,
-    tieuDe: 'Một chạm để duyệt. Tiền chỉ đi khi bạn trả.',
-    mo: 'AI gửi yêu cầu chi. Bạn xem số tiền, lý do rồi bấm Duyệt. Mã VietQR hiện ra để bạn trả. Sao kê báo về là khoản đó tự chuyển sang "Đã chi".',
-  },
-  {
-    Canh: CanhDoiTaiKhoan,
-    tieuDe: 'Bắt được lúc "nhà cung cấp đổi số tài khoản".',
-    mo: 'Cùng người nhận mà số tài khoản khác lần trước? MIMI dừng lại và báo đỏ. Đây là chiêu lừa chuyển khoản rất hay gặp.',
-  },
+  { Canh: CanhDuyet, k: 'c1' },
+  { Canh: CanhDoiTaiKhoan, k: 'c2' },
 ];
 
 export default function DemoTuChay() {
+  const { t } = useTranslation();
   return (
     <section id="demo" className="py-24 bg-background">
       <div className="container mx-auto px-4">
         <div className="max-w-2xl">
           <h2 className="font-serif font-normal text-foreground text-balance leading-[1.05] tracking-[-0.015em] text-[clamp(2rem,4.2vw,3.25rem)]">
-            Xem MIMI làm việc
+            {t('app.demoTuChay.tieuDe')}
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            Các khung dưới đây diễn lại việc bạn làm trong app, bằng số liệu ví dụ.
+            {t('app.demoTuChay.moTa')}
           </p>
         </div>
         <div className="mt-14 grid gap-x-8 gap-y-14 md:grid-cols-2">
-          {CANH.map(({ Canh, tieuDe, mo }) => (
-            <article key={tieuDe}>
+          {CANH.map(({ Canh, k }) => (
+            <article key={k}>
               <Canh />
-              <h3 className="mt-6 font-display text-xl font-semibold text-foreground text-balance">{tieuDe}</h3>
-              <p className="mt-2 max-w-lg leading-relaxed text-muted-foreground">{mo}</p>
+              <h3 className="mt-6 font-display text-xl font-semibold text-foreground text-balance">{t(`app.demoTuChay.${k}.tieuDe`)}</h3>
+              <p className="mt-2 max-w-lg leading-relaxed text-muted-foreground">{t(`app.demoTuChay.${k}.mo`)}</p>
             </article>
           ))}
         </div>

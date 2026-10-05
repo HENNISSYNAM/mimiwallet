@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import namPhoto from '@/assets/team/nam.jpg';
 import hoangPhoto from '@/assets/team/hoang.jpg';
 import nhiPhoto from '@/assets/team/nhi.jpg';
@@ -16,35 +17,12 @@ import kodyPhoto from '@/assets/team/kody.jpg';
  * responds only to being pointed at.
  */
 
+// Tên người giữ nguyên; trường và phần việc dịch ở app.teamSection.m.<i>.{school,owns}.
 const team = [
-  {
-    name: 'Đinh Văn Nam',
-    role: 'CEO',
-    photo: namPhoto,
-    school: 'Công nghệ Tài chính · ĐH Công Thương TP.HCM',
-    owns: 'Định hướng sản phẩm và kiến trúc hệ thống',
-  },
-  {
-    name: 'Lê Việt Hoàng',
-    role: 'CTO',
-    photo: hoangPhoto,
-    school: 'Khoa học Máy tính CLC · ĐH Bách Khoa TP.HCM',
-    owns: 'Mô hình chấm điểm và lớp mật mã hậu lượng tử',
-  },
-  {
-    name: 'Phạm Yến Nhi',
-    role: 'COO',
-    photo: nhiPhoto,
-    school: 'Quản trị Kinh doanh CLC · ĐH Ngoại thương Hà Nội',
-    owns: 'Mô hình kinh doanh và phát triển khách hàng',
-  },
-  {
-    name: 'Nguyễn Thị Ngọc Tú',
-    role: 'CFO',
-    photo: tuPhoto,
-    school: 'Trường Kinh tế · ĐH Bách khoa Hà Nội',
-    owns: 'Mô hình tài chính và quan hệ tổ chức tín dụng',
-  },
+  { name: 'Đinh Văn Nam', role: 'CEO', photo: namPhoto },
+  { name: 'Lê Việt Hoàng', role: 'CTO', photo: hoangPhoto },
+  { name: 'Phạm Yến Nhi', role: 'COO', photo: nhiPhoto },
+  { name: 'Nguyễn Thị Ngọc Tú', role: 'CFO', photo: tuPhoto },
 ];
 
 function TiltCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -78,6 +56,7 @@ function TiltCard({ children, className = '' }: { children: React.ReactNode; cla
 }
 
 export default function TeamSection() {
+  const { t } = useTranslation();
   return (
     <section id="about" className="py-24 mimi-hero-warm relative overflow-hidden">
       <div className="container mx-auto px-4 lg:px-8 relative z-10">
@@ -94,12 +73,11 @@ export default function TeamSection() {
           <h2
             className="mimi-tieu-de-muc text-foreground"
           >
-            Bốn người, bốn trường,
-            <br className="hidden sm:block" /> một sản phẩm đang có người dùng
+            {t('app.teamSection.tieuDe1')}
+            <br className="hidden sm:block" /> {t('app.teamSection.tieuDe2')}
           </h2>
           <p className="mimi-doan-dan mt-5 text-muted-foreground">
-            Hai người lo kỹ thuật, xây và vận hành sản phẩm. Hai người lo kinh doanh và
-            tài chính, đi hỏi khách hàng và làm việc với ngân hàng.
+            {t('app.teamSection.moTa')}
           </p>
         </motion.div>
 
@@ -133,8 +111,8 @@ export default function TeamSection() {
                         {m.role}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1.5 leading-snug">{m.school}</p>
-                    <p className="text-[13px] text-foreground/80 mt-3 leading-snug">{m.owns}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5 leading-snug">{t(`app.teamSection.m.${i}.school`)}</p>
+                    <p className="text-[13px] text-foreground/80 mt-3 leading-snug">{t(`app.teamSection.m.${i}.owns`)}</p>
                   </div>
                 </div>
               </TiltCard>
@@ -163,12 +141,11 @@ export default function TeamSection() {
               />
               <div style={{ transform: 'translateZ(14px)' }}>
                 <p className="text-[11px] font-mono font-semibold text-muted-foreground">
-                  CỐ VẤN
+                  {t('app.teamSection.covan')}
                 </p>
                 <h3 className="font-display font-bold text-foreground mt-0.5">Kody</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  CEO EFFOMA · Meta Partner · Monash University — cố vấn chiến lược ra thị trường
-                  quốc tế
+                  {t('app.teamSection.kody')}
                 </p>
               </div>
             </div>

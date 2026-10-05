@@ -8,6 +8,7 @@ import DaiLogo from '@/components/landing/DaiLogo';
 import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
 import VideoBaoMat from '@/components/landing/VideoBaoMat';
 import VideoMeoMimi from '@/components/landing/VideoMeoMimi';
+import HuongNghienCuu from '@/components/landing/HuongNghienCuu';
 import { ManHinhChoDemo } from '@/components/landing/ManHinhChoDemo';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
@@ -363,7 +364,7 @@ function HeroMockup() {
         </div>
         <div>
           <p className="text-xs text-muted-foreground">{t('heroBadges.cashflow')}</p>
-          <p className="text-sm font-mono font-bold text-mimi-green">+₫1.2 tỷ</p>
+          <p className="text-sm font-mono font-bold text-mimi-green">{t('app.landingCon.heroTy')}</p>
         </div>
       </motion.div>
 
@@ -427,6 +428,7 @@ function PricingCard({ name, price, features, cta, highlighted, badge }: {
   name: string; price: string; features: string[]; cta: string; highlighted?: boolean; badge?: string;
 }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <motion.div
       whileHover={{ y: -8, transition: { duration: 0.3 } }}
@@ -445,8 +447,8 @@ function PricingCard({ name, price, features, cta, highlighted, badge }: {
       <p className="font-mono text-3xl font-extrabold text-foreground mt-3">
         {price}
       </p>
-      {price !== 'Miễn phí' && price !== 'Liên hệ' && (
-        <p className="text-xs text-muted-foreground mt-1">/tháng</p>
+      {price !== t('app.landingCon.mienPhi') && price !== t('app.landingCon.lienHe') && (
+        <p className="text-xs text-muted-foreground mt-1">{t('app.landingCon.moiThang')}</p>
       )}
       <div className="w-full h-px bg-border my-6" />
       <ul className="space-y-3 flex-1">
@@ -523,10 +525,10 @@ function TechPillarCard({
 export type KhoaKhoi =
   | 'hero' | 'dai_logo' | 'cong_nhan' | 'he_thong_roi_rac' | 'agent_ai' | 'demo' | 'bao_mat_video' | 'nhat_ky'
   | 'cap_nhat' | 'nang_luc' | 'cong_nghe' | 'quy_trinh' | 'giai_phap' | 'minh_bach' | 'bang_gia'
-  | 'kham_pha' | 'dang_ky';
+  | 'kham_pha' | 'dang_ky' | 'huong_nghien_cuu';
 
 export const KHOI_TRANG_CHU: readonly KhoaKhoi[] = [
-  'hero', 'dai_logo', 'cong_nhan', 'he_thong_roi_rac', 'quy_trinh', 'bang_gia', 'kham_pha', 'dang_ky',
+  'hero', 'dai_logo', 'cong_nhan', 'he_thong_roi_rac', 'quy_trinh', 'bang_gia', 'huong_nghien_cuu', 'kham_pha', 'dang_ky',
 ];
 
 export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: readonly KhoaKhoi[]; dauTrang?: React.ReactNode } = {}) {
@@ -962,19 +964,19 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
                 its figures can be checked, an auditable scorecard beats an
                 unverifiable 94%.
               */}
-              <span className="text-xs text-primary font-mono uppercase tracking-widest">Minh bạch</span>
+              <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('app.landingCon.minhBach')}</span>
               <h2 className="font-serif font-normal text-[clamp(1.75rem,3.2vw,2.375rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3 mb-6">
-                Bạn xem được MIMI làm gì,{' '}
-                <span className="text-gradient">từng bước một</span>
+                {t('app.landingCon.mbTd1')}{' '}
+                <span className="text-gradient">{t('app.landingCon.mbTd2')}</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Việc nào MIMI nhắc cũng kèm bằng chứng, và ghi rõ đó là MIMI tự kiểm trên số liệu hay do bạn xác nhận. Khi dẫn luật, MIMI trích nguyên văn và ghi số hiệu văn bản.
+                {t('app.landingCon.mbMo')}
               </p>
               <div className="space-y-4">
                 {[
-                  { label: 'Ghi rõ bằng chứng từ đâu', value: '"MIMI đã kiểm trên dữ liệu" khác với "theo xác nhận của bạn"', icon: <Brain size={16} /> },
-                  { label: 'Trích luật nguyên văn', value: 'Có số hiệu văn bản, điều, khoản. Không kể lại theo trí nhớ.', icon: <TrendingUp size={16} /> },
-                  { label: 'Ai xác nhận khoản nào', value: 'Ai bấm xác nhận khoản nào, MIMI đều ghi lại', icon: <Shield size={16} /> },
+                  { label: t('app.landingCon.mb1.label'), value: t('app.landingCon.mb1.value'), icon: <Brain size={16} /> },
+                  { label: t('app.landingCon.mb2.label'), value: t('app.landingCon.mb2.value'), icon: <TrendingUp size={16} /> },
+                  { label: t('app.landingCon.mb3.label'), value: t('app.landingCon.mb3.value'), icon: <Shield size={16} /> },
                 ].map((item, i) => (
                   <motion.div
                     key={item.label}
@@ -1001,7 +1003,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
               className="relative"
             >
               <div className="relative bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-6">
-                <NetworkGraph labels={['Sao kê', 'Hoá đơn', 'Đối chiếu', 'Chứng từ']} />
+                <NetworkGraph labels={[0, 1, 2, 3].map((i) => t(`app.landingCon.mang.${i}`))} />
                 <motion.div 
                   className="mt-4 relative overflow-hidden rounded-xl group/ai cursor-pointer"
                   whileHover={{ scale: 1.03, y: -4 }}
@@ -1034,8 +1036,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
       <section className="py-24 bg-background" id="pricing">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp(0)} className="text-center mb-4">
-            <span className="text-xs text-primary font-mono uppercase tracking-widest">Bảng giá</span>
-            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">Chọn gói phù hợp</h2>
+            <span className="text-xs text-primary font-mono uppercase tracking-widest">{t('app.landingCon.bangGia')}</span>
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mt-3">{t('app.landingCon.chonGoi')}</h2>
           </motion.div>
           {/*
             Gỡ nút gạt "Hàng tháng / Hàng năm" và dòng dùng thử 14 ngày (27/09/2026, trước Go-Live):
@@ -1046,9 +1048,9 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
           */}
           <div className="mb-14" />
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <PricingCard name="Free" price="Miễn phí" features={['Đồng bộ 1 tài khoản ngân hàng', 'Phân loại chi phí thủ công', 'Báo cáo dòng tiền tháng', 'Theo dõi ngưỡng miễn thuế 01 tỷ', 'Hỗ trợ qua email']} cta="Bắt đầu miễn phí" />
-            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={['So sánh hai cách tính thuế', 'Không giới hạn tài khoản ngân hàng']} cta="Chọn gói này" highlighted badge="MIMI gợi ý" />
-            <PricingCard name="Kế toán & đại lý thuế" price="Liên hệ" features={['Quản lý nhiều hộ kinh doanh', 'Nhật ký ai xác nhận khoản nào', 'Phân quyền theo từng khách', 'Hỗ trợ triển khai']} cta="Liên hệ" />
+            <PricingCard name="Free" price={t('app.landingCon.mienPhi')} features={[0, 1, 2, 3, 4].map((i) => t(`app.landingCon.free.${i}`))} cta={t('app.landingCon.batDauMienPhi')} />
+            <PricingCard name={GOI_THANG.growth.ten} price={giaVND(GOI_THANG.growth.amount)} features={[0, 1].map((i) => t(`app.landingCon.growth.${i}`))} cta={t('app.landingCon.chonGoiNay')} highlighted badge={t('app.landingCon.gopY')} />
+            <PricingCard name={t('app.landingCon.ketoan')} price={t('app.landingCon.lienHe')} features={[0, 1, 2, 3].map((i) => t(`app.landingCon.ketoanF.${i}`))} cta={t('app.landingCon.lienHe')} />
           </div>
 
           {/*
@@ -1066,12 +1068,13 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             work this product does, so they are the buyer who exists today.
           */}
           <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed">
-            MIMI làm sẵn sổ chi phí và bảng kê để bạn tự kê khai. MIMI không nộp thuế thay bạn và không cho vay.
+            {t('app.landingCon.ghiChuGia')}
           </p>
         </div>
       </section>
       </>)}
 
+      {hien('huong_nghien_cuu') && <HuongNghienCuu />}
       {hien('kham_pha') && <KhamPhaThem />}
 
       {hien('dang_ky') && (<>
@@ -1086,8 +1089,8 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
         </div>
         <div className="relative z-10 container mx-auto px-4 text-center max-w-2xl">
           <motion.div {...fadeUp(0)}>
-            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mb-4">Mở tài khoản</h2>
-            <p className="text-muted-foreground text-lg mb-10">Miễn phí, không cần thẻ. Nối ngân hàng xong là dùng được.</p>
+            <h2 className="font-serif font-normal text-[clamp(1.75rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em] text-balance text-foreground mb-4">{t('app.landingCon.moTk')}</h2>
+            <p className="text-muted-foreground text-lg mb-10">{t('app.landingCon.moTkMo')}</p>
           </motion.div>
           <MoTaiKhoan />
         </div>
