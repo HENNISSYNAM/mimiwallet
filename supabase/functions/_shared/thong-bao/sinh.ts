@@ -10,6 +10,7 @@
 import { goiYTienVao, TEN_LOAI_TIEN_VAO, type KhoanTienVao, type LoaiTienVao } from '../phan-loai/tien-vao.ts';
 import { TU_GOI_Y } from '../doanh-thu/phan-loai.ts';
 import type { MocThue } from '../luat/lich-thue.ts';
+import { khoaThongBaoMuc, MOC_NHAC_HAN, mucNhacTuLich, type SanSangChoNhac } from './muc-nhac.ts';
 
 export type LoaiThongBao = 'han_thue' | 'luat_moi' | 'tien_vao' | 'goi' | 'thanh_toan' | 'viec' | 'khac';
 export const LOAI_THONG_BAO: LoaiThongBao[] = ['han_thue', 'luat_moi', 'tien_vao', 'goi', 'thanh_toan', 'viec', 'khac'];
@@ -44,12 +45,8 @@ export interface BanNhapThongBao {
 
 const so = (n: number) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
 
-/**
- * Báo trước hạn vào đúng các mốc này (số ngày còn lại). Có mốc 5 ngày theo yêu cầu người dùng
- * (25/09/2026: "thuế nhắc trước 5 ngày") — đủ để gom chứng từ và hỏi kế toán trước khi nộp.
- * Thêm mốc 10 ngày (26/09/2026: "nhắc sớm hơn 5 ngày ra").
- */
-export const MOC_NHAC_HAN = [14, 10, 5, 1, 0];
+/** Mốc nhắc và cách dựng câu nằm ở `muc-nhac.ts` — một nguồn cho chuông, push, Việc cần làm, trợ lý. */
+export { MOC_NHAC_HAN };
 
 /**
  * Nhắc hạn theo LỊCH CỦA CHÍNH CÔNG TY (`_shared/luat/lich-thue.ts`), không theo lịch chung cả nước.
@@ -57,25 +54,23 @@ export const MOC_NHAC_HAN = [14, 10, 5, 1, 0];
  * khai quý. Giờ:
  *   - `khong_ap_dung` không bao giờ được nhắc;
  *   - `can_xac_minh` được nhắc kèm ĐÚNG câu hỏi còn thiếu, không nói như việc bắt buộc;
- *   - mốc không có hạn (thiếu dữ kiện) không được nhắc — không bịa ngày.
+ *   - mốc không có hạn (thiếu dữ kiện) không được nhắc — không bịa ngày;
+ *   - (02/10/2026) khi doanh thu còn cắt ngưỡng luật (`sanSang.ket_luan_phu_thuoc`) có thêm MỘT thông báo
+ *     "cần xem" với đúng một câu hỏi, thay cho mọi lời nói về nghĩa vụ.
  * Khoá gồm cả hạn: năm sau cùng loại mốc là một thông báo mới, còn cùng mốc cùng ngày chỉ một lần.
  */
-export function thongBaoHanThue(lich: MocThue[]): BanNhapThongBao[] {
+export function thongBaoHanThue(lich: MocThue[], sanSang?: SanSangChoNhac | null, homNay?: string): BanNhapThongBao[] {
   const ra: BanNhapThongBao[] = [];
-  for (const m of lich) {
-    if (m.trang_thai === 'khong_ap_dung' || !m.han || m.con_lai === null) continue;
-    if (!MOC_NHAC_HAN.includes(m.con_lai)) continue;
-    const han = m.han.split('-').reverse().join('/');
-    const xacMinh = m.trang_thai === 'can_xac_minh';
+  for (const m of mucNhacTuLich(lich, sanSang)) {
+    // Mục "cần xem" không có số ngày: báo một lần mỗi câu hỏi mỗi năm (cần biết năm); mốc hạn: đúng các mốc nhắc.
+    if (m.trang_thai === 'can_xem' ? !homNay : !MOC_NHAC_HAN.includes(m.con_lai as number)) continue;
     ra.push({
-      khoa: `han:${m.khoa}:${m.han}:${m.con_lai}`,
+      khoa: khoaThongBaoMuc(m, homNay ?? ''),
       loai: 'han_thue',
-      muc_do: m.con_lai <= 1 ? 'gap' : 'can_chu_y',
-      tieu_de: (m.con_lai === 0 ? `Hôm nay là hạn: ${m.ten}` : `Còn ${m.con_lai} ngày: ${m.ten}`).slice(0, 200),
-      noi_dung: (xacMinh
-        ? `Hạn ${han}, nếu việc này áp dụng cho bạn. MIMI chưa chắc: ${m.cau_hoi ?? 'còn thiếu một dữ kiện'} Trả lời để MIMI biết có phải làm không.`
-        : `Hạn ${han}. ${m.vi_sao} Mở Tờ khai thuế để xem bản nháp MIMI đã soạn, kiểm lại rồi mới nộp.`).slice(0, 1000),
-      duong_dan: '/dashboard/nhac-thue',
+      muc_do: m.muc_do,
+      tieu_de: m.tieu_de,
+      noi_dung: m.noi_dung,
+      duong_dan: m.duong_dan,
       hanh_dong: [],
     });
   }

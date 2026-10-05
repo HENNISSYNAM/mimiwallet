@@ -19,7 +19,7 @@ import { congTyLaDemo } from "../_shared/minh-hoa.ts";
 import {
   thongBaoGoi, thongBaoHanThue, thongBaoLuatMoi, trongGioYenLang, type BanNhapThongBao,
 } from "../_shared/thong-bao/sinh.ts";
-import { dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
+import { danhDauNhacLoiThoi, dayThongBao, ghiThongBao, nguoiNhan, type MayDay } from "../_shared/thong-bao/gui.ts";
 import { docLichCongTy } from "../_shared/luat/doc-lich-thue.ts";
 import { nhapTienVaoGanDay, tuPhanLoaiNamNay } from "../_shared/thong-bao/quet-tien-vao.ts";
 import { daNhacTheoDoi, dongBoViecDoanhThu, nhapTheoDoiDenHan, type HoSoViecDong } from "../_shared/viec/luu.ts";
@@ -93,7 +93,13 @@ async function quetCongTy(db: Db, companyId: string, lucVN: Date, luatMoi: BanNh
         // Prompt 4B: việc "Phân loại … doanh thu" luôn khớp số mới nhất (mở / cập nhật / tự đóng) — cùng lịch vừa đọc.
         await dongBoViecDoanhThu(db, { companyId, nam: lucVN.getFullYear(), homNay, laDemo, boi: null, lich: l })
           .catch((e) => console.error("việc phân loại doanh thu:", e instanceof Error ? e.message : e));
-        return thongBaoHanThue(l.lich);
+        // 02/10/2026: đánh dấu lỗi thời (không xoá) những nhắc không còn đúng — hạn đã qua, mốc đã không áp dụng
+        // hoặc biến khỏi lịch, câu hỏi cần xem đã khác, việc chờ đã xong — TRƯỚC khi ghi nhắc mới. Lỗi ở đây không
+        // chặn nhắc mới. Chỉ chạy khi lịch đọc thành công (đọc hỏng không được coi mọi mốc là biến mất).
+        await danhDauNhacLoiThoi(db, companyId, { lich: l.lich, sanSang: l.sanSang, homNay })
+          .catch((e) => console.error("đánh dấu nhắc lỗi thời:", e instanceof Error ? e.message : e));
+        // Cùng `sanSang` với màn Nhắc thuế: doanh thu còn cắt ngưỡng thì chuông hỏi MỘT câu, không nói nghĩa vụ.
+        return thongBaoHanThue(l.lich, l.sanSang, homNay);
       })
       .catch((e) => { console.error("lịch thuế cho nhắc hạn:", e instanceof Error ? e.message : e); return [] as BanNhapThongBao[]; })
     : [];

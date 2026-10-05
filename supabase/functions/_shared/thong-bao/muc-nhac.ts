@@ -1,16 +1,17 @@
 /**
  * MỘT MỤC NHẮC — cùng một hạn, cùng một trạng thái, cùng một câu chữ cho chuông, push, Việc cần làm,
- * "Việc cần chú ý hôm nay" và trang Nhắc thuế (02/10/2026).
+ * "Việc cần chú ý hôm nay", việc ưu tiên của trợ lý và trang Nhắc thuế (02/10/2026).
  *
  * Trước đây mỗi nơi tự dựng câu từ `MocThue`: chuông "Còn N ngày: <tên>", Việc cần làm "Chuẩn bị: <tên>",
  * trợ lý "Xác minh: <tên> — <câu hỏi>"; còn khi doanh thu chưa chắc (`ket_luan_phu_thuoc`) thì chuông và
  * Việc cần làm không nói gì về câu hỏi cần xem. Hàm ở đây là nguồn duy nhất.
  *
  * QUY TẮC (không đổi kết luận thuế — chỉ đổi cách nói):
- *   - `khong_ap_dung` và mốc không có hạn không bao giờ thành mục nhắc có hạn;
+ *   - `khong_ap_dung`, mốc không có hạn và mốc đã qua hạn không bao giờ thành mục nhắc có hạn;
  *   - `can_xac_minh` luôn kèm ĐÚNG câu hỏi, và nói "nếu áp dụng", không nói như việc bắt buộc;
- *   - `ket_luan_phu_thuoc` (doanh thu còn cắt ngưỡng luật): KHÔNG nói nghĩa vụ, chỉ một mục "cần xem" với
- *     đúng MỘT câu hỏi (`cau_hoi_can_xem`).
+ *   - `ket_luan_phu_thuoc` (doanh thu còn cắt ngưỡng luật): thêm MỘT mục "cần xem" với đúng MỘT câu hỏi
+ *     (`cau_hoi_can_xem` của `luat/san-sang-thue.ts`). Lịch (`lich-thue.ts`) đã tự bỏ mọi nghĩa vụ phụ thuộc
+ *     ngưỡng trong trường hợp này, nên ở đây KHÔNG lọc thêm mốc nào — lọc thêm là tự đổi kết luận thuế.
  * Hàm thuần; Deno và trình duyệt cùng đọc.
  */
 import type { MocThue } from '../luat/lich-thue.ts';
@@ -18,6 +19,8 @@ import type { SanSangThue } from '../luat/san-sang-thue.ts';
 
 /** Lối vào chung của mọi nhắc thuế. */
 export const DUONG_DAN_NHAC_THUE = '/dashboard/nhac-thue';
+/** Mục "cần xem" mở thẳng khối câu hỏi trên trang Nhắc thuế (có nút đi trả lời). */
+export const DUONG_DAN_CAN_XEM = `${DUONG_DAN_NHAC_THUE}#can-xem`;
 
 /**
  * Báo trước hạn vào đúng các mốc này (số ngày còn lại). Có mốc 5 ngày theo yêu cầu người dùng
@@ -30,6 +33,9 @@ export const NGAY_BAO_TRUOC = MOC_NHAC_HAN[0];
 
 export type TrangThaiMucNhac = 'phai_lam' | 'can_xac_minh' | 'can_xem';
 
+/** Phần sẵn sàng khai thuế mà mục nhắc cần — chỉ đọc, không suy thêm. */
+export type SanSangChoNhac = Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_can_xem'>;
+
 export interface MucNhac {
   /** Danh tính ổn định của mục: `<khoá mốc>:<hạn>` hoặc `can_xem:<khoá câu hỏi>`. KHÔNG chứa số ngày còn lại. */
   khoa: string;
@@ -38,10 +44,12 @@ export interface MucNhac {
   /** YYYY-MM-DD; null với mục "cần xem" (không có hạn). */
   han: string | null;
   con_lai: number | null;
-  /** Một dòng: "Còn 5 ngày: <tên>", "Hôm nay là hạn: <tên>", hoặc câu hỏi cần xem. */
+  /** Một dòng: "Còn 5 ngày: <tên>", "Hôm nay là hạn: <tên>", hoặc lời mời xem câu hỏi. */
   tieu_de: string;
   /** Vài câu: hạn, vì sao, và việc làm tiếp (động từ đứng đầu). */
   noi_dung: string;
+  /** Nút / việc tiếp theo, động từ đứng đầu: "Mở Tờ khai thuế", "Trả lời câu hỏi của MIMI"… */
+  viec_tiep: string;
   /** Đúng một câu hỏi khi `can_xac_minh` / `can_xem`. */
   cau_hoi: string | null;
   muc_do: 'thong_tin' | 'can_chu_y' | 'gap';
@@ -49,9 +57,6 @@ export interface MucNhac {
 }
 
 export const ngayVN = (ymd: string): string => ymd.slice(0, 10).split('-').reverse().join('/');
-
-/** "Còn 5 ngày" / "Hôm nay là hạn" — chỉ dùng cho mốc chưa qua hạn. */
-export const cauConLaiNgan = (conLai: number): string => (conLai <= 0 ? 'Hôm nay là hạn' : `Còn ${conLai} ngày`);
 
 /** Khoá của một mốc hạn: ổn định theo mốc + hạn, không theo số ngày còn lại. */
 export const khoaMocHan = (m: Pick<MocThue, 'khoa' | 'han'>): string => `${m.khoa}:${m.han}`;
@@ -75,6 +80,7 @@ export function mucNhacTuMoc(m: MocThue): MucNhac | null {
     noi_dung: (xacMinh
       ? `Hạn ${han}, nếu việc này áp dụng cho bạn. MIMI chưa chắc: ${m.cau_hoi ?? 'còn thiếu một dữ kiện.'} Trả lời để MIMI biết có phải làm không.`
       : `Hạn ${han}. ${m.vi_sao} Mở Tờ khai thuế để xem bản nháp MIMI đã soạn, kiểm lại rồi mới nộp.`).slice(0, 1000),
+    viec_tiep: xacMinh ? 'Trả lời câu hỏi của MIMI' : 'Mở Tờ khai thuế, kiểm bản nháp',
     cau_hoi: xacMinh ? m.cau_hoi ?? null : null,
     muc_do: m.con_lai <= 1 ? 'gap' : 'can_chu_y',
     duong_dan: DUONG_DAN_NHAC_THUE,
@@ -85,7 +91,7 @@ export function mucNhacTuMoc(m: MocThue): MucNhac | null {
  * Doanh thu còn cắt ngưỡng luật → MỘT mục "cần xem" với đúng một câu hỏi, thay cho mọi lời nói về nghĩa vụ.
  * `null` khi kết luận không phụ thuộc phần chưa rõ.
  */
-export function mucCanXem(ss: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_can_xem'> | null | undefined): MucNhac | null {
+export function mucCanXem(ss: SanSangChoNhac | null | undefined): MucNhac | null {
   if (!ss || !ss.ket_luan_phu_thuoc || !ss.cau_hoi_can_xem) return null;
   const cau = ss.cau_hoi_can_xem.cau;
   return {
@@ -95,10 +101,11 @@ export function mucCanXem(ss: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_
     han: null,
     con_lai: null,
     tieu_de: 'MIMI cần bạn xem một khoản trước khi nói về nghĩa vụ thuế',
-    noi_dung: `Khoản chưa rõ này có thể làm đổi việc bạn phải khai (khai theo quý hay chỉ thông báo doanh thu), nên MIMI chưa kết luận. Trả lời một câu: ${cau}`.slice(0, 1000),
+    noi_dung: `Khoản chưa rõ này có thể làm đổi việc bạn phải khai và khai từ khi nào, nên MIMI chưa kết luận. Trả lời một câu: ${cau}`.slice(0, 1000),
+    viec_tiep: 'Trả lời câu hỏi của MIMI',
     cau_hoi: cau,
     muc_do: 'can_chu_y',
-    duong_dan: DUONG_DAN_NHAC_THUE,
+    duong_dan: DUONG_DAN_CAN_XEM,
   };
 }
 
@@ -107,37 +114,57 @@ export function mucCanXem(ss: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_
  * không), rồi các hạn từ gần tới xa. `trongNgay`: chỉ lấy hạn còn tối đa chừng này ngày.
  */
 export function mucNhacTuLich(
-  lich: readonly MocThue[], sanSang?: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_can_xem'> | null, o: { trongNgay?: number } = {},
+  lich: readonly MocThue[], sanSang?: SanSangChoNhac | null, o: { trongNgay?: number } = {},
 ): MucNhac[] {
   const ra: MucNhac[] = [];
   const canXem = mucCanXem(sanSang);
   if (canXem) ra.push(canXem);
+  const han: MucNhac[] = [];
   for (const m of lich) {
     const muc = mucNhacTuMoc(m);
     if (!muc) continue;
     if (o.trongNgay !== undefined && (muc.con_lai ?? 0) > o.trongNgay) continue;
-    ra.push(muc);
+    han.push(muc);
   }
-  return ra;
+  han.sort((a, b) => (a.con_lai ?? 0) - (b.con_lai ?? 0));
+  return [...ra, ...han];
 }
 
 /**
- * Khoá thông báo hạn thuế đang nằm ở bảng `thong_bao` còn đúng không? Dùng để đánh dấu lỗi thời (không xoá).
- * Khoá hạn: `han:<khoá mốc>:<hạn>:<số ngày còn>`; khoá cần xem: `can_xem:<khoá câu hỏi>`.
+ * Khoá của dòng `thong_bao` cho một mục nhắc.
+ *   - Hạn: `han:<khoá mốc>:<hạn>:<số ngày còn>` — mỗi mốc 14/10/5/1/0 là một thông báo, chạy lại không trùng.
+ *   - Cần xem: `can_xem:<năm>:<khoá câu hỏi>` — một lần mỗi câu hỏi mỗi năm (năm sau hỏi lại được).
+ */
+export function khoaThongBaoMuc(m: MucNhac, homNay: string): string {
+  return m.trang_thai === 'can_xem' ? `can_xem:${homNay.slice(0, 4)}:${m.khoa.slice('can_xem:'.length)}` : `han:${m.khoa}:${m.con_lai}`;
+}
+
+/**
+ * Dòng `thong_bao` loại `han_thue` có khoá này còn đúng không? Dùng để đánh dấu lỗi thời (không xoá).
  *
- * Lỗi thời khi: hạn đã qua; mốc không còn trong lịch hoặc đã thành "không áp dụng"; hoặc kết luận lại đang
- * phụ thuộc phần chưa rõ mà mốc đó là nghĩa vụ chắc ("phai_lam"). Mục "cần xem" lỗi thời khi câu hỏi đó không
- * còn được hỏi nữa.
+ * Lỗi thời khi: hạn đã qua; mốc không còn trong lịch (ví dụ kết luận lại phụ thuộc phần chưa rõ — lịch bỏ
+ * nghĩa vụ đó) hoặc đã thành "không áp dụng"; hoặc mốc đổi trạng thái giữa "phải làm" và "cần xác minh" (câu
+ * chữ cũ đã sai). Mục "cần xem" lỗi thời khi câu hỏi đó không còn được hỏi.
+ * Khoá lạ (lịch chung cả nước trước 25/09/2026 — migration đã đánh dấu) thì giữ nguyên.
  */
 export function thongBaoNhacLoiThoi(
-  khoa: string, lich: readonly MocThue[], sanSang: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_can_xem'> | null | undefined, homNay: string,
+  khoa: string, lich: readonly MocThue[], sanSang: SanSangChoNhac | null | undefined, homNay: string,
+  /** Trạng thái lúc ghi thông báo, đọc từ câu chữ đã lưu (`noi_dung`) — không có thì bỏ qua phép so này. */
+  trangThaiLucGhi?: 'phai_lam' | 'can_xac_minh' | null,
 ): boolean {
-  if (khoa.startsWith('can_xem:')) return mucCanXem(sanSang)?.khoa !== khoa;
+  if (khoa.startsWith('can_xem:')) {
+    const c = mucCanXem(sanSang);
+    return !c || khoaThongBaoMuc(c, homNay) !== khoa;
+  }
   const p = /^han:(.+):(\d{4}-\d{2}-\d{2}):(\d+)$/.exec(khoa);
-  if (!p) return false; // khoá cũ (lịch chung cả nước) đã được migration đánh dấu
+  if (!p) return false;
   const [, khoaMoc, han] = p;
   if (han < homNay) return true;
   const m = lich.find((x) => x.khoa === khoaMoc && x.han === han);
   if (!m || m.trang_thai === 'khong_ap_dung') return true;
-  return m.trang_thai === 'phai_lam' && !!sanSang?.ket_luan_phu_thuoc && !!sanSang.cau_hoi_can_xem;
+  return !!trangThaiLucGhi && trangThaiLucGhi !== m.trang_thai;
 }
+
+/** Câu chữ đã lưu của một thông báo hạn → trạng thái lúc ghi (câu "nếu việc này áp dụng" chỉ có ở cần xác minh). */
+export const trangThaiTuNoiDung = (noiDung: string | null | undefined): 'phai_lam' | 'can_xac_minh' | null =>
+  !noiDung ? null : noiDung.includes('nếu việc này áp dụng cho bạn') ? 'can_xac_minh' : 'phai_lam';

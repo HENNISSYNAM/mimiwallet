@@ -82,4 +82,31 @@ describe('Nhắc thuế', () => {
     expect(document.body.textContent).toContain('Số liệu tham khảo.');
     expect(screen.getAllByRole('progressbar')).toHaveLength(2);
   });
+
+  it('doanh thu còn cắt ngưỡng: hỏi đúng câu cần xem (như chuông), không viết "Đã vượt" như chắc chắn, gọi máy chủ một lần', async () => {
+    const CAU = 'Còn 3 khoản tiền vào chưa rõ có phải tiền bán hàng không?';
+    gia.invoke.mockResolvedValue({
+      data: {
+        lich: [], mocKeTiep: null,
+        sanSang: { ket_luan_phu_thuoc: true, cau_hoi_can_xem: { khoa: 'tong_chua_ro', cau: CAU, con_lai: 0, hanh_dong: 'xac_nhan_tien_vao' } },
+        year: 2026, basis: 'bank', revenue: 1_050_000_000, hasBankConnection: true, disclaimer: 'Số liệu tham khảo.',
+        revenueUncertainty: { nguong: [{ ma: 'mien_thue_1_ty', phia: 'chua_chac' }, { ma: 'phuong_phap_3_ty', phia: 'duoi' }] },
+        milestones: [
+          { key: 'tax_exemption', threshold: 1e9, remaining: -50_000_000, ratio: 1.05, crossed: true },
+          { key: 'profit_method_required', threshold: 3e9, remaining: 1_950_000_000, ratio: 0.35, crossed: false },
+        ],
+      },
+      error: null,
+    });
+    dung();
+    expect(await screen.findByRole('heading', { name: 'MIMI cần bạn xem một khoản trước khi nói về nghĩa vụ thuế' })).toBeTruthy();
+    expect(document.body.textContent).toContain(CAU);
+    expect(screen.getByRole('link', { name: 'Trả lời ngay' }).getAttribute('href')).toBe('/dashboard/cashflow');
+    expect(document.body.textContent).not.toContain('Đã vượt');
+    expect(document.body.textContent).toContain('Chưa chắc — cần bạn xem một khoản');
+    // Ngưỡng 3 tỷ không bị cắt thì vẫn nói rõ.
+    expect(document.body.textContent).toMatch(/Còn 1\.950\.000\.000/);
+    expect(document.body.textContent).not.toContain('Chưa có việc thuế nào có hạn MIMI biết chắc');
+    expect(gia.invoke).toHaveBeenCalledTimes(1);
+  });
 });

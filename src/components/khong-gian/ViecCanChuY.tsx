@@ -42,6 +42,8 @@ export function ViecCanChuY({ viec, soChoDuyet, onHoi, dangHoi }: {
         )}
         {viec.map((v) => {
           const c = CTA[v.nhom];
+          // Mục thuế mang lối vào riêng (cùng đường dẫn với chuông và Việc cần làm).
+          const duong = v.duong_dan ?? c.duong;
           return (
             <li key={v.khoa} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
@@ -51,8 +53,8 @@ export function ViecCanChuY({ viec, soChoDuyet, onHoi, dangHoi }: {
               <span className="flex shrink-0 items-center gap-1.5">
                 <button type="button" disabled={dangHoi} onClick={() => onHoi(v)}
                   className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50">{t(`kg.viec.${c.nut}`)}</button>
-                {c.duong && (
-                  <Link to={c.duong} aria-label={t('kg.viec.moTrang', { cau: v.cau })} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent">
+                {duong && (
+                  <Link to={duong} aria-label={t('kg.viec.moTrang', { cau: v.cau })} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent">
                     <ChevronRight size={15} />
                   </Link>
                 )}

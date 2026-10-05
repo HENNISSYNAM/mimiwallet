@@ -239,3 +239,31 @@ describe('LAUNCH-CRITICAL 2 — doanh thu 951.983.000đ có 101.983.000đ chưa 
     expect(db2.ds('ho_so_viec')).toHaveLength(0);
   });
 });
+
+describe('Việc cần làm dùng cùng mục nhắc với chuông (02/10/2026)', () => {
+  const CAU = { khoa: 'tong_chua_ro', cau: 'Còn 3 khoản tiền vào chưa rõ có phải tiền bán hàng không?' };
+  const lich = (phuThuoc: boolean, moc: MocThue[]): LichCongTy => ({
+    ...lichRong(), lich: moc, soChuaRo: 3, tienChuaRo: 9_000_000,
+    sanSang: { ...lichRong().sanSang, ket_luan_phu_thuoc: phuThuoc, cau_hoi_can_xem: phuThuoc ? CAU as never : null },
+  });
+  const han = (o: Partial<MocThue>): MocThue => ({ khoa: 'gtgt:2026-10-08', ten: 'Khai và nộp thuế GTGT', loai: 'khai_va_nop', trang_thai: 'phai_lam', han: '2026-10-08', con_lai: 12, vi_sao: 'x', can_cu: [], ...o });
+
+  it('hạn trong 14 ngày: cùng tiêu đề với chuông, không còn "Chuẩn bị:"', async () => {
+    const ds = await dsViecCanLam(new DbGiaViec(), { companyId: C, homNay: HOM_NAY, laDemo: false, boi: null, dongBoDoanhThu: false, lich: lich(false, [han({})]) });
+    const nv = ds.viec.find((v) => v.nguon === 'nghia_vu')!;
+    expect(nv.tieu_de).toBe('Còn 12 ngày: Khai và nộp thuế GTGT');
+    expect(nv.khi?.ngay).toBe('2026-10-08');
+    expect(JSON.stringify(ds.viec)).not.toContain('Chuẩn bị:');
+    // Không có câu hỏi cần xem thì vẫn nhắc xác nhận khoản chưa rõ — nói là "tạm tính", không nói như chắc chắn.
+    expect(ds.viec.find((v) => v.nguon === 'tien_vao')?.vi_sao).toContain('tạm tính');
+  });
+
+  it('doanh thu còn cắt ngưỡng: đúng một mục cần xem với đúng một câu hỏi, không hỏi hai lần', async () => {
+    const ds = await dsViecCanLam(new DbGiaViec(), { companyId: C, homNay: HOM_NAY, laDemo: false, boi: null, dongBoDoanhThu: false, lich: lich(true, []) });
+    const canXem = ds.viec.filter((v) => v.loai === 'can_xem');
+    expect(canXem).toHaveLength(1);
+    expect(canXem[0].hanh_dong?.tieu_de).toBe(`Trả lời: ${CAU.cau}`);
+    expect(canXem[0].duong_dan).toBe('/dashboard/nhac-thue#can-xem');
+    expect(ds.viec.some((v) => v.nguon === 'tien_vao')).toBe(false);
+  });
+});

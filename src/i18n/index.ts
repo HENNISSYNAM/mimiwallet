@@ -25,9 +25,13 @@ import appVi from './modules/app.vi';
 import appEn from './modules/app.en';
 import appKo from './modules/app.ko';
 import appZh from './modules/app.zh';
+import tbVi from './modules/tb.vi';
+import tbEn from './modules/tb.en';
+import tbKo from './modules/tb.ko';
+import tbZh from './modules/tb.zh';
 
-const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi };
-const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn };
+const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi };
+const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn };
 
 /**
  * Bốn ngôn ngữ, cùng một bộ khoá. `NGON_NGU` là nguồn duy nhất cho menu chọn ngôn ngữ và cho
@@ -45,8 +49,8 @@ export const NGON_NGU = [
 
 export type MaNgonNgu = (typeof NGON_NGU)[number]['ma'];
 
-const koAll = { ...ko, ...manKo, ...kgKo, ...appKo };
-const zhAll = { ...zh, ...manZh, ...kgZh, ...appZh };
+const koAll = { ...ko, ...manKo, ...kgKo, ...appKo, ...tbKo };
+const zhAll = { ...zh, ...manZh, ...kgZh, ...appZh, ...tbZh };
 
 export const BO_DICH: Record<MaNgonNgu, Record<string, unknown>> = {
   vi: viAll, en: enAll, ko: koAll, zh: zhAll,

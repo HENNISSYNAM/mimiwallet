@@ -25,6 +25,7 @@ import { ghepTienVe, type Cap } from '../doi-soat/cham-diem.ts';
 import { goiYTienVao, TEN_LOAI_TIEN_VAO, type GoiYTienVao, type LoaiTienVao } from '../phan-loai/tien-vao.ts';
 import { mocKeTiep, TEN_LOAI_MOC, type MocThue } from '../luat/lich-thue.ts';
 import type { LichCongTy } from '../luat/doc-lich-thue.ts';
+import { mucNhacTuLich, NGAY_BAO_TRUOC } from '../thong-bao/muc-nhac.ts';
 import type { HanhTrinhDay } from '../hanh-trinh/luu.ts';
 import { TEN_MUC, type ViecCanLam } from '../viec/dong-co-viec.ts';
 import { buocTiepTheo, cauHoiTiepTheo, tinhBuoc } from '../hanh-trinh/dong-co.ts';
@@ -1092,8 +1093,27 @@ export function tatCaKetNoi(d: DuLieu): KetQuaNangLuc {
 
 // ── Việc cần làm hôm nay ─────────────────────────────────────────────────────
 
+/** Tối đa bấy nhiêu mục thuế ở "Việc cần chú ý hôm nay" — chừa chỗ cho việc khác. */
+const TOI_DA_THUE_HOM_NAY = 3;
+
+/**
+ * Mục thuế cho "Việc cần chú ý hôm nay": CÙNG mục nhắc với chuông, push và Việc cần làm (`thong-bao/muc-nhac.ts`),
+ * cùng cửa sổ `NGAY_BAO_TRUOC`. Doanh thu còn cắt ngưỡng thì có đúng một câu hỏi "cần xem" đứng đầu.
+ */
+function viecThueHomNay(d: DuLieu): ViecHomNay[] {
+  const l = d.lichThue;
+  if (!l) return [];
+  return mucNhacTuLich(l.lich, l.sanSang ?? null, { trongNgay: NGAY_BAO_TRUOC }).slice(0, TOI_DA_THUE_HOM_NAY).map((m) => ({
+    khoa: `thue:${m.khoa}`, nhom: 'tro_ly', cau: m.tieu_de,
+    hoi: m.trang_thai === 'can_xem' ? `MIMI cần tôi xem khoản nào trước khi nói về nghĩa vụ thuế? ${m.cau_hoi ?? ''}`.trim()
+      : m.trang_thai === 'can_xac_minh' ? `${m.ten}: ${m.cau_hoi ?? 'việc này có áp dụng cho tôi không?'}`
+        : `Chuẩn bị hạn ${m.ten} (${ngayVN(m.han as string)}) cần những gì?`,
+    muc_do: 'can_chu_y' as const, duong_dan: m.duong_dan,
+  }));
+}
+
 export function viecHomNay(d: DuLieu): ViecHomNay[] {
-  const viec: ViecHomNay[] = [];
+  const viec: ViecHomNay[] = [...viecThueHomNay(d)];
   const cho = d.yeuCau.filter((y) => y.trang_thai === 'cho_duyet');
   if (cho.length) {
     viec.push({
@@ -1536,18 +1556,22 @@ export function viecUuTien(d: DuLieu): KetQuaNangLuc {
   const l = d.viecCanLam ? null : d.lichThue;
   if (l) {
     // Hạn trong 7 ngày tới: tuần này. Hạn đã qua KHÔNG tự coi là quá hạn — MIMI không biết bạn đã nộp chưa.
-    for (const m of l.lich) {
-      if (m.trang_thai === 'khong_ap_dung' || m.con_lai === null || m.con_lai < 0 || m.con_lai > 7) continue;
-      them('P2', m.trang_thai === 'can_xac_minh' ? `Xác minh: ${m.ten}${m.cau_hoi ? ` — ${m.cau_hoi}` : ''}` : m.ten,
-        `Hạn ${ngayVN(m.han as string)}, ${cauConLaiMoc(m)}`, 100 - m.con_lai);
+    // Cùng mục nhắc với chuông và Việc cần làm (`thong-bao/muc-nhac.ts`); "tuần này" = 7 ngày.
+    const muc = mucNhacTuLich(l.lich, l.sanSang ?? null, { trongNgay: 7 });
+    for (const m of muc) {
+      if (m.trang_thai === 'can_xem') { them('P1', `${m.tieu_de}: ${m.cau_hoi ?? ''}`.replace(/: $/, ''), 'Câu trả lời quyết định bạn phải khai gì'); continue; }
+      them('P2', m.cau_hoi ? `${m.tieu_de} — ${m.cau_hoi}` : m.tieu_de,
+        `Hạn ${ngayVN(m.han as string)}${m.trang_thai === 'can_xac_minh' ? ', nếu việc này áp dụng cho bạn' : ''}`, 100 - (m.con_lai ?? 0));
     }
-    if (l.soChuaRo > 0) {
+    // Câu hỏi "cần xem" đã bao gồm việc xác nhận khoản chưa rõ — không hỏi hai lần.
+    if (l.soChuaRo > 0 && !muc.some((m) => m.trang_thai === 'can_xem')) {
       const hanGan = l.lich.some((m) => m.trang_thai !== 'khong_ap_dung' && m.con_lai !== null && m.con_lai >= 0 && m.con_lai <= 14);
       them('P3', `Xác nhận ${l.soChuaRo} khoản tiền vào chưa rõ (${vnd(l.tienChuaRo)})`,
-        hanGan ? 'Sắp tới hạn thuế; khoản chưa rõ đang được tính như doanh thu' : 'Khoản chưa rõ đang được tính như doanh thu', hanGan ? 50 : 0);
+        hanGan ? 'Sắp tới hạn thuế; MIMI đang tạm tính khoản chưa rõ như doanh thu' : 'MIMI đang tạm tính khoản chưa rõ như doanh thu', hanGan ? 50 : 0);
     }
   }
-  for (const v of viecHomNay(d)) {
+  // Mục thuế của viecHomNay đã có ở trên (từ lịch hoặc từ Việc cần làm) — không thêm lần hai với cửa sổ khác.
+  for (const v of viecHomNay(d).filter((x) => !x.khoa.startsWith('thue:'))) {
     them(v.muc_do === 'can_chu_y' ? 'P3' : 'P4', v.cau, v.muc_do === 'can_chu_y' ? 'Cần xử lý' : 'Nên làm');
   }
   ung.sort((a, b) => b.diem - a.diem);

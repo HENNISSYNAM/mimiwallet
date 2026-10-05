@@ -6,11 +6,11 @@ cùng nói MỘT hạn, MỘT trạng thái, MỘT câu chữ. Không đổi k�
 ## Tiến độ (cập nhật sau mỗi bước)
 
 - [x] Bước 1. Đọc luồng, lập bản đồ và danh sách lệch (mục 1, 2).
-- [ ] Bước 2. Hàm dùng chung `_shared/thong-bao/muc-nhac.ts` + test.
-- [ ] Bước 3. Nối chuông/push (`sinh.ts`, `gui.ts`, `thong-bao/index.ts`).
-- [ ] Bước 4. Nối "Việc cần làm" (`viec/luu.ts`) và `boi_canh.viec` (`tro-ly`).
-- [ ] Bước 5. Trang Nhắc thuế + i18n `tb.*`.
-- [ ] Bước 6. Chạy tsc/vitest, ghi kết quả ở mục 5.
+- [x] Bước 2. Hàm dùng chung `_shared/thong-bao/muc-nhac.ts` + test.
+- [x] Bước 3. Nối chuông/push (`sinh.ts`, `gui.ts`, `thong-bao/index.ts`).
+- [x] Bước 4. Nối "Việc cần làm" (`viec/luu.ts`) và `boi_canh.viec` (`tro-ly`).
+- [x] Bước 5. Trang Nhắc thuế + i18n `tb.*`.
+- [x] Bước 6. Chạy tsc/vitest, ghi kết quả ở mục 5.
 
 ## 1. Bản đồ: mỗi nhắc nhở được tạo, lưu, chống trùng và hiển thị ở đâu
 
@@ -48,12 +48,58 @@ cùng nói MỘT hạn, MỘT trạng thái, MỘT câu chữ. Không đổi k�
 
 ## 3. Cách sửa (nguồn duy nhất)
 
-Xem mục 5 sau khi xong.
+`supabase/functions/_shared/thong-bao/muc-nhac.ts` (hàm thuần, Deno + trình duyệt cùng đọc) dựng MỘT mục nhắc:
+khoá ổn định (`<khoá mốc>:<hạn>` hoặc `can_xem:<khoá câu hỏi>`), tiêu đề ("Còn N ngày: <tên>" / "Hôm nay là hạn:
+<tên>"), hạn, trạng thái (`phai_lam` / `can_xac_minh` / `can_xem`), nội dung, việc tiếp (động từ đứng đầu), đúng
+một câu hỏi, mức độ, đường dẫn. Khi `sanSang.ket_luan_phu_thuoc` có thêm đúng MỘT mục "cần xem" lấy
+`sanSang.cau_hoi_can_xem` (từ `luat/san-sang-thue.ts`), đứng đầu. Không lọc thêm mốc nào: lịch đã là kết luận thuế
+(khi doanh thu cắt ngưỡng, `lich-thue.ts` tự bỏ nghĩa vụ phụ thuộc ngưỡng) — lọc thêm là đổi kết luận.
+
+| # | Sửa ở đâu |
+|---|---|
+| L1 | `thongBaoHanThue(lich, sanSang, homNay)` (`sinh.ts`) dựng từ `mucNhacTuLich`; cron truyền `l.sanSang`. Mục "cần xem" khoá `can_xem:<năm>:<khoá câu hỏi>`, đường dẫn `/dashboard/nhac-thue#can-xem`. |
+| L2 | `dsViecCanLam` (`viec/luu.ts`) dùng `mucNhacTuLich(..., { trongNgay: NGAY_BAO_TRUOC })`: có mục `can_xem` (một câu hỏi, "Trả lời: …"). Có câu hỏi cần xem thì bỏ dòng "Xác nhận N khoản tiền vào chưa rõ" (giống `sanSang.viec_tiep`, không hỏi hai lần); khi còn dòng đó thì nói "MIMI đang tạm tính …", không nói như chắc chắn. |
+| L3 | `viecHomNay` (`tro-ly/tinh-toan.ts`) thêm tối đa 3 mục thuế từ cùng hàm (khoá `thue:…`, có `duong_dan`); `boi_canh` đọc thêm nguồn `lich_thue`. `ViecCanChuY.tsx` dùng `duong_dan` của mục nếu có. |
+| L4 | Chuông, push, Việc cần làm, "cần chú ý hôm nay", `viecUuTien` cùng tiêu đề/câu hỏi từ `muc-nhac.ts`; bỏ "Chuẩn bị: <tên>" và "Xác minh: <tên> — …". |
+| L5 | `NGAY_BAO_TRUOC = MOC_NHAC_HAN[0]` (14) cho chuông, Việc cần làm, "cần chú ý hôm nay". `viecUuTien` giữ 7 ngày vì nghĩa là "tuần này". |
+| L6 | `danhDauNhacLoiThoi` (`gui.ts`) + `thongBaoNhacLoiThoi` (`muc-nhac.ts`): đặt `loi_thoi_luc` (không xoá) khi hạn đã qua, mốc biến khỏi lịch/không áp dụng, đổi giữa phải làm và cần xác minh (đọc từ câu chữ đã lưu), hoặc câu hỏi cần xem đã khác/không còn. Dòng người dùng đã xử lý giữ nguyên. Cron gọi trước khi ghi nhắc mới, chỉ khi lịch đọc thành công. |
+| L7 | Cùng hàm: `theo_doi:<việc>:<hẹn>` lỗi thời khi việc không còn `waiting_external`, hoặc đã có lời nhắc ngày hẹn mới hơn cho cùng việc. |
+| L8 | `theThongBao(khoa)`: hạn thuế = khoá bỏ số ngày còn (14 → 10 → 5 của một hạn thay nhau, hai hạn khác nhau cùng hiện); cần xem = nguyên khoá. |
+| L9 | `dayThongBao` đọc `thanh_vien_cong_ty` và chỉ đẩy khi `user_id` còn là thành viên của đúng `company_id` của dòng; dòng đã lỗi thời không đẩy. |
+| L10 | Trang Nhắc thuế: khối "cần xem" (id `can-xem`) hỏi đúng câu đó, nút "Trả lời ngay" tới nơi ghi câu trả lời; ngưỡng nào máy chủ báo `chua_chac` (và `ket_luan_phu_thuoc`) thì viết "Chưa chắc — cần bạn xem một khoản" thay cho "Đã vượt / Còn". |
+| L11 | Trang đọc một lần qua `useLichThue` (phản hồi giữ nguyên ở `tomTat`, có `sanSang`); bỏ `ngay`, `conLaiChu`, lời gọi thứ hai. |
+| L15 | Tiêu đề ngưỡng dùng năm của phản hồi; chưa có dữ liệu thì không in năm. |
+| i18n | Chuỗi trang Nhắc thuế ở `src/i18n/modules/tb.{vi,en,ko,zh}.ts`, đăng ký trong `src/i18n/index.ts`. |
+
+Bài kiểm mới: `thong-bao/muc-nhac.test.ts`, thêm ở `thong-bao/gui.test.ts` (thành viên, lỗi thời, tag), `viec/e2e.test.ts`
+(Việc cần làm), `tro-ly/han-thue.test.ts` (cần chú ý hôm nay, việc ưu tiên), `src/pages/NhacThuePage.test.tsx`.
+Hai bài cũ của `gui.test.ts` hỏng vì bản nháp: dữ liệu giả thiếu `company_id` và bảng thành viên (dòng thật luôn
+có; đã thêm, không nới điều kiện), và `the: 'han'` đổi thành `the: 'han:2026-q3'` (kỳ vọng cũ chính là lỗi L8).
 
 ## 4. Để lại (kèm lý do)
 
-Xem mục 5 sau khi xong.
+- L12 (RLS `thong_bao` không kiểm còn là thành viên): cần migration — bị cấm trong việc này.
+- L13: giữ (cố ý, số liệu mỗi công ty tách riêng).
+- L14 (mốc đã nộp vẫn nhắc), L16 (`docLichCongTy` chưa truyền `kyKhaiGtgt`, `sieuNho`, `phuongPhapTndn`): đổi
+  nghĩa vụ/trạng thái thuế — ngoài phạm vi "không đổi kết luận thuế".
+- Khối `boi_canh.thue` (`docThueManDau`) vẫn suy thẳng từ `suyLuan`: đổi nó là đổi cách màn đầu nói nghĩa vụ; giờ
+  hạn và câu hỏi đã có ở `boi_canh.viec` từ cùng nguồn với chuông.
+- Đánh dấu lỗi thời chạy cùng lượt nhắc hạn (7–9 giờ VN): một nhắc đã qua hạn có thể còn trên chuông vài giờ đầu ngày.
+- "Cần xem" khoá theo năm + câu hỏi: cùng một câu hỏi đã trả lời rồi lại xuất hiện trong cùng năm thì không báo chuông
+  lần hai (vẫn hiện ở Việc cần làm, trợ lý và trang Nhắc thuế).
+- Mục `tien_vao` của Việc cần làm vẫn trỏ `/dashboard` (màn trợ lý), trong khi hàng đợi tiền vào nằm ở
+  `/dashboard/cashflow` — không đổi ở đây vì ngoài phạm vi; trang Nhắc thuế đã trỏ đúng.
+- `cauConLai` (`src/lib/lichThue.ts`) vẫn trả chuỗi tiếng Việt, dùng chung ba màn — chưa chuyển sang i18n.
+- Câu chữ của thông báo (chuông/push) do máy chủ ghi bằng tiếng Việt, như mọi thông báo khác.
 
 ## 5. Kết quả
 
-Chưa chạy.
+Chạy 06/10/2026 trên nhánh `dong-bo/thong-bao` (từ main 5440245):
+
+- `npx tsc --noEmit -p tsconfig.app.json`: sạch.
+- `npx vitest run --maxWorkers=2`: 217/217 tệp, 2085/2085 bài đạt. Vitest báo 10 lỗi không bắt được (unhandled) từ
+  `src/components/layout/ThanhBen.test.tsx` (mock `@/lib/congTyDangDung` thiếu `idCongTyDangDung`, `supabase.auth` không
+  mock) và `src/pages/DashboardOverview.test.tsx` — hai tệp và các component đó không bị việc này đụng tới; xem báo cáo.
+- Kết luận thuế không đổi: `luat/*`, `doanh-thu/*` không sửa dòng nào; mọi bài của hệ luật, lịch, sẵn sàng khai thuế
+  và bộ đối kháng doanh thu vẫn đạt.
+

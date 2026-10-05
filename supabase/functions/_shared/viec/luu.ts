@@ -14,6 +14,7 @@ import type { LoaiHanhTrinh } from '../hanh-trinh/mau.ts';
 import type { TrangThaiBuoc } from '../hanh-trinh/dong-co.ts';
 import { ghiSuKien } from '../do-luong/su-kien.ts';
 import { docLichCongTy, type LichCongTy } from '../luat/doc-lich-thue.ts';
+import { khoaMocHan, mucNhacTuLich, NGAY_BAO_TRUOC, ngayVN } from '../thong-bao/muc-nhac.ts';
 import type { BanNhapThongBao } from '../thong-bao/sinh.ts';
 import {
   cauTheoDoi, conCanLam, dieuKienGiaiQuyet, hanhDongTiepHanhTrinh, henKiemLaiKeTiep, khiNaoViec, lichTuViec, mucUuTienViec,
@@ -368,27 +369,36 @@ export async function dsViecCanLam(db: Db, o: {
     });
   }
 
-  // Nghĩa vụ sắp tới hạn trong 14 ngày (suy từ lịch — không lưu, không trùng với việc đã có).
+  /*
+   * Nghĩa vụ sắp tới hạn (cửa sổ `NGAY_BAO_TRUOC`, bằng mốc nhắc xa nhất của chuông) và câu hỏi "cần xem" khi
+   * doanh thu còn cắt ngưỡng — CÙNG mục nhắc với chuông và push (`thong-bao/muc-nhac.ts`), không dựng câu riêng.
+   * Suy từ lịch lúc đọc: không lưu, không trùng với việc đã có.
+   */
   if (lichThue) {
-    for (const m of lichThue.lich) {
-      if (m.trang_thai === 'khong_ap_dung' || !m.han || m.con_lai === null || m.con_lai < 0 || m.con_lai > 14) continue;
+    const muc = mucNhacTuLich(lichThue.lich, lichThue.sanSang, { trongNgay: NGAY_BAO_TRUOC });
+    const coCanXem = muc.some((m) => m.trang_thai === 'can_xem');
+    for (const m of muc) {
+      const canXem = m.trang_thai === 'can_xem';
       viec.push({
-        id: `nghia_vu:${m.khoa}`, nguon: 'nghia_vu', loai: m.loai, tieu_de: m.ten, trang_thai: null, muc: 2,
-        vi_sao: m.vi_sao || 'Hạn theo lịch thuế của công ty.',
-        khi: { loai_ngay: 'han_luat', ngay: m.han, nhan: `Hạn pháp lý: ${m.han.split('-').reverse().join('/')}` },
+        id: canXem ? m.khoa : `nghia_vu:${m.khoa}`, nguon: 'nghia_vu', loai: canXem ? 'can_xem' : (lichThue.lich.find((x) => khoaMocHan(x) === m.khoa)?.loai ?? 'khai_thue'),
+        tieu_de: m.tieu_de, trang_thai: null, muc: 2,
+        vi_sao: m.noi_dung,
+        khi: m.han ? { loai_ngay: 'han_luat', ngay: m.han, nhan: `Hạn pháp lý: ${ngayVN(m.han)}` } : null,
         hanh_dong: {
-          loai: 'lam_buoc', tieu_de: m.trang_thai === 'can_xac_minh' && m.cau_hoi ? `Trả lời: ${m.cau_hoi}` : `Chuẩn bị: ${m.ten}`,
-          mo_ta: m.vi_sao, vi_sao: 'Hạn pháp lý sắp tới.', can_nhap: [], chan: false, dieu_kien_xong: 'Bạn nộp đúng hạn.',
-          nguon: ['Lịch thuế của công ty'], buoc: null, dich: '/dashboard/nhac-thue',
+          loai: 'lam_buoc', tieu_de: m.cau_hoi ? `Trả lời: ${m.cau_hoi}` : m.viec_tiep,
+          mo_ta: m.viec_tiep, vi_sao: canXem ? 'Câu trả lời quyết định bạn phải khai gì.' : 'Hạn pháp lý sắp tới.', can_nhap: [], chan: false,
+          dieu_kien_xong: canXem ? 'MIMI không còn phải hỏi câu này.' : 'Bạn nộp đúng hạn.',
+          nguon: ['Lịch thuế của công ty'], buoc: null, dich: m.duong_dan,
         },
-        can_ban: true, duong_dan: '/dashboard/nhac-thue',
+        can_ban: true, duong_dan: m.duong_dan,
       });
     }
-    if (lichThue.soChuaRo > 0) {
+    // Câu hỏi "cần xem" đã bao gồm việc xác nhận khoản chưa rõ (như `sanSang.viec_tiep`) — không hỏi hai lần.
+    if (lichThue.soChuaRo > 0 && !coCanXem) {
       viec.push({
         id: `tien_vao:${nam}`, nguon: 'tien_vao', loai: 'tien_vao_chua_ro',
         tieu_de: `Xác nhận ${lichThue.soChuaRo} khoản tiền vào chưa rõ (${tienGon(lichThue.tienChuaRo)})`, trang_thai: null, muc: 5,
-        vi_sao: 'Khoản chưa rõ đang được tính như doanh thu — có thể là tiền vay, tiền người nhà, chuyển nội bộ.', khi: null,
+        vi_sao: 'MIMI đang tạm tính các khoản này như doanh thu cho tới khi bạn xác nhận — có thể là tiền vay, tiền người nhà, chuyển nội bộ.', khi: null,
         hanh_dong: {
           loai: 'lam_buoc', tieu_de: `Xác nhận ${lichThue.soChuaRo} khoản tiền vào chưa rõ`, mo_ta: 'Mỗi khoản: doanh thu, tiền vay, góp vốn, chuyển nội bộ, hoàn tiền, tiền người nhà…',
           vi_sao: 'Để doanh thu tính thuế đúng.', can_nhap: [], chan: false, dieu_kien_xong: 'Không còn khoản tiền vào chưa rõ.', nguon: ['Tiền vào ngân hàng'], buoc: null, dich: '/dashboard',

@@ -5,7 +5,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { nhanYDinh } from './y-dinh';
-import { chuanBiHanThue, duLieuTrong, soViecDuocHoi, viecUuTien, type DuLieu } from './tinh-toan';
+import { chuanBiHanThue, duLieuTrong, soViecDuocHoi, viecHomNay, viecUuTien, type DuLieu } from './tinh-toan';
+import type { LichCongTy } from '../luat/doc-lich-thue';
 import type { MocThue } from '../luat/lich-thue';
 
 const HOM_NAY = '2026-09-25';
@@ -108,5 +109,30 @@ describe('việc ưu tiên', () => {
   it('hạn đã qua không bị gọi là quá hạn — MIMI không biết đã nộp chưa', () => {
     const r = viecUuTien(moi({ cauHoi: 'Nêu 2 việc', lichThue: { lich: [moc({ con_lai: -20, han: '2026-09-05' })], loaiNguoiNop: 'doanh_nghiep', soChuaRo: 0, tienChuaRo: 0 } }));
     expect(JSON.stringify(r)).not.toContain('qua hạn');
+  });
+});
+
+describe('"Việc cần chú ý hôm nay" dùng cùng mục nhắc với chuông (02/10/2026)', () => {
+  const CAU = { khoa: 'tong_chua_ro', cau: 'Còn 3 khoản tiền vào chưa rõ có phải tiền bán hàng không?' };
+  const lt = (lich: MocThue[], phuThuoc: boolean) => ({
+    lich, loaiNguoiNop: 'ho_kinh_doanh', soChuaRo: 3, tienChuaRo: 9_000_000,
+    sanSang: { ket_luan_phu_thuoc: phuThuoc, cau_hoi_can_xem: phuThuoc ? CAU : null },
+  }) as unknown as LichCongTy;
+
+  it('hạn trong 14 ngày có mặt, cùng câu chữ "Còn N ngày: <tên>" và đường dẫn Nhắc thuế', () => {
+    const v = viecHomNay(moi({ lichThue: lt([moc({ con_lai: 12, han: '2026-10-07' }), moc({ khoa: 'xa', con_lai: 35 })], false) }));
+    const thue = v.filter((x) => x.khoa.startsWith('thue:'));
+    expect(thue.map((x) => x.cau)).toEqual(['Còn 12 ngày: Tạm nộp thuế TNDN quý 3/2026']);
+    expect(thue[0].duong_dan).toBe('/dashboard/nhac-thue');
+  });
+
+  it('doanh thu còn cắt ngưỡng: đúng một câu hỏi cần xem đứng đầu; việc ưu tiên không hỏi lại "xác nhận khoản chưa rõ"', () => {
+    const d = moi({ cauHoi: 'Nêu 3 việc ưu tiên', lichThue: lt([], true) });
+    const v = viecHomNay(d);
+    expect(v[0].khoa).toBe('thue:can_xem:tong_chua_ro');
+    expect(v.filter((x) => x.khoa.startsWith('thue:can_xem'))).toHaveLength(1);
+    const bang = JSON.stringify(viecUuTien(d).the);
+    expect(bang).toContain(CAU.cau);
+    expect(bang).not.toContain('Xác nhận 3 khoản tiền vào chưa rõ');
   });
 });

@@ -804,7 +804,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
     case "boi_canh": {
       await donQuyetDinhTreo(db, company.id);
       const [d, thue] = await Promise.all([
-        docDuLieu(db, company.id, new Set(TAT_CA_NGUON), moc, { soThangAi: SO_THANG_BIEU_DO_AI }),
+        // 02/10/2026: thêm lịch thuế để "Việc cần chú ý hôm nay" có cùng hạn / câu hỏi cần xem với chuông.
+        docDuLieu(db, company.id, new Set<NguonCan>([...TAT_CA_NGUON, "lich_thue"]), moc, { soThangAi: SO_THANG_BIEU_DO_AI }),
         // Hỏng hồ sơ thuế không được làm mất cả màn đầu.
         docThueManDau(db, company.id, moc.homNay).catch((e) => {
           console.error("boi_canh thue:", e instanceof Error ? e.message : e);

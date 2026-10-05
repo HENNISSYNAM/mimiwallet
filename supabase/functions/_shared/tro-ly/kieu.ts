@@ -150,6 +150,8 @@ export interface ViecHomNay {
   /** Câu hỏi gửi cho trợ lý khi người dùng bấm vào việc này. */
   hoi: string;
   muc_do: 'can_chu_y' | 'thong_tin';
+  /** Lối vào thẳng (mục thuế: cùng đường dẫn với chuông và Việc cần làm). Không có thì bấm là hỏi trợ lý. */
+  duong_dan?: string;
 }
 
 export interface KetNoiHienThi {

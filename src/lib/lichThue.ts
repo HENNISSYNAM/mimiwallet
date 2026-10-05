@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { kemCongTy } from '@/lib/congTyDangDung';
 import type { MocThue } from '../../supabase/functions/_shared/luat/lich-thue.ts';
+import type { SanSangThue } from '../../supabase/functions/_shared/luat/san-sang-thue.ts';
 export { TEN_LOAI_MOC, type MocThue } from '../../supabase/functions/_shared/luat/lich-thue.ts';
 
 /**
@@ -15,6 +16,14 @@ export interface LichThue {
   lich: MocThue[];
   mocKeTiep: MocThue | null;
   loaiNguoiNop: string | null;
+  /**
+   * Độ sẵn sàng khai thuế của CÙNG phản hồi (02/10/2026): khi `ket_luan_phu_thuoc` thì trang không được nói
+   * "đã vượt / còn" như chắc chắn, và phải hỏi đúng `cau_hoi_can_xem` — cùng câu với chuông và Việc cần làm.
+   * null khi máy chủ cũ chưa trả.
+   */
+  sanSang: Pick<SanSangThue, 'ket_luan_phu_thuoc' | 'cau_hoi_can_xem'> | null;
+  /** Nguyên phản hồi `tax-summary` (ngưỡng doanh thu…) — trang Nhắc thuế đọc một lần, không gọi lần hai. */
+  tomTat: Record<string, unknown>;
 }
 
 let dangDoc: { luc: number; p: Promise<LichThue> } | null = null;
@@ -25,7 +34,7 @@ export async function docLichThue(): Promise<LichThue> {
   const p = (async () => {
     const { data, error } = await supabase.functions.invoke('tax-summary', { body: await kemCongTy({}) });
     if (error || !data || data.error) throw new Error('Chưa đọc được lịch thuế.');
-    return { lich: data.lich ?? [], mocKeTiep: data.mocKeTiep ?? null, loaiNguoiNop: data.loaiNguoiNop ?? null } as LichThue;
+    return { lich: data.lich ?? [], mocKeTiep: data.mocKeTiep ?? null, loaiNguoiNop: data.loaiNguoiNop ?? null, sanSang: data.sanSang ?? null, tomTat: data } as LichThue;
   })();
   dangDoc = { luc: Date.now(), p };
   p.catch(() => { dangDoc = null; });
