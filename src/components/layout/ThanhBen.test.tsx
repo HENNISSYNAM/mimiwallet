@@ -11,7 +11,7 @@ vi.mock('@/components/chung-tu/NutQuetChungTu', () => ({
 }));
 vi.mock('./MenuTaiKhoan', () => ({ MenuTaiKhoan: () => <button type="button">Tài khoản và cài đặt</button> }));
 vi.mock('@/lib/lichSuHoiThoai', async (goc) => ({ ...(await goc<typeof import('@/lib/lichSuHoiThoai')>()), docLichSu: async () => [] }));
-vi.mock('@/integrations/supabase/client', () => ({ supabase: {} }));
+vi.mock('@/integrations/supabase/client', () => ({ supabase: { auth: { getSession: async () => ({ data: { session: null } }), getUser: async () => ({ data: { user: null } }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) } } }));
 
 import ThanhBen from './ThanhLichSu';
 

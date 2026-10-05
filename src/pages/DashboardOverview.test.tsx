@@ -36,7 +36,11 @@ vi.mock('@/integrations/supabase/client', () => ({
   supabase: { from: (t: string) => (t === 'transactions' ? bangGd() : bangKhac([])) },
 }));
 vi.mock('@/lib/nguoiDung', () => ({ nguoiDungHienTai: async () => ({ id: 'u-1' }) }));
-vi.mock('@/lib/congTyDangDung', () => ({ congTyDangDung: async () => ({ id: 'cty-1', ten: 'Tiệm Thử', la_demo: false }) }));
+vi.mock('@/lib/congTyDangDung', () => ({
+  congTyDangDung: async () => ({ id: 'cty-1', ten: 'Tiệm Thử', la_demo: false }),
+  idCongTyDangDung: async () => 'cty-1',
+  SU_KIEN_DOI_CONG_TY: 'mimi:cong-ty-doi',
+}));
 vi.mock('@/lib/lichThue', () => ({ useLichThue: () => ({ lich: null, dang: false }), cauConLai: () => '', ngayMoc: () => '' }));
 vi.mock('@/components/NewsAndLawPanel', () => ({ default: () => null }));
 vi.mock('@/components/onboarding/WelcomeCards', () => ({ default: () => null }));
