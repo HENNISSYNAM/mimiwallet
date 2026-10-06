@@ -124,7 +124,7 @@ const App = () => (
         <AuthInitializer>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
-              <Route path="/" element={<Page path="/" title="MIMI WALLET — Kiểm soát chi tiêu cho doanh nghiệp chạy bằng AI" description="Agent được chi, bạn giữ quyền quyết: MIMI xét khoản chi theo chính sách, dựng lệnh trả VietQR, đối chiếu sao kê và hoá đơn điện tử. MIMI không giữ tiền của bạn."><Landing /></Page>} />
+              <Route path="/" element={<Page path="/" title="MIMI WALLET — Trợ lý sổ sách và thuế cho hộ kinh doanh" description="MIMI đọc sao kê ngân hàng, chỉ ra khoản chi còn thiếu chứng từ, nhắc hạn thuế theo đúng hồ sơ của bạn và soạn sẵn bản nháp tờ khai có nguồn từng con số. Bạn tự kiểm và tự nộp. MIMI không giữ tiền, không chuyển tiền."><Landing /></Page>} />
               <Route path="/khach-hang" element={<Page path="/khach-hang" title="Khách hàng — MIMI WALLET" description="MIMI làm gì cho hộ kinh doanh, doanh nghiệp nhỏ và vừa, startup và văn phòng kế toán."><KhachHang /></Page>} />
               <Route path="/about" element={<Page path="/about" title="Về chúng tôi — MIMI WALLET" description="Câu chuyện và đội ngũ đứng sau MIMI Wallet: đưa hộ kinh doanh Việt Nam ra khỏi vùng vô hình với ngân hàng."><About /></Page>} />
               {/* Công khai, không nằm sau đăng nhập — App Store yêu cầu

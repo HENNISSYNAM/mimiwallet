@@ -1,0 +1,37 @@
+# MIMI Wallet
+
+> Trợ lý sổ sách và thuế cho hộ kinh doanh và doanh nghiệp siêu nhỏ tại Việt Nam. MIMI đọc sao kê ngân hàng, chỉ ra khoản chi còn thiếu chứng từ, nhắc hạn thuế theo hồ sơ của từng hộ và soạn bản nháp tờ khai có nguồn cho từng con số. Người dùng tự kiểm tra và tự nộp. MIMI không giữ tiền, không chuyển tiền, không cho vay.
+
+Đơn vị vận hành: CÔNG TY CỔ PHẦN CLI NUTRIX, mã số doanh nghiệp 0319436143, 829 Huỳnh Tấn Phát, Phường Phú Thuận, TP. Hồ Chí Minh. Liên hệ: hoc.qk2@gmail.com, 0984988359.
+
+## MIMI làm gì
+
+- Đọc tiền vào, tiền ra từ tệp sao kê Excel/CSV tải lên, hoặc từ liên kết ngân hàng được hỗ trợ (chỉ khi chủ tài khoản cho phép, quyền chỉ đọc).
+- Đối chiếu từng khoản chi với chứng từ người dùng đã chụp hoặc tải lên; liệt kê khoản chưa thấy chứng từ. "Chưa thấy trong dữ liệu" không có nghĩa là chứng từ không tồn tại.
+- Nhắc mốc thuế theo hồ sơ của chính hộ kinh doanh (ví dụ thông báo doanh thu năm, khai theo quý); khi chưa đủ thông tin thì nói rõ là chưa chắc và hỏi lại.
+- Soạn bản nháp tờ khai, công văn giải trình, đơn tra soát chuyển nhầm; mỗi con số dẫn về giao dịch gốc.
+- Kiểm tra một khoản trước khi chuyển tiền: so với lịch sử chi, cảnh báo người nhận mới, đổi số tài khoản, các kịch bản lừa đảo thường gặp.
+- Trả lời câu hỏi bằng tiếng Việt trên dữ liệu của chính doanh nghiệp; việc làm thay đổi dữ liệu luôn cần người dùng xác nhận.
+- Neo mã băm sổ chứng từ lên Bitcoin qua OpenTimestamps để chứng minh chứng từ không bị sửa sau ngày ghi (chỉ gửi mã băm, không gửi nội dung).
+
+## MIMI không làm gì
+
+- Không nộp thuế, không ký thay người dùng.
+- Không giữ tiền, không chuyển tiền, không cho vay, không là trung gian thanh toán.
+- Không xuất hoá đơn điện tử; trang "Hoá đơn" là sổ theo dõi bán chịu và công nợ.
+
+## Giá
+
+- Miễn phí: đọc sao kê, phân loại, báo cáo thu chi, nhắc thuế, trợ lý, xem trước và lưu nháp tờ khai.
+- Lượt xuất tờ khai: 10.000 ₫ mỗi tờ.
+- Gói Starter: 149.000 ₫ mỗi tháng, xuất tờ khai không giới hạn.
+- Thanh toán bằng chuyển khoản VietQR vào tài khoản công ty. Chi tiết: https://www.mimiwallet.online/chinh-sach/gia
+
+## Trang chính
+
+- [Trang chủ](https://www.mimiwallet.online/)
+- [Dùng thử bản demo](https://www.mimiwallet.online/register)
+- [Thông tin doanh nghiệp và chính sách](https://www.mimiwallet.online/chinh-sach)
+- [Chính sách bảo mật](https://www.mimiwallet.online/chinh-sach/bao-mat)
+- [Điều khoản sử dụng](https://www.mimiwallet.online/terms)
+- [Tài nguyên](https://www.mimiwallet.online/tai-nguyen)
