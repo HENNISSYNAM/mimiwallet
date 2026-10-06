@@ -97,7 +97,7 @@ export default function Privacy() {
         <ul className="list-disc pl-5 space-y-1.5">
           <li>
             <Dam>Nhà cung cấp dữ liệu ngân hàng (Cas)</Dam> — để lấy sao kê theo uỷ quyền của bạn.
-            <Dam> SePay</Dam> — chỉ để nhận báo có khi bạn chuyển khoản trả phí vào tài khoản của công ty.
+            <Dam> SePay</Dam> — chỉ để nhận báo có khi bạn chuyển khoản trả phí vào tài khoản nhận của MIMI.
           </li>
           <li>
             <Dam>Dịch vụ tra cứu mã số thuế (XInvoice)</Dam> — chỉ gửi đi mã số thuế cần tra,

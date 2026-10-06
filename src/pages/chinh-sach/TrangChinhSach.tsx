@@ -200,7 +200,8 @@ function ThanhToan() {
           nhận thẻ, ví điện tử hay tiền mặt, và không lưu thông tin thẻ.
         </p>
         <p>
-          Tài khoản nhận là tài khoản của {COMPANY.legalName}. Ngân hàng, số tài khoản và chủ tài khoản
+          Tài khoản nhận là tài khoản MB Bank số 2431122002 đứng tên ĐINH VĂN NAM — người đại diện theo
+          pháp luật, Tổng giám đốc {COMPANY.legalName}. Ngân hàng, số tài khoản và chủ tài khoản
           luôn hiện trên màn hình thanh toán trong ứng dụng, kèm mã tham chiếu riêng của từng hoá đơn.
           Chỉ chuyển tới tài khoản hiện trên màn hình đó.
         </p>
@@ -257,7 +258,7 @@ function ThanhToan() {
       <Muc so={6} tieuDe="An toàn khi thanh toán">
         <p>
           {COMPANY.product.name} không phải trung gian thanh toán, không giữ tiền và không chuyển tiền
-          thay bạn; khoản phí đi thẳng từ tài khoản của bạn vào tài khoản của công ty. Nhân viên của
+          thay bạn; khoản phí đi thẳng từ tài khoản của bạn vào tài khoản nhận nêu ở mục 1. Nhân viên của
           chúng tôi không bao giờ yêu cầu chuyển tiền vào tài khoản cá nhân, và không bao giờ hỏi mã OTP
           hay mật khẩu ngân hàng.
         </p>
