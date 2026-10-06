@@ -156,6 +156,7 @@ const vi = {
     register: 'Đăng ký miễn phí',
     errorEmpty: 'Bạn nhập email và mật khẩu nhé.',
     errorInvalid: 'Email hoặc mật khẩu chưa đúng. Bạn kiểm tra lại nhé.',
+    errorNotOpened: 'Email này chưa được mở tài khoản MIMI. Bạn liên hệ MIMI để dùng bản thật, hoặc vào bản demo trước.',
   },
 
   // Dashboard Sidebar

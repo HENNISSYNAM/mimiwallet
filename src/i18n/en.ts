@@ -121,6 +121,7 @@ const en = {
     register: 'Sign up for free',
     errorEmpty: 'Please enter your email and password.',
     errorInvalid: 'That email or password isn’t right. Please check and try again.',
+    errorNotOpened: 'This email doesn’t have a MIMI account yet. Contact MIMI to get the real version, or try the demo first.',
   },
 
   // Dashboard Sidebar

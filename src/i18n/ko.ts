@@ -114,6 +114,7 @@ const ko = {
     register: '무료 가입',
     errorEmpty: '이메일과 비밀번호를 입력하세요',
     errorInvalid: '이메일 또는 비밀번호가 올바르지 않습니다',
+    errorNotOpened: '이 이메일로 열린 MIMI 계정이 아직 없습니다. 실제 버전은 MIMI에 문의하시거나 먼저 데모를 써 보세요.',
   },
 
   sidebar: {

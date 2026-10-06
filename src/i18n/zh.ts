@@ -112,6 +112,7 @@ const zh = {
     register: '免费注册',
     errorEmpty: '请输入邮箱和密码',
     errorInvalid: '邮箱或密码不正确',
+    errorNotOpened: '该邮箱尚未开通 MIMI 账户。请联系 MIMI 开通正式版，或先试用演示版。',
   },
 
   sidebar: {

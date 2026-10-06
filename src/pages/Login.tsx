@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -33,6 +33,13 @@ export default function Login() {
   const nextParam = new URLSearchParams(window.location.search).get('next');
   const dich = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/dashboard/tro-ly';
 
+  // Tắt tự đăng ký (06/10/2026): Google/email lạ quay về đây với lỗi trên URL. Nói rõ là chưa được mở tài khoản.
+  useEffect(() => {
+    const u = `${window.location.search}&${window.location.hash.replace(/^#/, '')}`;
+    const moTa = new URLSearchParams(u).get('error_description') ?? '';
+    if (moTa) toast.error(/signup/i.test(moTa) ? t('login.errorNotOpened') : moTa);
+  }, [t]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -43,7 +50,7 @@ export default function Login() {
     const { error } = await login(email, password);
     setLoading(false);
     if (error) {
-      toast.error(error === 'Invalid login credentials' ? t('login.errorInvalid') : error);
+      toast.error(error === 'Invalid login credentials' ? t('login.errorInvalid') : /signup/i.test(error) ? t('login.errorNotOpened') : error);
     } else {
       // MIMI Assistant là màn làm việc chính từ 15/09/2026.
       if (dich.startsWith('/.lovable/')) window.location.href = dich; else navigate(dich);
