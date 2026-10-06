@@ -282,6 +282,8 @@ export default function InvoicesPage() {
         <div>
           <h2 className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t('fin.invoices.title')}</h2>
           <p className="text-sm text-muted-foreground mt-1">{t('fin.invoices.activeCount', { count: invoiceList.length })}</p>
+          {/* 06/10/2026: MIMI không xuất hoá đơn điện tử — nói rõ để khách không tưởng phiếu này thay được HĐĐT. */}
+          <p className="mt-1 max-w-xl text-xs text-muted-foreground">{t('fin.invoices.khongPhaiHddt')}</p>
         </div>
         <div className="flex gap-2">
           <motion.button

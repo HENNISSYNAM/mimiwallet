@@ -840,6 +840,10 @@ const m = {
     // </chinhSach>
     // <chungTu>
     chungTu: {
+      kyCoHan: 'Quý {{quy}}/{{nam}} · {{ten}}: hạn {{ngay}}, còn {{n}} ngày.',
+      kyQuaHan: 'Quý {{quy}}/{{nam}} · {{ten}}: hạn {{ngay}}, đã quá {{n}} ngày.',
+      kyChuaRoHan: 'Quý {{quy}}/{{nam}} · MIMI chưa chắc kỳ này bạn có phải khai hay không.',
+      xemLichThue: 'Xem lịch thuế',
       loi: {
         hetPhien: 'Phiên đăng nhập đã hết. Đăng nhập lại.',
         maLoi: 'Lỗi {{ma}}',

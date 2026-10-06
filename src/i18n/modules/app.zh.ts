@@ -840,6 +840,10 @@ const m = {
     // </chinhSach>
     // <chungTu>
     chungTu: {
+      kyCoHan: '{{nam}}年第{{quy}}季度 · {{ten}}：截止 {{ngay}}，还剩 {{n}} 天。',
+      kyQuaHan: '{{nam}}年第{{quy}}季度 · {{ten}}：截止 {{ngay}}，已逾期 {{n}} 天。',
+      kyChuaRoHan: '{{nam}}年第{{quy}}季度 · MIMI 还不确定本期您是否需要申报。',
+      xemLichThue: '查看税务日历',
       loi: {
         hetPhien: '登录会话已过期，请重新登录。',
         maLoi: '错误 {{ma}}',

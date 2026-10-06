@@ -472,6 +472,7 @@ const ko = {
 
   fin: {
     invoices: {
+      khongPhaiHddt: '외상 판매와 고객 미수금을 관리하는 장부이며, 법정 전자세금계산서가 아닙니다. 전자세금계산서는 기존 발행 프로그램에서 발행하세요.',
       title: '세금계산서',
       activeCount: '{{count}}건의 세금계산서가 진행 중',
       createInvoice: '세금계산서 만들기',

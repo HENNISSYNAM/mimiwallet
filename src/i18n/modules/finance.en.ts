@@ -1,6 +1,7 @@
 const m = {
   fin: {
     invoices: {
+      khongPhaiHddt: 'This is a tracker for credit sales and money customers still owe, not a legal e-invoice. Keep issuing e-invoices from your e-invoice software.',
       title: 'Invoices',
       activeCount: '{{count}} active invoices',
       createInvoice: 'Create invoice',

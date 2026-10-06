@@ -15,6 +15,7 @@ import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { CauHoiNhanh } from '@/components/phan-hoi/CauHoiNhanh';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { kyKeKhaiKeTiep } from '@/lib/hanKeKhai';
+import { ngayMoc, useLichThue } from '@/lib/lichThue';
 import { chieuTien } from '@/lib/chieuTien';
 import { docHet } from '../../supabase/functions/_shared/doc-het';
 import { dinhDangTien } from '@/lib/tien';
@@ -96,6 +97,11 @@ export default function ChungTuPage() {
   const [dangTai, setDangTai] = useState(true);
 
   const ky = useMemo(() => kyKeKhaiKeTiep(), []);
+  // Hạn nộp lấy từ lịch thuế CỦA CÔNG TY (06/10/2026), như Nhắc thuế — trước đây trang này luôn in "hạn 31/10" từ lịch
+  // chung, kể cả khi Nhắc thuế nói chưa biết hộ này có phải khai quý không. `ky` chỉ còn dùng để chọn khoảng ngày.
+  const { du: lichThue } = useLichThue();
+  const moc = lichThue?.mocKeTiep ?? null;
+  const hanChac = !!moc?.han && moc.con_lai !== null && moc.trang_thai !== 'can_xac_minh' && moc.trang_thai !== 'khong_ap_dung';
   /** Máy chủ đã bật đọc ảnh chứng từ chưa. Chưa bật thì nút chụp bị khoá — không được hứa "MIMI đọc". */
   const coMoHinh = useCoMoHinh();
 
@@ -310,7 +316,12 @@ export default function ChungTuPage() {
             {t('app.chungTu.tieuDe')}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t('app.chungTu.ky', { quy: ky.quy, nam: ky.nam, ngay: ky.han.getDate(), thang: ky.han.getMonth() + 1, cau: ky.cau })}
+            {hanChac && moc
+              ? (moc.con_lai! < 0
+                ? t('app.chungTu.kyQuaHan', { quy: ky.quy, nam: ky.nam, ten: moc.ten, ngay: ngayMoc(moc.han), n: -moc.con_lai! })
+                : t('app.chungTu.kyCoHan', { quy: ky.quy, nam: ky.nam, ten: moc.ten, ngay: ngayMoc(moc.han), n: moc.con_lai }))
+              : t('app.chungTu.kyChuaRoHan', { quy: ky.quy, nam: ky.nam })}{' '}
+            <Link to="/dashboard/nhac-thue" className="text-primary hover:underline">{t('app.chungTu.xemLichThue')}</Link>
           </p>
         </div>
         <button

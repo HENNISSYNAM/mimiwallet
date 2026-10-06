@@ -1,6 +1,7 @@
 const m = {
   fin: {
     invoices: {
+      khongPhaiHddt: 'Đây là sổ theo dõi khoản bán chịu và tiền khách còn nợ, không phải hoá đơn điện tử theo quy định. Hoá đơn điện tử bạn vẫn xuất ở phần mềm hoá đơn của mình.',
       title: 'Hóa đơn',
       activeCount: '{{count}} hóa đơn đang hoạt động',
       createInvoice: 'Tạo hóa đơn',

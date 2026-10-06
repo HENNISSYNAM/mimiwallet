@@ -840,6 +840,10 @@ const m = {
     // </chinhSach>
     // <chungTu>
     chungTu: {
+      kyCoHan: 'Q{{quy}}/{{nam}} · {{ten}}: due {{ngay}}, {{n}} days left.',
+      kyQuaHan: 'Q{{quy}}/{{nam}} · {{ten}}: due {{ngay}}, {{n}} days overdue.',
+      kyChuaRoHan: 'Q{{quy}}/{{nam}} · MIMI is not yet sure whether you need to file this period.',
+      xemLichThue: 'See tax calendar',
       loi: {
         hetPhien: 'Your session has expired. Please sign in again.',
         maLoi: 'Error {{ma}}',

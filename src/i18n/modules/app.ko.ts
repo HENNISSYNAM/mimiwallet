@@ -840,6 +840,10 @@ const m = {
     // </chinhSach>
     // <chungTu>
     chungTu: {
+      kyCoHan: '{{nam}}년 {{quy}}분기 · {{ten}}: 기한 {{ngay}}, {{n}}일 남음.',
+      kyQuaHan: '{{nam}}년 {{quy}}분기 · {{ten}}: 기한 {{ngay}}, {{n}}일 지남.',
+      kyChuaRoHan: '{{nam}}년 {{quy}}분기 · 이번 기간에 신고해야 하는지 MIMI가 아직 확실하지 않습니다.',
+      xemLichThue: '세금 일정 보기',
       loi: {
         hetPhien: '로그인 세션이 만료되었습니다. 다시 로그인하세요.',
         maLoi: '오류 {{ma}}',

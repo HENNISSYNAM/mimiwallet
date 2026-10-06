@@ -470,6 +470,7 @@ const zh = {
 
   fin: {
     invoices: {
+      khongPhaiHddt: '这里是赊销和客户欠款的跟踪记录，不是法定电子发票。电子发票请继续在您的发票软件中开具。',
       title: '发票',
       activeCount: '{{count}} 张发票正在进行',
       createInvoice: '新建发票',
