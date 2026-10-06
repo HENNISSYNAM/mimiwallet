@@ -8,7 +8,7 @@
  * bank-link, hoặc `luu_chung_tu` ở đây).
  *
  * HAI CHẾ ĐỘ HIỂU CÂU HỎI:
- *   - `mo_hinh`: có `LOVABLE_API_KEY` (hoặc `OPENROUTER_API_KEY`) → mô hình chọn năng lực và viết lời (`mo-hinh.ts`).
+ *   - `mo_hinh`: có `STALI_API_KEY`, `LOVABLE_API_KEY` hoặc `OPENROUTER_API_KEY` → mô hình chọn năng lực và viết lời (`mo-hinh.ts`).
  *   - `co_dinh`: không có khoá, hoặc cổng lỗi → bộ nhận ý định (`y-dinh.ts`). Tới 15/09/2026
  *     production chưa có khoá nên đây là đường đang chạy.
  *
@@ -789,8 +789,9 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
 };
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null; la_demo?: boolean | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
-  // Cổng mô hình: Lovable AI nếu có khoá, không thì OpenRouter (OPENROUTER_API_KEY, mô hình đổi bằng OPENROUTER_MODEL).
+  // Cổng mô hình: ưu tiên Stali, sau đó Lovable / trung gian Lovable / OpenRouter.
   const cong = chonCongMoHinh({
+    stali: Deno.env.get("STALI_API_KEY"), moHinhStali: Deno.env.get("STALI_MODEL"),
     lovable: Deno.env.get("LOVABLE_API_KEY"),
     trungGianUrl: Deno.env.get("AI_TRUNG_GIAN_URL"), trungGianKhoa: Deno.env.get("AI_TRUNG_GIAN_KEY"),
     openrouter: Deno.env.get("OPENROUTER_API_KEY"), moHinhOpenRouter: Deno.env.get("OPENROUTER_MODEL"),
