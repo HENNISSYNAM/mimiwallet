@@ -1585,7 +1585,7 @@ const m = {
       "daVuot": "đã vượt",
       "conLai": "còn {{x}}",
       "canCu": "Căn cứ",
-      "xemLuat": "Xem chi tiết ở mục Luật & Thuế",
+      "xemLuat": "Xem mốc và căn cứ ở Nhắc thuế",
       "daGiaiThich": "Đã giải thích {{p}}% giá trị tiền vào.",
       "chuaXacNhan": "{{tien}} ({{n}} khoản) chưa ai xác nhận là tiền bán hàng — MIMI đang tạm tính là doanh thu, không tự trừ.",
       "xacNhan": "Xác nhận",

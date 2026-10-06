@@ -1585,7 +1585,7 @@ const m = {
       "daVuot": "exceeded",
       "conLai": "{{x}} left",
       "canCu": "Legal basis",
-      "xemLuat": "See details in Law & Tax",
+      "xemLuat": "See deadlines and legal basis in Tax reminders",
       "daGiaiThich": "{{p}}% of the money received has been explained.",
       "chuaXacNhan": "{{tien}} ({{n}} payments) have not been confirmed by anyone as sales receipts — MIMI temporarily counts them as revenue and does not deduct them on its own.",
       "xacNhan": "Confirm",

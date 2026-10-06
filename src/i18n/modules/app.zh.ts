@@ -1585,7 +1585,7 @@ const m = {
       "daVuot": "已超过",
       "conLai": "还差 {{x}}",
       "canCu": "依据",
-      "xemLuat": "在“法律与税务”中查看详情",
+      "xemLuat": "在税务提醒中查看期限和依据",
       "daGiaiThich": "已解释入账金额的 {{p}}%。",
       "chuaXacNhan": "{{tien}}（{{n}} 笔）尚无人确认是销售款 — MIMI 暂按收入计算，不会自行扣除。",
       "xacNhan": "确认",

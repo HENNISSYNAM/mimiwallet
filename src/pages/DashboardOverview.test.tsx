@@ -42,11 +42,9 @@ vi.mock('@/lib/congTyDangDung', () => ({
   SU_KIEN_DOI_CONG_TY: 'mimi:cong-ty-doi',
 }));
 vi.mock('@/lib/lichThue', () => ({ useLichThue: () => ({ lich: null, dang: false }), cauConLai: () => '', ngayMoc: () => '' }));
-vi.mock('@/components/NewsAndLawPanel', () => ({ default: () => null }));
 vi.mock('@/components/onboarding/WelcomeCards', () => ({ default: () => null }));
 vi.mock('@/components/onboarding/BatDauTuDau', () => ({ default: () => null }));
 vi.mock('@/components/canh-bao/TheBatThuong', () => ({ default: () => null }));
-vi.mock('@/components/DailyBriefCard', () => ({ DailyBriefCard: () => null }));
 vi.mock('@/components/tien-vao/HangDoiTienVao', () => ({ HangDoiTienVao: () => null }));
 vi.mock('@/components/viec/ViecCanLamTomTat', () => ({ ViecCanLamTomTat: () => null }));
 vi.mock('@/components/to-khai/PhanLoaiHoatDong', () => ({ PhanLoaiHoatDong: () => null }));

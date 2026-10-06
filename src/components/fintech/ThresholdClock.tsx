@@ -8,7 +8,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { track } from '@/lib/track';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { Coin, Chest } from '@/components/illustrations/GamifyObjects';
-import { SHOW_LAW_TAB_EVENT } from '@/components/NewsAndLawPanel';
+import { Link } from 'react-router-dom';
 import { ChonCachTinhThue } from '@/components/fintech/ChonCachTinhThue';
 import { dinhDangTien } from '@/lib/tien';
 import { goiToKhai } from '@/lib/goiToKhai';
@@ -118,12 +118,6 @@ function short(n: number): string {
 
 /** Scrolls to the Luật & Thuế tab so a crossed milestone leads somewhere, not
  *  just a warning with nowhere to go next. */
-function goToLawPanel() {
-  // Switch the tab first, then scroll — otherwise the panel can finish
-  // scrolling into view a frame before the content underneath it changes.
-  window.dispatchEvent(new Event(SHOW_LAW_TAB_EVENT));
-  document.getElementById('news-and-law-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
 function MilestoneBar({ m }: { m: Milestone }) {
   const { t } = useTranslation();
@@ -197,12 +191,13 @@ function MilestoneBar({ m }: { m: Milestone }) {
       {/* The crossed tax-exemption bar is the one moment that genuinely needs
           somewhere to go next, not just a warning icon. */}
       {m.crossed && m.key === 'tax_exemption' && (
-        <button
-          onClick={goToLawPanel}
+        // 06/10/2026: bảng Luật & Thuế đã gỡ khỏi trang này — nút dẫn sang Nhắc thuế, nơi có mốc và căn cứ.
+        <Link
+          to="/dashboard/nhac-thue"
           className="mt-1.5 text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
         >
           <Scale size={10} /> {t('app.nguong.xemLuat')}
-        </button>
+        </Link>
       )}
     </div>
   );
