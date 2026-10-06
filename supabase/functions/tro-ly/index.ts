@@ -63,7 +63,7 @@ import { ghepTienVe } from "../_shared/doi-soat/cham-diem.ts";
 import { docHet } from "../_shared/doc-het.ts";
 import { dungNguCanh, nguCanhChoMoHinh } from "../_shared/tro-ly/ngu-canh.ts";
 import { chuanBiNop, dsYeuCauNop, ghiDaNop, ghiKetQua, huyNop, kiemTruocKhiNop, LoiNop, xacNhanNop } from "../_shared/thuc-thi/luu.ts";
-import { chonCongMoHinh, coDo, nhaCungCapCua, type LanGoi } from "../_shared/ai/nha-cung-cap.ts";
+import { chonCongMoHinh, coDo, MO_HINH_OPENROUTER_MAC_DINH, nhaCungCapCua, type LanGoi } from "../_shared/ai/nha-cung-cap.ts";
 import { duocLam } from "../_shared/quyen/vai-tro.ts";
 import { chonThuTuc } from "../_shared/tro-ly/thu-tuc.ts";
 import { ngayHopLe } from "../_shared/ngay.ts";
@@ -896,6 +896,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             khoa: khoaMoHinh,
             ncc,
             moHinh: cong!.mo_hinh,
+            moHinhDuPhong: cong!.ten === 'openrouter' ? MO_HINH_OPENROUTER_MAC_DINH : undefined,
             nguCanh,
             cau,
             lichSu: docLichSu(body.lich_su),

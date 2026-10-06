@@ -89,9 +89,14 @@ export async function hoiMoHinh(o: {
   goi?: Goi;
   ncc?: NhaCungCap;
   moHinh?: string;
+  /**
+   * Mô hình dự phòng: mô hình cấu hình trả 404 (không còn tồn tại) hay 429 (gói miễn phí hết lượt) thì chuyển sang
+   * mô hình này một lần cho phần còn lại của câu hỏi (06/10/2026: `qwen/...:free` bị gỡ, trợ lý mất AI cả ngày).
+   */
+  moHinhDuPhong?: string;
 }): Promise<{ cau: string; ket_qua: KetQuaNangLuc[] }> {
   const ncc = o.ncc ?? congKieuOpenAI({ ten: 'lovable', url: DIEM_GOI_MO_HINH, khoa: o.khoa, goi: o.goi });
-  const moHinh = o.moHinh ?? MO_HINH;
+  let moHinh = o.moHinh ?? MO_HINH;
   const hopLe = new Set(o.congCu.map((c) => c.id));
   const congCu = o.congCu.map((c) => ({ ten: c.id, mo_ta: c.mo_ta }));
   const tin: TinNhan[] = [
@@ -110,6 +115,18 @@ export async function hoiMoHinh(o: {
     try {
       return await ncc.hoi({ mo_hinh: moHinh, tin, cong_cu: cuoi ? undefined : congCu, han_ms: conLai });
     } catch (e) {
+      const duPhong = o.moHinhDuPhong;
+      if (e instanceof LoiNhaCungCap && (e.status === 404 || e.status === 429) && duPhong && duPhong !== moHinh) {
+        moHinh = duPhong;
+        const conLai2 = TONG_THOI_GIAN_MO_HINH_MS - (Date.now() - batDau);
+        if (conLai2 < 3000) throw new LoiMoHinh(504, 'Mô hình trả lời quá chậm.');
+        try {
+          return await ncc.hoi({ mo_hinh: moHinh, tin, cong_cu: cuoi ? undefined : congCu, han_ms: conLai2 });
+        } catch (e2) {
+          if (e2 instanceof LoiNhaCungCap) throw new LoiMoHinh(e2.status, e2.message);
+          throw e2;
+        }
+      }
       if (e instanceof LoiNhaCungCap) throw new LoiMoHinh(e.status, e.message);
       throw e;
     }
