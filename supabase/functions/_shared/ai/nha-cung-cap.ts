@@ -103,13 +103,17 @@ export type MucDich = (typeof MUC_DICH)[number];
 export interface Tuyen { nha_cung_cap: 'lovable'; mo_hinh: string; hang: 'nhanh' | 'manh'; ly_do: string }
 
 // ── Cổng mô hình máy chủ đang có khoá (26/09/2026) ───────────────────────────────────────────────
+export const DIEM_GOI_STALI = 'https://api.stali.vn/v1/chat/completions';
+/** Stali khuyến nghị model này cho giao thức OpenAI-compatible. */
+export const MO_HINH_STALI_MAC_DINH = 'gpt-5.6-sol';
 export const DIEM_GOI_OPENROUTER = 'https://openrouter.ai/api/v1/chat/completions';
 /** Mô hình mặc định trên OpenRouter: cùng họ Gemini Flash với cổng Lovable, gọi công cụ và đọc ảnh được. */
 export const MO_HINH_OPENROUTER_MAC_DINH = 'google/gemini-2.5-flash';
 const TEN_MO_HINH = /^[a-z0-9][a-z0-9._-]{0,60}\/[a-z0-9][a-z0-9._:-]{0,80}$/i;
+const TEN_MO_HINH_STALI = /^[a-z0-9][a-z0-9._:/-]{0,120}$/i;
 
 export interface CongMoHinh {
-  ten: 'lovable' | 'lovable_trung_gian' | 'openrouter';
+  ten: 'stali' | 'lovable' | 'lovable_trung_gian' | 'openrouter';
   url: string;
   khoa: string;
   mo_hinh: string;
@@ -123,16 +127,27 @@ export const DO_DAI_KHOA_TRUNG_GIAN = 32;
 
 /**
  * Chọn cổng theo cấu hình máy chủ, theo thứ tự:
- *   1. `LOVABLE_API_KEY` — gọi thẳng Lovable AI (chỉ có trong dự án Lovable Cloud);
- *   2. trung gian Lovable (`AI_TRUNG_GIAN_URL` + `AI_TRUNG_GIAN_KEY`) — máy chủ thật gọi function
+ *   1. `STALI_API_KEY` — gọi Stali qua OpenAI-compatible API; model đổi bằng `STALI_MODEL`;
+ *   2. `LOVABLE_API_KEY` — gọi thẳng Lovable AI (chỉ có trong dự án Lovable Cloud);
+ *   3. trung gian Lovable (`AI_TRUNG_GIAN_URL` + `AI_TRUNG_GIAN_KEY`) — máy chủ thật gọi function
  *      `ai-trung-gian` chạy trong dự án Lovable Cloud, function đó gọi Lovable AI;
- *   3. `OPENROUTER_API_KEY` (mô hình đổi bằng OPENROUTER_MODEL; tên sai khuôn thì bỏ qua).
+ *   4. `OPENROUTER_API_KEY` (mô hình đổi bằng OPENROUTER_MODEL; tên sai khuôn thì bỏ qua).
  * Không có gì → `null`, trợ lý chạy bộ hiểu câu cố định.
  */
 export function chonCongMoHinh(env: {
+  stali?: string | null; moHinhStali?: string | null;
   lovable?: string | null; trungGianUrl?: string | null; trungGianKhoa?: string | null;
   openrouter?: string | null; moHinhOpenRouter?: string | null;
 }): CongMoHinh | null {
+  const st = env.stali?.trim();
+  if (st) {
+    const m = env.moHinhStali?.trim();
+    return {
+      ten: 'stali', url: DIEM_GOI_STALI, khoa: st,
+      mo_hinh: m && TEN_MO_HINH_STALI.test(m) ? m : MO_HINH_STALI_MAC_DINH,
+      dau_them: {},
+    };
+  }
   const lv = env.lovable?.trim();
   if (lv) return { ten: 'lovable', url: DIEM_GOI_LOVABLE, khoa: lv, mo_hinh: MO_HINH_MAC_DINH, dau_them: {} };
   const tgUrl = env.trungGianUrl?.trim() ?? '';
