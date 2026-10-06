@@ -42,8 +42,7 @@ export default function Privacy() {
         </p>
         <p><Dam>Dữ liệu ngân hàng.</Dam>{' '}
           Khi và chỉ khi bạn tự liên kết tài khoản, chúng tôi nhận lịch sử giao dịch (ngày, số
-          tiền, nội dung chuyển khoản, số dư) qua nhà cung cấp dịch vụ dữ liệu ngân hàng (Cas,
-          SePay). Bạn cấp quyền trực tiếp trên giao diện của ngân hàng hoặc của nhà cung cấp —{' '}
+          tiền, nội dung chuyển khoản, số dư) qua nhà cung cấp dịch vụ dữ liệu ngân hàng (Cas). Bạn cấp quyền trực tiếp trên giao diện của ngân hàng hoặc của nhà cung cấp —{' '}
           {COMPANY.product.name} không bao giờ nhìn thấy mật khẩu ngân hàng của bạn. Bạn cũng có thể
           tự tải sao kê lên.
         </p>
@@ -97,8 +96,8 @@ export default function Privacy() {
         <p>Dữ liệu chỉ rời hệ thống trong các trường hợp sau, mỗi trường hợp giới hạn ở phần tối thiểu:</p>
         <ul className="list-disc pl-5 space-y-1.5">
           <li>
-            <Dam>Nhà cung cấp dữ liệu ngân hàng (Cas, SePay)</Dam> — để lấy sao kê và nhận báo có
-            theo uỷ quyền của bạn.
+            <Dam>Nhà cung cấp dữ liệu ngân hàng (Cas)</Dam> — để lấy sao kê theo uỷ quyền của bạn.
+            <Dam> SePay</Dam> — chỉ để nhận báo có khi bạn chuyển khoản trả phí vào tài khoản của công ty.
           </li>
           <li>
             <Dam>Dịch vụ tra cứu mã số thuế (XInvoice)</Dam> — chỉ gửi đi mã số thuế cần tra,

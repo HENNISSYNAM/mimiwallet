@@ -1,9 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { daBiKhoaViSai, ghiLanSai, idTuIp, ipNguoiGoi } from "../_shared/an-ninh/gioi-han.ts";
-import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
 import { mapSepayWebhook } from "../_shared/bank/sepay-map.ts";
-import { timTaiKhoanAoTrongNoiDung } from "../_shared/bank/ma-tai-khoan-ao.ts";
-import { doiSoatChiTacTu } from "../_shared/tac-tu/doi-soat.ts";
 import { doiSoatTienVeMimi, laTaiKhoanMimi } from "../_shared/billing/thu-tien.ts";
 
 /**
@@ -219,110 +216,11 @@ Deno.serve(async (req) => {
     return ack();
   }
 
-  const { data: conn, error: connError } = await supabase
-    .from("bank_connections")
-    .select("id, company_id, bank_name")
-    .eq("provider", "sepay")
-    .eq("account_number", accountNumber)
-    .eq("status", "connected")
-    .maybeSingle();
-
-  if (connError) {
-    // A database hiccup is worth retrying, unlike a bad payload, so this is the
-    // one path that deliberately returns a non-200.
-    console.error("lookup failed:", connError.message);
-    return new Response(JSON.stringify({ error: "lookup failed" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  if (!conn) {
-    console.warn(`no connected sepay account matches ${accountNumber}`);
-    await ghiKetQua(
-      "ignored",
-      `chưa khai tài khoản ${accountNumber} trong MIMI — vào Fintech Hub, khối SePay`,
-    );
-    return ack({ ignored: "unknown account" });
-  }
-
   /*
-   * MÃ QR TẠO QUA CAS: KHỚP BẰNG TÀI KHOẢN ẢO TRONG NỘI DUNG.
-   *
-   * Nội dung chuyển khoản của mã Cas không mang mã tham chiếu MIMI, và SePay
-   * không trả `subAccount` — nên trước 14/09/2026 khoản tiền được ghi mà mã QR
-   * nằm `pending` mãi (nghiệm thu case 15). Chỉ so với tài khoản ảo của mã đang
-   * chờ của CHÍNH công ty này; xem `_shared/bank/ma-tai-khoan-ao.ts`.
+   * 06/10/2026: MIMI BỎ ĐƯỜNG SEPAY CHO KHÁCH. Khách từng tự khai số tài khoản SePay mà không có bước chứng minh
+   * mình là chủ tài khoản — ai cũng khai được tài khoản của người khác và đọc tiền về của họ. Từ nay SePay chỉ còn
+   * báo tiền về tài khoản nhận của chính MIMI (nhánh trên). Khách đọc sao kê qua Cas hoặc tải tệp sao kê.
    */
-  if (!row.payment_reference && !row.virtual_account_number && row.amount > 0) {
-    const { data: choVa } = await supabase
-      .from("qr_payments")
-      .select("virtual_account_number")
-      .eq("company_id", conn.company_id)
-      .eq("status", "pending")
-      .not("virtual_account_number", "is", null);
-    const va = timTaiKhoanAoTrongNoiDung(
-      row.merchant_name,
-      (choVa ?? []).map((q) => q.virtual_account_number as string | null),
-    );
-    if (va) row.virtual_account_number = va;
-  }
-
-  const { error: writeError } = await supabase
-    .from("transactions")
-    .upsert(
-      { ...row, company_id: conn.company_id, source: "sepay" },
-      { onConflict: "company_id,reference_id", ignoreDuplicates: true },
-    );
-
-  if (writeError) {
-    console.error("insert failed:", writeError.message);
-    return new Response(JSON.stringify({ error: "write failed" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  await supabase
-    .from("bank_connections")
-    .update({ last_synced_at: new Date().toISOString() })
-    .eq("id", conn.id);
-
-  /*
-   * ĐỐI SOÁT MÃ QR NGAY SAU KHI GHI GIAO DỊCH.
-   *
-   * Mắt xích thiếu, tìm ra 07/09/2026. Đường SePay vốn đã đầy đủ: nhận webhook,
-   * ánh xạ, ghi vào `transactions`. Nhưng nó dừng ở đó — không ai gọi
-   * `reconcileCompanyQr`, nên một khoản tiền vào khớp đúng mã tham chiếu của
-   * một mã QR đang chờ vẫn để mã đó ở `pending` vĩnh viễn.
-   *
-   * VÌ SAO ĐÁNG GIÁ HƠN MỘT BẢN VÁ NHỎ. Đường Cas hiện đang tắc: `/transactions`
-   * trả về rỗng cho tài khoản hợp lệ, và không có webhook nào khi tiền thật về.
-   * Cả hai đều nằm ngoài tầm sửa của mình. Nhưng SePay là một đường HOÀN TOÀN
-   * ĐỘC LẬP cho cùng một việc — nó canh tài khoản và đẩy thông báo kèm nội dung
-   * chuyển khoản, đúng cách đối soát của Việt Nam. Mã QR thì `lib/vietqr.ts`
-   * dựng ngay tại máy khách, cũng không cần Cas.
-   *
-   * Nối một dòng này là vòng "khách quét mã → tiền về → hoá đơn tự tất toán"
-   * đóng lại được mà không phụ thuộc bên nào trả lời.
-   */
-  const kq = await reconcileCompanyQr(supabase, conn.company_id);
-  if (kq.settled || kq.mismatched) {
-    console.log(`sepay qr reconcile: ${kq.settled} settled, ${kq.mismatched} mismatch`);
-  }
-  // Cùng lúc: khoản chi đã duyệt của agent nào vừa thật sự rời tài khoản.
-  // Đường tiền ra dùng đúng cơ chế mã tham chiếu như đường tiền vào.
-  const chi = await doiSoatChiTacTu(supabase, conn.company_id);
-  await ghiKetQua(
-    "verified",
-    `ghi 1 giao dịch cho ${conn.bank_name ?? accountNumber}` +
-      (kq.settled || kq.mismatched
-        ? ` · khớp QR: ${kq.settled} xong, ${kq.mismatched} lệch`
-        : " · không có mã QR nào đang chờ khớp") +
-      (chi.khop || chi.lech ? ` · chi agent: ${chi.khop} xác nhận, ${chi.lech} lệch` : ""),
-  );
-
-  console.log(
-    `stored ${row.type} ${row.amount} for company ${conn.company_id} (${row.reference_id})`,
-  );
-  return ack();
+  await ghiKetQua("ignored", `tài khoản ${accountNumber} không phải tài khoản nhận của MIMI — MIMI không nhận sao kê khách qua SePay`);
+  return ack({ ignored: "not mimi account" });
 });

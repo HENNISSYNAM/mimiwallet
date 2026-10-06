@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chuoiChongTrung, danhSoLan, docCsv, docDong, docNgay, docSo, kiemDong, nhanCot, type O } from './doc-sao-ke';
+import { chuoiChongTrung, chuoiChongTrungV2, danhSoLan, phatHienNgoaiTe, docCsv, docDong, docNgay, docSo, kiemDong, nhanCot, type O } from './doc-sao-ke';
 
 /*
  * Các bảng dưới đây dựng theo những KIỂU CỘT thường gặp trong sao kê tải về (tiêu đề tiếng Việt,
@@ -102,5 +102,29 @@ describe('máy chủ kiểm lại và chống trùng', () => {
     expect(lan).toEqual([1, 2, 1]);
     expect(chuoiChongTrung('TK1', d, 1)).not.toBe(chuoiChongTrung('TK1', d, 2));
     expect(danhSoLan([d, d], 'TK1')).toEqual(lan.slice(0, 2));
+  });
+});
+
+describe('sao kê: khoá v2, ngoại tệ, số lẻ (06/10/2026)', () => {
+  const goc = { transaction_date: '2026-09-02', amount: 7096000, type: 'income' as const, merchant_name: 'CK QUAN COM A', counter_account_name: null, counter_account_number: null, so_tham_chieu: 'FT2609 001', so_du: 1000 };
+
+  it('có số tham chiếu: nội dung ghi khác vẫn cùng một khoá', () => {
+    const khac = { ...goc, merchant_name: '  ck quan com a ', so_du: null };
+    expect(chuoiChongTrungV2('TK1', khac, 1)).toBe(chuoiChongTrungV2('TK1', goc, 1));
+  });
+
+  it('không có số tham chiếu: giữ đúng khoá cũ', () => {
+    const khongRef = { ...goc, so_tham_chieu: null };
+    expect(chuoiChongTrungV2('TK1', khongRef, 1)).toBe(chuoiChongTrung('TK1', khongRef, 1));
+  });
+
+  it('nhận ra sao kê ngoại tệ ở phần đầu tệp, bỏ qua tiền đồng', () => {
+    expect(phatHienNgoaiTe([['Số tài khoản: 0123456789'], ['Loại tiền: USD'], ['Ngày', 'Ghi có']])).toBe('USD');
+    expect(phatHienNgoaiTe([['Số tài khoản: 0123456789'], ['Loại tiền: VND'], ['Ngày', 'Ghi có']])).toBeNull();
+  });
+
+  it('số tiền có phần lẻ bị từ chối — tiền đồng không có số lẻ', () => {
+    expect(kiemDong({ ...goc, amount: 12.5 }, '2026-10-06')).toMatch(/VND/);
+    expect(kiemDong(goc, '2026-10-06')).toBeNull();
   });
 });

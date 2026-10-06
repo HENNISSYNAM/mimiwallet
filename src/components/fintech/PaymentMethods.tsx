@@ -312,7 +312,7 @@ export default function PaymentMethods() {
                   className="mt-0.5"
                 />
                 <span>
-                  Tạo qua Cas QR Pay (nghiệm thu webhook Casso). Bỏ trống thì dùng VietQR + SePay như bình thường.
+                  Tạo qua Cas QR Pay (nghiệm thu webhook Casso). Bỏ trống thì dùng VietQR như bình thường; tiền về khớp khi giao dịch về sổ.
                 </span>
               </label>
             </div>

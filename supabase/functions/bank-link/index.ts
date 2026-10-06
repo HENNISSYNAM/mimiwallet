@@ -1198,75 +1198,12 @@ Deno.serve(async (req) => {
        * và cũng không có quyền truy cập nào được cấp cho MIMI ở đây.
        */
       case "dang-ky-sepay": {
-        const soTaiKhoan = String(body.accountNumber ?? "").replace(/\s/g, "");
-        if (!/^\d{6,20}$/.test(soTaiKhoan)) {
-          return json({ error: "Số tài khoản chỉ gồm chữ số, 6–20 ký tự." }, 400);
-        }
-        const tenNganHang = String(body.bankName ?? "").trim();
-        if (!tenNganHang) return json({ error: "Thiếu tên ngân hàng." }, 400);
-
-        /*
-         * `bank_code` LƯU MÃ BIN 6 SỐ, KHÔNG LƯU CHUỖI TỰ DO.
-         *
-         * Bản đầu để `bankCode || bankName`, tức chấp nhận cả "MB Bank". Lúc đó
-         * `bank_code` chỉ là nhãn phân biệt các dòng nên chuỗi nào cũng được.
-         *
-         * Từ khi `create-qr` dựng mã VietQR từ chính dòng này thì nó không còn
-         * là nhãn nữa — nó là **nơi tiền sẽ tới**. Một BIN sai không báo lỗi ở
-         * đâu cả: mã QR vẫn quét được, chỉ là trỏ tới người trùng số tài khoản
-         * ở ngân hàng khác.
-         *
-         * NHƯNG TỪ CHỐI THẲNG CHUỖI TỰ DO LÀ MỘT LỖI TÔI VỪA GÂY RA.
-         *
-         * Bản 08/09 đòi `bankCode` phải là 6 số, coi như giao diện luôn gửi
-         * đúng vì tôi vừa sửa giao diện. Giao diện đó đi theo nhịp build của
-         * bên khác, nên người dùng vẫn đang chạy bản có ô gõ tự do — và mọi lần
-         * khai tài khoản của họ bị trả 400. Từ phía họ: "đã khai rồi mà nó cứ
-         * bảo khai lại".
-         *
-         * Máy chủ không được giả định máy khách đã cập nhật. Nên: nhận BIN nếu
-         * có, còn không thì tự tra tên qua `timNganHang` — cùng một bảng giao
-         * diện đang dùng, nên hai bên không thể hiểu ra hai ngân hàng khác nhau.
-         * Chỉ từ chối khi tra không ra, và khi đó nói rõ là tra không ra CÁI GÌ.
-         */
-        const binGuiLen = String(body.bankCode ?? "").trim();
-        const nganHang = /^\d{6}$/.test(binGuiLen)
-          ? timNganHang(binGuiLen)
-          : timNganHang(binGuiLen || tenNganHang);
-
-        if (!nganHang) {
-          return json({
-            error: `Không nhận ra ngân hàng "${binGuiLen || tenNganHang}".`,
-            remedy:
-              "Chọn ngân hàng từ danh sách. Nếu ngân hàng của bạn chưa có trong danh sách, báo lại để bổ sung — đoán mã ngân hàng là mã QR trỏ sai nơi.",
-          }, 400);
-        }
-        const maNganHang = nganHang.bin;
-
-        const { data: luu, error: loiLuu } = await supabase
-          .from("bank_connections")
-          .upsert(
-            {
-              company_id: company.id,
-              provider: "sepay",
-              account_number: soTaiKhoan,
-              account_name: String(body.accountName ?? "").trim() || null,
-              // Tên chuẩn từ bảng, không phải chuỗi người dùng gõ — để hai dòng
-              // cùng một ngân hàng không hiện thành hai tên khác nhau.
-              bank_name: nganHang.ten,
-              bank_code: maNganHang,
-              status: "connected",
-              scopes: "transaction",
-              consent_granted: true,
-              revoked_at: null,
-            },
-            { onConflict: "company_id,provider,account_number,scopes" },
-          )
-          .select("id, account_number, bank_name")
-          .maybeSingle();
-
-        if (loiLuu) return json({ error: loiLuu.message, detail: loiLuu.details }, 500);
-        return json({ connection: luu });
+        // 06/10/2026: bỏ đường khách tự khai tài khoản SePay — không có bước chứng minh chủ tài khoản.
+        return json({
+          error: "MIMI không còn nhận khai tài khoản SePay.",
+          remedy: "Liên kết ngân hàng qua Cas, hoặc tải tệp sao kê lên ở trang Kết nối.",
+          code: "SEPAY_DA_BO",
+        }, 410);
       }
 
       case "thu-hoi-grant-cu": {

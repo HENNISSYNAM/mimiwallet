@@ -3,7 +3,7 @@ import { CauHoiNhanh } from '@/components/phan-hoi/CauHoiNhanh';
 import { Link } from 'react-router-dom';
 import { FileSpreadsheet, Loader2, Upload } from 'lucide-react';
 import {
-  docDong, docTep, doanTaiKhoan, goiSaoKe, nhanCot, TEN_COT,
+  docDong, docTep, doanTaiKhoan, goiSaoKe, nhanCot, phatHienNgoaiTe, TEN_COT,
   type BanDoCot, type Cot, type O,
 } from '@/lib/saoKe';
 import { congTien, dinhDangTien } from '@/lib/tien';
@@ -40,8 +40,15 @@ export function NhapSaoKe() {
     setLoi(null); setKetQua(null); setTenTep(tep.name);
     try {
       const b = await docTep(tep);
-      setBang(b);
       const bd = nhanCot(b);
+      // Chỉ xét phần đầu tệp (thông tin tài khoản, tiêu đề cột) — nội dung giao dịch có chữ "USD" không phải tiền tệ của sổ.
+      const ngoaiTe = phatHienNgoaiTe(b.slice(0, (bd?.dong_tieu_de ?? 9) + 1));
+      if (ngoaiTe) {
+        setBang(null); setBanDo(null);
+        setLoi(`Sao kê này ghi tiền ${ngoaiTe}. MIMI chỉ nhận sao kê tài khoản tiền đồng (VND) — chọn tệp của tài khoản VND.`);
+        return;
+      }
+      setBang(b);
       setBanDo(bd);
       setSuaCot(!bd);
       setTaiKhoan((tk) => tk || doanTaiKhoan(b) || '');

@@ -169,7 +169,7 @@ Xem ngân hàng đã báo gì tới và MIMI xử lý ra sao
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
               Mọi thông báo <strong className="text-foreground">gửi tới</strong> trong 30 ngày qua —
-              từ Casso và từ SePay — kể cả những cái bị bỏ qua. Bấm Đồng bộ không tạo dòng ở
+              từ Casso — kể cả những cái bị bỏ qua. Bấm Đồng bộ không tạo dòng ở
               đây: đó là chiều mình gọi ra, không phải chiều bên kia đẩy vào.
             </p>
             <button

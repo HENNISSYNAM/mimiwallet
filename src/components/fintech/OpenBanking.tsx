@@ -1,6 +1,5 @@
 import { Shield, Lock } from 'lucide-react';
 import { NhatKyWebhook } from '@/components/fintech/NhatKyWebhook';
-import { DangKySePay } from '@/components/fintech/DangKySePay';
 import CasLink from './CasLink';
 
 /**
@@ -24,15 +23,7 @@ export default function OpenBanking() {
     <div className="space-y-6">
       <CasLink />
 
-      {/*
-        SePay đứng NGAY DƯỚI CasLink, không nằm tách dưới cùng.
-
-        Với người dùng thì cả hai đều là "nối tài khoản ngân hàng của tôi" —
-        khác nhau ở việc Cas đọc sao kê còn SePay báo tiền về. Đặt cách nhau
-        nửa trang làm người ta không thấy chúng liên quan, và không biết mình
-        đã nối đủ chưa.
-      */}
-      <DangKySePay />
+      {/* 06/10/2026: bỏ khối khai tài khoản SePay — không có bước chứng minh chủ tài khoản. */}
 
       {/* Điều thật về cách kết nối được bảo vệ — không nhận tuân thủ chuẩn nào chưa được đánh giá. */}
       <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between gap-3">

@@ -94,7 +94,7 @@ const MENU_SAN_PHAM: CauHinhMenu = {
       { icon: Sparkles, ten: { vi: 'Trí tuệ nhân tạo', en: 'Intelligence', ko: '인공지능', zh: '人工智能' }, mo: { vi: 'Agent làm gì, và bạn giữ gì', en: 'What agents do, what you keep', ko: '에이전트가 하는 일과 사용자가 쥐는 권한', zh: '智能体做什么，您掌握什么' }, href: '/tri-tue-nhan-tao' },
       { icon: Code2, ten: { vi: 'MCP & API cho agent', en: 'MCP & agent API', ko: '에이전트용 MCP·API', zh: '智能体 MCP 与 API' }, mo: { vi: 'Nối Claude, Cursor trong một lệnh', en: 'Connect Claude, Cursor in one command', ko: '명령 한 줄로 Claude, Cursor 연결', zh: '一条命令接入 Claude、Cursor' }, href: '/san-pham/mcp-api' },
       { icon: Lock, ten: { vi: 'Bảo mật', en: 'Security', ko: '보안', zh: '安全' }, mo: { vi: 'Mã hoá kháng lượng tử, tách dữ liệu', en: 'Post-quantum encryption, data isolation', ko: '양자 내성 암호화, 데이터 분리', zh: '抗量子加密，数据隔离' }, href: '/san-pham/bao-mat' },
-      { icon: Plug, ten: { vi: 'Kết nối', en: 'Connections', ko: '연결', zh: '连接' }, mo: { vi: 'Ngân hàng, SePay', en: 'Banks, SePay', ko: '은행, SePay', zh: '银行、SePay' }, href: '/san-pham/ket-noi' },
+      { icon: Plug, ten: { vi: 'Kết nối', en: 'Connections', ko: '연결', zh: '连接' }, mo: { vi: 'Ngân hàng, sao kê', en: 'Banks, statements', ko: '은행, 거래내역', zh: '银行、对账单' }, href: '/san-pham/ket-noi' },
     ],
   },
   noiBat: {

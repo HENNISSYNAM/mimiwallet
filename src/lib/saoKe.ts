@@ -38,8 +38,15 @@ export async function docTep(tep: File): Promise<O[][]> {
     const { readSheet } = await import('read-excel-file/browser');
     return (await readSheet(tep)) as O[][];
   }
-  if (ten.endsWith('.xls')) throw new Error('Tệp .xls là định dạng Excel cũ. Mở bằng Excel rồi "Lưu thành" .xlsx hoặc .csv, sau đó tải lại.');
-  throw new Error('MIMI đọc được tệp .xlsx và .csv.');
+  if (ten.endsWith('.xls')) {
+    // Excel đời cũ — và nhiều ngân hàng Việt xuất ".xls" thực chất là bảng HTML. SheetJS đọc được cả hai.
+    const XLSX = await import('xlsx');
+    const wb = XLSX.read(await tep.arrayBuffer(), { type: 'array', cellDates: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    if (!sheet) throw new Error('Tệp .xls không có trang tính nào.');
+    return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null }) as O[][];
+  }
+  throw new Error('MIMI đọc được tệp .xlsx, .xls và .csv.');
 }
 
 /** "Số tài khoản: 0123 456 789" ở phần đầu sao kê → đoán sẵn, người dùng khỏi gõ. */

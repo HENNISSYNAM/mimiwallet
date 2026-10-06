@@ -216,6 +216,8 @@ export function kiemDong(d: unknown, homNay: string): string | null {
   if (typeof o.transaction_date !== 'string' || docNgay(o.transaction_date) !== o.transaction_date) return 'Ngày không hợp lệ';
   if (o.transaction_date > homNay) return 'Ngày ở tương lai';
   if (typeof o.amount !== 'number' || !Number.isFinite(o.amount) || o.amount <= 0 || o.amount > 1e13) return 'Số tiền không hợp lệ';
+  // Tiền đồng không có phần lẻ: số lẻ thập phân là dấu hiệu sao kê ngoại tệ.
+  if (!Number.isInteger(o.amount)) return 'Số tiền có phần lẻ — MIMI chỉ nhận sao kê tiền đồng (VND)';
   if (o.type !== 'income' && o.type !== 'expense') return 'Chiều tiền không hợp lệ';
   for (const k of ['merchant_name', 'counter_account_name', 'counter_account_number', 'so_tham_chieu']) {
     if (o[k] !== null && o[k] !== undefined && (typeof o[k] !== 'string' || (o[k] as string).length > 500)) return `Cột ${k} không hợp lệ`;
@@ -231,6 +233,31 @@ export function kiemDong(d: unknown, homNay: string): string | null {
  */
 export function chuoiChongTrung(taiKhoan: string, d: DongSaoKe, lan: number): string {
   return [taiKhoan, d.transaction_date, d.type, d.amount, d.so_tham_chieu ?? '', d.merchant_name ?? '', d.so_du ?? '', lan].join('|');
+}
+
+/**
+ * Khoá chống trùng v2 (06/10/2026). Dòng có SỐ THAM CHIẾU của ngân hàng thì khoá theo số đó (cùng ngày, số tiền,
+ * chiều) — xuất lại sao kê với cách ghi nội dung khác (khoảng trắng, hoa thường) không còn sinh dòng trùng. Dòng
+ * không có số tham chiếu giữ khoá cũ. Máy chủ vẫn so cả khoá cũ để không nhập lại dòng đã nhập trước ngày đổi.
+ */
+export function chuoiChongTrungV2(taiKhoan: string, d: DongSaoKe, lan: number): string {
+  const ref = (d.so_tham_chieu ?? '').replace(/\s+/g, '').toUpperCase();
+  return ref ? ['v2', taiKhoan, 'ref', ref, d.transaction_date, d.type, d.amount].join('|') : chuoiChongTrung(taiKhoan, d, lan);
+}
+
+const NGOAI_TE = /\b(USD|EUR|JPY|CNY|RMB|SGD|KRW|AUD|GBP|THB|HKD|TWD|CAD|CHF)\b/i;
+
+/**
+ * Sao kê NGOẠI TỆ (06/10/2026): MIMI chỉ tính tiền đồng — cộng 1.000 USD như 1.000 ₫ là sai cả sổ lẫn ngưỡng thuế.
+ * Tìm mã tiền tệ ở phần đầu tệp (thông tin tài khoản, tiêu đề cột). Trả mã tìm thấy, hoặc null nếu là VND.
+ */
+export function phatHienNgoaiTe(bang: O[][]): string | null {
+  for (const hang of bang.slice(0, 25)) {
+    const dong = hang.map((o) => (o === null || o === undefined ? '' : String(o))).join(' ');
+    const m = NGOAI_TE.exec(dong);
+    if (m) return m[1].toUpperCase();
+  }
+  return null;
 }
 
 /** Đánh số lần xuất hiện cho các dòng giống hệt nhau trong một tệp. */

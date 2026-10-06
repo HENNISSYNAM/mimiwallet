@@ -14,7 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 import { lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
-import { chuoiChongTrung, danhSoLan, kiemDong, type DongSaoKe } from "../_shared/sao-ke/doc-sao-ke.ts";
+import { chuoiChongTrung, chuoiChongTrungV2, danhSoLan, kiemDong, type DongSaoKe } from "../_shared/sao-ke/doc-sao-ke.ts";
 import { ghiNhieuSuKien } from "../_shared/do-luong/su-kien.ts";
 
 const corsHeaders = {
@@ -102,20 +102,36 @@ Deno.serve(async (req) => {
     }
 
     const lan = danhSoLan(hopLe, taiKhoan);
-    const dong = await Promise.all(hopLe.map(async (d, i) => ({
-      company_id: companyId,
-      amount: d.amount,
-      type: d.type,
-      transaction_date: d.transaction_date,
-      merchant_name: d.merchant_name,
-      counter_account_name: d.counter_account_name,
-      counter_account_number: d.counter_account_number,
-      account_number: taiKhoan,
-      reference_id: `import:${await bam(chuoiChongTrung(taiKhoan, d, lan[i]))}`,
-      source: "import",
-      import_id: importId,
-      is_synthetic: false,
-    })));
+    // Khoá v2 theo số tham chiếu ngân hàng (doc-sao-ke.ts). Dòng đã nhập TRƯỚC ngày đổi mang khoá cũ — tra khoá cũ
+    // để không nhập lại chúng thành dòng mới.
+    const khoaCu = await Promise.all(hopLe.map(async (d, i) => `import:${await bam(chuoiChongTrung(taiKhoan, d, lan[i]))}`));
+    const khoaMoi = await Promise.all(hopLe.map(async (d, i) => `import:${await bam(chuoiChongTrungV2(taiKhoan, d, lan[i]))}`));
+    const canTra = khoaCu.filter((k, i) => k !== khoaMoi[i]);
+    const daCoKhoaCu = new Set<string>();
+    for (let i = 0; i < canTra.length; i += 200) {
+      const { data, error } = await db.from("transactions").select("reference_id")
+        .eq("company_id", companyId).in("reference_id", canTra.slice(i, i + 200));
+      if (error) throw error;
+      for (const r of data ?? []) daCoKhoaCu.add(String(r.reference_id));
+    }
+    const chiSoGhi = hopLe.map((_, i) => i).filter((i) => !daCoKhoaCu.has(khoaCu[i]));
+    const dong = chiSoGhi.map((i) => {
+      const d = hopLe[i];
+      return {
+        company_id: companyId,
+        amount: d.amount,
+        type: d.type,
+        transaction_date: d.transaction_date,
+        merchant_name: d.merchant_name,
+        counter_account_name: d.counter_account_name,
+        counter_account_number: d.counter_account_number,
+        account_number: taiKhoan,
+        reference_id: khoaMoi[i],
+        source: "import",
+        import_id: importId,
+        is_synthetic: false,
+      };
+    });
 
     let moiGhi = 0;
     for (let i = 0; i < dong.length; i += 500) {

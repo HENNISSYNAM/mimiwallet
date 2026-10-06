@@ -46,10 +46,10 @@ describe('tải sao kê lên', () => {
     expect(await screen.findByText(/Đã thêm 2 giao dịch mới, bỏ qua 1 dòng đã có/)).toBeTruthy();
   });
 
-  it('tệp .xls cũ: nói cách lưu lại, không đoán', async () => {
+  it('tệp .xls hỏng: báo không đọc được, không đoán', async () => {
+    // 06/10/2026: .xls đọc bằng SheetJS; tệp không phải bảng tính thì báo lỗi, không im lặng.
     render(<MemoryRouter><NhapSaoKe /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText('Chọn tệp sao kê'), { target: { files: [new File(['x'], 'cu.xls')] } });
     expect(await screen.findByRole('alert')).toBeTruthy();
-    expect(screen.getByRole('alert').textContent).toContain('Lưu thành');
   });
 });

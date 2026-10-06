@@ -177,10 +177,10 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
       soLieu: ATRADIUS,
     },
     cachHoatDong: [
-      { tieuDe: 'Khai tài khoản nhận', mo: 'Khai số tài khoản ở khối SePay trong Fintech Hub — chỉ khai số để nhận diện, không cấp quyền gì.' },
+      { tieuDe: 'Liên kết tài khoản nhận', mo: 'Liên kết tài khoản nhận tiền qua Cas (QR Pay) ở trang Kết nối — chỉ quyền nhận tiền bằng mã QR.' },
       { tieuDe: 'Tạo hoá đơn, bấm mã QR', mo: 'Mã VietQR trỏ tới tài khoản của bạn, kèm số tiền và mã tham chiếu MIMI trong nội dung chuyển khoản.' },
       { tieuDe: 'Khách quét và trả', mo: 'Tiền vào thẳng tài khoản ngân hàng của bạn, không đi qua MIMI.' },
-      { tieuDe: 'Tự khớp', mo: 'SePay báo tiền về; mã tham chiếu và số tiền khớp thì hoá đơn chuyển sang đã thu.' },
+      { tieuDe: 'Tự khớp', mo: 'Khi giao dịch về sổ (liên kết Cas hoặc tệp sao kê tải lên) mang đúng mã tham chiếu và số tiền, hoá đơn chuyển sang đã thu.' },
     ],
     lamDuoc: [
       { tieuDe: 'Mã QR cho khoản thu rời', mo: 'Tạo mã cho một số tiền bất kỳ, không cần phát hành hoá đơn trước.' },
@@ -194,7 +194,7 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     ],
     trongApp: { ten: 'Hoá đơn', duong: '/dashboard/invoices' },
     hoiDap: [
-      { hoi: 'Có cần nối ngân hàng qua Cas không?', dap: 'Không bắt buộc. Mã VietQR dựng ngay trên máy, còn báo tiền về đi qua SePay.' },
+      { hoi: 'Có cần nối ngân hàng qua Cas không?', dap: 'Không bắt buộc. Không liên kết thì bạn tải tệp sao kê lên; giao dịch có mã tham chiếu vẫn tự khớp.' },
       { hoi: 'Khách trả bằng ví điện tử được không?', dap: 'Được nếu ví đó quét và trả được mã VietQR chuyển khoản ngân hàng.' },
     ],
     lienQuan: ['/san-pham/doi-soat-sao-ke', '/san-pham/chung-tu-chi-phi', '/giai-phap/thuong-mai-dien-tu'],
@@ -240,12 +240,12 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     },
     cachHoatDong: [
       { tieuDe: 'Sinh mã tham chiếu', mo: 'Mỗi hoá đơn QR và lệnh trả có mã MIMI kèm ký tự ngẫu nhiên, đặt trong nội dung chuyển khoản.' },
-      { tieuDe: 'Nhận giao dịch', mo: 'SePay báo từng giao dịch theo thời gian thực; liên kết Cas đọc lịch sử giao dịch.' },
+      { tieuDe: 'Nhận giao dịch', mo: 'Liên kết Cas đọc lịch sử giao dịch; hoặc bạn tải tệp sao kê Excel/CSV lên.' },
       { tieuDe: 'Khớp', mo: 'Theo mã tham chiếu, hoặc theo tài khoản ảo của mã QR. Số tiền phải khớp.' },
       { tieuDe: 'Chuyển trạng thái', mo: 'Hoá đơn thành đã thu; lệnh trả của agent thành "Đã chi".' },
     ],
     lamDuoc: [
-      { tieuDe: 'Hai đường độc lập', mo: 'SePay và Cas chạy song song — một bên trục trặc, bên kia vẫn nhận được giao dịch.' },
+      { tieuDe: 'Hai đường độc lập', mo: 'Liên kết Cas và tệp sao kê chạy song song — liên kết trục trặc thì vẫn tải sao kê được.' },
       { tieuDe: 'Lệch thì để người xem', mo: 'Trả thiếu hay trả thừa không tự áp, không tự đóng hoá đơn.' },
       { tieuDe: 'Nhật ký webhook', mo: 'Mọi thông báo nhận được đều ghi lại trước khi xử lý, kể cả thông báo không đọc được.' },
     ],
@@ -255,7 +255,7 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     ],
     trongApp: { ten: 'Fintech Hub', duong: '/dashboard/fintech' },
     hoiDap: [
-      { hoi: 'Có cần cả SePay lẫn Cas không?', dap: 'Không. SePay đủ để báo tiền về; Cas thêm lịch sử giao dịch và nhận tiền QR.' },
+      { hoi: 'Có bắt buộc liên kết ngân hàng không?', dap: 'Không. Tải tệp sao kê là đủ; liên kết Cas giúp giao dịch tự về, khỏi tải tay.' },
       { hoi: 'Tiền vào không có mã thì sao?', dap: 'Vẫn được ghi vào sổ; chỉ là không tự khớp với hoá đơn nào.' },
     ],
     lienQuan: ['/san-pham/hoa-don-qr', '/san-pham/ket-noi', '/san-pham/duyet-chi'],
@@ -365,21 +365,21 @@ export const TRANG_SAN_PHAM: TrangNoiDung[] = [
     },
     cachHoatDong: [
       { tieuDe: 'Cas', mo: 'Liên kết tài khoản ngân hàng để đọc giao dịch và nhận tiền QR. Ngắt quyền trong app Cas thì MIMI tự ghi nhận.' },
-      { tieuDe: 'SePay', mo: 'Báo tiền về theo thời gian thực. Bạn chỉ khai số tài khoản, không cấp quyền gì.' },
+      { tieuDe: 'Tệp sao kê', mo: 'Tải tệp Excel/CSV từ ứng dụng ngân hàng — không cần cấp quyền gì.' },
       { tieuDe: 'VietQR', mo: 'Chuẩn mã QR chuyển khoản, dựng ngay trên máy cho hoá đơn và lệnh trả.' },
       { tieuDe: 'MCP', mo: 'Claude, Cursor và ứng dụng hỗ trợ MCP gọi vào MIMI bằng khoá agent.' },
     ],
     lamDuoc: [
-      { tieuDe: 'Hai đường nhận giao dịch', mo: 'SePay và Cas độc lập nhau.' },
+      { tieuDe: 'Hai đường nhận giao dịch', mo: 'Liên kết Cas và tệp sao kê độc lập nhau.' },
       { tieuDe: 'Ngắt được mọi kết nối', mo: 'Ngắt thì mã truy cập bị xoá khỏi hệ thống.' },
-      { tieuDe: 'Nhật ký kết nối', mo: 'Thông báo từ Cas và SePay được ghi lại, xem được trong Fintech Hub.' },
+      { tieuDe: 'Nhật ký kết nối', mo: 'Thông báo từ Cas được ghi lại, xem được trong Fintech Hub.' },
     ],
     ranhGioi: [
       'Đây là dịch vụ MIMI kết nối tới, không phải thoả thuận đối tác.',
     ],
     trongApp: { ten: 'Fintech Hub', duong: '/dashboard/fintech' },
     hoiDap: [
-      { hoi: 'Ngân hàng của tôi có được hỗ trợ không?', dap: 'Cas Link hiện danh sách ngân hàng hỗ trợ khi bạn bấm liên kết. Báo tiền về qua SePay theo danh sách ngân hàng của SePay.' },
+      { hoi: 'Ngân hàng của tôi có được hỗ trợ không?', dap: 'Cas Link hiện danh sách ngân hàng hỗ trợ khi bạn bấm liên kết. Ngân hàng nào xuất được tệp sao kê Excel/CSV thì đều tải lên được.' },
     ],
     lienQuan: ['/san-pham/doi-soat-sao-ke', '/san-pham/bao-mat'],
   },
@@ -424,7 +424,7 @@ export const TRANG_GIAI_PHAP: TrangNoiDung[] = [
       soLieu: GASA,
     },
     cachHoatDong: [
-      { tieuDe: 'Nối nguồn tiền', mo: 'Khai tài khoản với SePay để nhận tiền về, hoặc liên kết qua Cas để đọc giao dịch.' },
+      { tieuDe: 'Nối nguồn tiền', mo: 'Liên kết qua Cas để đọc giao dịch, hoặc tải tệp sao kê lên.' },
       { tieuDe: 'Lập danh sách người nhận được phép', mo: 'Nhà cung cấp quen, số tài khoản đã kiểm.' },
       { tieuDe: 'Duyệt chi', mo: 'Khoản trên ngưỡng hoặc người nhận mới chờ bạn, kèm số tiền bằng chữ.' },
       { tieuDe: 'Đối soát', mo: 'Lệnh trả và hoá đơn QR tự khớp khi sao kê về.' },
@@ -531,7 +531,7 @@ export const TRANG_GIAI_PHAP: TrangNoiDung[] = [
     cachHoatDong: [
       { tieuDe: 'Tạo mã QR cho đơn', mo: 'Mỗi mã mang mã tham chiếu riêng.' },
       { tieuDe: 'Khách trả', mo: 'Tiền vào thẳng tài khoản của bạn.' },
-      { tieuDe: 'Tự khớp', mo: 'SePay báo tiền về, khớp mã và số tiền.' },
+      { tieuDe: 'Tự khớp', mo: 'Giao dịch về sổ mang đúng mã và số tiền thì tự khớp.' },
       { tieuDe: 'Trả nhà cung cấp có kiểm soát', mo: 'Danh sách người nhận được phép, cảnh báo đổi số tài khoản.' },
     ],
     lamDuoc: [
