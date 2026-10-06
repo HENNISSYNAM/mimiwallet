@@ -501,7 +501,7 @@ const zh = {
         amount: '金额',
         status: '状态',
       },
-      advanceAction: '预支',
+      advanceAction: '详情',
       emptyTitle: '还没有发票',
       emptyDesc: '点“新建发票”添加第一张发票。',
       modal: {

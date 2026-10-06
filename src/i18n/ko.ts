@@ -503,7 +503,7 @@ const ko = {
         amount: '금액',
         status: '상태',
       },
-      advanceAction: '선지급',
+      advanceAction: '자세히',
       emptyTitle: '세금계산서가 없습니다',
       emptyDesc: '"세금계산서 만들기"를 눌러 첫 계산서를 추가하세요.',
       modal: {

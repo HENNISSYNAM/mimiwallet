@@ -33,7 +33,7 @@ const m = {
         amount: 'Amount',
         status: 'Status',
       },
-      advanceAction: 'Advance',
+      advanceAction: 'Details',
       emptyTitle: 'No invoices yet',
       emptyDesc: 'Click "Create invoice" to add your first invoice.',
       modal: {

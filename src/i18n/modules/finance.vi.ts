@@ -33,7 +33,7 @@ const m = {
         amount: 'Số tiền',
         status: 'Trạng thái',
       },
-      advanceAction: 'Ứng vốn',
+      advanceAction: 'Chi tiết',
       emptyTitle: 'Chưa có hóa đơn nào',
       emptyDesc: 'Bấm "Tạo hóa đơn" để thêm hóa đơn đầu tiên.',
       modal: {

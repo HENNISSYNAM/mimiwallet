@@ -511,29 +511,7 @@ export default function InvoicesPage() {
                   </div>
                 </div>
 
-                {(selectedInvoice.status === 'pending' || selectedInvoice.status === 'overdue') && (
-                  /* Muted, not the gradient call-to-action it used to wear. An
-                     estimate that cannot be acted on should not look like the
-                     brightest thing on the panel. */
-                  <div className="bg-muted/40 border border-border/60 rounded-2xl p-5">
-                    <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <InsightSpark size={16} className="text-muted-foreground" /> {t('fin.invoices.detail.advanceTitle')}
-                    </p>
-                    <div className="space-y-2 text-sm text-muted-foreground mb-3">
-                      <div className="flex justify-between">
-                        <span>{t('fin.invoices.detail.advanceAmount')}</span>
-                        <span className="font-mono text-foreground font-semibold">{formatVND(selectedInvoice.total * 0.8)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t('fin.invoices.detail.advanceFee')}</span>
-                        <span className="font-mono text-foreground">{formatVND(selectedInvoice.total * 0.015)}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs leading-relaxed text-muted-foreground border-t border-border/60 pt-3">
-                      {t('fin.invoices.detail.advanceUnavailable')}
-                    </p>
-                  </div>
-                )}
+                {/* 06/10/2026: gỡ khối 'Ứng vốn hoá đơn' (ước tính ứng 80%, phí 1,5%) — MIMI không cho vay từ 17/08/2026. */}
               </div>
             </motion.div>
           </>
