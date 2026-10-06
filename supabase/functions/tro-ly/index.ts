@@ -1041,7 +1041,12 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       try {
         ketQua = await docAnhChungTu({ khoa: khoaMoHinh, anh: body.anh as string, homNay: moc.homNay, cong: cong ?? undefined });
       } catch (e) {
-        if (e instanceof LoiMoHinh) return loi("DOC_ANH", "Chưa đọc được ảnh này. Chụp lại rõ hơn, đủ sáng, thấy cả tổng tiền.", 502);
+        if (e instanceof LoiMoHinh) {
+          // Chỉ đổ cho ảnh khi mô hình đã trả lời mà không đọc ra chứng từ (502). Hết hạn mức, quá chậm, cổng lỗi
+          // là lỗi phía MIMI — nói thật để người dùng không chụp đi chụp lại vô ích.
+          if (e.status === 502) return loi("DOC_ANH", "Chưa đọc được ảnh này. Chụp lại rõ hơn, đủ sáng, thấy cả tổng tiền.", 502);
+          return loi("DOC_ANH_TAM_NGUNG", "MIMI đang tạm ngưng đọc ảnh, không phải do ảnh của bạn. Bạn nhập tay ở trang Chứng từ chi phí, hoặc thử lại sau ít phút.", 503);
+        }
         throw e;
       }
 

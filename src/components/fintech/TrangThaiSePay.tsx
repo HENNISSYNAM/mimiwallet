@@ -7,6 +7,7 @@ import { idCongTyDangDung } from '@/lib/congTyDangDung';
  * TRẠNG THÁI THẬT CỦA SEPAY (06/10/2026). Khai số tài khoản xong, máy chủ ghi `status='connected'` ngay — nhưng SePay
  * chỉ báo tiền về khi tài khoản đó đã liên kết trong SePay và webhook trỏ về MIMI. Trước đây màn hình nói "đã đăng ký,
  * tiền vào sẽ tự khớp" dù chưa có giao dịch nào tới (kiểm 06/10: không công ty nào từng nhận giao dịch SePay).
+ * Đếm theo `reference_id` 'sepay:…' vì giao dịch SePay cũ có `source` rỗng.
  * Khối này nói đúng điều MIMI thấy: đã nhận bao nhiêu giao dịch qua SePay, lần cuối khi nào — hay chưa lần nào.
  */
 interface TaiKhoan { so: string; nganHang: string | null }
@@ -22,7 +23,7 @@ export function TrangThaiSePay({ lamMoi = 0 }: { lamMoi?: number }) {
       if (!cid) return;
       const [{ data: kn }, { count, data: cuoi }] = await Promise.all([
         supabase.from('bank_connections').select('account_number, bank_name').eq('company_id', cid).eq('provider', 'sepay').eq('status', 'connected'),
-        supabase.from('transactions').select('transaction_date', { count: 'exact' }).eq('company_id', cid).eq('source', 'sepay')
+        supabase.from('transactions').select('transaction_date', { count: 'exact' }).eq('company_id', cid).like('reference_id', 'sepay:%')
           .order('transaction_date', { ascending: false }).limit(1),
       ]);
       if (huy) return;

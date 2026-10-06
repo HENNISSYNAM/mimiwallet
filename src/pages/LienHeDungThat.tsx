@@ -128,7 +128,8 @@ export function LienHeDungThat() {
       utm_campaign: p.get('utm_campaign'),
     });
     setDangGui(false);
-    if (error) { setLoi(c.loiGui); return; }
+    // Gửi lại cùng email (trùng khoá) nghĩa là MIMI đã có yêu cầu này rồi — báo đã nhận, không báo lỗi.
+    if (error && error.code !== '23505') { setLoi(c.loiGui); return; }
     setDaGui(true);
   };
 

@@ -125,7 +125,14 @@ export function SubscriptionPayment({ plan, soLuot, onPaid }: { plan?: string; s
    */
   useEffect(() => {
     if (!hoaDon) return;
+    // Hỏi tối đa 15 phút. Quá lâu thì dừng và nói thật, thay vì hỏi mãi khi khách đã rời đi.
+    const batDau = Date.now();
     const t = setInterval(async () => {
+      if (Date.now() - batDau > 15 * 60_000) {
+        clearInterval(t);
+        toast.info('Chưa thấy tiền về sau 15 phút. Nếu bạn đã chuyển, MIMI vẫn tự kích hoạt khi tiền tới; tải lại trang để xem.', { duration: 15000 });
+        return;
+      }
       const { data } = await supabase
         .from('subscription_invoices')
         .select('status')
