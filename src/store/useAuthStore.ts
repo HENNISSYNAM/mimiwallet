@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { DEMO_EMAIL, DEMO_PASSWORD } from '@/lib/env';
+import { batDauPhienDemo, dangLaDemo, ketThucPhienDemo } from '@/lib/demoPhien';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -112,6 +113,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       email: DEMO_EMAIL,
       password: DEMO_PASSWORD,
     });
+    // Dọn lịch sử hỏi cũ của demo dùng chung; hỏng thì vẫn vào được (lịch sử phiên vẫn lọc riêng).
+    if (!error) await batDauPhienDemo().catch(() => {});
     return { error: error?.message ?? null };
   },
 
@@ -135,6 +138,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    if (await dangLaDemo().catch(() => false)) await ketThucPhienDemo().catch(() => {});
     await supabase.auth.signOut();
     set({ isAuthenticated: false, user: null, session: null });
   },

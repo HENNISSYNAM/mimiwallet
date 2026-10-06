@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { kemCongTy } from '@/lib/congTyDangDung';
+import { laEmailDemo, ghiNhoHoiThoaiDemo } from '@/lib/demoPhien';
 
 async function phien() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -27,6 +28,8 @@ export async function goiTroLy(hanhDong: string, du: Record<string, unknown> = {
   if (!res.ok || body?.error) {
     throw new LoiGoiHam(typeof body.error === 'string' ? body.error : `Lỗi ${res.status}`, res.status, body);
   }
+  // Bản demo: nhớ lượt hỏi của phiên này để lịch sử chỉ hiện của chính người đang xem (lib/demoPhien.ts).
+  if (typeof body.hoi_thoai_id === 'string' && laEmailDemo(session.user?.email)) ghiNhoHoiThoaiDemo(body.hoi_thoai_id);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return body as Record<string, any>;
 }

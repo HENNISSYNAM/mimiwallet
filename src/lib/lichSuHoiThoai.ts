@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import type { TraLoiNao } from '@/lib/troLy';
+import { dangLaDemo, idHoiThoaiPhienDemo } from '@/lib/demoPhien';
 
 /**
  * Lịch sử hỏi MIMI cho thanh bên trái, kiểu ChatGPT/Claude (29/09/2026).
@@ -73,10 +74,16 @@ export function nhomTheoNgay(cuoc: CuocHoi[], bayGio = Date.now()): { nhom: Nhom
 export async function docLichSu(): Promise<DongLichSu[]> {
   const cid = await idCongTyDangDung();
   if (!cid) return [];
-  const { data, error } = await supabase
+  // Demo dùng chung: chỉ lượt hỏi của phiên này, không lộ câu hỏi của người vào trước.
+  const demo = await dangLaDemo();
+  const idsPhien = demo ? idHoiThoaiPhienDemo() : [];
+  if (demo && !idsPhien.length) return [];
+  let q = supabase
     .from('hoi_thoai_tro_ly')
     .select('id, cau_hoi, tao_luc')
-    .eq('company_id', cid)
+    .eq('company_id', cid);
+  if (demo) q = q.in('id', idsPhien);
+  const { data, error } = await q
     .order('tao_luc', { ascending: false })
     .limit(SO_DONG_TOI_DA);
   if (error) throw new Error(error.message);
