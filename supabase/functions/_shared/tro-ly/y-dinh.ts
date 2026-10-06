@@ -47,9 +47,10 @@ const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   [/\b(chung tu|thieu hoa don|chua co hoa don|hoa don dau vao|hoa don mua vao)\b/, 'thieu_chung_tu'],
   [/\b(qua han|cong no|phai thu|khach no|no tien|chua thu|hoa don ban)\b/, 'hoa_don_qua_han'],
   [/\b(doi soat|doi chieu|khop tien|tien ve|da thu|chua khop)\b/, 'doi_soat'],
-  [/\b(dong tien|thu chi|tien vao|tien ra)\b/, 'dong_tien'],
+  // Cách nói thường ngày của chủ hộ (06/10/2026): "tháng này thu bao nhiêu" trước đây rơi vào "chưa trả lời được".
+  [/\b(dong tien|thu chi|tien vao|tien ra|(?<!doanh )thu (duoc )?bao nhieu|thu ve bao nhieu|con (lai )?bao nhieu tien|so du)\b/, 'dong_tien'],
   [/\b(ngan hang|sao ke|casso|sepay|dong bo)\b/, 'ket_noi_ngan_hang'],
-  [/\b(bao cao|loi nhuan|doanh thu|lai lo)\b/, 'bao_cao_tai_chinh'],
+  [/\b(bao cao|loi nhuan|doanh thu|lai lo|loi hay lo|lai hay lo|(lai|loi|lo|ban duoc|kiem duoc) bao nhieu)\b/, 'bao_cao_tai_chinh'],
   [/\b(tiet kiem|cat giam|giam chi|bi trung|tra trung|tru hai lan|trung lap)\b/, 'phan_tich_tiet_kiem'],
   [/\b(ket noi|tich hop|plugin|tong cuc thue|co quan thue)\b/, 'tat_ca_ket_noi'],
   [/\b(chi phi|khoan chi|chi tieu|chi bao nhieu|chi het bao nhieu|tieu bao nhieu)\b/, 'chi_phi_thang'],

@@ -25,6 +25,13 @@ describe('nhận ý định không cần mô hình', () => {
     expect(nhanYDinh('Kết nối Tổng cục Thuế đã chạy chưa?')).toEqual(['tat_ca_ket_noi']);
   });
 
+  it('cách nói thường ngày của chủ hộ không rơi vào "chưa trả lời được"', () => {
+    expect(nhanYDinh('Tháng này thu bao nhiêu?')).toContain('dong_tien');
+    expect(nhanYDinh('Tôi còn bao nhiêu tiền?')).toContain('dong_tien');
+    expect(nhanYDinh('Tháng này lời hay lỗ?')).toContain('bao_cao_tai_chinh');
+    expect(nhanYDinh('Bán được bao nhiêu rồi?')).toContain('bao_cao_tai_chinh');
+  });
+
   it('câu hỏi về thuế đi vào năng lực nghĩa vụ thuế', () => {
     expect(nhanYDinh('Năm nay tôi có phải nộp thuế không?')).toEqual(['nghia_vu_thue']);
     expect(nhanYDinh('to khai thue quy nay the nao')).toEqual(['nghia_vu_thue']);
