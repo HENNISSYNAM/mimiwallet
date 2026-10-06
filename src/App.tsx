@@ -45,7 +45,7 @@ const TriTueNhanTaoPage = lazy(() => import("./pages/TriTueNhanTaoPage"));
 const Login = lazy(() => import("./pages/Login"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const BankCallback = lazy(() => import("./pages/BankCallback"));
-const Onboarding = lazy(() => import("./pages/Onboarding"));
+const DangKy = lazy(() => import("./pages/LienHeDungThat"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
@@ -166,7 +166,7 @@ const App = () => (
                   ProtectedRoute's dashboard subtree because Cas navigates the
                   browser here directly, and it must resolve on its own. */}
               <Route path="/bank/callback" element={<Page noIndex path="/bank/callback" title="Đang liên kết ngân hàng — MIMI WALLET" description="Hoàn tất kết nối tài khoản ngân hàng của bạn với MIMI Wallet để đồng bộ sao kê tự động."><BankCallback /></Page>} />
-              <Route path="/register" element={<Page path="/register" title="Tạo tài khoản — MIMI WALLET" description="Đăng ký MIMI Wallet trong vài phút: kết nối ngân hàng, nhập mã số thuế và bắt đầu quản lý dòng tiền doanh nghiệp."><Onboarding /></Page>} />
+              <Route path="/register" element={<Page path="/register" title="Dùng thử MIMI — MIMI WALLET" description="Xem ngay bản demo MIMI Wallet với cửa hàng mẫu, hoặc liên hệ để dùng MIMI cho sổ sách thật của doanh nghiệp."><DangKy /></Page>} />
               <Route path="/admin" element={<Page noIndex path="/admin" title="Quản trị — MIMI WALLET" description="Bảng điều khiển quản trị nội bộ của MIMI Wallet dành riêng cho tài khoản có quyền admin."><AdminPage /></Page>} />
               <Route
                 path="/dashboard"

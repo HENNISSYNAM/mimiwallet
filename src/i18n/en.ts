@@ -7,8 +7,8 @@ const en = {
     customers: 'Customers',
     about: 'About us',
     login: 'Sign In',
-    startFree: 'Get Started Free →',
-    startFreeMobile: 'Get Started Free',
+    startFree: 'Try it now →',
+    startFreeMobile: 'Try it now',
   },
 
   // Loading
@@ -24,7 +24,7 @@ const en = {
     titleLine2: 'not on revenue',
     subtitle: 'The law lets you choose how your tax is calculated — but only if you can document your costs. MIMI reads your bank statements and builds that cost record for you.',
     subtitleBold: 'A few taps a day, and your books are ready when filing season arrives.',
-    ctaPrimary: 'Start Free — 5 minutes →',
+    ctaPrimary: 'See the demo →',
     ctaSecondary: 'Watch 2-min demo',
     trustGreen: 'Lump-sum tax ends 2026',
     trustCarbon: 'Documented costs',

@@ -7,8 +7,8 @@ const vi = {
     customers: 'Khách hàng',
     about: 'Về chúng tôi',
     login: 'Đăng nhập',
-    startFree: 'Bắt đầu miễn phí →',
-    startFreeMobile: 'Bắt đầu miễn phí',
+    startFree: 'Dùng thử ngay →',
+    startFreeMobile: 'Dùng thử ngay',
   },
 
   // Loading
@@ -35,7 +35,7 @@ const vi = {
     titleLine2: 'không phải trên doanh thu',
     subtitle: 'Luật cho bạn chọn cách tính thuế — nhưng chỉ khi chứng minh được chi phí. MIMI đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó cho bạn.',
     subtitleBold: 'Mỗi ngày vài chạm, tới kỳ kê khai là đã xong sổ.',
-    ctaPrimary: 'Bắt đầu miễn phí — 5 phút →',
+    ctaPrimary: 'Xem demo ngay →',
     ctaSecondary: 'Xem demo 2 phút',
     trustGreen: 'Hết thuế khoán 2026',
     trustCarbon: 'Chi phí có chứng từ',
