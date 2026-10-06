@@ -29,7 +29,7 @@ export const TEN_NHOM_CONG_CU: Record<NhomCongCu, string> = {
   thue: 'Thuế',
   ngan_hang: 'Ngân hàng & dòng tiền',
   chi_tieu: 'Kiểm soát chi',
-  ai: 'Chi phí AI',
+  ai: 'Tuỳ chọn · cho công ty dùng AI',
   ban_hang: 'Bán hàng & công nợ',
 };
 
@@ -38,7 +38,7 @@ const DANH_MUC_DAY_DU: CongCu[] = [
   { khoa: 'soan_to_khai', ten: 'Soạn tờ khai thuế', nhom: 'thue', loai: 'trang', dich: '/dashboard/to-khai', mo_ta: 'MIMI điền mẫu tờ khai từ hoá đơn, sao kê và quy định trong kho văn bản.', tu_khoa: ['to khai', 'khai thue', 'thong bao doanh thu', 'gtgt', 'tncn'] },
   { khoa: 'doc_bao_cao', ten: 'Đọc báo cáo tài chính & tờ khai', nhom: 'thue', loai: 'trang', dich: '/dashboard/doc-bao-cao', mo_ta: 'Tải báo cáo tài chính hoặc tờ khai (Excel/CSV): xếp từng chỉ tiêu, kiểm đẳng thức kế toán, cảnh báo mẫu hết hiệu lực.', tu_khoa: ['bao cao tai chinh', 'bang can doi ke toan', 'tinh hinh tai chinh', 'ket qua kinh doanh', 'luu chuyen tien te', 'quyet toan', 'b01', 'b02'] },
   { khoa: 'bao_cao', ten: 'Báo cáo thu chi', nhom: 'thue', loai: 'trang', dich: '/dashboard/reports', mo_ta: 'Thu, chi, chênh lệch theo tháng từ sao kê ngân hàng.', tu_khoa: ['loi nhuan', 'lai lo', 'bao cao'] },
-  { khoa: 'lien_ket_ngan_hang', ten: 'Liên kết ngân hàng', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/fintech', mo_ta: 'Liên kết tài khoản, nhận tiền QR, kết nối Tổng cục Thuế.', tu_khoa: ['casso', 'sepay', 'qr', 'tong cuc thue'] },
+  { khoa: 'lien_ket_ngan_hang', ten: 'Liên kết ngân hàng', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/fintech', mo_ta: 'Liên kết tài khoản để MIMI đọc tiền vào, tiền ra; nhận tiền bằng mã QR.', tu_khoa: ['casso', 'sepay', 'qr', 'sao ke'] },
   { khoa: 'tach_chi_ca_nhan', ten: 'Tách chi cá nhân', nhom: 'thue', loai: 'trang', dich: '/dashboard/chi-ca-nhan', mo_ta: 'Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi dùng chung một tài khoản.', tu_khoa: ['ca nhan', 'gia dinh', 'chi phi kinh doanh', 'chung tai khoan'] },
   { khoa: 'viec_can_lam', ten: 'Việc cần làm', nhom: 'thue', loai: 'trang', dich: '/dashboard/viec-can-lam', mo_ta: 'Tạm ngừng, kinh doanh lại, đóng mã số thuế, hoá đơn sai, trả lời giải trình — hỏi từng câu, làm từng bước.', tu_khoa: ['tam ngung', 'giai trinh', 'hoa don sai', 'dong ma so thue', 'giai the', 'mo ho kinh doanh'] },
   { khoa: 'tai_lieu', ten: 'Tài liệu & Chứng từ', nhom: 'thue', loai: 'trang', dich: '/dashboard/tai-lieu', mo_ta: 'Báo cáo phân tích, gói sẵn sàng khai thuế, gói bằng chứng, công văn MIMI soạn.', tu_khoa: ['bao cao', 'goi bang chung', 'tai lieu', 'cong van'] },
@@ -46,10 +46,11 @@ const DANH_MUC_DAY_DU: CongCu[] = [
   { khoa: 'kiem_truoc_khi_chuyen', ten: 'Kiểm tra trước khi chuyển tiền', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/kiem-truoc-khi-chuyen', mo_ta: 'So khoản sắp chuyển với lịch sử chi: đổi số tài khoản, người nhận lạ, kịch bản lừa đảo.', tu_khoa: ['lua dao', 'doi so tai khoan', 'chuyen khoan', 'an toan'] },
   { khoa: 'kiem_soat_agent', ten: 'Kiểm soát agent', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/tac-tu', mo_ta: 'Agent AI được phép xin chi, hạn mức, người nhận.', tu_khoa: ['agent', 'bot', 'han muc'] },
   { khoa: 'chinh_sach_chi', ten: 'Chính sách chi', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/chinh-sach', mo_ta: 'Ngưỡng duyệt, hạn mức, nhóm chi cho từng agent.', tu_khoa: ['quy dinh', 'nguong duyet'] },
-  { khoa: 'chi_phi_ai', ten: 'Chi phí AI', nhom: 'ai', loai: 'trang', dich: '/dashboard/chi-phi-ai', mo_ta: 'Chi phí OpenAI, Anthropic, Gemini, OpenRouter so với ngân sách.', tu_khoa: ['openai', 'claude', 'gemini', 'ngan sach'] },
-  { khoa: 'model_re_hon', ten: 'Model AI rẻ hơn', nhom: 'ai', loai: 'hoi', dich: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.', mo_ta: 'So giá token với model rẻ hơn cùng hãng — chưa đo chất lượng.', tu_khoa: ['token', 'toi uu', 'tiet kiem'] },
   { khoa: 'hoa_don_ban', ten: 'Hoá đơn bán ra', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/invoices', mo_ta: 'Lập hoá đơn cho khách và theo dõi khoản chưa thu.', tu_khoa: ['xuat hoa don', 'phai thu'] },
   { khoa: 'khach_hang', ten: 'Khách hàng', nhom: 'ban_hang', loai: 'trang', dich: '/dashboard/clients', mo_ta: 'Danh sách khách, mã số thuế, tình trạng tiếp cận.', tu_khoa: ['doi tac', 'ma so thue', 'crm'] },
+  // 06/10/2026: nhóm TUỲ CHỌN, đứng cuối kho — chỉ công ty có dùng dịch vụ AI mới cần; không ghim sẵn cho ai.
+  { khoa: 'chi_phi_ai', ten: 'Chi phí AI', nhom: 'ai', loai: 'trang', dich: '/dashboard/chi-phi-ai', mo_ta: 'Chi phí OpenAI, Anthropic, Gemini, OpenRouter so với ngân sách.', tu_khoa: ['openai', 'claude', 'gemini', 'ngan sach'] },
+  { khoa: 'model_re_hon', ten: 'Model AI rẻ hơn', nhom: 'ai', loai: 'hoi', dich: 'Tìm các khoản chi AI vượt ngân sách và đề xuất model rẻ hơn.', mo_ta: 'So giá token với model rẻ hơn cùng hãng — chưa đo chất lượng.', tu_khoa: ['token', 'toi uu', 'tiet kiem'] },
 ];
 
 /** Danh mục người dùng thấy: bỏ công cụ đóng băng (`lib/dongBang.ts`) — mã và dữ liệu vẫn giữ. */
@@ -114,7 +115,7 @@ export function duongDanCongCu(c: CongCu): string {
  *
  *   Hộ kinh doanh          → chứng từ chi phí, soạn tờ khai (ai cũng cần)
  *   Bán trên nền tảng số   → liên kết ngân hàng (thu tiền, tự khớp khi tiền về)
- *   Phần mềm & AI          → chi phí AI, model rẻ hơn
+ *   Phần mềm & AI          → (chi phí AI là nhóm tuỳ chọn, tự thêm từ kho)
  *   Dịch vụ chuyên môn     → hoá đơn bán ra, khách hàng
  *   Bán lẻ, sản xuất       → báo cáo thu chi
  *   Doanh nghiệp           → chính sách chi, kiểm soát agent
@@ -130,7 +131,7 @@ export function congCuGoiY(h: {
   // 28/09/2026: vòng chính (kiểm trước khi chuyển + sao kê để đối soát) đứng đầu cho MỌI ngành; thuế theo sau.
   const ds = ['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu'];
   for (const n of h.nhom_nganh) {
-    if (n === 'noi_dung_so') ds.push('chi_phi_ai', 'model_re_hon');
+    // Chi phí AI là nhóm tuỳ chọn (06/10/2026): người cần tự thêm từ kho công cụ, không gợi ý sẵn theo ngành.
     if (n === 'dich_vu') ds.push('hoa_don_ban', 'khach_hang');
     if (n === 'cho_thue_tai_san') ds.push('hoa_don_ban');
     if (n === 'phan_phoi_hang_hoa' || n === 'san_xuat_van_tai' || n === 'khac') ds.push('bao_cao');

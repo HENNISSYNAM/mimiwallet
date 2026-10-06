@@ -7,9 +7,9 @@ import { DANH_MUC_CONG_CU } from '@/lib/congCu';
 
 describe('tính năng đóng băng', () => {
   it('đường dẫn cũ hiện trang giải thích, dẫn về việc chính — không chuyển hướng im lặng', () => {
-    render(<MemoryRouter initialEntries={['/dashboard/chi-phi-ai']}><TamDungPage /></MemoryRouter>);
-    expect(screen.getByRole('heading', { name: 'Chi phí AI đang tạm dừng' })).toBeTruthy();
-    expect(screen.getByText(/dữ liệu cũ vẫn được giữ nguyên/)).toBeTruthy();
+    render(<MemoryRouter initialEntries={['/dashboard/clients']}><TamDungPage /></MemoryRouter>);
+    expect(screen.getByRole('heading', { name: 'Khách hàng đang tạm dừng' })).toBeTruthy();
+    expect(screen.getByText(/dữ liệu cũ vẫn được giữ nguyên/i)).toBeTruthy();
     expect(screen.getByRole('link', { name: /Kiểm tra một khoản trước khi chuyển/ }).getAttribute('href')).toBe('/dashboard/kiem-truoc-khi-chuyen');
   });
 

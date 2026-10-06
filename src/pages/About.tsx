@@ -57,10 +57,11 @@ export default function About() {
                 transition={{ duration: 0.6, delay: 0.16 }}
                 className="mimi-doan-dan mt-6 max-w-xl text-muted-foreground"
               >
-                Mimi Wallet bắt đầu từ một quan sát đơn giản: hộ kinh doanh không phải là khách
-                vay xấu, họ chỉ vô hình với ngân hàng. Không báo cáo kiểm toán, không tài sản thế
-                chấp, không hồ sơ tín dụng — nên chi phí thẩm định một khoản vay nhỏ ngang với
-                một khoản vay lớn, và không ai làm.
+                Mimi Wallet bắt đầu từ một quan sát đơn giản: chủ hộ kinh doanh bán hàng cả ngày,
+                đến tối lại ngồi dò sao kê, tìm hoá đơn và tự hỏi mình có phải khai thuế không. Từ
+                2026 bỏ thuế khoán, sổ sách không còn là chuyện để sau — nên chúng tôi làm một trợ
+                lý đọc sao kê, chỉ ra khoản chi còn thiếu chứng từ và chuẩn bị sẵn hồ sơ thuế, để
+                chủ hộ tự kiểm và tự nộp.
               </motion.p>
             </div>
 

@@ -48,9 +48,11 @@ describe('danh mục công cụ', () => {
     // tài chính & tờ khai" đọc tờ khai người dùng tải lên.
     expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['soan_to_khai', 'doc_bao_cao', 'soan_giay_to']);
     expect(timCongCu('bảng cân đối kế toán').map((c) => c.khoa)).toEqual(['doc_bao_cao']);
-    // Chi phí AI đóng băng 28/09/2026 (`lib/dongBang.ts`): không còn trong danh mục người dùng thấy.
-    expect(timCongCu('claude')).toEqual([]);
-    expect(DANH_MUC_CONG_CU.some((c) => c.khoa === 'chi_phi_ai' || c.khoa === 'khach_hang' || c.khoa === 'model_re_hon')).toBe(false);
+    // Chi phí AI (06/10/2026): nhóm "Tuỳ chọn" — tìm được trong kho, nhưng không ghim sẵn, không gợi ý theo ngành.
+    expect(timCongCu('claude').map((c) => c.khoa)).toEqual(['chi_phi_ai']);
+    expect(CONG_CU_THEO_KHOA.chi_phi_ai.nhom).toBe('ai');
+    expect(CONG_CU_MAC_DINH).not.toContain('chi_phi_ai');
+    expect(DANH_MUC_CONG_CU.some((c) => c.khoa === 'khach_hang')).toBe(false);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
     expect(timCongCu('  ')).toHaveLength(DANH_MUC_CONG_CU.length);
   });

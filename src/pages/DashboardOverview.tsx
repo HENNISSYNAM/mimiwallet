@@ -2,8 +2,6 @@ import { motion } from 'framer-motion';
 import MimiCat from '@/components/brand/MimiCat';
 import { tamTrang } from '@/lib/mimiTamTrang';
 import { Wallet, TrendingUp, FileText, ShieldCheck, AlertTriangle, Lightbulb, Bell, ArrowRight, Loader2, Link2 } from 'lucide-react';
-import NewsAndLawPanel from '@/components/NewsAndLawPanel';
-import { DailyBriefCard } from '@/components/DailyBriefCard';
 import WelcomeCards from '@/components/onboarding/WelcomeCards';
 import BatDauTuDau from '@/components/onboarding/BatDauTuDau';
 import TheBatThuong from '@/components/canh-bao/TheBatThuong';
@@ -464,7 +462,7 @@ export default function DashboardOverview() {
         Hai agent đóng vai khách hàng đọc ra cùng điều đó. Nay tin đứng sau đúng
         một thẻ: con số mà màn hình này sinh ra để trả lời.
       */}
-      <motion.div variants={fadeUp}><DailyBriefCard /></motion.div>
+      {/* 06/10/2026: bỏ thẻ bản tin — trang Dòng tiền chỉ nói về tiền của chính cửa hàng. */}
 
       <motion.div variants={stagger} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Compared against last month, which is measurable. The old tile
@@ -711,17 +709,7 @@ export default function DashboardOverview() {
 
       </motion.div>
 
-      {/*
-        Full width, outside the 5-column grid above. It once sat inside that
-        grid as an implicit 1-column item and rendered at a fifth of the row,
-        headlines clipped to two words. The M2M widget that used to share this
-        row was removed on 10/09/2026, so the panel no longer has to adapt.
-      */}
-      <motion.div variants={stagger}>
-        <motion.div variants={fadeUp}>
-          <NewsAndLawPanel wide />
-        </motion.div>
-      </motion.div>
+      {/* 06/10/2026: bỏ bảng tin tức & văn bản luật — văn bản mới vẫn báo qua thông báo và Nhắc thuế. */}
     </motion.div>
   );
 }

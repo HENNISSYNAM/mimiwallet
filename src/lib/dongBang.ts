@@ -10,13 +10,10 @@
  * ĐÓNG BĂNG, KHÔNG XOÁ: mã, bảng dữ liệu và máy chủ giữ nguyên; bỏ một khoá khỏi đây là mở lại.
  * Ai mở đường dẫn cũ thấy trang `TamDung` nói rõ vì sao, không bị chuyển hướng im lặng.
  */
-export const CONG_CU_DONG_BANG = new Set(['chi_phi_ai', 'model_re_hon', 'khach_hang']);
+// 06/10/2026: Chi phí AI + Model AI rẻ hơn mở lại thành nhóm "Tuỳ chọn" trong kho công cụ (không ghim sẵn).
+export const CONG_CU_DONG_BANG = new Set(['khach_hang']);
 
 export const TRANG_DONG_BANG: Record<string, { ten: string; ly_do: string }> = {
-  '/dashboard/chi-phi-ai': {
-    ten: 'Chi phí AI',
-    ly_do: 'MIMI đang tập trung vào một việc: kiểm từng khoản thanh toán trước khi tiền rời tài khoản, rồi đối soát sau khi tiền đi. Theo dõi chi phí AI tạm dừng; dữ liệu cũ vẫn được giữ nguyên.',
-  },
   '/dashboard/clients': {
     ten: 'Khách hàng',
     ly_do: 'Danh sách khách hàng tạm dừng để MIMI tập trung vào kiểm tra khoản thanh toán trước khi chuyển tiền. Dữ liệu cũ vẫn được giữ nguyên.',
