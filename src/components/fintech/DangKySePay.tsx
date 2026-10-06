@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { DANH_SACH_NGAN_HANG } from '@/lib/nganHang';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { toast } from 'sonner';
+import { TrangThaiSePay } from './TrangThaiSePay';
 
 /**
  * Đăng ký tài khoản nhận thông báo SePay.
@@ -47,6 +48,7 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
   const [bin, setBin] = useState('');
   const [tenChu, setTenChu] = useState('');
   const [dangGui, setDangGui] = useState(false);
+  const [lanLuu, setLanLuu] = useState(0);
 
   const nganHang = DANH_SACH_NGAN_HANG.find((n) => n.bin === bin) ?? null;
   const hopLe = /^\d{6,20}$/.test(soTaiKhoan.replace(/\s/g, '')) && !!nganHang;
@@ -71,7 +73,8 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
       });
       const kq = await res.json();
       if (!res.ok || kq?.error) throw new Error(kq?.error ?? `Lỗi ${res.status}`);
-      toast.success('Đã đăng ký. Tiền vào tài khoản này sẽ tự khớp với mã QR đang chờ.');
+      toast.success('Đã lưu số tài khoản. MIMI sẽ ghi tiền về khi SePay bắt đầu gửi thông báo cho tài khoản này.');
+      setLanLuu((n) => n + 1);
       setSoTaiKhoan('');
       setTenChu('');
       onXong?.();
@@ -150,6 +153,7 @@ export function DangKySePay({ onXong }: { onXong?: () => void }) {
             {dangGui && <Loader2 size={14} className="animate-spin" />}
             Đăng ký nhận thông báo
           </button>
+          <TrangThaiSePay lamMoi={lanLuu} />
         </div>
       </div>
     </div>
