@@ -9,7 +9,8 @@ import { CaiDatPet } from '@/components/settings/CaiDatPet';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection';
-import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { ChuaBanTrongApp, SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { laTrongApp } from '@/lib/chayTrongApp';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
 import { DangXuatMoiThietBi } from '@/components/settings/DangXuatMoiThietBi';
@@ -158,7 +159,7 @@ function SubscriptionSection() {
               {key === 'growth' && !isActive && (
                 <p className="mt-4 w-full rounded-xl bg-muted py-2.5 text-center text-xs text-muted-foreground">Sắp mở</p>
               )}
-              {!isActive && key !== 'growth' && (
+              {!isActive && key !== 'growth' && !laTrongApp() && (
                 <motion.button
                   whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.98 }}
@@ -180,6 +181,7 @@ function SubscriptionSection() {
       {/* Màn hình chuyển khoản, hiện ngay dưới lưới gói thay vì mở tab Stripe
           mới. Stripe không nhận merchant Việt Nam nên đường cũ không bao giờ
           thu được tiền của khách hàng Việt. */}
+      {laTrongApp() && <ChuaBanTrongApp />}
       {goiDangTra && (
         <SubscriptionPayment
           plan={goiDangTra}

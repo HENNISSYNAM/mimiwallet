@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { laTrongApp } from '@/lib/chayTrongApp';
+import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,7 +76,22 @@ function DongChep({ nhan, giaTri, icon: Icon, mono }: {
  * `plan` để trả gói tháng; `soLuot` để mua lượt xuất tờ khai (10.000đ một lượt). Giá do máy chủ
  * tính — màn hình chỉ nói mình muốn mua gì.
  */
-export function SubscriptionPayment({ plan, soLuot, onPaid }: { plan?: string; soLuot?: number; onPaid?: () => void }) {
+/**
+ * Bản Android trên Google Play (TWA) không bán gì trong app (06/10/2026): Play bắt thu phí số qua Google Play Billing,
+ * MIMI thu bằng VietQR. Trong app chỉ nói là chưa mua được ở đây — không giá, không đường dẫn ra ngoài để mua
+ * (chính sách chống lái người dùng ra ngoài của Play). Xem src/lib/chayTrongApp.ts.
+ */
+export function SubscriptionPayment(props: { plan?: string; soLuot?: number; onPaid?: () => void }) {
+  if (laTrongApp()) return <ChuaBanTrongApp />;
+  return <ManChuyenKhoan {...props} />;
+}
+
+export function ChuaBanTrongApp() {
+  const { t } = useTranslation();
+  return <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">{t('app.chuaBanTrongApp')}</p>;
+}
+
+function ManChuyenKhoan({ plan, soLuot, onPaid }: { plan?: string; soLuot?: number; onPaid?: () => void }) {
   const [hoaDon, setHoaDon] = useState<HoaDon | null>(null);
   const [dangTao, setDangTao] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);

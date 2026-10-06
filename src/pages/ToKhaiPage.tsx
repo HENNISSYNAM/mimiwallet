@@ -9,7 +9,8 @@ import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type DongPhuLucGiaiTrinh, type KetQuaPhanTich, type ThanhToanToKhai } from '@/lib/goiToKhai';
 import { TEN_VAI_TRO } from '../../supabase/functions/_shared/quyen/vai-tro.ts';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
-import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { ChuaBanTrongApp, SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { laTrongApp } from '@/lib/chayTrongApp';
 import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
 import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
@@ -652,7 +653,8 @@ export default function ToKhaiPage() {
                     <p className="mt-2 text-xs text-muted-foreground">
                       {t('app.toKhai.nhap.hanNop', { ngay: ngay(kq.to_khai.han_nop) })}
                     </p>
-                    {canMua && (
+                    {canMua && laTrongApp() && <div className="mt-4"><ChuaBanTrongApp /></div>}
+                    {canMua && !laTrongApp() && (
                       <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
                         <p className="text-sm font-medium text-foreground">{t('app.toKhai.nhap.xuatGia', { gia: dinhDangTien(kq.thanh_toan.gia_mot_to) })}</p>
                         <p className="mt-1 text-xs text-muted-foreground">

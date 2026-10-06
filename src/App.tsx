@@ -156,7 +156,7 @@ const App = () => (
                 <Route key={m.duong} path={m.duong} element={<Page path={m.duong} title={`${m.tieuDe} — MIMI WALLET`} description={m.moTa}>{m.slug === "bao-mat" ? <Privacy /> : <TrangChinhSach slug={m.slug} />}</Page>} />
               ))}
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
-              <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, khoản vay và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
+              <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, thuế và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
               {/* Khôi phục mật khẩu. Trước đây KHÔNG có đường nào: chỉ có "Đổi
                   mật khẩu" trong Cài đặt, mà muốn vào Cài đặt thì phải đăng
                   nhập được đã — tức ai quên mật khẩu là mất tài khoản. */}

@@ -4,6 +4,7 @@
  */
 const m = {
   app: {
+    chuaBanTrongApp: '모바일 앱에서는 아직 요금제나 이용권을 구매할 수 없습니다.',
     // <chung>
     chung: {
       huy: '취소',

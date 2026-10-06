@@ -4,6 +4,7 @@
  */
 const m = {
   app: {
+    chuaBanTrongApp: 'The mobile app does not support buying plans or credits yet.',
     // <chung>
     chung: {
       huy: 'Cancel',

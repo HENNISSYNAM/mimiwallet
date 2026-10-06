@@ -4,6 +4,7 @@
  */
 const m = {
   app: {
+    chuaBanTrongApp: '手机应用暂不支持购买套餐或次数。',
     // <chung>
     chung: {
       huy: '取消',

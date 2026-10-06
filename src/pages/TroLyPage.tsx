@@ -28,6 +28,7 @@ import {
 import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
 import { DauKetNoi } from '@/components/tro-ly/DauKetNoi';
 import { NutBangChung } from '@/components/tro-ly/NutBangChung';
+import { NutBaoAI } from '@/components/tro-ly/NutBaoAI';
 import { dongBoSaoKe, goiTroLy } from '@/lib/goiTroLy';
 import { goiTacTu } from '@/lib/goiTacTu';
 import { canXacMinh, type DauHieu } from '@/lib/batThuong';
@@ -749,6 +750,7 @@ function TraLoiMimi({ luotId, traLoi, dangDoc, onDoc, viec, onChon }: {
         >
           {dangDoc ? <Square size={14} /> : <Volume2 size={16} />}
         </button>
+        <NutBaoAI cauTraLoi={traLoi.cau} />
       </div>
       {traLoi.ket_qua.map((r) => (
         <KetQua key={r.nang_luc} luotId={luotId} r={r} viec={viec} yeuCauDaXong={yeuCauDaXong} onChon={onChon} />

@@ -4,6 +4,7 @@
  */
 const m = {
   app: {
+    chuaBanTrongApp: 'Bản ứng dụng trên điện thoại chưa hỗ trợ mua gói hay mua lượt.',
     // <chung>
     chung: {
       huy: 'Huỷ',

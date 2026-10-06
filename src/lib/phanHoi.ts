@@ -11,7 +11,7 @@ import { lamSachDuongDan } from './ghiLoi';
  * hỏi thừa một lần không hại bằng không bao giờ hỏi). Gửi hỏng thì nuốt: đo lường không được làm hỏng sản phẩm.
  */
 
-export type CauHoi = 'sao_ke_khop' | 'doanh_thu_dung' | 'doi_soat_de_kho' | 'sean_ellis';
+export type CauHoi = 'sao_ke_khop' | 'doanh_thu_dung' | 'doi_soat_de_kho' | 'sean_ellis' | 'bao_tra_loi_ai';
 
 const khoa = (c: CauHoi, cty: string | null) => `mimi.phan_hoi.${c}.${cty ?? 'chung'}`;
 

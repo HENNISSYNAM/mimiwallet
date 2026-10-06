@@ -23,7 +23,7 @@ export function TrangThaiSePay({ lamMoi = 0 }: { lamMoi?: number }) {
       if (!cid) return;
       const [{ data: kn }, { count, data: cuoi }] = await Promise.all([
         supabase.from('bank_connections').select('account_number, bank_name').eq('company_id', cid).eq('provider', 'sepay').eq('status', 'connected'),
-        supabase.from('transactions').select('transaction_date', { count: 'exact' }).eq('company_id', cid).like('reference_id', 'sepay:%')
+        supabase.from('transactions').select('transaction_date', { count: 'exact' }).eq('company_id', cid).like('reference_id', 'sepay:%').eq('is_synthetic', false)
           .order('transaction_date', { ascending: false }).limit(1),
       ]);
       if (huy) return;
