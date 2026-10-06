@@ -15,7 +15,9 @@ import tempfile
 OUT = os.path.dirname(os.path.abspath(__file__))
 TMP = os.path.join(tempfile.gettempdir(), "mimi-chup-ho-so")
 os.makedirs(TMP, exist_ok=True)
-EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+# Trình duyệt chạy nền: Chrome nếu có (06/10/2026 Edge headless trên máy chủ dự án ngừng xuất trang), không thì Edge.
+CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+EDGE = CHROME if os.path.exists(CHROME) else r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8091").rstrip("/")
 PROD = "https://www.mimiwallet.online"
 
