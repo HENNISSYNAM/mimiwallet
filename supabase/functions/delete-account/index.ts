@@ -77,6 +77,9 @@ Deno.serve(async (req) => {
       error: authError,
     } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return json({ error: "Invalid token" }, 401);
+    // Tài khoản demo dùng chung: một khách vãng lai xoá là nút demo chết với mọi người (kiểm 06/10/2026).
+    const { data: hoSo } = await supabase.from("profiles").select("is_demo").eq("user_id", user.id).maybeSingle();
+    if (hoSo?.is_demo) return json({ error: "Bản demo dùng chung không xoá được. Liên hệ MIMI để dùng bản thật." }, 403);
     // Giới hạn tần suất mỗi người (26/09/2026): chống bot và script dội yêu cầu.
     if (!(await duocGoi(supabase, user.id, [{ hanh_dong: "xoa_tai_khoan_gio", cua_so_giay: 3600, toi_da: 5 }], false))) return qua429(corsHeaders);
 

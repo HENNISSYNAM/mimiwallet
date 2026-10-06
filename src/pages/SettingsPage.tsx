@@ -13,6 +13,8 @@ import { SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
 import { DangXuatMoiThietBi } from '@/components/settings/DangXuatMoiThietBi';
+import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
+import { DEMO_EMAIL } from '@/lib/env';
 import { dinhDangTien } from '@/lib/tien';
 
 /*
@@ -329,6 +331,8 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  // Bản demo dùng chung (06/10/2026): khoá mọi thao tác tài khoản — một khách xoá/đổi mật khẩu là demo chết với mọi người.
+  const laDemo = !!DEMO_EMAIL && user?.email?.toLowerCase() === DEMO_EMAIL.toLowerCase();
 
   // Bỏ "Xác thực 2 lớp" và "Quản lý thiết bị" (27/09/2026): hai nút chỉ hiện "sẽ ra mắt sớm". Thay bằng
   // "Đăng xuất khỏi mọi thiết bị" — có thật ở máy chủ (DangXuatMoiThietBi).
@@ -352,6 +356,14 @@ export default function SettingsPage() {
       {/* Truoc 08/09/2026 khoi nay doc `companyProfile` tu mockData, nen moi
           nguoi dung deu thay ten, ma so thue, nganh va tinh cua mot cong ty
           khong co that — trinh bay nhu ho so cua chinh ho. */}
+      {laDemo && (
+        <motion.div variants={fadeUp} role="note" className="rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm text-foreground">
+          Đây là bản demo dùng chung nên thông tin doanh nghiệp, thành viên, gói, mật khẩu và xoá tài khoản đã được khoá.
+          Muốn dùng MIMI cho sổ sách thật, <a href="/register" className="font-medium text-primary hover:underline">liên hệ MIMI</a>.
+        </motion.div>
+      )}
+
+      {!laDemo && (<>
       <SettingsSection icon={Building} title={t('settings.business')}>
         <ThongTinDoanhNghiep />
       </SettingsSection>
@@ -365,14 +377,19 @@ export default function SettingsPage() {
         <SubscriptionSection />
       </SettingsSection>
 
+      </>)}
+
+      {/* 06/10/2026: thay hai công tắc cũ (ghi notification_prefs mà không máy chủ nào đọc) bằng bộ bật/tắt thông báo
+          thật — cùng khối với trang Nhắc thuế. */}
       <SettingsSection icon={Bell} title={t('settings.notifications')}>
-        <NotificationToggles />
+        <CaiDatThongBao />
       </SettingsSection>
 
       <SettingsSection icon={Cat} title="Pet MIMI">
         <CaiDatPet />
       </SettingsSection>
 
+      {!laDemo && (<>
       <SettingsSection icon={Shield} title={t('settings.securityTitle')}>
         <div className="space-y-1">
           {securityItems.map((item) => (
@@ -388,6 +405,7 @@ export default function SettingsPage() {
           <DangXuatMoiThietBi sauKhiXong={() => navigate('/')} />
         </div>
       </SettingsSection>
+      </>)}
 
       <motion.div variants={fadeUp}>
         <button
@@ -401,7 +419,7 @@ export default function SettingsPage() {
       {/* Cuối trang, sau khi mọi thứ khác đã đọc xong — nhưng vẫn nằm trong
           Cài đặt chứ không đẩy ra một trang web riêng, vì App Store Guideline
           5.1.1(v) yêu cầu xoá được ngay trong ứng dụng. */}
-      <motion.div variants={fadeUp}><DeleteAccountSection /></motion.div>
+      {!laDemo && <motion.div variants={fadeUp}><DeleteAccountSection /></motion.div>}
 
       <ChangePasswordModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
     </motion.div>

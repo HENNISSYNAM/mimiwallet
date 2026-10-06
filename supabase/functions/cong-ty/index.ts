@@ -113,6 +113,11 @@ Deno.serve(async (req) => {
     const hanhDong = String(body.hanh_dong ?? "");
     const gh = GIOI_HAN[hanhDong];
     if (!gh) return loi("THAM_SO", "Hành động không hợp lệ.", 400);
+    // Bản demo dùng chung chỉ được xem danh sách: không mời, gỡ, đổi vai — tránh khách vãng lai dò email hay thêm người lạ.
+    if (hanhDong !== "thanh_vien") {
+      const { data: hoSo } = await db.from("profiles").select("is_demo").eq("user_id", user.id).maybeSingle();
+      if (hoSo?.is_demo) return loi("BAN_DEMO", "Bản demo dùng chung không đổi được thành viên. Liên hệ MIMI để dùng bản thật.", 403);
+    }
     const { data: duoc, error: loiDem } = await db.rpc("tang_luot_goi", {
       p_user: user.id, p_hanh_dong: `cong_ty:${hanhDong}`, p_cua_so_giay: gh.cuaSoGiay, p_toi_da: gh.toiDa,
     });
@@ -140,7 +145,7 @@ Deno.serve(async (req) => {
 
       const nguoi = await timTheoEmail(db, email);
       if (!nguoi) {
-        return loi("CHUA_CO_TAI_KHOAN", "Email này chưa có tài khoản MIMI. Nhờ người đó đăng ký MIMI trước (đăng nhập bằng Google là nhanh nhất), rồi thêm lại.", 404);
+        return loi("CHUA_CO_TAI_KHOAN", "Email này chưa có tài khoản MIMI. MIMI đang mở tài khoản theo yêu cầu: liên hệ MIMI để mở tài khoản cho người này, rồi thêm lại.", 404);
       }
       const daCo = ds.find((r) => r.user_id === nguoi.id) ?? null;
       const kt = kiemThaoTac({ thaoTac: "moi", nguoiLam: toi, doiTuong: daCo && { id: daCo.user_id, vai_tro: daCo.vai_tro }, vaiTroMoi: vaiTro, soChuSoHuu: demChu(ds) });
