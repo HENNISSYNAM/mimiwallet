@@ -26,11 +26,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.mimiwallet.online/tai-nguyen</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.mimiwallet.online/tuyen-dung</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>

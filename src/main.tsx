@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { ghiAnhDungSan } from "./lib/anhDungSan";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import AppErrorBoundary from "./components/AppErrorBoundary.tsx";
@@ -52,10 +53,17 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
+const goc = document.getElementById("root")!;
+const cay = (
   <AppErrorBoundary>
     <HelmetProvider>
       <App />
     </HelmetProvider>
   </AppErrorBoundary>
 );
+/*
+ * Trang công khai có HTML dựng sẵn lúc build (`scripts/dung-san-html.mjs`) để máy tìm kiếm và trợ lý AI đọc được mà
+ * không chạy JS. Giữ lại ảnh đó làm màn chờ của chính trang này (lib/anhDungSan.ts) rồi render bình thường.
+ */
+if (goc.dataset.dungSan === "1") ghiAnhDungSan(window.location.pathname, goc.innerHTML);
+createRoot(goc).render(cay);

@@ -21,7 +21,6 @@ export function danhSachTrangCongKhai(): Muc[] {
     { duong: '/login', tanSuat: 'monthly', uuTien: 0.5 },
     { duong: '/tri-tue-nhan-tao', tanSuat: 'monthly', uuTien: 0.7 },
     { duong: '/khach-hang', tanSuat: 'monthly', uuTien: 0.6 },
-    { duong: '/tai-nguyen', tanSuat: 'weekly', uuTien: 0.6 },
     { duong: '/tuyen-dung', tanSuat: 'monthly', uuTien: 0.4 },
     { duong: '/about', tanSuat: 'monthly', uuTien: 0.5 },
     { duong: '/thuong-hieu', tanSuat: 'yearly', uuTien: 0.3 },

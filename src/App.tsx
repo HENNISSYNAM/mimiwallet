@@ -9,6 +9,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Seo from "@/components/Seo";
+import { layAnhDungSan } from "@/lib/anhDungSan";
 import { DANH_MUC_CHINH_SACH, TRANG_THONG_TIN } from "@/pages/chinh-sach/danhMuc";
 
 /** Gắn thẻ head riêng cho từng route mà không phải sửa từng trang. */
@@ -85,6 +86,9 @@ const queryClient = new QueryClient();
 
 /** Màn hình chờ — khung cảnh đổi theo giờ, xem `brand/ManHinhCho.tsx`. */
 function LoadingFallback() {
+  // Trang đầu có HTML dựng sẵn: hiện đúng HTML đó trong lúc tải, không nháy sang màn chờ.
+  const html = layAnhDungSan();
+  if (html) return <div style={{ display: "contents" }} dangerouslySetInnerHTML={{ __html: html }} />;
   return <ManHinhCho />;
 }
 
@@ -101,7 +105,13 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const App = () => (
+/**
+ * `router`: bộ định tuyến. Mặc định là BrowserRouter; lúc dựng sẵn HTML (`scripts/dung-san-html.mjs`) truyền
+ * StaticRouter với đúng đường dẫn đang dựng.
+ */
+const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode }) => React.ReactElement } = {}) => {
+  const Router = BoDinhTuyen ?? BrowserRouter;
+  return (
   /* `attribute="class"` để next-themes gắn `class="dark"` lên <html> — đúng cái
      tên mà `darkMode: ["class"]` trong tailwind.config.ts đang chờ. Trước đây
      CSS khai `.theme-dark`, nên không bên nào gặp bên nào.
@@ -120,13 +130,13 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <Router>
         <AuthInitializer>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               <Route path="/" element={<Page path="/" title="MIMI WALLET — Trợ lý sổ sách và thuế cho hộ kinh doanh" description="MIMI đọc sao kê ngân hàng, chỉ ra khoản chi còn thiếu chứng từ, nhắc hạn thuế theo đúng hồ sơ của bạn và soạn sẵn bản nháp tờ khai có nguồn từng con số. Bạn tự kiểm và tự nộp. MIMI không giữ tiền, không chuyển tiền."><Landing /></Page>} />
               <Route path="/khach-hang" element={<Page path="/khach-hang" title="Khách hàng — MIMI WALLET" description="MIMI làm gì cho hộ kinh doanh, doanh nghiệp nhỏ và vừa, startup và văn phòng kế toán."><KhachHang /></Page>} />
-              <Route path="/about" element={<Page path="/about" title="Về chúng tôi — MIMI WALLET" description="Câu chuyện và đội ngũ đứng sau MIMI Wallet: đưa hộ kinh doanh Việt Nam ra khỏi vùng vô hình với ngân hàng."><About /></Page>} />
+              <Route path="/about" element={<Page path="/about" title="Về chúng tôi — MIMI WALLET" description="Câu chuyện và đội ngũ đứng sau MIMI Wallet: bớt cho chủ hộ kinh doanh những buổi tối dò sao kê, tìm hoá đơn và lo hạn thuế."><About /></Page>} />
               {/* Công khai, không nằm sau đăng nhập — App Store yêu cầu
                   Privacy Policy URL truy cập được mà không cần tài khoản. */}
               {/* Bộ nhận diện — công khai, không nằm sau đăng nhập: người thiết kế
@@ -205,10 +215,11 @@ const App = () => (
             </Routes>
           </Suspense>
         </AuthInitializer>
-      </BrowserRouter>
+      </Router>
     </TooltipProvider>
   </QueryClientProvider>
   </ThemeProvider>
-);
+  );
+};
 
 export default App;

@@ -54,7 +54,12 @@ function datMeta(khoa: 'name' | 'property', ten: string, noiDung: string) {
   el.setAttribute('content', noiDung);
 }
 
+/** Khi dựng sẵn HTML lúc build (`scripts/dung-san-html.mjs`): ghi lại thẻ head của trang đang dựng. */
+type ThuSeo = { title: string; description: string; path: string; noIndex?: boolean };
+const thu = (globalThis as { __MIMI_SEO__?: ThuSeo[] }).__MIMI_SEO__;
+
 export default function Seo({ title, description, path, noIndex }: Props) {
+  if (thu) thu.push({ title, description, path, noIndex });
   useEffect(() => {
     const url = `${SITE_URL}${path}`;
 

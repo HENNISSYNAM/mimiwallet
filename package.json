@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html','dist/app-shell.html')\" && (vite build --ssr src/dungSan.tsx --outDir dist-ssr && node scripts/dung-san-html.mjs || echo Bo qua dung san HTML)",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
