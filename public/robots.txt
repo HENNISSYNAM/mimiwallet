@@ -1,6 +1,7 @@
+# /dashboard KHÔNG chặn ở đây: trang đó có thẻ noindex; chặn bằng robots thì Google không đọc được noindex
+# và giữ /dashboard trong kết quả tìm kiếm (06/10/2026 đã xảy ra).
 User-agent: *
 Allow: /
-Disallow: /dashboard
 Disallow: /admin
 Disallow: /bank/
 Disallow: /quen-mat-khau
