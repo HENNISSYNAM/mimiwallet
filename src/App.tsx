@@ -81,6 +81,7 @@ const ToKhaiPage = lazy(() => import("./pages/ToKhaiPage"));
 const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const KhaoSatGiaPage = lazy(() => import("./pages/KhaoSatGiaPage"));
 
 const queryClient = new QueryClient();
 
@@ -151,6 +152,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
               <Route path="/san-pham/:slug" element={<TrangNoiDungPage />} />
               <Route path="/giai-phap/:slug" element={<TrangNoiDungPage />} />
               <Route path="/kham-pha/:trang" element={<KhamPhaPage />} />
+              <Route path="/khao-sat-gia" element={<Page noIndex path="/khao-sat-gia" title="Khảo sát giá — MIMI WALLET" description="2 phút giúp MIMI đặt giá đúng với chủ hộ kinh doanh."><KhaoSatGiaPage /></Page>} />
               <Route path="/tri-tue-nhan-tao" element={<Page path="/tri-tue-nhan-tao" title="Trí tuệ nhân tạo — MIMI WALLET" description="Agent của bạn xin chi, MIMI xét bằng luật bạn đọc được: tự duyệt khi an toàn, hỏi bạn khi không, chặn đổi số tài khoản. Ghi rõ phần nào đang chạy, phần nào đang xây."><TriTueNhanTaoPage /></Page>} />
               <Route path="/privacy" element={<Page path="/privacy" title="Chính sách bảo mật — MIMI WALLET" description="Cách MIMI Wallet thu thập, lưu trữ và bảo vệ dữ liệu tài chính của doanh nghiệp bạn, cùng quyền của bạn với dữ liệu đó."><Privacy /></Page>} />
               {/* Google Play yêu cầu một đường xoá tài khoản mở được mà KHÔNG cần cài app
