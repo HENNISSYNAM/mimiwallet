@@ -118,7 +118,7 @@ table{{border-collapse:collapse;width:100%}} td,th{{border:1px solid #bbb;paddin
 dl div{{display:flex;gap:8pt}} dt{{min-width:120pt;color:#555}} dd{{margin:0}}
 nav ul, footer ul{{columns:2}} .sr-only{{display:none}}
 .dau{{font-size:9pt;color:#555;border-bottom:1px solid #ccc;padding-bottom:4pt;margin-bottom:10pt}}
-</style></head><body><div class="dau">Phần B — Toàn văn trang {PROD}{duong} (bản chạy cục bộ {url}, {thoi_diem})</div>{than}</body></html>"""
+</style></head><body><div class="dau">Phần B — Toàn văn trang {PROD}{duong} ({"bản chạy cục bộ " + url + ", " if "localhost" in url else "chụp "}{thoi_diem})</div>{than}</body></html>"""
         html_path = os.path.join(TMP, f"{ten}-in.html")
         with open(html_path, "w", encoding="utf-8") as fh:
             fh.write(html)
@@ -142,7 +142,7 @@ nav ul, footer ul{{columns:2}} .sr-only{{display:none}}
         dong("HỒ SƠ THÔNG BÁO WEBSITE/ỨNG DỤNG THƯƠNG MẠI ĐIỆN TỬ BÁN HÀNG", 13, True)
         dong("MIMI WALLET — CÔNG TY CỔ PHẦN CLI NUTRIX — MST 0319436143", 11, True, 14)
         dong(f"Mục {so}: {tieu_de}", 14, True, 14)
-        dong(f"Đường dẫn công bố (sau khi triển khai): {PROD}{duong}")
+        dong(f"Đường dẫn công bố: {PROD}{duong}")
         dong((f"Ảnh chụp lấy từ bản chạy thử cục bộ: {url}" if "localhost" in url else f"Ảnh chụp lấy từ: {url}"))
         dong(f"Thời điểm chụp: {thoi_diem}", gap=14)
         dong("Nội dung tệp:", 11, True)
