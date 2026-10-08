@@ -2145,7 +2145,7 @@ function chuaLamDuoc(id: string) {
     return kq(id, 'bao_cao', `MIMI chưa theo dõi ${m.ten}.`, {
       the: [
         { loai: 'ghi_chu', muc_do: 'thong_tin', cau: m.thay_vao },
-        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'MIMI đọc được: tiền vào, tiền ra ngân hàng; hoá đơn điện tử; khoản chi thiếu chứng từ; nghĩa vụ thuế và hạn nộp.' },
+        { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'MIMI đọc được: tiền vào, tiền ra ngân hàng; chứng từ bạn chụp hoặc tải lên; khoản chi thiếu chứng từ; nghĩa vụ thuế và hạn nộp.' },
       ],
     });
   };
