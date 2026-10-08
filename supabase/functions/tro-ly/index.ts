@@ -874,7 +874,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const chay = async (id: string) => {
         const nl = NANG_LUC[id];
         const thieu = nl.can.filter((n) => !nguonDaDoc.has(n));
-        if (thieu.length) {
+        // 08/10/2026: năng lực không cần nguồn nào (can = []) gọi đầu tiên thì `dl` còn null — đọc rỗng thay vì
+        // để năng lực đọc thuộc tính của null (lỗi "reading 'giaoDich'" giữa buổi demo).
+        if (thieu.length || !dl) {
           // Đọc lại đủ các nguồn đã cần từ trước cộng nguồn mới: gọn hơn ghép hai lần đọc.
           thieu.forEach((n) => nguonDaDoc.add(n));
           dl = docDuLieu(db, company.id, new Set(nguonDaDoc), moc, { cauHoi: cau, hanhTrinh });
