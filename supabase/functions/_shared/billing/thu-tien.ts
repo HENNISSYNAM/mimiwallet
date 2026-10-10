@@ -20,7 +20,7 @@ import { ghiSuKien } from '../do-luong/su-kien.ts';
 type Db = any;
 
 // Giá đọc từ MỘT bảng giá chung với Cài đặt và trang chủ — xem `bang-gia.ts`.
-import { GIA_MOT_TO_KHAI, GOI_THANG } from './bang-gia.ts';
+import { GIA_MOT_TO_KHAI, GOI_DOANH_NGHIEP_TRON_DOI, GOI_THANG, HET_HAN_TRON_DOI, mienPhiTronDoi } from './bang-gia.ts';
 export { GIA_MOT_TO_KHAI };
 /** Mua tối đa bao nhiêu lượt một lần — chặn hoá đơn gõ nhầm 1000 lượt. */
 export const TOI_DA_LUOT_MOT_LAN = 20;
@@ -152,20 +152,23 @@ async function apDung(db: Db, h: Row, bayGio: Date): Promise<void> {
 // ── Quyền lợi: công ty này đang được xuất tờ khai bằng gì ─────────────────────
 
 export interface QuyenLoi {
-  /** Gói còn hạn: xuất không giới hạn. */
+  /** Gói còn hạn (hoặc doanh nghiệp miễn phí trọn đời): xuất không giới hạn. */
   goi: { plan: string; het_han: string } | null;
   con_luot: number;
   gia_mot_to: number;
 }
 
 export async function docQuyenLoi(db: Db, companyId: string, homNay: string): Promise<QuyenLoi> {
-  const [{ data: goi }, { data: luot }] = await Promise.all([
+  const [{ data: goi }, { data: luot }, { data: ct }] = await Promise.all([
     db.from('subscriptions').select('plan, current_period_end').eq('company_id', companyId).maybeSingle(),
     db.from('luot_to_khai').select('thay_doi').eq('company_id', companyId),
+    db.from('companies').select('tax_id, loai_theo_mst, trang_thai_mst').eq('id', companyId).maybeSingle(),
   ]);
   const conHan = goi && String(goi.current_period_end) >= homNay;
   return {
-    goi: conHan ? { plan: goi.plan, het_han: String(goi.current_period_end) } : null,
+    goi: mienPhiTronDoi(ct)
+      ? { plan: GOI_DOANH_NGHIEP_TRON_DOI, het_han: HET_HAN_TRON_DOI }
+      : conHan ? { plan: goi.plan, het_han: String(goi.current_period_end) } : null,
     con_luot: (luot ?? []).reduce((s: number, r: { thay_doi: number }) => s + Number(r.thay_doi), 0),
     gia_mot_to: GIA_MOT_TO_KHAI,
   };

@@ -20,8 +20,6 @@ import { DANH_MUC_CHINH_SACH, TRANG_THONG_TIN, timChinhSach } from './danhMuc';
  * Thông tin còn thiếu hẳn hiện dạng token `{{…}}`. Danh sách: docs/bo-cong-thuong/HUONG_DAN_NOP.md.
  */
 
-/** Khớp `TOI_DA_LUOT_MOT_LAN` trong `_shared/billing/thu-tien.ts` (file đó kéo theo mã chỉ chạy trên máy chủ). */
-const TOI_DA_LUOT_MOT_LAN = 20;
 
 const emailHoTro = () =>
   CONTACT.email ? (
@@ -121,11 +119,13 @@ function Gia() {
                 </td>
               </tr>
               <tr>
-                <td className="px-3 py-2 font-medium text-foreground">Lượt xuất tờ khai</td>
-                <td className="px-3 py-2 font-mono">{giaVND(GIA_MOT_TO_KHAI)} / tờ</td>
+                <td className="px-3 py-2 font-medium text-foreground">Doanh nghiệp</td>
+                <td className="px-3 py-2 font-mono">0₫ trọn đời</td>
                 <td className="px-3 py-2">
-                  Một bản tờ khai sạch (không dấu “BẢN XEM TRƯỚC”) cho một kỳ. Mua từ 1 đến{' '}
-                  {TOI_DA_LUOT_MOT_LAN} lượt một lần. Không cần mua khi gói tháng còn hạn.
+                  Doanh nghiệp có mã số thuế 10 số tra được trên dữ liệu của cơ quan thuế và đang hoạt động: dùng
+                  mọi tính năng như gói tháng, không giới hạn, không thu phí. Từ 11/10/2026 MIMI ngừng bán lượt
+                  xuất tờ khai theo tờ ({giaVND(GIA_MOT_TO_KHAI)}/tờ); lượt đã mua trước đó vẫn dùng được và được
+                  hoàn theo mục hoàn tiền.
                 </td>
               </tr>
               <tr>
@@ -210,8 +210,8 @@ function ThanhToan() {
       <Muc so={2} tieuDe="Các bước">
         <ol className="list-decimal pl-5 space-y-1.5">
           <li>
-            Đăng nhập, vào <Dam>Cài đặt → Gói dịch vụ</Dam> để chọn gói tháng, hoặc bấm “Xuất tờ khai”
-            để mua lượt.
+            Đăng nhập, vào <Dam>Cài đặt → Gói dịch vụ</Dam> để chọn gói tháng. Doanh nghiệp có mã số thuế
+            tra được thì miễn phí trọn đời, không cần thanh toán.
           </li>
           <li>
             Hệ thống phát hành một hoá đơn kèm <Dam>mã tham chiếu duy nhất</Dam>. Mở lại màn hình khi
@@ -222,7 +222,7 @@ function ThanhToan() {
             mã tham chiếu vào nội dung chuyển khoản.
           </li>
           <li>
-            Khi tiền về, hệ thống tự đối soát theo mã tham chiếu và kích hoạt gói hoặc cộng lượt, thường
+            Khi tiền về, hệ thống tự đối soát theo mã tham chiếu và kích hoạt gói, thường
             trong vài phút; có vòng đối soát lại định kỳ phòng trường hợp báo có đến chậm. Bạn nhận
             thông báo trong ứng dụng.
           </li>
@@ -338,7 +338,7 @@ function CungCapHoanTien() {
         <ul className="list-disc pl-5 space-y-1.5">
           <li>Phần Miễn phí dùng được ngay sau khi đăng ký.</li>
           <li>
-            Gói tháng và lượt xuất tờ khai được kích hoạt tự động sau khi khoản chuyển khoản được đối
+            Gói tháng được kích hoạt tự động sau khi khoản chuyển khoản được đối
             soát (xem <LienKet to="/chinh-sach/thanh-toan">Chính sách thanh toán</LienKet>).
           </li>
           <li>
@@ -501,7 +501,7 @@ export function ThongTinDoanhNghiep() {
           <li>MIMI Trợ lý trả lời câu hỏi dựa trên dữ liệu thật của doanh nghiệp, chỉ làm khi bạn xác nhận.</li>
         </ul>
         <p>
-          Hàng hoá/dịch vụ bán trên nền tảng: gói thuê bao phần mềm và lượt xuất tờ khai của chính{' '}
+          Hàng hoá/dịch vụ bán trên nền tảng: gói thuê bao phần mềm của chính{' '}
           {COMPANY.legalName}. Nền tảng không cho bên thứ ba mở gian hàng hay bán hàng.
         </p>
         <p>

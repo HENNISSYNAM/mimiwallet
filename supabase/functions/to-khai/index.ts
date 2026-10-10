@@ -410,7 +410,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
     }
 
     /*
-     * XUẤT TỜ KHAI — chỗ MIMI thu tiền: 10.000đ một tờ, hoặc miễn phí khi gói còn hạn.
+     * XUẤT TỜ KHAI — cần gói tháng còn hạn, hoặc doanh nghiệp miễn phí trọn đời (`mienPhiTronDoi`).
+     * 11/10/2026 ngừng bán lượt 10.000đ/tờ; lượt khách đã mua trước đó vẫn được trừ ở dưới.
      *
      * Xem trước, sửa số, lưu nháp đều miễn phí: người dùng thấy đủ giá trị trước khi trả. Tiền
      * tính ở lúc lấy bản sạch để nộp. Một kỳ khai chỉ tính một lần — sửa số rồi xuất lại cùng
@@ -446,7 +447,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         if (loiTru) throw loiTru;
         if (kq === "het_luot") {
           return json({
-            error: `Xuất tờ khai này cần ${tt.gia_mot_to.toLocaleString("vi-VN")}đ. Mua lượt xuất hoặc gói tháng để tiếp tục.`,
+            error: "Xuất tờ khai cần gói tháng. Doanh nghiệp có mã số thuế tra được ở Tổng cục Thuế thì miễn phí trọn đời.",
             ma: "CAN_THANH_TOAN",
             gia_mot_to: tt.gia_mot_to,
           }, 402);

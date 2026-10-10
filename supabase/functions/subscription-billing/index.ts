@@ -4,6 +4,7 @@ import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts
 import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 import { taoMaThamChieu } from "../_shared/billing/subscription.ts";
 import { doiSoatTienVeMimi, GIA_MOT_TO_KHAI, GOI, TOI_DA_LUOT_MOT_LAN } from "../_shared/billing/thu-tien.ts";
+import { DANG_BAN_LUOT } from "../_shared/billing/bang-gia.ts";
 
 /**
  * Thu phí MIMI bằng chuyển khoản ngân hàng.
@@ -131,6 +132,8 @@ Deno.serve(async (req) => {
      */
     const muaLuot = body?.loai === "luot_to_khai";
     const soLuot = muaLuot ? Number(body?.so_luot) : null;
+    // 11/10/2026: ngừng bán lượt xuất tờ khai. Lượt đã mua vẫn dùng được; hoá đơn lượt đang chờ vẫn đối soát.
+    if (muaLuot && !DANG_BAN_LUOT) return json({ error: "MIMI đã ngừng bán lượt xuất tờ khai. Dùng gói tháng; doanh nghiệp có mã số thuế tra được thì miễn phí trọn đời." }, 410);
     if (muaLuot && (!Number.isInteger(soLuot) || (soLuot as number) < 1 || (soLuot as number) > TOI_DA_LUOT_MOT_LAN)) {
       return json({ error: `Mua từ 1 đến ${TOI_DA_LUOT_MOT_LAN} lượt một lần.` }, 400);
     }

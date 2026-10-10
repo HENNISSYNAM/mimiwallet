@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
-import { GOI_THANG } from '../../supabase/functions/_shared/billing/bang-gia.ts';
+import { GOI_DOANH_NGHIEP_TRON_DOI, GOI_THANG, HET_HAN_TRON_DOI, mienPhiTronDoi } from '../../supabase/functions/_shared/billing/bang-gia.ts';
 
 /*
  * GỠ STRIPE 24/09/2026: `create-checkout`, `check-subscription`, `customer-portal` đã gỡ khỏi máy
@@ -42,8 +42,10 @@ interface SubscriptionState {
   subscribed: boolean;
   /** Khoá gói trong `TIERS` đang còn hạn, hoặc null. */
   plan: string | null;
-  /** Số lượt xuất tờ khai còn lại (10.000đ một lượt). */
+  /** Số lượt xuất tờ khai còn lại (đã ngừng bán 11/10/2026; lượt cũ vẫn dùng được). */
   conLuot: number;
+  /** Doanh nghiệp có MST tra được, đang hoạt động: miễn phí trọn đời (máy chủ là nơi quyết; đây chỉ để hiển thị). */
+  tronDoi: boolean;
   productId: string | null;
   subscriptionEnd: string | null;
   loading: boolean;
@@ -54,6 +56,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
   subscribed: false,
   plan: null,
   conLuot: 0,
+  tronDoi: false,
   productId: null,
   subscriptionEnd: null,
   loading: false,
@@ -70,14 +73,20 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     try {
       const id = await idCongTyDangDung();
       if (!id) return;
-      const [{ data: goi }, { data: luot }] = await Promise.all([
+      const [{ data: goi }, { data: luot }, { data: ct }] = await Promise.all([
         supabase.from('subscriptions').select('plan, current_period_end').eq('company_id', id).maybeSingle(),
         supabase.from('luot_to_khai').select('thay_doi').eq('company_id', id),
+        supabase.from('companies').select('tax_id, loai_theo_mst, trang_thai_mst').eq('id', id).maybeSingle(),
       ]);
+      if (mienPhiTronDoi(ct)) {
+        set({ subscribed: true, tronDoi: true, plan: GOI_DOANH_NGHIEP_TRON_DOI, productId: null, subscriptionEnd: HET_HAN_TRON_DOI, conLuot: 0 });
+        return;
+      }
       const homNay = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
       const conHan = !!goi && goi.current_period_end >= homNay;
       const tier = conHan ? TIERS[goi.plan as keyof typeof TIERS] : undefined;
       set({
+        tronDoi: false,
         subscribed: conHan,
         plan: conHan ? goi.plan : null,
         productId: tier?.product_id ?? null,

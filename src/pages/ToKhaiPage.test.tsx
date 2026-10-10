@@ -206,10 +206,11 @@ describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
     });
   };
 
-  it('nói giá ngay trên nút, và bản chưa xuất mang dấu "BẢN XEM TRƯỚC"', async () => {
+  it('không gói, không lượt: nút nói cần gói tháng (đã ngừng bán lượt 10.000đ), bản chưa xuất mang dấu "BẢN XEM TRƯỚC"', async () => {
     voiThanhToan({ goi: null, con_luot: 0, gia_mot_to: 10_000, da_tra_ky_nay: false });
     dung();
-    expect(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000 ₫/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Xuất tờ khai · cần gói tháng/ })).toBeTruthy();
+    expect(screen.queryByText(/10\.000 ₫ \/ tờ|mua lượt/i)).toBeNull();
     expect(screen.getByText('BẢN XEM TRƯỚC — CHƯA XUẤT')).toBeTruthy();
   });
 
@@ -224,7 +225,7 @@ describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
     inRa.mockRestore();
   });
 
-  it('hết lượt: máy chủ trả 402 thì hiện chỗ mua lượt, không in', async () => {
+  it('máy chủ trả 402: chỉ đường sang gói tháng / miễn phí doanh nghiệp, không bán lượt, không in', async () => {
     const { LoiGoiHam } = await import('@/lib/loiGoiHam');
     const inRa = vi.spyOn(window, 'print').mockImplementation(() => {});
     gia.goi.mockImplementation(async (hanhDong: string) => {
@@ -233,11 +234,18 @@ describe('Tờ khai thuế — xuất tờ khai có tính tiền', () => {
       return { ok: true };
     });
     dung();
-    fireEvent.click(await screen.findByRole('button', { name: /Xuất tờ khai · 10\.000 ₫/ }));
-    expect(await screen.findByText(/Tiền về là MIMI tự cộng lượt và xuất tờ khai ngay/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /4 quý trong năm · 40\.000 ₫/ })).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: /Xuất tờ khai · cần gói tháng/ }));
+    expect(await screen.findByText(/Doanh nghiệp có mã số thuế tra được ở Tổng cục Thuế thì miễn phí trọn đời/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Xem gói tháng' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /4 quý trong năm/ })).toBeNull();
     expect(inRa).not.toHaveBeenCalled();
     inRa.mockRestore();
+  });
+
+  it('doanh nghiệp miễn phí trọn đời: nút nói rõ', async () => {
+    voiThanhToan({ goi: { plan: 'doanh_nghiep_tron_doi', het_han: '9999-12-31' }, con_luot: 0, gia_mot_to: 10_000, da_tra_ky_nay: false });
+    dung();
+    expect(await screen.findByRole('button', { name: /doanh nghiệp miễn phí trọn đời/ })).toBeTruthy();
   });
 
   it('gói còn hạn: nút nói rõ là miễn phí', async () => {

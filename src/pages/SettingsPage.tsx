@@ -68,7 +68,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function SubscriptionSection() {
-  const { subscribed, productId, subscriptionEnd, loading, checkSubscription, conLuot } = useSubscriptionStore();
+  const { subscribed, productId, subscriptionEnd, loading, checkSubscription, conLuot, tronDoi } = useSubscriptionStore();
   const { t } = useTranslation();
   /*
    * Gói khách đang chọn để trả. Không có nghĩa là đã trả — màn hình chuyển
@@ -106,11 +106,21 @@ function SubscriptionSection() {
         </div>
       )}
 
-      {/* Trả theo lượt: 10.000đ một kỳ khai. Gói tháng thì xuất không giới hạn. */}
-      <p className="text-sm text-muted-foreground">
-        Không dùng gói? Trả theo lượt: <span className="font-medium text-foreground">10.000đ mỗi tờ khai</span>, trả ngay lúc xuất trên trang Tờ khai.
-        {conLuot > 0 && <> Bạn còn <span className="font-medium text-foreground">{conLuot} lượt</span>.</>}
-      </p>
+      {/* 11/10/2026: doanh nghiệp có MST tra được miễn phí trọn đời; ngừng bán lượt 10.000đ/tờ. */}
+      {tronDoi ? (
+        <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <Crown size={18} className="text-primary" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Doanh nghiệp — miễn phí trọn đời</p>
+            <p className="text-xs text-muted-foreground">Mã số thuế của bạn tra được ở Tổng cục Thuế là doanh nghiệp đang hoạt động. Mọi tính năng, không giới hạn, không cần trả gói.</p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Doanh nghiệp (mã số thuế 10 số, đang hoạt động) được <span className="font-medium text-foreground">miễn phí trọn đời</span> — nhập đúng mã số thuế ở mục Thông tin doanh nghiệp. Hộ kinh doanh dùng gói tháng.
+          {conLuot > 0 && <> Bạn còn <span className="font-medium text-foreground">{conLuot} lượt</span> xuất tờ khai đã mua trước đây.</>}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {Object.entries(TIERS).map(([key, tier]) => {
@@ -144,7 +154,7 @@ function SubscriptionSection() {
                   phí (đang xây)": bán một thứ chưa có.
                 */}
                 {(key === 'starter'
-                  ? ['Xuất tờ khai không giới hạn (thay vì 10.000đ mỗi tờ)', 'Sửa số, xuất lại bao nhiêu lần cũng được']
+                  ? ['Xuất tờ khai không giới hạn', 'Sửa số, xuất lại bao nhiêu lần cũng được']
                   // Xác nhận tiền vào là MIỄN PHÍ cho mọi người (docs/KIEM_TOAN_RA_MAT.md, P-4) — không
                   // bán nó trong gói. Growth chờ tới khi có thứ riêng thật sự.
                   // "Sắp có…" gỡ 28/09/2026: không bán thứ chưa chạy.

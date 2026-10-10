@@ -9,7 +9,8 @@ import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type DongPhuLucGiaiTrinh, type KetQuaPhanTich, type ThanhToanToKhai } from '@/lib/goiToKhai';
 import { TEN_VAI_TRO } from '../../supabase/functions/_shared/quyen/vai-tro.ts';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
-import { ChuaBanTrongApp, SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { ChuaBanTrongApp } from '@/components/settings/SubscriptionPayment';
+import { GOI_DOANH_NGHIEP_TRON_DOI } from '../../supabase/functions/_shared/billing/bang-gia.ts';
 import { DienHoCong } from '@/components/dien-cong/DienHoCong';
 import { laTrongApp } from '@/lib/chayTrongApp';
 import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
@@ -32,8 +33,9 @@ import { dinhDangTien } from '@/lib/tien';
  *
  * MIMI không nộp thay: nút cuối mở Cổng dịch vụ công của cơ quan thuế để người dùng tự nộp.
  *
- * THU TIỀN Ở ĐÂY (24/09/2026): xem trước, sửa số, lưu nháp miễn phí; lấy bản sạch để nộp là
- * "Xuất tờ khai" — 10.000đ một kỳ, hoặc miễn phí khi gói tháng còn hạn. Bản chưa xuất mang dấu
+ * THU TIỀN Ở ĐÂY (24/09/2026, sửa 11/10/2026): xem trước, sửa số, lưu nháp miễn phí; lấy bản sạch để nộp là
+ * "Xuất tờ khai" — cần gói tháng; doanh nghiệp có MST tra được thì miễn phí trọn đời. Đã ngừng bán lượt
+ * 10.000đ/tờ (lượt đã mua vẫn dùng được). Bản chưa xuất mang dấu
  * "BẢN XEM TRƯỚC". Dấu này chặn được người ngay, không chặn được người sửa trang bằng công cụ
  * lập trình — thứ khách trả tiền là bản sạch, lưu kèm mã băm, và không phải chép tay.
  */
@@ -93,10 +95,11 @@ function PhuLucGiaiTrinh({ ds, nam }: { ds: DongPhuLucGiaiTrinh[]; nam: number }
 
 /** Nói trước giá trên chính cái nút — không để người dùng bấm rồi mới biết mất tiền. */
 function nhanNutXuat(t: ThanhToanToKhai): string {
+  if (t.goi?.plan === GOI_DOANH_NGHIEP_TRON_DOI) return i18n.t('app.toKhai.xuat.tronDoi');
   if (t.goi) return i18n.t('app.toKhai.xuat.goi');
   if (t.da_tra_ky_nay) return i18n.t('app.toKhai.xuat.daTra');
   if (t.con_luot > 0) return i18n.t('app.toKhai.xuat.luot', { n: t.con_luot });
-  return i18n.t('app.toKhai.xuat.gia', { gia: dinhDangTien(t.gia_mot_to) });
+  return i18n.t('app.toKhai.xuat.canGoi');
 }
 
 /**
@@ -382,7 +385,6 @@ export default function ToKhaiPage() {
   const [suaDoanhThu, setSuaDoanhThu] = useState<string[] | null>(null);
   const [dangXuat, setDangXuat] = useState(false);
   const [daXuat, setDaXuat] = useState(false);
-  const [muaLuot, setMuaLuot] = useState<number | null>(null);
   const [canMua, setCanMua] = useState(false);
 
   const tai = useCallback(async (du: Record<string, unknown> = {}) => {
@@ -412,7 +414,7 @@ export default function ToKhaiPage() {
     }
   };
 
-  const doiKy = (ky: KyToKhai) => { setDaXuat(false); setCanMua(false); setMuaLuot(null); void taiKy(ky); };
+  const doiKy = (ky: KyToKhai) => { setDaXuat(false); setCanMua(false); void taiKy(ky); };
   const taiKy = (ky: KyToKhai) => tai({ nam: ky.nam, ky, ...(suaDoanhThu ? { doanh_thu_quy: suaDoanhThu.map((x) => Math.max(0, Math.floor(Number(x) || 0))) } : {}) });
 
   const thamSoKy = () => kq
@@ -427,7 +429,6 @@ export default function ToKhaiPage() {
       const r = await goiToKhai('xuat', thamSoKy());
       setDaXuat(true);
       setCanMua(false);
-      setMuaLuot(null);
       toast.success(
         r.cach_tra === 'goi' ? t('app.toKhai.toast.xuatGoi')
           : r.cach_tra === 'da_tra_ky_nay' ? t('app.toKhai.toast.xuatLai')
@@ -657,31 +658,10 @@ export default function ToKhaiPage() {
                     {canMua && laTrongApp() && <div className="mt-4"><ChuaBanTrongApp /></div>}
                     {canMua && !laTrongApp() && (
                       <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-                        <p className="text-sm font-medium text-foreground">{t('app.toKhai.nhap.xuatGia', { gia: dinhDangTien(kq.thanh_toan.gia_mot_to) })}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {t('app.toKhai.nhap.quetMa')}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {[1, 4].map((n) => (
-                            <button
-                              key={n}
-                              type="button"
-                              onClick={() => setMuaLuot(n)}
-                              aria-pressed={muaLuot === n}
-                              className={`h-9 rounded-xl px-3 text-sm ${muaLuot === n ? 'bg-primary text-primary-foreground' : 'border border-border text-foreground hover:bg-accent'}`}
-                            >
-                              {n === 1 ? t('app.toKhai.nhap.toNay') : t('app.toKhai.nhap.bonQuy')} · {dinhDangTien(n * kq.thanh_toan.gia_mot_to)}
-                            </button>
-                          ))}
-                          <Link to="/dashboard/settings" className="inline-flex h-9 items-center rounded-xl px-3 text-sm text-primary hover:underline">
-                            {t('app.toKhai.nhap.goiThang')}
-                          </Link>
-                        </div>
-                        {muaLuot && (
-                          <div className="mt-4">
-                            <SubscriptionPayment key={muaLuot} soLuot={muaLuot} onPaid={() => void xuat()} />
-                          </div>
-                        )}
+                        <p className="text-sm text-foreground">{t('app.toKhai.nhap.canGoi')}</p>
+                        <Link to="/dashboard/settings" className="mt-2 inline-flex h-9 items-center rounded-xl px-3 text-sm font-medium text-primary hover:underline">
+                          {t('app.toKhai.nhap.goiThang')}
+                        </Link>
                       </div>
                     )}
                   </div>
