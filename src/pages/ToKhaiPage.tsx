@@ -10,6 +10,7 @@ import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type CongTyTheoMst, type DongPhuLucGi
 import { TEN_VAI_TRO } from '../../supabase/functions/_shared/quyen/vai-tro.ts';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { ChuaBanTrongApp, SubscriptionPayment } from '@/components/settings/SubscriptionPayment';
+import { DienHoCong } from '@/components/dien-cong/DienHoCong';
 import { laTrongApp } from '@/lib/chayTrongApp';
 import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
 import {
@@ -700,6 +701,8 @@ export default function ToKhaiPage() {
                 </div>
               )}
           </section>
+          {/* 10/10/2026: điền hộ lên cổng — thử nghiệm, chỉ hiện khi bật cờ. docs/DIEN_HO_CONG_V1.md */}
+          {import.meta.env.VITE_DIEN_CONG === '1' && <DienHoCong />}
         </>
       )}
     </div>

@@ -44,7 +44,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://xzymxgdavepvygdcmfup.supabase.co https://*.googleusercontent.com; media-src 'self' blob:; connect-src 'self' https://xzymxgdavepvygdcmfup.supabase.co wss://xzymxgdavepvygdcmfup.supabase.co; frame-src https://link.bankhub.dev https://dev.link.bankhub.dev; worker-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://xzymxgdavepvygdcmfup.supabase.co https://*.googleusercontent.com; media-src 'self' blob:; connect-src 'self' https://xzymxgdavepvygdcmfup.supabase.co wss://xzymxgdavepvygdcmfup.supabase.co http://127.0.0.1:47321; frame-src https://link.bankhub.dev https://dev.link.bankhub.dev; worker-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests"
         }
       ]
     }

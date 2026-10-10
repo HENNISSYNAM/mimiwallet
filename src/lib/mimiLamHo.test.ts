@@ -96,3 +96,19 @@ describe('lấy tên', () => {
     expect(layTen('tạo agent cho tôi')).toBeNull();
   });
 });
+
+describe('điền tờ khai lên cổng', () => {
+  it('dẫn tới khung điền hộ và nhường ở nút bắt đầu; không bao giờ tự bấm bắt đầu', () => {
+    const kb = nhanViec('điền hộ tờ khai lên cổng giúp mình');
+    expect(kb?.ten).toBe('dien_to_khai_len_cong');
+    expect(kiemKichBan(kb!)).toEqual([]);
+    expect(kb!.buoc.at(-1)).toMatchObject({ loai: 'nhuong', dich: 'to-khai.dien-ho.bat-dau' });
+    expect(kb!.buoc.some((b) => b.loai === 'bam' && b.dich.startsWith('to-khai.'))).toBe(false);
+    expect(DICH_KHONG_TU_BAM.has('to-khai.dien-ho.bat-dau')).toBe(true);
+    // Cờ tắt thì khung không có: mèo nói rõ và dừng, không đi tiếp tới nút.
+    expect(kb!.buoc.find((b) => b.loai === 'chi' && b.dich === 'to-khai.dien-ho')).toMatchObject({ neuKhongThay: expect.stringMatching(/thử nghiệm/) });
+  });
+  it('một kịch bản tự bấm nút bắt đầu bị chặn', () => {
+    expect(kiemKichBan({ ten: 'x', moTa: 'x', buoc: [{ loai: 'bam', dich: 'to-khai.dien-ho.bat-dau', noi: 'x' }] })).not.toEqual([]);
+  });
+});

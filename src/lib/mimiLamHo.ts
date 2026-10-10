@@ -48,6 +48,7 @@ export const DICH_KHONG_TU_BAM: ReadonlySet<string> = new Set([
   'tac-tu.nguoi-nhan.them',
   'tac-tu.nguoi-nhan.xoa',
   'tac-tu.tao-yeu-cau.gui',
+  'to-khai.dien-ho.bat-dau',
 ]);
 
 export const SO_BUOC_TOI_DA = 12;
@@ -117,6 +118,7 @@ export function layTen(cau: string): string | null {
 const KB_TAC_TU = '/dashboard/tac-tu';
 const KB_CHUNG_TU = '/dashboard/chung-tu';
 const KB_FINTECH = '/dashboard/fintech';
+const KB_TO_KHAI = '/dashboard/to-khai';
 
 /** Nhận việc từ một câu. `null` khi không chắc — để chat trả lời như cũ. */
 export function nhanViec(cau: string): KichBan | null {
@@ -200,6 +202,29 @@ export function nhanViec(cau: string): KichBan | null {
       buoc: [
         ...moTrang(KB_FINTECH, 'Fintech Hub'),
         { loai: 'chi', dich: 'fintech.ngan-hang', noi: 'Liên kết ngân hàng và khai tài khoản SePay ở trang này.' },
+      ],
+    };
+  }
+
+  // 10/10/2026: điền hộ lên cổng. Con trỏ chỉ dẫn tới khung "Điền hộ lên cổng" và NHƯỜNG ở nút bắt đầu — việc điền do bộ
+  // chạy tại máy làm, có đối chiếu riêng. Mèo chỉ báo tiến độ, không phải bằng chứng đã điền đúng hay đã nộp.
+  if (/ (dien|nhap|khai) (ho |giup )?(to khai|bieu mau|thong bao doanh thu)( (len|vao|tren) (cong|trang|web))? /.test(s) && / (cong|ho|giup|len|vao) /.test(s)) {
+    return {
+      ten: 'dien_to_khai_len_cong',
+      moTa: 'điền bản nháp tờ khai lên trang biểu mẫu',
+      buoc: [
+        ...moTrang(KB_TO_KHAI, 'Tờ khai'),
+        {
+          loai: 'chi',
+          dich: 'to-khai.dien-ho',
+          noi: 'Khung "Điền hộ lên cổng" ở đây: ghép bộ chạy trên máy, chọn bản nháp đã lưu và tab biểu mẫu.',
+          neuKhongThay: 'Điền hộ lên cổng đang ở giai đoạn thử nghiệm và chưa bật cho tài khoản này. Bạn tải bản nháp rồi tự nhập trên cổng nhé.',
+        },
+        {
+          loai: 'nhuong',
+          dich: 'to-khai.dien-ho.bat-dau',
+          noi: 'Chọn xong thì bạn bấm "Bắt đầu điền". MIMI điền, đọc lại từng ô và báo đối chiếu — không ký, không nộp.',
+        },
       ],
     };
   }
