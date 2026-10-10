@@ -15,7 +15,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
-import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
+import { cauTuChoi, duocLam, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
 import { canCuDung, docHoSoThue, NAM_AP_DUNG, PHIEN_BAN_HE_LUAT, suyLuan } from "../_shared/luat/he-luat.ts";
 import { kyGoiY, soanToKhai, type KyToKhai } from "../_shared/luat/to-khai.ts";
@@ -38,6 +38,7 @@ import { docXacNhanHoatDong, keHoachHoanTacHoatDong, TOI_DA_MOT_LAN_HOAT_DONG } 
 import { chuanHoaTrangThai } from "../_shared/doanh-nghiep/trang-thai.ts";
 import { dongBoViecDoanhThu } from "../_shared/viec/luu.ts";
 import { tinhNghiaVu } from "../_shared/nghia-vu/tinh.ts";
+import { docNhiemVu, dsPhien, ghiBuoc, LoiDien, taoPhien } from "../_shared/dien-cong/luu.ts";
 import { TEN_NHOM_NGANH } from "../_shared/luat/he-luat.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
@@ -67,6 +68,9 @@ const KICH_THUOC_THAN_TOI_DA = 100_000;
 
 const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   ho_so: { cuaSoGiay: 60, toiDa: 60 },
+  dien_tao_phien: { cuaSoGiay: 60, toiDa: 10 },
+  dien_nhiem_vu: { cuaSoGiay: 60, toiDa: 60 },
+  dien_ghi: { cuaSoGiay: 60, toiDa: 120 },
   luu_ho_so: { cuaSoGiay: 60, toiDa: 20 },
   luu_tien_mat: { cuaSoGiay: 60, toiDa: 20 },
   phan_tich: { cuaSoGiay: 60, toiDa: 30 },
@@ -315,7 +319,14 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   // Nhóm hoạt động quyết định dòng và tỷ lệ thuế trên tờ khai: cùng mức quyền.
   xac_nhan_hoat_dong: "sua_ho_so_thue",
   hoan_tac_hoat_dong: "sua_ho_so_thue",
+  // Điền hộ trên cổng ngoài (10/10/2026): cùng mức quyền với soạn tờ khai — không dựng quyền riêng.
+  dien_tao_phien: "soan_to_khai",
+  dien_nhiem_vu: "soan_to_khai",
+  dien_ghi: "soan_to_khai",
 };
+
+/** Điền hộ trên cổng ngoài chỉ chạy khi máy chủ bật cờ — tắt được ngay khi cổng đổi. */
+const dienCongBat = () => Deno.env.get("DIEN_CONG_ENABLED") === "1";
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
   const can = QUYEN_HANH_DONG[hanhDong];
@@ -669,6 +680,40 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         });
       }
       return json({ ok: true, so: ls.length, viec: await dongBoViecSauPhanLoai(db, company.id, userId, null) });
+    }
+
+    /*
+     * ĐIỀN HỘ TRÊN CỔNG NGOÀI (10/10/2026) — docs/DIEN_HO_CONG_V1.md. Máy chủ chỉ giữ NHIỆM VỤ và NHẬT KÝ; việc điều
+     * khiển trình duyệt nằm ở bộ chạy tại máy người dùng, không ở edge function.
+     */
+    case "dien_ds": {
+      if (!dienCongBat()) return loi("DIEN_CONG_TAT", "Điền hộ trên cổng đang tắt.", 403);
+      return json(await dsPhien(db, company.id));
+    }
+    case "dien_tao_phien":
+    case "dien_nhiem_vu":
+    case "dien_ghi": {
+      if (!dienCongBat()) return loi("DIEN_CONG_TAT", "Điền hộ trên cổng đang tắt.", 403);
+      try {
+        const { cong_ty } = await docHoSo(db, company.id);
+        const hoSo = { ten: cong_ty.ten ?? null, mst: cong_ty.mst ?? null };
+        if (hanhDong === "dien_tao_phien") {
+          return json(await taoPhien(db, {
+            companyId: company.id, userId, nhapId: String(body.nhap_id ?? ""), boChuyen: String(body.bo_chuyen ?? ""),
+            khoaChongTrung: String(body.khoa_chong_trung ?? ""), hoSo,
+          }));
+        }
+        if (hanhDong === "dien_nhiem_vu") {
+          return json(await docNhiemVu(db, { companyId: company.id, userId, phienId: String(body.phien_id ?? ""), duocSoanToKhai: duocLam(vaiTro, "soan_to_khai"), hoSo }));
+        }
+        return json(await ghiBuoc(db, {
+          companyId: company.id, phienId: String(body.phien_id ?? ""), dong: Array.isArray(body.dong) ? body.dong : [],
+          trangThaiMoi: body.trang_thai, ketQua: body.ket_qua,
+        }));
+      } catch (e) {
+        if (e instanceof LoiDien) return loi(e.ma, e.message, e.status);
+        throw e;
+      }
     }
 
     case "ds_nhap": {

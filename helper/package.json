@@ -1,0 +1,11 @@
+{
+  "name": "mimi-dien-ho",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MIMI Điền hộ — bộ chạy tại máy (Windows) điền biểu mẫu trong tab người dùng chọn, đọc lại, đối chiếu và bàn giao. Không ký, không nộp.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "playwright-core": "^1.56.1"
+  }
+}
