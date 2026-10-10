@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BO_CHUYEN, chuanTien, kiemPhien, layTruongTKN, originHopLe, timBoChuyen } from './bo-chuyen';
+import { BO_CHUYEN, chuanTien, coBatDienCong, kiemPhien, layTruongTKN, originHopLe, timBoChuyen } from './bo-chuyen';
 import { CHUYEN_PHIEN, dongNhatKyHopLe, duocChuyen } from './luu';
 
 const dong = (ma: string, tong: number | null, khac: Record<string, number | null> = {}) => ({ ma, o: { tong_dt: tong, thue_gtgt: null, thue_tncn: null, ...khac } });
@@ -105,5 +105,17 @@ describe('trạng thái vận hành tách khỏi trạng thái hồ sơ', () => 
     expect(dongNhatKyHopLe({ tac_nhan: 'bo_chay', hanh_dong: 'dien', ket_qua: 'ok', ma_bam_gia_tri: '812345678' })).toBe(false);
     expect(dongNhatKyHopLe({ tac_nhan: 'ke_la', hanh_dong: 'dien', ket_qua: 'ok' })).toBe(false);
     expect(dongNhatKyHopLe({ tac_nhan: 'bo_chay', hanh_dong: 'dien', ket_qua: 'ok', ghi_chu: 'x'.repeat(301) })).toBe(false);
+  });
+});
+
+describe('cờ máy chủ DIEN_CONG_ENABLED', () => {
+  it('"1" bật cho mọi công ty; danh sách id chỉ bật cho công ty có tên; trống/khác là tắt', () => {
+    expect(coBatDienCong('1', 'a')).toBe(true);
+    expect(coBatDienCong('cty-1, cty-2', 'cty-2')).toBe(true);
+    expect(coBatDienCong('cty-1,cty-2', 'cty-3')).toBe(false);
+    expect(coBatDienCong('', 'cty-1')).toBe(false);
+    expect(coBatDienCong(undefined, 'cty-1')).toBe(false);
+    expect(coBatDienCong('true', 'cty-1')).toBe(false);
+    expect(coBatDienCong('cty-1', '')).toBe(false);
   });
 });

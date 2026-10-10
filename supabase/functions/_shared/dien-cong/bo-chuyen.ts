@@ -192,3 +192,14 @@ export function kiemPhien(p: {
   else if (bc.phien_ban !== p.phien_ban) loi.push('Bộ chuyển đã đổi phiên bản — tạo phiên mới.');
   return loi;
 }
+
+/**
+ * Cờ máy chủ DIEN_CONG_ENABLED: "1" bật cho mọi công ty; danh sách id công ty cách nhau bởi dấu phẩy chỉ bật cho các công ty
+ * đó (thử trên công ty của chính mình trước khi mở cho khách); trống hoặc giá trị khác là tắt.
+ */
+export function coBatDienCong(giaTri: string | undefined | null, congTyId: string): boolean {
+  const g = (giaTri ?? "").trim();
+  if (g === "1") return true;
+  if (!g || !congTyId) return false;
+  return g.split(",").map((x) => x.trim()).filter(Boolean).includes(congTyId);
+}

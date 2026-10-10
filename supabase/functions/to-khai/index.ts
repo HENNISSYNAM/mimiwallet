@@ -39,6 +39,7 @@ import { chuanHoaTrangThai } from "../_shared/doanh-nghiep/trang-thai.ts";
 import { dongBoViecDoanhThu } from "../_shared/viec/luu.ts";
 import { tinhNghiaVu } from "../_shared/nghia-vu/tinh.ts";
 import { docNhiemVu, dsPhien, ghiBuoc, LoiDien, taoPhien } from "../_shared/dien-cong/luu.ts";
+import { coBatDienCong } from "../_shared/dien-cong/bo-chuyen.ts";
 import { TEN_NHOM_NGANH } from "../_shared/luat/he-luat.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
@@ -325,8 +326,8 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   dien_ghi: "soan_to_khai",
 };
 
-/** Điền hộ trên cổng ngoài chỉ chạy khi máy chủ bật cờ — tắt được ngay khi cổng đổi. */
-const dienCongBat = () => Deno.env.get("DIEN_CONG_ENABLED") === "1";
+/** Điền hộ trên cổng ngoài chỉ chạy khi máy chủ bật cờ (cho mọi công ty, hoặc danh sách id công ty thử) — tắt được ngay. */
+const dienCongBat = (congTyId: string) => coBatDienCong(Deno.env.get("DIEN_CONG_ENABLED"), congTyId);
 
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
   const can = QUYEN_HANH_DONG[hanhDong];
@@ -687,13 +688,13 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
      * khiển trình duyệt nằm ở bộ chạy tại máy người dùng, không ở edge function.
      */
     case "dien_ds": {
-      if (!dienCongBat()) return loi("DIEN_CONG_TAT", "Điền hộ trên cổng đang tắt.", 403);
+      if (!dienCongBat(company.id)) return loi("DIEN_CONG_TAT", "Điền hộ trên cổng đang tắt.", 403);
       return json(await dsPhien(db, company.id));
     }
     case "dien_tao_phien":
     case "dien_nhiem_vu":
     case "dien_ghi": {
-      if (!dienCongBat()) return loi("DIEN_CONG_TAT", "Điền hộ trên cổng đang tắt.", 403);
+      if (!dienCongBat(company.id)) return loi("DIEN_CONG_TAT", "Điền hộ trên cổng đang tắt.", 403);
       try {
         const { cong_ty } = await docHoSo(db, company.id);
         const hoSo = { ten: cong_ty.ten ?? null, mst: cong_ty.mst ?? null };
