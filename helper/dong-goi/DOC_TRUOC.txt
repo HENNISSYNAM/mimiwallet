@@ -1,0 +1,15 @@
+﻿MIMI Điền hộ — bản thử nghiệm 0.1.x (Windows)
+
+Làm gì: điền bản nháp tờ khai ĐÃ LƯU trong MIMI vào trang biểu mẫu bạn chọn, đọc lại từng ô, báo đối chiếu, rồi bàn giao.
+Không làm: không ký số, không nộp, không nhập OTP, không vượt CAPTCHA, không thanh toán.
+Phạm vi bản này: chỉ biểu mẫu THỬ có nhãn "MÔI TRƯỜNG THỬ". Bộ chuyển cho cổng thuế thật CHƯA XÁC MINH và đang tắt.
+
+Cài:      bấm phải cai-dat.ps1 > Run with PowerShell   (hoặc: powershell -ExecutionPolicy Bypass -File cai-dat.ps1)
+Mở:       menu Start > MIMI Dien Ho. Cửa sổ hiện MÃ GHÉP 6 số; nhập mã đó trong MIMI > Tờ khai > Điền hộ lên cổng.
+Dừng:     bấm "Dừng" trong MIMI, hoặc gõ q trong cửa sổ bộ chạy, hoặc đóng cửa sổ đó.
+Thu hồi:  bấm "Huỷ ghép" trong MIMI, hoặc gõ m trong cửa sổ bộ chạy (đổi mã, mọi ghép cũ mất hiệu lực).
+Quay lại bản trước:  powershell -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\MIMI\dien-ho\ban\<bản>\cai-dat.ps1" -QuayLai
+Gỡ:       powershell -ExecutionPolicy Bypass -File go-cai-dat.ps1   (thêm -GiuHoSo nếu muốn giữ phiên đăng nhập cổng)
+
+An toàn: bộ chạy chỉ nghe 127.0.0.1:47321, chỉ nhận lệnh từ trang MIMI đã ghép mã, không mở cổng gỡ lỗi trình duyệt.
+Cookie, mật khẩu, OTP của cổng nằm trong hồ sơ trình duyệt riêng ở %LOCALAPPDATA%\MIMI\dien-ho và không gửi về MIMI.
