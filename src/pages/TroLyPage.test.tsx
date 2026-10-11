@@ -510,3 +510,36 @@ describe('MIMI Assistant — bộ não dùng chung', () => {
     expect(gia.troLy.mock.calls.filter((c) => c[0] === 'hoi')).toHaveLength(2);
   });
 });
+
+describe('gõ câu nhờ việc → con trỏ mèo tự chạy (11/10/2026: nối lại sau khi gộp khung chat)', () => {
+  it('"tạo agent" trong ô Trợ lý: con trỏ chạy kịch bản, KHÔNG gửi câu sang bộ não AI', async () => {
+    const { MimiLamHoProvider } = await import('@/components/mimi/MimiLamHo');
+    const { Routes, Route } = await import('react-router-dom');
+    const { toast } = await import('sonner');
+    render(
+      <MemoryRouter initialEntries={['/dashboard/tro-ly']}>
+        <MimiLamHoProvider>
+          <Routes>
+            <Route path="/dashboard/tro-ly" element={<TroLyPage />} />
+            <Route path="/dashboard/tac-tu" element={<p>Trang Kiểm soát agent</p>} />
+          </Routes>
+        </MimiLamHoProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
+    const soLanHoiTruoc = gia.troLy.mock.calls.filter((c) => c[0] === 'hoi').length;
+    hoiBangTay('Tạo agent "Bot quảng cáo" cho tôi');
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringMatching(/Để mình làm cho bạn xem: tạo agent "Bot quảng cáo"/)));
+    // Con trỏ đi thật: bước "mở trang" đưa sang Kiểm soát agent.
+    expect(await screen.findByText('Trang Kiểm soát agent', {}, { timeout: 8000 })).toBeTruthy();
+    expect(gia.troLy.mock.calls.filter((c) => c[0] === 'hoi').length).toBe(soLanHoiTruoc);
+  }, 20_000);
+
+  it('câu hỏi thường vẫn đi sang bộ não AI như cũ', async () => {
+    const { MimiLamHoProvider } = await import('@/components/mimi/MimiLamHo');
+    render(<MemoryRouter><MimiLamHoProvider><TroLyPage /></MimiLamHoProvider></MemoryRouter>);
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
+    hoiBangTay('Doanh thu tháng này bao nhiêu?');
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Doanh thu tháng này bao nhiêu?' }), expect.anything()));
+  }, 30_000);
+});

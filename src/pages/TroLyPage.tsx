@@ -19,6 +19,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
 import { toast } from 'sonner';
 import { docCaiDat, laLenhPet, luuCaiDat, SU_KIEN_LENH_PET } from '@/lib/petMimi';
+import { nhanViec } from '@/lib/mimiLamHo';
+import { useMimiLamHoNeuCo } from '@/components/mimi/MimiLamHo';
 import { useTranslation } from 'react-i18next';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
 import {
@@ -119,6 +121,7 @@ export default function TroLyPage() {
   const [thamSo, datThamSo] = useSearchParams();
   const daHoiTuDuongDan = useRef(false);
   const cuoiHoiThoai = useRef<HTMLDivElement>(null);
+  const lamHo = useMimiLamHoNeuCo();
 
   const taiBoiCanh = useCallback(async () => {
     try {
@@ -159,13 +162,27 @@ export default function TroLyPage() {
       toast(c.an ? 'Đã hiện lại pet MIMI.' : 'Đã ẩn pet MIMI. Gõ /pet hoặc Alt+Shift+M để hiện lại.');
       return;
     }
+    /*
+     * Câu NHỜ VIỆC → con trỏ mèo làm ngay trên giao diện (11/10/2026: nối lại — phần này nằm trong khung chat cũ
+     * và bị xoá theo khi gộp vào trang này ngày 26/09, từ đó gõ "tạo agent…" chỉ nhận câu trả lời chữ).
+     * Câu khác → hỏi bộ não chung như cũ. Con trỏ vẫn không tự bấm nút quan trọng (`DICH_KHONG_TU_BAM`).
+     */
+    const kichBan = lamHo ? nhanViec(cau) : null;
+    if (kichBan && lamHo) {
+      if (lamHo.dangChay) return;
+      setNhap('');
+      toast(`Để mình làm cho bạn xem: ${kichBan.moTa}. Bấm "Dừng" hoặc Esc bất cứ lúc nào.`);
+      const kq = await lamHo.chay(kichBan);
+      if (kq.xong) toast.success(kq.cau); else toast(kq.cau);
+      return;
+    }
     const lichSu = dungLichSu(luot);
     setNhap('');
     // Cùng câu đang chạy (vd. vừa hỏi từ pet) → kho trả lại đúng request đó, không gửi lần hai.
     const kq = await useNaoMimi.getState().hoi(cau, { phamVi: pv, nguon: 'tro_ly', lichSu });
     // Hỏi bằng giọng thì nghe trả lời bằng giọng — cuộc nói chuyện, không phải đọc màn hình.
     if (bangGiong && kq.trangThai === 'xong' && kq.traLoi?.cau) void docTraLoi(kq.id, kq.traLoi.cau);
-  }, [dangHoi, luot, phamVi, docTraLoi]);
+  }, [dangHoi, luot, phamVi, docTraLoi, lamHo]);
 
   const nghe = useNgheGiong({
     onCau: (cau) => void hoi(cau.slice(0, 1000), phamVi, true),

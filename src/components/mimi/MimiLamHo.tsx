@@ -52,6 +52,11 @@ export function useMimiLamHo(): NguCanh {
   return c;
 }
 
+/** Như `useMimiLamHo` nhưng trả null khi không có provider (trang dựng riêng trong test, ngoài /dashboard). */
+export function useMimiLamHoNeuCo(): NguCanh | null {
+  return useContext(Ctx);
+}
+
 const ngu = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 function timDich(dich: string): HTMLElement | null {
