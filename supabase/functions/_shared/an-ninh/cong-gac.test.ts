@@ -62,12 +62,7 @@ describe('cổng gác: edge function', () => {
     }
   });
 
-  it('API trả tiền theo lần gọi có giới hạn tần suất và đóng khi bộ đếm lỗi', () => {
-    const ma = readFileSync(join(FN, 'elevenlabs-tts', 'index.ts'), 'utf8');
-    expect(ma).toMatch(/auth\.getUser\(/);
-    expect(ma).toMatch(/duocGoi\([^)]*\],\s*true\)/s);
-    expect(ma).toMatch(/DO_DAI_TOI_DA/);
-  });
+  // 11/10/2026: `elevenlabs-tts` đã gỡ (đọc giọng dùng giọng có sẵn của trình duyệt từ 26/09, không còn ai gọi).
 });
 
 describe('cổng gác: hàm SECURITY DEFINER', () => {
