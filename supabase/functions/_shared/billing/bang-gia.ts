@@ -48,3 +48,60 @@ export const GOI_THANG = {
 export type KhoaGoi = keyof typeof GOI_THANG;
 
 export const giaVND = (n: number) => `${new Intl.NumberFormat('vi-VN').format(n)}₫`;
+
+// ── ĐỀ XUẤT CHỜ CHỦ SẢN PHẨM CHỐT (11/10/2026) ────────────────────────────────────────────────
+//
+// Mọi con số dưới đây là ĐỀ XUẤT của kỹ sư để tính năng chạy được và test được — CHƯA PHẢI GIÁ
+// ĐÃ CHỐT. Đổi ở đây là đổi ở mọi nơi (máy chủ trừ xu, thanh năng lượng, số trỏ). Chủ sản phẩm
+// chốt xong thì bỏ chữ DE_XUAT khỏi tên và ghi ngày chốt.
+
+/**
+ * XU — "năng lượng" của MIMI: đơn vị đo phần việc dùng mô hình AI, CHỈ dùng trong MIMI. Không đổi
+ * ngược ra tiền, không chuyển cho người khác, không hoàn thành tiền mặt.
+ *
+ * Vì sao quy theo USD: chi phí token THẬT của mỗi lượt gọi mô hình tính bằng USD (bảng giá
+ * OpenRouter trong `bang_gia_model`). 1 xu = 0,001 USD chi phí token (ĐỀ XUẤT) — một câu hỏi
+ * thường trên mô hình rẻ tốn vài xu; câu nhiều lượt gọi công cụ trên mô hình đắt tốn vài chục.
+ */
+export const USD_MOT_XU_DE_XUAT = 0.001;
+
+/**
+ * Không tra được giá mô hình (cổng Stali/Lovable, mô hình chưa có trong bảng giá): tính bao nhiêu xu
+ * MỖI LẦN GỌI THÀNH CÔNG. ĐỀ XUẤT. Không tính 0 — gọi mô hình không bao giờ miễn phí với MIMI.
+ */
+export const XU_MOT_LAN_GOI_KHONG_RO_GIA_DE_XUAT = 5;
+
+/**
+ * Hạn mức xu mỗi tháng theo gói — đầu mỗi tháng (giờ Việt Nam) sổ được NẠP ĐẦY TỚI hạn mức này
+ * (không cộng dồn qua tháng). ĐỀ XUẤT.
+ */
+export const HAN_MUC_XU_THANG_DE_XUAT = {
+  mien_phi: 300,
+  goi_thang: 3_000,
+  doanh_nghiep_tron_doi: 3_000,
+} as const;
+
+/** Khoá gói (cột `subscriptions.plan`, hoặc `GOI_DOANH_NGHIEP_TRON_DOI`, hoặc null = chưa có gói) → nhóm. */
+function nhomGoi(goi: string | null | undefined): keyof typeof HAN_MUC_XU_THANG_DE_XUAT {
+  if (goi === GOI_DOANH_NGHIEP_TRON_DOI) return 'doanh_nghiep_tron_doi';
+  if (goi && goi in GOI_THANG) return 'goi_thang';
+  return 'mien_phi';
+}
+
+export function hanMucXuThang(goi: string | null | undefined): number {
+  return HAN_MUC_XU_THANG_DE_XUAT[nhomGoi(goi)];
+}
+
+/**
+ * Số con trỏ MIMI (mỗi trỏ là một agent người dùng đã tạo) được chạy SONG SONG theo gói. ĐỀ XUẤT.
+ * Chưa có gói: 1; gói tháng: 2; doanh nghiệp miễn phí trọn đời: 3.
+ */
+export const SO_TRO_DE_XUAT = {
+  mien_phi: 1,
+  goi_thang: 2,
+  doanh_nghiep_tron_doi: 3,
+} as const;
+
+export function soTroToiDa(goi: string | null | undefined): number {
+  return SO_TRO_DE_XUAT[nhomGoi(goi)];
+}

@@ -24,6 +24,7 @@ import stretch from '@/assets/mimi/stretch.png';
 import sit from '@/assets/mimi/sit.png';
 import type { TraLoiNao } from '@/lib/troLy';
 import { CAU_NGUNG_CHO } from '@/store/naoMimi';
+import { ThanhNangLuongGon } from '@/components/mimi/ThanhNangLuong';
 
 /**
  * Pet MIMI — mèo nổi trên trang, theo đúng cơ chế "Pets" của ChatGPT (xem `lib/petMimi.ts`).
@@ -404,6 +405,9 @@ export default function PetMimi() {
             {tt === 'bi_chan' && <span aria-hidden className="absolute right-1 top-1 h-3 w-3 rounded-full bg-destructive ring-2 ring-background" />}
           </div>
         )}
+        {/* Năng lượng (xu) của MIMI — thanh nhỏ, có nhãn cho trình đọc màn hình; không có sổ xu thì không hiện. */}
+        {/* Cao 0: không đẩy thanh nút xuống, không đổi kích thước pet đã tính để giữ trong màn hình. */}
+        {!cd.mini && <div className="relative z-10 h-0 w-full"><div className="absolute inset-x-0 -top-2"><ThanhNangLuongGon /></div></div>}
         <div className="relative mt-2 flex w-full items-center justify-center" style={{ height: CAO_NUT }}>
           {/* Ô nhập nhỏ: thay chỗ thanh nút khi mở; gửi thì câu hỏi vào thẳng Trợ lý MIMI. */}
           {moO ? (

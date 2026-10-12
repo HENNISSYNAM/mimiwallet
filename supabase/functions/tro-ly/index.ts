@@ -71,6 +71,7 @@ import { cauHinhXInvoice, dongBoMstCongTy } from "../_shared/mst/tra-cuu.ts";
 import { congTyLaDemo, locMinhHoa } from "../_shared/minh-hoa.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
+import { docXuTruocLuot, truXuSauLuot, type XuTruocLuot } from "../_shared/xu/so-xu.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -887,14 +888,39 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         return await themMaBam(apDoDay(nl.chay(d), nl.can.map((n) => d.doDay[n]).filter((x): x is DoDayNguon => !!x)), d);
       };
 
+      /*
+       * XU (11/10/2026): lượt nào gọi mô hình thì trừ xu theo chi phí token THẬT của lượt đó; trả lời theo
+       * mẫu cố định thì 0 xu. Hết xu → không gọi mô hình, rơi xuống đúng nhánh mẫu cố định bên dưới — tính
+       * năng thuế cốt lõi không bị chặn. Sổ xu lỗi (vd. migration chưa áp) thì KHÔNG chặn trả lời: ghi log
+       * và chạy như trước khi có xu.
+       */
+      let xuTruoc: XuTruocLuot | null = null;
       if (khoaMoHinh) {
+        xuTruoc = await docXuTruocLuot(db, company.id, moc.homNay).catch((e) => {
+          console.error("tro-ly xu:", e instanceof Error ? e.message : e);
+          return null;
+        });
+      }
+      const hetXu = !!xuTruoc && xuTruoc.so_du < 1;
+      const lanGoi: LanGoi[] = [];
+      const truXu = async (thamChieu: string | null) => {
+        if (!xuTruoc) return null;
+        try {
+          return await truXuSauLuot(db, company.id, xuTruoc, lanGoi, thamChieu);
+        } catch (e) {
+          console.error("tro-ly trừ xu:", e instanceof Error ? e.message : e);
+          return null;
+        }
+      };
+
+      if (khoaMoHinh && !hetXu) {
         try {
           // Mục 24: ngữ cảnh làm việc có cấu trúc thay cho dồn lịch sử dài. Lỗi đọc không chặn câu trả lời.
           const nguCanh = await dsHanhTrinhDangMo(db, company.id)
             .then((ds) => nguCanhChoMoHinh(dungNguCanh({ hanhTrinh: ds })))
             .catch(() => "");
           // Mục 36: đo từng lần gọi (nhà cung cấp, mô hình, mục đích, độ trễ, token).
-          const ncc = coDo(nhaCungCapCua(cong!), "y_dinh", (l) => { void ghiLanGoi(db, company.id, l); });
+          const ncc = coDo(nhaCungCapCua(cong!), "y_dinh", (l) => { lanGoi.push(l); void ghiLanGoi(db, company.id, l); });
           const r = await hoiMoHinh({
             khoa: khoaMoHinh,
             ncc,
@@ -911,11 +937,15 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
           });
           const tl = dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau });
           const id = await ghiHoiThoai(db, company.id, userId, cau, tl, cong!.mo_hinh);
-          return json({ ...tl, hoi_thoai_id: id });
+          const xu = await truXu(id);
+          return json({ ...tl, hoi_thoai_id: id, ...(xu ? { xu: { da_tru: xu.da_tru, so_du: xu.so_du, han_muc: xuTruoc!.han_muc } } : {}) });
         } catch (e) {
           // Cổng lỗi không làm người dùng mất câu trả lời: chạy tiếp bằng bộ luật cố định.
           if (!(e instanceof LoiMoHinh)) throw e;
           console.error("tro-ly mo hinh:", e.status, e.message);
+          // Những lần gọi đã thành công trước khi hỏng vẫn tốn token thật.
+          const daTru = await truXu(null);
+          if (daTru && xuTruoc) xuTruoc = { ...xuTruoc, so_du: daTru.so_du };
         }
       }
 
@@ -923,7 +953,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       for (const id of yDinh) ketQua.push(await chay(id));
       const tl = dungTraLoi({ ketQua: locDeXuat(ketQua, vaiTro), cheDo: "co_dinh", cauHoi: cau });
       const idHt = await ghiHoiThoai(db, company.id, userId, cau, tl, null);
-      return json({ ...tl, hoi_thoai_id: idHt });
+      // Trả lời theo mẫu cố định: 0 xu. Báo `het` để giao diện nói rõ vì sao câu này không dùng mô hình.
+      return json({ ...tl, hoi_thoai_id: idHt, ...(xuTruoc ? { xu: { da_tru: 0, so_du: Math.max(0, xuTruoc.so_du), han_muc: xuTruoc.han_muc, het: hetXu } } : {}) });
     }
 
     // ── Prompt 4: hồ sơ việc / hành trình ──────────────────────────────────

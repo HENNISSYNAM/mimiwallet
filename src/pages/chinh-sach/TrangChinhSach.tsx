@@ -144,6 +144,14 @@ function Gia() {
                 </td>
               </tr>
               <tr>
+                <td className="px-3 py-2 font-medium text-foreground">Năng lượng MIMI (xu)</td>
+                <td className="px-3 py-2">Đi kèm gói, không bán riêng</td>
+                <td className="px-3 py-2">
+                  Đơn vị đo phần trả lời dùng mô hình AI, <Dam>chỉ dùng trong MIMI</Dam>: không quy đổi ra tiền, không
+                  chuyển cho người khác, không hoàn thành tiền. Hết xu thì MIMI trả lời theo mẫu cố định.
+                </td>
+              </tr>
+              <tr>
                 <td className="px-3 py-2 font-medium text-foreground">Kế toán &amp; đại lý thuế</td>
                 <td className="px-3 py-2">Liên hệ</td>
                 <td className="px-3 py-2">

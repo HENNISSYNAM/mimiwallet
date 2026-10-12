@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { GIA_MOT_TO_KHAI, GOI_THANG, giaVND, mienPhiTronDoi } from './bang-gia';
+import {
+  GIA_MOT_TO_KHAI, GOI_DOANH_NGHIEP_TRON_DOI, GOI_THANG, giaVND, HAN_MUC_XU_THANG_DE_XUAT, hanMucXuThang, mienPhiTronDoi,
+  SO_TRO_DE_XUAT, soTroToiDa, XU_MOT_LAN_GOI_KHONG_RO_GIA_DE_XUAT,
+} from './bang-gia';
 import { GOI, GIA_MOT_TO_KHAI as GIA_MAY_CHU } from './thu-tien';
 import { TIERS } from '../../../../src/store/useSubscriptionStore';
 
@@ -43,5 +46,22 @@ describe('doanh nghiệp miễn phí trọn đời (11/10/2026)', () => {
     expect(mienPhiTronDoi({ ...dn, loai_theo_mst: null })).toBe(false);
     expect(mienPhiTronDoi({ ...dn, trang_thai_mst: 'NNT ngừng hoạt động và đã đóng MST' })).toBe(false);
     expect(mienPhiTronDoi(null)).toBe(false);
+  });
+});
+
+describe('ĐỀ XUẤT chờ chốt: hạn mức xu và số trỏ theo gói (11/10/2026)', () => {
+  it('chưa có gói < gói tháng <= doanh nghiệp trọn đời; gói lạ coi như chưa có gói', () => {
+    expect(soTroToiDa(null)).toBe(SO_TRO_DE_XUAT.mien_phi);
+    expect(soTroToiDa('starter')).toBe(SO_TRO_DE_XUAT.goi_thang);
+    expect(soTroToiDa('growth')).toBe(SO_TRO_DE_XUAT.goi_thang);
+    expect(soTroToiDa(GOI_DOANH_NGHIEP_TRON_DOI)).toBe(SO_TRO_DE_XUAT.doanh_nghiep_tron_doi);
+    expect(soTroToiDa('luot_to_khai')).toBe(SO_TRO_DE_XUAT.mien_phi);
+    expect(hanMucXuThang(null)).toBeLessThan(hanMucXuThang('starter'));
+    expect(hanMucXuThang(GOI_DOANH_NGHIEP_TRON_DOI)).toBeGreaterThanOrEqual(hanMucXuThang('growth'));
+  });
+  it('mọi con số xu là số nguyên dương', () => {
+    for (const v of [...Object.values(HAN_MUC_XU_THANG_DE_XUAT), ...Object.values(SO_TRO_DE_XUAT), XU_MOT_LAN_GOI_KHONG_RO_GIA_DE_XUAT]) {
+      expect(Number.isInteger(v) && v > 0).toBe(true);
+    }
   });
 });

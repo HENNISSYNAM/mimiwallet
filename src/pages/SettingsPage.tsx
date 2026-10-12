@@ -4,7 +4,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionStore, TIERS } from '@/store/useSubscriptionStore';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, Check, Crown, X, UsersRound, Cat } from 'lucide-react';
+import { User, Building, Bell, Shield, CreditCard, ChevronRight, LogOut, Loader2, Check, Crown, X, UsersRound, Cat, Zap } from 'lucide-react';
+import { NangLuongChiTiet } from '@/components/mimi/ThanhNangLuong';
 import { CaiDatPet } from '@/components/settings/CaiDatPet';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -395,6 +396,11 @@ export default function SettingsPage() {
           thật — cùng khối với trang Nhắc thuế. */}
       <SettingsSection icon={Bell} title={t('settings.notifications')}>
         <CaiDatThongBao />
+      </SettingsSection>
+
+      {/* 11/10/2026: năng lượng (xu) của MIMI — số chính xác và lịch sử; pet chỉ hiện thanh phần trăm. */}
+      <SettingsSection icon={Zap} title="Năng lượng MIMI (xu)">
+        <NangLuongChiTiet />
       </SettingsSection>
 
       <SettingsSection icon={Cat} title="Pet MIMI">
