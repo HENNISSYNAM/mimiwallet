@@ -3,7 +3,8 @@
  *
  * ĐƯỜNG ĐI. Đọc hồ sơ công ty + hồ sơ thuế + doanh thu (hoá đơn điện tử của cơ quan thuế, sao kê
  * đã bỏ chuyển khoản nội bộ và dữ liệu thử) → dựng `SuKienThue` → hệ luật `suyLuan` cho ra chuỗi
- * nghĩa vụ kèm căn cứ → `soanToKhai` điền mẫu 01/TKN-CNKD hoặc 01/CNKD (bản kèm TT 50/2026) →
+ * nghĩa vụ kèm căn cứ → `soanToKhai` điền mẫu 01/TKN-CNKD (bản kèm TT 50/2026 cho kỳ kết thúc trước 01/07/2026, bản kèm
+ * TT 89/2026 từ đó — `chonPhienBanTKN`) hoặc 01/CNKD (bản kèm TT 50/2026) →
  * `kiemCanCu` đối chiếu từng câu trích với kho Công báo trước khi trả về.
  *
  * CÁI GÌ KHÔNG LÀM. Không nộp tờ khai, không ký, không gửi cơ quan thuế: MIMI trả bản nháp để
@@ -43,6 +44,7 @@ import { coBatDienCong } from "../_shared/dien-cong/bo-chuyen.ts";
 import { TEN_NHOM_NGANH } from "../_shared/luat/he-luat.ts";
 import { docBangLuong } from "../_shared/thue-tncn/khau-tru.ts";
 import { MAU_05, soanToKhai05 } from "../_shared/thue-tncn/to-khai-05.ts";
+import { xuLyHoSoNghiaVu } from "../_shared/luat/ho-so-nghia-vu.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
 const congTyChoGiaoDien = (c: HoSoCongTy) => ({
@@ -849,6 +851,17 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const { error } = await db.from("to_khai_nhap").delete().eq("id", id).eq("company_id", company.id);
       if (error) throw error;
       return json({ ok: true });
+    }
+
+    /*
+     * Câu trả lời "cần xác minh" của doanh nghiệp và ngành VSIC (12/10/2026) — cùng bảng `ho_so_thue`, cùng
+     * quyền `sua_ho_so_thue` như `luu_ho_so`; kiểm quyền và giới hạn tần suất ở `_shared/luat/ho-so-nghia-vu.ts`.
+     */
+    case "luu_tra_loi_nghia_vu":
+    case "doc_nganh":
+    case "luu_nganh": {
+      const r = await xuLyHoSoNghiaVu(db, { companyId: company.id, userId, vaiTro }, hanhDong, body);
+      return json(r.body, r.status);
     }
 
     default:

@@ -14,6 +14,17 @@ const nhapHopLe = (sua: Partial<{ dong: unknown[]; mau: string; san_sang: unknow
 const hoSo = { mst: '0123456789', ten: 'Hộ kinh doanh thử' };
 
 describe('lấy ô cần điền từ bản nháp máy chủ (01/TKN-CNKD)', () => {
+  it('bản nháp theo mẫu TT 89/2026 (cùng số hiệu 01/TKN-CNKD, khác cấu trúc): từ chối rõ, không điền sai ô', () => {
+    const moi = layTruongTKN({ ...nhapHopLe(), phien_ban_mau: 'TT89/2026' }, { loai: 'nam', nam: 2026 }, hoSo);
+    expect(moi.ok).toBe(false);
+    if (!moi.ok) expect(moi.ly_do).toContain('chưa hỗ trợ mẫu này');
+    // Bản nháp không ghi phiên bản nhưng dòng "Kèm theo" là TT 89 → vẫn từ chối.
+    const kem = layTruongTKN({ ...nhapHopLe(), kem_theo: 'Kèm theo Thông tư số 89/2026/TT-BTC ngày 30 tháng 6 năm 2026' }, { loai: 'nam', nam: 2026 }, hoSo);
+    expect(kem.ok).toBe(false);
+    // Bản TT 50 vẫn điền như cũ.
+    expect(layTruongTKN({ ...nhapHopLe(), phien_ban_mau: 'TT50/2026' }, { loai: 'nam', nam: 2025 }, hoSo).ok).toBe(true);
+  });
+
   it('bản nháp hợp lệ: chép đúng số, tổng [11] khớp tổng dòng, có chủ thể để kiểm trên cổng', () => {
     const r = layTruongTKN(nhapHopLe(), { loai: 'nam', nam: 2025 }, hoSo);
     expect(r.ok).toBe(true);

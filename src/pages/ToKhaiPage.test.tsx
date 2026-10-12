@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ToKhaiPage from './ToKhaiPage';
-import { CAN_CU, kyGoiY, soanToKhai, suyLuan, type SuKienThue } from '@/lib/heLuat';
+import { CAN_CU, kyGoiY, soanToKhai, suyLuan, type KyToKhai, type SuKienThue } from '@/lib/heLuat';
 import type { KetQuaPhanTich } from '@/lib/goiToKhai';
 import { chiaTheoHoatDong } from '../../supabase/functions/_shared/doanh-thu/theo-hoat-dong';
 
@@ -32,9 +32,9 @@ const suKien = (p: Partial<SuKienThue> = {}): SuKienThue => ({
   hoatDong: chiaDu((p.doanhThuQuy ?? [200e6, 200e6, 200e6, 0]) as [number, number, number, number]), ...p,
 });
 
-function ketQua(sk: SuKienThue): KetQuaPhanTich {
+function ketQua(sk: SuKienThue, kyChon?: KyToKhai): KetQuaPhanTich {
   const sl = suyLuan(sk);
-  const ky = kyGoiY(sk, sl);
+  const ky = kyChon ?? kyGoiY(sk, sl);
   const soan = soanToKhai(sk, sl, { ten: 'HỘ KINH DOANH NAM ĐINH', mst: '0123456789' }, ky);
   const toKhai = soan.ok === true ? soan.to_khai : null;
   const lyDo = soan.ok === true ? null : soan.ly_do;
@@ -80,16 +80,36 @@ beforeEach(() => {
 const dung = () => render(<MemoryRouter><ToKhaiPage /></MemoryRouter>);
 
 describe('Tờ khai thuế', () => {
-  it('in ra đúng mẫu 01/TKN-CNKD với doanh thu thật và không có số thuế bịa', async () => {
+  it('kỳ năm 2026 in đúng mẫu 01/TKN-CNKD bản TT 89: 16 cột, mã nhóm ngành, phần B–E, không có số thuế bịa', async () => {
     dung();
     expect(await screen.findByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM')).toBeTruthy();
     expect(screen.getByText(/Mẫu số: 01\/TKN-CNKD/)).toBeTruthy();
-    expect(document.body.textContent).toContain('Thông tư số 50/2026/TT-BTC');
-    const bang = screen.getAllByRole('table').find((t) => t.textContent?.includes('Tổng cộng')) as HTMLElement;
-    // Doanh thu 600 triệu của ba quý đầu, điền vào dòng dịch vụ và dòng tổng cộng.
-    expect(within(bang).getAllByText('600.000.000').length).toBeGreaterThanOrEqual(2);
+    expect(document.body.textContent).toContain('Thông tư số 89/2026/TT-BTC ngày 30 tháng 6 năm 2026');
+    expect(document.body.textContent).not.toContain('Thông tư số 50/2026/TT-BTC');
+    const bang = screen.getAllByRole('table').find((t) => t.textContent?.includes('A. XÁC ĐỊNH NGHĨA VỤ THUẾ GTGT, TNCN')) as HTMLElement;
+    // Doanh thu 600 triệu của ba quý đầu: dòng [08] (nhóm 2 — dịch vụ) và ô [13.1].
+    expect(within(bang).getAllByText('600.000.000')).toHaveLength(2);
+    expect(within(bang).getByText('Số thuế nộp thừa')).toBeTruthy();
+    expect(within(bang).getByText('(16)')).toBeTruthy();
+    expect(within(bang).getByText('[13.15]')).toBeTruthy();
+    expect(within(bang).getByText('[15]=[13.13]-[14]>=0')).toBeTruthy();
     // Không có ô thuế nào bị điền 0 cho đẹp.
     expect(within(bang).queryByText('0')).toBeNull();
+    expect(screen.getByText('B. KÊ KHAI THUẾ TIÊU THỤ ĐẶC BIỆT')).toBeTruthy();
+    expect(screen.getByText('NGƯỜI TRỰC TIẾP THỰC HIỆN DỊCH VỤ LÀM THỦ TỤC VỀ THUẾ')).toBeTruthy();
+  });
+
+  it('kỳ 6 tháng đầu năm 2026 vẫn in mẫu TT 50 như trước (7 cột, Thuế GTGT gộp 4 cột)', async () => {
+    gia.goi.mockImplementation(async (hanhDong: string) => (hanhDong === 'phan_tich'
+      ? ketQua(suKien({ doanhThuQuy: [200e6, 200e6, 0, 0] }), { loai: '6_thang_dau', nam: 2026 }) as unknown as Record<string, unknown>
+      : { ok: true }));
+    dung();
+    await screen.findByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM');
+    expect(document.body.textContent).toContain('Thông tư số 50/2026/TT-BTC');
+    const bang = screen.getAllByRole('table').find((t) => t.textContent?.includes('Tổng cộng')) as HTMLElement;
+    expect(within(bang).getByText('Thuế GTGT').getAttribute('colspan')).toBe('4');
+    expect(within(bang).getByText('Thuế TNCN').getAttribute('colspan')).toBe('3');
+    expect(screen.queryByText('B. KÊ KHAI THUẾ TIÊU THỤ ĐẶC BIỆT')).toBeNull();
   });
 
   it('tab thuế TNCN từ tiền lương: ẩn tờ khai hộ kinh doanh, hiện bảng lương mẫu 05/KK-TNCN', async () => {

@@ -7,6 +7,11 @@
  * tự dòng, câu "(Áp dụng...)" và câu Ghi chú trong file này chép từ chính mẫu trong kho Công báo
  * MIMI đã cào, không viết lại theo trí nhớ.
  *
+ * 01/TKN-CNKD CÓ HAI BẢN (sửa 12/10/2026). Thông tư 89/2026/TT-BTC (hiệu lực 01/07/2026) Điều 99 khoản 5
+ * thay mẫu 01/TKN-CNKD bằng mẫu Phụ lục I của TT 89 — cấu trúc khác hẳn (16 cột, dòng theo loại hoạt
+ * động, phần B–E). Kỳ kết thúc trước 01/07/2026 vẫn mẫu TT 50 (Điều 100 khoản 1). `chonPhienBanTKN` chọn
+ * bản; mẫu TT 89 dựng trong `mau-tkn-tt89.ts`. Mẫu 01/CNKD (khai quý) TT 89 không thay → giữ bản TT 50.
+ *
  * CHỈ ĐIỀN Ô NÀO CÓ CĂN CỨ VÀ CÓ SỐ THẬT. Ô nào MIMI không tính được từ dữ liệu (doanh thu không
  * chịu thuế, doanh thu 0%, số thuế được miễn) thì để trống — người dùng hoặc kế toán điền, chứ
  * không điền 0 cho đẹp. Mỗi con số điền vào đều có một dòng trong `cach_tinh` nói nó ra từ đâu.
@@ -28,6 +33,10 @@ import {
 } from './he-luat.ts';
 import { HOAT_DONG, tienTrongKy, type ChiaHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
 import { CHAN_KHAI_THUONG, TEN_TRANG_THAI, type TrangThaiDoanhNghiep } from '../doanh-nghiep/trang-thai.ts';
+import {
+  AP_DUNG_TKN_TT89, CAM_DOAN_TT89, CHU_KY_TT89, COT_TKN_TT89, DANH_DAU_TKN_TT89, dungDongTKN89, GHI_CHU_TKN_TT89, KEM_THEO_TT89,
+  kiemCongThucTKN89, MA_NHOM_NGANH_TT89 as MA_NHOM_NGANH, NGAY_HIEU_LUC_TT89, NHAN_CHI_TIEU_TT89, PHAN_A_TT89, PHAN_SAU_TKN_TT89, type DongNganhTT89,
+} from './mau-tkn-tt89.ts';
 
 export type Mau = '01/TKN-CNKD' | '01/CNKD';
 
@@ -36,12 +45,47 @@ export type KyToKhai =
   | { loai: '6_thang_dau'; nam: number }
   | { loai: 'quy'; nam: number; quy: number };
 
+/**
+ * Bản mẫu nào của cùng một số hiệu mẫu. 01/TKN-CNKD có hai bản: kèm TT 50/2026 (kỳ trước 01/07/2026) và kèm
+ * TT 89/2026 (từ 01/07/2026) — cùng tên "01/TKN-CNKD" nên phải mang phiên bản theo, kẻo bộ điền hộ hay bản in
+ * nhầm cấu trúc.
+ */
+export type PhienBanMau = 'TT50/2026' | 'TT89/2026';
+
+/** Nhóm cột in thành dòng tiêu đề gộp phía trên tên cột. `chung` = cột không thuộc nhóm nào. */
+export type NhomCot = 'chung' | 'gtgt' | 'tncn' | 'truc_tiep_nop' | 'khau_tru_nop_thay' | 'nop_them' | 'nop_thua';
+export const TEN_NHOM_COT: Record<NhomCot, string> = {
+  chung: '',
+  gtgt: 'Thuế GTGT',
+  tncn: 'Thuế TNCN',
+  truc_tiep_nop: 'Số tiền người nộp thuế trực tiếp nộp vào NSNN',
+  khau_tru_nop_thay: 'Số tiền do tổ chức khấu trừ, nộp thay',
+  nop_them: 'Số thuế phải nộp thêm',
+  nop_thua: 'Số thuế nộp thừa',
+};
+
 export interface CotToKhai {
   khoa: string;
   /** Mã chỉ tiêu của cột, khi mẫu có đánh mã (01/CNKD có, 01/TKN-CNKD không). */
   ma: string | null;
   nhan: string;
-  nhom: 'gtgt' | 'tncn';
+  nhom: NhomCot;
+  /** Số thứ tự cột in trên mẫu, ví dụ "(1)" — mẫu TT 89 có, mẫu TT 50 không. */
+  so?: string;
+  /** `ma_nhom`: ô ghi mã nhóm ngành nghề 1…6, không phải tiền. Mặc định là tiền. */
+  kieu?: 'tien' | 'ma_nhom';
+}
+
+/** Một ô của bảng in tĩnh (phần B–E mẫu TT 89): chữ, số cột/hàng gộp, in đậm. */
+export interface OBangIn { nhan: string; cot: number; hang: number; dam: boolean }
+
+/** Phần in sau phần A, chép nguyên văn từ mẫu; MIMI không điền số vào đây. */
+export interface PhanSauToKhai {
+  tieu_de: string | null;
+  don_vi_tien?: string;
+  cau_dan?: string;
+  bang?: { dau: OBangIn[][]; than: OBangIn[][] };
+  dong_ke?: string[];
 }
 
 export interface DongToKhai {
@@ -54,13 +98,19 @@ export interface DongToKhai {
   la_tong?: boolean;
   /** Con số trên dòng này gồm những khoản nào — bấm vào là thấy. Tối đa 500 mã; `so_khoan` là số thật. */
   nguon_khoan?: { nguon: string; so_khoan: number; ids: string[] };
+  /** Dòng tiêu đề mục (vd "I Hoạt động sản xuất…"): một ô trải hết các cột, không có số. */
+  tieu_de_phan?: boolean;
+  /** Dòng chỉ có MỘT ô gộp hết các cột (mẫu TT 89, [14]–[18], [20], [21]): công thức in trên mẫu + giá trị. */
+  gop?: { cong_thuc: string | null; gia_tri: number | null };
+  /** Mã ô in sẵn trong từng cột (mẫu TT 89: [13.1]…[13.15], [19.1]…[19.15]). */
+  ma_o?: Record<string, string>;
 }
 
 /** Tờ khai đã đủ căn cứ để xuất/nộp chưa. */
 export type TrangThaiSanSang = 'san_sang' | 'can_xem' | 'bi_chan';
 
 export interface VuongMac {
-  ma: 'CHUA_RO_HOAT_DONG' | 'THIEU_MST' | 'TRANG_THAI_DOANH_NGHIEP' | 'KY_CHUA_KET_THUC' | 'THIEU_TY_LE' | 'NHIEU_NHOM_TNCN' | 'MAU_DA_THAY';
+  ma: 'CHUA_RO_HOAT_DONG' | 'THIEU_MST' | 'TRANG_THAI_DOANH_NGHIEP' | 'KY_CHUA_KET_THUC' | 'THIEU_TY_LE' | 'NHIEU_NHOM_TNCN' | 'MAU_DA_THAY' | 'SAI_CONG_THUC';
   /** true = chặn xuất; false = chỉ cần người xem lại. */
   chan: boolean;
   cau: string;
@@ -88,6 +138,7 @@ export interface ChiTieuDau {
 
 export interface ToKhai {
   mau: Mau;
+  phien_ban_mau: PhienBanMau;
   kem_theo: string;
   tieu_de: string;
   ap_dung: string;
@@ -101,6 +152,11 @@ export interface ToKhai {
   dong: DongToKhai[];
   /** Câu Ghi chú in trên chính mẫu (nguyên văn). */
   ghi_chu_mau: string[];
+  /** Phần B–E và bảng bù trừ của mẫu TT 89 — in trống, nguyên văn. Mẫu TT 50 không có. */
+  phan_sau?: PhanSauToKhai[];
+  /** Lời cam đoan và khối ký, khi mẫu khác bản TT 50 (mẫu TT 89 thêm chỗ ký của người làm dịch vụ thuế). */
+  cam_doan?: string;
+  chu_ky?: { dich_vu: string[]; nguoi_nop_chu_thich: string };
   /** MIMI giải thích từng con số đã điền. */
   cach_tinh: string[];
   canh_bao: string[];
@@ -329,6 +385,7 @@ function soanTKN(
   }
   const nuaDau = ky.loai === '6_thang_dau';
   const dt = nuaDau ? dtQuy[0] + dtQuy[1] : dtNam;
+  if (chonPhienBanTKN(ky) === 'TT89/2026') return soanTKN89(sk, sl, hoSo, ky, dtQuy, dt, tmdt);
   const dong = dongTKN();
   const canhBao: string[] = [];
   const cachTinh: string[] = [];
@@ -345,30 +402,6 @@ function soanTKN(
     cachTinh.push(`Dòng ${TEN_NHOM_NGANH[n]}: ${tienVN(tien)} — các khoản bạn đã xác nhận thuộc nhóm này.`);
   }
   if (chia.chua_ro.so_tien > 0) vuong.push(vuongChuaRo(chia.chua_ro, sk.nhomNganh));
-  /*
-   * MẪU ĐÃ BỊ THAY (thêm 25/09/2026). Thông tư 89/2026/TT-BTC (ban hành 30/06/2026, hiệu lực
-   * 01/07/2026) Điều 99 thay mẫu 01/TKN-CNKD bằng mẫu tại Phụ lục I của chính Thông tư đó; hồ sơ có
-   * kỳ tính thuế trước 01/07/2026 vẫn dùng mẫu cũ. Danh mục tờ khai trên dichvucong.gdt.gov.vn đã ghi
-   * "01/TKN-CNKD … (TT89/2026)".
-   *
-   * VẪN CHẶN (xét lại 11/10/2026). Đã đọc mẫu mới trên bản ký số của TT 89 (tệp 89-btc.signed.pdf
-   * vanban.chinhphu.vn, trang 365–371): mẫu đổi cấu trúc chứ không chỉ đổi dòng "Kèm theo" — phần A
-   * thành 16 cột (thêm cột "Nhóm ngành nghề (chỉ áp dụng với mục 1, 2, 5)", cột số tiền trực tiếp nộp,
-   * số tổ chức khấu trừ/nộp thay, số phải nộp thêm, số nộp thừa), các dòng [08]…[12] theo LOẠI hoạt
-   * động (cố định, nền tảng số, đại lý, môi giới, hợp tác kinh doanh) thay cho dòng theo nhóm ngành,
-   * [13] Tổng cộng có mã ô [13.1]…[13.15], [14] giảm thuế do thiên tai…, các phần sau phần A kéo dài tới trang 371,
-   * và hai ô đánh dấu mới (điều chỉnh tờ khai cũ; giảm thuế do thiên tai…). Hàm `dongTKN`/`COT_TKN` và giấy in hiện tại không biểu diễn được cấu trúc đó; in
-   * bảng cũ với dòng "Kèm theo Thông tư 89" là in sai mẫu. Gỡ chặn khi đã dựng lại toàn bộ mẫu mới.
-   * Kỳ "6 tháng đầu năm 2026" kết thúc 30/06/2026 → vẫn dùng mẫu cũ (TT 89 Điều 100 khoản 1), không chặn.
-   */
-  if (!nuaDau && ky.nam >= 2026) {
-    vuong.push({
-      ma: 'MAU_DA_THAY',
-      chan: true,
-      cau: `Từ kỳ tính thuế năm ${ky.nam}, mẫu 01/TKN-CNKD đã được thay bằng mẫu theo Thông tư 89/2026/TT-BTC (hiệu lực 01/07/2026). Mẫu mới đổi cấu trúc bảng (thêm cột, đổi dòng) và MIMI chưa dựng lại mẫu đó, nên chưa xuất bản này — số liệu phía trên vẫn dùng được để điền vào mẫu mới trên Cổng dịch vụ công.`,
-      hanh_dong: 'hoi_ke_toan',
-    });
-  }
   cachTinh.push(
     `[11] Tổng cộng: ${tienVN(dt)} = ${nuaDau ? 'doanh thu quý 1 + quý 2' : 'doanh thu 4 quý'} (${dtQuy.map((x) => tienVN(x)).join(' + ')})${sk.nguonDoanhThu ? `, ${TEN_NGUON_DOANH_THU[sk.nguonDoanhThu]}` : ''}.`,
   );
@@ -394,6 +427,7 @@ function soanTKN(
     ok: true,
     to_khai: {
       mau: '01/TKN-CNKD',
+      phien_ban_mau: 'TT50/2026',
       kem_theo: KEM_THEO_TT50,
       tieu_de: 'THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM',
       ap_dung: AP_DUNG_TKN,
@@ -409,6 +443,140 @@ function soanTKN(
       cot: COT_TKN,
       dong,
       ghi_chu_mau: [CAN_CU.tt50_mau_tkn.trich],
+      cach_tinh: cachTinh,
+      canh_bao: canhBao,
+      can_cu: [...new Set(canCu)],
+      san_sang: ketLuanSanSang(vuong),
+    },
+  };
+}
+
+/** Ngày cuối của kỳ khai trên mẫu 01/TKN-CNKD. */
+export function cuoiKyTKN(ky: Extract<KyToKhai, { loai: 'nam' | '6_thang_dau' }>): string {
+  return ky.loai === '6_thang_dau' ? `${ky.nam}-06-30` : `${ky.nam}-12-31`;
+}
+
+/**
+ * Chọn bản mẫu 01/TKN-CNKD theo kỳ (thêm 12/10/2026).
+ *
+ * TT 89 Điều 100 khoản 1: "hồ sơ khai thuế có kỳ tính thuế trước ngày 01 tháng 7 năm 2026" dùng mẫu cũ. Một kỳ
+ * chỉ "trước 01/07/2026" khi nó KẾT THÚC trước ngày đó — nên so NGÀY CUỐI KỲ, không so ngày đầu kỳ: kỳ năm 2026
+ * (01/01–31/12/2026) kéo dài qua 01/07 nên dùng mẫu mới (danh mục tờ khai trên dichvucong.gdt.gov.vn cũng đã
+ * ghi "01/TKN-CNKD … (TT89/2026)"); 6 tháng đầu năm 2026 hết 30/06/2026 nên vẫn mẫu cũ; năm 2025 mẫu cũ.
+ */
+export function chonPhienBanTKN(ky: Extract<KyToKhai, { loai: 'nam' | '6_thang_dau' }>): PhienBanMau {
+  return cuoiKyTKN(ky) >= NGAY_HIEU_LUC_TT89 ? 'TT89/2026' : 'TT50/2026';
+}
+
+/**
+ * 01/TKN-CNKD bản TT 89. Cùng nguyên tắc với bản cũ: chỉ ghi ô MIMI biết chắc —
+ *   - cột (1) mã nhóm ngành nghề + cột (2) tổng doanh thu, mỗi nhóm đã xác nhận một dòng, trên mục 1 [08] (bán
+ *     có địa điểm cố định) hoặc mục 2 [09] (nền tảng số không có thanh toán) theo kênh trong hồ sơ;
+ *   - [13.1] = doanh thu thật của kỳ.
+ * Để trống: cột (3)–(16), [14]–[21], phần B–E — hộ từ 01 tỷ trở xuống "chỉ thực hiện thông báo doanh thu" (Ghi
+ * chú của mẫu), và MIMI không biết số đã nộp/khấu trừ, quyết định giảm thuế, đại lý, môi giới, hợp tác kinh
+ * doanh, cho thuê bất động sản, TTĐB, tài nguyên. Ô trống là trống, không phải 0.
+ */
+function soanTKN89(
+  sk: SuKienThue,
+  sl: SuyLuan,
+  hoSo: { ten: string | null; mst: string | null },
+  ky: Extract<KyToKhai, { loai: 'nam' | '6_thang_dau' }>,
+  dtQuy: [number, number, number, number],
+  dt: number,
+  tmdt: boolean,
+): KetQuaSoan {
+  const nuaDau = ky.loai === '6_thang_dau';
+  const quy = nuaDau ? [1, 2] : [1, 2, 3, 4];
+  const canhBao: string[] = [];
+  const cachTinh: string[] = [];
+  // Kho căn cứ (he-luat.ts) chưa có mục cho chính mẫu TT 89 → không dẫn tt50_mau_tkn/tt50_d3 (đó là mẫu cũ);
+  // câu Ghi chú của mẫu mới in nguyên văn ở ghi_chu_mau.
+  const canCu = ['nd68_d3_k1', 'nd68_d4_k1', 'nd141_d1_k1', 'tt18_d4_k1a', 'nd68_d5_k1', nuaDau ? 'nd68_d9_k1' : 'nd68_d8_k1a'];
+  const vuong: VuongMac[] = [];
+
+  const nganh: DongNganhTT89[] = [];
+  let daChia = 0;
+  const chia = sk.hoatDong;
+  if (chia) {
+    for (const n of HOAT_DONG) {
+      const o = chia.nhom[n];
+      const tien = tienTrongKy(o, quy);
+      if (tien <= 0) continue;
+      nganh.push({ nhom: n, tong_dt: tien, nguon_khoan: { nguon: chia.nguon, so_khoan: o.so_khoan, ids: o.ids.slice(0, 500) } });
+      daChia += tien;
+      cachTinh.push(`Dòng ${tmdt ? '[09]' : '[08]'} nhóm ngành nghề (${MA_NHOM_NGANH[n]}) ${TEN_NHOM_NGANH[n]}: ${tienVN(tien)} — các khoản bạn đã xác nhận thuộc nhóm này.`);
+    }
+  }
+  // Phần chưa ai xác nhận nhóm: KHÔNG ghi lên dòng nào (mẫu bắt mỗi dòng một nhóm ngành nghề), chặn xuất.
+  const chuaRo = { so_tien: Math.max(0, dt - daChia), so_khoan: chia ? chia.nhom.chua_ro.so_khoan : 0 };
+  if (chuaRo.so_tien > 0) vuong.push(vuongChuaRo(chuaRo, sk.nhomNganh));
+
+  const dong = dungDongTKN89(tmdt ? { '[09]': nganh } : { '[08]': nganh });
+  const tong = dong.find((d) => d.ma === '[13]') as DongToKhai;
+  tong.o.tong_dt = dt;
+
+  // Công thức của mẫu phải khớp trước khi cho xuất; phần chưa rõ nhóm đã có vướng chặn riêng.
+  const loi = kiemCongThucTKN89(dong, { tong_dt: chuaRo.so_tien });
+  if (loi.length) vuong.push({ ma: 'SAI_CONG_THUC', chan: true, cau: `Bản nháp không khớp công thức của mẫu: ${loi.join(' ')}`, hanh_dong: 'hoi_ke_toan' });
+
+  cachTinh.push(
+    `[13.1] Tổng cộng doanh thu: ${tienVN(dt)} = ${nuaDau ? 'doanh thu quý 1 + quý 2' : 'doanh thu 4 quý'} (${dtQuy.map((x) => tienVN(x)).join(' + ')})${sk.nguonDoanhThu ? `, ${TEN_NGUON_DOANH_THU[sk.nguonDoanhThu]}` : ''}.`,
+  );
+  cachTinh.push('Cột (1) ghi mã nhóm ngành nghề theo Ghi chú của mẫu: (1) phân phối hàng hóa, (2) dịch vụ, (3) cho thuê tài sản trừ bất động sản, (4) sản xuất, vận tải, (5) nội dung số, (6) khác.');
+  cachTinh.push('Các cột số thuế, [14]–[21] và phần B–E để trống theo đúng Ghi chú của mẫu: doanh thu năm từ 01 tỷ đồng trở xuống thì chỉ thông báo doanh thu.');
+  canhBao.push('Mẫu mới tách riêng mục II "Hoạt động cho thuê bất động sản" ([19]) và các mục đại lý [10], môi giới [11], hợp tác kinh doanh với tổ chức [12]. MIMI không có dữ liệu các hoạt động này nên để trống — nếu bạn có, khai thêm trên Cổng dịch vụ công.');
+
+  if (sl.tam_tinh && !nuaDau) {
+    canhBao.push(`Năm ${ky.nam} chưa kết thúc: số trên đây là lũy kế tới ${ngayVN(sk.homNay)}. Nộp sau 31/12, hạn 31/01/${ky.nam + 1}.`);
+  }
+  if (!hoSo.mst) canhBao.push('Hồ sơ công ty chưa có mã số thuế — điền ở Cài đặt rồi soạn lại, tờ khai thiếu mã số thuế thì không nộp được.');
+  if (sk.daNopThueTrongNam) {
+    canhBao.push('Bạn đã nộp thuế trong năm: đánh dấu mục đề nghị hoàn và điền số tiền ở phần E ([49]) của mẫu — MIMI không biết bạn đã nộp bao nhiêu.');
+    canCu.push('nd141_d4_k1', 'tt18_d5_k1');
+  }
+
+  const N = NHAN_CHI_TIEU_TT89;
+  const chiTieu: ChiTieuDau[] = [
+    { ma: '[01a]', nhan: 'Kỳ tính thuế: Năm', gia_tri: nuaDau ? null : String(ky.nam) },
+    { ma: '[01b]', nhan: '6 tháng đầu năm', gia_tri: nuaDau ? String(ky.nam) : null },
+    { ma: '[01c]', nhan: '6 tháng cuối năm', gia_tri: null },
+    { ma: '[02]', nhan: N['[02]'], gia_tri: '✔' },
+    { ma: '[03]', nhan: N['[03]'], gia_tri: null },
+    { ma: '[04]', nhan: N['[04]'], gia_tri: hoSo.ten },
+    { ma: '[05]', nhan: N['[05]'], gia_tri: hoSo.mst },
+    { ma: '[06]', nhan: N['[06]'], gia_tri: null },
+    { ma: '[06.1]', nhan: N['[06.1]'], gia_tri: null },
+    { ma: '[06.2]', nhan: N['[06.2]'], gia_tri: null },
+    { ma: '[07]', nhan: N['[07]'], gia_tri: null },
+    { ma: '[07.1]', nhan: N['[07.1]'], gia_tri: null },
+    { ma: '[07.2]', nhan: N['[07.2]'], gia_tri: null },
+  ];
+
+  return {
+    ok: true,
+    to_khai: {
+      mau: '01/TKN-CNKD',
+      phien_ban_mau: 'TT89/2026',
+      kem_theo: KEM_THEO_TT89,
+      tieu_de: 'THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM',
+      ap_dung: AP_DUNG_TKN_TT89,
+      ky_chu: nuaDau ? `6 tháng đầu năm ${ky.nam}` : `Năm ${ky.nam}`,
+      han_nop: nuaDau ? `${ky.nam}-07-31` : `${ky.nam + 1}-01-31`,
+      // Ô 4 (hợp tác/đại lý/môi giới), 5 (điều chỉnh tờ khai cũ), 6 (giảm thuế thiên tai…) MIMI không biết → không đánh.
+      danh_dau: DANH_DAU_TKN_TT89.map((nhan, i) => ({
+        nhan,
+        chon: i === 0 ? !nuaDau : i === 1 ? nuaDau : i === 2 ? !!sk.daNopThueTrongNam : false,
+      })),
+      chi_tieu: chiTieu,
+      phan_a: PHAN_A_TT89,
+      don_vi_tien: DON_VI_TIEN,
+      cot: COT_TKN_TT89,
+      dong,
+      ghi_chu_mau: GHI_CHU_TKN_TT89,
+      phan_sau: PHAN_SAU_TKN_TT89,
+      cam_doan: CAM_DOAN_TT89,
+      chu_ky: CHU_KY_TT89,
       cach_tinh: cachTinh,
       canh_bao: canhBao,
       can_cu: [...new Set(canCu)],
@@ -560,6 +728,7 @@ function soanCNKD(
     ok: true,
     to_khai: {
       mau: '01/CNKD',
+      phien_ban_mau: 'TT50/2026',
       kem_theo: KEM_THEO_TT50,
       tieu_de: 'TỜ KHAI THUẾ ĐỐI VỚI HỘ KINH DOANH, CÁ NHÂN KINH DOANH',
       ap_dung: CAN_CU.tt50_mau_cnkd.trich,

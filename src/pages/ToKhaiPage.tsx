@@ -16,8 +16,8 @@ import { laTrongApp } from '@/lib/chayTrongApp';
 import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
 import { ToKhaiTncn } from '@/components/to-khai/ToKhaiTncn';
 import {
-  KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
-  type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
+  KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_COT, TEN_NHOM_NGANH,
+  type CanCuDaKiem, type NhomCot, type OBangIn, type PhanSauToKhai, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
 } from '@/lib/heLuat';
 import { dinhDangTien } from '@/lib/tien';
 
@@ -27,7 +27,9 @@ import { dinhDangTien } from '@/lib/tien';
  * Hai lớp, đọc từ trên xuống:
  *   1. Hồ sơ thuế — vài điều chỉ người dùng biết (nhóm ngành, bán ở đâu). Điều mã số thuế đã
  *      trả lời — tên đăng ký, hộ hay doanh nghiệp, cơ quan thuế — thì chỉ hiện, không hỏi lại.
- *   2. Bản nháp tờ khai — đúng mẫu 01/TKN-CNKD hoặc 01/CNKD kèm Thông tư 50/2026, in được.
+ *   2. Bản nháp tờ khai — đúng mẫu 01/TKN-CNKD hoặc 01/CNKD, in được. 01/TKN-CNKD có hai bản: kèm TT 50/2026
+ *      (kỳ trước 01/07/2026) và kèm TT 89/2026 (16 cột, phần B–E) — giấy in dựng từ dữ liệu mẫu, không
+ *      viết cứng cột, nên cùng một khung in đúng cả hai.
  *
  * Chuỗi suy luận kèm căn cứ không bày ở đây nữa: người dùng hỏi MIMI Assistant thì MIMI trả lời
  * (năng lực nghia_vu_thue), để trang này chỉ còn việc cần làm.
@@ -103,6 +105,55 @@ function nhanNutXuat(t: ThanhToanToKhai): string {
   return i18n.t('app.toKhai.xuat.canGoi');
 }
 
+/** Cột liền nhau cùng nhóm gộp thành một ô tiêu đề (mẫu TT 50: GTGT 4 cột, TNCN 3 cột; mẫu TT 89: 7 nhóm). */
+function nhomCot(cot: ToKhai['cot']): { nhom: NhomCot; so: number }[] {
+  const ra: { nhom: NhomCot; so: number }[] = [];
+  for (const c of cot) {
+    const cuoi = ra[ra.length - 1];
+    if (cuoi && cuoi.nhom === c.nhom) cuoi.so += 1;
+    else ra.push({ nhom: c.nhom, so: 1 });
+  }
+  return ra;
+}
+
+function GhiChuMau({ ds }: { ds: string[] }) {
+  if (!ds.length) return null;
+  return (
+    <div className="mt-3 text-[11px] leading-relaxed text-slate-600">
+      <p className="font-semibold">Ghi chú:</p>
+      {ds.map((g) => <p key={g}>- {g}</p>)}
+    </div>
+  );
+}
+
+/** Một ô của bảng in tĩnh ở phần B–E. */
+function OIn({ x, th }: { x: OBangIn; th: boolean }) {
+  const lop = `whitespace-pre-line border border-slate-300 px-2 py-1 text-center ${x.dam ? 'font-semibold' : 'font-normal'}`;
+  return th
+    ? <th scope="col" colSpan={x.cot} rowSpan={x.hang} className={lop}>{x.nhan}</th>
+    : <td colSpan={x.cot} rowSpan={x.hang} className={lop}>{x.nhan}</td>;
+}
+
+/** Phần B–E của mẫu TT 89: bảng/dòng kẻ in trống, nguyên văn — GIỮ TIẾNG VIỆT như phần còn lại của mẫu. */
+function PhanSauIn({ p }: { p: PhanSauToKhai }) {
+  return (
+    <div className="mt-5">
+      {p.tieu_de && <p className="font-semibold">{p.tieu_de}</p>}
+      {p.cau_dan && <p className="text-[12px]">{p.cau_dan}</p>}
+      {p.don_vi_tien && <p className="text-right text-[11px] italic text-slate-600">{p.don_vi_tien}</p>}
+      {p.bang && (
+        <div className="mt-1 overflow-x-auto">
+          <table className="w-full min-w-[760px] border-collapse text-[11px]">
+            <thead>{p.bang.dau.map((h, i) => <tr key={i} className="bg-slate-50">{h.map((x, j) => <OIn key={j} x={x} th />)}</tr>)}</thead>
+            <tbody>{p.bang.than.map((h, i) => <tr key={i} className="h-6">{h.map((x, j) => <OIn key={j} x={x} th={false} />)}</tr>)}</tbody>
+          </table>
+        </div>
+      )}
+      {p.dong_ke && <div className="mt-1 space-y-0.5 text-[12px]">{p.dong_ke.map((x) => <p key={x}>{x} ……</p>)}</div>}
+    </div>
+  );
+}
+
 /**
  * GIỮ TIẾNG VIỆT, KHÔNG DỊCH: đây là mẫu tờ khai theo Thông tư (quốc hiệu, lời cam đoan, chỗ ký, căn cứ pháp lý)
  * để in và nộp cho cơ quan thuế — nguyên văn pháp lý, dịch ra là mất giá trị. Chỉ chữ phụ trợ trên màn hình
@@ -160,8 +211,9 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
               <th scope="col" className="border border-slate-300 px-2 py-1 text-left">STT</th>
               <th scope="col" className="border border-slate-300 px-2 py-1 text-left">Chỉ tiêu</th>
               <th scope="col" className="border border-slate-300 px-2 py-1 text-left">Mã chỉ tiêu</th>
-              <th scope="col" className="border border-slate-300 px-2 py-1 text-center" colSpan={4}>Thuế GTGT</th>
-              <th scope="col" className="border border-slate-300 px-2 py-1 text-center" colSpan={3}>Thuế TNCN</th>
+              {nhomCot(tk.cot).map((g, i) => (
+                <th key={`${g.nhom}-${i}`} scope="col" className="border border-slate-300 px-2 py-1 text-center" colSpan={g.so}>{TEN_NHOM_COT[g.nhom]}</th>
+              ))}
             </tr>
             <tr className="bg-slate-50">
               <th scope="col" className="border border-slate-300 px-2 py-1" />
@@ -173,9 +225,20 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
                 </th>
               ))}
             </tr>
+            {tk.cot.some((c) => c.so) && (
+              <tr className="bg-slate-50 text-[11px] italic">
+                <th scope="col" className="border border-slate-300 px-2 py-1" colSpan={3} />
+                {tk.cot.map((c) => <th key={c.khoa} scope="col" className="border border-slate-300 px-2 py-1 text-center font-normal">{c.so ?? ''}</th>)}
+              </tr>
+            )}
           </thead>
           <tbody>
-            {tk.dong.map((d, i) => (
+            {tk.dong.map((d, i) => d.tieu_de_phan ? (
+              <tr key={`p-${i}`} className="font-semibold">
+                <td className="border border-slate-300 px-2 py-1 align-top">{d.stt}</td>
+                <td className="border border-slate-300 px-2 py-1" colSpan={tk.cot.length + 2}>{d.nhan}</td>
+              </tr>
+            ) : (
               <tr key={`${d.ma ?? 'x'}-${i}`} className={d.la_tong ? 'font-semibold' : ''}>
                 <td className="border border-slate-300 px-2 py-1 align-top">{d.stt}</td>
                 <td className={`border border-slate-300 px-2 py-1 align-top ${d.cap === 1 ? 'pl-4' : ''}`}>
@@ -187,8 +250,16 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
                   )}
                 </td>
                 <td className="border border-slate-300 px-2 py-1 align-top whitespace-nowrap">{d.ma ?? ''}</td>
-                {tk.cot.map((c) => (
-                  <td key={c.khoa} className="border border-slate-300 px-2 py-1 text-right tabular-nums">{so(d.o[c.khoa])}</td>
+                {d.gop ? (
+                  <td className="border border-slate-300 px-2 py-1 text-center tabular-nums" colSpan={tk.cot.length}>
+                    {d.gop.gia_tri !== null ? so(d.gop.gia_tri) : (d.gop.cong_thuc ?? '')}
+                  </td>
+                ) : tk.cot.map((c) => (
+                  <td key={c.khoa} className={`border border-slate-300 px-2 py-1 tabular-nums ${c.kieu === 'ma_nhom' ? 'text-center' : 'text-right'}`}>
+                    {c.kieu === 'ma_nhom'
+                      ? (d.o[c.khoa] ?? '')
+                      : d.o[c.khoa] !== null && d.o[c.khoa] !== undefined ? so(d.o[c.khoa]) : <span className="text-[10px] text-slate-400">{d.ma_o?.[c.khoa] ?? ''}</span>}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -196,22 +267,27 @@ function GiayToKhai({ tk, canCu, xemTruoc }: { tk: ToKhai; canCu: CanCuDaKiem[];
         </table>
       </div>
 
-      {!!tk.ghi_chu_mau.length && (
-        <div className="mt-3 text-[11px] leading-relaxed text-slate-600">
-          <p className="font-semibold">Ghi chú:</p>
-          {tk.ghi_chu_mau.map((g) => <p key={g}>- {g}</p>)}
-        </div>
-      )}
+      {/* Mẫu TT 89 in Ghi chú ở cuối, sau chỗ ký; mẫu TT 50 giữ chỗ cũ ngay dưới bảng. */}
+      {!tk.phan_sau && <GhiChuMau ds={tk.ghi_chu_mau} />}
 
-      <p className="mt-5 text-[12px] italic">Tôi cam đoan những nội dung kê khai trên là đúng và chịu trách nhiệm trước pháp luật về những nội dung đã khai./.</p>
-      <div className="mt-6 flex flex-col items-end text-center text-[12px]">
+      {tk.phan_sau?.map((p, i) => <PhanSauIn key={`${p.tieu_de ?? 'x'}-${i}`} p={p} />)}
+
+      <p className="mt-5 text-[12px] italic">{tk.cam_doan ?? 'Tôi cam đoan những nội dung kê khai trên là đúng và chịu trách nhiệm trước pháp luật về những nội dung đã khai./.'}</p>
+      <div className={`mt-6 flex text-center text-[12px] ${tk.chu_ky ? 'flex-col gap-4 sm:flex-row sm:justify-between' : 'flex-col items-end'}`}>
+        {tk.chu_ky && (
+          <div>
+            <p className="font-semibold">{tk.chu_ky.dich_vu[0]}</p>
+            {tk.chu_ky.dich_vu.slice(1).map((x) => <p key={x} className="text-left">{x}</p>)}
+          </div>
+        )}
         <div>
           <p>....., ngày ..... tháng ....... năm ......</p>
           <p className="font-semibold uppercase">Người nộp thuế hoặc</p>
           <p className="font-semibold uppercase">Đại diện hợp pháp của người nộp thuế</p>
-          <p className="italic">(Ký, ghi rõ họ tên/ Ký điện tử)</p>
+          <p className="italic">{tk.chu_ky?.nguoi_nop_chu_thich ?? '(Ký, ghi rõ họ tên/ Ký điện tử)'}</p>
         </div>
       </div>
+      {tk.phan_sau && <GhiChuMau ds={tk.ghi_chu_mau} />}
 
       <div className="mt-6 border-t border-slate-200 pt-3 text-[11px] text-slate-600">
         <p className="font-semibold text-slate-900">Căn cứ MIMI dùng cho tờ khai này</p>

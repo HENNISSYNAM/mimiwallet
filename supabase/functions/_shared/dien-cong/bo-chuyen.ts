@@ -88,6 +88,8 @@ export type KetQuaLay =
 interface DongNhap { ma: string | null; o: Record<string, number | null> }
 interface DuLieuNhap {
   mau?: string;
+  phien_ban_mau?: string;
+  kem_theo?: string;
   chi_tieu?: { ma: string; gia_tri: string | null }[];
   danh_dau?: { nhan: string; chon: boolean }[];
   dong?: DongNhap[];
@@ -117,6 +119,15 @@ export function layTruongTKN(
 ): KetQuaLay {
   const d = (duLieu ?? {}) as DuLieuNhap;
   if (d.mau !== '01/TKN-CNKD') return { ok: false, ly_do: 'Bộ chuyển này chỉ điền mẫu 01/TKN-CNKD.' };
+  /*
+   * Mẫu 01/TKN-CNKD kèm TT 89/2026 (kỳ kết thúc từ 01/07/2026) cùng số hiệu nhưng khác hẳn cấu trúc: 16 cột, dòng
+   * [08]–[12] theo loại hoạt động, mỗi ngành nghề một dòng có mã nhóm. Các ô bộ chuyển biết ([08a]…[08e], [11]) là
+   * của mẫu TT 50 — đem điền sang mẫu mới là điền sai ô. Từ chối rõ, cả khi bản nháp cũ không có `phien_ban_mau`
+   * mà dòng "Kèm theo" ghi TT 89.
+   */
+  if (d.phien_ban_mau === 'TT89/2026' || (d.kem_theo ?? '').includes('89/2026')) {
+    return { ok: false, ly_do: 'Bản nháp theo mẫu 01/TKN-CNKD kèm Thông tư 89/2026 — bộ chuyển điền hộ chưa hỗ trợ mẫu này (chỉ biết mẫu kèm Thông tư 50/2026). Điền tay trên cổng theo bản in.' };
+  }
   if (ky.loai !== 'nam' && ky.loai !== '6_thang_dau') return { ok: false, ly_do: 'Mẫu 01/TKN-CNKD chỉ có kỳ năm hoặc 6 tháng đầu năm.' };
   if (d.san_sang?.trang_thai === 'bi_chan') return { ok: false, ly_do: 'Bản nháp còn vướng mắc chặn — gỡ vướng mắc rồi lưu bản nháp mới.' };
   if (!hoSo.mst || !/^\d{10}(-\d{3})?$/.test(hoSo.mst)) return { ok: false, ly_do: 'Hồ sơ chưa có mã số thuế hợp lệ — không xác nhận được đúng người nộp trên cổng.' };
