@@ -105,3 +105,34 @@ export const SO_TRO_DE_XUAT = {
 export function soTroToiDa(goi: string | null | undefined): number {
   return SO_TRO_DE_XUAT[nhomGoi(goi)];
 }
+
+/**
+ * GÓI XU MUA THÊM (12/10/2026, chủ sản phẩm: khách mua gói, chuyển khoản vào tài khoản MIMI có liên kết SePay,
+ * webhook đẩy về, đối chiếu là nhận hạn mức; giá "phải liên kết rất chặt với số token mình tiêu qua API").
+ *
+ * GIÁ TÍNH TỪ CHI PHÍ TOKEN, không đặt tay: giá = số xu × USD_MOT_XU × tỷ giá × hệ số biên, làm tròn LÊN
+ * nghìn đồng. Một xu luôn đổi ra đúng 0,001 USD tiền token MIMI trả cho cổng mô hình (`xuCuaLuot` lấy
+ * `usage.cost` OpenRouter báo), nên mỗi gói xu bán ra luôn có lãi bằng (hệ số − 1) trên tiền token.
+ * Tỷ giá, hệ số và cỡ gói đều là ĐỀ XUẤT chờ chủ chốt.
+ */
+export const TY_GIA_USD_VND_DE_XUAT = 26_500;
+export const HE_SO_BIEN_XU_DE_XUAT = 2;
+
+export const GOI_XU_DE_XUAT = {
+  xu_1000: { so_xu: 1_000, ten: '1.000 xu' },
+  xu_5000: { so_xu: 5_000, ten: '5.000 xu' },
+  xu_20000: { so_xu: 20_000, ten: '20.000 xu' },
+} as const;
+export type KhoaGoiXu = keyof typeof GOI_XU_DE_XUAT;
+
+/** Giá (đồng, số nguyên, tròn nghìn) của `soXu` xu — chỉ máy chủ dùng số này để phát hành hoá đơn. */
+export function giaXu(soXu: number): number {
+  const dong = soXu * USD_MOT_XU_DE_XUAT * TY_GIA_USD_VND_DE_XUAT * HE_SO_BIEN_XU_DE_XUAT;
+  return Math.ceil(Math.round(dong) / 1000) * 1000;
+}
+
+export function goiXu(khoa: string | null | undefined): { so_xu: number; ten: string; amount: number } | null {
+  if (!khoa || !(khoa in GOI_XU_DE_XUAT)) return null;
+  const g = GOI_XU_DE_XUAT[khoa as KhoaGoiXu];
+  return { so_xu: g.so_xu, ten: g.ten, amount: giaXu(g.so_xu) };
+}

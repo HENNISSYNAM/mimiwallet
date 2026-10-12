@@ -158,7 +158,15 @@ export function thongBaoGoi(goi: { plan: string; current_period_end: string } | 
 }
 
 /** Tiền trả cho MIMI đã về — gọi từ đối soát thu phí. */
-export function thongBaoThanhToan(hoaDon: { id: string; amount: number; so_luot: number | null; plan: string }): BanNhapThongBao {
+export function thongBaoThanhToan(hoaDon: { id: string; amount: number; so_luot: number | null; so_xu?: number | null; plan: string }): BanNhapThongBao {
+  if (hoaDon.so_xu) {
+    return {
+      khoa: `thanh_toan:${hoaDon.id}`, loai: 'thanh_toan', muc_do: 'thong_tin',
+      tieu_de: `Đã nhận ${so(hoaDon.amount)}đ — cộng ${so(hoaDon.so_xu)} xu năng lượng`,
+      noi_dung: 'MIMI đã đối chiếu khoản chuyển khoản với mã thanh toán của bạn.',
+      duong_dan: '/dashboard/settings', hanh_dong: [],
+    };
+  }
   return {
     khoa: `thanh_toan:${hoaDon.id}`,
     loai: 'thanh_toan',

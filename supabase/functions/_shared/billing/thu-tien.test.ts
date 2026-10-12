@@ -45,7 +45,17 @@ function dbGia(bang: Record<string, Dong[]>) {
     };
     return b;
   };
-  return { from: q, bang };
+  // Mô phỏng hàm SQL `cong_xu_hoa_don` (migration 20261011120000): một hoá đơn cộng một lần; 'nang_goi' nâng tới hạn mức.
+  const rpc = async (ten: string, a: Dong) => {
+    if (ten !== 'cong_xu_hoa_don') return { data: null, error: { message: `không có hàm ${ten}` } };
+    const so = (bang.so_xu ??= []);
+    const con = Number(so.at(-1)?.so_du_sau ?? 0);
+    if (so.some((x) => x.hoa_don_id === a.p_hoa_don)) return { data: { da_cong: 0, so_du: con }, error: null };
+    const cong = a.p_ly_do === 'mua' ? Number(a.p_so_xu) : Math.max(Number(a.p_so_xu) - con, 0);
+    if (cong > 0) so.push({ company_id: a.p_company, thay_doi: cong, so_du_sau: con + cong, ly_do: a.p_ly_do, hoa_don_id: a.p_hoa_don });
+    return { data: { da_cong: cong, so_du: con + cong }, error: null };
+  };
+  return { from: q, rpc, bang };
 }
 
 const BAY_GIO = new Date('2026-09-24T08:00:00Z');
@@ -136,5 +146,39 @@ describe('quyền lợi', () => {
   it('một kỳ khai có một khoá: sửa số rồi xuất lại không bị tính thêm', () => {
     expect(khoaKy('01/CNKD', { loai: 'quy', nam: 2026, quy: 3 })).toBe('01/CNKD|2026|quy|3');
     expect(khoaKy('01/TKN-CNKD', { loai: 'nam', nam: 2026 })).toBe('01/TKN-CNKD|2026|nam|');
+  });
+});
+
+
+describe('mua xu và nâng gói qua chuyển khoản (12/10/2026)', () => {
+  it('hoá đơn gói xu: tiền về đúng mã → cộng đúng số xu, đối soát chạy lại không cộng thêm', async () => {
+    const { giaXu } = await import('./bang-gia');
+    const db = dbGia({
+      subscription_invoices: [hoaDon({ id: 'hx', company_id: 'c1', reference_code: 'MIMIXU01', amount: giaXu(1000), plan: 'xu', so_xu: 1000 })],
+      tien_ve_mimi: [tien({ id: 't1', so_tien: giaXu(1000), noi_dung: 'CK MIMIXU01' })],
+    });
+    expect((await doiSoatTienVeMimi(db, BAY_GIO)).da_kich_hoat).toBe(1);
+    expect(db.bang.so_xu).toEqual([expect.objectContaining({ thay_doi: 1000, so_du_sau: 1000, ly_do: 'mua', hoa_don_id: 'hx' })]);
+    await doiSoatTienVeMimi(db, BAY_GIO);
+    expect(db.bang.so_xu).toHaveLength(1);
+  });
+
+  it('trả gói tháng giữa tháng: nhận NGAY hạn mức xu của gói, không đợi tháng sau', async () => {
+    const { GOI_THANG, hanMucXuThang } = await import('./bang-gia');
+    const db = dbGia({
+      subscription_invoices: [hoaDon({ id: 'hg', company_id: 'c1', reference_code: 'MIMIGOI1', amount: GOI_THANG.starter.amount, plan: 'starter' })],
+      tien_ve_mimi: [tien({ id: 't2', so_tien: GOI_THANG.starter.amount, noi_dung: 'MIMIGOI1' })],
+      so_xu: [{ company_id: 'c1', thay_doi: 300, so_du_sau: 120, ly_do: 'tang_thang' }],
+    });
+    await doiSoatTienVeMimi(db, BAY_GIO);
+    expect(db.bang.so_xu.at(-1)).toMatchObject({ ly_do: 'nang_goi', so_du_sau: hanMucXuThang('starter'), hoa_don_id: 'hg' });
+  });
+
+  it('giá gói xu tính từ chi phí token, tròn nghìn đồng, tăng theo số xu', async () => {
+    const { giaXu, USD_MOT_XU_DE_XUAT, TY_GIA_USD_VND_DE_XUAT, HE_SO_BIEN_XU_DE_XUAT } = await import('./bang-gia');
+    const g = giaXu(1000);
+    expect(g % 1000).toBe(0);
+    expect(g).toBeGreaterThanOrEqual(1000 * USD_MOT_XU_DE_XUAT * TY_GIA_USD_VND_DE_XUAT * HE_SO_BIEN_XU_DE_XUAT);
+    expect(giaXu(5000)).toBeGreaterThan(g);
   });
 });

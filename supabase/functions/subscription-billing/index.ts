@@ -4,7 +4,7 @@ import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts
 import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 import { taoMaThamChieu } from "../_shared/billing/subscription.ts";
 import { doiSoatTienVeMimi, GIA_MOT_TO_KHAI, GOI, TOI_DA_LUOT_MOT_LAN } from "../_shared/billing/thu-tien.ts";
-import { DANG_BAN_LUOT } from "../_shared/billing/bang-gia.ts";
+import { DANG_BAN_LUOT, goiXu } from "../_shared/billing/bang-gia.ts";
 
 /**
  * Thu phí MIMI bằng chuyển khoản ngân hàng.
@@ -137,11 +137,17 @@ Deno.serve(async (req) => {
     if (muaLuot && (!Number.isInteger(soLuot) || (soLuot as number) < 1 || (soLuot as number) > TOI_DA_LUOT_MOT_LAN)) {
       return json({ error: `Mua từ 1 đến ${TOI_DA_LUOT_MOT_LAN} lượt một lần.` }, 400);
     }
-    const goi = muaLuot
-      ? { amount: (soLuot as number) * GIA_MOT_TO_KHAI, ten: `${soLuot} lượt xuất tờ khai` }
-      : GOI[body?.plan];
+    // 12/10/2026: mua gói xu. Giá do máy chủ tính từ chi phí token (`giaXu`), không nhận từ trình duyệt.
+    const muaXu = body?.loai === "xu";
+    const gx = muaXu ? goiXu(String(body?.goi_xu ?? "")) : null;
+    if (muaXu && !gx) return json({ error: "Gói xu không hợp lệ" }, 400);
+    const goi = muaXu ? { amount: gx!.amount, ten: gx!.ten }
+      : muaLuot
+        ? { amount: (soLuot as number) * GIA_MOT_TO_KHAI, ten: `${soLuot} lượt xuất tờ khai` }
+        : GOI[body?.plan];
     if (!goi) return json({ error: "Gói không hợp lệ" }, 400);
-    const khoaGoi = muaLuot ? "luot_to_khai" : String(body.plan);
+    const khoaGoi = muaXu ? "xu" : muaLuot ? "luot_to_khai" : String(body.plan);
+    const soXu = muaXu ? gx!.so_xu : null;
 
     const bank = taiKhoanNhan();
     if (!bank) {
@@ -171,6 +177,7 @@ Deno.serve(async (req) => {
       .eq("status", "pending")
       .eq("plan", khoaGoi);
     if (muaLuot) timCho = timCho.eq("so_luot", soLuot);
+    if (muaXu) timCho = timCho.eq("so_xu", soXu);
     const { data: dangCho } = await timCho
       .order("created_at", { ascending: false })
       .limit(1)
@@ -187,6 +194,7 @@ Deno.serve(async (req) => {
           plan: khoaGoi,
           amount: goi.amount,
           so_luot: soLuot,
+          ...(muaXu ? { so_xu: soXu } : {}),
         })
         .select("id, reference_code, amount, plan, created_at")
         .single();

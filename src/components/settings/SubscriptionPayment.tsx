@@ -73,7 +73,7 @@ function DongChep({ nhan, giaTri, icon: Icon, mono }: {
 }
 
 /**
- * `plan` để trả gói tháng; `soLuot` để mua lượt xuất tờ khai (10.000đ một lượt). Giá do máy chủ
+ * `plan` để trả gói tháng; `goiXu` để mua gói xu (12/10/2026); `soLuot` để mua lượt (đã ngừng bán). Giá do máy chủ
  * tính — màn hình chỉ nói mình muốn mua gì.
  */
 /**
@@ -81,7 +81,7 @@ function DongChep({ nhan, giaTri, icon: Icon, mono }: {
  * MIMI thu bằng VietQR. Trong app chỉ nói là chưa mua được ở đây — không giá, không đường dẫn ra ngoài để mua
  * (chính sách chống lái người dùng ra ngoài của Play). Xem src/lib/chayTrongApp.ts.
  */
-export function SubscriptionPayment(props: { plan?: string; soLuot?: number; onPaid?: () => void }) {
+export function SubscriptionPayment(props: { plan?: string; soLuot?: number; goiXu?: string; onPaid?: () => void }) {
   if (laTrongApp()) return <ChuaBanTrongApp />;
   return <ManChuyenKhoan {...props} />;
 }
@@ -91,7 +91,7 @@ export function ChuaBanTrongApp() {
   return <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">{t('app.chuaBanTrongApp')}</p>;
 }
 
-function ManChuyenKhoan({ plan, soLuot, onPaid }: { plan?: string; soLuot?: number; onPaid?: () => void }) {
+function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot?: number; goiXu?: string; onPaid?: () => void }) {
   const [hoaDon, setHoaDon] = useState<HoaDon | null>(null);
   const [dangTao, setDangTao] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -103,7 +103,7 @@ function ManChuyenKhoan({ plan, soLuot, onPaid }: { plan?: string; soLuot?: numb
     try {
       // Kèm công ty đang dùng: người có nhiều công ty phải được cộng lượt vào đúng công ty đang xem.
       const { data, error } = await supabase.functions.invoke('subscription-billing', {
-        body: await kemCongTy(soLuot ? { action: 'create', loai: 'luot_to_khai', so_luot: soLuot } : { action: 'create', plan }),
+        body: await kemCongTy(goiXu ? { action: 'create', loai: 'xu', goi_xu: goiXu } : soLuot ? { action: 'create', loai: 'luot_to_khai', so_luot: soLuot } : { action: 'create', plan }),
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -113,7 +113,7 @@ function ManChuyenKhoan({ plan, soLuot, onPaid }: { plan?: string; soLuot?: numb
     } finally {
       setDangTao(false);
     }
-  }, [plan, soLuot]);
+  }, [plan, soLuot, goiXu]);
 
   useEffect(() => { void tao(); }, [tao]);
 
@@ -157,7 +157,9 @@ function ManChuyenKhoan({ plan, soLuot, onPaid }: { plan?: string; soLuot?: numb
         .maybeSingle();
       if (data?.status === 'paid') {
         clearInterval(t);
-        toast.success(soLuot
+        toast.success(goiXu
+          ? 'Đã nhận tiền. Đã cộng xu vào năng lượng MIMI.'
+          : soLuot
           ? `Đã nhận tiền. Đã cộng ${soLuot} lượt xuất tờ khai.`
           : 'Đã nhận được thanh toán. Gói đã kích hoạt.');
         onPaid?.();
@@ -171,7 +173,7 @@ function ManChuyenKhoan({ plan, soLuot, onPaid }: { plan?: string; soLuot?: numb
       }
     }, 5_000);
     return () => clearInterval(t);
-  }, [hoaDon, onPaid, soLuot]);
+  }, [hoaDon, onPaid, soLuot, goiXu]);
 
   if (dangTao) {
     return (

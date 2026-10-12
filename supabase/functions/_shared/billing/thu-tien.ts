@@ -20,7 +20,7 @@ import { ghiSuKien } from '../do-luong/su-kien.ts';
 type Db = any;
 
 // Giá đọc từ MỘT bảng giá chung với Cài đặt và trang chủ — xem `bang-gia.ts`.
-import { GIA_MOT_TO_KHAI, GOI_DOANH_NGHIEP_TRON_DOI, GOI_THANG, HET_HAN_TRON_DOI, mienPhiTronDoi } from './bang-gia.ts';
+import { GIA_MOT_TO_KHAI, GOI_DOANH_NGHIEP_TRON_DOI, GOI_THANG, hanMucXuThang, HET_HAN_TRON_DOI, mienPhiTronDoi } from './bang-gia.ts';
 export { GIA_MOT_TO_KHAI };
 /** Mua tối đa bao nhiêu lượt một lần — chặn hoá đơn gõ nhầm 1000 lượt. */
 export const TOI_DA_LUOT_MOT_LAN = 20;
@@ -53,7 +53,9 @@ export interface KetQuaThuTien {
  */
 export async function doiSoatTienVeMimi(db: Db, bayGio: Date = new Date()): Promise<KetQuaThuTien> {
   const { data: hoaDon, error: e1 } = await db.from('subscription_invoices')
-    .select('id, company_id, reference_code, amount, status, plan, so_luot')
+    // `*` thay vì liệt kê: cột `so_xu` chỉ có sau migration 20261011120000 — liệt kê cứng thì thiếu cột là hỏng
+    // cả vòng đối soát gói tháng.
+    .select('*')
     .eq('status', 'pending');
   if (e1) throw new Error(`đọc hoá đơn: ${e1.message}`);
   if (!hoaDon?.length) return { da_kich_hoat: 0, lech_so_tien: 0, chua_khop: 0 };
@@ -89,10 +91,10 @@ export async function doiSoatTienVeMimi(db: Db, bayGio: Date = new Date()): Prom
     await db.from('tien_ve_mimi').update({ hoa_don_id: h.id }).eq('id', m.transaction_id).is('hoa_don_id', null);
     await apDung(db, h, bayGio);
     daKichHoat += 1;
-    await ghiSuKien(db, h.company_id, null, 'first_paid_action', { loai: h.so_luot ? 'luot_to_khai' : 'goi' });
+    await ghiSuKien(db, h.company_id, null, 'first_paid_action', { loai: h.so_xu ? 'xu' : h.so_luot ? 'luot_to_khai' : 'goi' });
     // Báo trong app (và lên điện thoại ở lần quét kế tiếp). Lỗi ở đây không được làm hỏng việc thu tiền.
     try {
-      await ghiThongBao(db, h.company_id, [thongBaoThanhToan({ id: h.id, amount: Number(h.amount), so_luot: h.so_luot ?? null, plan: h.plan })]);
+      await ghiThongBao(db, h.company_id, [thongBaoThanhToan({ id: h.id, amount: Number(h.amount), so_luot: h.so_luot ?? null, so_xu: h.so_xu ?? null, plan: h.plan })]);
     } catch (e) {
       console.error('thông báo thanh toán:', e instanceof Error ? e.message : e);
     }
@@ -119,6 +121,12 @@ type Row = Record<string, any>;
 
 /** Hoá đơn đã trả: cộng lượt, hoặc gia hạn gói. */
 async function apDung(db: Db, h: Row, bayGio: Date): Promise<void> {
+  if (h.so_xu) {
+    // Gói xu: cộng đúng số xu của hoá đơn, nguyên tử, một lần (hàm SQL kiểm `hoa_don_id`).
+    const { error } = await db.rpc('cong_xu_hoa_don', { p_company: h.company_id, p_so_xu: Number(h.so_xu), p_ly_do: 'mua', p_hoa_don: h.id });
+    if (error) throw new Error(`cộng xu: ${error.message}`);
+    return;
+  }
   if (h.so_luot) {
     // `hoa_don_id` duy nhất: chạy trùng thì lần sau lỗi khoá trùng và không cộng thêm.
     const { error } = await db.from('luot_to_khai').insert({
@@ -147,6 +155,12 @@ async function apDung(db: Db, h: Row, bayGio: Date): Promise<void> {
     last_invoice_id: h.id,
     updated_at: bayGio.toISOString(),
   }, { onConflict: 'company_id' });
+  /*
+   * Trả gói giữa tháng → nhận NGAY hạn mức xu của gói (không đợi lần nạp đầu tháng sau). Sổ xu lỗi (vd. migration
+   * chưa áp) không được làm hỏng việc kích hoạt gói đã thu tiền: chỉ ghi log.
+   */
+  const { error: loiXu } = await db.rpc('cong_xu_hoa_don', { p_company: h.company_id, p_so_xu: hanMucXuThang(h.plan), p_ly_do: 'nang_goi', p_hoa_don: h.id });
+  if (loiXu) console.error('nâng hạn mức xu:', loiXu.message);
 }
 
 // ── Quyền lợi: công ty này đang được xuất tờ khai bằng gì ─────────────────────

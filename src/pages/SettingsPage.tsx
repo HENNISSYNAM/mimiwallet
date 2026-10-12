@@ -18,6 +18,34 @@ import { DangXuatMoiThietBi } from '@/components/settings/DangXuatMoiThietBi';
 import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
 import { DEMO_EMAIL } from '@/lib/env';
 import { dinhDangTien } from '@/lib/tien';
+import { GOI_XU_DE_XUAT, goiXu, type KhoaGoiXu } from '../../supabase/functions/_shared/billing/bang-gia.ts';
+
+/**
+ * Mua gói xu (12/10/2026): chuyển khoản VietQR vào tài khoản MIMI (SePay báo về), đối soát theo mã tham chiếu,
+ * cộng xu tự động. Giá do máy chủ tính từ chi phí token — số hiển thị ở đây cùng một công thức (`goiXu`).
+ */
+function MuaXu() {
+  const [chon, setChon] = useState<KhoaGoiXu | null>(null);
+  if (laTrongApp()) return <div className="mt-4"><ChuaBanTrongApp /></div>;
+  return (
+    <div className="mt-5 border-t border-border/60 pt-4">
+      <p className="text-sm font-medium text-foreground">Nạp thêm xu</p>
+      <p className="mt-1 text-xs text-muted-foreground">Chuyển khoản đúng số tiền và mã tham chiếu; tiền về là MIMI tự cộng xu, thường trong vài phút. Giá tính theo chi phí AI thật mà MIMI trả cho mỗi lượt.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {(Object.keys(GOI_XU_DE_XUAT) as KhoaGoiXu[]).map((k) => {
+          const g = goiXu(k)!;
+          return (
+            <button key={k} type="button" aria-pressed={chon === k} onClick={() => setChon(chon === k ? null : k)}
+              className={`h-9 rounded-xl px-3 text-sm ${chon === k ? 'bg-primary text-primary-foreground' : 'border border-border text-foreground hover:bg-accent'}`}>
+              {g.ten} · {dinhDangTien(g.amount)}
+            </button>
+          );
+        })}
+      </div>
+      {chon && <div className="mt-4"><SubscriptionPayment key={chon} goiXu={chon} /></div>}
+    </div>
+  );
+}
 
 /*
  * `disbursement` đã rời khỏi đây 24/09/2026.
@@ -401,6 +429,7 @@ export default function SettingsPage() {
       {/* 11/10/2026: năng lượng (xu) của MIMI — số chính xác và lịch sử; pet chỉ hiện thanh phần trăm. */}
       <SettingsSection icon={Zap} title="Năng lượng MIMI (xu)">
         <NangLuongChiTiet />
+        <MuaXu />
       </SettingsSection>
 
       <SettingsSection icon={Cat} title="Pet MIMI">

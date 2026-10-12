@@ -17,8 +17,9 @@ CREATE TABLE IF NOT EXISTS public.so_xu (
   -- một lần — cộng phía trình duyệt sẽ sai khi sổ dài). CHECK >= 0: sổ không bao giờ âm, kể cả ghi tay.
   so_du_sau integer NOT NULL CHECK (so_du_sau >= 0),
   -- tang_thang: nạp đầy tới hạn mức đầu tháng; dung_ai: một lượt hỏi có gọi mô hình;
-  -- mua: mua thêm qua chuyển khoản (CHƯA BÁN — để sẵn khuôn, xem backlog); dieu_chinh: người vận hành sửa tay.
-  ly_do text NOT NULL CHECK (ly_do IN ('tang_thang', 'dung_ai', 'mua', 'dieu_chinh')),
+  -- mua: mua gói xu qua chuyển khoản; nang_goi: vừa trả gói tháng → nâng ngay lên hạn mức gói mới;
+  -- dieu_chinh: người vận hành sửa tay.
+  ly_do text NOT NULL CHECK (ly_do IN ('tang_thang', 'dung_ai', 'mua', 'nang_goi', 'dieu_chinh')),
   -- "2026-10" (giờ Việt Nam) cho dòng tang_thang: mỗi tháng nạp đúng một lần.
   ky_thang text CHECK (ky_thang IS NULL OR ky_thang ~ '^\d{4}-(0[1-9]|1[0-2])$'),
   -- Tham chiếu của dòng: id hội thoại (`dung_ai`)…
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.so_xu (
     -- Nạp tháng được phép 0: vẫn phải ghi dấu "tháng này đã nạp", kể cả khi số dư đang cao hơn hạn mức.
     (ly_do = 'tang_thang' AND thay_doi >= 0 AND ky_thang IS NOT NULL) OR
     (ly_do = 'dung_ai' AND thay_doi < 0) OR
-    (ly_do = 'mua' AND thay_doi > 0 AND hoa_don_id IS NOT NULL) OR
+    (ly_do IN ('mua', 'nang_goi') AND thay_doi > 0 AND hoa_don_id IS NOT NULL) OR
     (ly_do = 'dieu_chinh' AND thay_doi <> 0)
   )
 );
@@ -112,3 +113,50 @@ $$;
 
 REVOKE ALL ON FUNCTION public.tru_xu(uuid, integer, integer, text, text, jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.tru_xu(uuid, integer, integer, text, text, jsonb) TO service_role;
+
+-- ── MUA XU / NÂNG GÓI QUA CHUYỂN KHOẢN (12/10/2026) ──────────────────────────────────────────────────
+-- Khách chuyển khoản vào tài khoản MIMI (SePay báo về `bank-webhook` → `tien_ve_mimi`), đối soát theo mã tham
+-- chiếu (`_shared/billing/thu-tien.ts`) rồi gọi hàm dưới. Mỗi hoá đơn cộng đúng một lần (`hoa_don_id` UNIQUE).
+ALTER TABLE public.subscription_invoices
+  ADD COLUMN IF NOT EXISTS so_xu integer CHECK (so_xu IS NULL OR so_xu > 0);
+
+/*
+ * Cộng xu theo một hoá đơn đã trả — NGUYÊN TỬ, chạy trùng không cộng hai lần.
+ *   p_ly_do = 'mua'      : cộng đúng p_so_xu.
+ *   p_ly_do = 'nang_goi' : nâng số dư lên tới p_so_xu (hạn mức gói mới); đã cao hơn thì không cộng.
+ * Trả về jsonb { da_cong, so_du }.
+ */
+CREATE OR REPLACE FUNCTION public.cong_xu_hoa_don(p_company uuid, p_so_xu integer, p_ly_do text, p_hoa_don uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  con integer;
+  cong integer;
+BEGIN
+  IF p_so_xu IS NULL OR p_so_xu <= 0 OR p_hoa_don IS NULL OR p_ly_do NOT IN ('mua', 'nang_goi') THEN
+    RAISE EXCEPTION 'cong_xu_hoa_don: tham số không hợp lệ';
+  END IF;
+  PERFORM 1 FROM public.companies WHERE id = p_company FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'cong_xu_hoa_don: không có công ty';
+  END IF;
+  SELECT so_du_sau INTO con FROM public.so_xu WHERE company_id = p_company ORDER BY thu_tu DESC LIMIT 1;
+  con := COALESCE(con, 0);
+  IF EXISTS (SELECT 1 FROM public.so_xu WHERE hoa_don_id = p_hoa_don) THEN
+    RETURN jsonb_build_object('da_cong', 0, 'so_du', con);
+  END IF;
+  cong := CASE WHEN p_ly_do = 'mua' THEN p_so_xu ELSE GREATEST(p_so_xu - con, 0) END;
+  IF cong > 0 THEN
+    con := con + cong;
+    INSERT INTO public.so_xu (company_id, thay_doi, so_du_sau, ly_do, hoa_don_id, chi_tiet)
+    VALUES (p_company, cong, con, p_ly_do, p_hoa_don, jsonb_build_object('yeu_cau', p_so_xu));
+  END IF;
+  RETURN jsonb_build_object('da_cong', cong, 'so_du', con);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.cong_xu_hoa_don(uuid, integer, text, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.cong_xu_hoa_don(uuid, integer, text, uuid) TO service_role;
