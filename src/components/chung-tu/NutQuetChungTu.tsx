@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Loader2, ScanLine } from 'lucide-react';
 import { toast } from 'sonner';
 import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { dinhDang, type KetQuaQuet } from '@/lib/troLy';
+import { QuetTaiLieu } from '@/components/quet/QuetTaiLieu';
 
 /**
  * Chụp hoặc tải ảnh chứng từ → MIMI đọc → người dùng xem lại từng ô → lưu.
@@ -13,6 +14,11 @@ import { dinhDang, type KetQuaQuet } from '@/lib/troLy';
  * Luồng theo cách Ramp làm với biên lai: ảnh vào, máy đọc bên bán / ngày / tiền, tự gợi ý
  * khoản chi khớp, người dùng chỉ việc kiểm và bấm. Khác Ramp một chỗ: không có thẻ, nên
  * "khoản chi" là dòng sao kê ngân hàng.
+ *
+ * 11/10/2026: bấm nút mở MÁY QUÉT (`QuetTaiLieu`) thay vì ô chọn tệp trần — tìm mép, nắn phẳng,
+ * khử bóng ngay trên máy rồi mới gửi trang đầu cho MIMI đọc. Ảnh nghiêng, có bóng tay là lý do
+ * chính khiến mô hình đọc sai số tiền; ảnh đã nắn còn nhẹ hơn. Trong máy quét người dùng cũng tải
+ * được PDF nhiều trang mà không gửi gì đi.
  *
  * Dùng ở ô hỏi MIMI Assistant và ở Thư viện chứng từ. Có `giaoDichId` thì chứng từ gắn
  * thẳng vào khoản chi đó (người dùng đã chọn khoản trước khi chụp).
@@ -65,10 +71,8 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
   children: ReactNode;
 }) {
   const { t } = useTranslation();
-  const oAnh = useRef<HTMLInputElement>(null);
   const [quet, setQuet] = useState<TrangThaiQuet>(null);
-  // Điện thoại (màn cảm ứng): bấm là mở thẳng máy ảnh sau. Máy tính: chọn tệp để tải lên.
-  const dungMayAnh = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+  const [moQuet, setMoQuet] = useState(false);
 
   /**
    * Máy chủ đã nói trước là chưa bật, nên nói lại trước khi người ta bấm.
@@ -93,21 +97,19 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
 
   const mo = () => {
     if (chuaBat) { setQuet({ ketQua: RONG, goiY: null, anh: '', nhapTay: true }); return; }
-    oAnh.current?.click();
+    setMoQuet(true);
   };
 
-  const chon = async (file: File | undefined) => {
-    if (!file) return;
+  /** Trang đầu đã quét (data URL JPEG) → MIMI đọc → hộp xem lại. */
+  const doc = async (anh: string) => {
+    setMoQuet(false);
     setQuet({ dangDoc: true });
     try {
-      const anh = await anhThanhDataUrl(file);
       const kq = await goiTroLy('quet_chung_tu', { anh });
       setQuet({ ketQua: kq.ket_qua as KetQuaQuet, goiY: (kq.giao_dich_goi_y as GoiYGiaoDich | null) ?? null, anh });
     } catch (e) {
       setQuet(null);
       toast.error(e instanceof Error ? e.message : t('app.quetCt.chuaDocAnh'));
-    } finally {
-      if (oAnh.current) oAnh.current.value = '';
     }
   };
 
@@ -122,15 +124,7 @@ export function NutQuetChungTu({ coMoHinh, giaoDichId, onDaLuu, className, nhanA
       >
         {children}
       </button>
-      <input
-        ref={oAnh}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        capture={dungMayAnh ? 'environment' : undefined}
-        className="hidden"
-        aria-label={t('app.quetCt.anhAria')}
-        onChange={(e) => void chon(e.target.files?.[0])}
-      />
+      <QuetTaiLieu mo={moQuet} onDong={() => setMoQuet(false)} onDungAnh={(anh) => void doc(anh)} cheDoMacDinh="mau" tenTep="chung-tu-mimi" />
       <HopXemLai
         quet={quet}
         giaoDichId={giaoDichId}
@@ -172,6 +166,7 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
   const [loi, setLoi] = useState<string | null>(null);
   /** Ảnh gốc người dùng tự đính kèm khi nhập tay (tuỳ chọn). */
   const [anhKem, setAnhKem] = useState('');
+  const [moQuetKem, setMoQuetKem] = useState(false);
   const daDoc = quet && 'ketQua' in quet ? quet : null;
   const nhapTay = !!daDoc?.nhapTay;
   const anh = daDoc?.anh || anhKem;
@@ -276,6 +271,11 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
                 <input type="file" accept="image/jpeg,image/png,image/webp" aria-label={tr('app.quetCt.dinhKem')}
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) void anhThanhDataUrl(f).then(setAnhKem).catch(() => setLoi(tr('app.quetCt.khongDocNay'))); }}
                   className="text-sm text-foreground" />
+                {/* Quét thay vì đính ảnh trần: nắn phẳng, khử bóng — bản lưu kho dễ đọc khi kiểm tra. */}
+                <button type="button" onClick={() => setMoQuetKem(true)}
+                  className="inline-flex h-10 w-fit items-center gap-2 rounded-lg border border-border px-3 text-sm text-foreground hover:bg-accent">
+                  <ScanLine size={14} /> Quét giấy tờ
+                </button>
               </label>
             )}
             {anh && (
@@ -293,6 +293,9 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
             </DialogFooter>
           </form>
         )}
+        {/* Đặt TRONG hộp xem lại để Radix xếp lớp đúng: đóng máy quét không đóng luôn hộp nhập tay. */}
+        <QuetTaiLieu mo={moQuetKem} onDong={() => setMoQuetKem(false)} cheDoMacDinh="mau" tenTep="chung-tu-mimi"
+          nhanDungAnh="Đính kèm trang đầu" onDungAnh={(a) => { setAnhKem(a); setMoQuetKem(false); }} />
       </DialogContent>
     </Dialog>
   );

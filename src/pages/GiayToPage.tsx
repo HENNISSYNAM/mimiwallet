@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Copy, Printer, TriangleAlert } from 'lucide-react';
+import { Copy, FileDown, Printer, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
+import { inTaiLieu, LOP_VUNG_IN, ngayTep, tenTepAnToan } from '@/lib/inTaiLieu';
 import {
   LOAI_GIAY_TO, LY_DO_HUY, soanCongVanGiaiTrinh, soanCongVanHuyToKhai, soanDonTraSoat, vanBanThanhChu,
   type GiaoDichTraSoat, type LoaiGiayTo, type LyDoHuy, type LyDoTraSoat, type ThongTinDonVi, type VanBan,
@@ -114,6 +115,13 @@ export default function GiayToPage() {
   const lk = `app.giayTo.loai.${loai}`;
   const dv = (k: keyof ThongTinDonVi) => (v: string) => setDonVi((d) => ({ ...d, [k]: v }));
   const g = (k: keyof GiaoDichTraSoat) => (v: string) => setGd((x) => ({ ...x, [k]: k === 'so_tien' ? Number(v.replace(/\D/g, '')) || 0 : v }));
+
+  // Tên tệp PDF = tên giấy tờ + ngày, không dấu — tệp gửi qua Zalo/email không bị đổi thành "%C4%90..." .
+  const tenTep = `${tenTepAnToan([vanBan.tieu_de, vanBan.trich_yeu].filter(Boolean).join(" "))}-${ngayTep()}`;
+  const taiPdf = () => {
+    toast.info(t('app.giayTo.huongDanPdf', { defaultValue: 'Ở hộp in, chọn máy in "Lưu dưới dạng PDF" (Save as PDF) rồi bấm Lưu.' }));
+    inTaiLieu(tenTep);
+  };
 
   const saoChep = async () => {
     try {
@@ -237,8 +245,12 @@ export default function GiayToPage() {
 
         <div className="space-y-3">
           <div className="no-print flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => window.print()} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
+            <button type="button" onClick={() => inTaiLieu(tenTep)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
               <Printer size={14} /> {t('app.giayTo.in')}
+            </button>
+            {/* Cùng hộp in, nhưng nói trước phải chọn gì: người dùng không rành sẽ tìm nút "Tải" chứ không tìm "Máy in". */}
+            <button type="button" onClick={taiPdf} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground">
+              <FileDown size={14} /> {t('app.giayTo.taiPdf', { defaultValue: 'Tải PDF' })}
             </button>
             <button type="button" onClick={() => void saoChep()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground">
               <Copy size={14} /> {t('app.giayTo.saoChep')}
@@ -260,7 +272,7 @@ export default function GiayToPage() {
 function GiayIn({ v }: { v: VanBan }) {
   const { t } = useTranslation();
   return (
-    <article aria-label={t('app.giayTo.banNhap')} className="to-khai-giay rounded-lg border border-border bg-white p-8 font-serif text-[14px] leading-relaxed text-black shadow-sm">
+    <article aria-label={t('app.giayTo.banNhap')} className={`${LOP_VUNG_IN} rounded-lg border border-border bg-white p-8 font-serif text-[14px] leading-relaxed text-black shadow-sm`}>
       <div className="flex justify-between gap-4 text-center">
         <div className="text-[13px]">
           {v.so_hieu && <p>{v.so_hieu}</p>}
@@ -291,7 +303,7 @@ function GiayIn({ v }: { v: VanBan }) {
         <p className="font-semibold">Tài liệu kèm theo:</p>
         <ul className="list-disc pl-6">{v.kem_theo.map((k) => <li key={k}>{k}</li>)}</ul>
       </div>
-      <div className="mt-8 ml-auto w-1/2 text-center">
+      <div className="khong-ngat mt-8 ml-auto w-1/2 text-center">
         <p className="font-semibold">{v.ky.chuc_danh}</p>
         <p className="italic text-[13px]">{v.ky.ghi_chu}</p>
         <p className="mt-16 font-semibold">{v.ky.ten}</p>

@@ -13,7 +13,7 @@ const gia = vi.hoisted(() => ({
   hoi: [] as { bang: string; loc: Record<string, unknown> }[],
 }));
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u-1' } } }), getSession: async () => ({ data: { session: { user: { id: 'u-1' } } }, error: null }) },
@@ -97,5 +97,17 @@ describe('Soạn giấy tờ', () => {
   it('?loai= lạ thì về mẫu mặc định, không vỡ trang', () => {
     dung('/dashboard/giay-to?loai=<script>');
     expect(screen.getByRole('tab', { name: 'Đơn đề nghị tra soát giao dịch' }).getAttribute('aria-selected')).toBe('true');
+  });
+  it('In và Tải PDF: chỉ bản nháp ra giấy (lớp vung-in), tên tệp PDF không dấu theo tên giấy tờ', async () => {
+    dung();
+    await waitFor(() => expect(giay().textContent).toContain('Hộ kinh doanh Thịnh Phát'), { timeout: 8000 });
+    expect(giay().classList.contains('vung-in')).toBe(true);
+    const tieuDe: string[] = [];
+    const print = vi.spyOn(window, 'print').mockImplementation(() => { tieuDe.push(document.title); });
+    fireEvent.click(screen.getByRole('button', { name: /Tải PDF/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^In/ }));
+    expect(print).toHaveBeenCalledTimes(2);
+    expect(tieuDe[0]).toMatch(/^don-de-nghi-tra-soat.*-\d{4}-\d{2}-\d{2}$/);
+    print.mockRestore();
   });
 });

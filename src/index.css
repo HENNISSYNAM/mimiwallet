@@ -615,6 +615,34 @@
   .no-print { display: none !important; }
 }
 
+/* In tài liệu MIMI (src/lib/inTaiLieu.ts): chỉ phần tử `.vung-in` ra giấy, khổ A4 lề 15 mm.
+   Trang tên riêng (`page: a4-mimi`) để không đổi lề của tờ khai đang in theo khối ở trên.
+   Không ngắt trang giữa một dòng bảng, một khối chữ ký, hay ngay sau tiêu đề. */
+@page a4-mimi { size: A4; margin: 15mm; }
+@media print {
+  .vung-in, .vung-in * { visibility: visible !important; }
+  .vung-in {
+    page: a4-mimi;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .vung-in tr, .vung-in img, .vung-in .khong-ngat { break-inside: avoid; page-break-inside: avoid; }
+  .vung-in h1, .vung-in h2, .vung-in h3 { break-after: avoid; page-break-after: avoid; }
+  .vung-in p { orphans: 3; widows: 3; }
+  .vung-in thead { display: table-header-group; }
+}
+
 /*
  * Thang chữ của các trang giới thiệu (Về chúng tôi, Câu chuyện MIMI, Đội ngũ) — 16/09/2026.
  * Trước đó mỗi khối tự đặt độ đậm, giãn chữ, cỡ chữ riêng nên cùng một trang mà tiêu đề trông
