@@ -33,8 +33,6 @@ export const ghiDaNopViec = async (id: string, maHoSo?: string) => (await goiTro
 export const ghiPhanHoiViec = async (id: string, noiDung: string) => (await goiTroLy('viec_phan_hoi', { id, noi_dung: noiDung })) as KetQuaGhi;
 export const huyViec = async (id: string) => (await goiTroLy('viec_huy', { id })) as { viec: HoSoViecDong | null };
 
-export const dsViec = async () =>
-  (await goiTroLy('hanh_trinh_ds')) as { hanh_trinh: HanhTrinhDay[]; ho_so_viec: HoSoViec[]; duoc_sua: boolean };
 export const docViec = async (id: string) =>
   (await goiTroLy('hanh_trinh_doc', { id })) as { hanh_trinh: HanhTrinhDay; tai_lieu: TaiLieuTom[]; duoc_sua: boolean };
 export const moViec = async (loai: string) =>

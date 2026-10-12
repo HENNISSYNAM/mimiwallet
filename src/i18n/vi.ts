@@ -11,8 +11,6 @@ const vi = {
     startFreeMobile: 'Dùng thử ngay',
   },
 
-  // Loading
-  loading: 'Đang tải...',
 
   // Hero
   /*
@@ -251,54 +249,12 @@ const vi = {
     back: '← Về trang chủ',
   },
 
-  // Onboarding
-  onboarding: {
-    steps: [
-      { title: 'Tạo tài khoản', desc: 'Bảo mật & riêng tư' },
-      { title: 'Doanh nghiệp', desc: 'Thông tin kinh doanh' },
-      { title: 'Kết nối dữ liệu', desc: 'Tăng hạn mức vốn' },
-      { title: 'Nhu cầu vốn', desc: 'Giải pháp phù hợp' },
-      { title: 'Xác minh eKYC', desc: 'Hoàn tất hồ sơ' },
-    ],
-    smartCapital: 'Sổ sách tự động cho SME',
-    next: 'Tiếp tục',
-    prev: 'Quay lại',
-    complete: 'Hoàn tất đăng ký',
-    fullName: 'Họ và tên',
-    email: 'Email doanh nghiệp',
-    phone: 'Số điện thoại',
-    password: 'Mật khẩu',
-    confirmPassword: 'Xác nhận mật khẩu',
-    agreeTerms: 'Tôi đồng ý với Điều khoản sử dụng và Chính sách bảo mật',
-    emailWarn: 'Nên dùng email doanh nghiệp để MIMI nhận ra công ty của bạn',
-    taxIdLabel: 'Mã số thuế',
-    companyName: 'Tên công ty',
-    industry: 'Ngành nghề',
-    province: 'Tỉnh/Thành phố',
-    yearsOp: 'Số năm hoạt động',
-    revenue: 'Doanh thu hàng tháng',
-    employees: 'Số nhân viên',
-    connectBanks: 'Kết nối ngân hàng',
-    estimatedLimit: 'Hạn mức dự kiến',
-    successTitle: 'Hồ sơ đã được gửi thành công!',
-    successSub: 'AI đang phân tích dữ liệu của bạn',
-    goToDashboard: 'Vào Dashboard ngay →',
-    contactIn24h: 'Chúng tôi sẽ liên hệ trong 24 giờ',
-    estimatedLimitLabel: 'Dự kiến hạn mức',
-  },
 
   // Floating Badges (Hero)
   heroBadges: {
     cashflow: 'Dòng tiền',
   },
 
-  // AI Chat Widget
-  aiChat: {
-    title: 'Trợ lý MIMI',
-    placeholder: 'Hỏi MIMI về tiền vào, tiền ra…',
-    // Was "tư vấn vay vốn". The assistant should offer what the product does.
-    greeting: 'Chào bạn, MIMI đây! MIMI giúp bạn phân loại chi phí, xem ngưỡng thuế và xem dòng tiền.',
-  },
 };
 
 export default vi;

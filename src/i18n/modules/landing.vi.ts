@@ -88,44 +88,6 @@ const m = {
         { step: 'Kết xuất tờ khai', time: 'cuối kỳ' },
       ],
     },
-    solutions: {
-      greenFinanceBadge: 'Lộ trình 2026',
-      greenFinanceDesc: 'Dự định làm: kết nối nguồn vốn ưu đãi cho dự án môi trường',
-      greenFinanceNote: 'Lãi suất và hạn mức ưu đãi sẽ được công bố khi hợp tác với tổ chức tín dụng xanh hoàn tất.',
-      carbonTitle: 'Dấu chân carbon',
-      carbonDesc: 'Ước tính phát thải từ chi tiêu của doanh nghiệp (phương pháp spend-based)',
-      carbonNotDeployed: 'Chưa triển khai — dự kiến 2026',
-      carbonFeatures: [
-        'Theo dõi phát thải theo hoạt động kinh doanh',
-        'Quy đổi và giao dịch tín chỉ carbon',
-        'Xuất báo cáo phục vụ thẩm định vốn xanh',
-      ],
-    },
-    ai: {
-      networkLabels: ['Giao dịch', 'Đặc trưng', 'Mô hình', 'Điểm số'],
-    },
-    proof: {
-      sectionLabel: 'Bằng chứng vận hành',
-      title: 'Số này lấy từ hệ thống đang chạy',
-      subtitle: 'Mô hình chấm điểm tính cho một doanh nghiệp mẫu, từ 12 tháng giao dịch, trên đúng máy chủ đang phục vụ khách.',
-      items: [
-        { value: '701', unit: '/ 850', label: 'Điểm tín dụng', note: 'Hạng B — Tốt' },
-        { value: '34,1', unit: '%', label: 'Xác suất vỡ nợ (PD)', note: 'Hồi quy logistic' },
-        // Bỏ "Hạn mức khả dụng 1,36 tỷ": nghe như một khoản vay đã được duyệt,
-        // trong khi MIMI không cho vay và không có đối tác giải ngân.
-        { value: '12', unit: ' tháng', label: 'Dữ liệu dùng để chấm', note: 'Sao kê thật của doanh nghiệp' },
-      ],
-      footnote: 'Lấy từ tài khoản demo. Mở ứng dụng là tự tính lại được.',
-    },
-    cta: {
-      title: 'Mở tài khoản',
-      subtitle: 'Miễn phí, không cần thẻ. Nối ngân hàng xong là dùng được.',
-      thanks: 'Cảm ơn bạn!',
-      willContact: 'Chúng tôi sẽ liên hệ trong 24 giờ.',
-      button: 'Bắt đầu ngay',
-      successToast: 'Đã đăng ký thành công!',
-      errorToast: 'Có lỗi xảy ra, vui lòng thử lại.',
-    },
   },
 };
 

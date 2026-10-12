@@ -70,67 +70,6 @@ const m = {
         advanceSuccess: 'Đã ứng vốn {{amount}} cho hóa đơn {{number}}',
       },
     },
-    loans: {
-      loanTypes: {
-        workingCapital: 'Vốn lưu động',
-        invoiceAdvance: 'Ứng hóa đơn',
-        expansion: 'Mở rộng KD',
-      },
-      creditScore: {
-        rank: 'Hạng A — Xuất sắc',
-        updated: 'Cập nhật: 09/03/2026',
-        higherThan: 'Cao hơn 84% doanh nghiệp cùng ngành',
-        analysisTitle: 'Phân tích điểm tín dụng',
-        factors: {
-          paymentHistory: 'Lịch sử thanh toán',
-          cashFlowHealth: 'Sức khỏe dòng tiền',
-          capitalUsageRatio: 'Tỷ lệ sử dụng vốn',
-          operatingTime: 'Thời gian hoạt động',
-        },
-        boostCta: '3 cách để tăng điểm ngay',
-      },
-      calculator: {
-        title: 'Tính toán khoản vay',
-        loanAmount: 'Số tiền vay',
-        term: 'Thời hạn',
-        termUnit: 'N',
-        receivedAmount: 'Số tiền nhận được',
-        fee: 'Phí',
-        feeRate: '(2%/kỳ)',
-        dueDate: 'Ngày đến hạn',
-        effectiveRate: 'Lãi suất hiệu dụng',
-        perYear: '%/năm',
-        applyNow: 'Đăng ký vay ngay →',
-      },
-      activeLoans: {
-        title: 'Khoản vay đang hoạt động ({{count}})',
-        emptyTitle: 'Chưa có khoản vay nào',
-        emptyDesc: 'Dùng công cụ tính toán ở trên để đăng ký khoản vay đầu tiên.',
-        table: {
-          type: 'Loại',
-          amount: 'Số tiền',
-          appliedDate: 'Ngày đăng ký',
-          dueDate: 'Đến hạn',
-          repaymentProgress: 'Tiến độ trả nợ',
-          status: 'Trạng thái',
-        },
-      },
-      status: {
-        on_track: 'Đúng hạn',
-        completed: 'Hoàn thành',
-        due_soon: 'Sắp đến hạn',
-        pending: 'Chờ duyệt',
-      },
-      toast: {
-        companyNotFound: 'Không tìm thấy doanh nghiệp của bạn',
-        applyFailed: 'Đăng ký vay thất bại: {{error}}',
-        // Was 'Đã gửi yêu cầu vay, đang chờ duyệt' — nothing is awaiting
-        // approval, because there is no lender to approve it. This records
-        // interest, which is honest and is also the demand signal MIMI needs in
-        // order to go and find a lending partner at all.
-        applySuccess: 'Đã ghi nhận nhu cầu vay của bạn. MIMI chưa có đối tác cho vay — chúng tôi sẽ báo bạn khi có.',
-      },
-    },
     reports: {
       title: 'Tiền vào, tiền ra',
       subtitle: 'Lấy từ sao kê ngân hàng. Đây chưa phải báo cáo tài chính.',

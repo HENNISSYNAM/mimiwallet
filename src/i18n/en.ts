@@ -11,8 +11,6 @@ const en = {
     startFreeMobile: 'Try it now',
   },
 
-  // Loading
-  loading: 'Loading...',
 
   // Hero
   // See the note on the Vietnamese hero block: working capital was removed
@@ -213,54 +211,12 @@ const en = {
     back: '← Back to home',
   },
 
-  // Onboarding
-  onboarding: {
-    steps: [
-      { title: 'Create account', desc: 'Secure & private' },
-      { title: 'Business', desc: 'Business information' },
-      { title: 'Connect data', desc: 'Increase credit limit' },
-      { title: 'Funding needs', desc: 'Tailored solutions' },
-      { title: 'eKYC verification', desc: 'Complete profile' },
-    ],
-    smartCapital: 'Smart capital for SMEs',
-    next: 'Continue',
-    prev: 'Back',
-    complete: 'Complete Registration',
-    fullName: 'Full name',
-    email: 'Business email',
-    phone: 'Phone number',
-    password: 'Password',
-    confirmPassword: 'Confirm password',
-    agreeTerms: 'I agree to the Terms of Service and Privacy Policy',
-    emailWarn: 'A business email helps MIMI recognise your company',
-    taxIdLabel: 'Tax ID',
-    companyName: 'Company name',
-    industry: 'Industry',
-    province: 'Province/City',
-    yearsOp: 'Years operating',
-    revenue: 'Monthly revenue',
-    employees: 'Number of employees',
-    connectBanks: 'Connect banks',
-    estimatedLimit: 'Estimated credit limit',
-    successTitle: 'Application submitted successfully!',
-    successSub: 'AI is analyzing your data',
-    goToDashboard: 'Go to Dashboard →',
-    contactIn24h: 'We\'ll contact you within 24 hours',
-    estimatedLimitLabel: 'Estimated credit limit',
-  },
 
   // Floating Badges (Hero)
   heroBadges: {
     cashflow: 'Cash Flow',
   },
 
-  // AI Chat Widget
-  aiChat: {
-    title: 'MIMI Assistant',
-    placeholder: 'Ask about finance...',
-    // Was 'advise on loans'. The assistant should offer what the product does.
-    greeting: 'Hello! I\'m the MIMI WALLET AI assistant. I can help classify expenses, track tax thresholds and analyze cash flow.',
-  },
 };
 
 export default en;

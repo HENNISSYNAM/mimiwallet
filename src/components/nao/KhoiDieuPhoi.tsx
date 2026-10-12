@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { DAN_AGENT_DONG_BANG } from '@/lib/dongBang';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Bot, FileSpreadsheet, Landmark, Loader2, Plug, Receipt, ScanLine } from 'lucide-react';
-import { goiTroLy } from '@/lib/goiTroLy';
-import { QUY_TRINH_AGENT, type AgentMimi, type QuyTrinhAgent } from '@/lib/troLy';
-import { TEN_QUY_TRINH, useNaoMimi, type LuotNao } from '@/store/naoMimi';
+import { useNaoMimi, type LuotNao } from '@/store/naoMimi';
 import { DanAgentBaoCao } from './DanAgentBaoCao';
 
 /**
@@ -12,7 +8,8 @@ import { DanAgentBaoCao } from './DanAgentBaoCao';
  *
  *   - Thu nạp dữ liệu: chỉ là lối vào các trang ĐANG CÓ (liên kết ngân hàng, chụp chứng từ…). Không có nút
  *     tải lên giả.
- *   - Ba quy trình đàn agent (allowlist máy chủ). Bấm một lần → một request; đang chạy thì khoá nút.
+ *   - (12/10/2026) Nút ba quy trình đàn agent đã gỡ: bị đóng băng vĩnh viễn từ 29/09 (máy chủ chưa có
+ *     `danh_sach_agent`/`chay_dan_agent`), không người dùng nào thấy. Có máy chủ thì dựng lại.
  *   - Báo cáo chung: lượt gần nhất trong kho — hỏi từ pet, từ Trợ lý hay từ đây đều hiện cùng một chỗ.
  * Không thăm dò định kỳ, không gọi mô hình theo khung hình. Việc làm thay đổi dữ liệu (duyệt chi, lưu chứng
  * từ…) KHÔNG chạy ở đây: dẫn sang Trợ lý MIMI, nơi có hộp xác nhận.
@@ -24,12 +21,6 @@ const LOI_VAO = [
   { duong: '/dashboard/doc-bao-cao', ten: 'Đọc báo cáo tài chính', mo: 'Excel / CSV', Icon: FileSpreadsheet },
   { duong: '/dashboard/ket-noi', ten: 'Kết nối', mo: 'Trạng thái nguồn dữ liệu', Icon: Plug },
 ];
-
-const MO_TA_QUY_TRINH: Record<QuyTrinhAgent, string> = {
-  ke_toan_hang_ngay: 'Đọc giao dịch mới, xếp loại, chỉ ra khoản thiếu chứng từ.',
-  thu_hoi_cong_no: 'Tìm khoản phải thu quá hạn, soạn bản nháp nhắc nợ để bạn duyệt — không tự gửi.',
-  kiem_tra_so_sach: 'Đối chiếu sổ với sao kê, tìm khoản trùng, lệch, thiếu.',
-};
 
 const CAU_DO_DAY: Record<string, string> = {
   partial: 'Dữ liệu bị cắt bớt khi đọc.',
@@ -85,33 +76,9 @@ function BaoCaoLuot({ l }: { l: LuotNao }) {
   );
 }
 
-export function KhoiDieuPhoi({ moDanAgent = !DAN_AGENT_DONG_BANG }: { moDanAgent?: boolean } = {}) {
+export function KhoiDieuPhoi() {
   const luot = useNaoMimi((s) => s.luot);
-  const chayQuyTrinh = useNaoMimi((s) => s.chayQuyTrinh);
-  const [agent, setAgent] = useState<AgentMimi[] | null>(null);
-  /** Câu lỗi NGUYÊN VĂN của máy chủ khi chưa đọc được danh mục (vd. action chưa triển khai). */
-  const [loiDanhMuc, setLoiDanhMuc] = useState<string | null>(null);
-
-  // Danh sách agent: đọc một lần khi mở trang (máy chủ cũ không gửi → không hiện gì). Không thăm dò.
-  useEffect(() => {
-    // Đóng băng (`lib/dongBang.ts`): không gọi hành động máy chủ chưa có — tránh lỗi hiện cho mọi người dùng.
-    if (!moDanAgent) return;
-    const ctrl = new AbortController();
-    // Action nhẹ `danh_sach_agent`: máy chủ chỉ kiểm JWT, quyền công ty, giới hạn gọi — không đọc sao kê,
-    // chứng từ, không gọi mô hình. Đây là DANH MỤC năng lực, không phải trạng thái việc đang chạy.
-    goiTroLy('danh_sach_agent', {}, { signal: ctrl.signal })
-      .then((kq) => {
-        if (ctrl.signal.aborted) return;
-        const ds = (kq as { danh_sach_agent?: unknown }).danh_sach_agent;
-        if (Array.isArray(ds)) { setAgent(ds as AgentMimi[]); setLoiDanhMuc(null); }
-      })
-      .catch((e: unknown) => { if (!ctrl.signal.aborted) setLoiDanhMuc(e instanceof Error ? e.message : String(e)); });
-    return () => ctrl.abort();
-  }, [moDanAgent]);
-
-  const coDanAgent = agent !== null;
   const moiNhat = luot[luot.length - 1] ?? null;
-  const dangChay = useMemo(() => new Set(luot.filter((l) => l.trangThai === 'dang' && l.quyTrinh).map((l) => l.quyTrinh)), [luot]);
 
   return (
     <section aria-label="Điều phối MIMI" className="rounded-2xl border border-border/60 bg-card/60 p-5">
@@ -132,47 +99,10 @@ export function KhoiDieuPhoi({ moDanAgent = !DAN_AGENT_DONG_BANG }: { moDanAgent
         ))}
       </nav>
 
-      {/*
-        Nút quy trình CHỈ hiện khi máy chủ trả được danh mục agent (`danh_sach_agent`).
-        Máy chủ cũ chưa có `chay_dan_agent`: hiện ba nút bấm vào chỉ ra lỗi là hứa điều không làm được.
-      */}
-      {coDanAgent && (
-      <div className="mt-5 grid gap-2 sm:grid-cols-3" role="group" aria-label="Quy trình">
-        {QUY_TRINH_AGENT.map((q) => (
-          <button
-            key={q}
-            type="button"
-            disabled={dangChay.has(q)}
-            onClick={() => void chayQuyTrinh(q, { nguon: 'trang_chu' })}
-            className="rounded-xl border border-border px-3 py-2.5 text-left hover:bg-accent disabled:opacity-60"
-          >
-            <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-              {dangChay.has(q) && <Loader2 size={13} className="animate-spin" />} {TEN_QUY_TRINH[q]}
-            </span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">{MO_TA_QUY_TRINH[q]}</span>
-          </button>
-        ))}
-      </div>
-      )}
-
-      {loiDanhMuc && (
-        <p className="mt-4 text-xs text-muted-foreground">Chưa chạy được đàn agent — máy chủ báo: {loiDanhMuc}</p>
-      )}
-
-      {agent && agent.length > 0 && (
-        <ul aria-label="Agent của MIMI" className="mt-4 flex flex-wrap gap-2">
-          {agent.map((a) => (
-            <li key={a.id} title={a.mo_ta} className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground">
-              {a.ten} · {a.trang_thai === 'san_sang' ? 'sẵn sàng' : 'cần kết nối'} · chỉ đọc và soạn nháp
-            </li>
-          ))}
-        </ul>
-      )}
-
       <div className="mt-5 border-t border-border/60 pt-4" aria-label="Báo cáo chung" aria-live="polite">
         {moiNhat ? <BaoCaoLuot l={moiNhat} /> : (
           <p className="text-sm text-muted-foreground">
-            Chưa có việc nào. {coDanAgent ? 'Chạy một quy trình ở trên, hỏi' : 'Hỏi'} MIMI Assistant hoặc hỏi pet — kết quả hiện ở đây.
+            Chưa có việc nào. Hỏi MIMI Assistant hoặc hỏi pet — kết quả hiện ở đây.
           </p>
         )}
       </div>

@@ -77,11 +77,6 @@ function bam(chu: string): number {
   return h;
 }
 
-/** Màu cố định theo id agent: cùng agent luôn cùng màu ở mọi lần mở trang. */
-export function mauCuaTacTu(id: string): string {
-  return BANG_MAU[bam(id) % BANG_MAU.length];
-}
-
 /**
  * Trỏ được chạy: agent đang `hoat_dong`, theo thứ tự tạo, tối đa `soToiDa`. Hai agent trùng màu thì
  * agent sau lấy màu kế tiếp còn trống — trên màn hình hai trỏ cùng màu là không phân biệt được.

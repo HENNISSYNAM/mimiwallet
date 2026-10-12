@@ -54,9 +54,6 @@ export const TRAN_NHOM_CHON = 3_000_000_000;
 /** Thuế suất trên thu nhập, khi xác định được chi phí đầu vào. */
 export const TY_LE_TREN_LAI = 0.15;
 
-/** Khoảng tỷ lệ trên doanh thu, tuỳ ngành nghề. */
-export const TY_LE_DOANH_THU = { min: 0.005, max: 0.02 } as const;
-
 export interface DauVao {
   /** Doanh thu NĂM, đồng. Không truyền doanh thu quý — ngưỡng là ngưỡng năm. */
   doanhThu: number;

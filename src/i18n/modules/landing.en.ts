@@ -70,42 +70,6 @@ const m = {
         { step: 'Export return', time: 'end of period' },
       ],
     },
-    solutions: {
-      greenFinanceBadge: '2026 Roadmap',
-      greenFinanceDesc: 'Planned direction: preferential capital for ESG projects and sustainable development',
-      greenFinanceNote: 'Preferential interest rates and limits will be announced once partnership with a green credit institution is finalized.',
-      carbonTitle: 'Carbon footprint',
-      carbonDesc: 'Estimates emissions from your business transactions using a spend-based methodology',
-      carbonNotDeployed: 'Not yet deployed — expected 2026',
-      carbonFeatures: [
-        'Track emissions by business activity',
-        'Convert and trade carbon credits',
-        'Export reports for green financing assessment',
-      ],
-    },
-    ai: {
-      networkLabels: ['Transactions', 'Features', 'ML Model', 'Score'],
-    },
-    proof: {
-      sectionLabel: 'Proof of operation',
-      title: 'Actually running, not a simulation',
-      subtitle: 'Scoring model results returned for a sample business, computed directly on production infrastructure from 12 months of transaction data.',
-      items: [
-        { value: '701', unit: '/ 850', label: 'Credit score', note: 'Grade B — Good' },
-        { value: '34.1', unit: '%', label: 'Probability of default (PD)', note: 'Logistic regression' },
-        { value: '1.36', unit: 'B ₫', label: 'Available credit limit', note: 'Suggested by the model' },
-      ],
-      footnote: 'Data from a demo account on production infrastructure — open the app to recompute it yourself.',
-    },
-    cta: {
-      title: 'Ready to accelerate your cash flow?',
-      subtitle: 'Sign up for free — no credit card, set up in 5 minutes',
-      thanks: 'Thank you!',
-      willContact: 'We\'ll be in touch within 24 hours.',
-      button: 'Get started',
-      successToast: 'Successfully signed up!',
-      errorToast: 'Something went wrong, please try again.',
-    },
   },
 };
 

@@ -4,9 +4,6 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { MeoSong } from '@/components/mimi/MeoSong';
 
-/** Màn chờ hiện ít nhất ngần này, để không chớp một cái rồi tắt khi đăng nhập demo quá nhanh. */
-export const CHO_TOI_THIEU_MS = 0;
-
 /** Chờ ngắn thì không hiện video (tránh nháy một cảnh rồi mất); quá ngần này mới hiện. */
 export const CHO_LAU_MS = 900;
 

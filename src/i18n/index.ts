@@ -5,8 +5,6 @@ import vi from './vi';
 import en from './en';
 import landingVi from './modules/landing.vi';
 import landingEn from './modules/landing.en';
-import onboardingVi from './modules/onboarding.vi';
-import onboardingEn from './modules/onboarding.en';
 import financeVi from './modules/finance.vi';
 import financeEn from './modules/finance.en';
 import miscVi from './modules/misc.vi';
@@ -30,8 +28,8 @@ import tbEn from './modules/tb.en';
 import tbKo from './modules/tb.ko';
 import tbZh from './modules/tb.zh';
 
-const viAll = { ...vi, ...landingVi, ...onboardingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi };
-const enAll = { ...en, ...landingEn, ...onboardingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn };
+const viAll = { ...vi, ...landingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi };
+const enAll = { ...en, ...landingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn };
 
 /**
  * Bốn ngôn ngữ, cùng một bộ khoá. `NGON_NGU` là nguồn duy nhất cho menu chọn ngôn ngữ và cho

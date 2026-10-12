@@ -70,65 +70,6 @@ const m = {
         advanceSuccess: 'Advanced {{amount}} for invoice {{number}}',
       },
     },
-    loans: {
-      loanTypes: {
-        workingCapital: 'Working capital',
-        invoiceAdvance: 'Invoice advance',
-        expansion: 'Business expansion',
-      },
-      creditScore: {
-        rank: 'Grade A — Excellent',
-        updated: 'Updated: 09/03/2026',
-        higherThan: 'Higher than 84% of businesses in your industry',
-        analysisTitle: 'Credit score analysis',
-        factors: {
-          paymentHistory: 'Payment history',
-          cashFlowHealth: 'Cash flow health',
-          capitalUsageRatio: 'Capital usage ratio',
-          operatingTime: 'Operating time',
-        },
-        boostCta: '3 ways to boost your score now',
-      },
-      calculator: {
-        title: 'Loan calculator',
-        loanAmount: 'Loan amount',
-        term: 'Term',
-        termUnit: 'D',
-        receivedAmount: 'Amount received',
-        fee: 'Fee',
-        feeRate: '(2%/term)',
-        dueDate: 'Due date',
-        effectiveRate: 'Effective rate',
-        perYear: '%/year',
-        applyNow: 'Apply now →',
-      },
-      activeLoans: {
-        title: 'Active loans ({{count}})',
-        emptyTitle: 'No loans yet',
-        emptyDesc: 'Use the calculator above to apply for your first loan.',
-        table: {
-          type: 'Type',
-          amount: 'Amount',
-          appliedDate: 'Applied date',
-          dueDate: 'Due date',
-          repaymentProgress: 'Repayment progress',
-          status: 'Status',
-        },
-      },
-      status: {
-        on_track: 'On track',
-        completed: 'Completed',
-        due_soon: 'Due soon',
-        pending: 'Pending approval',
-      },
-      toast: {
-        companyNotFound: 'Could not find your company',
-        applyFailed: 'Loan application failed: {{error}}',
-        // See the Vietnamese note: nothing is awaiting approval because there is
-        // no lender. This records interest.
-        applySuccess: 'Your funding need has been recorded. MIMI has no lending partner yet — we will let you know when it does.',
-      },
-    },
     reports: {
       title: 'Money in, money out',
       subtitle: 'Taken from your bank statements. This is not a financial statement yet.',
