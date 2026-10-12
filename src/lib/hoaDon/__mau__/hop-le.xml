@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hoá đơn MẪU TỔNG HỢP cho test MIMI. Không phải hoá đơn thật; MST là số giả đúng hình. -->
+<HDon>
+  <DLHDon Id="data">
+    <TTChung>
+      <PBan>2.0.0</PBan>
+      <THDon>HÓA ĐƠN GIÁ TRỊ GIA TĂNG</THDon>
+      <KHMSHDon>1</KHMSHDon>
+      <KHHDon>C26TMM</KHHDon>
+      <SHDon>123</SHDon>
+      <NLap>2026-09-15</NLap>
+      <DVTTe>VND</DVTTe>
+      <TGia>1</TGia>
+    </TTChung>
+    <NDHDon>
+      <NBan>
+        <Ten>CÔNG TY TNHH MẪU BÁN HÀNG</Ten>
+        <MST>0109999999</MST>
+        <DChi>Số 1 Đường Mẫu, Hà Nội</DChi>
+      </NBan>
+      <NMua>
+        <Ten>CÔNG TY TNHH MẪU MUA HÀNG</Ten>
+        <MST>0108888888</MST>
+      </NMua>
+      <DSHHDVu>
+        <HHDVu><TChat>1</TChat><STT>1</STT><THHDVu>Giấy in A4</THHDVu><DVTinh>Ram</DVTinh><SLuong>2</SLuong><DGia>150000</DGia><STCKhau>0</STCKhau><ThTien>300000</ThTien><TSuat>10%</TSuat></HHDVu>
+        <HHDVu><TChat>1</TChat><STT>2</STT><THHDVu>Bút bi</THHDVu><DVTinh>Hộp</DVTinh><SLuong>3</SLuong><DGia>50000</DGia><STCKhau>10000</STCKhau><ThTien>140000</ThTien><TSuat>8%</TSuat></HHDVu>
+      </DSHHDVu>
+      <TToan>
+        <THTTLTSuat>
+          <LTSuat><TSuat>10%</TSuat><ThTien>300000</ThTien><TThue>30000</TThue></LTSuat>
+          <LTSuat><TSuat>8%</TSuat><ThTien>140000</ThTien><TThue>11200</TThue></LTSuat>
+        </THTTLTSuat>
+        <TgTCThue>440000</TgTCThue>
+        <TgTThue>41200</TgTThue>
+        <TgTTTBSo>481200</TgTTTBSo>
+        <TgTTTBChu>Bốn trăm tám mươi mốt nghìn hai trăm đồng</TgTTTBChu>
+      </TToan>
+    </NDHDon>
+  </DLHDon>
+  <MCCQT Id="Id-MCCQT">00ABCDEF0123456789ABCDEF0123456789</MCCQT>
+  <DSCKS>
+    <NBan>
+      <Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo/><SignatureValue>MAU</SignatureValue></Signature>
+    </NBan>
+  </DSCKS>
+</HDon>

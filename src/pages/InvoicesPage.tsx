@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { GlassTabs } from '@/components/ui/glass-tabs';
 import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
+import { KiemHoaDonXml } from '@/components/hoa-don/KiemHoaDonXml';
+import { NghiaVuHoaDon } from '@/components/hoa-don/NghiaVuHoaDon';
 import { homNayVN } from '../../supabase/functions/_shared/viec/dong-co-viec';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -314,6 +316,16 @@ export default function InvoicesPage() {
             <p className={`font-mono text-lg font-bold ${s.color}`}>{formatVND(s.value)}</p>
           </div>
         ))}
+      </motion.div>
+
+      {/*
+        12/10/2026: phần hoá đơn điện tử MIMI làm được THẬT mà không cần kết nối cơ quan thuế — kiểm tệp XML
+        nhận từ người bán, tra cứu trên cổng, và cho biết bạn có phải dùng / đăng ký HĐĐT không. MIMI vẫn không
+        xuất hoá đơn điện tử (dòng ghi chú ở đầu trang giữ nguyên).
+      */}
+      <motion.div variants={fadeUp} className="grid gap-4 lg:grid-cols-2">
+        <KiemHoaDonXml />
+        <NghiaVuHoaDon />
       </motion.div>
 
       {/* Filters */}

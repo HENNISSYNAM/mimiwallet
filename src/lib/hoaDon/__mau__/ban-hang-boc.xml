@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hoá đơn bán hàng MẪU TỔNG HỢP, bọc trong thông điệp TDiep; người mua không ghi MST. -->
+<TDiep>
+  <DLieu>
+    <HDon>
+      <DLHDon>
+        <TTChung><KHMSHDon>2</KHMSHDon><KHHDon>K26THH</KHHDon><SHDon>7</SHDon><NLap>2026-10-01</NLap><DVTTe>VND</DVTTe></TTChung>
+        <NDHDon>
+          <NBan><Ten>CỬA HÀNG MẪU</Ten><MST>0106666666</MST></NBan>
+          <NMua><Ten>Khách lẻ</Ten></NMua>
+          <DSHHDVu>
+            <HHDVu><TChat>1</TChat><STT>1</STT><THHDVu>Cà phê</THHDVu><SLuong>2.5</SLuong><DGia>40000</DGia><ThTien>100000</ThTien></HHDVu>
+            <HHDVu><TChat>4</TChat><STT>2</STT><THHDVu>Ghi chú: giao tận nơi</THHDVu></HHDVu>
+          </DSHHDVu>
+          <TToan><TgTCThue>100000</TgTCThue><TgTTTBSo>100000</TgTTTBSo></TToan>
+        </NDHDon>
+      </DLHDon>
+      <DSCKS><NBan><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"/></NBan></DSCKS>
+    </HDon>
+  </DLieu>
+</TDiep>

