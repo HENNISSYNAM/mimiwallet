@@ -33,7 +33,37 @@ export interface MocThue {
   mau?: string;
   /** Khi `can_xac_minh`: đúng một câu hỏi để gỡ. */
   cau_hoi?: string;
+  /**
+   * Câu hỏi này trả lời được NGAY trên trang (12/10/2026): trường hồ sơ sẽ lưu câu trả lời. Không có
+   * trường này nghĩa là câu hỏi cần người khác (kế toán, cơ quan thuế) — trang không hiện nút hứa suông.
+   */
+  tra_loi?: TruongTraLoi;
 }
+
+/**
+ * Bốn câu hỏi "cần xác minh" của doanh nghiệp mà chỉ người dùng biết, lưu ở `ho_so_thue` (migration
+ * 20261012100000) qua hành động `luu_tra_loi_nghia_vu` của edge function `to-khai`. Trước 12/10/2026
+ * không có nơi lưu, nên lịch đứng mãi ở "cần xác minh" (lỗi L16, docs/DONG_BO_THONG_BAO_NHAC_THUE.md).
+ */
+export type TruongTraLoi = 'tra_luong' | 'ky_khai_gtgt' | 'sieu_nho' | 'phuong_phap_tndn';
+export const TRUONG_TRA_LOI: readonly TruongTraLoi[] = ['tra_luong', 'ky_khai_gtgt', 'sieu_nho', 'phuong_phap_tndn'];
+
+export interface TraLoiNghiaVu {
+  tra_luong: boolean | null;
+  ky_khai_gtgt: 'thang' | 'quy' | null;
+  sieu_nho: boolean | null;
+  phuong_phap_tndn: 'thu_nhap' | 'ty_le' | null;
+}
+
+export const TRA_LOI_TRONG: TraLoiNghiaVu = { tra_luong: null, ky_khai_gtgt: null, sieu_nho: null, phuong_phap_tndn: null };
+
+/** Giá trị hợp lệ của từng câu — máy chủ kiểm bằng đúng danh sách này, giao diện vẽ nút từ đây. */
+export const LUA_CHON_TRA_LOI: { [K in TruongTraLoi]: readonly NonNullable<TraLoiNghiaVu[K]>[] } = {
+  tra_luong: [true, false],
+  ky_khai_gtgt: ['thang', 'quy'],
+  sieu_nho: [true, false],
+  phuong_phap_tndn: ['thu_nhap', 'ty_le'],
+};
 
 export const TEN_LOAI_MOC: Record<LoaiMoc, string> = {
   khai_va_nop: 'Khai và nộp thuế',
@@ -156,16 +186,25 @@ export function lichThue(dk: DuKienLich): MocThue[] {
         vi_sao: 'Hạn khai GTGT phụ thuộc công ty khai theo tháng (ngày 20 tháng sau) hay theo quý (cuối tháng đầu quý sau).',
         can_cu: ['nd252_d10_k2', 'nd252_d10_k3'],
         cau_hoi: 'Công ty đang khai thuế GTGT theo tháng hay theo quý?',
+        tra_loi: 'ky_khai_gtgt',
       }));
     } else {
-      const han = dk.kyKhaiGtgt === 'thang'
-        ? (() => { const d = new Date(`${homNay.slice(0, 7)}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + 1); return `${d.toISOString().slice(0, 7)}-20`; })()
-        : hanNopQuy(quy, nam);
-      ra.push(moc({
-        khoa: `gtgt:${han}`, ten: `Khai và nộp thuế GTGT (${dk.kyKhaiGtgt === 'thang' ? 'theo tháng' : 'theo quý'})`,
-        loai: 'khai_va_nop', trang_thai: 'phai_lam', han, vi_sao: 'Kỳ khai GTGT bạn đã cho biết.',
-        can_cu: [dk.kyKhaiGtgt === 'thang' ? 'nd252_d10_k2' : 'nd252_d10_k3'],
-      }));
+      /*
+       * Kỳ vừa hết VÀ kỳ đang chạy (12/10/2026), như tạm nộp TNDN: ngày 12/10 hạn GTGT tháng 9 (20/10) còn
+       * chưa qua. Trước đây chỉ sinh kỳ đang chạy → nhắc 20/11 trong khi hạn gần nhất là 20/10.
+       */
+      const thangNay = Number(homNay.slice(5, 7));
+      const cacThang: [number, number][] = [thangNay === 1 ? [12, nam - 1] : [thangNay - 1, nam], [thangNay, nam]];
+      const cacKy: { ten: string; han: string }[] = dk.kyKhaiGtgt === 'thang'
+        ? cacThang.map(([t, n]) => ({ ten: `tháng ${t}/${n}`, han: `${t === 12 ? n + 1 : n}-${String(t === 12 ? 1 : t + 1).padStart(2, '0')}-20` }))
+        : cacQuy.map(([q, n]) => ({ ten: `quý ${q}/${n}`, han: hanNopQuy(q, n) }));
+      for (const k of cacKy) {
+        ra.push(moc({
+          khoa: `gtgt:${k.han}`, ten: `Khai và nộp thuế GTGT ${k.ten} (${dk.kyKhaiGtgt === 'thang' ? 'theo tháng' : 'theo quý'})`,
+          loai: 'khai_va_nop', trang_thai: 'phai_lam', han: k.han, vi_sao: 'Kỳ khai GTGT bạn đã cho biết.',
+          can_cu: [dk.kyKhaiGtgt === 'thang' ? 'nd252_d10_k2' : 'nd252_d10_k3'],
+        }));
+      }
     }
     /*
      * Báo cáo tài chính năm (26/09/2026, người dùng: "cuối năm còn báo cáo tài chính").
@@ -180,22 +219,32 @@ export function lichThue(dk: DuKienLich): MocThue[] {
       } else if (dk.sieuNho && dk.phuongPhapTndn === 'thu_nhap') {
         ra.push(moc({ khoa: `bctc:${namBc}`, ten, loai: 'nop_bao_cao', trang_thai: 'phai_lam', han, vi_sao: 'Doanh nghiệp siêu nhỏ nộp TNDN theo thu nhập tính thuế: nộp báo cáo tài chính năm trong 90 ngày sau khi hết năm.', can_cu: ['tt58_d10_k1a'] }));
       } else {
+        /*
+         * Hỏi đúng câu còn thiếu (12/10/2026): đã biết phương pháp TNDN mà chưa biết có siêu nhỏ không thì
+         * hỏi "siêu nhỏ" — trước đây vẫn hỏi lại câu phương pháp vừa trả lời. Không phải siêu nhỏ: câu hỏi
+         * dành cho kế toán, không có nút trả lời nhanh (MIMI chưa có căn cứ để tự kết luận).
+         */
+        const hoiSieuNho = dk.sieuNho == null && dk.phuongPhapTndn != null;
         ra.push(moc({
           khoa: `bctc:${namBc}`, ten, loai: 'nop_bao_cao', trang_thai: 'can_xac_minh', han,
           vi_sao: dk.sieuNho === false
             ? 'Doanh nghiệp không phải siêu nhỏ: MIMI chưa đối chiếu được văn bản quy định hạn nộp báo cáo tài chính cho nhóm này — hỏi kế toán. Mốc hiển thị là hạn 90 ngày của doanh nghiệp siêu nhỏ để tham khảo.'
             : 'Doanh nghiệp siêu nhỏ nộp TNDN theo thu nhập tính thuế phải nộp báo cáo tài chính năm trong 90 ngày; nộp theo tỷ lệ % trên doanh thu thì không bắt buộc.',
           can_cu: ['tt58_d10_k1a', 'tt58_d10_k1b'],
-          cau_hoi: dk.sieuNho === false ? 'Kế toán của công ty có nắm hạn nộp báo cáo tài chính không?' : 'Công ty nộp thuế TNDN theo thu nhập tính thuế hay theo tỷ lệ % trên doanh thu?',
+          cau_hoi: dk.sieuNho === false ? 'Kế toán của công ty có nắm hạn nộp báo cáo tài chính không?'
+            : hoiSieuNho ? CAU_HOI_SIEU_NHO : 'Công ty nộp thuế TNDN theo thu nhập tính thuế hay theo tỷ lệ % trên doanh thu?',
+          ...(dk.sieuNho === false ? {} : { tra_loi: hoiSieuNho ? 'sieu_nho' as const : 'phuong_phap_tndn' as const }),
         }));
       }
     }
     // TNCN: chỉ tổ chức trả lương mới khấu trừ và quyết toán thay.
-    const khongTraLuong = dk.soNguoi === '1' || dk.traLuong === false;
+    // Câu người dùng xác nhận thắng số người khai lúc đăng ký: đăng ký "chỉ mình tôi" rồi sau đó xác nhận có
+    // trả lương (đã thuê người) thì theo câu xác nhận.
+    const khongTraLuong = dk.traLuong === false || (dk.traLuong !== true && dk.soNguoi === '1');
     if (khongTraLuong) {
       ra.push(moc({
         khoa: 'tncn_khau_tru', ten: 'Khấu trừ, quyết toán thuế TNCN cho người lao động', loai: 'quyet_toan', trang_thai: 'khong_ap_dung', han: null,
-        vi_sao: dk.soNguoi === '1' ? 'Bạn cho biết chỉ có mình bạn làm, không trả lương cho người lao động.' : 'Bạn xác nhận công ty không trả tiền lương, tiền công.',
+        vi_sao: dk.traLuong === false ? 'Bạn xác nhận công ty không trả tiền lương, tiền công.' : 'Bạn cho biết chỉ có mình bạn làm, không trả lương cho người lao động.',
         can_cu: [],
       }));
     } else {
@@ -205,7 +254,7 @@ export function lichThue(dk: DuKienLich): MocThue[] {
         loai: 'quyet_toan', trang_thai: coLuong ? 'phai_lam' : 'can_xac_minh', han: `${nam}-03-31`,
         vi_sao: 'Tổ chức trả tiền lương, tiền công phải khấu trừ và quyết toán TNCN; hạn cuối tháng thứ 3 sau năm.',
         can_cu: ['nd252_d10_k5a'],
-        ...(coLuong ? {} : { cau_hoi: CAU_HOI_TRA_LUONG }),
+        ...(coLuong ? {} : { cau_hoi: CAU_HOI_TRA_LUONG, tra_loi: 'tra_luong' as const }),
       }));
       /*
        * Khai TNCN đã khấu trừ THEO QUÝ — mẫu 05/KK-TNCN (11/10/2026).
@@ -225,7 +274,7 @@ export function lichThue(dk: DuKienLich): MocThue[] {
             ? 'Công ty trả tiền lương, tiền công: khai số thuế TNCN đã khấu trừ theo quý (từ kỳ quý 3/2026 không còn khai tháng); hạn ngày cuối tháng đầu của quý sau.'
             : 'Chỉ tổ chức trả tiền lương, tiền công mới phải khai TNCN đã khấu trừ theo quý (từ kỳ quý 3/2026). MIMI chưa biết công ty có trả lương không.',
           can_cu: ['nd252_d10_k3', 'tt89_tncn_khai_quy'], mau: '05/KK-TNCN',
-          ...(coLuong ? {} : { cau_hoi: CAU_HOI_TRA_LUONG }),
+          ...(coLuong ? {} : { cau_hoi: CAU_HOI_TRA_LUONG, tra_loi: 'tra_luong' as const }),
         }));
       }
     }
@@ -260,6 +309,7 @@ export function lichThue(dk: DuKienLich): MocThue[] {
       m.trang_thai = 'can_xac_minh';
       m.vi_sao = `Cơ quan thuế ghi ${ghi}. MIMI không tự coi kỳ này là bắt buộc hay miễn. ${m.vi_sao}`;
       m.cau_hoi = 'Cơ quan thuế ghi trạng thái này có đúng với tình hình hiện tại của bạn không?';
+      delete m.tra_loi;
     }
   }
 
@@ -270,6 +320,7 @@ export function lichThue(dk: DuKienLich): MocThue[] {
         m.vi_sao = `Cơ quan thuế ghi doanh nghiệp đang tạm ngừng. Kỳ nằm trọn trong thời gian tạm ngừng thì không phải khai; không trọn thì vẫn phải khai. ${m.vi_sao}`;
         m.can_cu = [...m.can_cu, 'nd252_d7_c1'];
         m.cau_hoi = 'Thời gian tạm ngừng có trọn kỳ này không?';
+        delete m.tra_loi;
       }
     }
   }
@@ -279,6 +330,8 @@ export function lichThue(dk: DuKienLich): MocThue[] {
 
 /** Câu hỏi gỡ mọi mốc TNCN của tổ chức trả thu nhập — một câu, dùng chung để không hỏi hai lần hai kiểu. */
 export const CAU_HOI_TRA_LUONG = 'Công ty có trả lương cho người lao động không?';
+/** Câu hỏi khi đã biết phương pháp TNDN mà chưa biết quy mô — TT 58/2026 Điều 10 chỉ nói về doanh nghiệp siêu nhỏ. */
+export const CAU_HOI_SIEU_NHO = 'Công ty có phải doanh nghiệp siêu nhỏ không?';
 
 export interface NghiaVu {
   /** Phần khoá trước dấu ":" — một nghĩa vụ, nhiều kỳ. */
@@ -290,6 +343,7 @@ export interface NghiaVu {
   can_cu: string[];
   mau?: string;
   cau_hoi?: string;
+  tra_loi?: TruongTraLoi;
   /** Hạn gần nhất chưa qua (hoặc hạn muộn nhất nếu mọi kỳ đã qua). null khi chưa tính được. */
   han: string | null;
   so_ky: number;
@@ -311,7 +365,7 @@ export function nghiaVuTuLich(lich: MocThue[]): Record<TrangThaiMoc, NghiaVu[]> 
     const sapToi = ds.find((m) => m.con_lai !== null && m.con_lai >= 0) ?? ds[ds.length - 1];
     ra[sapToi.trang_thai].push({
       khoa: sapToi.khoa.split(':')[0], ten: sapToi.ten, loai: sapToi.loai, trang_thai: sapToi.trang_thai,
-      vi_sao: sapToi.vi_sao, can_cu: sapToi.can_cu, mau: sapToi.mau, cau_hoi: sapToi.cau_hoi, han: sapToi.han, so_ky: ds.length,
+      vi_sao: sapToi.vi_sao, can_cu: sapToi.can_cu, mau: sapToi.mau, cau_hoi: sapToi.cau_hoi, tra_loi: sapToi.tra_loi, han: sapToi.han, so_ky: ds.length,
     });
   }
   return ra;

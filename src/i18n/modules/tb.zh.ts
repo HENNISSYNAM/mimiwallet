@@ -19,6 +19,23 @@ const m = {
       viSao: '原因：',
       canCu: '依据：',
     },
+    traLoi: {
+      dangLuu: '正在保存…',
+      daLuu: '已保存。MIMI 已重新计算税务日程。',
+      loi: '未能保存回答。',
+      daTraLoi: '你的回答',
+      daTraLoiMoTa: '本页日程按这些回答计算。答错了可以修改。',
+      sua: '修改',
+      xoa: '清除回答',
+      thoi: '取消',
+      cau: { tra_luong: '向员工支付工资', ky_khai_gtgt: '增值税申报周期', sieu_nho: '微型企业', phuong_phap_tndn: '企业所得税缴纳方式' },
+      lc: {
+        tra_luong: { true: '支付工资', false: '不支付工资' },
+        ky_khai_gtgt: { thang: '按月', quy: '按季' },
+        sieu_nho: { true: '是，微型企业', false: '不是微型企业' },
+        phuong_phap_tndn: { thu_nhap: '按应纳税所得额', ty_le: '按收入的百分比' },
+      },
+    },
     lich: {
       dangTinh: '正在计算你的税务日历…',
       loi: '暂时无法读取税务日历，请几分钟后再试。',

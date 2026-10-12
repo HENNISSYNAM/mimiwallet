@@ -23,6 +23,23 @@ const m = {
       viSao: 'Vì sao:',
       canCu: 'Căn cứ:',
     },
+    traLoi: {
+      dangLuu: 'Đang lưu…',
+      daLuu: 'Đã lưu. MIMI đã tính lại lịch thuế.',
+      loi: 'Chưa lưu được câu trả lời.',
+      daTraLoi: 'Câu bạn đã trả lời',
+      daTraLoiMoTa: 'Lịch trên trang này tính theo các câu trả lời này. Trả lời nhầm thì sửa lại.',
+      sua: 'Sửa',
+      xoa: 'Xoá câu trả lời',
+      thoi: 'Thôi',
+      cau: { tra_luong: 'Trả lương cho người lao động', ky_khai_gtgt: 'Kỳ khai GTGT', sieu_nho: 'Doanh nghiệp siêu nhỏ', phuong_phap_tndn: 'Cách nộp thuế TNDN' },
+      lc: {
+        tra_luong: { true: 'Có trả lương', false: 'Không trả lương' },
+        ky_khai_gtgt: { thang: 'Theo tháng', quy: 'Theo quý' },
+        sieu_nho: { true: 'Có, siêu nhỏ', false: 'Không phải siêu nhỏ' },
+        phuong_phap_tndn: { thu_nhap: 'Theo thu nhập tính thuế', ty_le: 'Theo tỷ lệ % trên doanh thu' },
+      },
+    },
     lich: {
       dangTinh: 'Đang tính lịch thuế của bạn…',
       loi: 'Chưa đọc được lịch thuế. Thử lại sau ít phút.',

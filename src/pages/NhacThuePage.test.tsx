@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import NhacThuePage from './NhacThuePage';
 import { quenLichThue } from '@/lib/lichThue';
 
 const gia = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { functions: { invoke: gia.invoke } } }));
+const giaToKhai = vi.hoisted(() => ({ goi: vi.fn() }));
+vi.mock('@/lib/goiToKhai', async (goc) => ({ ...(await goc<typeof import('@/lib/goiToKhai')>()), goiToKhai: giaToKhai.goi }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -155,5 +158,48 @@ describe('Nhắc thuế', () => {
     dung();
     expect(await screen.findByRole('heading', { name: 'Hồ sơ nghĩa vụ thuế của bạn' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Thêm mã số thuế' }).getAttribute('href')).toBe('/dashboard/settings');
+  });
+});
+
+describe('Nhắc thuế — trả lời nhanh câu "cần xác minh" (12/10/2026)', () => {
+  const MOC = (o: Record<string, unknown>) => ({ khoa: 'k', loai: 'khai_va_nop', trang_thai: 'phai_lam', han: '2026-10-31', con_lai: 46, vi_sao: 'v', can_cu: [], ...o });
+  const TRONG = { tra_luong: null, ky_khai_gtgt: null, sieu_nho: null, phuong_phap_tndn: null };
+  const truoc = {
+    lich: [MOC({ khoa: 'tncn_khai_quy:2026-q3', ten: 'Khai thuế TNCN đã khấu trừ quý 3/2026 — mẫu 05/KK-TNCN', trang_thai: 'can_xac_minh', cau_hoi: 'Công ty có trả lương cho người lao động không?', tra_loi: 'tra_luong' }),
+      MOC({ khoa: 'bctc:2026', ten: 'Nộp báo cáo tài chính năm 2026', loai: 'nop_bao_cao', trang_thai: 'can_xac_minh', cau_hoi: 'Kế toán của công ty có nắm hạn nộp báo cáo tài chính không?' })],
+    mocKeTiep: null, traLoiNghiaVu: TRONG, milestones: [], revenue: 0,
+  };
+  const sau = {
+    lich: [MOC({ khoa: 'tncn_khai_quy:2026-q3', ten: 'Khai thuế TNCN đã khấu trừ quý 3/2026 — mẫu 05/KK-TNCN' })],
+    mocKeTiep: null, traLoiNghiaVu: { ...TRONG, tra_luong: true }, milestones: [], revenue: 0,
+  };
+
+  it('bấm "Có trả lương" → lưu qua to-khai, đọc lại lịch: mốc 05/KK-TNCN chuyển sang Áp dụng; sửa được', async () => {
+    gia.invoke.mockResolvedValueOnce({ data: truoc, error: null }).mockResolvedValueOnce({ data: sau, error: null });
+    giaToKhai.goi.mockResolvedValue({ ok: true });
+    dung();
+    const hoSo = (await screen.findByRole('heading', { name: 'Hồ sơ nghĩa vụ thuế của bạn' })).parentElement as HTMLElement;
+    // Câu dành cho kế toán không có nút hứa suông.
+    expect(within(hoSo).getAllByRole('button', { name: 'Có trả lương' })).toHaveLength(1);
+    fireEvent.click(within(hoSo).getByRole('button', { name: 'Có trả lương' }));
+    await waitFor(() => expect(giaToKhai.goi).toHaveBeenCalledWith('luu_tra_loi_nghia_vu', { tra_loi: { tra_luong: true } }));
+    expect(await within(hoSo).findByText('Câu bạn đã trả lời')).toBeTruthy();
+    expect(gia.invoke).toHaveBeenCalledTimes(2);
+    expect(within(hoSo).getByText('Áp dụng cho bạn')).toBeTruthy();
+    expect(within(hoSo).queryByText('Cần xác minh')).toBeNull();
+    // Sửa lại: mở lựa chọn, chọn "Không trả lương".
+    fireEvent.click(within(hoSo).getByRole('button', { name: 'Sửa' }));
+    fireEvent.click(within(hoSo).getByRole('button', { name: 'Không trả lương' }));
+    await waitFor(() => expect(giaToKhai.goi).toHaveBeenLastCalledWith('luu_tra_loi_nghia_vu', { tra_loi: { tra_luong: false } }));
+  });
+
+  it('máy chủ từ chối (vai trò không đủ quyền) → báo đúng câu, lịch không đổi', async () => {
+    const { toast } = await import('sonner');
+    gia.invoke.mockResolvedValue({ data: truoc, error: null });
+    giaToKhai.goi.mockRejectedValue(new Error('Vai trò của bạn trong công ty (Người xem) không được làm việc này.'));
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: 'Có trả lương' }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Vai trò của bạn trong công ty (Người xem) không được làm việc này.'));
+    expect(gia.invoke).toHaveBeenCalledTimes(1);
   });
 });

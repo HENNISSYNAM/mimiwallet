@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
      * dưới ngưỡng, không phải khai quý. Xem `_shared/luat/lich-thue.ts`.
      */
     const homNay = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
-    const { lich, loaiNguoiNop, sanSang, hoSoMst } = await docLichCongTy(supabase, company.id, { nam: year, homNay, laDemo, s });
+    const { lich, loaiNguoiNop, sanSang, hoSoMst, traLoi } = await docLichCongTy(supabase, company.id, { nam: year, homNay, laDemo, s });
 
     // Measured on the strongest evidence available. An e-invoice total is the
     // tax authority's own record; bank income is a reading of what arrived.
@@ -173,6 +173,8 @@ Deno.serve(async (req) => {
       sanSang,
       // Điều MIMI biết nhờ mã số thuế — trang Nhắc thuế hiện "vì sao biết" (11/10/2026).
       hoSoMst,
+      // Câu trả lời đã lưu cho các câu "cần xác minh" (12/10/2026) — trang Nhắc thuế cho sửa lại.
+      traLoiNghiaVu: traLoi,
       disclaimer:
         "Số liệu tham khảo, tính từ dữ liệu đã kết nối. Không phải kết luận về nghĩa vụ thuế.",
     });

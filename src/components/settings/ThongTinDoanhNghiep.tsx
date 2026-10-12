@@ -38,6 +38,105 @@ import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
  * là chưa có dòng "theo đăng ký thuế".
  */
 
+interface NganhVsic { ma: string; ten: string }
+
+/** Như `doc_nganh` của `to-khai` trả về (`_shared/luat/ho-so-nghia-vu.ts`). */
+interface NganhHoSo {
+  nganh: NganhVsic[];
+  nganh_chinh: string | null;
+  nhom_nganh: string[];
+  loai_nguoi_nop: string | null;
+  goi_y: { ma: string; nhom: string | null; ten_nhom: string | null; vi_sao: string; da_co: boolean } | null;
+}
+
+/**
+ * Ngành nghề theo mã VSIC cấp 4 (12/10/2026): nhiều ngành, một ngành chính, chép mã + tên từ giấy đăng ký.
+ * MIMI không giữ danh mục VSIC nên không tự điền tên. Hộ kinh doanh nhận GỢI Ý nhóm hoạt động (dùng cho tỷ lệ
+ * thuế) từ ngành chính — chỉ ghi vào hồ sơ khi người dùng bấm xác nhận. Lưu qua `to-khai` (quyền sửa hồ sơ thuế).
+ */
+export function NganhNghe() {
+  const [du, setDu] = useState<NganhHoSo | null>(null);
+  const [ds, setDs] = useState<NganhVsic[]>([]);
+  const [chinh, setChinh] = useState<string | null>(null);
+  const [ma, setMa] = useState('');
+  const [ten, setTen] = useState('');
+  const [dangLuu, setDangLuu] = useState(false);
+
+  const nhan = useCallback((r: NganhHoSo) => { setDu(r); setDs(Array.isArray(r?.nganh) ? r.nganh : []); setChinh(r?.nganh_chinh ?? null); }, []);
+  useEffect(() => {
+    goiToKhai('doc_nganh').then((r) => nhan(r as NganhHoSo)).catch(() => setDu(null));
+  }, [nhan]);
+
+  const luu = async (than: Record<string, unknown>, cau: string) => {
+    setDangLuu(true);
+    try {
+      nhan(await goiToKhai('luu_nganh', than) as NganhHoSo);
+      toast.success(cau);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Chưa lưu được ngành nghề.');
+    } finally {
+      setDangLuu(false);
+    }
+  };
+
+  const them = () => {
+    const m = ma.trim();
+    if (!/^\d{4}$/.test(m)) { toast.error('Mã ngành cấp 4 gồm đúng 4 chữ số (ví dụ 4711).'); return; }
+    if (ten.trim().length < 2) { toast.error('Ghi tên ngành như trên giấy chứng nhận đăng ký.'); return; }
+    if (ds.some((n) => n.ma === m)) { toast.error(`Mã ngành ${m} đã có.`); return; }
+    setDs([...ds, { ma: m, ten: ten.trim() }]);
+    if (!chinh) setChinh(m);
+    setMa(''); setTen('');
+  };
+
+  const doi = JSON.stringify(ds) !== JSON.stringify(du?.nganh ?? []) || chinh !== (du?.nganh_chinh ?? null);
+  const g = du?.goi_y ?? null;
+
+  return (
+    <div className="border-t border-border/20 pt-4">
+      <p className="mb-1.5 text-sm text-muted-foreground">Ngành nghề đăng ký (mã VSIC cấp 4)</p>
+      {ds.length === 0 && <p className="text-sm text-muted-foreground/60">Chưa khai ngành nào.</p>}
+      <ul className="space-y-1">
+        {ds.map((n) => (
+          <li key={n.ma} className="flex items-center gap-2 text-sm">
+            <label className="flex min-w-0 flex-1 items-center gap-2">
+              <input type="radio" name="nganh-chinh" checked={chinh === n.ma} onChange={() => setChinh(n.ma)} aria-label={`Ngành chính ${n.ma}`} />
+              <span className="font-mono">{n.ma}</span> <span className="truncate">{n.ten}</span>
+              {chinh === n.ma && <span className="text-xs text-primary">(ngành chính)</span>}
+            </label>
+            <button type="button" onClick={() => { const con = ds.filter((x) => x.ma !== n.ma); setDs(con); if (chinh === n.ma) setChinh(con[0]?.ma ?? null); }} className="text-xs text-muted-foreground hover:underline">Bỏ</button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <input inputMode="numeric" value={ma} onChange={(e) => setMa(e.target.value)} placeholder="Mã, ví dụ 4711" aria-label="Mã ngành" className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm sm:w-32" />
+        <input value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên ngành như trên giấy đăng ký" aria-label="Tên ngành" className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm" />
+        <button type="button" onClick={them} className="rounded-xl border border-border px-3 py-2 text-sm font-medium hover:bg-accent">Thêm</button>
+      </div>
+      <button
+        type="button"
+        onClick={() => void luu({ nganh: ds, nganh_chinh: chinh }, 'Đã lưu ngành nghề.')}
+        disabled={dangLuu || !doi}
+        className="mt-2 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+      >
+        {dangLuu && <Loader2 size={14} className="animate-spin" />}
+        {doi ? 'Lưu ngành nghề' : 'Đã lưu'}
+      </button>
+      {g && g.nhom && !g.da_co && !doi && (
+        <div className="mt-3 rounded-xl bg-muted/40 p-3 text-sm">
+          <p className="font-medium text-foreground">Gợi ý nhóm hoạt động tính thuế: {g.ten_nhom}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{g.vi_sao}</p>
+          <button type="button" disabled={dangLuu} onClick={() => void luu({ xac_nhan_nhom: g.nhom }, 'Đã thêm nhóm hoạt động vào hồ sơ thuế.')} className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40">
+            Đúng, dùng nhóm này
+          </button>
+        </div>
+      )}
+      {g && !g.nhom && !doi && <p className="mt-2 text-xs text-muted-foreground">Chưa gợi ý nhóm tính thuế cho ngành {g.ma}: {g.vi_sao}</p>}
+      <p className="mt-2 text-xs text-muted-foreground">MIMI không tự lập danh sách ngành nghề kinh doanh có điều kiện — kiểm giấy phép con với cơ quan cấp phép.</p>
+    </div>
+  );
+}
+
 interface DoanhNghiep {
   id: string;
   name: string | null;
@@ -160,6 +259,8 @@ export function ThongTinDoanhNghiep() {
           )}
         </div>
       )}
+
+      <NganhNghe />
 
       <div className="border-t border-border/20 pt-4">
         <label className="block">

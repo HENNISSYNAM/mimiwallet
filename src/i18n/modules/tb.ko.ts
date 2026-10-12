@@ -19,6 +19,23 @@ const m = {
       viSao: '이유:',
       canCu: '근거:',
     },
+    traLoi: {
+      dangLuu: '저장 중…',
+      daLuu: '저장했습니다. MIMI가 세금 일정을 다시 계산했습니다.',
+      loi: '답변을 저장하지 못했습니다.',
+      daTraLoi: '내 답변',
+      daTraLoiMoTa: '이 페이지의 일정은 이 답변을 따릅니다. 잘못 답했다면 수정하세요.',
+      sua: '수정',
+      xoa: '답변 지우기',
+      thoi: '취소',
+      cau: { tra_luong: '직원 급여 지급', ky_khai_gtgt: '부가세 신고 주기', sieu_nho: '초소기업', phuong_phap_tndn: '법인세 납부 방식' },
+      lc: {
+        tra_luong: { true: '급여 지급함', false: '급여 없음' },
+        ky_khai_gtgt: { thang: '월별', quy: '분기별' },
+        sieu_nho: { true: '예, 초소기업', false: '초소기업 아님' },
+        phuong_phap_tndn: { thu_nhap: '과세소득 기준', ty_le: '매출 대비 % 기준' },
+      },
+    },
     lich: {
       dangTinh: '세금 일정을 계산하는 중…',
       loi: '세금 일정을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.',

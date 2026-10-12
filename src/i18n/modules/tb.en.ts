@@ -19,6 +19,23 @@ const m = {
       viSao: 'Why:',
       canCu: 'Legal basis:',
     },
+    traLoi: {
+      dangLuu: 'Saving…',
+      daLuu: 'Saved. MIMI has recalculated your tax calendar.',
+      loi: 'Couldn’t save your answer.',
+      daTraLoi: 'Your answers',
+      daTraLoiMoTa: 'The calendar on this page follows these answers. Change one if it was wrong.',
+      sua: 'Change',
+      xoa: 'Clear answer',
+      thoi: 'Cancel',
+      cau: { tra_luong: 'Pays wages to employees', ky_khai_gtgt: 'VAT filing period', sieu_nho: 'Micro enterprise', phuong_phap_tndn: 'Corporate income tax method' },
+      lc: {
+        tra_luong: { true: 'Yes, pays wages', false: 'No wages' },
+        ky_khai_gtgt: { thang: 'Monthly', quy: 'Quarterly' },
+        sieu_nho: { true: 'Yes, micro', false: 'Not micro' },
+        phuong_phap_tndn: { thu_nhap: 'On taxable income', ty_le: 'As a % of revenue' },
+      },
+    },
     lich: {
       dangTinh: 'Working out your tax calendar…',
       loi: 'Couldn’t read your tax calendar. Try again in a few minutes.',

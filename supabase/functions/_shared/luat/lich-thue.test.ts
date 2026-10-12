@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { suyLuan, type SuKienThue } from './he-luat';
 import { CAN_CU, CAN_CU_CHUA_DOI_CHIEU, nhanCanCu } from './he-luat';
-import { CAU_HOI_TRA_LUONG, han90NgaySauNam, lichThue, mocKeTiep, nghiaVuTuLich } from './lich-thue';
+import { CAU_HOI_SIEU_NHO, CAU_HOI_TRA_LUONG, han90NgaySauNam, lichThue, mocKeTiep, nghiaVuTuLich } from './lich-thue';
 
 const HOM_NAY = '2026-09-25';
 const sk = (p: Partial<SuKienThue> = {}): SuKienThue => ({
@@ -55,7 +55,8 @@ describe('lịch thuế — một nguồn, không tự coi "chưa biết" là "b
 
   it('doanh nghiệp khai GTGT theo tháng: hạn ngày 20 tháng sau', () => {
     const l = lich(sk({ loai: 'doanh_nghiep' }), { kyKhaiGtgt: 'thang' });
-    expect(l.find((m) => m.khoa.startsWith('gtgt:'))?.han).toBe('2026-10-20');
+    // Kỳ đang chạy (tháng 9) hạn 20/10; kỳ vừa hết (tháng 8) hạn 20/09 vẫn hiện (đã qua) như tạm nộp TNDN.
+    expect(l.filter((m) => m.khoa.startsWith('gtgt:')).map((m) => [m.han, m.trang_thai])).toEqual([['2026-09-20', 'phai_lam'], ['2026-10-20', 'phai_lam']]);
   });
 
   it('chỉ mình tôi → TNCN khấu trừ không áp dụng; chưa biết → hỏi', () => {
@@ -200,5 +201,67 @@ describe('hồ sơ nghĩa vụ — gom từ CÙNG lịch', () => {
     expect(nv.can_xac_minh.find((x) => x.khoa === 'gtgt_ky_khai')?.cau_hoi).toBeTruthy();
     const tong = Object.values(nv).reduce((a, ds) => a + ds.reduce((b, x) => b + x.so_ky, 0), 0);
     expect(tong).toBe(l.length);
+  });
+});
+
+describe('câu trả lời đã lưu đổi lịch (12/10/2026 — sửa L16)', () => {
+  const NGAY = '2026-10-12';
+  const dn = sk({ loai: 'doanh_nghiep', homNay: NGAY });
+  const l = (p: Record<string, unknown> = {}) => lichThue({ sk: dn, sl: suyLuan(dn), homNay: NGAY, ...p });
+
+  it('mỗi câu "cần xác minh" trả lời được mang đúng trường để lưu; câu cho kế toán thì không', () => {
+    const goc = l();
+    expect(goc.find((m) => m.khoa === 'gtgt_ky_khai')?.tra_loi).toBe('ky_khai_gtgt');
+    expect(goc.find((m) => m.khoa === 'tncn_khai_quy:2026-q3')?.tra_loi).toBe('tra_luong');
+    expect(goc.find((m) => m.khoa === 'bctc:2026')?.tra_loi).toBe('phuong_phap_tndn');
+    expect(l({ sieuNho: false }).find((m) => m.khoa === 'bctc:2026')?.tra_loi).toBeUndefined();
+    expect(nghiaVuTuLich(goc).can_xac_minh.find((n) => n.khoa === 'gtgt_ky_khai')?.tra_loi).toBe('ky_khai_gtgt');
+  });
+
+  it('traLuong=true → 05/KK-TNCN quý 3 "phải làm", hạn 31/10; không còn câu hỏi', () => {
+    const m = l({ traLuong: true }).find((x) => x.khoa === 'tncn_khai_quy:2026-q3')!;
+    expect(m).toMatchObject({ trang_thai: 'phai_lam', han: '2026-10-31', mau: '05/KK-TNCN' });
+    expect(m.cau_hoi).toBeUndefined();
+    expect(m.tra_loi).toBeUndefined();
+  });
+
+  it('xác nhận có trả lương thắng "chỉ mình tôi" lúc đăng ký (đã thuê thêm người)', () => {
+    expect(l({ soNguoi: '1', traLuong: true }).find((x) => x.khoa === 'tncn_khai_quy:2026-q3')?.trang_thai).toBe('phai_lam');
+    expect(l({ soNguoi: '1' }).find((x) => x.khoa === 'tncn_khau_tru')?.trang_thai).toBe('khong_ap_dung');
+  });
+
+  it("kyKhaiGtgt='thang' ngày 12/10 → hạn gần nhất 20/10 (kỳ tháng 9), rồi 20/11; hết câu hỏi GTGT", () => {
+    const ds = l({ kyKhaiGtgt: 'thang' });
+    expect(ds.some((m) => m.khoa === 'gtgt_ky_khai')).toBe(false);
+    const g = ds.filter((m) => m.khoa.startsWith('gtgt:'));
+    expect(g.map((m) => [m.ten, m.han, m.trang_thai])).toEqual([
+      ['Khai và nộp thuế GTGT tháng 9/2026 (theo tháng)', '2026-10-20', 'phai_lam'],
+      ['Khai và nộp thuế GTGT tháng 10/2026 (theo tháng)', '2026-11-20', 'phai_lam'],
+    ]);
+    expect(g[0].con_lai).toBe(8);
+  });
+
+  it("kyKhaiGtgt='thang' tháng 1 → kỳ tháng 12 năm trước hạn 20/01", () => {
+    const sk1 = sk({ loai: 'doanh_nghiep', homNay: '2027-01-05', nam: 2027 });
+    const g = lichThue({ sk: sk1, sl: suyLuan(sk1), homNay: '2027-01-05', kyKhaiGtgt: 'thang' }).filter((m) => m.khoa.startsWith('gtgt:'));
+    expect(g.map((m) => m.han)).toEqual(['2027-01-20', '2027-02-20']);
+  });
+
+  it("kyKhaiGtgt='quy' ngày 12/10 → quý 3 vừa hết hạn 31/10, quý 4 đang chạy hạn 31/01/2027", () => {
+    const g = l({ kyKhaiGtgt: 'quy' }).filter((m) => m.khoa.startsWith('gtgt:'));
+    expect(g.map((m) => m.han)).toEqual(['2026-10-31', '2027-01-31']);
+    expect(g[0].can_cu).toEqual(['nd252_d10_k3']);
+  });
+
+  it('báo cáo tài chính: đã trả lời phương pháp mà chưa biết siêu nhỏ → hỏi câu siêu nhỏ (không hỏi lại câu cũ)', () => {
+    const m = l({ phuongPhapTndn: 'thu_nhap' }).find((x) => x.khoa === 'bctc:2026')!;
+    expect(m).toMatchObject({ trang_thai: 'can_xac_minh', cau_hoi: CAU_HOI_SIEU_NHO, tra_loi: 'sieu_nho' });
+    expect(l({ phuongPhapTndn: 'thu_nhap', sieuNho: true }).find((x) => x.khoa === 'bctc:2026')?.trang_thai).toBe('phai_lam');
+  });
+
+  it('tạm ngừng: mốc bị chuyển sang câu hỏi tạm ngừng thì không mang nút trả lời của câu khác', () => {
+    for (const m of l({ traLuong: true, kyKhaiGtgt: 'thang', trangThai: 'tam_ngung' })) {
+      if (m.cau_hoi === 'Thời gian tạm ngừng có trọn kỳ này không?') expect(m.tra_loi).toBeUndefined();
+    }
   });
 });

@@ -1,16 +1,20 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { BadgeCheck, CalendarClock, ExternalLink, FileCheck2, HelpCircle, Loader2, ScrollText } from 'lucide-react';
-import { DUONG_DAN_NOP_TO_KHAI } from '@/lib/goiToKhai';
+import { DUONG_DAN_NOP_TO_KHAI, goiToKhai } from '@/lib/goiToKhai';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { mucKhan, type MucKhan } from '@/lib/hanKeKhai';
-import { cauConLai, ngayMoc, TEN_LOAI_MOC, useLichThue, type MocThue } from '@/lib/lichThue';
+import { cauConLai, docLichThue, ngayMoc, quenLichThue, TEN_LOAI_MOC, useLichThue, type LichThue, type MocThue } from '@/lib/lichThue';
 import { dinhDang } from '@/lib/troLy';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '@/lib/giayTo';
 import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
 import { LichViec } from '@/components/viec/LichViec';
 import { mucCanXem } from '../../supabase/functions/_shared/thong-bao/muc-nhac.ts';
-import { nghiaVuTuLich, type NghiaVu, type TrangThaiMoc } from '../../supabase/functions/_shared/luat/lich-thue.ts';
+import {
+  LUA_CHON_TRA_LOI, nghiaVuTuLich, TRUONG_TRA_LOI, type NghiaVu, type TraLoiNghiaVu, type TrangThaiMoc, type TruongTraLoi,
+} from '../../supabase/functions/_shared/luat/lich-thue.ts';
 import { nhanCanCu } from '../../supabase/functions/_shared/luat/he-luat.ts';
 import type { HoSoMst } from '../../supabase/functions/_shared/mst/ho-so-mst.ts';
 
@@ -71,10 +75,67 @@ const NHOM_NGHIA_VU: { trang_thai: TrangThaiMoc; mau: string }[] = [
 /**
  * Hồ sơ nghĩa vụ (11/10/2026): đầu trang nói MIMI biết gì nhờ mã số thuế và vì sao từng nghĩa vụ áp dụng,
  * cần xác minh hay không áp dụng. Gom từ CÙNG `lich` của `tax-summary` (`nghiaVuTuLich`) — không lịch thứ hai.
- * Không có nút trả lời nhanh: câu hỏi "cần xác minh" ở đây (kỳ khai GTGT, có trả lương…) chưa có đường lưu
- * câu trả lời mà lịch thuế đọc lại; nút mà không lưu được là nút hứa suông.
+ *
+ * Trả lời nhanh (12/10/2026): câu "cần xác minh" nào lưu được (`tra_loi` của mốc — kỳ khai GTGT, có trả lương,
+ * siêu nhỏ, cách nộp TNDN) có nút ngay dưới câu hỏi → lưu vào `ho_so_thue` qua `to-khai` (quyền sửa hồ sơ thuế)
+ * → đọc lại `tax-summary` nên lịch tính lại ngay. Câu không lưu được (hỏi kế toán, cơ quan thuế) KHÔNG có nút.
  */
-function HoSoNghiaVu({ hoSo, lich }: { hoSo: HoSoMst | null; lich: MocThue[] }) {
+type GuiTraLoi = (truong: TruongTraLoi, giaTri: TraLoiNghiaVu[TruongTraLoi]) => void;
+
+function NutTraLoi({ truong, gui, dangLuu }: { truong: TruongTraLoi; gui: GuiTraLoi; dangLuu: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-2">
+      {LUA_CHON_TRA_LOI[truong].map((gt) => (
+        <button
+          key={String(gt)}
+          type="button"
+          disabled={dangLuu}
+          onClick={() => gui(truong, gt)}
+          className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-50"
+        >
+          {t(`tb.traLoi.lc.${truong}.${String(gt)}`)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Câu đã trả lời, kèm nút sửa và xoá — trả lời nhầm thì gỡ được, mốc quay về "cần xác minh". */
+function CauDaTraLoi({ traLoi, gui, dangLuu }: { traLoi: TraLoiNghiaVu; gui: GuiTraLoi; dangLuu: boolean }) {
+  const { t } = useTranslation();
+  const [dangSua, setDangSua] = useState<TruongTraLoi | null>(null);
+  const da = TRUONG_TRA_LOI.filter((k) => traLoi[k] !== null);
+  if (da.length === 0) return null;
+  return (
+    <div className="mt-4 rounded-xl border border-border p-4">
+      <h3 className="text-sm font-semibold text-foreground">{t('tb.traLoi.daTraLoi')}</h3>
+      <p className="text-xs text-muted-foreground">{t('tb.traLoi.daTraLoiMoTa')}</p>
+      <ul className="mt-2 divide-y divide-border">
+        {da.map((k) => (
+          <li key={k} className="py-2 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p><span className="text-muted-foreground">{t(`tb.traLoi.cau.${k}`)}:</span> <span className="font-medium text-foreground">{t(`tb.traLoi.lc.${k}.${String(traLoi[k])}`)}</span></p>
+              <div className="flex gap-2">
+                <button type="button" disabled={dangLuu} onClick={() => setDangSua(dangSua === k ? null : k)} className="text-xs font-medium text-primary hover:underline disabled:opacity-50">
+                  {dangSua === k ? t('tb.traLoi.thoi') : t('tb.traLoi.sua')}
+                </button>
+                <button type="button" disabled={dangLuu} onClick={() => { setDangSua(null); gui(k, null); }} className="text-xs font-medium text-muted-foreground hover:underline disabled:opacity-50">
+                  {t('tb.traLoi.xoa')}
+                </button>
+              </div>
+            </div>
+            {dangSua === k && <NutTraLoi truong={k} gui={(tr, gt) => { setDangSua(null); gui(tr, gt); }} dangLuu={dangLuu} />}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function HoSoNghiaVu({ hoSo, lich, traLoi, gui, dangLuu }: {
+  hoSo: HoSoMst | null; lich: MocThue[]; traLoi: TraLoiNghiaVu | null; gui: GuiTraLoi; dangLuu: boolean;
+}) {
   const { t } = useTranslation();
   const nhom = nghiaVuTuLich(lich);
   return (
@@ -110,6 +171,7 @@ function HoSoNghiaVu({ hoSo, lich }: { hoSo: HoSoMst | null; lich: MocThue[] }) 
                 <p className="text-sm font-medium text-foreground">{n.ten}{n.so_ky > 1 ? ` ${t('tb.hoSo.soKy', { n: n.so_ky })}` : ''}</p>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground"><span className="font-medium">{t('tb.hoSo.viSao')}</span> {n.vi_sao}</p>
                 {n.cau_hoi && <p className="mt-0.5 text-xs font-medium text-mimi-amber">{n.cau_hoi}</p>}
+                {trang_thai === 'can_xac_minh' && n.tra_loi && <NutTraLoi truong={n.tra_loi} gui={gui} dangLuu={dangLuu} />}
                 {n.can_cu.length > 0 && (
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     <span className="font-medium">{t('tb.hoSo.canCu')}</span>{' '}
@@ -121,9 +183,13 @@ function HoSoNghiaVu({ hoSo, lich }: { hoSo: HoSoMst | null; lich: MocThue[] }) 
           </ul>
         </div>
       ))}
+      {traLoi && <CauDaTraLoi traLoi={traLoi} gui={gui} dangLuu={dangLuu} />}
+      {dangLuu && <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={12} className="animate-spin" /> {t('tb.traLoi.dangLuu')}</p>}
     </section>
   );
 }
+
+const laTraLoi = (x: unknown): x is TraLoiNghiaVu => !!x && typeof x === 'object' && TRUONG_TRA_LOI.every((k) => k in (x as object));
 
 const laTomTat = (x: Record<string, unknown> | undefined): x is Record<string, unknown> & TomTatThue =>
   !!x && Array.isArray(x.milestones) && typeof x.revenue === 'number';
@@ -134,7 +200,26 @@ export default function NhacThuePage() {
    * Lịch CỦA công ty này (25/09/2026), từ `tax-summary` → `_shared/luat/lich-thue.ts`. Cùng phản hồi mang
    * `sanSang` và ngưỡng doanh thu.
    */
-  const { du: lichThue, loi: loiLich } = useLichThue();
+  const { du: lichDau, loi: loiLich } = useLichThue();
+  // Sau khi lưu câu trả lời: đọc lại tax-summary (bỏ bản giữ 30 giây) và dùng bản mới — lịch tính lại ngay.
+  const [lichMoi, setLichMoi] = useState<LichThue | null>(null);
+  const [dangLuu, setDangLuu] = useState(false);
+  const lichThue = lichMoi ?? lichDau;
+  const traLoi = laTraLoi(lichThue?.tomTat?.traLoiNghiaVu) ? lichThue.tomTat.traLoiNghiaVu as TraLoiNghiaVu : null;
+  const gui: GuiTraLoi = async (truong, giaTri) => {
+    setDangLuu(true);
+    try {
+      await goiToKhai('luu_tra_loi_nghia_vu', { tra_loi: { [truong]: giaTri } });
+      quenLichThue();
+      setLichMoi(await docLichThue());
+      toast.success(t('tb.traLoi.daLuu'));
+    } catch (e) {
+      // Máy chủ nói rõ lý do (ví dụ vai trò không được sửa hồ sơ thuế) — hiện nguyên câu.
+      toast.error(e instanceof Error && e.message ? e.message : t('tb.traLoi.loi'));
+    } finally {
+      setDangLuu(false);
+    }
+  };
   const moc = lichThue?.mocKeTiep ?? null;
   const thue = laTomTat(lichThue?.tomTat) ? lichThue.tomTat : null;
   const canXem = mucCanXem(lichThue?.sanSang);
@@ -152,7 +237,7 @@ export default function NhacThuePage() {
         <p className="mt-1 text-sm text-muted-foreground">{t('tb.trang.moTa')}</p>
       </header>
 
-      {lichThue && <HoSoNghiaVu hoSo={hoSoMst} lich={lichThue.lich} />}
+      {lichThue && <HoSoNghiaVu hoSo={hoSoMst} lich={lichThue.lich} traLoi={traLoi} gui={(k, v) => void gui(k, v)} dangLuu={dangLuu} />}
 
       {canXem && (
         <section id="can-xem" aria-labelledby="can-xem-tieu-de" className="scroll-mt-20 rounded-2xl border border-mimi-amber/40 bg-mimi-amber/5 p-5">
