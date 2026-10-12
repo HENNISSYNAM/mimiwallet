@@ -72,6 +72,7 @@ import { congTyLaDemo, locMinhHoa } from "../_shared/minh-hoa.ts";
 import { chieuTien, doLonTien } from "../_shared/tien/chieu-tien.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
 import { docXuTruocLuot, truXuSauLuot, type XuTruocLuot } from "../_shared/xu/so-xu.ts";
+import { docKeHoach, loiDanLapKeHoach } from "../_shared/tro-ly/lap-kich-ban.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,6 +99,7 @@ const KICH_THUOC_THAN_TOI_DA = 8_000_000;
 const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   hoi: { cuaSoGiay: 60, toiDa: 30 },
   quet_chung_tu: { cuaSoGiay: 60, toiDa: 10 },
+  lap_ke_hoach: { cuaSoGiay: 60, toiDa: 10 },
   luu_chung_tu: { cuaSoGiay: 60, toiDa: 30 },
   gan_chung_tu: { cuaSoGiay: 60, toiDa: 60 },
   quyet_dinh_chung_tu: { cuaSoGiay: 60, toiDa: 60 },
@@ -829,6 +831,32 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         do_day: Object.values(d.doDay),
         do_day_chung: trangThaiChung(Object.values(d.doDay) as DoDayNguon[]),
       });
+    }
+
+    /*
+     * 12/10/2026: trỏ tự lập kế hoạch. Mô hình chỉ ĐỀ XUẤT bước trong danh mục; `docKeHoach` kiểm, trình duyệt
+     * kiểm lại (`kiemKichBan`) rồi mới cho trỏ chạy. Không gửi số liệu công ty cho mô hình — chỉ câu người dùng.
+     * Trừ xu theo chi phí thật như nhánh `hoi`. Không có mô hình / hết xu / kế hoạch sai luật → `ke_hoach: null`,
+     * trình duyệt quay về hỏi trợ lý như cũ.
+     */
+    case "lap_ke_hoach": {
+      const cau = String(body.cau ?? "").trim().slice(0, DO_DAI_CAU_HOI);
+      if (!cau) return loi("CAU_HOI", "Bạn chưa nhập câu hỏi.", 400);
+      if (!khoaMoHinh || !cong) return json({ ke_hoach: null, ly_do: "Chưa bật mô hình." });
+      const xu = await docXuTruocLuot(db, company.id, moc.homNay).catch(() => null);
+      if (xu && xu.so_du < 1) return json({ ke_hoach: null, ly_do: "Hết xu tháng này." });
+      const lanGoi: LanGoi[] = [];
+      try {
+        const ncc = coDo(nhaCungCapCua(cong), "y_dinh", (l) => { lanGoi.push(l); void ghiLanGoi(db, company.id, l); });
+        const r = await ncc.hoi({ mo_hinh: cong.mo_hinh, tin: [{ vai: "he_thong", noi_dung: loiDanLapKeHoach() }, { vai: "nguoi_dung", noi_dung: cau }], han_ms: 15_000 });
+        const kq = docKeHoach(r.noi_dung);
+        return json(kq.ok ? { ke_hoach: kq.keHoach } : { ke_hoach: null, ly_do: kq.ly_do });
+      } catch (e) {
+        console.error("lap_ke_hoach:", e instanceof Error ? e.message : e);
+        return json({ ke_hoach: null, ly_do: "Mô hình chưa lập được kế hoạch." });
+      } finally {
+        if (xu && lanGoi.length) await truXuSauLuot(db, company.id, xu, lanGoi, "lap_ke_hoach").catch(() => null);
+      }
     }
 
     case "hoi": {

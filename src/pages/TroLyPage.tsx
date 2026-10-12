@@ -19,7 +19,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
 import { toast } from 'sonner';
 import { docCaiDat, laLenhPet, luuCaiDat, SU_KIEN_LENH_PET } from '@/lib/petMimi';
-import { nhanViec } from '@/lib/mimiLamHo';
+import { kiemKichBan, nhanViec, type KichBan } from '@/lib/mimiLamHo';
+import { laCauNhoViec } from '../../supabase/functions/_shared/tro-ly/lap-kich-ban.ts';
 import { useMimiLamHoNeuCo } from '@/components/mimi/MimiLamHo';
 import { useTranslation } from 'react-i18next';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
@@ -167,7 +168,15 @@ export default function TroLyPage() {
      * và bị xoá theo khi gộp vào trang này ngày 26/09, từ đó gõ "tạo agent…" chỉ nhận câu trả lời chữ).
      * Câu khác → hỏi bộ não chung như cũ. Con trỏ vẫn không tự bấm nút quan trọng (`DICH_KHONG_TU_BAM`).
      */
-    const kichBan = lamHo ? nhanViec(cau) : null;
+    let kichBan: KichBan | null = lamHo ? nhanViec(cau) : null;
+    /*
+     * 12/10/2026: luật không nhận ra mà câu có dáng nhờ việc → mô hình LẬP kế hoạch (chỉ trong danh mục trang/đích),
+     * máy chủ kiểm, rồi kiểm lại ở đây bằng `kiemKichBan`. Lỗi, không có kế hoạch, sai luật → hỏi trợ lý như cũ.
+     */
+    if (!kichBan && lamHo && laCauNhoViec(cau)) {
+      const kh = await goiTroLy('lap_ke_hoach', { cau }).catch(() => null) as { ke_hoach?: KichBan | null } | null;
+      if (kh?.ke_hoach && kiemKichBan(kh.ke_hoach).length === 0) kichBan = kh.ke_hoach;
+    }
     if (kichBan && lamHo) {
       if (lamHo.dangChay) return;
       setNhap('');

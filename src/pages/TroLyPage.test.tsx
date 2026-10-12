@@ -543,3 +543,43 @@ describe('gõ câu nhờ việc → con trỏ mèo tự chạy (11/10/2026: nố
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Doanh thu tháng này bao nhiêu?' }), expect.anything()));
   }, 30_000);
 });
+
+describe('trỏ tự lập kế hoạch khi luật không nhận ra câu (12/10/2026)', () => {
+  it('máy chủ trả kế hoạch hợp lệ → trỏ chạy, không gửi câu sang hỏi đáp', async () => {
+    const { MimiLamHoProvider } = await import('@/components/mimi/MimiLamHo');
+    const { Routes, Route } = await import('react-router-dom');
+    gia.troLy.mockImplementation(async (hanhDong: string) => {
+      if (hanhDong === 'boi_canh') return BOI_CANH;
+      if (hanhDong === 'lap_ke_hoach') return { ke_hoach: { ten: 'ke_hoach_ai', moTa: 'mở Cài đặt để nạp xu', buoc: [{ loai: 'di_toi', duongDan: '/dashboard/settings', noi: 'Mở Cài đặt.' }] } };
+      return TRA_LOI;
+    });
+    render(
+      <MemoryRouter initialEntries={['/dashboard/tro-ly']}>
+        <MimiLamHoProvider>
+          <Routes>
+            <Route path="/dashboard/tro-ly" element={<TroLyPage />} />
+            <Route path="/dashboard/settings" element={<p>Trang Cài đặt</p>} />
+          </Routes>
+        </MimiLamHoProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
+    hoiBangTay('Chỉ cho tôi chỗ nạp xu');
+    expect(await screen.findByText('Trang Cài đặt', {}, { timeout: 8000 })).toBeTruthy();
+    expect(gia.troLy).toHaveBeenCalledWith('lap_ke_hoach', expect.objectContaining({ cau: 'Chỉ cho tôi chỗ nạp xu' }));
+    expect(gia.troLy.mock.calls.some((c) => c[0] === 'hoi')).toBe(false);
+  }, 30_000);
+
+  it('kế hoạch sai luật (tự bấm nút chạm tiền) → bỏ, quay về hỏi trợ lý', async () => {
+    const { MimiLamHoProvider } = await import('@/components/mimi/MimiLamHo');
+    gia.troLy.mockImplementation(async (hanhDong: string) => {
+      if (hanhDong === 'boi_canh') return BOI_CANH;
+      if (hanhDong === 'lap_ke_hoach') return { ke_hoach: { ten: 'x', moTa: 'x', buoc: [{ loai: 'bam', dich: 'tac-tu.tao-yeu-cau.gui', noi: 'bấm' }] } };
+      return TRA_LOI;
+    });
+    render(<MemoryRouter><MimiLamHoProvider><TroLyPage /></MimiLamHoProvider></MemoryRouter>);
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
+    hoiBangTay('Giúp tôi gửi yêu cầu chi');
+    await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Giúp tôi gửi yêu cầu chi' }), expect.anything()));
+  }, 30_000);
+});
