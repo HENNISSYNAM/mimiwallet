@@ -641,6 +641,9 @@
   .vung-in h1, .vung-in h2, .vung-in h3 { break-after: avoid; page-break-after: avoid; }
   .vung-in p { orphans: 3; widows: 3; }
   .vung-in thead { display: table-header-group; }
+  /* Một lần in chỉ một loại: in qua `inTaiLieu` (body[data-in-vung]) thì ẩn tờ khai; in tờ khai thì ẩn vùng in. */
+  body[data-in-vung] .to-khai-giay, body[data-in-vung] .to-khai-giay * { visibility: hidden !important; }
+  body:not([data-in-vung]) .vung-in, body:not([data-in-vung]) .vung-in * { visibility: hidden !important; }
 }
 
 /*

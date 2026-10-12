@@ -12,6 +12,7 @@
  */
 
 export const LOP_VUNG_IN = 'vung-in';
+export const THUOC_TINH_DANG_IN_VUNG = 'data-in-vung';
 
 /** Tên tệp không dấu, không ký tự lạ: "Đơn tra soát" → "don-tra-soat". */
 export function tenTepAnToan(s: string, duPhong = 'tai-lieu-mimi'): string {
@@ -40,11 +41,15 @@ export function inTaiLieu(tenTep?: string): void {
   if (typeof window === 'undefined' || typeof window.print !== 'function') return;
   const cu = document.title;
   if (tenTep) document.title = tenTep;
+  // Đánh dấu đang in VÙNG IN (12/10/2026): trang có cả tờ khai (`.to-khai-giay`) lẫn `.vung-in` thì CSS chỉ cho
+  // đúng một loại ra giấy — trước đây cả hai cùng đặt ở đầu trang và in chồng lên nhau.
+  document.body.setAttribute(THUOC_TINH_DANG_IN_VUNG, '');
   let daTra = false;
   const tra = () => {
     if (daTra) return;
     daTra = true;
     document.title = cu;
+    document.body.removeAttribute(THUOC_TINH_DANG_IN_VUNG);
     window.removeEventListener('afterprint', tra);
   };
   window.addEventListener('afterprint', tra);

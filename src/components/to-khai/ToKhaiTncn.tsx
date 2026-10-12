@@ -8,6 +8,7 @@ import { docTep } from '@/lib/saoKe';
 import { TEN_LOAI_NGUOI, type ToKhai05 } from '../../../supabase/functions/_shared/thue-tncn/to-khai-05.ts';
 import type { LoaiNguoiLaoDong } from '../../../supabase/functions/_shared/thue-tncn/khau-tru.ts';
 import { docBangTinh, dongTrong, guiLen, type DongNhap } from './bangLuong';
+import { BoHoSoNop } from './BoHoSoNop';
 
 /**
  * Tờ khai thuế TNCN của tổ chức trả lương — mẫu 05/KK-TNCN kèm Thông tư 89/2026/TT-BTC, khai theo quý.
@@ -366,6 +367,19 @@ export function ToKhaiTncn() {
             <p className="mt-2 text-xs text-muted-foreground">{t('app.toKhai.nhap.hanNop', { ngay: ngay(tk.han_nop) })}</p>
             {canMua && <p className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm text-foreground">{t('app.toKhai.nhap.canGoi')}</p>}
           </div>
+
+          {/* 12/10/2026: sau khi xuất — bộ hồ sơ nộp: bảng số liệu đối chiếu + hướng dẫn nộp đúng cổng. */}
+          {daXuat && (
+            <BoHoSoNop
+              mau={tk.mau}
+              kyChu={tk.ky_chu}
+              hanNop={tk.han_nop}
+              loai={kq.cong_ty.loai_theo_mst ?? 'doanh_nghiep'}
+              congTy={{ ten: kq.cong_ty.ten, mst: kq.cong_ty.mst }}
+              chiTieu={[...tk.chi_tieu_dau.map((c) => ({ ma: c.ma, nhan: c.nhan, gia_tri: c.gia_tri })), ...tk.dong.map((d) => ({ ma: d.ma, nhan: d.nhan, gia_tri: d.gia_tri, don_vi: d.don_vi }))]}
+              canCu={tk.can_cu_tncn.map((c) => `${c.van_ban} · ${c.vi_tri}${c.nguon === 'thu_cap' ? ' (nguồn thứ cấp, chưa đối chiếu Công báo)' : ''}`)}
+            />
+          )}
         </>
       )}
     </div>
