@@ -16,6 +16,8 @@ import { cauTuChoi } from "../_shared/quyen/vai-tro.ts";
 import { lucGioVietNam } from "../_shared/thue/han-ke-khai.ts";
 import { chuoiChongTrung, chuoiChongTrungV2, danhSoLan, kiemDong, type DongSaoKe } from "../_shared/sao-ke/doc-sao-ke.ts";
 import { ghiNhieuSuKien } from "../_shared/do-luong/su-kien.ts";
+import { docMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
+import { doiSoatSauKhiGhi } from "../_shared/tac-tu/doi-soat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -127,6 +129,8 @@ Deno.serve(async (req) => {
         counter_account_number: d.counter_account_number,
         account_number: taiKhoan,
         reference_id: khoaMoi[i],
+        // Mã tham chiếu MIMI trong nội dung (lệnh trả của agent, mã QR) — để đối soát khớp được dòng sao kê nhập tay.
+        payment_reference: docMaThamChieu(d.merchant_name),
         source: "import",
         import_id: importId,
         is_synthetic: false,
@@ -151,6 +155,9 @@ Deno.serve(async (req) => {
       tu_ngay: [dot?.tu_ngay, ngays[0]].filter(Boolean).sort()[0],
       den_ngay: [dot?.den_ngay, ngays[ngays.length - 1]].filter(Boolean).sort().at(-1),
     }).eq("id", importId);
+
+    // Sao kê nhập tay cũng là tiền thật đã đi/về: đối soát mã QR và khoản chi agent như đường webhook.
+    if (moiGhi > 0) await doiSoatSauKhiGhi(db, companyId).catch((e) => console.error("sao-ke đối soát:", e instanceof Error ? e.message : e));
 
     await ghiNhieuSuKien(db, companyId, user.id, [
       ["financial_source_connected", { nguon: "import" }],

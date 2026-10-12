@@ -63,6 +63,11 @@ Casso không có chữ ký nên **không tự tất toán** — mã QR chỉ chu
 có giao dịch ngân hàng thật khớp. Bản sửa **chưa được chạy lại** bằng một lần
 thanh toán mới; mã `MIMIJNFGB3` của lần thử này vẫn để `pending`, không sửa tay.
 
+> **Cập nhật 12/10/2026 — sửa cho khớp mã nguồn.** Phần `bank-webhook` khớp tài khoản ảo đã không còn chạy từ
+> 06/10/2026: khi bỏ SePay phía khách, `bank-webhook` chỉ còn nhận tiền về tài khoản của MIMI, nên đường SePay →
+> mã QR Cas không còn tồn tại. Tệp `_shared/bank/ma-tai-khoan-ao.ts` (không còn nơi gọi) đã được gỡ. Mã QR Cas giờ
+> chỉ được tất toán qua `cas-webhook` (mã tham chiếu) và lần đồng bộ của `bank-link`, cùng một hàm đối soát.
+
 Tổng nghiệm thu: **19/20 (95%)**. Còn case 4 — sandbox chưa dựng được ngân hàng đòi OTP khi gỡ quyền; thử lại
 21:10 qua grant cấp bằng app Cas vẫn gỡ thẳng. Cần hỏi Casso cách dựng. Nên thu hồi 7
 grant cũ vẫn nhận webhook (nút "Thu hồi grant cũ" trong nhật ký webhook).

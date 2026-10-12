@@ -3,7 +3,7 @@ import { daBiKhoaViSai, ghiLanSai, idTuIp, ipNguoiGoi } from "../_shared/an-ninh
 import { bankhubConfigFromEnv, fetchQrPayIdentity } from "../_shared/bank/bankhub.ts";
 import { kiemGrantQr, nhanKetLuan } from "../_shared/bank/kiem-grant-qr.ts";
 import { ingestConnection } from "../_shared/bank/ingest.ts";
-import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
+import { doiSoatSauKhiGhi } from "../_shared/tac-tu/doi-soat.ts";
 import { coSaoKeDeDoc } from "../_shared/bank/dong-bo.ts";
 import { decryptField, type EncryptedBlob } from "../_shared/pqcCrypto.ts";
 import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (qr?.company_id) {
-        const r = await reconcileCompanyQr(supabase, qr.company_id);
+        const r = await doiSoatSauKhiGhi(supabase, qr.company_id);
         return await finish(
           "verified",
           `qr ref ${reference}: ${r.settled} settled / ${r.mismatched} mismatch`,
@@ -445,7 +445,7 @@ Deno.serve(async (req) => {
           .eq("company_id", conn.company_id)
           .eq("reference_number", tt.maThamChieu)
           .maybeSingle();
-        const r = maQr ? await reconcileCompanyQr(supabase, conn.company_id) : null;
+        const r = maQr ? await doiSoatSauKhiGhi(supabase, conn.company_id) : null;
         outcomes.push(
           maQr
             ? `qr ${tt.maThamChieu} (${tt.soTien ?? "?"}đ, ${tt.maNganHang ?? "?"}): ` +
@@ -521,7 +521,7 @@ Deno.serve(async (req) => {
 
   // One reconcile per company touched, after everything is stored.
   for (const companyId of new Set(conns.map((c) => c.company_id))) {
-    const r = await reconcileCompanyQr(supabase, companyId);
+    const r = await doiSoatSauKhiGhi(supabase, companyId);
     if (r.settled || r.mismatched) {
       outcomes.push(`qr:${r.settled}settled/${r.mismatched}mismatch`);
     }

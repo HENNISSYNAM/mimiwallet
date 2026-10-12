@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { khopChiTacTu, type GiaoDichRa, type YeuCauChoKhop } from "./khop-chi.ts";
+import { reconcileCompanyQr } from "../ledger/qr-reconciler.ts";
 
 /**
  * Nối `khopChiTacTu` vào database. Quyết định nằm trong hàm thuần; file này chỉ
@@ -93,4 +94,19 @@ export async function doiSoatChiTacTu(
   }
 
   return { khop: soKhop, lech: kq.lech.length };
+}
+
+/**
+ * MỘT CHỖ GỌI sau mỗi lần ghi giao dịch ngân hàng (12/10/2026): đối soát mã QR rồi đối soát khoản chi agent.
+ * Trước đây `doiSoatChiTacTu` viết xong, có test, nhưng không chỗ ghi giao dịch nào gọi — khoản chi agent đã
+ * duyệt không bao giờ tự chuyển sang "đã chi" khi tiền thật rời tài khoản. Lỗi đối soát agent không được làm
+ * hỏng đối soát QR (đường thu tiền) nên bọc riêng.
+ */
+export async function doiSoatSauKhiGhi(supabase: SupabaseClient, companyId: string) {
+  const qr = await reconcileCompanyQr(supabase, companyId);
+  const chi = await doiSoatChiTacTu(supabase, companyId).catch((e) => {
+    console.error("đối soát chi agent:", e instanceof Error ? e.message : e);
+    return { khop: 0, lech: 0 };
+  });
+  return { ...qr, chi_agent: chi };
 }

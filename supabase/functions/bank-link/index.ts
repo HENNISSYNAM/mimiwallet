@@ -18,7 +18,7 @@ import {
 import { ingestConnection } from "../_shared/bank/ingest.ts";
 import { describeBankError } from "../_shared/bank/errors.ts";
 import { dongBoHoaDonThue } from "../_shared/tax/dong-bo-gdt.ts";
-import { reconcileCompanyQr } from "../_shared/ledger/qr-reconciler.ts";
+import { doiSoatSauKhiGhi } from "../_shared/tac-tu/doi-soat.ts";
 import { sinhMaThamChieu } from "../_shared/bank/ma-tham-chieu.ts";
 import { timNganHang } from "../_shared/bank/ngan-hang.ts";
 import { docMaWebhookCas } from "../_shared/bank/ma-webhook-cas.ts";
@@ -676,7 +676,7 @@ Deno.serve(async (req) => {
 
         // Payments that settled a QR may have just landed. Same call runs on
         // the webhook path, so an invoice closes identically either way.
-        const reconciled = await reconcileCompanyQr(supabase, company.id);
+        const reconciled = await doiSoatSauKhiGhi(supabase, company.id);
 
         return json({ synced: results, reconciled });
       }

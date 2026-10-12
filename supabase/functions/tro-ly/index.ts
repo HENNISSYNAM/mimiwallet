@@ -796,7 +796,6 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
   const cong = chonCongMoHinh({
     stali: Deno.env.get("STALI_API_KEY"), moHinhStali: Deno.env.get("STALI_MODEL"),
     lovable: Deno.env.get("LOVABLE_API_KEY"),
-    trungGianUrl: Deno.env.get("AI_TRUNG_GIAN_URL"), trungGianKhoa: Deno.env.get("AI_TRUNG_GIAN_KEY"),
     openrouter: Deno.env.get("OPENROUTER_API_KEY"), moHinhOpenRouter: Deno.env.get("OPENROUTER_MODEL"),
   });
   const khoaMoHinh = cong?.khoa ?? "";

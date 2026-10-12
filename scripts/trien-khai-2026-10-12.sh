@@ -10,16 +10,17 @@ npx supabase db push --linked --dry-run
 read -r -p "Đúng 5 migration ở trên? Gõ y để áp: " ok; [ "$ok" = "y" ] || exit 1
 npx supabase db push --linked
 
-echo "== 2. Triển khai 9 function bị ảnh hưởng (đã dò theo đồ thị import)"
-for fn in to-khai tro-ly tac-tu tax-summary subscription-billing bank-webhook cas-webhook thong-bao mcp; do
+echo "== 2. Triển khai 11 function bị ảnh hưởng (đã dò theo đồ thị import)"
+for fn in to-khai tro-ly tac-tu tax-summary subscription-billing bank-webhook cas-webhook thong-bao mcp bank-link sao-ke; do
   npx supabase functions deploy "$fn" --project-ref "$REF"
 done
 
 echo "== 3. (Tuỳ chọn) bật điền hộ cho riêng công ty thử: npx supabase secrets set DIEN_CONG_ENABLED=<id công ty> --project-ref $REF"
 
-echo "== 4. Gỡ 2 function không còn ai gọi (code đã xoá khỏi repo)"
+echo "== 4. Gỡ 3 function không còn ai gọi (code đã xoá khỏi repo)"
 npx supabase functions delete macro-news --project-ref "$REF" || true
 npx supabase functions delete elevenlabs-tts --project-ref "$REF" || true
+npx supabase functions delete ai-trung-gian --project-ref "$REF" || true
 
 echo "== 5. Đẩy code web (Vercel tự triển khai khi lên main)"
 git push origin main
