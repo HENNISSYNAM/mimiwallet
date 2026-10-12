@@ -66,7 +66,7 @@ async function guiLich(goc: Uint8Array): Promise<{ lich: string; phanHoi: Uint8A
       const res = await fetch(`${lich}/digest`, {
         method: "POST",
         headers: { Accept: "application/vnd.opentimestamps.v1", "User-Agent": USER_AGENT, "Content-Type": "application/octet-stream" },
-        body: goc,
+        body: new Uint8Array(goc),
         signal: AbortSignal.timeout(20_000),
       });
       if (!res.ok) { loiCuoi = `${lich} trả ${res.status}`; continue; }

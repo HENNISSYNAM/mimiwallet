@@ -49,7 +49,6 @@ const BankCallback = lazy(() => import("./pages/BankCallback"));
 const DangKy = lazy(() => import("./pages/LienHeDungThat"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
-const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const XoaTaiKhoan = lazy(() => import("./pages/XoaTaiKhoan"));
 const Terms = lazy(() => import("./pages/Terms"));

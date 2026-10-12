@@ -53,7 +53,8 @@ export function noi(...phan: (Uint8Array | number[])[]): Uint8Array {
 }
 
 export async function sha256(b: Uint8Array): Promise<Uint8Array> {
-  return new Uint8Array(await crypto.subtle.digest('SHA-256', b));
+  // Chép sang ArrayBuffer thường: kiểu Deno mới không nhận Uint8Array<ArrayBufferLike> (có thể là SharedArrayBuffer).
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(b)));
 }
 
 export function ghiVaruint(n: number): number[] {
