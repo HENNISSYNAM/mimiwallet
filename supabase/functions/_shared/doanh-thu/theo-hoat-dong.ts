@@ -48,8 +48,6 @@ export interface ChiaHoatDong {
   nhom: Record<NhomChia, NhomDaChia>;
 }
 
-export const khoaPhanLoai = (nguon: NguonDoanhThuKhoan, id: string) => `${nguon}:${id}`;
-
 const rong = (): NhomDaChia => ({ so_tien: 0, so_khoan: 0, theo_quy: [0, 0, 0, 0], ids: [] });
 
 /** Chia các khoản doanh thu theo nhóm hoạt động người đã xác nhận. Hàm thuần. */

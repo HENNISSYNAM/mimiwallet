@@ -30,11 +30,6 @@ export const TEN_PHAN_LOAI: Record<LoaiPhanLoai, string> = {
   unknown: 'Tôi chưa chắc',
 };
 
-/**
- * Bốn nút đầu tiên (mục P-3): người dùng chính là ba mẹ lớn tuổi, 11 lựa chọn là quá nhiều.
- * "Không phải tiền bán hàng" bấm vào mới hiện các loại còn lại.
- */
-export const NUT_CHINH: LoaiPhanLoai[] = ['business_revenue', 'internal_transfer', 'unknown'];
 export const LOAI_KHONG_PHAI_DOANH_THU: LoaiPhanLoai[] = [
   'loan', 'family_transfer', 'capital_contribution', 'refund', 'deposit', 'collection_on_behalf', 'personal', 'other',
 ];

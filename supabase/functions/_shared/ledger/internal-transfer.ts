@@ -250,9 +250,6 @@ export const TAX_EXEMPTION_THRESHOLD_VND = 1_000_000_000;
  */
 export const PROFIT_METHOD_THRESHOLD_VND = 3_000_000_000;
 
-/** Kept so existing callers keep compiling; prefer the named constants above. */
-export const EXEMPTION_THRESHOLD_VND = TAX_EXEMPTION_THRESHOLD_VND;
-
 export interface Milestone {
   /** Machine name, so the UI does not switch on translated text. */
   key: 'tax_exemption' | 'profit_method_required';

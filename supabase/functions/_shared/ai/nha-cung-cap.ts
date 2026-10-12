@@ -201,12 +201,6 @@ export const DINH_TUYEN: Record<MucDich, Tuyen> = {
 
 export const DIEM_GOI_LOVABLE = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
-export function chonNhaCungCap(mucDich: MucDich, khoa: { lovable?: string }, goi?: Goi): { ncc: NhaCungCap; tuyen: Tuyen } {
-  const tuyen = DINH_TUYEN[mucDich];
-  if (!khoa.lovable) throw new LoiNhaCungCap(503, 'Máy chủ chưa có khoá mô hình.');
-  return { ncc: congKieuOpenAI({ ten: 'lovable', url: DIEM_GOI_LOVABLE, khoa: khoa.lovable, goi }), tuyen };
-}
-
 // ── Đo từng lần gọi (mục 36) ─────────────────────────────────────────────────────────────────────
 export interface LanGoi {
   nha_cung_cap: string; mo_hinh: string; muc_dich: MucDich; do_tre_ms: number;

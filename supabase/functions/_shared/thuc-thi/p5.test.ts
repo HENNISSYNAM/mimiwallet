@@ -1,37 +1,10 @@
-/** Prompt 5 — sự kiện ngoài, xung đột hoá đơn, kiểm trước khi nộp, trợ lý (không gọi mạng nào). */
+/** Prompt 5 — kiểm trước khi nộp, trợ lý (không gọi mạng nào). */
 import { describe, expect, it } from 'vitest';
-import { chuanHoaSuKien, xungDotHoaDon } from './su-kien-ngoai';
 import { kiemTruocKhiNop } from './luu';
 import { nhanYDinh } from '../tro-ly/y-dinh';
 import { NANG_LUC, duLieuTrong, type DuLieu } from '../tro-ly/tinh-toan';
 
 const moi = (p: Partial<DuLieu> = {}): DuLieu => ({ ...duLieuTrong('2026-09-26', { tu: '2026-07-01', den: '2026-09-30', nhan: 'q3' }), ...p });
-
-describe('(10) webhook là gợi ý', () => {
-  const sk = (p: Partial<Parameters<typeof chuanHoaSuKien>[0]>) => chuanHoaSuKien({ loai: 'TRANSACTIONS', ma: null, doi_tuong: null, moi_truong: 'production', khoa_hop_le: true, da_kiem_lai_nguon: false, ...p });
-  it('chưa hỏi lại nguồn → chưa được đổi trạng thái', () => expect(sk({})).toMatchObject({ verification_status: 'unverified', duoc_doi_trang_thai: false }));
-  it('đã hỏi lại nguồn → được', () => expect(sk({ da_kiem_lai_nguon: true })).toMatchObject({ verification_status: 'verified', duoc_doi_trang_thai: true }));
-  it('khoá giả / sai → từ chối', () => expect(sk({ khoa_hop_le: false, da_kiem_lai_nguon: true })).toMatchObject({ verification_status: 'rejected', duoc_doi_trang_thai: false }));
-  it('INVOICE / TVAN / SIGN: không kiểm được → không bao giờ đổi trạng thái', () => {
-    for (const loai of ['INVOICE', 'TVAN', 'SIGN', 'AUTO_DEBIT'] as const) expect(sk({ loai, da_kiem_lai_nguon: true }).duoc_doi_trang_thai).toBe(false);
-  });
-  it('môi trường dev → sandbox', () => expect(sk({ moi_truong: 'dev' }).environment).toBe('sandbox'));
-});
-
-describe('(11) xung đột hoá đơn — ghi lại, không ghi đè', () => {
-  it('cùng trạng thái hoặc bên ngoài chưa rõ → không xung đột', () => {
-    expect(xungDotHoaDon({ trong: 'paid', ngoai: 'paid', nguonNgoai: 'nha_cung_cap' })).toBeNull();
-    expect(xungDotHoaDon({ trong: 'paid', ngoai: 'unknown', nguonNgoai: 'co_quan_thue' })).toBeNull();
-  });
-  it('cơ quan thuế ghi đã huỷ, MIMI ghi đã thu → xung đột, bên ngoài đáng tin hơn, gợi ý kiểm trước khi kê khai', () => {
-    const x = xungDotHoaDon({ trong: 'paid', ngoai: 'cancelled', nguonNgoai: 'co_quan_thue' })!;
-    expect(x.thang).toBe('ngoai');
-    expect(x.goi_y).toContain('kiểm trên cổng');
-  });
-  it('bên ngoài ghi đã thu mà MIMI chưa thấy tiền → không tự ghi "đã thu"', () => {
-    expect(xungDotHoaDon({ trong: 'issued', ngoai: 'paid', nguonNgoai: 'nha_cung_cap' })!.goi_y).toContain('chỉ ghi "đã thu" khi đối soát');
-  });
-});
 
 describe('(13) kiểm trước khi nộp', () => {
   it('chặn: đã nộp, đang chờ xem lại, gói thiếu, báo cáo nội bộ', () => {

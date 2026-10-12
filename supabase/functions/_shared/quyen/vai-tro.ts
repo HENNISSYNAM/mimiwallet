@@ -20,14 +20,6 @@ export const TEN_VAI_TRO: Record<VaiTro, string> = {
   nguoi_xem: 'Người xem',
 };
 
-export const MO_TA_VAI_TRO: Record<VaiTro, string> = {
-  chu_so_huu: 'Làm được mọi việc, kể cả mời người khác và xoá công ty.',
-  quan_tri: 'Như chủ doanh nghiệp, trừ xoá công ty và chuyển quyền sở hữu.',
-  nguoi_duyet: 'Duyệt hoặc từ chối khoản chi; không đổi kết nối, không cấp khoá agent.',
-  ke_toan: 'Ghi chứng từ, soạn tờ khai, sửa hồ sơ thuế; không duyệt chi.',
-  nguoi_xem: 'Chỉ xem số liệu và câu trả lời của MIMI.',
-};
-
 /**
  * Hành động cần kiểm quyền. Phân loại theo đặc tả (mục 2.4): `read_only`, `reversible`,
  * `sensitive`, `regulated`.

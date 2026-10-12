@@ -24,7 +24,6 @@
  */
 
 export type NhaCungCapApi = 'anthropic' | 'openai';
-export const NHA_CUNG_CAP_API: readonly string[] = ['anthropic', 'openai'];
 /** Kết nối bằng khoá được: hai nhà cung cấp có Cost API, cộng OpenRouter (Activity API, `token.ts`). */
 export const NHA_CUNG_CAP_KET_NOI: readonly string[] = ['anthropic', 'openai', 'openrouter'];
 export const NHA_CUNG_CAP_NHAP: readonly string[] = ['anthropic', 'openai', 'gemini', 'openrouter', 'khac'];

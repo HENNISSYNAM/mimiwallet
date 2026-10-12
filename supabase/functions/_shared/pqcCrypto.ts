@@ -94,17 +94,3 @@ export async function decryptField(
   );
   return new TextDecoder().decode(decrypted);
 }
-
-export async function encryptJson(
-  value: unknown,
-  publicKeyB64: string
-): Promise<EncryptedBlob> {
-  return encryptField(JSON.stringify(value), publicKeyB64);
-}
-
-export async function decryptJson<T = unknown>(
-  blob: EncryptedBlob,
-  privateKeyB64: string
-): Promise<T> {
-  return JSON.parse(await decryptField(blob, privateKeyB64)) as T;
-}

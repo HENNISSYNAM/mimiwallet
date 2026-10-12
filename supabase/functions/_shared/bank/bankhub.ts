@@ -217,14 +217,6 @@ export function exchangePublicToken(cfg: BankhubConfig, publicToken: string): Pr
   return request<ExchangeResult>(cfg, 'POST', '/grant/exchange', { body: { publicToken } });
 }
 
-/** Rotates the accessToken and keeps the grant. Use after a suspected leak. */
-export function rotateAccessToken(
-  cfg: BankhubConfig,
-  accessToken: string
-): Promise<{ newAccessToken: string; grantId: string; requestId?: string }> {
-  return request(cfg, 'POST', '/grant/invalidate', { accessToken });
-}
-
 /**
  * Result of asking Cas to end an authorisation.
  *

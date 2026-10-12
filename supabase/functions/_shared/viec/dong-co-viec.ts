@@ -206,8 +206,6 @@ export function ngayTuHanhTrinh(loai: LoaiHanhTrinh, dk: DuKien): NgayViec {
 export function henKiemLaiKeTiep(tuNgay: string, soLanDaNhac: number): string {
   return congNgay(tuNgay, soLanDaNhac <= 0 ? 3 : soLanDaNhac === 1 ? 7 : 14);
 }
-export const denHanKiemLai = (v: { trang_thai: string; hen_kiem_lai: string | null }, homNay: string): boolean =>
-  v.trang_thai === 'waiting_external' && !!v.hen_kiem_lai && v.hen_kiem_lai <= homNay;
 
 // ── Lịch: một nguồn ngày, ba loại ────────────────────────────────────────────────────────────────
 export type LoaiNgay = 'han_luat' | 'nen_lam' | 'hen_kiem_lai';
