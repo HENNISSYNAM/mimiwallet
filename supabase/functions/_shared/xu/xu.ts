@@ -15,6 +15,8 @@ export interface LanGoiTinhXu {
   token_vao: number | null;
   token_ra: number | null;
   thanh_cong: boolean;
+  /** Số tiền cổng mô hình báo đã trừ (USD). Có thì dùng số này — đúng bằng tiền MIMI trả. */
+  chi_phi_usd?: number | null;
 }
 
 export interface XuCuaLuot {
@@ -43,6 +45,12 @@ export function xuCuaLuot(ds: LanGoiTinhXu[], bang: GiaModel[]): XuCuaLuot {
   for (const l of ds) {
     if (!l.thanh_cong) continue;
     soLan += 1;
+    // 12/10/2026 (chủ sản phẩm: xu "phải liên kết rất chặt với số token mình tiêu qua API"): cổng đã báo số tiền
+    // thật thì lấy đúng số đó, không ước theo bảng giá niêm yết.
+    if (typeof l.chi_phi_usd === 'number' && Number.isFinite(l.chi_phi_usd) && l.chi_phi_usd >= 0) {
+      usd += l.chi_phi_usd;
+      continue;
+    }
     const gia = timGia(l.mo_hinh, l.nha_cung_cap, bang);
     if (!gia || l.token_vao == null || l.token_ra == null) {
       khongRo += 1;

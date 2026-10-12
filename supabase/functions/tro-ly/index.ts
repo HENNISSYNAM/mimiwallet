@@ -1071,9 +1071,25 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       }
       const k = kiemAnh(body.anh);
       if (!k.ok) return loi("ANH", k.cau, 400);
+      // 12/10/2026: đọc ảnh cũng tốn token thật → trừ xu theo đúng chi phí. Sổ xu lỗi thì không chặn (như nhánh `hoi`).
+      const xuQuet = await docXuTruocLuot(db, company.id, moc.homNay).catch((e) => {
+        console.error("quet xu:", e instanceof Error ? e.message : e);
+        return null;
+      });
+      if (xuQuet && xuQuet.so_du < 1) {
+        return loi("HET_XU", "MIMI đã hết năng lượng (xu) tháng này nên chưa đọc ảnh được. Bạn nhập tay ở trang Chứng từ chi phí, hoặc nạp thêm ở Cài đặt.", 402);
+      }
+      const lanGoiQuet: LanGoi[] = [];
       let ketQua;
       try {
-        ketQua = await docAnhChungTu({ khoa: khoaMoHinh, anh: body.anh as string, homNay: moc.homNay, cong: cong ?? undefined });
+        ketQua = await docAnhChungTu({
+          khoa: khoaMoHinh, anh: body.anh as string, homNay: moc.homNay, cong: cong ?? undefined,
+          doDem: (d) => {
+            const l: LanGoi = { nha_cung_cap: cong?.ten ?? "khong_ro", mo_hinh: cong?.mo_hinh ?? "", muc_dich: "doc_anh", do_tre_ms: 0, token_vao: d.token_vao, token_ra: d.token_ra, chi_phi_usd: d.chi_phi_usd, thanh_cong: true, ma_loi: null };
+            lanGoiQuet.push(l);
+            void ghiLanGoi(db, company.id, l);
+          },
+        });
       } catch (e) {
         if (e instanceof LoiMoHinh) {
           // Chỉ đổ cho ảnh khi mô hình đã trả lời mà không đọc ra chứng từ (502). Hết hạn mức, quá chậm, cổng lỗi
@@ -1082,6 +1098,11 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
           return loi("DOC_ANH_TAM_NGUNG", "MIMI đang tạm ngưng đọc ảnh, không phải do ảnh của bạn. Bạn nhập tay ở trang Chứng từ chi phí, hoặc thử lại sau ít phút.", 503);
         }
         throw e;
+      }
+
+      if (xuQuet && lanGoiQuet.length) {
+        await truXuSauLuot(db, company.id, xuQuet, lanGoiQuet, "quet_chung_tu").catch((e) =>
+          console.error("quet trừ xu:", e instanceof Error ? e.message : e));
       }
 
       // Gợi ý khoản chi đi kèm: đúng một khoản khớp số tiền trong ±7 ngày thì mới gợi ý.

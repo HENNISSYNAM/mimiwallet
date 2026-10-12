@@ -16,7 +16,14 @@ export type VaiTinNhan = 'he_thong' | 'nguoi_dung' | 'tro_ly' | 'cong_cu';
 export interface GoiCongCu { id: string; ten: string }
 export interface TinNhan { vai: VaiTinNhan; noi_dung: string | null; goi_cong_cu?: GoiCongCu[]; id_goi?: string }
 export interface CongCu { ten: string; mo_ta: string }
-export interface PhanHoi { noi_dung: string | null; goi_cong_cu: GoiCongCu[]; token_vao: number | null; token_ra: number | null }
+export interface PhanHoi {
+  noi_dung: string | null; goi_cong_cu: GoiCongCu[]; token_vao: number | null; token_ra: number | null;
+  /**
+   * Số tiền cổng mô hình THẬT SỰ trừ của MIMI cho lần gọi này, USD (OpenRouter trả trong `usage.cost` khi yêu
+   * cầu có `usage: { include: true }`). null = cổng không báo → xu tính theo token × bảng giá.
+   */
+  chi_phi_usd?: number | null;
+}
 
 export class LoiNhaCungCap extends Error {
   constructor(public status: number, message: string) {
@@ -63,6 +70,8 @@ export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?
         headers: { ...(o.dauThem ?? {}), Authorization: `Bearer ${o.khoa}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: mo_hinh, messages,
+          // Xin OpenRouter báo đúng số tiền đã trừ cho lần gọi (xu bám chi phí thật). Cổng khác không gửi trường lạ.
+          ...(o.url === DIEM_GOI_OPENROUTER ? { usage: { include: true } } : {}),
           ...(cong_cu?.length ? {
             tools: cong_cu.map((c) => ({ type: 'function', function: { name: c.ten, description: c.mo_ta, parameters: { type: 'object', properties: {}, additionalProperties: false } } })),
             tool_choice: 'auto',
@@ -82,7 +91,7 @@ export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?
             : `Cổng mô hình trả lỗi ${res.status}.`;
         throw new LoiNhaCungCap(res.status, cau);
       }
-      const j = await res.json().catch(() => null) as { choices?: Array<{ message?: Record<string, unknown> }>; usage?: { prompt_tokens?: number; completion_tokens?: number } } | null;
+      const j = await res.json().catch(() => null) as { choices?: Array<{ message?: Record<string, unknown> }>; usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number } } | null;
       const msg = j?.choices?.[0]?.message;
       if (!msg) throw new LoiNhaCungCap(502, 'Phản hồi của cổng mô hình không đúng khuôn.');
       const goiCC = Array.isArray(msg.tool_calls) ? msg.tool_calls as Array<{ id?: string; function?: { name?: string } }> : [];
@@ -91,6 +100,7 @@ export function congKieuOpenAI(o: { ten: string; url: string; khoa: string; goi?
         goi_cong_cu: goiCC.map((g) => ({ id: String(g.id ?? g.function?.name ?? ''), ten: String(g.function?.name ?? '') })),
         token_vao: j?.usage?.prompt_tokens ?? null,
         token_ra: j?.usage?.completion_tokens ?? null,
+        chi_phi_usd: typeof j?.usage?.cost === 'number' && Number.isFinite(j.usage.cost) && j.usage.cost >= 0 ? j.usage.cost : null,
       };
     },
   };
@@ -201,6 +211,8 @@ export function chonNhaCungCap(mucDich: MucDich, khoa: { lovable?: string }, goi
 export interface LanGoi {
   nha_cung_cap: string; mo_hinh: string; muc_dich: MucDich; do_tre_ms: number;
   token_vao: number | null; token_ra: number | null; thanh_cong: boolean; ma_loi: number | null;
+  /** Tiền cổng mô hình báo đã trừ, USD; null khi cổng không báo. */
+  chi_phi_usd?: number | null;
 }
 
 /** Bọc một nhà cung cấp để đo độ trễ và token mỗi lần gọi, không đổi hành vi. */
@@ -211,7 +223,7 @@ export function coDo(ncc: NhaCungCap, mucDich: MucDich, ghi: (l: LanGoi) => void
       const bd = bayGio();
       try {
         const r = await ncc.hoi(o);
-        ghi({ nha_cung_cap: ncc.ten, mo_hinh: o.mo_hinh, muc_dich: mucDich, do_tre_ms: bayGio() - bd, token_vao: r.token_vao, token_ra: r.token_ra, thanh_cong: true, ma_loi: null });
+        ghi({ nha_cung_cap: ncc.ten, mo_hinh: o.mo_hinh, muc_dich: mucDich, do_tre_ms: bayGio() - bd, token_vao: r.token_vao, token_ra: r.token_ra, chi_phi_usd: r.chi_phi_usd ?? null, thanh_cong: true, ma_loi: null });
         return r;
       } catch (e) {
         ghi({ nha_cung_cap: ncc.ten, mo_hinh: o.mo_hinh, muc_dich: mucDich, do_tre_ms: bayGio() - bd, token_vao: null, token_ra: null, thanh_cong: false, ma_loi: e instanceof LoiNhaCungCap ? e.status : null });

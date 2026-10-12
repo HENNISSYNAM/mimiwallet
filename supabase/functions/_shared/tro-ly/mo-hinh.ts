@@ -181,11 +181,14 @@ async function goiCong(cong: Pick<CongMoHinh, 'url' | 'khoa' | 'dau_them'>, body
         : `Cổng mô hình trả lỗi ${res.status}.`;
     throw new LoiMoHinh(res.status, cau);
   }
-  const j = await res.json().catch(() => null) as { choices?: Array<{ message?: Record<string, unknown> }> } | null;
+  const j = await res.json().catch(() => null) as { choices?: Array<{ message?: Record<string, unknown> }>; usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number } } | null;
   const msg = j?.choices?.[0]?.message;
   if (!msg) throw new LoiMoHinh(502, 'Phản hồi của cổng mô hình không đúng khuôn.');
-  return msg;
+  return { msg, usage: j?.usage ?? null };
 }
+
+/** Token và tiền thật của một lần gọi — để trừ xu đúng chi phí (12/10/2026). */
+export interface DoLanGoi { token_vao: number | null; token_ra: number | null; chi_phi_usd: number | null }
 
 // ── Đọc ảnh chứng từ ─────────────────────────────────────────────────────────
 
@@ -308,11 +311,13 @@ export function docKetQuaQuet(v: unknown, homNay: string): KetQuaQuet {
   };
 }
 
-export async function docAnhChungTu(o: { khoa: string; anh: string; homNay: string; goi?: Goi; cong?: CongMoHinh }): Promise<KetQuaQuet> {
+export async function docAnhChungTu(o: { khoa: string; anh: string; homNay: string; goi?: Goi; cong?: CongMoHinh; doDem?: (d: DoLanGoi) => void }): Promise<KetQuaQuet> {
   const goi = o.goi ?? ((u, i) => fetch(u, i));
   const cong = o.cong ?? { url: DIEM_GOI_MO_HINH, khoa: o.khoa, dau_them: {}, mo_hinh: MO_HINH };
-  const msg = await goiCong(cong, {
+  const { msg, usage } = await goiCong(cong, {
     model: cong.mo_hinh,
+    // OpenRouter báo đúng số tiền đã trừ cho lần gọi; cổng khác bỏ qua trường này không được → chỉ gửi cho OpenRouter.
+    ...(/openrouter\.ai/.test(cong.url) ? { usage: { include: true } } : {}),
     messages: [
       {
         role: 'system',
@@ -329,6 +334,11 @@ export async function docAnhChungTu(o: { khoa: string; anh: string; homNay: stri
     tools: [CONG_CU_QUET],
     tool_choice: { type: 'function', function: { name: 'ghi_chung_tu' } },
   }, goi);
+  o.doDem?.({
+    token_vao: usage?.prompt_tokens ?? null,
+    token_ra: usage?.completion_tokens ?? null,
+    chi_phi_usd: typeof usage?.cost === 'number' && Number.isFinite(usage.cost) && usage.cost >= 0 ? usage.cost : null,
+  });
   const g = Array.isArray(msg.tool_calls) ? (msg.tool_calls as Array<{ function?: { arguments?: unknown } }>)[0] : undefined;
   const thamSo = g?.function?.arguments;
   let v: unknown = thamSo;

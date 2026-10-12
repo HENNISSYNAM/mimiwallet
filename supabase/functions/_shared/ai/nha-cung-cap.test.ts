@@ -7,7 +7,7 @@ describe('tầng nhà cung cấp', () => {
   it('dịch phản hồi cổng về khuôn chung, kể cả token', async () => {
     const ncc = congKieuOpenAI({ ten: 'x', url: 'https://x', khoa: 'k', goi: cong({ choices: [{ message: { content: null, tool_calls: [{ id: 'c1', function: { name: 'dong_tien' } }] } }], usage: { prompt_tokens: 10, completion_tokens: 3 } }) });
     expect(await ncc.hoi({ mo_hinh: 'm', tin: [{ vai: 'nguoi_dung', noi_dung: 'hi' }] }))
-      .toEqual({ noi_dung: null, goi_cong_cu: [{ id: 'c1', ten: 'dong_tien' }], token_vao: 10, token_ra: 3 });
+      .toEqual({ noi_dung: null, goi_cong_cu: [{ id: 'c1', ten: 'dong_tien' }], token_vao: 10, token_ra: 3, chi_phi_usd: null });
   });
 
   it('lỗi cổng thành LoiNhaCungCap có mã, không lộ khuôn của hãng', async () => {
@@ -43,5 +43,24 @@ describe('hết giờ chờ cổng mô hình', () => {
     });
     const ncc = congKieuOpenAI({ ten: 'thu', url: 'https://x', khoa: 'k', goi });
     await expect(ncc.hoi({ mo_hinh: 'm', tin: [{ vai: 'nguoi_dung', noi_dung: 'a' }], han_ms: 1000 })).rejects.toMatchObject({ status: 504 });
+  });
+});
+
+describe('chi phí thật từ OpenRouter (12/10/2026)', () => {
+  it('gửi usage.include cho OpenRouter và đọc usage.cost; cổng khác không gửi trường lạ', async () => {
+    const { DIEM_GOI_OPENROUTER } = await import('./nha-cung-cap');
+    const than: unknown[] = [];
+    const goi = async (_u: string, i: RequestInit) => {
+      than.push(JSON.parse(String(i.body)));
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }], usage: { prompt_tokens: 5, completion_tokens: 2, cost: 0.00123 } }), { status: 200 });
+    };
+    const or = await congKieuOpenAI({ ten: 'openrouter', url: DIEM_GOI_OPENROUTER, khoa: 'k', goi }).hoi({ mo_hinh: 'm', tin: [{ vai: 'nguoi_dung', noi_dung: 'x' }] });
+    expect(or.chi_phi_usd).toBe(0.00123);
+    expect(than[0]).toMatchObject({ usage: { include: true } });
+    await congKieuOpenAI({ ten: 'khac', url: 'https://khac.example/v1', khoa: 'k', goi }).hoi({ mo_hinh: 'm', tin: [{ vai: 'nguoi_dung', noi_dung: 'x' }] });
+    expect(than[1]).not.toHaveProperty('usage');
+    const ghi: LanGoi[] = [];
+    await coDo(congKieuOpenAI({ ten: 'openrouter', url: DIEM_GOI_OPENROUTER, khoa: 'k', goi }), 'y_dinh', (l) => ghi.push(l)).hoi({ mo_hinh: 'm', tin: [] });
+    expect(ghi[0].chi_phi_usd).toBe(0.00123);
   });
 });

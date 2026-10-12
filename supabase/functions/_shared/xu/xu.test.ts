@@ -112,3 +112,23 @@ describe('sổ xu ở máy chủ chỉ đi qua hàm SQL tru_xu', () => {
     expect(db.goiRpc[0]).toMatchObject({ p_so_xu: 60, p_tham_chieu: 'ht1', p_chi_tiet: expect.objectContaining({ token_vao: 10_000, token_ra: 2_000 }) });
   });
 });
+
+describe('xu bám đúng tiền cổng mô hình đã trừ (12/10/2026)', () => {
+  it('cổng báo chi phí thật thì dùng đúng số đó, không ước theo bảng giá', () => {
+    // 1000 token vào + 200 ra theo bảng ≈ 0,00027 USD; cổng báo đã trừ 0,0042 USD → 5 xu (0,001 USD/xu, làm tròn lên).
+    const r = xuCuaLuot([goi({ chi_phi_usd: 0.0042 })], BANG);
+    expect(r.usd).toBeCloseTo(0.0042, 10);
+    expect(r.xu).toBe(Math.ceil(0.0042 / USD_MOT_XU_DE_XUAT));
+    expect(r.khong_ro_gia).toBe(0);
+  });
+  it('mô hình không có trong bảng giá nhưng cổng báo chi phí: không rơi vào mức đoán cố định', () => {
+    const r = xuCuaLuot([goi({ mo_hinh: 'hang-la/mo-hinh-moi', chi_phi_usd: 0.002 })], BANG);
+    expect(r.khong_ro_gia).toBe(0);
+    expect(r.xu).toBe(2);
+  });
+  it('trộn: lần có chi phí thật + lần theo bảng giá cộng chung rồi làm tròn một lần', () => {
+    const r = xuCuaLuot([goi({ chi_phi_usd: 0.0005 }), goi({ token_vao: 1_000_000, token_ra: 0 })], BANG);
+    expect(r.usd).toBeCloseTo(0.0005 + 0.15, 10);
+    expect(r.xu).toBe(151);
+  });
+});
