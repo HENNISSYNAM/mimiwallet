@@ -134,6 +134,47 @@ export const CAN_CU: Record<string, CanCu> = {
   tt69_d5_k2: { van_ban: '69/2025/TT-BTC', dieu: 'Điều 5', vi_tri: 'Điều 5 khoản 2', trich: 'phải áp dụng theo mức tỷ lệ % cao nhất của hàng hóa, dịch vụ mà cơ sở sản xuất, kinh doanh trên toàn bộ doanh thu tính thuế của kỳ tính thuế đó.', y: 'Nhiều ngành mà không tách doanh thu thì áp tỷ lệ GTGT cao nhất cho toàn bộ doanh thu.' },
 };
 
+/**
+ * CĂN CỨ CHƯA ĐỐI CHIẾU CÔNG BÁO (11/10/2026).
+ *
+ * Tách khỏi `CAN_CU` có chủ ý: mọi mục trong `CAN_CU` có Điều, khoản và câu trích nguyên văn đã so với kho
+ * Công báo (`kiemCanCu`). Mục ở đây CHƯA có — chỉ có số hiệu văn bản và điều nguồn thứ cấp nói. Không ghi
+ * số Điều/khoản vì chưa đọc bản gốc; không ghi câu trích vì sẽ là lời của trang tin, không phải của văn bản.
+ * Màn hình luôn kèm nhãn "chưa đối chiếu Công báo". Khi kho có văn bản, chuyển mục sang `CAN_CU` với câu
+ * trích thật và xoá ở đây.
+ */
+export interface CanCuChuaDoiChieu {
+  van_ban: string;
+  ten_van_ban: string;
+  /** Điều nguồn thứ cấp nói, bằng lời thường — KHÔNG phải câu trích. */
+  y: string;
+  /** Nguồn thứ cấp đã đọc, để người kiểm lần theo. */
+  nguon_thu_cap: string[];
+}
+
+export const NHAN_CHUA_DOI_CHIEU = 'chưa đối chiếu Công báo';
+
+export const CAN_CU_CHUA_DOI_CHIEU: Record<string, CanCuChuaDoiChieu> = {
+  tt89_tncn_khai_quy: {
+    van_ban: '89/2026/TT-BTC',
+    ten_van_ban: 'Thông tư 89/2026/TT-BTC hướng dẫn Luật Quản lý thuế và Nghị định 252/2026/NĐ-CP (thay Thông tư 80/2021/TT-BTC, hiệu lực 01/07/2026)',
+    y: 'Tổ chức trả tiền lương, tiền công khai thuế TNCN đã khấu trừ theo quý trên mẫu 05/KK-TNCN (bỏ kỳ khai tháng), áp dụng từ kỳ quý 3/2026; quyết toán theo năm.',
+    nguon_thu_cap: [
+      'https://thuvienphapluat.vn/ma-so-thue/phap-luat-thue/tron-bo-ho-so-khai-thue-tncn-theo-quy-ap-dung-tu-01072026-theo-thong-tu-89-228321.html',
+      'https://thuvienphapluat.vn/ma-so-thue/phap-luat-thue/chinh-thuc-thong-tu-892026ttbtc-thay-the-thong-tu-802021-tu-ngay-172026-228300.html',
+    ],
+  },
+};
+
+/** Nhãn đọc được cho một mã căn cứ — dùng chung cho mọi màn hình liệt kê căn cứ của mốc thuế. */
+export function nhanCanCu(id: string): { nhan: string; chua_doi_chieu: boolean } | null {
+  const c = CAN_CU[id];
+  if (c) return { nhan: `${c.van_ban} · ${c.vi_tri}`, chua_doi_chieu: false };
+  const x = CAN_CU_CHUA_DOI_CHIEU[id];
+  if (x) return { nhan: `${x.van_ban} (${NHAN_CHUA_DOI_CHIEU})`, chua_doi_chieu: true };
+  return null;
+}
+
 // ── Sự kiện đầu vào ─────────────────────────────────────────────────────────────
 
 export type LoaiNguoiNop = 'ho_kinh_doanh' | 'doanh_nghiep';

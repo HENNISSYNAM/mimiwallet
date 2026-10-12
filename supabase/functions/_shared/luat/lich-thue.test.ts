@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { suyLuan, type SuKienThue } from './he-luat';
-import { han90NgaySauNam, lichThue, mocKeTiep } from './lich-thue';
+import { CAN_CU, CAN_CU_CHUA_DOI_CHIEU, nhanCanCu } from './he-luat';
+import { CAU_HOI_TRA_LUONG, han90NgaySauNam, lichThue, mocKeTiep, nghiaVuTuLich } from './lich-thue';
 
 const HOM_NAY = '2026-09-25';
 const sk = (p: Partial<SuKienThue> = {}): SuKienThue => ({
@@ -96,5 +97,108 @@ describe('báo cáo tài chính năm (TT 58/2026)', () => {
 
   it('hộ kinh doanh không có mốc báo cáo tài chính', () => {
     expect(lich(sk({ loai: 'ho_kinh_doanh' })).some((m) => m.loai === 'nop_bao_cao')).toBe(false);
+  });
+});
+
+describe('khai TNCN đã khấu trừ theo quý — mẫu 05/KK-TNCN (TT 89/2026, chưa đối chiếu Công báo)', () => {
+  const dn = sk({ loai: 'doanh_nghiep' });
+  const tncnQuy = (p: Record<string, unknown>, homNay = HOM_NAY) =>
+    lichThue({ sk: { ...dn, homNay }, sl: suyLuan(dn), homNay, ...p }).filter((m) => m.khoa.startsWith('tncn_khai_quy:'));
+
+  it('đã xác nhận trả lương → phải làm, hạn theo NĐ 252 Điều 10 khoản 3 (cuối tháng đầu quý sau)', () => {
+    const m = tncnQuy({ soNguoi: '2-9', traLuong: true });
+    expect(m).toHaveLength(1);
+    expect(m[0]).toMatchObject({ khoa: 'tncn_khai_quy:2026-q3', trang_thai: 'phai_lam', han: '2026-10-31', mau: '05/KK-TNCN', loai: 'khai_va_nop' });
+    expect(m[0].can_cu).toEqual(['nd252_d10_k3', 'tt89_tncn_khai_quy']);
+    expect(m[0].cau_hoi).toBeUndefined();
+  });
+
+  it('chưa xác nhận (kể cả soNguoi "2-9") → cần xác minh với đúng một câu hỏi, không bao giờ "phải làm"', () => {
+    for (const p of [{}, { soNguoi: '2-9' }, { soNguoi: null, traLuong: null }]) {
+      const m = tncnQuy(p);
+      expect(m.length).toBeGreaterThan(0);
+      for (const x of m) expect(x).toMatchObject({ trang_thai: 'can_xac_minh', cau_hoi: CAU_HOI_TRA_LUONG });
+    }
+  });
+
+  it('chỉ mình tôi, hoặc xác nhận không trả lương → không có mốc khai quý; TNCN không áp dụng', () => {
+    expect(tncnQuy({ soNguoi: '1' })).toHaveLength(0);
+    const l = lich(dn, { soNguoi: '10-49', traLuong: false });
+    expect(l.some((m) => m.khoa.startsWith('tncn_'))).toBe(true);
+    expect(l.find((m) => m.khoa === 'tncn_khau_tru')).toMatchObject({ trang_thai: 'khong_ap_dung' });
+    expect(l.some((m) => m.khoa.startsWith('tncn_khai_quy') || m.khoa.startsWith('tncn_quyet_toan'))).toBe(false);
+  });
+
+  it('trả lương thì quyết toán TNCN năm cũng thành phải làm (cùng câu trả lời)', () => {
+    expect(lich(dn, { traLuong: true }).find((m) => m.khoa === 'tncn_quyet_toan:2025')).toMatchObject({ trang_thai: 'phai_lam' });
+  });
+
+  it('không sinh kỳ trước quý 3/2026 (trước TT 89 là quy định cũ); quý 4 hạn 31/01 năm sau', () => {
+    expect(tncnQuy({ traLuong: true }, '2026-05-10')).toHaveLength(0);
+    expect(tncnQuy({ traLuong: true }, '2026-11-02').map((m) => [m.khoa, m.han])).toEqual([
+      ['tncn_khai_quy:2026-q3', '2026-10-31'], ['tncn_khai_quy:2026-q4', '2027-01-31'],
+    ]);
+  });
+
+  it('hộ kinh doanh không có mốc 05/KK-TNCN', () => {
+    expect(lich(sk(), { traLuong: true }).some((m) => m.khoa.startsWith('tncn_khai_quy'))).toBe(false);
+  });
+
+  it('tạm ngừng: kỳ khai TNCN quý cũng chuyển sang cần xác minh', () => {
+    expect(tncnQuy({ traLuong: true, trangThai: 'tam_ngung' })[0]).toMatchObject({ trang_thai: 'can_xac_minh' });
+  });
+});
+
+describe('nghĩa vụ theo mã số thuế', () => {
+  const dn = sk({ loai: 'doanh_nghiep' });
+
+  it('đơn vị trực thuộc: không khẳng định — một mốc cần xác minh với đúng một câu hỏi', () => {
+    const m = lich(dn, { donViTrucThuoc: true }).find((x) => x.khoa === 'don_vi_truc_thuoc')!;
+    expect(m).toMatchObject({ trang_thai: 'can_xac_minh', han: null });
+    expect(m.cau_hoi).toContain('đơn vị chủ quản');
+    expect(lich(dn).some((x) => x.khoa === 'don_vi_truc_thuoc')).toBe(false);
+  });
+
+  it('ngừng hoạt động / đã đóng MST: không còn mốc nào "phải làm" — tất cả cần xác minh, không xoá', () => {
+    for (const trangThai of ['ngung_chua_dong_mst', 'da_dong_mst', 'khong_o_dia_chi']) {
+      const goc = lich(dn, { traLuong: true });
+      const l = lich(dn, { traLuong: true, trangThai });
+      expect(l).toHaveLength(goc.length);
+      expect(l.some((m) => m.trang_thai === 'phai_lam')).toBe(false);
+      expect(l.find((m) => m.khoa === 'tndn_tam_nop:2026-q3')?.vi_sao).toContain('Cơ quan thuế ghi');
+    }
+  });
+
+  it('đang hoạt động: kết luận như cũ', () => {
+    expect(lich(dn, { trangThai: 'dang_hoat_dong' })).toEqual(lich(dn));
+  });
+});
+
+describe('căn cứ của mọi mốc', () => {
+  it('mỗi mã căn cứ hoặc đã có câu trích trong kho, hoặc nằm trong danh sách CHƯA đối chiếu có nhãn rõ', () => {
+    const dn = sk({ loai: 'doanh_nghiep' });
+    const moi = [
+      ...lich(dn, { traLuong: true, donViTrucThuoc: true }), ...lich(dn, { trangThai: 'tam_ngung' }),
+      ...lich(sk()), ...lich(sk({ doanhThuQuy: [600e6, 600e6, 0, 0] })),
+    ];
+    for (const m of moi) for (const c of m.can_cu) expect(CAN_CU[c] ?? CAN_CU_CHUA_DOI_CHIEU[c], `${m.khoa} → ${c}`).toBeTruthy();
+    expect(nhanCanCu('tt89_tncn_khai_quy')).toEqual({ nhan: '89/2026/TT-BTC (chưa đối chiếu Công báo)', chua_doi_chieu: true });
+    expect(nhanCanCu('nd252_d10_k3')).toEqual({ nhan: '252/2026/NĐ-CP · Điều 10 khoản 3', chua_doi_chieu: false });
+    // Căn cứ chưa đối chiếu không được giả làm căn cứ đã có câu trích.
+    for (const k of Object.keys(CAN_CU_CHUA_DOI_CHIEU)) expect(CAN_CU[k]).toBeUndefined();
+  });
+});
+
+describe('hồ sơ nghĩa vụ — gom từ CÙNG lịch', () => {
+  it('một nghĩa vụ nhiều kỳ thành một dòng, kèm số kỳ và hạn gần nhất chưa qua', () => {
+    const l = lich(sk({ loai: 'doanh_nghiep' }), { traLuong: true, soNguoi: '2-9' });
+    const nv = nghiaVuTuLich(l);
+    const tndn = nv.phai_lam.find((x) => x.khoa === 'tndn_tam_nop')!;
+    expect(tndn.so_ky).toBe(2);
+    expect(tndn.han).toBe('2026-10-31');
+    expect(nv.phai_lam.find((x) => x.khoa === 'tncn_khai_quy')).toMatchObject({ mau: '05/KK-TNCN' });
+    expect(nv.can_xac_minh.find((x) => x.khoa === 'gtgt_ky_khai')?.cau_hoi).toBeTruthy();
+    const tong = Object.values(nv).reduce((a, ds) => a + ds.reduce((b, x) => b + x.so_ky, 0), 0);
+    expect(tong).toBe(l.length);
   });
 });

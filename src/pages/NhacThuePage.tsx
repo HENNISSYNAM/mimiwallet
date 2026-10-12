@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CalendarClock, ExternalLink, FileCheck2, HelpCircle, Loader2, ScrollText } from 'lucide-react';
+import { BadgeCheck, CalendarClock, ExternalLink, FileCheck2, HelpCircle, Loader2, ScrollText } from 'lucide-react';
 import { DUONG_DAN_NOP_TO_KHAI } from '@/lib/goiToKhai';
 import logoDichVuCong from '@/assets/logos/dich-vu-cong-tai-chinh.png';
 import { mucKhan, type MucKhan } from '@/lib/hanKeKhai';
@@ -10,6 +10,9 @@ import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '@/lib/giayTo';
 import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
 import { LichViec } from '@/components/viec/LichViec';
 import { mucCanXem } from '../../supabase/functions/_shared/thong-bao/muc-nhac.ts';
+import { nghiaVuTuLich, type NghiaVu, type TrangThaiMoc } from '../../supabase/functions/_shared/luat/lich-thue.ts';
+import { nhanCanCu } from '../../supabase/functions/_shared/luat/he-luat.ts';
+import type { HoSoMst } from '../../supabase/functions/_shared/mst/ho-so-mst.ts';
 
 /**
  * Nhắc thuế — như "Scheduled" của ChatGPT, nhưng là các mốc nghĩa vụ thuế (15/09/2026).
@@ -57,6 +60,71 @@ const NOI_TRA_LOI: Record<string, string> = {
   ket_noi_ngan_hang: '/dashboard/ket-noi',
 };
 
+const laHoSoMst = (x: unknown): x is HoSoMst => !!x && typeof x === 'object' && Array.isArray((x as HoSoMst).dieu_suy);
+
+const NHOM_NGHIA_VU: { trang_thai: TrangThaiMoc; mau: string }[] = [
+  { trang_thai: 'phai_lam', mau: 'text-primary' },
+  { trang_thai: 'can_xac_minh', mau: 'text-mimi-amber' },
+  { trang_thai: 'khong_ap_dung', mau: 'text-muted-foreground' },
+];
+
+/**
+ * Hồ sơ nghĩa vụ (11/10/2026): đầu trang nói MIMI biết gì nhờ mã số thuế và vì sao từng nghĩa vụ áp dụng,
+ * cần xác minh hay không áp dụng. Gom từ CÙNG `lich` của `tax-summary` (`nghiaVuTuLich`) — không lịch thứ hai.
+ * Không có nút trả lời nhanh: câu hỏi "cần xác minh" ở đây (kỳ khai GTGT, có trả lương…) chưa có đường lưu
+ * câu trả lời mà lịch thuế đọc lại; nút mà không lưu được là nút hứa suông.
+ */
+function HoSoNghiaVu({ hoSo, lich }: { hoSo: HoSoMst | null; lich: MocThue[] }) {
+  const { t } = useTranslation();
+  const nhom = nghiaVuTuLich(lich);
+  return (
+    <section aria-labelledby="ho-so-nghia-vu" className="rounded-2xl border border-border bg-card p-5">
+      <h2 id="ho-so-nghia-vu" className="text-lg font-semibold text-foreground">
+        {hoSo?.ten ? t('tb.hoSo.tieuDe', { ten: hoSo.ten }) : t('tb.hoSo.tieuDeChung')}
+      </h2>
+      {hoSo && hoSo.dieu_suy.length > 0 ? (
+        <div className="mt-3 rounded-xl bg-accent/50 p-4">
+          <p className="flex items-center gap-2 text-sm font-medium text-foreground"><BadgeCheck size={16} className="text-primary" aria-hidden /> {t('tb.hoSo.nhoMst')}</p>
+          <dl className="mt-2 space-y-2">
+            {hoSo.dieu_suy.map((d) => (
+              <div key={d.truong} className="text-sm">
+                <dt className="inline font-medium text-foreground">{d.nhan}: </dt>
+                <dd className="inline text-foreground">{d.gia_tri}</dd>
+                <p className="text-xs text-muted-foreground">{d.vi_sao} <span className="italic">({t(d.nguon === 'hinh_ma_so' ? 'tb.hoSo.nguonHinh' : 'tb.hoSo.nguonTct')})</span></p>
+              </div>
+            ))}
+          </dl>
+          {!hoSo.da_tra && <p className="mt-2 text-xs text-mimi-amber">{t('tb.hoSo.chuaTra')}</p>}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t('tb.hoSo.chuaCoMst')} <Link to="/dashboard/settings" className="font-medium text-primary hover:underline">{t('tb.hoSo.moCaiDat')}</Link>
+        </p>
+      )}
+      {NHOM_NGHIA_VU.map(({ trang_thai, mau }) => nhom[trang_thai].length > 0 && (
+        <div key={trang_thai} className="mt-4">
+          <h3 className={`text-sm font-semibold ${mau}`}>{t(`tb.hoSo.nhom.${trang_thai}`)}</h3>
+          <ul className="mt-2 divide-y divide-border">
+            {nhom[trang_thai].map((n: NghiaVu) => (
+              <li key={n.khoa} className="py-2">
+                <p className="text-sm font-medium text-foreground">{n.ten}{n.so_ky > 1 ? ` ${t('tb.hoSo.soKy', { n: n.so_ky })}` : ''}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground"><span className="font-medium">{t('tb.hoSo.viSao')}</span> {n.vi_sao}</p>
+                {n.cau_hoi && <p className="mt-0.5 text-xs font-medium text-mimi-amber">{n.cau_hoi}</p>}
+                {n.can_cu.length > 0 && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    <span className="font-medium">{t('tb.hoSo.canCu')}</span>{' '}
+                    {n.can_cu.map((c) => nhanCanCu(c)?.nhan ?? c).join('; ')}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 const laTomTat = (x: Record<string, unknown> | undefined): x is Record<string, unknown> & TomTatThue =>
   !!x && Array.isArray(x.milestones) && typeof x.revenue === 'number';
 
@@ -75,6 +143,7 @@ export default function NhacThuePage() {
     !!lichThue?.sanSang?.ket_luan_phu_thuoc && (thue?.revenueUncertainty?.nguong ?? []).some((n) => n.ma === ma && n.phia === 'chua_chac');
 
   const khan = mucKhan(moc?.con_lai ?? 999);
+  const hoSoMst = laHoSoMst(lichThue?.tomTat?.hoSoMst) ? lichThue.tomTat.hoSoMst as HoSoMst : null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
@@ -82,6 +151,8 @@ export default function NhacThuePage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('tb.trang.tieuDe')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('tb.trang.moTa')}</p>
       </header>
+
+      {lichThue && <HoSoNghiaVu hoSo={hoSoMst} lich={lichThue.lich} />}
 
       {canXem && (
         <section id="can-xem" aria-labelledby="can-xem-tieu-de" className="scroll-mt-20 rounded-2xl border border-mimi-amber/40 bg-mimi-amber/5 p-5">

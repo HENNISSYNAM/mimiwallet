@@ -12,6 +12,7 @@ import { lichThue, type MocThue } from './lich-thue.ts';
 import { chuanHoaTrangThai } from '../doanh-nghiep/trang-thai.ts';
 import { sanSangThue, type SanSangThue } from './san-sang-thue.ts';
 import type { ChiaHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
+import { hoSoTheoMst, type HoSoMst } from '../mst/ho-so-mst.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -26,6 +27,8 @@ export interface LichCongTy {
   sanSang: SanSangThue;
   /** Doanh thu năm của ĐÚNG nguồn đang dùng để khai, chia theo nhóm hoạt động (null: chưa có doanh thu). */
   hoatDong: ChiaHoatDong | null;
+  /** Điều MIMI biết nhờ mã số thuế (11/10/2026) — cùng lần đọc với lịch, để trang hiện "vì sao biết". */
+  hoSoMst: HoSoMst;
 }
 
 /** `s`: số liệu doanh thu năm `nam` nếu nơi gọi đã đọc (tránh đọc hai lần). */
@@ -38,10 +41,13 @@ export async function docLichCongTy(
     db.from('companies').select('employee_count').eq('id', companyId).maybeSingle(),
   ]);
   const dung = dungSuKien({ nam: o.nam, homNay: o.homNay, congTy: cong_ty, hoSo: ho_so, doanhThu: doanhThuQuyTuSoLieu(s) });
+  const hoSoMst = hoSoTheoMst(cong_ty);
   const lich = lichThue({
     sk: dung.su_kien, sl: suyLuan(dung.su_kien), homNay: o.homNay,
     trangThai: chuanHoaTrangThai(cong_ty.theo_mst?.trang_thai).trang_thai,
     soNguoi: (ctNguoi?.employee_count as string | null) ?? null,
+    donViTrucThuoc: hoSoMst.don_vi_truc_thuoc,
+    // `traLuong`: chưa có nơi lưu câu xác nhận "có trả lương" → để trống, mốc TNCN quý ở "cần xác minh".
   });
   const hoatDong = dung.su_kien.hoatDong ?? null;
   // Chỉ hộ kinh doanh: nhóm hoạt động quyết định dòng và tỷ lệ trên tờ khai của hộ.
@@ -49,6 +55,6 @@ export async function docLichCongTy(
     ? { so_tien: hoatDong.nhom.chua_ro.so_tien, so_khoan: hoatDong.nhom.chua_ro.so_khoan } : null;
   return {
     lich, loaiNguoiNop: dung.su_kien.loai ?? null, soChuaRo: s.so_chua_ro, tienChuaRo: s.chua_ro,
-    sanSang: sanSangThue(lich, s, chuaRoNhom, dung.su_kien.loai ?? null), hoatDong,
+    sanSang: sanSangThue(lich, s, chuaRoNhom, dung.su_kien.loai ?? null), hoatDong, hoSoMst,
   };
 }

@@ -63,6 +63,13 @@ export interface DuKienLich {
   sieuNho?: boolean | null;
   /** Cách nộp TNDN: theo thu nhập tính thuế, hay theo tỷ lệ % trên doanh thu. null = chưa biết. */
   phuongPhapTndn?: 'thu_nhap' | 'ty_le' | null;
+  /**
+   * Doanh nghiệp: NGƯỜI DÙNG đã xác nhận công ty có trả tiền lương, tiền công hay không. null = chưa xác
+   * nhận. `soNguoi` ('2-9'…) KHÔNG đủ: người làm cùng có thể là người nhà không nhận lương.
+   */
+  traLuong?: boolean | null;
+  /** MST 13 số (10 số + "-xxx") — đơn vị trực thuộc. Xem `_shared/mst/ho-so-mst.ts`. */
+  donViTrucThuoc?: boolean;
 }
 
 /** Ngày thứ 90 kể từ ngày kết thúc năm `nam` (31/12) — năm nhuận là 30/3, năm thường 31/3. */
@@ -184,24 +191,78 @@ export function lichThue(dk: DuKienLich): MocThue[] {
       }
     }
     // TNCN: chỉ tổ chức trả lương mới khấu trừ và quyết toán thay.
-    if (dk.soNguoi === '1') {
+    const khongTraLuong = dk.soNguoi === '1' || dk.traLuong === false;
+    if (khongTraLuong) {
       ra.push(moc({
         khoa: 'tncn_khau_tru', ten: 'Khấu trừ, quyết toán thuế TNCN cho người lao động', loai: 'quyet_toan', trang_thai: 'khong_ap_dung', han: null,
-        vi_sao: 'Bạn cho biết chỉ có mình bạn làm, không trả lương cho người lao động.', can_cu: [],
+        vi_sao: dk.soNguoi === '1' ? 'Bạn cho biết chỉ có mình bạn làm, không trả lương cho người lao động.' : 'Bạn xác nhận công ty không trả tiền lương, tiền công.',
+        can_cu: [],
       }));
     } else {
+      const coLuong = dk.traLuong === true;
       ra.push(moc({
         khoa: `tncn_quyet_toan:${nam - 1}`, ten: `Quyết toán thuế TNCN năm ${nam - 1} (tổ chức trả thu nhập)`,
-        loai: 'quyet_toan', trang_thai: 'can_xac_minh', han: `${nam}-03-31`,
+        loai: 'quyet_toan', trang_thai: coLuong ? 'phai_lam' : 'can_xac_minh', han: `${nam}-03-31`,
         vi_sao: 'Tổ chức trả tiền lương, tiền công phải khấu trừ và quyết toán TNCN; hạn cuối tháng thứ 3 sau năm.',
         can_cu: ['nd252_d10_k5a'],
-        cau_hoi: 'Công ty có trả lương cho người lao động không?',
+        ...(coLuong ? {} : { cau_hoi: CAU_HOI_TRA_LUONG }),
+      }));
+      /*
+       * Khai TNCN đã khấu trừ THEO QUÝ — mẫu 05/KK-TNCN (11/10/2026).
+       * Nguồn thứ cấp: Thông tư 89/2026/TT-BTC bỏ kỳ khai tháng, áp dụng từ kỳ quý 3/2026 → chỉ sinh mốc từ
+       * quý 3/2026, không sinh quý 2/2026 trở về trước (kỳ đó theo quy định cũ, MIMI không suy).
+       * Hạn: quy tắc chung cho "loại thuế khai theo quý" — NĐ 252 Điều 10 khoản 3, đã đối chiếu, đúng
+       * `hanNopQuy`. Phần "TNCN khấu trừ khai theo quý" là TT 89 — CHƯA đối chiếu Công báo, nhãn ghi rõ.
+       * Chưa biết công ty có trả lương → "cần xác minh" với đúng một câu hỏi, không bao giờ "phải làm".
+       * Mốc NHẮC thôi; tờ khai 05/KK-TNCN do `to-khai.ts` soạn.
+       */
+      for (const [q, n] of cacQuy) {
+        if (n < 2026 || (n === 2026 && q < 3)) continue;
+        ra.push(moc({
+          khoa: `tncn_khai_quy:${n}-q${q}`, ten: `Khai thuế TNCN đã khấu trừ quý ${q}/${n} — mẫu 05/KK-TNCN`,
+          loai: 'khai_va_nop', trang_thai: coLuong ? 'phai_lam' : 'can_xac_minh', han: hanNopQuy(q, n),
+          vi_sao: coLuong
+            ? 'Công ty trả tiền lương, tiền công: khai số thuế TNCN đã khấu trừ theo quý (từ kỳ quý 3/2026 không còn khai tháng); hạn ngày cuối tháng đầu của quý sau.'
+            : 'Chỉ tổ chức trả tiền lương, tiền công mới phải khai TNCN đã khấu trừ theo quý (từ kỳ quý 3/2026). MIMI chưa biết công ty có trả lương không.',
+          can_cu: ['nd252_d10_k3', 'tt89_tncn_khai_quy'], mau: '05/KK-TNCN',
+          ...(coLuong ? {} : { cau_hoi: CAU_HOI_TRA_LUONG }),
+        }));
+      }
+    }
+    /*
+     * Đơn vị trực thuộc (MST 13 số). Kho chưa có căn cứ đã đối chiếu nói đơn vị trực thuộc tự khai hay đơn
+     * vị chủ quản khai thay từng loại thuế → không khẳng định; một mốc "cần xác minh" với đúng một câu hỏi.
+     */
+    if (dk.donViTrucThuoc) {
+      ra.push(moc({
+        khoa: 'don_vi_truc_thuoc', ten: 'Đơn vị trực thuộc: tự khai hay đơn vị chủ quản khai thay', loai: 'khai_thue', trang_thai: 'can_xac_minh', han: null,
+        vi_sao: 'Mã số thuế có đuôi "-xxx" là của đơn vị trực thuộc. Tuỳ loại thuế, đơn vị trực thuộc tự khai với cơ quan thuế quản lý mình hoặc đơn vị chủ quản khai thay — MIMI chưa có căn cứ đã đối chiếu để nói thay bạn. Các mốc bên trên là của một doanh nghiệp tự khai.',
+        can_cu: [],
+        cau_hoi: 'Đơn vị này tự nộp tờ khai thuế, hay đơn vị chủ quản khai thay?',
       }));
     }
   }
 
   // Tạm ngừng: không phải khai kỳ nằm trọn trong thời gian tạm ngừng — nhưng chưa biết có trọn kỳ
   // không, nên chuyển sang "cần xác minh", không xoá.
+  /*
+   * Ngừng hoạt động / đã đóng MST / không ở địa chỉ đăng ký (11/10/2026). Kho chưa có căn cứ đã đối chiếu
+   * nói kỳ nào còn phải khai trong các trạng thái này → không xoá mốc, không giữ "phải làm": chuyển sang
+   * "cần xác minh" và nói rõ cơ quan thuế ghi gì. Trước đây các trạng thái này vẫn hiện "phải làm" như
+   * doanh nghiệp đang hoạt động.
+   */
+  const ngung = dk.trangThai === 'ngung_chua_dong_mst' || dk.trangThai === 'da_dong_mst' || dk.trangThai === 'khong_o_dia_chi';
+  if (ngung) {
+    const ghi = dk.trangThai === 'da_dong_mst' ? 'mã số thuế đã chấm dứt hiệu lực'
+      : dk.trangThai === 'ngung_chua_dong_mst' ? 'đã ngừng hoạt động, chưa đóng mã số thuế' : 'không hoạt động tại địa chỉ đăng ký';
+    for (const m of ra) {
+      if (m.trang_thai !== 'phai_lam') continue;
+      m.trang_thai = 'can_xac_minh';
+      m.vi_sao = `Cơ quan thuế ghi ${ghi}. MIMI không tự coi kỳ này là bắt buộc hay miễn. ${m.vi_sao}`;
+      m.cau_hoi = 'Cơ quan thuế ghi trạng thái này có đúng với tình hình hiện tại của bạn không?';
+    }
+  }
+
   if (tamNgung) {
     for (const m of ra) {
       if (m.trang_thai === 'phai_lam' && (m.loai === 'khai_va_nop' || m.loai === 'tam_nop' || m.loai === 'thong_bao_doanh_thu')) {
@@ -214,6 +275,46 @@ export function lichThue(dk: DuKienLich): MocThue[] {
   }
 
   return ra.sort((a, b) => (a.han ?? '9999').localeCompare(b.han ?? '9999'));
+}
+
+/** Câu hỏi gỡ mọi mốc TNCN của tổ chức trả thu nhập — một câu, dùng chung để không hỏi hai lần hai kiểu. */
+export const CAU_HOI_TRA_LUONG = 'Công ty có trả lương cho người lao động không?';
+
+export interface NghiaVu {
+  /** Phần khoá trước dấu ":" — một nghĩa vụ, nhiều kỳ. */
+  khoa: string;
+  ten: string;
+  loai: LoaiMoc;
+  trang_thai: TrangThaiMoc;
+  vi_sao: string;
+  can_cu: string[];
+  mau?: string;
+  cau_hoi?: string;
+  /** Hạn gần nhất chưa qua (hoặc hạn muộn nhất nếu mọi kỳ đã qua). null khi chưa tính được. */
+  han: string | null;
+  so_ky: number;
+}
+
+/**
+ * Hồ sơ nghĩa vụ: gom các mốc của CÙNG lịch theo nghĩa vụ (phần khoá trước ":") và trạng thái — đầu trang
+ * Nhắc thuế đọc từ đây, không dựng lịch thứ hai. Nghĩa vụ có kỳ ở hai trạng thái (ví dụ tạm ngừng chỉ
+ * với một kỳ) hiện ở cả hai nhóm.
+ */
+export function nghiaVuTuLich(lich: MocThue[]): Record<TrangThaiMoc, NghiaVu[]> {
+  const ra: Record<TrangThaiMoc, NghiaVu[]> = { phai_lam: [], can_xac_minh: [], khong_ap_dung: [] };
+  const theoKhoa = new Map<string, MocThue[]>();
+  for (const m of lich) {
+    const k = `${m.trang_thai}|${m.khoa.split(':')[0]}`;
+    theoKhoa.set(k, [...(theoKhoa.get(k) ?? []), m]);
+  }
+  for (const ds of theoKhoa.values()) {
+    const sapToi = ds.find((m) => m.con_lai !== null && m.con_lai >= 0) ?? ds[ds.length - 1];
+    ra[sapToi.trang_thai].push({
+      khoa: sapToi.khoa.split(':')[0], ten: sapToi.ten, loai: sapToi.loai, trang_thai: sapToi.trang_thai,
+      vi_sao: sapToi.vi_sao, can_cu: sapToi.can_cu, mau: sapToi.mau, cau_hoi: sapToi.cau_hoi, han: sapToi.han, so_ky: ds.length,
+    });
+  }
+  return ra;
 }
 
 /** Mốc kế tiếp còn phải để ý: chưa qua hạn, phải làm hoặc cần xác minh. */

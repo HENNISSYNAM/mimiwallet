@@ -109,4 +109,51 @@ describe('Nhắc thuế', () => {
     expect(document.body.textContent).not.toContain('Chưa có việc thuế nào có hạn MIMI biết chắc');
     expect(gia.invoke).toHaveBeenCalledTimes(1);
   });
+
+  it('hồ sơ nghĩa vụ: MIMI biết gì nhờ MST, và từng nghĩa vụ áp dụng / cần xác minh / không áp dụng kèm vì sao, căn cứ', async () => {
+    const tncn = MOC({
+      khoa: 'tncn_khai_quy:2026-q3', ten: 'Khai thuế TNCN đã khấu trừ quý 3/2026 — mẫu 05/KK-TNCN', loai: 'khai_va_nop', trang_thai: 'can_xac_minh',
+      han: '2026-10-31', con_lai: 46, vi_sao: 'Chỉ tổ chức trả tiền lương mới phải khai.', can_cu: ['nd252_d10_k3', 'tt89_tncn_khai_quy'],
+      cau_hoi: 'Công ty có trả lương cho người lao động không?',
+    });
+    const tndn = (q: number, han: string, con_lai: number) => MOC({ khoa: `tndn_tam_nop:2026-q${q}`, ten: `Tạm nộp thuế TNDN quý ${q}/2026`, han, con_lai, can_cu: ['nd252_d24_k2'] });
+    gia.invoke.mockResolvedValue({
+      data: {
+        lich: [tndn(3, '2026-10-31', 46), tncn, tndn(4, '2027-01-31', 138), MOC({ khoa: 'tncn_khau_tru', ten: 'Khấu trừ TNCN', trang_thai: 'khong_ap_dung', han: null, con_lai: null, vi_sao: 'Bạn cho biết chỉ có mình bạn làm.' })],
+        mocKeTiep: tndn(3, '2026-10-31', 46),
+        hoSoMst: {
+          mst: '0300588569', ten: 'CÔNG TY CỔ PHẦN SỮA VIỆT NAM', loai: 'doanh_nghiep', da_tra: true, don_vi_truc_thuoc: false,
+          dieu_suy: [
+            { truong: 'loai', nhan: 'Loại người nộp thuế', gia_tri: 'Doanh nghiệp', nguon: 'tong_cuc_thue', vi_sao: 'Doanh nghiệp tạm nộp TNDN theo quý.' },
+            { truong: 'co_quan_thue', nhan: 'Cơ quan thuế quản lý', gia_tri: 'Chi cục Thuế Doanh nghiệp lớn', nguon: 'tong_cuc_thue', vi_sao: 'Nơi nhận tờ khai và nơi bạn nộp tiền thuế.' },
+          ],
+        },
+        year: 2026, basis: 'bank', revenue: 0, hasBankConnection: true, disclaimer: 'x', milestones: [],
+      },
+      error: null,
+    });
+    dung();
+    const h = await screen.findByRole('heading', { name: 'Hồ sơ nghĩa vụ của CÔNG TY CỔ PHẦN SỮA VIỆT NAM' });
+    const ho = h.parentElement as HTMLElement;
+    expect(ho.textContent).toContain('MIMI biết điều này nhờ mã số thuế');
+    expect(ho.textContent).toContain('Chi cục Thuế Doanh nghiệp lớn');
+    expect(ho.textContent).toContain('theo bản ghi Tổng cục Thuế');
+    // Hai kỳ tạm nộp TNDN gom thành một nghĩa vụ.
+    expect(ho.textContent).toContain('Tạm nộp thuế TNDN quý 3/2026 (2 kỳ)');
+    expect(screen.getByRole('heading', { name: 'Áp dụng cho bạn' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Cần xác minh' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Không áp dụng' })).toBeTruthy();
+    // Căn cứ chưa đối chiếu luôn mang nhãn.
+    expect(ho.textContent).toContain('89/2026/TT-BTC (chưa đối chiếu Công báo)');
+    expect(ho.textContent).toContain('252/2026/NĐ-CP · Điều 10 khoản 3');
+    expect(ho.textContent).toContain('Công ty có trả lương cho người lao động không?');
+    expect(gia.invoke).toHaveBeenCalledTimes(1);
+  });
+
+  it('chưa có mã số thuế: nói thẳng MIMI chưa biết gì, chỉ chỗ thêm mã', async () => {
+    gia.invoke.mockResolvedValue({ data: { lich: [], mocKeTiep: null, hoSoMst: { mst: null, ten: null, dieu_suy: [] }, year: 2026, basis: 'bank', revenue: 0, hasBankConnection: false, disclaimer: 'x', milestones: [] }, error: null });
+    dung();
+    expect(await screen.findByRole('heading', { name: 'Hồ sơ nghĩa vụ thuế của bạn' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Thêm mã số thuế' }).getAttribute('href')).toBe('/dashboard/settings');
+  });
 });
