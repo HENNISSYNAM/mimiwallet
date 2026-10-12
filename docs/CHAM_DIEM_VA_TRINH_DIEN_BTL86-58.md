@@ -1,6 +1,6 @@
 # MIMI — chấm điểm theo đề BTL86-58 và kịch bản trình diễn
 
-Chấm lại ngày 12/10/2026 sau đợt nâng điểm. HEAD: `21ff5b2` (30 commit từ `79c58ec`, **chưa triển khai production** — xem mục 4).
+Chấm lại ngày 12/10/2026 sau đợt nâng điểm và **sau khi triển khai production** (web `fd5e67a` trên www.mimiwallet.online, 5 migration, 11 edge function; đã kiểm trên production — mục 4).
 
 Đề BTL86-58 (Bộ Tư lệnh 86): *Trợ lý số đồng hành cùng hộ kinh doanh và doanh nghiệp nhỏ về thủ tục, thuế và hoá đơn điện tử* — hướng dẫn từng bước đăng ký, nghĩa vụ thuế, hoá đơn điện tử, nhắc hạn và quy định theo loại hình, cá nhân hoá theo ngành nghề, kết nối cơ quan liên quan.
 
@@ -29,7 +29,8 @@ Chấm lại ngày 12/10/2026 sau đợt nâng điểm. HEAD: `21ff5b2` (30 comm
 | An toàn hành động | 9 | Agent không giữ/chuyển tiền; luật chi thuần (hạn mức, khung giờ, trần người nhận); **đối soát chi agent đã nối vào mọi đường ghi giao dịch**; trỏ AI chỉ đề xuất trong danh mục |
 | Chi phí AI có kiểm soát | 9 | Xu trừ theo đúng `usage.cost` OpenRouter báo đã trừ; giá gói xu tính từ chi phí token; mua qua chuyển khoản → SePay → đối soát tự động |
 | Gọn | 8,5 | Đợt dọn gỡ ~2.800 dòng mã chết, 17 ảnh, 3 edge function, 1 gói npm; trang CRM đóng băng đã gỡ |
-| Dữ liệu thật đã chạy | 3 | Chưa có số liệu dùng thật mới; toàn bộ đợt này **chưa lên production** |
+| Đã chạy trên production | 7 | Đã triển khai và kiểm: bundle production khớp bản build; 7 function mới trả 401 (sống, đòi đăng nhập), 2 function gỡ trả 404; 4 trang mới trả 200; CSP có cổng bộ chạy tại máy; 5 migration có trên CSDL thật. Chưa đăng nhập thử từng màn hình trên production |
+| Dữ liệu dùng thật | 3 | Chưa có số liệu khách dùng thật cho các tính năng mới |
 
 ## 3. Phần ăn tiền và con số chờ chốt
 
@@ -37,9 +38,9 @@ Chấm lại ngày 12/10/2026 sau đợt nâng điểm. HEAD: `21ff5b2` (30 comm
 - Xu mua thêm qua chuyển khoản; trả gói giữa tháng nhận ngay hạn mức xu.
 - **ĐỀ XUẤT chờ chủ chốt**: hạn mức xu 300 / 3.000 / 3.000; số trỏ 1 / 2 / 3; 1 xu = 0,001 USD chi phí token; giá gói xu = chi phí × 2 × 26.500 (1.000 xu = 53.000đ).
 
-## 4. Điều kiện trước khi trình diễn (bắt buộc)
+## 4. Điều kiện trước khi trình diễn
 
-1. `bash scripts/trien-khai-2026-10-12.sh` — **5 migration → 11 function → gỡ 3 function cũ → đẩy web**. Chưa chạy thì production **không có** các tính năng mục 1.
+1. ~~Triển khai~~ — **đã xong 12/10/2026**: 5 migration áp lên CSDL thật; 11 function triển khai (to-khai, tro-ly, tac-tu, tax-summary, subscription-billing, bank-webhook, cas-webhook, thong-bao, mcp, bank-link, sao-ke); gỡ macro-news, elevenlabs-tts (ai-trung-gian chưa từng có trên production); web `fd5e67a` lên Vercel. Bước kiểm còn lại: đăng nhập tài khoản trình diễn và đi hết kịch bản mục 5 trên production.
 2. Tài khoản trình diễn: một **hộ kinh doanh** có sao kê năm 2026 đã phân loại; một **doanh nghiệp** có MST tra được. Một tệp bảng lương mẫu và một tệp XML hoá đơn mẫu (`src/lib/hoaDon/__mau__/hop-le.xml`). Không dùng dữ liệu khách thật trên màn hình.
 3. Khoá OpenRouter còn tiền; sổ xu tài khoản trình diễn còn năng lượng.
 4. Chạy thử toàn kịch bản một lần trên đúng máy và mạng sẽ trình.
