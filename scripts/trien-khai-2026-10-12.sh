@@ -5,9 +5,9 @@
 set -euo pipefail
 REF=xzymxgdavepvygdcmfup
 
-echo "== 1. Áp 4 migration (điền hộ, luật agent khung giờ/trần người nhận, sổ xu + mua xu, mẫu 05/KK-TNCN)"
+echo "== 1. Áp 5 migration (điền hộ, luật agent khung giờ/trần người nhận, sổ xu + mua xu, mẫu 05/KK-TNCN, câu trả lời nghĩa vụ + ngành)"
 npx supabase db push --linked --dry-run
-read -r -p "Đúng 4 migration ở trên? Gõ y để áp: " ok; [ "$ok" = "y" ] || exit 1
+read -r -p "Đúng 5 migration ở trên? Gõ y để áp: " ok; [ "$ok" = "y" ] || exit 1
 npx supabase db push --linked
 
 echo "== 2. Triển khai 9 function bị ảnh hưởng (đã dò theo đồ thị import)"
