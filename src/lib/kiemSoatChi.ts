@@ -109,6 +109,8 @@ export const NHAN_MA: Record<MaLyDo | 'NGUOI_DUYET_TU_CHOI', string> = {
   VUOT_HAN_MUC_NGAY: 'Vượt hạn mức ngày',
   VUOT_HAN_MUC_THANG: 'Vượt hạn mức tháng',
   VUOT_TAN_SUAT: 'Vượt tần suất yêu cầu',
+  VUOT_HAN_MUC_NGUOI_NHAN: 'Vượt trần mỗi người nhận trong tháng',
+  NGOAI_KHUNG_GIO: 'Ngoài khung giờ được chi',
   NGUOI_NHAN_CHUA_DUYET: 'Người nhận ngoài danh sách',
   NGUOI_NHAN_MOI: 'Người nhận lần đầu',
   NGUOI_NHAN_MOI_THEM: 'Người nhận mới thêm dưới 24 giờ',

@@ -263,3 +263,36 @@ describe('chủ doanh nghiệp tạo yêu cầu chi (hành động tao_yeu_cau)'
     expect(maLyDo(r.body)).toContain('TAC_TU_TAM_DUNG');
   });
 });
+
+describe('kiểm soát nâng cao (11/10/2026)', () => {
+  it('trần mỗi người nhận: đếm đúng khoản đang giữ của CÙNG tài khoản, không đếm người khác', async () => {
+    const m = await moiTruong({ han_muc_moi_nguoi_nhan_thang: 700_000 });
+    const r1 = await m.goi('xin_chi', xin());
+    expect(r1.body.yeu_cau.trang_thai).toBe('da_duyet');
+    const r2 = await m.goi('xin_chi', xin());
+    expect(r2.status).toBe(422);
+    expect(maLyDo(r2.body)).toContain('VUOT_HAN_MUC_NGUOI_NHAN');
+    // Người nhận khác: không bị trần của người kia chặn (chỉ chờ duyệt vì là người lạ).
+    const r3 = await m.goi('xin_chi', xin({ so_tai_khoan: '5555666677' }));
+    expect(maLyDo(r3.body)).not.toContain('VUOT_HAN_MUC_NGUOI_NHAN');
+  });
+
+  it('xem_chinh_sach trả thêm trường mới, giữ nguyên trường cũ', async () => {
+    const m = await moiTruong({ khung_gio_chi: { tu_phut: 480, den_phut: 1200, thu: [1, 2, 3, 4, 5] }, ngoai_khung_gio: 'tu_choi' });
+    const r = await m.goi('xem_chinh_sach');
+    expect(r.body.chinh_sach).toMatchObject({
+      han_muc_moi_lan: 5_000_000,
+      so_yeu_cau_moi_gio: 30,
+      khung_gio_chi: { tu_phut: 480, den_phut: 1200, thu: [1, 2, 3, 4, 5] },
+      ngoai_khung_gio: 'tu_choi',
+      han_muc_moi_nguoi_nhan_thang: null,
+    });
+  });
+
+  it('khung giờ hỏng trong CSDL → đóng chặt: mọi khoản thành ngoài giờ', async () => {
+    const m = await moiTruong({ khung_gio_chi: { tu_phut: 'sai' } });
+    const r = await m.goi('xin_chi', xin());
+    expect(r.body.yeu_cau.trang_thai).toBe('cho_duyet');
+    expect(maLyDo(r.body)).toContain('NGOAI_KHUNG_GIO');
+  });
+});

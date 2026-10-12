@@ -17,6 +17,7 @@ import { SUPABASE_URL } from '@/lib/env';
 import { DIEM_GOI_TAC_TU as DIEM_GOI, goiTacTu as goi } from '@/lib/goiTacTu';
 import { canXacMinh, type DauHieu } from '@/lib/batThuong';
 import HopXacMinh from '@/components/canh-bao/HopXacMinh';
+import TaoAgentHoiThoai from '@/components/tac-tu/TaoAgentHoiThoai';
 import { docSoTienBangChu } from '@/lib/soTienBangChu';
 import { taoChuoiVietQr } from '@/lib/vietqr';
 import { DANH_SACH_NGAN_HANG } from '@/lib/nganHang';
@@ -603,6 +604,23 @@ export default function TacTuPage() {
                   ? { dich: 'tac-tu.them', ok: true, cau: tr('app.tacTu.mimi.themAgentOk', { ten }) }
                   : { dich: 'tac-tu.them', ok: false, cau: tr('app.tacTu.mimi.themAgentLoi') });
               }}
+            />
+          </section>
+          {/* Cùng hành động máy chủ như form trên — chỉ là cách hỏi từng câu. Xem TaoAgentHoiThoai. */}
+          <section aria-labelledby="ag-hoi-thoai" className="space-y-2">
+            <div>
+              <h2 id="ag-hoi-thoai" className="text-sm font-semibold text-foreground">{tr('app.tacTu.hoiThoai.tieuDe')}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">{tr('app.tacTu.hoiThoai.moTa')}</p>
+            </div>
+            <TaoAgentHoiThoai
+              ds={dsTacTu}
+              chinhSach={chinhSach}
+              goi={async (hanhDong, du) => {
+                const kq = await goi(hanhDong, du);
+                void tai();
+                return kq;
+              }}
+              khiCoKhoa={(ten, khoa) => setKhoaMoi({ ten, khoa })}
             />
           </section>
           {dsDangDung.length === 0 ? (

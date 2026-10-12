@@ -20,6 +20,7 @@ import { DANH_SACH_NGAN_HANG } from "../bank/ngan-hang.ts";
 import {
   dauNgayVN,
   dauThangVN,
+  docKhungGio,
   hanMucConLai,
   NHOM_CHI,
   TRANG_THAI_GIU_HAN_MUC,
@@ -83,7 +84,22 @@ function chinhSachTuDong(r: Row | null): ChinhSach {
         : r.so_yeu_cau_moi_gio === null
           ? null
           : Number(r.so_yeu_cau_moi_gio),
+    // Ba trường dưới từ migration 20261011090000. Chưa chạy migration thì `undefined` = không đặt.
+    khungGioChi: khungGioTuDong(r.khung_gio_chi),
+    ngoaiKhungGio: r.ngoai_khung_gio === "tu_choi" ? "tu_choi" : "cho_duyet",
+    hanMucMoiNguoiNhanThang:
+      r.han_muc_moi_nguoi_nhan_thang == null ? null : Number(r.han_muc_moi_nguoi_nhan_thang),
   };
+}
+
+/**
+ * Khung giờ trong CSDL sai khuôn (máy chủ đã kiểm lúc lưu, nên chỉ xảy ra khi ai
+ * sửa tay) thì ĐÓNG CHẶT: một khung không có ngày nào, mọi khoản thành "ngoài
+ * giờ". Bỏ qua khung hỏng là lặng lẽ mở cửa đúng chỗ chủ muốn đóng.
+ */
+function khungGioTuDong(v: unknown) {
+  const k = docKhungGio(v);
+  return k === 'sai' ? { tuPhut: 0, denPhut: 1440, thu: [] } : k;
 }
 
 export async function docChinhSach(db: Db, tacTuId: string): Promise<ChinhSach> {
@@ -92,11 +108,21 @@ export async function docChinhSach(db: Db, tacTuId: string): Promise<ChinhSach> 
   return chinhSachTuDong(data);
 }
 
-/** Tổng các yêu cầu đang giữ hạn mức trong ngày và tháng (giờ VN), trừ `truId`. */
-export async function tongDaGiu(db: Db, tacTuId: string, truId: string | null, luc: Date) {
+/**
+ * Tổng các yêu cầu đang giữ hạn mức trong ngày và tháng (giờ VN), trừ `truId`.
+ * Có `nhan` thì tính thêm phần tháng đang giữ cho đúng người nhận đó — cùng một
+ * lần đọc, không thêm truy vấn.
+ */
+export async function tongDaGiu(
+  db: Db,
+  tacTuId: string,
+  truId: string | null,
+  luc: Date,
+  nhan?: { nganHangBin: string; soTaiKhoan: string },
+) {
   const { data, error } = await db
     .from("yeu_cau_chi")
-    .select("id, so_tien, created_at")
+    .select("id, so_tien, created_at, ngan_hang_bin, so_tai_khoan")
     .eq("tac_tu_id", tacTuId)
     .in("trang_thai", [...TRANG_THAI_GIU_HAN_MUC])
     .gte("created_at", dauThangVN(luc).toISOString());
@@ -105,13 +131,15 @@ export async function tongDaGiu(db: Db, tacTuId: string, truId: string | null, l
   const dauNgay = dauNgayVN(luc).getTime();
   let ngay = 0;
   let thang = 0;
+  let nguoiNhanThang = 0;
   for (const r of data ?? []) {
     if (r.id === truId) continue;
     const t = Number(r.so_tien);
     thang += t;
     if (new Date(r.created_at).getTime() >= dauNgay) ngay += t;
+    if (nhan && r.ngan_hang_bin === nhan.nganHangBin && r.so_tai_khoan === nhan.soTaiKhoan) nguoiNhanThang += t;
   }
-  return { ngay, thang };
+  return { ngay, thang, nguoiNhanThang };
 }
 
 export async function ghiNhatKy(db: Db, dong: Row) {
@@ -183,6 +211,12 @@ export async function goiTacTu(db: Db, khoa: string, hanhDong: string, body: Row
             chi_tra_nguoi_nhan_da_duyet: cs.chiTraNguoiNhanDaDuyet,
             het_han: cs.hetHan,
             so_yeu_cau_moi_gio: cs.soYeuCauMoiGio ?? null,
+            // Thêm 11/10/2026, chỉ THÊM trường — agent cũ đọc API này không vỡ.
+            khung_gio_chi: cs.khungGioChi
+              ? { tu_phut: cs.khungGioChi.tuPhut, den_phut: cs.khungGioChi.denPhut, thu: cs.khungGioChi.thu }
+              : null,
+            ngoai_khung_gio: cs.ngoaiKhungGio ?? "cho_duyet",
+            han_muc_moi_nguoi_nhan_thang: cs.hanMucMoiNguoiNhanThang ?? null,
           },
           // Đổi sang snake_case như mọi trường khác của API. Trả thẳng kết quả
           // của `hanMucConLai` từng làm lộ `moiLan` giữa một object toàn `moi_lan`.
@@ -301,7 +335,7 @@ export async function xinChi(db: Db, tt: Row, body: Row, nguoiGui: NguoiGui = { 
     const luc = new Date();
     const [cs, giu, dsNhan, demGio, lichSu] = await Promise.all([
       docChinhSach(db, tt.id),
-      tongDaGiu(db, tt.id, dong.id, luc),
+      tongDaGiu(db, tt.id, dong.id, luc, { nganHangBin, soTaiKhoan }),
       db.from("nguoi_nhan_duoc_phep")
         .select("ngan_hang_bin, so_tai_khoan, ten_chu_tai_khoan, created_at")
         .eq("company_id", tt.company_id),
@@ -337,6 +371,7 @@ export async function xinChi(db: Db, tt: Row, body: Row, nguoiGui: NguoiGui = { 
       nganHangHopLe: Boolean(nganHang),
       luc,
       soYeuCauGioQua: demGio.count ?? 0,
+      daGiuNguoiNhanThang: giu.nguoiNhanThang,
       tenNguoiNhan: daBiet?.ten_chu_tai_khoan ?? tenGui,
       taiKhoanDaBiet: [
         ...(dsNhan.data ?? []).map((n) => ({ nganHangBin: n.ngan_hang_bin, soTaiKhoan: n.so_tai_khoan, ten: n.ten_chu_tai_khoan })),

@@ -23,7 +23,7 @@ import { daBiKhoaViSai, ghiLanSai, idTuIp, ipNguoiGoi } from "../_shared/an-ninh
 import { kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { DANH_SACH_NGAN_HANG } from "../_shared/bank/ngan-hang.ts";
-import { NHOM_CHI } from "../_shared/tac-tu/chinh-sach.ts";
+import { docKhungGio, NHOM_CHI } from "../_shared/tac-tu/chinh-sach.ts";
 import { bamKhoa, HEADER_KHOA, hienKhoa, sinhKhoa } from "../_shared/tac-tu/khoa.ts";
 import { kiemYeuCau } from "../_shared/bat-thuong/doc-db.ts";
 import {
@@ -187,6 +187,33 @@ async function xuLyChu(db: Db, userId: string, companyId: string, vaiTro: VaiTro
       const hetHan = body.het_han ? new Date(String(body.het_han)) : null;
       if (hetHan && Number.isNaN(hetHan.getTime())) return loi("HET_HAN", "Ngày hết hạn không hợp lệ.", 400);
 
+      /*
+       * Ba trường thêm 11/10/2026 (migration 20261011090000). KHÔNG GỬI = GIỮ NGUYÊN:
+       * màn Chính sách chi cũ không biết các trường này, lưu từ đó không được lặng
+       * lẽ xoá khung giờ hay trần người nhận chủ đã đặt ở nơi khác. Chỉ đưa vào
+       * lệnh ghi khi có gửi, nên CSDL chưa chạy migration vẫn lưu được như cũ.
+       */
+      const them: Row = {};
+      if (body.khung_gio_chi !== undefined) {
+        const k = docKhungGio(body.khung_gio_chi);
+        if (k === "sai") {
+          return loi("KHUNG_GIO", "Khung giờ gồm tu_phut (0–1439), den_phut (1–1440, khác tu_phut) và thu (1 = thứ Hai … 7 = Chủ nhật).", 400);
+        }
+        them.khung_gio_chi = k ? { tu_phut: k.tuPhut, den_phut: k.denPhut, thu: k.thu } : null;
+      }
+      if (body.ngoai_khung_gio !== undefined) {
+        if (!["tu_choi", "cho_duyet"].includes(String(body.ngoai_khung_gio))) {
+          return loi("NGOAI_KHUNG_GIO", "Ngoài khung giờ chỉ là tu_choi hoặc cho_duyet.", 400);
+        }
+        them.ngoai_khung_gio = body.ngoai_khung_gio;
+      }
+      if (body.han_muc_moi_nguoi_nhan_thang !== undefined) {
+        const v = body.han_muc_moi_nguoi_nhan_thang;
+        if (v === null || v === "") them.han_muc_moi_nguoi_nhan_thang = null;
+        else if (laSoNguyenKhongAm(v) && v >= 1) them.han_muc_moi_nguoi_nhan_thang = v;
+        else return loi("HAN_MUC_NGUOI_NHAN", "Trần mỗi người nhận là số nguyên đồng lớn hơn 0, hoặc để trống nếu không giới hạn.", 400);
+      }
+
       const truoc = await docChinhSach(db, tt.id);
       const { error } = await db.from("chinh_sach_chi").upsert({
         tac_tu_id: tt.id,
@@ -200,6 +227,7 @@ async function xuLyChu(db: Db, userId: string, companyId: string, vaiTro: VaiTro
         het_han: hetHan?.toISOString() ?? null,
         // Không gửi trường này (màn hình cũ) thì giữ giá trị đang có, không lặng lẽ bỏ trần.
         so_yeu_cau_moi_gio: body.so_yeu_cau_moi_gio === undefined ? (truoc.soYeuCauMoiGio ?? 30) : moiGio,
+        ...them,
         updated_at: bayGio(),
       });
       if (error) throw error;

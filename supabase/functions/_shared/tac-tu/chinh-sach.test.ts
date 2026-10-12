@@ -4,6 +4,10 @@ import {
   hanMucConLai,
   dauNgayVN,
   dauThangVN,
+  docKhungGio,
+  moTaKhungGio,
+  phutVaThuVN,
+  trongKhungGio,
   type ChinhSach,
   type BoiCanh,
   type YeuCau,
@@ -174,5 +178,62 @@ describe('ngày và tháng theo giờ Việt Nam', () => {
   it('0 giờ 30 sáng 01/09 giờ VN thuộc tháng 9', () => {
     expect(dauThangVN(new Date('2026-08-31T17:30:00Z')).toISOString()).toBe('2026-08-31T17:00:00.000Z');
     expect(dauThangVN(new Date('2026-08-31T16:59:00Z')).toISOString()).toBe('2026-07-31T17:00:00.000Z');
+  });
+});
+
+describe('khung giờ được chi', () => {
+  const k = { tuPhut: 480, denPhut: 1200, thu: [1, 2, 3, 4, 5] };
+
+  it('đọc phút và thứ theo giờ VN, Chủ nhật là 7', () => {
+    // 17:00 UTC thứ Bảy 12/09 = 00:00 Chủ nhật 13/09 giờ VN.
+    expect(phutVaThuVN(new Date('2026-09-12T17:00:00Z'))).toEqual({ phut: 0, thu: 7 });
+    expect(phutVaThuVN(new Date('2026-09-14T03:15:00Z'))).toEqual({ phut: 615, thu: 1 });
+  });
+
+  it('"từ" gồm, "đến" không gồm', () => {
+    expect(trongKhungGio(k, new Date('2026-09-14T01:00:00Z'))).toBe(true); // 08:00 T2
+    expect(trongKhungGio(k, new Date('2026-09-14T13:00:00Z'))).toBe(false); // 20:00 T2
+  });
+
+  it('chính sách cũ không có khung giờ thì không đổi kết quả', () => {
+    const q = xetYeuCau(yc(), cs(), bc({ luc: new Date('2026-09-12T20:00:00Z') }));
+    expect(q.ketQua).toBe('tu_dong_duyet');
+  });
+
+  it('lý do ngoài giờ nói rõ khung giờ cho người đọc', () => {
+    const q = xetYeuCau(yc(), cs({ khungGioChi: k }), bc({ luc: new Date('2026-09-10T15:00:00Z') }));
+    expect(q.ketQua).toBe('cho_duyet');
+    expect(q.lyDo[0].cau).toContain('08:00–20:00, thứ Hai–thứ Sáu');
+  });
+
+  it('docKhungGio: nhận dạng lưu, chặn sai khuôn', () => {
+    expect(docKhungGio(null)).toBeNull();
+    expect(docKhungGio(undefined)).toBeNull();
+    expect(docKhungGio({ tu_phut: 480, den_phut: 1200, thu: [5, 1, 2] })).toEqual({ tuPhut: 480, denPhut: 1200, thu: [1, 2, 5] });
+    expect(docKhungGio({ tu_phut: 480, den_phut: 480, thu: [1] })).toBe('sai');
+    expect(docKhungGio({ tu_phut: -1, den_phut: 600, thu: [1] })).toBe('sai');
+    expect(docKhungGio({ tu_phut: 0, den_phut: 1441, thu: [1] })).toBe('sai');
+    expect(docKhungGio({ tu_phut: 0, den_phut: 600, thu: [] })).toBe('sai');
+    expect(docKhungGio({ tu_phut: 0, den_phut: 600, thu: [1, 1] })).toBe('sai');
+    expect(docKhungGio({ tu_phut: 0, den_phut: 600, thu: [8] })).toBe('sai');
+    expect(docKhungGio({ tu_phut: 8.5, den_phut: 600, thu: [1] })).toBe('sai');
+    expect(docKhungGio('08:00-20:00')).toBe('sai');
+  });
+
+  it('moTaKhungGio', () => {
+    expect(moTaKhungGio({ tuPhut: 0, denPhut: 1440, thu: [1, 2, 3, 4, 5, 6, 7] })).toBe('00:00–24:00, mọi ngày');
+    expect(moTaKhungGio({ tuPhut: 1320, denPhut: 360, thu: [6, 7] })).toBe('22:00–06:00, thứ Bảy, Chủ nhật');
+  });
+});
+
+describe('trần mỗi người nhận trong tháng', () => {
+  it('không có bối cảnh đã giữ thì tính là 0', () => {
+    expect(xetYeuCau(yc(), cs({ hanMucMoiNguoiNhanThang: 500_000 }), bc()).ketQua).toBe('tu_dong_duyet');
+    expect(ma(xetYeuCau(yc(), cs({ hanMucMoiNguoiNhanThang: 499_999 }), bc()))).toContain('VUOT_HAN_MUC_NGUOI_NHAN');
+  });
+
+  it('gom cùng các lý do khác trong một lần', () => {
+    const q = xetYeuCau(yc({ soTien: 3_000_000 }), cs({ hanMucMoiNguoiNhanThang: 1_000_000 }), bc());
+    expect(ma(q)).toEqual(expect.arrayContaining(['VUOT_HAN_MUC_NGUOI_NHAN', 'VUOT_HAN_MUC_MOI_LAN']));
   });
 });

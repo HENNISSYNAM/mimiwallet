@@ -71,6 +71,34 @@ export interface ChinhSach {
    * Không bắt buộc để dòng chính sách cũ và test cũ vẫn hợp lệ.
    */
   soYeuCauMoiGio?: number | null;
+  /**
+   * Khung giờ agent được chi, theo giờ Việt Nam. `null`/không có = mọi lúc.
+   * Không bắt buộc, như `soYeuCauMoiGio`, để chính sách cũ vẫn hợp lệ.
+   */
+  khungGioChi?: KhungGioChi | null;
+  /**
+   * Khoản xin NGOÀI khung giờ thì sao. Mặc định `cho_duyet`: tiền không tự đi
+   * lúc không ai trông, nhưng việc thật lúc 22 giờ vẫn có đường đi qua người duyệt.
+   * `tu_choi` cho doanh nghiệp muốn cấm hẳn.
+   */
+  ngoaiKhungGio?: 'tu_choi' | 'cho_duyet';
+  /**
+   * Trần tổng chi cho MỘT người nhận (ngân hàng + số tài khoản) trong tháng giờ
+   * VN, tính trên agent này. `null`/không có = không giới hạn riêng.
+   */
+  hanMucMoiNguoiNhanThang?: number | null;
+}
+
+/**
+ * Khung giờ được chi. Phút trong ngày theo giờ VN: 08:00 = 480.
+ * `tuPhut` gồm, `denPhut` không gồm — "08:00–20:00" nghĩa là 20:00 đã là ngoài giờ.
+ * `tuPhut > denPhut` là khung qua đêm (22:00–06:00), thứ tính theo lúc xin.
+ */
+export interface KhungGioChi {
+  tuPhut: number;
+  denPhut: number;
+  /** Thứ được chi theo ISO: 1 = thứ Hai … 7 = Chủ nhật. */
+  thu: number[];
 }
 
 export interface NguoiNhan {
@@ -154,6 +182,8 @@ export interface BoiCanh {
   tenNguoiNhan?: string | null;
   /** Tài khoản đã biết của công ty (danh sách + lần đã duyệt/đã chi), để phát hiện đổi số tài khoản. */
   taiKhoanDaBiet?: TaiKhoanDaBiet[];
+  /** Tổng các yêu cầu KHÁC đang giữ hạn mức tới CÙNG người nhận này trong tháng (giờ VN). */
+  daGiuNguoiNhanThang?: number;
 }
 
 /**
@@ -175,6 +205,8 @@ export const MA_LY_DO = [
   'VUOT_HAN_MUC_NGAY',
   'VUOT_HAN_MUC_THANG',
   'VUOT_TAN_SUAT',
+  'VUOT_HAN_MUC_NGUOI_NHAN',
+  'NGOAI_KHUNG_GIO',
   'NGUOI_NHAN_CHUA_DUYET',
   'NGUOI_NHAN_MOI',
   'NGUOI_NHAN_MOI_THEM',
@@ -197,6 +229,51 @@ export interface QuyetDinh {
 }
 
 const dong = (n: number) => `${Math.round(n).toLocaleString('vi-VN')}đ`;
+
+const TEN_THU = ['', 'thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy', 'Chủ nhật'];
+const gioPhut = (p: number) => `${String(Math.floor(p / 60)).padStart(2, '0')}:${String(p % 60).padStart(2, '0')}`;
+
+/** Phút trong ngày và thứ (ISO, 1 = thứ Hai) theo giờ Việt Nam. */
+export function phutVaThuVN(luc: Date): { phut: number; thu: number } {
+  const vn = new Date(luc.getTime() + 7 * 3_600_000);
+  return { phut: vn.getUTCHours() * 60 + vn.getUTCMinutes(), thu: vn.getUTCDay() || 7 };
+}
+
+export function trongKhungGio(k: KhungGioChi, luc: Date): boolean {
+  const { phut, thu } = phutVaThuVN(luc);
+  if (!k.thu.includes(thu)) return false;
+  return k.tuPhut < k.denPhut ? phut >= k.tuPhut && phut < k.denPhut : phut >= k.tuPhut || phut < k.denPhut;
+}
+
+/** "08:00–20:00, thứ Hai–thứ Sáu" — câu cho người đọc, dùng cả ở lý do và ở giao diện. */
+export function moTaKhungGio(k: KhungGioChi): string {
+  const thu = [...k.thu].sort((a, b) => a - b);
+  const lienTiep = thu.length > 2 && thu.every((t, i) => i === 0 || t === thu[i - 1] + 1);
+  const ngay =
+    thu.length === 7 ? 'mọi ngày'
+      : lienTiep ? `${TEN_THU[thu[0]]}–${TEN_THU[thu[thu.length - 1]]}`
+        : thu.map((t) => TEN_THU[t]).join(', ');
+  return `${gioPhut(k.tuPhut)}–${gioPhut(k.denPhut)}, ${ngay}`;
+}
+
+/**
+ * Đọc khung giờ ở dạng lưu (jsonb `{tu_phut, den_phut, thu}`).
+ * Trả `null` khi không đặt, `'sai'` khi sai khuôn — máy chủ dùng để từ chối lúc
+ * lưu, bộ đọc chính sách dùng để đóng chặt lúc xét (xem `cong-tac-tu.ts`).
+ */
+export function docKhungGio(v: unknown): KhungGioChi | null | 'sai' {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== 'object' || Array.isArray(v)) return 'sai';
+  const o = v as Record<string, unknown>;
+  const tu = o.tu_phut;
+  const den = o.den_phut;
+  const thu = o.thu;
+  const nguyen = (x: unknown, a: number, b: number): x is number => Number.isInteger(x) && (x as number) >= a && (x as number) <= b;
+  if (!nguyen(tu, 0, 1439) || !nguyen(den, 1, 1440) || tu === den) return 'sai';
+  if (!Array.isArray(thu) || thu.length === 0 || thu.length > 7 || !thu.every((t) => nguyen(t, 1, 7))) return 'sai';
+  if (new Set(thu).size !== thu.length) return 'sai';
+  return { tuPhut: tu, denPhut: den, thu: [...thu].sort((a, b) => a - b) };
+}
 
 export function xetYeuCau(yc: YeuCau, cs: ChinhSach, bc: BoiCanh): QuyetDinh {
   const chan: LyDo[] = [];
@@ -265,6 +342,21 @@ export function xetYeuCau(yc: YeuCau, cs: ChinhSach, bc: BoiCanh): QuyetDinh {
   }
 
   if (soTienHopLe) {
+    /*
+     * TRẦN THEO NGƯỜI NHẬN. Trần ngày/tháng chặn tổng, không chặn chuyện dồn cả
+     * tháng vào một tài khoản — đúng kiểu thất thoát khi agent bị dắt (một
+     * "nhà cung cấp" lặp lại hoá đơn nhỏ). Là trần chủ tự đặt nên từ chối, không
+     * đẩy sang người duyệt.
+     */
+    if (cs.hanMucMoiNguoiNhanThang != null) {
+      const da = bc.daGiuNguoiNhanThang ?? 0;
+      if (da + yc.soTien > cs.hanMucMoiNguoiNhanThang) {
+        chan.push({
+          ma: 'VUOT_HAN_MUC_NGUOI_NHAN',
+          cau: `Tháng này người nhận này còn ${dong(Math.max(0, cs.hanMucMoiNguoiNhanThang - da))} trong trần ${dong(cs.hanMucMoiNguoiNhanThang)} mỗi người nhận.`,
+        });
+      }
+    }
     if (yc.soTien > cs.hanMucMoiLan) {
       chan.push({ ma: 'VUOT_HAN_MUC_MOI_LAN', cau: `Mỗi khoản tối đa ${dong(cs.hanMucMoiLan)}.` });
     }
@@ -321,6 +413,19 @@ export function xetYeuCau(yc: YeuCau, cs: ChinhSach, bc: BoiCanh): QuyetDinh {
         ma: 'DOI_SO_TAI_KHOAN',
         cau: `"${bc.tenNguoiNhan}" từng nhận tiền ở tài khoản ••••${cu.soTaiKhoan.slice(-4)} (mã ngân hàng ${cu.nganHangBin}). Lần này là tài khoản khác — gọi xác nhận qua số điện thoại đã lưu từ trước rồi mới duyệt.`,
       });
+    }
+  }
+
+  /*
+   * KHUNG GIỜ. Agent chạy cả đêm; người trông nó thì không. Khoản xin lúc không
+   * ai xem được không tự đi — tuỳ chính sách, chờ người duyệt hoặc bị từ chối.
+   */
+  if (cs.khungGioChi && !trongKhungGio(cs.khungGioChi, bc.luc)) {
+    const cauGio = `Ngoài khung giờ được chi (${moTaKhungGio(cs.khungGioChi)}, giờ Việt Nam).`;
+    if (cs.ngoaiKhungGio === 'tu_choi') {
+      chan.push({ ma: 'NGOAI_KHUNG_GIO', cau: `${cauGio} Chính sách không cho chi ngoài giờ — gửi lại trong khung giờ.` });
+    } else {
+      hoi.push({ ma: 'NGOAI_KHUNG_GIO', cau: `${cauGio} Khoản này phải có người duyệt.` });
     }
   }
 

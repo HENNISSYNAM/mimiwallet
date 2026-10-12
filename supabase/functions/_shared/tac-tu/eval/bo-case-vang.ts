@@ -24,6 +24,7 @@ export type NhomCase =
   | 'nguoi_nhan'
   | 'chong_lua_dao'
   | 'tan_suat'
+  | 'khung_gio'
   | 'du_lieu'
   | 'trang_thai';
 
@@ -33,6 +34,7 @@ export const TEN_NHOM_CASE: Record<NhomCase, string> = {
   nguoi_nhan: 'Người nhận',
   chong_lua_dao: 'Chống lừa đảo chuyển khoản',
   tan_suat: 'Tần suất (agent chạy vòng lặp)',
+  khung_gio: 'Khung giờ được chi (giờ VN)',
   du_lieu: 'Dữ liệu yêu cầu sai',
   trang_thai: 'Trạng thái agent và chính sách',
 };
@@ -95,6 +97,12 @@ export const YEU_CAU_CHUAN: YeuCau = {
   mucDich: 'Nạp ngân sách quảng cáo tháng 9',
 };
 
+/** Giờ hành chính mở rộng: 08:00–20:00, thứ Hai–thứ Sáu. */
+const GIO_HANH_CHINH = { tuPhut: 8 * 60, denPhut: 20 * 60, thu: [1, 2, 3, 4, 5] };
+/** Giờ VN `hh:mm` của ngày LUC_CHUAN (thứ Hai 14/09/2026), lệch thêm `ngay` ngày. */
+const lucVN = (gio: number, phut = 0, ngay = 0) =>
+  new Date(Date.UTC(2026, 8, 14 + ngay, gio - 7, phut));
+
 const TK_CU_CUNG_TEN = { nganHangBin: BIN_B, soTaiKhoan: '0071000123456', ten: 'Công ty TNHH ABC' };
 
 export const BO_CASE_VANG: CaseVang[] = [
@@ -121,6 +129,16 @@ export const BO_CASE_VANG: CaseVang[] = [
     bc: { daGiuThang: 99_600_000 }, kyVong: { ketQua: 'tu_choi', phaiCo: ['VUOT_HAN_MUC_THANG'] } },
   { id: 'H05', nhom: 'han_muc', nguon: 'thiet-ke', moTa: 'Vượt trần mà cũng trên ngưỡng → TỪ CHỐI, không đẩy sang người duyệt',
     yc: { soTien: 6_000_000 }, kyVong: { ketQua: 'tu_choi', phaiCo: ['VUOT_HAN_MUC_MOI_LAN'], khongDuocCo: ['TREN_NGUONG_DUYET'] } },
+  { id: 'H07', nhom: 'han_muc', nguon: 'bien', moTa: 'Trần mỗi người nhận 3tr/tháng, đã giữ 2,5tr, xin 500k → đúng bằng trần, vẫn được',
+    cs: { hanMucMoiNguoiNhanThang: 3_000_000 }, bc: { daGiuNguoiNhanThang: 2_500_000 }, kyVong: { ketQua: 'tu_dong_duyet' } },
+  { id: 'H08', nhom: 'han_muc', nguon: 'bien', moTa: 'Trần mỗi người nhận vượt 1 đồng → từ chối',
+    cs: { hanMucMoiNguoiNhanThang: 3_000_000 }, bc: { daGiuNguoiNhanThang: 2_500_001 },
+    kyVong: { ketQua: 'tu_choi', phaiCo: ['VUOT_HAN_MUC_NGUOI_NHAN'] } },
+  { id: 'H09', nhom: 'han_muc', nguon: 'thiet-ke', moTa: 'Vượt trần người nhận mà cũng trên ngưỡng → TỪ CHỐI, không đẩy sang người duyệt',
+    yc: { soTien: 2_500_000 }, cs: { hanMucMoiNguoiNhanThang: 3_000_000 }, bc: { daGiuNguoiNhanThang: 1_000_000 },
+    kyVong: { ketQua: 'tu_choi', phaiCo: ['VUOT_HAN_MUC_NGUOI_NHAN'], khongDuocCo: ['TREN_NGUONG_DUYET'] } },
+  { id: 'H10', nhom: 'han_muc', nguon: 'thiet-ke', moTa: 'Không đặt trần người nhận (null) → tổng đã giữ lớn vẫn không chặn riêng',
+    cs: { hanMucMoiNguoiNhanThang: null }, bc: { daGiuNguoiNhanThang: 90_000_000 }, kyVong: { ketQua: 'tu_dong_duyet' } },
   { id: 'H06', nhom: 'han_muc', nguon: 'thiet-ke', moTa: 'Vượt cả ngày lẫn tháng → nói cả hai lý do một lần',
     bc: { daGiuNgay: 19_600_000, daGiuThang: 99_600_000 },
     kyVong: { ketQua: 'tu_choi', phaiCo: ['VUOT_HAN_MUC_NGAY', 'VUOT_HAN_MUC_THANG'] } },
@@ -186,6 +204,27 @@ export const BO_CASE_VANG: CaseVang[] = [
   { id: 'T06', nhom: 'tan_suat', nguon: 'thiet-ke', moTa: 'Vòng lặp khoản lớn → từ chối, không thành chờ duyệt',
     yc: { soTien: 3_000_000 }, bc: { soYeuCauGioQua: 40 },
     kyVong: { ketQua: 'tu_choi', phaiCo: ['VUOT_TAN_SUAT'], khongDuocCo: ['TREN_NGUONG_DUYET'] } },
+
+  /* ── Khung giờ được chi ─────────────────────────────────────────── */
+  { id: 'G01', nhom: 'khung_gio', nguon: 'thiet-ke', moTa: '10:00 thứ Hai, khung 08–20 T2–T6 → tự duyệt',
+    cs: { khungGioChi: GIO_HANH_CHINH }, kyVong: { ketQua: 'tu_dong_duyet', khongDuocCo: ['NGOAI_KHUNG_GIO'] } },
+  { id: 'G02', nhom: 'khung_gio', nguon: 'bien', moTa: 'Đúng 20:00 → đã ngoài giờ ("đến" không gồm) → chờ duyệt',
+    cs: { khungGioChi: GIO_HANH_CHINH }, bc: { luc: lucVN(20) }, kyVong: { ketQua: 'cho_duyet', phaiCo: ['NGOAI_KHUNG_GIO'] } },
+  { id: 'G03', nhom: 'khung_gio', nguon: 'bien', moTa: '07:59 → chưa tới giờ → chờ duyệt; 08:00 đúng thì được (G01 bao)',
+    cs: { khungGioChi: GIO_HANH_CHINH }, bc: { luc: lucVN(7, 59) }, kyVong: { ketQua: 'cho_duyet', phaiCo: ['NGOAI_KHUNG_GIO'] } },
+  { id: 'G04', nhom: 'khung_gio', nguon: 'bien', moTa: '10:00 Chủ nhật → ngoài ngày được chi',
+    cs: { khungGioChi: GIO_HANH_CHINH }, bc: { luc: lucVN(10, 0, -1) }, kyVong: { ketQua: 'cho_duyet', phaiCo: ['NGOAI_KHUNG_GIO'] } },
+  { id: 'G05', nhom: 'khung_gio', nguon: 'thiet-ke', moTa: 'Chính sách cấm chi ngoài giờ → 21:00 bị TỪ CHỐI',
+    cs: { khungGioChi: GIO_HANH_CHINH, ngoaiKhungGio: 'tu_choi' }, bc: { luc: lucVN(21) },
+    kyVong: { ketQua: 'tu_choi', phaiCo: ['NGOAI_KHUNG_GIO'] } },
+  { id: 'G06', nhom: 'khung_gio', nguon: 'bien', moTa: 'Khung qua đêm 22:00–06:00, xin lúc 23:30 → trong khung',
+    cs: { khungGioChi: { tuPhut: 22 * 60, denPhut: 6 * 60, thu: [1, 2, 3, 4, 5, 6, 7] } }, bc: { luc: lucVN(23, 30) },
+    kyVong: { ketQua: 'tu_dong_duyet', khongDuocCo: ['NGOAI_KHUNG_GIO'] } },
+  { id: 'G07', nhom: 'khung_gio', nguon: 'thiet-ke', moTa: 'Ngoài giờ mà vượt trần → TỪ CHỐI vì trần, ngoài giờ không biến nó thành chờ duyệt',
+    yc: { soTien: 6_000_000 }, cs: { khungGioChi: GIO_HANH_CHINH }, bc: { luc: lucVN(22) },
+    kyVong: { ketQua: 'tu_choi', phaiCo: ['VUOT_HAN_MUC_MOI_LAN'], khongDuocCo: ['NGOAI_KHUNG_GIO'] } },
+  { id: 'G08', nhom: 'khung_gio', nguon: 'bien', moTa: 'Giờ VN không phải UTC: 01:00 sáng thứ Ba VN (18:00 UTC thứ Hai) là ngoài giờ',
+    cs: { khungGioChi: GIO_HANH_CHINH }, bc: { luc: lucVN(1, 0, 1) }, kyVong: { ketQua: 'cho_duyet', phaiCo: ['NGOAI_KHUNG_GIO'] } },
 
   /* ── Dữ liệu yêu cầu sai ────────────────────────────────────────── */
   { id: 'D01', nhom: 'du_lieu', nguon: 'thiet-ke', moTa: 'Số tiền 0', yc: { soTien: 0 }, kyVong: { ketQua: 'tu_choi', phaiCo: ['SO_TIEN_KHONG_HOP_LE'] } },
