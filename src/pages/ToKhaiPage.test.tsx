@@ -92,6 +92,15 @@ describe('Tờ khai thuế', () => {
     expect(within(bang).queryByText('0')).toBeNull();
   });
 
+  it('tab thuế TNCN từ tiền lương: ẩn tờ khai hộ kinh doanh, hiện bảng lương mẫu 05/KK-TNCN', async () => {
+    dung();
+    await screen.findByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM');
+    fireEvent.click(screen.getByRole('tab', { name: 'Thuế TNCN từ tiền lương' }));
+    expect(screen.queryByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM')).toBeNull();
+    expect(screen.getByText(/mẫu 05\/KK-TNCN/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Tính thuế và soạn tờ khai/ })).toBeTruthy();
+  });
+
   it('không bày chuỗi suy luận trên trang — người dùng hỏi MIMI Assistant mới trả lời', async () => {
     dung();
     await screen.findByText('THÔNG BÁO DOANH THU/TỜ KHAI THUẾ NĂM');

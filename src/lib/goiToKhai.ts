@@ -4,6 +4,8 @@ import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { kemCongTy } from '@/lib/congTyDangDung';
 import type { CanCuDaKiem, HoSoThue, KyToKhai, LoaiNguoiNop, SuKienThue, SuyLuan, ToKhai } from '@/lib/heLuat';
 import type { TheoMst } from '../../supabase/functions/_shared/luat/doc-su-kien.ts';
+import type { ToKhai05 } from '../../supabase/functions/_shared/thue-tncn/to-khai-05.ts';
+import type { KetQuaNguoi } from '../../supabase/functions/_shared/thue-tncn/khau-tru.ts';
 
 /**
  * Công ty như máy chủ trả về. `loai_theo_mst` có giá trị thì màn hình KHÔNG hỏi "hộ hay doanh
@@ -64,6 +66,19 @@ export interface KetQuaPhanTich {
   canh_bao: string[];
   can_cu: CanCuDaKiem[];
   chua_doi_chieu: string[];
+}
+
+/** Kết quả `tncn_soan` — tờ khai 05/KK-TNCN và thuế từng người (chỉ trả về, máy chủ không lưu bảng lương). */
+export interface KetQuaTncn {
+  nam: number;
+  quy: number;
+  hom_nay: string;
+  cong_ty: CongTyTheoMst;
+  to_khai: ToKhai05 | null;
+  nguoi: KetQuaNguoi[];
+  ly_do_khong_soan: string | null;
+  can_cu: CanCuDaKiem[];
+  thanh_toan: ThanhToanToKhai;
 }
 
 export interface BanNhap {

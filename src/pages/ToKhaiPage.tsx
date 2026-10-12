@@ -14,6 +14,7 @@ import { GOI_DOANH_NGHIEP_TRON_DOI } from '../../supabase/functions/_shared/bill
 import { DienHoCong } from '@/components/dien-cong/DienHoCong';
 import { laTrongApp } from '@/lib/chayTrongApp';
 import { PhanLoaiHoatDong } from '@/components/to-khai/PhanLoaiHoatDong';
+import { ToKhaiTncn } from '@/components/to-khai/ToKhaiTncn';
 import {
   KENH, NHOM_NGANH, TEN_KENH, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH,
   type CanCuDaKiem, type HoSoThue, type Kenh, type KyToKhai, type LoaiNguoiNop, type NhomNganh, type ToKhai,
@@ -386,6 +387,8 @@ export default function ToKhaiPage() {
   const [dangXuat, setDangXuat] = useState(false);
   const [daXuat, setDaXuat] = useState(false);
   const [canMua, setCanMua] = useState(false);
+  // 12/10/2026: tab thứ hai — tờ khai 05/KK-TNCN của tổ chức trả lương (mọi loại người nộp thuế đều có thể trả lương).
+  const [tab, setTab] = useState<'kinh_doanh' | 'tncn'>('kinh_doanh');
 
   const tai = useCallback(async (du: Record<string, unknown> = {}) => {
     setDangTai(true);
@@ -473,14 +476,30 @@ export default function ToKhaiPage() {
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
           {t('app.toKhai.moTa')}
         </p>
+        <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label={t('app.toKhai.tab.aria')}>
+          {(['kinh_doanh', 'tncn'] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={tab === k}
+              onClick={() => setTab(k)}
+              className={`h-9 rounded-xl px-3 text-sm ${tab === k ? 'bg-primary text-primary-foreground' : 'border border-border text-foreground hover:bg-accent'}`}
+            >
+              {t(k === 'tncn' ? 'app.toKhai.tab.tncn' : 'app.toKhai.tab.kinhDoanh')}
+            </button>
+          ))}
+        </div>
       </header>
 
-      {dangTai && !kq && (
+      {tab === 'tncn' && <ToKhaiTncn />}
+
+      {tab === 'kinh_doanh' && dangTai && !kq && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={15} className="animate-spin" /> {t('app.toKhai.dangDoc')}</p>
       )}
-      {loi && <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{loi}</p>}
+      {tab === 'kinh_doanh' && loi && <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{loi}</p>}
 
-      {kq && (
+      {tab === 'kinh_doanh' && kq && (
         <>
           <section aria-labelledby="ho-so-thue" className="no-print rounded-2xl border border-border bg-card p-5">
             <h2 id="ho-so-thue" className="text-lg font-semibold text-foreground">{t('app.toKhai.hoSo')}</h2>

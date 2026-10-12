@@ -41,6 +41,8 @@ import { tinhNghiaVu } from "../_shared/nghia-vu/tinh.ts";
 import { docNhiemVu, dsPhien, ghiBuoc, LoiDien, taoPhien } from "../_shared/dien-cong/luu.ts";
 import { coBatDienCong } from "../_shared/dien-cong/bo-chuyen.ts";
 import { TEN_NHOM_NGANH } from "../_shared/luat/he-luat.ts";
+import { docBangLuong } from "../_shared/thue-tncn/khau-tru.ts";
+import { MAU_05, soanToKhai05 } from "../_shared/thue-tncn/to-khai-05.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
 const congTyChoGiaoDien = (c: HoSoCongTy) => ({
@@ -60,12 +62,22 @@ const json = (body: unknown, status = 200) =>
 
 const loi = (ma: string, cau: string, status: number) => json({ error: cau, ma }, status);
 
+const canThanhToan = (giaMotTo: number) => json({
+  error: "Xuất tờ khai cần gói tháng. Doanh nghiệp có mã số thuế tra được ở Tổng cục Thuế thì miễn phí trọn đời.",
+  ma: "CAN_THANH_TOAN",
+  gia_mot_to: giaMotTo,
+}, 402);
+
 // deno-lint-ignore no-explicit-any
 type Db = any;
 // deno-lint-ignore no-explicit-any
 type Row = Record<string, any>;
 
-const KICH_THUOC_THAN_TOI_DA = 100_000;
+/*
+ * 300 KB: bảng lương 05/KK-TNCN tối đa 1.000 người × 3 tháng đi trong một yêu cầu (khoảng 250 byte một
+ * người). Các hành động khác vẫn chỉ gửi vài KB.
+ */
+const KICH_THUOC_THAN_TOI_DA = 300_000;
 
 const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   ho_so: { cuaSoGiay: 60, toiDa: 60 },
@@ -82,7 +94,18 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   hoan_tac_tien_vao: { cuaSoGiay: 60, toiDa: 60 },
   ds_nhap: { cuaSoGiay: 60, toiDa: 60 },
   xoa_nhap: { cuaSoGiay: 60, toiDa: 30 },
+  tncn_soan: { cuaSoGiay: 60, toiDa: 30 },
+  tncn_luu_nhap: { cuaSoGiay: 60, toiDa: 20 },
+  tncn_xuat: { cuaSoGiay: 60, toiDa: 20 },
 };
+
+/** Mã băm SHA-256 (hex) của nội dung bản nháp — một cách cho mọi mẫu. */
+async function maBam(noiDung: string): Promise<string> {
+  return Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(noiDung))),
+    (x) => x.toString(16).padStart(2, "0"),
+  ).join("");
+}
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -307,6 +330,61 @@ async function docHoatDong(db: Db, companyId: string, body: Row) {
   };
 }
 
+/**
+ * Tờ khai 05/KK-TNCN (thuế TNCN khấu trừ từ tiền lương, tiền công) — xem `_shared/thue-tncn/`.
+ *
+ * Bảng lương đi theo từng yêu cầu, KHÔNG lưu: máy chủ kiểm, tính, trả kết quả. Bản nháp chỉ giữ tờ
+ * khai (số tổng) và mã băm của bảng lương đã chuẩn hoá — đủ để sau này đối chiếu "bản nháp này tính
+ * từ đúng bảng lương nào" mà không cất họ tên, lương từng người. Số định danh (MST/CCCD) giao diện
+ * không gửi lên.
+ */
+async function soanTncn(db: Db, companyId: string, body: Row) {
+  const homNay = iso(lucGioVietNam());
+  const n = docNam(body.nam, homNay);
+  if (!n.ok) return { loi: n.cau };
+  const quy = Number(body.quy);
+  const bang = docBangLuong(body.bang_luong);
+  if (!bang.ok) return { loi: bang.cau };
+  const { cong_ty } = await docHoSo(db, companyId);
+  const ky = { nam: n.nam, quy };
+  const soan = soanToKhai05(bang.ds, { ten: cong_ty.ten, mst: cong_ty.mst, dia_chi: cong_ty.theo_mst?.dia_chi ?? null }, ky, homNay);
+  const canCu = soan.ok ? await kiemCanCu(db, soan.to_khai.can_cu, homNay) : [];
+  const quyenLoi = await docQuyenLoi(db, companyId, homNay);
+  const khoa = khoaKy(MAU_05, { loai: "quy", nam: n.nam, quy });
+  const { data: daTra } = soan.ok
+    ? await db.from("luot_to_khai").select("id").eq("company_id", companyId).eq("ly_do", "xuat").eq("ky_khoa", khoa).limit(1)
+    : { data: [] };
+  return {
+    ket_qua: {
+      nam: n.nam,
+      quy,
+      hom_nay: homNay,
+      cong_ty: congTyChoGiaoDien(cong_ty),
+      to_khai: soan.ok ? soan.to_khai : null,
+      nguoi: soan.ok ? soan.nguoi : [],
+      ly_do_khong_soan: soan.ok ? null : soan.ly_do,
+      can_cu: canCu,
+      thanh_toan: { ...quyenLoi, da_tra_ky_nay: !!daTra?.length },
+    },
+    soan,
+    khoa,
+    // Băm bảng lương ĐÃ chuẩn hoá (không phải thân yêu cầu thô): cùng số liệu → cùng mã.
+    bam_bang_luong: await maBam(JSON.stringify(bang.ds)),
+  };
+}
+
+/**
+ * Trả tiền cho một lần xuất: gói còn hạn, hoặc trừ lượt nguyên tử ở CSDL (kỳ đã trả thì không trừ nữa).
+ * `null` khi hết lượt — người gọi trả 402.
+ */
+async function traTienXuat(db: Db, companyId: string, khoa: string, coGoi: boolean): Promise<"goi" | "luot" | "da_tra_ky_nay" | null> {
+  if (coGoi) return "goi";
+  const { data: kq, error: loiTru } = await db.rpc("tru_luot_to_khai", { p_company: companyId, p_ky_khoa: khoa, p_to_khai_nhap: null });
+  if (loiTru) throw loiTru;
+  if (kq === "het_luot") return null;
+  return kq === "da_tru" ? "luot" : "da_tra_ky_nay";
+}
+
 /** MIMI-P1-003: sửa hồ sơ thuế và lưu bản nháp tờ khai là việc của kế toán trở lên. */
 const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   luu_ho_so: "sua_ho_so_thue",
@@ -324,6 +402,10 @@ const QUYEN_HANH_DONG: Record<string, HanhDong> = {
   dien_tao_phien: "soan_to_khai",
   dien_nhiem_vu: "soan_to_khai",
   dien_ghi: "soan_to_khai",
+  // 05/KK-TNCN: bảng lương là lương từng người — xem trước cũng cần quyền soạn tờ khai.
+  tncn_soan: "soan_to_khai",
+  tncn_luu_nhap: "soan_to_khai",
+  tncn_xuat: "soan_to_khai",
 };
 
 /** Điền hộ trên cổng ngoài chỉ chạy khi máy chủ bật cờ (cho mọi công ty, hoặc danh sách id công ty thử) — tắt được ngay. */
@@ -389,10 +471,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const ky = r.ky as KyToKhai;
       // Ảnh chụp pháp lý (P0-003): căn cứ kèm tình trạng hiệu lực lúc soạn + phiên bản bộ quy tắc, cùng vào mã băm.
       const noiDung = JSON.stringify({ to_khai: tk, can_cu: r.ket_qua.can_cu, phien_ban_he_luat: PHIEN_BAN_HE_LUAT });
-      const bam = Array.from(
-        new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(noiDung))),
-        (x) => x.toString(16).padStart(2, "0"),
-      ).join("");
+      const bam = await maBam(noiDung);
       const { data, error } = await db.from("to_khai_nhap").insert({
         company_id: company.id,
         mau: tk.mau,
@@ -440,26 +519,11 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const khoa = khoaKy(tk.mau, ky);
       const tt = r.ket_qua.thanh_toan;
 
-      let cachTra: "goi" | "luot" | "da_tra_ky_nay";
-      if (tt.goi) cachTra = "goi";
-      else {
-        const { data: kq, error: loiTru } = await db.rpc("tru_luot_to_khai", { p_company: company.id, p_ky_khoa: khoa, p_to_khai_nhap: null });
-        if (loiTru) throw loiTru;
-        if (kq === "het_luot") {
-          return json({
-            error: "Xuất tờ khai cần gói tháng. Doanh nghiệp có mã số thuế tra được ở Tổng cục Thuế thì miễn phí trọn đời.",
-            ma: "CAN_THANH_TOAN",
-            gia_mot_to: tt.gia_mot_to,
-          }, 402);
-        }
-        cachTra = kq === "da_tru" ? "luot" : "da_tra_ky_nay";
-      }
+      const cachTra = await traTienXuat(db, company.id, khoa, !!tt.goi);
+      if (!cachTra) return canThanhToan(tt.gia_mot_to);
 
       const noiDung = JSON.stringify({ to_khai: tk, can_cu: r.ket_qua.can_cu, phien_ban_he_luat: PHIEN_BAN_HE_LUAT });
-      const bam = Array.from(
-        new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(noiDung))),
-        (x) => x.toString(16).padStart(2, "0"),
-      ).join("");
+      const bam = await maBam(noiDung);
       const bayGio = new Date().toISOString();
       const { data, error } = await db.from("to_khai_nhap").insert({
         company_id: company.id,
@@ -716,6 +780,59 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         if (e instanceof LoiDien) return loi(e.ma, e.message, e.status);
         throw e;
       }
+    }
+
+    /*
+     * 05/KK-TNCN — xem trước, lưu nháp, xuất. Cùng bảng `to_khai_nhap`, cùng cách băm, cùng cách thu
+     * tiền với tờ khai hộ kinh doanh; chỉ khác chỗ số liệu đến từ bảng lương gửi kèm mỗi yêu cầu.
+     */
+    case "tncn_soan": {
+      const r = await soanTncn(db, company.id, body);
+      if (r.loi) return loi("THAM_SO", r.loi, 400);
+      return json(r.ket_qua);
+    }
+
+    case "tncn_luu_nhap":
+    case "tncn_xuat": {
+      const r = await soanTncn(db, company.id, body);
+      if (r.loi) return loi("THAM_SO", r.loi, 400);
+      if (!r.soan || !r.soan.ok || !r.ket_qua || !r.khoa) return loi("CHUA_SOAN_DUOC", (r.soan && !r.soan.ok ? r.soan.ly_do : null) ?? "Chưa soạn được tờ khai.", 409);
+      const tk = r.soan.to_khai;
+      const tt = r.ket_qua.thanh_toan;
+      const xuat = hanhDong === "tncn_xuat";
+      let cachTra: "goi" | "luot" | "da_tra_ky_nay" | null = null;
+      if (xuat) {
+        // Như tờ khai hộ kinh doanh: còn vướng chặn thì không trừ tiền, không xuất.
+        if (tk.san_sang.trang_thai === "bi_chan") {
+          return json({ error: tk.san_sang.vuong.filter((v) => v.chan).map((v) => v.cau).join(" "), ma: "CHUA_SAN_SANG", san_sang: tk.san_sang }, 409);
+        }
+        cachTra = await traTienXuat(db, company.id, r.khoa, !!tt.goi);
+        if (!cachTra) return canThanhToan(tt.gia_mot_to);
+      }
+      const bam = await maBam(JSON.stringify({ to_khai: tk, bam_bang_luong: r.bam_bang_luong, can_cu: r.ket_qua.can_cu, phien_ban_he_luat: PHIEN_BAN_HE_LUAT }));
+      const { data, error } = await db.from("to_khai_nhap").insert({
+        company_id: company.id,
+        mau: tk.mau,
+        nam: tk.ky.nam,
+        ky_loai: "quy",
+        quy: tk.ky.quy,
+        han_nop: tk.han_nop,
+        du_lieu: { ...tk, bam_bang_luong: r.bam_bang_luong, phien_ban_he_luat: PHIEN_BAN_HE_LUAT },
+        // Căn cứ trong kho (đã đối chiếu tự động) và căn cứ ngoài kho (văn bản gốc / nguồn thứ cấp) tách riêng.
+        can_cu: { kho: r.ket_qua.can_cu, ngoai_kho: tk.can_cu_tncn },
+        ma_bam: bam,
+        user_id: userId,
+        ...(xuat ? { da_xuat_luc: new Date().toISOString(), cach_tra: cachTra } : {}),
+      }).select("id, created_at").single();
+      if (error) throw error;
+      if (cachTra === "luot") {
+        await db.from("luot_to_khai").update({ to_khai_nhap_id: data.id })
+          .eq("company_id", company.id).eq("ly_do", "xuat").eq("ky_khoa", r.khoa).is("to_khai_nhap_id", null);
+      }
+      return json({
+        id: data.id, created_at: data.created_at, ma_bam: bam,
+        ...(xuat ? { cach_tra: cachTra, con_luot: cachTra === "luot" ? tt.con_luot - 1 : tt.con_luot } : {}),
+      });
     }
 
     case "ds_nhap": {
