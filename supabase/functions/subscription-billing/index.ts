@@ -170,15 +170,18 @@ Deno.serve(async (req) => {
      * khớp đúng.
      */
     // Mua lượt: chỉ dùng lại hoá đơn đang chờ khi CÙNG số lượt — khác số lượt là khác số tiền.
-    let timCho = supabase
-      .from("subscription_invoices")
-      .select("id, reference_code, amount, plan, created_at")
-      .eq("company_id", company.id)
-      .eq("status", "pending")
-      .eq("plan", khoaGoi);
-    if (muaLuot) timCho = timCho.eq("so_luot", soLuot);
-    if (muaXu) timCho = timCho.eq("so_xu", soXu);
-    const { data: dangCho } = await timCho
+    const timCho = () => {
+      let q = supabase
+        .from("subscription_invoices")
+        .select("id, reference_code, amount, plan, created_at")
+        .eq("company_id", company.id)
+        .eq("status", "pending")
+        .eq("plan", khoaGoi);
+      if (muaLuot) q = q.eq("so_luot", soLuot);
+      if (muaXu) q = q.eq("so_xu", soXu);
+      return q;
+    };
+    const { data: dangCho } = await timCho()
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -198,8 +201,14 @@ Deno.serve(async (req) => {
         })
         .select("id, reference_code, amount, plan, created_at")
         .single();
-      if (error) throw error;
-      hoaDon = data;
+      if (error) {
+        // 13/10/2026: hai lần bấm cùng lúc — khoá duy nhất `hoa_don_cho_mot_moi_mat_hang` chặn hoá đơn thứ hai;
+        // đọc lại hoá đơn của lần thứ nhất để khách chỉ có MỘT mã chuyển khoản.
+        if ((error as { code?: string }).code !== "23505") throw error;
+        const { data: lai } = await timCho().order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (!lai) throw error;
+        hoaDon = lai;
+      } else hoaDon = data;
     }
 
     return json({

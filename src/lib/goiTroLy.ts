@@ -29,7 +29,9 @@ export async function goiTroLy(hanhDong: string, du: Record<string, unknown> = {
     throw new LoiGoiHam(typeof body.error === 'string' ? body.error : `Lỗi ${res.status}`, res.status, body);
   }
   // Bản demo: nhớ lượt hỏi của phiên này để lịch sử chỉ hiện của chính người đang xem (lib/demoPhien.ts).
-  if (typeof body.hoi_thoai_id === 'string' && laEmailDemo(session.user?.email)) ghiNhoHoiThoaiDemo(body.hoi_thoai_id);
+  if (typeof body.hoi_thoai_id === 'string' && laEmailDemo(session.user?.email)) {
+    ghiNhoHoiThoaiDemo(body.hoi_thoai_id, { cau: String(du.cau ?? ''), tra_loi: typeof body.cau === 'string' ? body.cau : '' });
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return body as Record<string, any>;
 }

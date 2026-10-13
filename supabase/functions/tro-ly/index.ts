@@ -172,13 +172,21 @@ async function donQuyetDinhTreo(db: Db, companyId: string): Promise<void> {
  * Hỏng thì không làm mất câu trả lời — nhưng hành động cần xác nhận sẽ không có nhật ký, và
  * `xac_nhan` chặn lại ở đó.
  */
-async function ghiHoiThoai(db: Db, companyId: string, userId: string, cau: string, tl: TraLoi, moHinh: string | null): Promise<string | null> {
+/**
+ * Bản demo là MỘT tài khoản dùng chung: RLS theo `user_id` không tách được người này với người kia, nên mọi khách
+ * demo đọc được câu hỏi của nhau qua API (13/10/2026). Với công ty demo, máy chủ KHÔNG lưu chữ câu hỏi / câu trả
+ * lời — chữ chỉ nằm trong sessionStorage của tab người hỏi (`src/lib/demoPhien.ts`). Đề xuất vẫn lưu (dựng từ dữ
+ * liệu minh hoạ, không chứa chữ người dùng gõ) để bước xác nhận tra lại được.
+ */
+export const CHU_THAY_DEMO = "(bản demo — nội dung chỉ giữ trên trình duyệt của người hỏi)";
+
+async function ghiHoiThoai(db: Db, companyId: string, userId: string, cau: string, tl: TraLoi, moHinh: string | null, laDemo = false): Promise<string | null> {
   try {
     const { data, error } = await db.from("hoi_thoai_tro_ly").insert({
       company_id: companyId,
       user_id: userId,
-      cau_hoi: cau.slice(0, 1000),
-      cau_tra_loi: tl.cau.slice(0, 20_000),
+      cau_hoi: laDemo ? CHU_THAY_DEMO : cau.slice(0, 1000),
+      cau_tra_loi: laDemo ? "" : tl.cau.slice(0, 20_000),
       che_do: tl.che_do,
       mo_hinh: moHinh,
       nang_luc: tl.ket_qua.map((r) => r.nang_luc),
@@ -842,8 +850,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const cau = String(body.cau ?? "").trim().slice(0, DO_DAI_CAU_HOI);
       if (!cau) return loi("CAU_HOI", "Bạn chưa nhập câu hỏi.", 400);
       if (!khoaMoHinh || !cong) return json({ ke_hoach: null, ly_do: "Chưa bật mô hình." });
+      // Đóng chặt (13/10/2026): không đọc được sổ xu thì KHÔNG gọi mô hình — không để đốt chi phí AI không kiểm soát.
       const xu = await docXuTruocLuot(db, company.id, moc.homNay).catch(() => null);
-      if (xu && xu.so_du < 1) return json({ ke_hoach: null, ly_do: "Hết xu tháng này." });
+      if (!xu || xu.so_du < 1) return json({ ke_hoach: null, ly_do: xu ? "Hết xu tháng này." : "Chưa kiểm được năng lượng (xu)." });
       const lanGoi: LanGoi[] = [];
       try {
         const ncc = coDo(nhaCungCapCua(cong), "y_dinh", (l) => { lanGoi.push(l); void ghiLanGoi(db, company.id, l); });
@@ -890,7 +899,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         });
         if (chatViec.ketQua) {
           const tlViec = dungTraLoi({ ketQua: [chatViec.ketQua], cheDo: "co_dinh", cauHoi: cau });
-          const idViec = await ghiHoiThoai(db, company.id, userId, cau, tlViec, null);
+          const idViec = await ghiHoiThoai(db, company.id, userId, cau, tlViec, null, company.la_demo === true);
           return json({ ...tlViec, hoi_thoai_id: idViec });
         }
         hanhTrinh = chatViec.hanhTrinh;
@@ -918,8 +927,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       /*
        * XU (11/10/2026): lượt nào gọi mô hình thì trừ xu theo chi phí token THẬT của lượt đó; trả lời theo
        * mẫu cố định thì 0 xu. Hết xu → không gọi mô hình, rơi xuống đúng nhánh mẫu cố định bên dưới — tính
-       * năng thuế cốt lõi không bị chặn. Sổ xu lỗi (vd. migration chưa áp) thì KHÔNG chặn trả lời: ghi log
-       * và chạy như trước khi có xu.
+       * năng thuế cốt lõi không bị chặn. Sổ xu lỗi thì cũng trả lời theo mẫu cố định (đóng chặt, 13/10/2026).
+       * Hai lượt cùng lúc khi gần hết xu: kiểm trước, trừ sau, nên vượt tối đa bằng chi phí các lượt đang chạy
+       * song song — bị chặn trên bởi giới hạn tần suất `hoi` (30/phút); số dư không bao giờ âm (`tru_xu`).
        */
       let xuTruoc: XuTruocLuot | null = null;
       if (khoaMoHinh) {
@@ -928,7 +938,9 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
           return null;
         });
       }
-      const hetXu = !!xuTruoc && xuTruoc.so_du < 1;
+      // Đóng chặt (13/10/2026): sổ xu lỗi = coi như hết xu → trả lời theo luật cố định, không gọi mô hình. Trước đây
+      // sổ lỗi thì vẫn gọi mô hình mà không trừ xu: một lỗi CSDL là chi phí AI không còn trần.
+      const hetXu = !!khoaMoHinh && (!xuTruoc || xuTruoc.so_du < 1);
       const lanGoi: LanGoi[] = [];
       const truXu = async (thamChieu: string | null) => {
         if (!xuTruoc) return null;
@@ -963,7 +975,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             goiY: yDinh,
           });
           const tl = dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau });
-          const id = await ghiHoiThoai(db, company.id, userId, cau, tl, cong!.mo_hinh);
+          const id = await ghiHoiThoai(db, company.id, userId, cau, tl, cong!.mo_hinh, company.la_demo === true);
           const xu = await truXu(id);
           return json({ ...tl, hoi_thoai_id: id, ...(xu ? { xu: { da_tru: xu.da_tru, so_du: xu.so_du, han_muc: xuTruoc!.han_muc } } : {}) });
         } catch (e) {
@@ -979,7 +991,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const ketQua = [];
       for (const id of yDinh) ketQua.push(await chay(id));
       const tl = dungTraLoi({ ketQua: locDeXuat(ketQua, vaiTro), cheDo: "co_dinh", cauHoi: cau });
-      const idHt = await ghiHoiThoai(db, company.id, userId, cau, tl, null);
+      const idHt = await ghiHoiThoai(db, company.id, userId, cau, tl, null, company.la_demo === true);
       // Trả lời theo mẫu cố định: 0 xu. Báo `het` để giao diện nói rõ vì sao câu này không dùng mô hình.
       return json({ ...tl, hoi_thoai_id: idHt, ...(xuTruoc ? { xu: { da_tru: 0, so_du: Math.max(0, xuTruoc.so_du), han_muc: xuTruoc.han_muc, het: hetXu } } : {}) });
     }
@@ -1103,7 +1115,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         console.error("quet xu:", e instanceof Error ? e.message : e);
         return null;
       });
-      if (xuQuet && xuQuet.so_du < 1) {
+      if (!xuQuet || xuQuet.so_du < 1) {
         return loi("HET_XU", "MIMI đã hết năng lượng (xu) tháng này nên chưa đọc ảnh được. Bạn nhập tay ở trang Chứng từ chi phí, hoặc nạp thêm ở Cài đặt.", 402);
       }
       const lanGoiQuet: LanGoi[] = [];

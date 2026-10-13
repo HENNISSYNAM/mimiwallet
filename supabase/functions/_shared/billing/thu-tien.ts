@@ -58,7 +58,9 @@ export async function doiSoatTienVeMimi(db: Db, bayGio: Date = new Date()): Prom
     .select('*')
     .eq('status', 'pending');
   if (e1) throw new Error(`đọc hoá đơn: ${e1.message}`);
-  if (!hoaDon?.length) return { da_kich_hoat: 0, lech_so_tien: 0, chua_khop: 0 };
+  // 13/10/2026: trước khi khớp tiền mới, cấp lại quyền lợi của hoá đơn đã trả mà lần trước lỗi giữa chừng.
+  const capLai = await capLaiQuyenLoiConThieu(db, bayGio);
+  if (!hoaDon?.length) return { da_kich_hoat: capLai, lech_so_tien: 0, chua_khop: 0 };
 
   const tu = new Date(bayGio.getTime() - 60 * 86400_000).toISOString().slice(0, 10);
   const { data: tienVe, error: e2 } = await db.from('tien_ve_mimi')
@@ -89,7 +91,17 @@ export async function doiSoatTienVeMimi(db: Db, bayGio: Date = new Date()): Prom
     }).eq('id', h.id).eq('status', 'pending').select('id');
     if (!thang?.length) continue;
     await db.from('tien_ve_mimi').update({ hoa_don_id: h.id }).eq('id', m.transaction_id).is('hoa_don_id', null);
-    await apDung(db, h, bayGio);
+    /*
+     * Cấp quyền lợi. Lỗi ở đây KHÔNG được làm mất quyền lợi: hoá đơn đã `paid` nhưng chưa có `ap_dung_luc` sẽ được
+     * `capLaiQuyenLoiConThieu` cấp lại ở vòng đối soát sau (webhook kế tiếp hoặc cron 10 phút).
+     */
+    try {
+      await apDung(db, h, bayGio);
+      await danhDauDaApDung(db, h.id, bayGio);
+    } catch (e) {
+      console.error(`cấp quyền lợi hoá đơn ${h.id} lỗi — sẽ thử lại:`, e instanceof Error ? e.message : e);
+      continue;
+    }
     daKichHoat += 1;
     await ghiSuKien(db, h.company_id, null, 'first_paid_action', { loai: h.so_xu ? 'xu' : h.so_luot ? 'luot_to_khai' : 'goi' });
     // Báo trong app (và lên điện thoại ở lần quét kế tiếp). Lỗi ở đây không được làm hỏng việc thu tiền.
@@ -119,6 +131,31 @@ export async function doiSoatTienVeMimi(db: Db, bayGio: Date = new Date()): Prom
 // deno-lint-ignore no-explicit-any
 type Row = Record<string, any>;
 
+async function danhDauDaApDung(db: Db, id: string, bayGio: Date) {
+  const { error } = await db.from('subscription_invoices').update({ ap_dung_luc: bayGio.toISOString() }).eq('id', id);
+  if (error) console.error(`đánh dấu đã cấp ${id}:`, error.message);
+}
+
+/**
+ * Hoá đơn đã `paid` mà chưa có `ap_dung_luc` (lỗi giữa "đánh dấu đã trả" và "cấp quyền lợi") → cấp lại. Mọi bước
+ * của `apDung` chạy lại được mà không cấp trùng. Cột chưa có (migration chưa áp) thì bỏ qua, không làm hỏng đối soát.
+ */
+export async function capLaiQuyenLoiConThieu(db: Db, bayGio: Date = new Date()): Promise<number> {
+  const { data, error } = await db.from('subscription_invoices').select('*').eq('status', 'paid').is('ap_dung_luc', null);
+  if (error) { console.error('đọc hoá đơn chưa cấp:', error.message); return 0; }
+  let so = 0;
+  for (const h of (data ?? []) as Row[]) {
+    try {
+      await apDung(db, h, bayGio);
+      await danhDauDaApDung(db, h.id, bayGio);
+      so += 1;
+    } catch (e) {
+      console.error(`cấp lại quyền lợi ${h.id} lỗi:`, e instanceof Error ? e.message : e);
+    }
+  }
+  return so;
+}
+
 /** Hoá đơn đã trả: cộng lượt, hoặc gia hạn gói. */
 async function apDung(db: Db, h: Row, bayGio: Date): Promise<void> {
   if (h.so_xu) {
@@ -140,7 +177,13 @@ async function apDung(db: Db, h: Row, bayGio: Date): Promise<void> {
    * lại thì lần sau khách đợi sát hạn mới trả — tự tạo ra rủi ro gián đoạn.
    */
   const { data: dangCo } = await db.from('subscriptions')
-    .select('current_period_end').eq('company_id', h.company_id).maybeSingle();
+    .select('current_period_end, last_invoice_id').eq('company_id', h.company_id).maybeSingle();
+  // Chạy lại sau lỗi (13/10/2026): hoá đơn này đã gia hạn gói rồi thì không gia hạn lần hai — chỉ cấp tiếp phần xu.
+  if (dangCo?.last_invoice_id === h.id) {
+    const { error: loiXu0 } = await db.rpc('cong_xu_hoa_don', { p_company: h.company_id, p_so_xu: hanMucXuThang(h.plan), p_ly_do: 'nang_goi', p_hoa_don: h.id });
+    if (loiXu0) console.error('nâng hạn mức xu:', loiXu0.message);
+    return;
+  }
   const moc = dangCo?.current_period_end && new Date(dangCo.current_period_end) > bayGio
     ? new Date(dangCo.current_period_end)
     : bayGio;

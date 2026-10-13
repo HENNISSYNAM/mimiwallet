@@ -30,15 +30,33 @@ export function idHoiThoaiPhienDemo(): string[] {
   }
 }
 
-export function ghiNhoHoiThoaiDemo(id: string): void {
+const KHOA_CHU = 'mimi.demo.hoi_thoai_chu';
+
+export function ghiNhoHoiThoaiDemo(id: string, chu?: { cau: string; tra_loi: string }): void {
   try {
     const ds = idHoiThoaiPhienDemo();
     if (!ds.includes(id)) sessionStorage.setItem(KHOA, JSON.stringify([...ds, id].slice(-300)));
+    // 13/10/2026: máy chủ không còn lưu chữ của bản demo (ai dùng chung tài khoản demo cũng đọc được qua API) —
+    // chữ của phiên này chỉ nằm ở đây.
+    if (chu) {
+      const m = chuPhienDemo();
+      m[id] = { cau: chu.cau.slice(0, 1000), tra_loi: chu.tra_loi.slice(0, 20_000) };
+      sessionStorage.setItem(KHOA_CHU, JSON.stringify(m));
+    }
   } catch { /* không nhớ được thì lịch sử phiên này trống — không hiện nhầm của người khác */ }
 }
 
+export function chuPhienDemo(): Record<string, { cau: string; tra_loi: string }> {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(KHOA_CHU) ?? '{}');
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function batDauPhienDemo(): Promise<void> {
-  try { sessionStorage.removeItem(KHOA); } catch { /* bỏ qua */ }
+  try { sessionStorage.removeItem(KHOA); sessionStorage.removeItem(KHOA_CHU); } catch { /* bỏ qua */ }
   const { data } = await supabase.auth.getSession();
   const uid = data.session?.user?.id;
   if (!uid) return;
@@ -49,5 +67,5 @@ export async function batDauPhienDemo(): Promise<void> {
 export async function ketThucPhienDemo(): Promise<void> {
   const ids = idHoiThoaiPhienDemo();
   if (ids.length) await supabase.from('hoi_thoai_tro_ly').delete().in('id', ids);
-  try { sessionStorage.removeItem(KHOA); } catch { /* bỏ qua */ }
+  try { sessionStorage.removeItem(KHOA); sessionStorage.removeItem(KHOA_CHU); } catch { /* bỏ qua */ }
 }

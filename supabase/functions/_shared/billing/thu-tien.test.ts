@@ -182,3 +182,41 @@ describe('mua xu và nâng gói qua chuyển khoản (12/10/2026)', () => {
     expect(giaXu(5000)).toBeGreaterThan(g);
   });
 });
+
+describe('lỗi giữa "đã trả" và "cấp quyền lợi" (13/10/2026)', () => {
+  it('cộng xu lỗi lần đầu: hoá đơn vẫn chưa "đã cấp"; vòng sau cấp lại đúng một lần, không mất, không trùng', async () => {
+    const { giaXu } = await import('./bang-gia');
+    const db = dbGia({
+      subscription_invoices: [hoaDon({ id: 'hx', company_id: 'c1', reference_code: 'MIMIXU02', amount: giaXu(1000), plan: 'xu', so_xu: 1000 })],
+      tien_ve_mimi: [tien({ id: 't1', so_tien: giaXu(1000), noi_dung: 'MIMIXU02' })],
+    });
+    const rpcThat = db.rpc;
+    let lan = 0;
+    (db as { rpc: typeof rpcThat }).rpc = async (ten: string, a: Dong) => (++lan === 1 ? { data: null, error: { message: 'mất kết nối' } } : rpcThat(ten, a));
+    expect((await doiSoatTienVeMimi(db, BAY_GIO)).da_kich_hoat).toBe(0);
+    expect(db.bang.subscription_invoices[0]).toMatchObject({ status: 'paid' });
+    expect(db.bang.subscription_invoices[0].ap_dung_luc ?? null).toBeNull();
+    expect(db.bang.so_xu ?? []).toHaveLength(0);
+    // Vòng sau (webhook kế tiếp / cron): cấp lại.
+    await doiSoatTienVeMimi(db, BAY_GIO);
+    expect(db.bang.so_xu).toEqual([expect.objectContaining({ thay_doi: 1000, hoa_don_id: 'hx' })]);
+    expect(db.bang.subscription_invoices[0].ap_dung_luc).toBeTruthy();
+    await doiSoatTienVeMimi(db, BAY_GIO);
+    expect(db.bang.so_xu).toHaveLength(1);
+  });
+
+  it('gói tháng cấp lại sau lỗi: không gia hạn hai lần cho cùng một hoá đơn', async () => {
+    const { GOI_THANG } = await import('./bang-gia');
+    const db = dbGia({
+      subscription_invoices: [hoaDon({ id: 'hg', company_id: 'c1', reference_code: 'MIMIGOI2', amount: GOI_THANG.starter.amount, plan: 'starter' })],
+      tien_ve_mimi: [tien({ id: 't2', so_tien: GOI_THANG.starter.amount, noi_dung: 'MIMIGOI2' })],
+    });
+    await doiSoatTienVeMimi(db, BAY_GIO);
+    const het = db.bang.subscriptions[0].current_period_end;
+    // Giả lập lần cấp trước lỗi SAU khi đã gia hạn: xoá dấu "đã cấp" rồi đối soát lại.
+    delete db.bang.subscription_invoices[0].ap_dung_luc;
+    await doiSoatTienVeMimi(db, BAY_GIO);
+    expect(db.bang.subscriptions[0].current_period_end).toBe(het);
+    expect(db.bang.subscription_invoices[0].ap_dung_luc).toBeTruthy();
+  });
+});

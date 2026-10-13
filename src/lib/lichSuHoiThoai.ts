@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import type { TraLoiNao } from '@/lib/troLy';
-import { dangLaDemo, idHoiThoaiPhienDemo } from '@/lib/demoPhien';
+import { chuPhienDemo, dangLaDemo, idHoiThoaiPhienDemo } from '@/lib/demoPhien';
 
 /**
  * Lịch sử hỏi MIMI cho thanh bên trái, kiểu ChatGPT/Claude (29/09/2026).
@@ -87,6 +87,8 @@ export async function docLichSu(): Promise<DongLichSu[]> {
     .order('tao_luc', { ascending: false })
     .limit(SO_DONG_TOI_DA);
   if (error) throw new Error(error.message);
+  // Demo: chữ câu hỏi lấy từ trình duyệt (máy chủ không lưu chữ của bản demo).
+  if (demo) { const chu = chuPhienDemo(); return (data ?? []).map((d) => ({ ...d, cau_hoi: chu[d.id]?.cau ?? d.cau_hoi })); }
   return data ?? [];
 }
 
@@ -101,11 +103,12 @@ export async function docCuoc(ids: string[]): Promise<{ cau: string; traLoi: Tra
     .in('id', ids)
     .order('tao_luc', { ascending: true });
   if (error) throw new Error(error.message);
+  const chu = (await dangLaDemo()) ? chuPhienDemo() : {};
   return (data ?? []).map((d) => ({
-    cau: d.cau_hoi,
+    cau: chu[d.id]?.cau ?? d.cau_hoi,
     luc: Date.parse(d.tao_luc),
     traLoi: {
-      cau: d.cau_tra_loi,
+      cau: chu[d.id]?.tra_loi ?? d.cau_tra_loi,
       buoc: [],
       ket_qua: [],
       che_do: d.che_do === 'mo_hinh' ? 'mo_hinh' : 'co_dinh',
