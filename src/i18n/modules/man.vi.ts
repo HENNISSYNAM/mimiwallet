@@ -54,6 +54,8 @@ const m = {
     },
 
     troLy: {
+      nangLuong: { sapHet: 'Sắp hết năng lượng tháng này', nhanHonNhip: 'Đang dùng nhanh hơn nhịp tháng', het: 'Đã hết năng lượng tháng này', daDung: 'đã dùng {{pt}}%', napLai: 'nạp lại {{ngay}}', napThem: 'Nạp thêm', dong: 'Đóng' },
+      nghe: { dangNghe: 'Đang nghe — bấm để dừng', noi: 'Nói câu hỏi', chonNgonNgu: 'Ngôn ngữ nghe' },
       vungHoi: 'Hỏi MIMI Assistant',
       tieuDe: 'MIMI có thể giúp gì cho bạn?',
       gioiThieu: 'MIMI đang trông sổ cho {{congTy}}. Việc gì cần sửa số liệu, MIMI sẽ hỏi bạn trước.',

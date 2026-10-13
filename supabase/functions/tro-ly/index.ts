@@ -31,7 +31,7 @@ import { coBangChungMayChu, doiChieuQuyetDinh, PHUT_TREO } from "../_shared/doi-
 import { nhanYDinh } from "../_shared/tro-ly/y-dinh.ts";
 import { chonNguon, type DoanLuat } from "../_shared/luat/nguon-luat.ts";
 import { dungTraLoi } from "../_shared/tro-ly/tra-loi.ts";
-import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
+import { docAnhChungTu, docKetQuaQuet, giaiMaAnh, hoiMoHinh, kiemAnh, LoiMoHinh, maNgonNguTraLoi, type TinNhanCu } from "../_shared/tro-ly/mo-hinh.ts";
 import {
   congNgay,
   danhSachKetNoi,
@@ -972,6 +972,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
             chay,
             congTy: company.name,
             homNay: moc.homNay,
+            ngonNgu: maNgonNguTraLoi(body.ngon_ngu),
             goiY: yDinh,
           });
           const tl = dungTraLoi({ ketQua: locDeXuat(r.ket_qua, vaiTro), cheDo: "mo_hinh", cauMoHinh: r.cau, cauHoi: cau });

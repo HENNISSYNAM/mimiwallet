@@ -19,6 +19,35 @@ type NhanDien = any;
 export const layNhanDien = (): NhanDien => (typeof window === 'undefined' ? null : (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition ?? null);
 
 export type LoiNghe = 'khong_ho_tro' | 'khong_nghe_thay' | 'khong_co_mic' | 'loi';
+
+/**
+ * NGHE ĐA NGÔN NGỮ (13/10/2026). Nhận dạng của trình duyệt cần biết trước ngôn ngữ (không tự đoán được), nên
+ * người dùng chọn ở nút mũi tên cạnh mic — mặc định theo ngôn ngữ giao diện đang dùng. Lựa chọn lưu ở máy.
+ */
+export const NGON_NGU_NGHE = [
+  { ma: 'vi', bcp47: 'vi-VN', ten: 'Tiếng Việt' },
+  { ma: 'en', bcp47: 'en-US', ten: 'English' },
+  { ma: 'ko', bcp47: 'ko-KR', ten: '한국어' },
+  { ma: 'zh', bcp47: 'zh-CN', ten: '中文' },
+] as const;
+export type MaNgonNguNghe = (typeof NGON_NGU_NGHE)[number]['ma'];
+const KHOA_NGHE = 'mimi.nghe.ngon_ngu';
+
+/** Ngôn ngữ nghe: đã chọn → dùng; chưa chọn → theo ngôn ngữ giao diện; lạ → tiếng Việt. */
+export function ngonNguNghe(giaoDien?: string | null): MaNgonNguNghe {
+  try {
+    const da = localStorage.getItem(KHOA_NGHE);
+    if (da && NGON_NGU_NGHE.some((n) => n.ma === da)) return da as MaNgonNguNghe;
+  } catch { /* chế độ riêng tư */ }
+  const g = (giaoDien ?? '').slice(0, 2);
+  return (NGON_NGU_NGHE.find((n) => n.ma === g)?.ma ?? 'vi') as MaNgonNguNghe;
+}
+
+export function luuNgonNguNghe(ma: MaNgonNguNghe) {
+  try { localStorage.setItem(KHOA_NGHE, ma); } catch { /* bỏ qua */ }
+}
+
+export const bcp47Cua = (ma: MaNgonNguNghe) => NGON_NGU_NGHE.find((n) => n.ma === ma)!.bcp47;
 /** Hộp MIMI đang mở: xin bật mic, hoặc chỉ cách mở lại mic đã bị chặn. */
 export type HoiQuyenMic = null | 'xin' | 'bi_chan';
 
@@ -35,7 +64,7 @@ async function docQuyenMic(): Promise<QuyenMic> {
   }
 }
 
-export function useNgheGiong(o: { onCau: (cau: string) => void; onLoi?: (l: LoiNghe) => void }) {
+export function useNgheGiong(o: { onCau: (cau: string) => void; onLoi?: (l: LoiNghe) => void; ngonNgu?: MaNgonNguNghe }) {
   const [dangNghe, setDangNghe] = useState(false);
   const [hoiQuyen, setHoiQuyen] = useState<HoiQuyenMic>(null);
   const nd = useRef<NhanDien>(null);
@@ -48,7 +77,7 @@ export function useNgheGiong(o: { onCau: (cau: string) => void; onLoi?: (l: LoiN
     const Lop = layNhanDien();
     if (!Lop) { goiLai.current.onLoi?.('khong_ho_tro'); return; }
     const n = new Lop();
-    n.lang = 'vi-VN';
+    n.lang = bcp47Cua(goiLai.current.ngonNgu ?? 'vi');
     n.interimResults = false;
     n.maxAlternatives = 1;
     n.onresult = (ev: { results: { 0: { 0: { transcript: string } } } }) => {

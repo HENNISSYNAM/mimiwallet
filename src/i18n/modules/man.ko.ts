@@ -43,6 +43,8 @@ const m = {
     },
 
     troLy: {
+      nangLuong: { sapHet: '이번 달 에너지가 얼마 남지 않았어요', nhanHonNhip: '예상보다 빨리 소진될 페이스예요', het: '이번 달 에너지를 모두 사용했어요', daDung: '{{pt}}% 사용', napLai: '{{ngay}} 재충전', napThem: '충전하기', dong: '닫기' },
+      nghe: { dangNghe: '듣는 중 — 눌러서 중지', noi: '질문을 말하기', chonNgonNgu: '듣기 언어' },
       vungHoi: 'MIMI 어시스턴트에게 묻기',
       tieuDe: 'MIMI가 무엇을 도와드릴까요?',
       gioiThieu: 'MIMI가 {{congTy}}의 장부를 살피고 있어요. 숫자를 바꿔야 할 때는 먼저 여쭤볼게요.',

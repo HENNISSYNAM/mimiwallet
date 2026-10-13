@@ -12,8 +12,9 @@ import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import {
   AlertTriangle, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2, Mic, Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, Square, Volume2, X,
 } from 'lucide-react';
-import { CAU_LOI_NGHE, useNgheGiong } from '@/hooks/useNgheGiong';
+import { CAU_LOI_NGHE, luuNgonNguNghe, NGON_NGU_NGHE, ngonNguNghe, useNgheGiong, type MaNgonNguNghe } from '@/hooks/useNgheGiong';
 import { HopBatMic } from '@/components/giong/HopBatMic';
+import { DaiNangLuong } from '@/components/mimi/ThanhNangLuong';
 import { docGiong, dungDoc } from '@/lib/docGiong';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HopTaiUngDung } from '@/components/layout/HopTaiUngDung';
@@ -104,7 +105,7 @@ const THE = 'flex flex-col rounded-2xl border border-border bg-card p-5 text-lef
 
 export default function TroLyPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [boiCanh, setBoiCanh] = useState<BoiCanh | null>(null);
   const [loiBoiCanh, setLoiBoiCanh] = useState<string | null>(null);
   // Lượt hỏi nằm ở BỘ NÃO DÙNG CHUNG (`store/naoMimi.ts`): pet, trang này và Tổng quan thấy cùng kết quả.
@@ -253,9 +254,12 @@ export default function TroLyPage() {
     if (bangGiong && kq.trangThai === 'xong' && kq.traLoi?.cau) void docTraLoi(kq.id, kq.traLoi.cau);
   }, [dangHoi, luot, phamVi, docTraLoi, lamHo, lamNhiemVuWeb]);
 
+  // Nghe đa ngôn ngữ (13/10/2026): mặc định theo ngôn ngữ giao diện, đổi ở mũi tên cạnh mic.
+  const [ngonNguNgheChon, setNgonNguNgheChon] = useState<MaNgonNguNghe>(() => ngonNguNghe(i18n.language));
   const nghe = useNgheGiong({
     onCau: (cau) => void hoi(cau.slice(0, 1000), phamVi, true),
     onLoi: (l) => toast.error(CAU_LOI_NGHE[l]),
+    ngonNgu: ngonNguNgheChon,
   });
 
   // Bấm thông báo kết quả trên pet → mở trang này với ĐÚNG câu hỏi và câu trả lời pet đã nhận (pet hỏi
@@ -369,7 +373,8 @@ export default function TroLyPage() {
             </p>
           )}
 
-          {/* Ô hỏi, chip nhóm việc nằm bên trong như mẫu */}
+          {/* Ô hỏi, chip nhóm việc nằm bên trong như mẫu. Dải năng lượng ngay trên ô, kiểu Claude (13/10/2026). */}
+          <div className="mt-6 text-left"><DaiNangLuong /></div>
           <form
             onSubmit={(e) => { e.preventDefault(); void hoi(nhap); }}
             className="mx-auto mt-7 max-w-3xl rounded-2xl border border-border bg-card text-left shadow-[0_8px_30px_hsla(220,30%,20%,0.08)]"
@@ -434,12 +439,40 @@ export default function TroLyPage() {
                   onClick={() => void nghe.batDau()}
                   disabled={dangHoi}
                   aria-pressed={nghe.dangNghe}
-                  aria-label={nghe.dangNghe ? 'Đang nghe — bấm để dừng' : 'Nói câu hỏi'}
-                  title={nghe.dangNghe ? 'Đang nghe — bấm để dừng' : 'Nói câu hỏi (tiếng Việt)'}
+                  aria-label={nghe.dangNghe ? t('man.troLy.nghe.dangNghe') : t('man.troLy.nghe.noi')}
+                  title={nghe.dangNghe ? t('man.troLy.nghe.dangNghe') : `${t('man.troLy.nghe.noi')} (${NGON_NGU_NGHE.find((n) => n.ma === ngonNguNgheChon)?.ten})`}
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${nghe.dangNghe ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                 >
                   <Mic size={18} className={nghe.dangNghe ? 'animate-pulse' : undefined} />
                 </button>
+              )}
+              {nghe.coHoTro && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={t('man.troLy.nghe.chonNgonNgu')}
+                      title={t('man.troLy.nghe.chonNgonNgu')}
+                      className="-ml-1 flex h-10 shrink-0 items-center gap-0.5 rounded-xl px-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {ngonNguNgheChon.toUpperCase()} <ChevronDown size={12} aria-hidden />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-44 p-1">
+                    <p className="px-2 py-1 text-xs text-muted-foreground">{t('man.troLy.nghe.chonNgonNgu')}</p>
+                    {NGON_NGU_NGHE.map((n) => (
+                      <button
+                        key={n.ma}
+                        type="button"
+                        aria-pressed={n.ma === ngonNguNgheChon}
+                        onClick={() => { setNgonNguNgheChon(n.ma); luuNgonNguNghe(n.ma); }}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                      >
+                        {n.ten} {n.ma === ngonNguNgheChon && <Check size={14} aria-hidden />}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
               )}
               <button
                 type="submit"

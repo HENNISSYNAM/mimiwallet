@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Gauge, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { idCongTyDangDung, SU_KIEN_DOI_CONG_TY } from '@/lib/congTyDangDung';
 import { useSubscriptionStore } from '@/store/useSubscriptionStore';
@@ -194,6 +196,63 @@ export function NangLuongChiTiet() {
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * DẢI NĂNG LƯỢNG TRÊN Ô NHẬP — kiểu Claude (13/10/2026, chủ sản phẩm: "học cách hiển thị của Claude thay vì hiển thị
+ * trên pet"). Một dòng mảnh trên ô hỏi: đã dùng bao nhiêu %, ngày nạp lại, và cảnh báo khi đang dùng nhanh hơn nhịp
+ * tháng — chỉ hiện khi đáng nói, đóng được, và hiện lại khi chạm mốc cao hơn.
+ */
+export interface TrangThaiDai {
+  daDung: number;
+  /** Đang dùng nhanh hơn số ngày đã trôi qua của tháng (+10 điểm % đệm). */
+  nhanHonNhip: boolean;
+  /** Mốc để nhớ người dùng đã đóng dải ở mức nào: 50 / 75 / 90 / 100. */
+  moc: 50 | 75 | 90 | 100;
+  ngayNap: Date;
+}
+
+export function trangThaiDai(n: Pick<NangLuong, 'phanTram' | 'hanMuc'>, bayGio: Date = new Date()): TrangThaiDai | null {
+  if (n.hanMuc <= 0) return null;
+  const daDung = Math.max(0, Math.min(100, 100 - n.phanTram));
+  const ngayTrongThang = new Date(bayGio.getFullYear(), bayGio.getMonth() + 1, 0).getDate();
+  const nhip = Math.round((bayGio.getDate() / ngayTrongThang) * 100);
+  const nhanHonNhip = daDung >= 20 && daDung > nhip + 10;
+  if (daDung < 50 && !nhanHonNhip) return null;
+  const moc = daDung >= 100 ? 100 : daDung >= 90 ? 90 : daDung >= 75 ? 75 : 50;
+  return { daDung, nhanHonNhip, moc, ngayNap: new Date(bayGio.getFullYear(), bayGio.getMonth() + 1, 1) };
+}
+
+const KHOA_DONG_DAI = 'mimi.nang_luong.dong_moc';
+
+export function DaiNangLuong() {
+  const { t, i18n } = useTranslation();
+  const { nangLuong } = useNangLuong();
+  const [dongMoc, setDongMoc] = useState<number>(() => {
+    try { return Number(sessionStorage.getItem(KHOA_DONG_DAI) ?? 0); } catch { return 0; }
+  });
+  if (!nangLuong) return null;
+  const tt = trangThaiDai(nangLuong);
+  if (!tt || tt.moc <= dongMoc) return null;
+  const ngay = new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'numeric' }).format(tt.ngayNap);
+  const dong = () => {
+    setDongMoc(tt.moc);
+    try { sessionStorage.setItem(KHOA_DONG_DAI, String(tt.moc)); } catch { /* bỏ qua */ }
+  };
+  const tieuDe = tt.daDung >= 100 ? t('man.troLy.nangLuong.het') : tt.nhanHonNhip ? t('man.troLy.nangLuong.nhanHonNhip') : t('man.troLy.nangLuong.sapHet');
+  return (
+    <div role="status" className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-muted/60 px-3 py-2 text-sm" data-mimi-nang-luong={nangLuong.muc}>
+      <Gauge size={15} className="shrink-0 text-muted-foreground" aria-hidden />
+      <p className="min-w-0 flex-1 truncate">
+        <span className="font-medium text-foreground">{tieuDe}</span>
+        <span className="text-muted-foreground"> · {t('man.troLy.nangLuong.daDung', { pt: tt.daDung })} · {t('man.troLy.nangLuong.napLai', { ngay })}</span>
+      </p>
+      <Link to="/dashboard/settings#nang-luong" className="shrink-0 text-xs font-medium text-primary hover:underline">{t('man.troLy.nangLuong.napThem')}</Link>
+      <button type="button" onClick={dong} aria-label={t('man.troLy.nangLuong.dong')} className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
+        <X size={14} aria-hidden />
+      </button>
     </div>
   );
 }

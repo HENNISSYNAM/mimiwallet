@@ -43,6 +43,8 @@ const m = {
     },
 
     troLy: {
+      nangLuong: { sapHet: 'Running low on energy this month', nhanHonNhip: 'On pace to run out early', het: 'Out of energy this month', daDung: '{{pt}}% used', napLai: 'resets {{ngay}}', napThem: 'Top up', dong: 'Dismiss' },
+      nghe: { dangNghe: 'Listening — click to stop', noi: 'Speak your question', chonNgonNgu: 'Listening language' },
       vungHoi: 'Ask MIMI Assistant',
       tieuDe: 'What can MIMI do for you?',
       gioiThieu: 'MIMI is looking after the books for {{congTy}}. Before changing any figures, MIMI asks you first.',

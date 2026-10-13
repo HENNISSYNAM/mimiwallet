@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
@@ -21,7 +22,8 @@ export async function goiTroLy(hanhDong: string, du: Record<string, unknown> = {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/tro-ly`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ hanh_dong: hanhDong, ...(await kemCongTy(du)) }),
+    // Ngôn ngữ giao diện → ngôn ngữ MIMI trả lời (13/10/2026).
+    body: JSON.stringify({ hanh_dong: hanhDong, ngon_ngu: i18n.language, ...(await kemCongTy(du)) }),
     ...(tc.signal ? { signal: tc.signal } : {}),
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;

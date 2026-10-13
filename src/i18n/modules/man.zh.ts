@@ -43,6 +43,8 @@ const m = {
     },
 
     troLy: {
+      nangLuong: { sapHet: '本月能量即将用完', nhanHonNhip: '按当前速度将提前用完', het: '本月能量已用完', daDung: '已用 {{pt}}%', napLai: '{{ngay}} 重置', napThem: '充值', dong: '关闭' },
+      nghe: { dangNghe: '正在聆听 — 点击停止', noi: '说出您的问题', chonNgonNgu: '聆听语言' },
       vungHoi: '向 MIMI 助手提问',
       tieuDe: 'MIMI 能为你做什么？',
       gioiThieu: 'MIMI 正在帮{{congTy}}看账。需要改动数据时，MIMI 会先问你。',
