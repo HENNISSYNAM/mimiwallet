@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as SuKienTro } from 'react';
 import { ArrowLeft, ArrowRight, Camera, Check, Crop, FileDown, ImagePlus, Loader2, RotateCw, ScanLine, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { CheDoQuet } from '@/lib/quet/lamRo';
 import type { BonGoc } from '@/lib/quet/phoiCanh';
@@ -33,12 +34,6 @@ interface Trang extends AnhNguon {
 type Buoc = 'chup' | 'chinh' | 'ds';
 type LoiMayAnh = 'bi_tu_choi' | 'khong_co' | 'khong_ho_tro' | 'loi';
 
-const CAU_LOI: Record<LoiMayAnh, string> = {
-  bi_tu_choi: 'MIMI chưa được phép dùng máy ảnh. Bật quyền máy ảnh cho trang này trong cài đặt trình duyệt — hoặc chọn ảnh có sẵn bên dưới.',
-  khong_co: 'Không tìm thấy máy ảnh trên thiết bị này. Chọn ảnh có sẵn, hoặc mở MIMI trên điện thoại để chụp.',
-  khong_ho_tro: 'Trình duyệt không cho mở máy ảnh ở đây. Chọn ảnh có sẵn, hoặc chụp bằng máy ảnh điện thoại.',
-  loi: 'Chưa mở được máy ảnh (có thể ứng dụng khác đang dùng). Chọn ảnh có sẵn hoặc thử lại.',
-};
 
 /** Đổi lỗi getUserMedia thành lý do người dùng hiểu được. */
 export function loiMayAnh(e: unknown): LoiMayAnh {
@@ -48,17 +43,13 @@ export function loiMayAnh(e: unknown): LoiMayAnh {
   return 'loi';
 }
 
-const CHE_DO: { khoa: CheDoQuet; nhan: string }[] = [
-  { khoa: 'tai_lieu', nhan: 'Tài liệu' },
-  { khoa: 'mau', nhan: 'Màu' },
-  { khoa: 'goc', nhan: 'Ảnh gốc' },
-];
+const CHE_DO: CheDoQuet[] = ['tai_lieu', 'mau', 'goc'];
 
 const kichCo = (b: number) => (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 let dem = 0;
 const idMoi = () => `t${Date.now().toString(36)}${(dem++).toString(36)}`;
 
-export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI đọc', cheDoMacDinh = 'tai_lieu', tenTep = 'quet-mimi' }: {
+export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh, cheDoMacDinh = 'tai_lieu', tenTep = 'quet-mimi' }: {
   mo: boolean;
   onDong: () => void;
   /** Có thì hiện nút đưa trang đầu (data URL JPEG) vào luồng sẵn có — đọc chứng từ, đính kèm. */
@@ -67,6 +58,7 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
   cheDoMacDinh?: CheDoQuet;
   tenTep?: string;
 }) {
+  const { t: dich } = useTranslation();
   const [buoc, setBuoc] = useState<Buoc>('chup');
   const [trang, setTrang] = useState<Trang[]>([]);
   const [dangChinh, setDangChinh] = useState<number>(-1);
@@ -159,7 +151,7 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
       }));
     } catch (e) {
       setTrang((ds) => ds.map((x) => (x.id === id ? { ...x, dangDung: false } : x)));
-      toast.error(e instanceof Error ? e.message : 'Chưa dựng được trang này.');
+      toast.error(e instanceof Error ? e.message : dich('ui1.quet.chuaDung'));
     }
   }, []);
 
@@ -172,9 +164,9 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
       setTrang(trangRef.current);
       setDangChinh(trangRef.current.length - 1);
       setBuoc('chinh');
-      if (!a.timThay) toast.info('Chưa thấy rõ mép tờ giấy — kéo bốn góc tròn vào đúng bốn góc giấy.');
+      if (!a.timThay) toast.info(dich('ui1.quet.chuaThayMep'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Không đọc được ảnh này.');
+      toast.error(e instanceof Error ? e.message : dich('ui1.quet.khongDocAnh'));
     } finally {
       setDangNhan(false);
     }
@@ -198,12 +190,12 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
         setTrang(trangRef.current);
         void dungLai(t.id, cheDo);
       } catch {
-        toast.error(`Không đọc được ảnh ${f.name}.`);
+        toast.error(dich('ui1.quet.khongDocAnhTen', { ten: f.name }));
       }
     }
     setDangNhan(false);
     setBuoc('ds');
-    if (lech) toast.info(`${lech} trang chưa thấy rõ mép giấy — bấm "Chỉnh góc" ở trang đó.`);
+    if (lech) toast.info(dich('ui1.quet.lechNhieu', { n: lech }));
   };
 
   const chup = () => {
@@ -257,9 +249,9 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
       const pdf = taoPdf(byte, `${tenTep} ${ngayTep()}`);
       const ten = `${tenTep}-${ngayTep()}.pdf`;
       taiTep(new Blob([pdf], { type: 'application/pdf' }), ten);
-      toast.success(`Đã tải ${ten} — ${trang.length} trang, ${kichCo(pdf.length)}.`);
+      toast.success(dich('ui1.quet.daTai', { ten, n: trang.length, co: kichCo(pdf.length) }));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chưa tạo được PDF.');
+      toast.error(e instanceof Error ? e.message : dich('ui1.quet.chuaPdf'));
     } finally {
       setDangXuat(false);
     }
@@ -274,7 +266,7 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
       donDep();
       onDungAnh(anh);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Không đọc được trang.');
+      toast.error(e instanceof Error ? e.message : dich('ui1.quet.khongDocTrang'));
     }
   };
 
@@ -288,49 +280,49 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
     <Dialog open={mo} onOpenChange={(v) => { if (!v && !dangXuat) dong(); }}>
       <DialogContent className="max-h-[94vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><ScanLine size={18} aria-hidden /> Quét giấy tờ</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><ScanLine size={18} aria-hidden /> {dich('ui1.quet.tieuDe')}</DialogTitle>
           <DialogDescription>
-            {buoc === 'chup' && 'Đặt tờ giấy trên mặt bàn tối màu, đủ sáng, chụp thẳng từ trên xuống. Ảnh xử lý ngay trên máy bạn.'}
-            {buoc === 'chinh' && 'Kéo bốn góc tròn vào đúng bốn góc tờ giấy. MIMI sẽ nắn phẳng phần bên trong.'}
-            {buoc === 'ds' && `${trang.length} trang. Sắp lại, xoay, hoặc thêm trang rồi tải một tệp PDF khổ A4.`}
+            {buoc === 'chup' && dich('ui1.quet.moTaChup')}
+            {buoc === 'chinh' && dich('ui1.quet.moTaChinh')}
+            {buoc === 'ds' && dich('ui1.quet.moTaDs', { n: trang.length })}
           </DialogDescription>
         </DialogHeader>
 
         {/* Ô chọn ảnh dùng chung cho mọi bước. `capture` mở thẳng máy ảnh sau trên điện thoại. */}
-        <input ref={oChon} type="file" accept="image/*" multiple className="hidden" aria-label="Chọn ảnh giấy tờ" onChange={(e) => void chonTep(e.target.files)} />
-        <input ref={oChup} type="file" accept="image/*" capture="environment" className="hidden" aria-label="Chụp bằng máy ảnh điện thoại" onChange={(e) => void chonTep(e.target.files)} />
+        <input ref={oChon} type="file" accept="image/*" multiple className="hidden" aria-label={dich('ui1.quet.chonAnhAria')} onChange={(e) => void chonTep(e.target.files)} />
+        <input ref={oChup} type="file" accept="image/*" capture="environment" className="hidden" aria-label={dich('ui1.quet.chupDtAria')} onChange={(e) => void chonTep(e.target.files)} />
 
         {buoc === 'chup' && (
           <div className="space-y-3">
             <div className="relative flex aspect-[3/4] max-h-[60vh] w-full items-center justify-center overflow-hidden rounded-xl bg-black sm:aspect-[4/3]">
               <video ref={video} playsInline muted className={`h-full w-full object-contain ${camSan ? '' : 'hidden'}`} />
-              {!camSan && !loiCam && <Loader2 className="animate-spin text-white/70" aria-label="Đang mở máy ảnh" />}
-              {loiCam && <p role="alert" className="max-w-sm px-6 text-center text-sm text-white">{CAU_LOI[loiCam]}</p>}
+              {!camSan && !loiCam && <Loader2 className="animate-spin text-white/70" aria-label={dich('ui1.quet.dangMoCam')} />}
+              {loiCam && <p role="alert" className="max-w-sm px-6 text-center text-sm text-white">{dich(`ui1.quet.loi_${loiCam}`)}</p>}
               {dangNhan && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm text-white" role="status">
-                  <Loader2 size={16} className="mr-2 animate-spin" /> Đang tìm mép tờ giấy…
+                  <Loader2 size={16} className="mr-2 animate-spin" /> {dich('ui1.quet.dangTimMep')}
                 </div>
               )}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {camSan && (
                 <button type="button" onClick={chup} disabled={dangNhan} className={nutChinh}>
-                  <Camera size={16} /> Chụp trang
+                  <Camera size={16} /> {dich('ui1.quet.chupTrang')}
                 </button>
               )}
               {loiCam && (
                 <button type="button" onClick={() => oChup.current?.click()} disabled={dangNhan} className={nutChinh}>
-                  <Camera size={16} /> Chụp bằng máy ảnh
+                  <Camera size={16} /> {dich('ui1.quet.chupMayAnh')}
                 </button>
               )}
               <button type="button" onClick={() => oChon.current?.click()} disabled={dangNhan} className={nutPhu}>
-                <ImagePlus size={16} /> Chọn ảnh có sẵn
+                <ImagePlus size={16} /> {dich('ui1.quet.chonAnh')}
               </button>
               {loiCam && loiCam !== 'khong_ho_tro' && (
-                <button type="button" onClick={() => void batMayAnh()} className={nutPhu}>Thử mở lại máy ảnh</button>
+                <button type="button" onClick={() => void batMayAnh()} className={nutPhu}>{dich('ui1.quet.moLaiCam')}</button>
               )}
               {trang.length > 0 && (
-                <button type="button" onClick={() => setBuoc('ds')} className={nutPhu}>Xem {trang.length} trang đã quét</button>
+                <button type="button" onClick={() => setBuoc('ds')} className={nutPhu}>{dich('ui1.quet.xemDaQuet', { n: trang.length })}</button>
               )}
             </div>
           </div>
@@ -341,55 +333,55 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
             <KhungChinhGoc url={tc.nguonUrl} rong={tc.rong} cao={tc.cao} goc={tc.goc} onDoi={doiGoc} />
             <div className="flex flex-wrap justify-between gap-2">
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => doiGoc(khungMacDinh(tc.rong, tc.cao, 0))} className={nutPhu}>Lấy cả ảnh</button>
+                <button type="button" onClick={() => doiGoc(khungMacDinh(tc.rong, tc.cao, 0))} className={nutPhu}>{dich('ui1.quet.layCaAnh')}</button>
                 <button type="button" className={nutPhu} onClick={() => void timLaiGoc(tc).then((r) => {
                   doiGoc(r.goc);
-                  if (!r.timThay) toast.info('Vẫn chưa thấy rõ mép giấy — kéo góc bằng tay nhé.');
-                })}>Tự tìm lại</button>
+                  if (!r.timThay) toast.info(dich('ui1.quet.vanChuaThay'));
+                })}>{dich('ui1.quet.tuTimLai')}</button>
               </div>
-              <button type="button" onClick={xongChinh} className={nutChinh}><Check size={16} /> Xong trang này</button>
+              <button type="button" onClick={xongChinh} className={nutChinh}><Check size={16} /> {dich('ui1.quet.xongTrang')}</button>
             </div>
           </div>
         )}
 
         {buoc === 'ds' && (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Chế độ quét">
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={dich('ui1.quet.cheDoAria')}>
               {CHE_DO.map((c) => (
-                <button key={c.khoa} type="button" role="radio" aria-checked={cheDo === c.khoa} onClick={() => doiCheDo(c.khoa)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${cheDo === c.khoa ? 'border-foreground bg-foreground text-background' : 'border-border text-foreground hover:bg-accent'}`}>
-                  {c.nhan}
+                <button key={c} type="button" role="radio" aria-checked={cheDo === c} onClick={() => doiCheDo(c)}
+                  className={`rounded-full border px-3 py-1.5 text-sm ${cheDo === c ? 'border-foreground bg-foreground text-background' : 'border-border text-foreground hover:bg-accent'}`}>
+                  {dich(`ui1.quet.cd_${c}`)}
                 </button>
               ))}
             </div>
-            <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Các trang đã quét">
+            <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label={dich('ui1.quet.cacTrangAria')}>
               {trang.map((t, i) => (
                 <li key={t.id} className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
                   <div className="relative flex aspect-[3/4] items-center justify-center bg-accent">
-                    {t.ketQuaUrl && <img src={t.ketQuaUrl} alt={`Trang ${i + 1}`} className="h-full w-full object-contain" />}
-                    {(t.dangDung || !t.ketQuaUrl) && <Loader2 className="absolute animate-spin text-muted-foreground" aria-label="Đang xử lý trang" />}
+                    {t.ketQuaUrl && <img src={t.ketQuaUrl} alt={dich('ui1.quet.trangN', { n: i + 1 })} className="h-full w-full object-contain" />}
+                    {(t.dangDung || !t.ketQuaUrl) && <Loader2 className="absolute animate-spin text-muted-foreground" aria-label={dich('ui1.quet.dangXuLy')} />}
                     <span className="absolute left-1.5 top-1.5 rounded-md bg-background/90 px-1.5 text-xs font-medium tabular-nums text-foreground">{i + 1}</span>
                   </div>
                   <div className="flex justify-between p-1">
-                    <button type="button" className={nutNho} disabled={i === 0} onClick={() => doiCho(i, i - 1)} aria-label={`Đưa trang ${i + 1} lên trước`}><ArrowLeft size={15} /></button>
-                    <button type="button" className={nutNho} onClick={() => xoayTrang(t.id)} aria-label={`Xoay trang ${i + 1}`}><RotateCw size={15} /></button>
-                    <button type="button" className={nutNho} onClick={() => { setDangChinh(i); setBuoc('chinh'); }} aria-label={`Chỉnh góc trang ${i + 1}`}><Crop size={15} /></button>
-                    <button type="button" className={nutNho} onClick={() => xoaTrang(t.id)} aria-label={`Xoá trang ${i + 1}`}><Trash2 size={15} /></button>
-                    <button type="button" className={nutNho} disabled={i === trang.length - 1} onClick={() => doiCho(i, i + 1)} aria-label={`Đưa trang ${i + 1} ra sau`}><ArrowRight size={15} /></button>
+                    <button type="button" className={nutNho} disabled={i === 0} onClick={() => doiCho(i, i - 1)} aria-label={dich('ui1.quet.lenTruoc', { n: i + 1 })}><ArrowLeft size={15} /></button>
+                    <button type="button" className={nutNho} onClick={() => xoayTrang(t.id)} aria-label={dich('ui1.quet.xoay', { n: i + 1 })}><RotateCw size={15} /></button>
+                    <button type="button" className={nutNho} onClick={() => { setDangChinh(i); setBuoc('chinh'); }} aria-label={dich('ui1.quet.chinhGoc', { n: i + 1 })}><Crop size={15} /></button>
+                    <button type="button" className={nutNho} onClick={() => xoaTrang(t.id)} aria-label={dich('ui1.quet.xoa', { n: i + 1 })}><Trash2 size={15} /></button>
+                    <button type="button" className={nutNho} disabled={i === trang.length - 1} onClick={() => doiCho(i, i + 1)} aria-label={dich('ui1.quet.raSau', { n: i + 1 })}><ArrowRight size={15} /></button>
                   </div>
                 </li>
               ))}
             </ol>
             <div className="flex flex-wrap justify-between gap-2">
-              <button type="button" onClick={() => setBuoc('chup')} className={nutPhu}><Camera size={16} /> Thêm trang</button>
+              <button type="button" onClick={() => setBuoc('chup')} className={nutPhu}><Camera size={16} /> {dich('ui1.quet.themTrang')}</button>
               <div className="flex flex-wrap gap-2">
                 {onDungAnh && (
                   <button type="button" onClick={() => void dungAnh()} disabled={!trang[0]?.ketQua || trang[0].dangDung} className={nutPhu}>
-                    <Send size={16} /> {nhanDungAnh}
+                    <Send size={16} /> {nhanDungAnh ?? dich('ui1.quet.guiDoc')}
                   </button>
                 )}
                 <button type="button" onClick={() => void xuatPdf()} disabled={!trang.length || dangBan || dangXuat} className={nutChinh}>
-                  {dangXuat ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />} Tải PDF
+                  {dangXuat ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />} {dich('ui1.quet.taiPdf')}
                 </button>
               </div>
             </div>
@@ -406,10 +398,11 @@ export function QuetTaiLieu({ mo, onDong, onDungAnh, nhanDungAnh = 'Gửi MIMI �
  * có viền đen hai bên. `touch-action: none` để kéo góc không cuộn cả hộp thoại.
  */
 export function KhungChinhGoc({ url, rong, cao, goc, onDoi }: { url: string; rong: number; cao: number; goc: BonGoc; onDoi: (g: BonGoc) => void }) {
+  const { t: dich } = useTranslation();
   const svg = useRef<SVGSVGElement>(null);
   const dangKeo = useRef<number>(-1);
   const r = Math.max(rong, cao) * 0.022;
-  const TEN = ['trên trái', 'trên phải', 'dưới phải', 'dưới trái'];
+  const TEN = ['tt', 'tp', 'dp', 'dt'];
 
   const doi = (i: number, x: number, y: number) => {
     const g = goc.map((p) => ({ ...p })) as BonGoc;
@@ -449,7 +442,7 @@ export function KhungChinhGoc({ url, rong, cao, goc, onDoi }: { url: string; ron
       onPointerUp={() => { dangKeo.current = -1; }}
       onPointerCancel={() => { dangKeo.current = -1; }}
       role="group"
-      aria-label="Khung chỉnh bốn góc tờ giấy"
+      aria-label={dich('ui1.quet.khungAria')}
     >
       <image href={url} x={0} y={0} width={rong} height={cao} />
       {/* Làm tối phần ngoài tờ giấy để thấy rõ vùng sẽ giữ lại. */}
@@ -466,7 +459,7 @@ export function KhungChinhGoc({ url, rong, cao, goc, onDoi }: { url: string; ron
             className="cursor-grab"
             tabIndex={0}
             role="slider"
-            aria-label={`Góc ${TEN[i]}`}
+            aria-label={dich(`ui1.quet.goc_${TEN[i]}`)}
             aria-valuetext={`${Math.round(p.x)}, ${Math.round(p.y)}`}
             onKeyDown={phim(i)}
             onPointerDown={(e) => {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { FileSearch, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { goiTroLy } from '@/lib/goiTroLy';
@@ -16,6 +17,8 @@ import { dinhDang, type BangChung, type LoaiBangChung } from '@/lib/troLy';
 type BanGhi = Record<string, unknown>;
 
 /** Mỗi loại bản ghi hiện vài trường đủ để nhận ra nó; không đổ cả hàng cột ra màn hình. */
+/** Định dạng số/ngày hiển thị theo ngôn ngữ đang chọn (đơn vị ₫ giữ nguyên). */
+const locHienThi = () => (({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
 const CACH_HIEN: Record<LoaiBangChung, { ngay?: string; chinh: string[]; tien?: { khoa: string; don_vi: 'vnd' | 'usd' | 'so' } }> = {
   giao_dich: { ngay: 'transaction_date', chinh: ['counter_account_name', 'merchant_name', 'payment_reference'], tien: { khoa: 'amount', don_vi: 'vnd' } },
   hoa_don_vao: { ngay: 'issued_at', chinh: ['invoice_number', 'counterparty_name'], tien: { khoa: 'total_amount', don_vi: 'vnd' } },
@@ -82,7 +85,7 @@ export function NutBangChung({ bangChung }: { bangChung: BangChung[] }) {
           type="button"
           className="mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <FileSearch size={12} aria-hidden /> {t('man.troLy.bangChung.nut', { so: new Intl.NumberFormat('vi-VN').format(tong) })}
+          <FileSearch size={12} aria-hidden /> {t('man.troLy.bangChung.nut', { so: new Intl.NumberFormat(locHienThi()).format(tong) })}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="max-h-80 w-[min(92vw,26rem)] overflow-y-auto rounded-2xl p-3 text-left text-xs">

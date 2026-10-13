@@ -1,5 +1,6 @@
 import { motion, useScroll, useTransform, useMotionValue, useSpring, useInView, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -93,7 +94,7 @@ function MetricItem({
     <motion.div ref={ref} {...fadeUp(delay)} className="text-center group">
       <p className="font-mono text-3xl md:text-5xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors duration-300">
         {prefix}
-        {shown.toLocaleString('vi-VN')}
+        {shown.toLocaleString(i18n.language)}
         {suffix}
       </p>
       <p className="text-sm text-muted-foreground mt-2 font-medium">{label}</p>

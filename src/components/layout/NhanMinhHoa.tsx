@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FlaskConical } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { congTyDangDung, SU_KIEN_DOI_CONG_TY } from '@/lib/congTyDangDung';
 
 /**
@@ -10,6 +11,7 @@ import { congTyDangDung, SU_KIEN_DOI_CONG_TY } from '@/lib/congTyDangDung';
  * bao giờ thấy nó: cờ `la_demo` do máy chủ đặt, trình duyệt không sửa được.
  */
 export function NhanMinhHoa() {
+  const { t } = useTranslation();
   const [laDemo, setLaDemo] = useState(false);
 
   useEffect(() => {
@@ -28,8 +30,8 @@ export function NhanMinhHoa() {
     <div role="note" className="relative z-20 mb-4 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
       <FlaskConical size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
       <p>
-        <span className="font-medium">Cửa hàng minh hoạ.</span>{' '}
-        <span className="text-muted-foreground">Mọi con số ở đây là dữ liệu mẫu của một cửa hàng hư cấu, không phải của doanh nghiệp nào. Dữ liệu tự làm mới mỗi đêm.</span>
+        <span className="font-medium">{t('ui2.minhHoa.tieuDe')}</span>{' '}
+        <span className="text-muted-foreground">{t('ui2.minhHoa.moTa')}</span>
       </p>
     </div>
   );

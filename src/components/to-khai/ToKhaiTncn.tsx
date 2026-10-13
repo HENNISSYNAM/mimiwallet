@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Calculator, ExternalLink, FileDown, FileUp, Loader2, Plus, Save, ScrollText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { DUONG_DAN_NOP_TO_KHAI, goiToKhai, type KetQuaTncn } from '@/lib/goiToKhai';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { docTep } from '@/lib/saoKe';
@@ -20,6 +21,8 @@ import { BoHoSoNop } from './BoHoSoNop';
  */
 
 const so = (n: number | null | undefined) => (n === null || n === undefined ? '' : new Intl.NumberFormat('vi-VN').format(n));
+/** Số trên màn hình (không phải mẫu in): theo ngôn ngữ đang chọn. */
+const soMan = (n: number | null | undefined) => (n === null || n === undefined ? '' : new Intl.NumberFormat(({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN').format(n));
 const ngay = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
 
 /** Các quý soạn được: từ quý 3/2026 (mẫu TT 89) tới quý hiện tại. */
@@ -336,9 +339,9 @@ export function ToKhaiTncn() {
                   {kq.nguoi.map((n) => (
                     <tr key={n.thu_tu}>
                       <td className="py-1.5">{n.ho_ten}{!n.mimi_tinh && <span className="ml-1 text-xs text-muted-foreground">({t('app.toKhai.tncn.banNhap')})</span>}</td>
-                      <td className="py-1.5 text-right tabular-nums">{so(n.thu_nhap_chiu_thue_quy)}</td>
-                      <td className="py-1.5 text-right tabular-nums">{n.thu_nhap_tinh_thue_quy === null ? '—' : so(n.thu_nhap_tinh_thue_quy)}</td>
-                      <td className="py-1.5 text-right tabular-nums">{so(n.thue_quy)}</td>
+                      <td className="py-1.5 text-right tabular-nums">{soMan(n.thu_nhap_chiu_thue_quy)}</td>
+                      <td className="py-1.5 text-right tabular-nums">{n.thu_nhap_tinh_thue_quy === null ? '—' : soMan(n.thu_nhap_tinh_thue_quy)}</td>
+                      <td className="py-1.5 text-right tabular-nums">{soMan(n.thue_quy)}</td>
                     </tr>
                   ))}
                 </tbody>

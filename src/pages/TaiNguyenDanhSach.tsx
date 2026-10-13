@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -12,6 +13,7 @@ import NotFound from './NotFound';
  * không bày bài mẫu.
  */
 export function DanhSachBai({ loai }: { loai: LoaiTaiNguyen }) {
+  const { t } = useTranslation();
   const [bai, setBai] = useState<BaiTaiNguyen[] | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
 
@@ -21,16 +23,16 @@ export function DanhSachBai({ loai }: { loai: LoaiTaiNguyen }) {
     setLoi(null);
     docDanhSach(loai)
       .then((d) => { if (!huy) setBai(d); })
-      .catch(() => { if (!huy) setLoi('Chưa tải được danh sách. Thử lại sau ít phút.'); });
+      .catch(() => { if (!huy) setLoi(t('ui2.taiNguyen.loiDs')); });
     return () => { huy = true; };
-  }, [loai]);
+  }, [loai, t]);
 
   if (loi) return <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">{loi}</p>;
   if (!bai) {
-    return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" /> Đang tải…</p>;
+    return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" /> {t('ui2.chung.dangTai')}</p>;
   }
   if (!bai.length) {
-    return <p className="rounded-2xl border border-dashed border-border p-10 text-center text-muted-foreground">{CAU_HINH_LOAI[loai].rong}</p>;
+    return <p className="rounded-2xl border border-dashed border-border p-10 text-center text-muted-foreground">{t(`ui2.taiNguyen.loai.${loai}.rong`, { defaultValue: CAU_HINH_LOAI[loai].rong })}</p>;
   }
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -40,6 +42,7 @@ export function DanhSachBai({ loai }: { loai: LoaiTaiNguyen }) {
 }
 
 export default function TaiNguyenDanhSach() {
+  const { t } = useTranslation();
   const { loai: duong } = useParams();
   const loai = loaiTuDuong(duong);
   useEffect(() => {
@@ -53,13 +56,13 @@ export default function TaiNguyenDanhSach() {
       <Navbar />
       <section className="mimi-hero-warm border-b border-border/60">
         <div className="container mx-auto px-4 pt-32 pb-14 lg:px-8 lg:pt-40">
-          <nav aria-label="Đường dẫn" className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-foreground">Trang chủ</Link>
+          <nav aria-label={t('ui2.taiNguyen.duongDan')} className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-foreground">{t('ui2.taiNguyen.trangChu')}</Link>
             <ChevronRight size={14} />
-            <span>Tài nguyên</span>
+            <span>{t('ui2.taiNguyen.taiNguyen')}</span>
           </nav>
-          <h1 className="mimi-tieu-de-trang mt-4 text-foreground">{ch.ten}</h1>
-          <p className="mimi-doan-dan mt-4 max-w-2xl text-muted-foreground">{ch.mo}</p>
+          <h1 className="mimi-tieu-de-trang mt-4 text-foreground">{t(`ui2.taiNguyen.loai.${loai}.ten`, { defaultValue: ch.ten })}</h1>
+          <p className="mimi-doan-dan mt-4 max-w-2xl text-muted-foreground">{t(`ui2.taiNguyen.loai.${loai}.mo`, { defaultValue: ch.mo })}</p>
         </div>
       </section>
       <section className="py-16">

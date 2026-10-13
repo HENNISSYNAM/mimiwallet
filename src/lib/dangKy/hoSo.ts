@@ -7,6 +7,7 @@
  * hoặc chặn bộ nhớ thì trang vẫn chạy, chỉ là không nhớ.
  */
 
+import i18n from 'i18next';
 import type { LoaiHinh } from './loaiHinh';
 
 export interface DiaChi {
@@ -259,46 +260,46 @@ export interface LoiHoSo {
  */
 export function kiemTraHoSo(hs: HoSoDangKy): LoiHoSo[] {
   const loi: LoiHoSo[] = [];
-  const thieu = (gia: string, truong: string, ten: string) => { if (!gia.trim()) loi.push({ truong, thong_bao: `Thiếu ${ten}.` }); };
-  thieu(hs.ten_vi, 'ten_vi', hs.loai === 'hkd' ? 'tên hộ kinh doanh' : 'tên công ty bằng tiếng Việt');
-  thieu(hs.tru_so.so_nha, 'tru_so', 'số nhà/đường của trụ sở');
-  thieu(hs.tru_so.xa, 'tru_so', 'xã/phường/đặc khu của trụ sở');
-  thieu(hs.tru_so.tinh, 'tru_so', 'tỉnh/thành phố của trụ sở');
-  thieu(hs.dai_dien.ho_ten, 'dai_dien', hs.loai === 'hkd' ? 'họ tên chủ hộ' : 'họ tên người đại diện theo pháp luật');
-  thieu(hs.dai_dien.so_dinh_danh, 'dai_dien', 'số định danh cá nhân của người ký');
+  const thieu = (gia: string, truong: string, ten: string) => { if (!gia.trim()) loi.push({ truong, thong_bao: i18n.t('ui1.dkl.thieu', { ten }) }); };
+  thieu(hs.ten_vi, 'ten_vi', hs.loai === 'hkd' ? i18n.t('ui1.dkl.tenHo') : i18n.t('ui1.dkl.tenCty'));
+  thieu(hs.tru_so.so_nha, 'tru_so', i18n.t('ui1.dkl.soNha'));
+  thieu(hs.tru_so.xa, 'tru_so', i18n.t('ui1.dkl.xa'));
+  thieu(hs.tru_so.tinh, 'tru_so', i18n.t('ui1.dkl.tinh'));
+  thieu(hs.dai_dien.ho_ten, 'dai_dien', hs.loai === 'hkd' ? i18n.t('ui1.dkl.hoTenChuHo') : i18n.t('ui1.dkl.hoTenDaiDien'));
+  thieu(hs.dai_dien.so_dinh_danh, 'dai_dien', i18n.t('ui1.dkl.dinhDanhKy'));
 
   const nganh = hs.nganh.filter((n) => n.ma.trim() || n.ten.trim());
-  if (nganh.length === 0) loi.push({ truong: 'nganh', thong_bao: 'Cần ít nhất một ngành, nghề kinh doanh.' });
+  if (nganh.length === 0) loi.push({ truong: 'nganh', thong_bao: i18n.t('ui1.dkl.itNhatNganh') });
   hs.nganh.forEach((n, i) => {
     if (!n.ma.trim() && !n.ten.trim()) return;
     const laChinh = i === hs.nganh_chinh;
     // Doanh nghiệp: mọi ngành ghi mã cấp bốn. Hộ kinh doanh: chỉ ngành chính bắt buộc mã (chú thích 2 Mẫu số 1 PL II).
     const canMa = hs.loai !== 'hkd' || laChinh;
-    if (canMa && !/^\d{4}$/.test(n.ma.trim())) loi.push({ truong: 'nganh', thong_bao: `Ngành "${n.ten || n.ma}": mã ngành cấp bốn phải đúng 4 chữ số.` });
-    if (!n.ten.trim()) loi.push({ truong: 'nganh', thong_bao: `Ngành mã ${n.ma}: thiếu tên ngành.` });
+    if (canMa && !/^\d{4}$/.test(n.ma.trim())) loi.push({ truong: 'nganh', thong_bao: i18n.t('ui1.dkl.ma4So', { nganh: n.ten || n.ma }) });
+    if (!n.ten.trim()) loi.push({ truong: 'nganh', thong_bao: i18n.t('ui1.dkl.thieuTenNganh', { ma: n.ma }) });
   });
   if (!(hs.nganh_chinh >= 0 && hs.nganh_chinh < hs.nganh.length) || !(hs.nganh[hs.nganh_chinh]?.ma.trim() || hs.nganh[hs.nganh_chinh]?.ten.trim())) {
-    loi.push({ truong: 'nganh', thong_bao: 'Chọn một ngành, nghề kinh doanh chính.' });
+    loi.push({ truong: 'nganh', thong_bao: i18n.t('ui1.dkl.chonNganhChinh') });
   }
-  if (!(hs.von > 0)) loi.push({ truong: 'von', thong_bao: hs.loai === 'hkd' ? 'Thiếu vốn kinh doanh.' : 'Thiếu vốn điều lệ.' });
+  if (!(hs.von > 0)) loi.push({ truong: 'von', thong_bao: hs.loai === 'hkd' ? i18n.t('ui1.dkl.thieuVonKd') : i18n.t('ui1.dkl.thieuVonDl') });
 
   if (hs.loai === 'tnhh2' || hs.loai === 'ctcp') {
     const tv = hs.thanh_vien;
-    if (hs.loai === 'tnhh2' && (tv.length < 2 || tv.length > 50)) loi.push({ truong: 'thanh_vien', thong_bao: 'Công ty TNHH hai thành viên trở lên cần từ 2 đến 50 thành viên.' });
-    if (hs.loai === 'ctcp' && tv.length < 3) loi.push({ truong: 'thanh_vien', thong_bao: 'Công ty cổ phần cần tối thiểu 3 cổ đông sáng lập.' });
+    if (hs.loai === 'tnhh2' && (tv.length < 2 || tv.length > 50)) loi.push({ truong: 'thanh_vien', thong_bao: i18n.t('ui1.dkl.tnhh2SoTv') });
+    if (hs.loai === 'ctcp' && tv.length < 3) loi.push({ truong: 'thanh_vien', thong_bao: i18n.t('ui1.dkl.ctcpSoCd') });
     tv.forEach((t, i) => {
-      if (!t.ho_ten.trim()) loi.push({ truong: 'thanh_vien', thong_bao: `${hs.loai === 'ctcp' ? 'Cổ đông' : 'Thành viên'} thứ ${i + 1}: thiếu họ tên.` });
-      if (!(t.von > 0)) loi.push({ truong: 'thanh_vien', thong_bao: `${hs.loai === 'ctcp' ? 'Cổ đông' : 'Thành viên'} thứ ${i + 1}: thiếu giá trị vốn góp.` });
+      if (!t.ho_ten.trim()) loi.push({ truong: 'thanh_vien', thong_bao: i18n.t(hs.loai === 'ctcp' ? 'ui1.dkl.cdThieuTen' : 'ui1.dkl.tvThieuTen', { n: i + 1 }) });
+      if (!(t.von > 0)) loi.push({ truong: 'thanh_vien', thong_bao: i18n.t(hs.loai === 'ctcp' ? 'ui1.dkl.cdThieuVon' : 'ui1.dkl.tvThieuVon', { n: i + 1 }) });
     });
     const tong = tv.reduce((s, t) => s + (t.von || 0), 0);
     if (hs.von > 0 && tong > 0 && tong !== hs.von) {
-      loi.push({ truong: 'thanh_vien', thong_bao: `Tổng vốn góp (${soCoDau(tong)} đồng) chưa bằng vốn điều lệ (${soCoDau(hs.von)} đồng).` });
+      loi.push({ truong: 'thanh_vien', thong_bao: i18n.t('ui1.dkl.tongVonLech', { tong: soCoDau(tong), von: soCoDau(hs.von) }) });
     }
     if (hs.loai === 'ctcp') {
-      if (!(hs.menh_gia > 0)) loi.push({ truong: 'menh_gia', thong_bao: 'Thiếu mệnh giá cổ phần.' });
+      if (!(hs.menh_gia > 0)) loi.push({ truong: 'menh_gia', thong_bao: i18n.t('ui1.dkl.thieuMenhGia') });
       else {
-        if (hs.von % hs.menh_gia !== 0) loi.push({ truong: 'menh_gia', thong_bao: 'Vốn điều lệ phải chia hết cho mệnh giá cổ phần.' });
-        tv.forEach((t, i) => { if (t.von > 0 && t.von % hs.menh_gia !== 0) loi.push({ truong: 'thanh_vien', thong_bao: `Cổ đông thứ ${i + 1}: vốn góp không chia hết cho mệnh giá.` }); });
+        if (hs.von % hs.menh_gia !== 0) loi.push({ truong: 'menh_gia', thong_bao: i18n.t('ui1.dkl.chiaHet') });
+        tv.forEach((t, i) => { if (t.von > 0 && t.von % hs.menh_gia !== 0) loi.push({ truong: 'thanh_vien', thong_bao: i18n.t('ui1.dkl.cdKhongChiaHet', { n: i + 1 }) }); });
       }
     }
   }

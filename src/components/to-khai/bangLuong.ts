@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import type { O } from '../../../supabase/functions/_shared/sao-ke/doc-sao-ke.ts';
 import type { LoaiNguoiLaoDong } from '../../../supabase/functions/_shared/thue-tncn/khau-tru.ts';
 
@@ -64,13 +65,13 @@ export function docBangTinh(bang: O[][]): { ok: true; ds: DongNhap[] } | { ok: f
     const tn1 = chu(h[4]);
     if (tn1 && !/^[\d.\s]+$/.test(tn1)) continue; // dòng tiêu đề
     const loai = docLoai(h[2]);
-    if (!loai) return { ok: false, cau: `Hàng ${i + 1} của tệp: cột Loại phải là "HĐLĐ", "khác" hoặc "không cư trú".` };
+    if (!loai) return { ok: false, cau: i18n.t('ui1.bangLuong.loaiSai', { hang: i + 1 }) };
     ds.push({
       khoa: khoaMoi(), ho_ten: ten, ma_dinh_danh: chu(h[1]), loai, so_nguoi_phu_thuoc: chu(h[3]) || '0',
       thang: [0, 1, 2].map((j) => ({ tn: chu(h[4 + j * 2]), bh: chu(h[5 + j * 2]) })),
       thue_da_khau_tru_quy: chu(h[10]),
     });
   }
-  if (!ds.length) return { ok: false, cau: 'Tệp không có dòng người lao động nào (cột đầu là họ tên).' };
+  if (!ds.length) return { ok: false, cau: i18n.t('ui1.bangLuong.trong') };
   return { ok: true, ds };
 }

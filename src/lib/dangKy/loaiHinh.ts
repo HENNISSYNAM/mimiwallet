@@ -6,6 +6,7 @@
  * thì không gợi ý — trang nói rõ điều đó thay vì đoán.
  */
 
+import i18n from 'i18next';
 import { CC, type CanCu } from './nguon';
 
 export type LoaiHinh = 'hkd' | 'tnhh1' | 'tnhh2' | 'ctcp';
@@ -122,32 +123,32 @@ export interface GoiY {
 export function goiYLoaiHinh(tl: TraLoiChon): GoiY {
   const ly_do: string[] = [];
   const n = tl.so_nguoi;
-  if (n == null || !Number.isFinite(n) || n < 1) return { loai: null, ly_do: ['Cho MIMI biết có bao nhiêu người cùng góp vốn.'] };
-  if (tl.nho_le_gia_dinh == null || tl.muon_co_phan == null) return { loai: null, ly_do: ['Trả lời đủ ba câu để MIMI gợi ý.'] };
+  if (n == null || !Number.isFinite(n) || n < 1) return { loai: null, ly_do: [i18n.t('ui1.dkl.gySoNguoi')] };
+  if (tl.nho_le_gia_dinh == null || tl.muon_co_phan == null) return { loai: null, ly_do: [i18n.t('ui1.dkl.gyDuBaCau')] };
 
   if (tl.nho_le_gia_dinh && !tl.muon_co_phan) {
-    ly_do.push('Kinh doanh nhỏ, một mình hoặc cùng gia đình: hộ kinh doanh có thủ tục gọn nhất, nộp ở cấp xã.');
-    ly_do.push('Đổi lại, hộ kinh doanh không có tư cách pháp nhân và chủ hộ chịu trách nhiệm bằng toàn bộ tài sản.');
+    ly_do.push(i18n.t('ui1.dkl.gyHkd1'));
+    ly_do.push(i18n.t('ui1.dkl.gyHkd2'));
     return { loai: 'hkd', ly_do };
   }
   if (tl.muon_co_phan) {
     if (n >= 3) {
-      ly_do.push('Muốn chia vốn thành cổ phần, gọi vốn: chỉ công ty cổ phần được phát hành cổ phần.');
+      ly_do.push(i18n.t('ui1.dkl.gyCtcp'));
       return { loai: 'ctcp', ly_do };
     }
-    ly_do.push('Công ty cổ phần cần tối thiểu 03 cổ đông — bạn mới có ' + n + ' người.');
-    ly_do.push('Có thể lập công ty TNHH trước rồi chuyển đổi khi có đủ cổ đông.');
+    ly_do.push(i18n.t('ui1.dkl.gyThieuCd', { n }));
+    ly_do.push(i18n.t('ui1.dkl.gyChuyenDoi'));
     return { loai: n === 1 ? 'tnhh1' : 'tnhh2', ly_do };
   }
   if (n === 1) {
-    ly_do.push('Một chủ sở hữu, muốn trách nhiệm giới hạn trong vốn điều lệ: công ty TNHH một thành viên.');
+    ly_do.push(i18n.t('ui1.dkl.gyTnhh1'));
     return { loai: 'tnhh1', ly_do };
   }
   if (n <= 50) {
-    ly_do.push('Từ 2 đến 50 người góp vốn, không cần phát hành cổ phần: công ty TNHH hai thành viên trở lên.');
+    ly_do.push(i18n.t('ui1.dkl.gyTnhh2'));
     return { loai: 'tnhh2', ly_do };
   }
-  ly_do.push('Trên 50 người góp vốn vượt giới hạn của công ty TNHH: chọn công ty cổ phần.');
+  ly_do.push(i18n.t('ui1.dkl.gyTren50'));
   return { loai: 'ctcp', ly_do };
 }
 

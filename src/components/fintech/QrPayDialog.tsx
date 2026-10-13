@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -87,6 +88,7 @@ export function QrPayDialog({
   onPaid,
   laMinhHoa = false,
 }: Props) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { session } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -106,7 +108,7 @@ export function QrPayDialog({
 
   const create = useCallback(async () => {
     if (!session) {
-      setError('Vui lòng đăng nhập.');
+      setError(t('ui2.qr.dangNhap'));
       return;
     }
     setLoading(true);
@@ -144,7 +146,7 @@ export function QrPayDialog({
         // to quote. The remedy comes from the server's documented code table —
         // never from this component guessing at a cause.
         setError(
-          [result?.error ?? `Lỗi ${res.status}`, result?.errorCode && `(${result.errorCode})`]
+          [result?.error ?? t('ui2.webhook.loiMa', { ma: res.status }), result?.errorCode && `(${result.errorCode})`]
             .filter(Boolean)
             .join(' '),
         );
@@ -161,7 +163,7 @@ export function QrPayDialog({
       setNganHang(typeof result.nganHang === 'string' ? result.nganHang : null);
       setChuTaiKhoan(typeof result.chuTaiKhoan === 'string' ? result.chuTaiKhoan : null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không tạo được mã QR');
+      setError(e instanceof Error ? e.message : t('ui2.qr.khongTao'));
     } finally {
       setLoading(false);
     }
@@ -212,13 +214,13 @@ export function QrPayDialog({
           addInfo: qr.reference_number,
         });
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Không dựng được mã VietQR.');
+        setError(e instanceof Error ? e.message : t('ui2.qr.khongDungVietQr'));
         return;
       }
     }
 
     QRCode.toCanvas(canvasRef.current, payload, { width: 240, margin: 1 }, (e) => {
-      if (e) setError('Không vẽ được mã QR.');
+      if (e) setError(t('ui2.qr.khongVe'));
     });
   }, [qr]);
 
@@ -235,7 +237,7 @@ export function QrPayDialog({
       if (data?.status === 'paid') {
         setQr((prev) => (prev ? { ...prev, status: 'paid' } : prev));
         track('qr_paid', {});
-        toast({ title: 'Đã nhận thanh toán', description: dong(amount) });
+        toast({ title: t('ui2.qr.daNhan'), description: dong(amount) });
         onPaid?.();
       }
     }, 5000);
@@ -246,9 +248,9 @@ export function QrPayDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Nhận tiền bằng QR</DialogTitle>
+          <DialogTitle>{t('ui2.qr.tieuDe')}</DialogTitle>
           <DialogDescription>
-            {invoiceNumber ? `Hoá đơn ${invoiceNumber} · ` : ''}
+            {invoiceNumber ? `${t('ui2.qr.hoaDonSo', { so: invoiceNumber })} · ` : ''}
             {dong(amount)}
           </DialogDescription>
         </DialogHeader>
@@ -256,19 +258,18 @@ export function QrPayDialog({
         {laMinhHoa && (
           <div className="space-y-3 py-2" data-testid="qr-minh-hoa">
             <p className="rounded-lg border border-mimi-amber/40 bg-mimi-amber/5 p-3 text-sm text-foreground">
-              Đây là hoá đơn minh hoạ, nên MIMI không tạo mã thu tiền thật. Với hoá đơn thật, khách quét mã sẽ
-              chuyển đúng số tiền và nội dung dưới đây.
+              {t('ui2.qr.minhHoa')}
             </p>
             <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1.5 text-sm">
-              <dt className="text-muted-foreground">Hoá đơn</dt><dd className="text-foreground">{invoiceNumber ?? '—'}</dd>
-              <dt className="text-muted-foreground">Số tiền</dt><dd className="font-medium tabular-nums text-foreground">{dong(amount)}</dd>
-              <dt className="text-muted-foreground">Nội dung</dt><dd className="font-mono text-foreground">{description}</dd>
+              <dt className="text-muted-foreground">{t('ui2.qr.hoaDon')}</dt><dd className="text-foreground">{invoiceNumber ?? '—'}</dd>
+              <dt className="text-muted-foreground">{t('ui2.ptThanhToan.soTien')}</dt><dd className="font-medium tabular-nums text-foreground">{dong(amount)}</dd>
+              <dt className="text-muted-foreground">{t('ui2.ptThanhToan.noiDung')}</dt><dd className="font-mono text-foreground">{description}</dd>
             </dl>
           </div>
         )}
 
         {loading && (
-          <p className="py-10 text-center text-sm text-muted-foreground">Đang tạo mã QR…</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">{t('ui2.qr.dangTao')}</p>
         )}
 
         {!loading && error && (
@@ -281,7 +282,7 @@ export function QrPayDialog({
               <p className="font-mono text-xs text-muted-foreground">requestId {requestId}</p>
             )}
             <Button variant="outline" size="sm" onClick={() => void create()}>
-              Thử lại
+              {t('ui2.chung.thuLai')}
             </Button>
           </div>
         )}
@@ -290,7 +291,7 @@ export function QrPayDialog({
           <div className="space-y-4">
             <div className="flex justify-center rounded-lg bg-white p-4">
               {qr.qr_code?.startsWith('data:image') ? (
-                <img src={qr.qr_code} alt="Mã QR thanh toán" className="h-60 w-60" />
+                <img src={qr.qr_code} alt={t('ui2.qr.altMa')} className="h-60 w-60" />
               ) : (
                 <canvas ref={canvasRef} />
               )}
@@ -298,11 +299,10 @@ export function QrPayDialog({
 
             {qr.virtual_account_number ? (
               <div className="rounded-lg border border-border p-3 text-sm">
-                <p className="text-muted-foreground">Hoặc chuyển khoản tới</p>
+                <p className="text-muted-foreground">{t('ui2.qr.hoacChuyen')}</p>
                 <p className="font-mono font-medium">{qr.virtual_account_number}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Tài khoản riêng cho lần thu này, nên tiền về là khớp đúng hoá đơn — không
-                  cần ghi nội dung chuyển khoản.
+                  {t('ui2.qr.taiKhoanRieng')}
                 </p>
               </div>
             ) : (
@@ -315,20 +315,19 @@ export function QrPayDialog({
                  */
                 <div className="space-y-2 rounded-lg border border-border p-3 text-sm">
                   <div>
-                    <p className="text-muted-foreground">Hoặc chuyển khoản tới</p>
+                    <p className="text-muted-foreground">{t('ui2.qr.hoacChuyen')}</p>
                     <p className="font-mono font-medium">{qr.account_number}</p>
                     <p className="text-xs text-muted-foreground">
                       {[nganHang, chuTaiKhoan].filter(Boolean).join(' · ')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Nội dung chuyển khoản</p>
+                    <p className="text-muted-foreground">{t('ui2.qr.noiDungCk')}</p>
                     <p className="font-mono text-base font-semibold tracking-wide">
                       {qr.reference_number}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Gõ đúng chuỗi này thì hoá đơn tự chuyển sang đã thu. Gõ thiếu hoặc
-                      thừa chữ thì tiền vẫn về tài khoản, chỉ là phải đối chiếu tay.
+                      {t('ui2.qr.goDung')}
                     </p>
                   </div>
                 </div>
@@ -342,7 +341,7 @@ export function QrPayDialog({
                   : 'text-center text-sm text-muted-foreground'
               }
             >
-              {qr.status === 'paid' ? 'Đã nhận thanh toán' : 'Đang chờ thanh toán…'}
+              {qr.status === 'paid' ? t('ui2.qr.daNhan') : t('ui2.qr.dangCho')}
             </p>
           </div>
         )}

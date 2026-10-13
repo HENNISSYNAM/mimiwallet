@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, RefreshCw, Radio, Eraser } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 /**
  * Nhật ký webhook — Casso có gửi gì tới không, và MIMI làm gì với nó.
@@ -35,7 +37,7 @@ interface SuKien {
 }
 
 const gio = (s: string) =>
-  new Date(s).toLocaleString('vi-VN', {
+  new Date(s).toLocaleString(i18n.language, {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
   });
 
@@ -65,6 +67,7 @@ function docGhiChu(note: string | null, ten: Record<string, string>): string {
 }
 
 export function NhatKyWebhook() {
+  const { t } = useTranslation();
   const { session } = useAuthStore();
   const [mo, setMo] = useState(false);
   const [dsach, setDsach] = useState<SuKien[] | null>(null);
@@ -89,11 +92,11 @@ export function NhatKyWebhook() {
         body: '{}',
       });
       const kq = await res.json();
-      if (!res.ok || kq?.error) throw new Error(kq?.error ?? `Lỗi ${res.status}`);
+      if (!res.ok || kq?.error) throw new Error(kq?.error ?? t('ui2.webhook.loiMa', { ma: res.status }));
       setDsach((kq.events ?? []) as SuKien[]);
       setTenLienKet((kq.tenLienKet ?? {}) as Record<string, string>);
     } catch (e) {
-      setLoi(e instanceof Error ? e.message : 'Không đọc được nhật ký');
+      setLoi(e instanceof Error ? e.message : t('ui2.webhook.khongDoc'));
     } finally {
       setDangTai(false);
     }
@@ -126,20 +129,20 @@ export function NhatKyWebhook() {
         body: '{}',
       });
       const kq = await res.json();
-      if (!res.ok || kq?.error) throw new Error(kq?.error ?? `Lỗi ${res.status}`);
+      if (!res.ok || kq?.error) throw new Error(kq?.error ?? t('ui2.webhook.loiMa', { ma: res.status }));
       // Ba con số tách bạch, không gộp thành "đã dọn xong".
       const ten = (kq.conLai ?? []) as string[];
       setKetQuaDon(
-        `Thu hồi được ${kq.thuHoiDuoc}. Hỏng ${kq.hong}.` +
+        t('ui2.webhook.thuHoiDuoc', { duoc: kq.thuHoiDuoc, hong: kq.hong }) +
         (kq.khongConToken
-          ? ` Còn ${kq.khongConToken} liên kết đã mất token, không thu hồi được từ đây` +
+          ? ' ' + t('ui2.webhook.conMatToken', { so: kq.khongConToken }) +
             (ten.length ? ` — ${ten.join('; ')}` : '') +
-            '. Cần Casso gỡ hộ, hoặc khách thu hồi trong app Cas ID.'
-          : ' Không còn liên kết nào cần thu hồi.'),
+            '. ' + t('ui2.webhook.canCassoGo')
+          : ' ' + t('ui2.webhook.khongCon')),
       );
       void tai();
     } catch (e) {
-      setKetQuaDon(e instanceof Error ? e.message : 'Không thu hồi được');
+      setKetQuaDon(e instanceof Error ? e.message : t('ui2.webhook.khongThuHoi'));
     } finally {
       setDangDon(false);
     }
@@ -153,9 +156,9 @@ export function NhatKyWebhook() {
       >
         <Radio size={15} className="shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground">Nhật ký webhook từ ngân hàng</p>
+          <p className="text-sm font-medium text-foreground">{t('ui2.webhook.tieuDe')}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-Xem ngân hàng đã báo gì tới và MIMI xử lý ra sao
+{t('ui2.webhook.moTa')}
           </p>
         </div>
         <ChevronDown
@@ -168,31 +171,28 @@ Xem ngân hàng đã báo gì tới và MIMI xử lý ra sao
         <div className="border-t border-border/50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Mọi thông báo <strong className="text-foreground">gửi tới</strong> trong 30 ngày qua —
-              từ Casso — kể cả những cái bị bỏ qua. Bấm Đồng bộ không tạo dòng ở
-              đây: đó là chiều mình gọi ra, không phải chiều bên kia đẩy vào.
+              {t('ui2.webhook.giaiThich')}
             </p>
             <button
               onClick={() => void tai()}
               disabled={dangTai}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs disabled:opacity-50"
             >
-              <RefreshCw size={12} className={dangTai ? 'animate-spin' : ''} /> Tải lại
+              <RefreshCw size={12} className={dangTai ? 'animate-spin' : ''} /> {t('ui2.webhook.taiLai')}
             </button>
           </div>
 
           <div className="mb-3 rounded-xl border border-border/60 p-3">
             <div className="flex items-start justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                Liên kết đã ngắt mà chưa thu hồi ở Casso vẫn nhận webhook, và quyền đọc tài
-                khoản ngân hàng vẫn còn hiệu lực.
+                {t('ui2.webhook.lienKetNgat')}
               </p>
               <button
                 onClick={() => void donGrant()}
                 disabled={dangDon}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs disabled:opacity-50"
               >
-                <Eraser size={12} className={dangDon ? 'animate-pulse' : ''} /> Thu hồi grant cũ
+                <Eraser size={12} className={dangDon ? 'animate-pulse' : ''} /> {t('ui2.webhook.thuHoiGrant')}
               </button>
             </div>
             {ketQuaDon && <p className="mt-2 text-xs text-foreground/80">{ketQuaDon}</p>}
@@ -206,7 +206,7 @@ Xem ngân hàng đã báo gì tới và MIMI xử lý ra sao
              * thẳng nó nghĩa là gì để người đọc biết phải đi hỏi ai tiếp.
              */
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Chưa có envelope nào trong 30 ngày qua.</p>
+              <p className="font-medium text-foreground">{t('ui2.webhook.rong')}</p>
               {/*
                 KHÔNG KẾT LUẬN HỘ. Bản đầu của câu này viết thẳng "nghĩa là Casso
                 chưa đẩy sự kiện sang" — một suy luận vượt quá dữ liệu, và nguy
@@ -214,20 +214,13 @@ Xem ngân hàng đã báo gì tới và MIMI xử lý ra sao
                 được đúng một điều: không có gì được ghi lại. Vì sao thì còn ít
                 nhất ba khả năng, và người đọc phải thấy cả ba.
               */}
-              <p>Có ba khả năng, chưa loại trừ được cái nào chỉ bằng màn hình này:</p>
+              <p>{t('ui2.webhook.baKhaNang')}</p>
               <ul className="ml-4 list-disc space-y-1">
-                <li>Casso chưa đẩy sự kiện sang.</li>
-                <li>
-                  Có đẩy nhưng không tới được endpoint — sai khoá, sai đường dẫn, hoặc bị chặn
-                  trước khi vào tới đây.
-                </li>
-                <li>Sự kiện xảy ra trước 30 ngày.</li>
+                <li>{t('ui2.webhook.kn1')}</li>
+                <li>{t('ui2.webhook.kn2')}</li>
+                <li>{t('ui2.webhook.kn3')}</li>
               </ul>
-              <p>
-                Muốn phân biệt thì đối chiếu với <strong className="text-foreground">Logs</strong> trong
-                console Casso: nếu bên đó có bản ghi gửi đi mà bên này trống, vấn đề nằm ở đường
-                truyền chứ không ở việc họ có gửi hay không.
-              </p>
+              <p>{t('ui2.webhook.doiChieu')}</p>
             </div>
           )}
 
@@ -236,11 +229,11 @@ Xem ngân hàng đã báo gì tới và MIMI xử lý ra sao
               <table className="w-full min-w-[520px] text-xs">
                 <thead>
                   <tr className="text-left text-muted-foreground">
-                    <th className="px-1 pb-2 font-medium">Lúc</th>
-                    <th className="px-1 pb-2 font-medium">Loại</th>
-                    <th className="px-1 pb-2 font-medium">Mã</th>
-                    <th className="px-1 pb-2 font-medium">Kết quả</th>
-                    <th className="px-1 pb-2 font-medium">Ghi chú</th>
+                    <th className="px-1 pb-2 font-medium">{t('ui2.webhook.cotLuc')}</th>
+                    <th className="px-1 pb-2 font-medium">{t('ui2.webhook.cotLoai')}</th>
+                    <th className="px-1 pb-2 font-medium">{t('ui2.webhook.cotMa')}</th>
+                    <th className="px-1 pb-2 font-medium">{t('ui2.webhook.cotKetQua')}</th>
+                    <th className="px-1 pb-2 font-medium">{t('ui2.webhook.cotGhiChu')}</th>
                   </tr>
                 </thead>
                 <tbody>

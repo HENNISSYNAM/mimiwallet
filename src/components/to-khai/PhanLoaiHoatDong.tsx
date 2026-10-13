@@ -3,6 +3,7 @@ import { Loader2, Tags } from 'lucide-react';
 import { toast } from 'sonner';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { dinhDangTien } from '@/lib/tien';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Doanh thu thuộc NHÓM HOẠT ĐỘNG nào — mỗi nhóm là một dòng và một tỷ lệ thuế trên tờ khai.
@@ -25,7 +26,6 @@ interface DuLieu {
 }
 
 const tien = dinhDangTien;
-const TEN_NGUON: Record<string, string> = { giao_dich: 'tiền về ngân hàng', hoa_don: 'hoá đơn điện tử', tu_nhap: 'số bạn tự nhập' };
 const HIEN_TRUOC = 8;
 
 export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: number; onDaDoi?: () => void; anKhiXong?: boolean }) {
@@ -34,6 +34,7 @@ export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: num
   const [nhomChon, setNhomChon] = useState<string>('');
   const [chonKhoan, setChonKhoan] = useState<Record<string, string>>({});
   const [xemHet, setXemHet] = useState(false);
+  const { t } = useTranslation();
 
   const tai = useCallback(async () => {
     try {
@@ -54,18 +55,18 @@ export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: num
       const r = await goiToKhai('xac_nhan_hoat_dong', { nguon: dl.nguon, nam: dl.nam, ...du });
       toast.success(moTa.replace('{so}', String(r.so)), {
         action: {
-          label: 'Hoàn tác',
+          label: t('ui1.plhd.hoanTac'),
           onClick: () => {
             void goiToKhai('hoan_tac_hoat_dong', { nhom_hang_loat: r.nhom_hang_loat })
-              .then(() => { toast.success('Đã hoàn tác.'); void tai(); onDaDoi?.(); })
-              .catch((e) => toast.error(e instanceof Error ? e.message : 'Chưa hoàn tác được.'));
+              .then(() => { toast.success(t('ui1.plhd.daHoanTac')); void tai(); onDaDoi?.(); })
+              .catch((e) => toast.error(e instanceof Error ? e.message : t('ui1.plhd.chuaHoanTac')));
           },
         },
       });
       await tai();
       onDaDoi?.();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chưa lưu được.');
+      toast.error(e instanceof Error ? e.message : t('ui1.chung.chuaLuu'));
     } finally {
       setDang(null);
     }
@@ -83,17 +84,17 @@ export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: num
   return (
     <section aria-labelledby="nhom-hoat-dong" className="rounded-2xl border border-border bg-card p-5">
       <h3 id="nhom-hoat-dong" className="flex items-center gap-2 text-base font-semibold text-foreground">
-        <Tags size={16} aria-hidden /> Doanh thu năm {dl.nam} thuộc nhóm nào
+        <Tags size={16} aria-hidden /> {t('ui1.plhd.tieuDe', { nam: dl.nam })}
       </h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Theo {TEN_NGUON[dl.nguon]}: {tien(dl.tong)}. Mỗi nhóm là một dòng và một tỷ lệ thuế riêng trên tờ khai.
+        {t('ui1.plhd.theoNguon', { nguon: t(`ui1.plhd.nguon_${dl.nguon}`), tien: tien(dl.tong) })}
       </p>
 
       {!!daXep.length && (
         <ul className="mt-3 space-y-1 text-sm">
           {daXep.map(([k, o]) => (
             <li key={k} className="flex justify-between gap-3">
-              <span className="text-foreground">{ten(k)} <span className="text-muted-foreground">· {o.so_khoan} khoản</span></span>
+              <span className="text-foreground">{ten(k)} <span className="text-muted-foreground">· {t('ui1.plhd.soKhoan', { n: o.so_khoan })}</span></span>
               <span className="tabular-nums text-foreground">{tien(o.so_tien)}</span>
             </li>
           ))}
@@ -103,11 +104,11 @@ export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: num
       {cr.so_tien > 0 ? (
         <div className="mt-4 rounded-xl border border-mimi-amber/40 bg-mimi-amber/5 p-4">
           <p className="text-sm font-medium text-foreground">
-            {tien(cr.so_tien)} ({cr.so_khoan} khoản) chưa xác định nhóm hoạt động.
+            {t('ui1.plhd.chuaRo', { tien: tien(cr.so_tien), n: cr.so_khoan })}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            MIMI không tự xếp{dl.goi_y ? ` — hồ sơ thuế của bạn đăng ký ${ten(dl.goi_y)}, nhưng đăng ký là việc được phép làm, chưa chắc là việc tạo ra từng khoản tiền` : ''}.
-            Chưa xếp xong thì chưa xuất được tờ khai.
+            {dl.goi_y ? t('ui1.plhd.khongTuXepGoiY', { ten: ten(dl.goi_y) }) : t('ui1.plhd.khongTuXep')}
+            {' '}{t('ui1.plhd.chuaXongChuaXuat')}
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -115,35 +116,35 @@ export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: num
               <button
                 type="button"
                 disabled={!!dang}
-                onClick={() => void xacNhan('tat_ca_goi_y', { tat_ca_chua_ro: true, hoat_dong: dl.goi_y }, `Đã xếp {so} khoản vào ${ten(dl.goi_y)}.`)}
+                onClick={() => void xacNhan('tat_ca_goi_y', { tat_ca_chua_ro: true, hoat_dong: dl.goi_y }, t('ui1.plhd.daXep', { ten: ten(dl.goi_y) }))}
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:brightness-110 disabled:opacity-50"
               >
-                {dang === 'tat_ca_goi_y' && <Loader2 size={14} className="animate-spin" />} Tất cả là {ten(dl.goi_y)}
+                {dang === 'tat_ca_goi_y' && <Loader2 size={14} className="animate-spin" />} {t('ui1.plhd.tatCaLa', { ten: ten(dl.goi_y) })}
               </button>
             )}
-            <label className="sr-only" htmlFor="nhom-tat-ca">Nhóm cho mọi khoản còn lại</label>
+            <label className="sr-only" htmlFor="nhom-tat-ca">{t('ui1.plhd.nhomConLai')}</label>
             <select
               id="nhom-tat-ca"
               value={nhomChon}
               onChange={(e) => setNhomChon(e.target.value)}
               className="h-10 rounded-xl border border-border bg-background px-3 text-sm text-foreground"
             >
-              <option value="">Chọn nhóm…</option>
+              <option value="">{t('ui1.plhd.chonNhom')}</option>
               {dl.cac_nhom.map((n) => <option key={n.ma} value={n.ma}>{n.ten}</option>)}
             </select>
             <button
               type="button"
               disabled={!nhomChon || !!dang}
-              onClick={() => void xacNhan('tat_ca_chon', { tat_ca_chua_ro: true, hoat_dong: nhomChon }, `Đã xếp {so} khoản vào ${ten(nhomChon)}.`)}
+              onClick={() => void xacNhan('tat_ca_chon', { tat_ca_chua_ro: true, hoat_dong: nhomChon }, t('ui1.plhd.daXep', { ten: ten(nhomChon) }))}
               className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50"
             >
-              {dang === 'tat_ca_chon' && <Loader2 size={14} className="animate-spin" />} Áp cho mọi khoản còn lại
+              {dang === 'tat_ca_chon' && <Loader2 size={14} className="animate-spin" />} {t('ui1.plhd.apConLai')}
             </button>
           </div>
 
           {!!cr.khoan.length && (
             <div className="mt-4">
-              <p className="text-xs font-medium text-muted-foreground">Hoặc xếp từng khoản (lớn nhất trước):</p>
+              <p className="text-xs font-medium text-muted-foreground">{t('ui1.plhd.tungKhoan')}</p>
               <ul className="mt-2 divide-y divide-border">
                 {khoanHien.map((k) => (
                   <li key={k.id} className="flex flex-wrap items-center gap-2 py-2">
@@ -152,14 +153,14 @@ export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: num
                       <p className="text-xs text-muted-foreground">{k.ngay}</p>
                     </div>
                     <span className="tabular-nums text-sm text-foreground">{tien(k.so_tien)}</span>
-                    <label className="sr-only" htmlFor={`nhom-${k.id}`}>Nhóm của khoản {tien(k.so_tien)}</label>
+                    <label className="sr-only" htmlFor={`nhom-${k.id}`}>{t('ui1.plhd.nhomCuaKhoan', { tien: tien(k.so_tien) })}</label>
                     <select
                       id={`nhom-${k.id}`}
                       value={chonKhoan[k.id] ?? dl.goi_y ?? ''}
                       onChange={(e) => setChonKhoan((c) => ({ ...c, [k.id]: e.target.value }))}
                       className="h-9 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
                     >
-                      <option value="">Chọn nhóm…</option>
+                      <option value="">{t('ui1.plhd.chonNhom')}</option>
                       {dl.cac_nhom.map((n) => <option key={n.ma} value={n.ma}>{n.ten}</option>)}
                     </select>
                     <button
@@ -167,25 +168,25 @@ export function PhanLoaiHoatDong({ nam, onDaDoi, anKhiXong = false }: { nam: num
                       disabled={!(chonKhoan[k.id] ?? dl.goi_y) || !!dang}
                       onClick={() => {
                         const n = chonKhoan[k.id] ?? dl.goi_y ?? '';
-                        void xacNhan(k.id, { ids: [k.id], hoat_dong: n }, `Đã xếp khoản ${tien(k.so_tien)} vào ${ten(n)}.`);
+                        void xacNhan(k.id, { ids: [k.id], hoat_dong: n }, t('ui1.plhd.daXepMot', { tien: tien(k.so_tien), ten: ten(n) }));
                       }}
                       className="h-9 rounded-lg border border-border px-3 text-sm text-foreground hover:bg-accent disabled:opacity-50"
                     >
-                      Xác nhận
+                      {t('ui1.chung.xacNhan')}
                     </button>
                   </li>
                 ))}
               </ul>
               {cr.khoan.length > HIEN_TRUOC && !xemHet && (
                 <button type="button" onClick={() => setXemHet(true)} className="mt-2 text-sm text-primary hover:underline">
-                  Xem thêm {cr.khoan.length - HIEN_TRUOC} khoản
+                  {t('ui1.plhd.xemThem', { n: cr.khoan.length - HIEN_TRUOC })}
                 </button>
               )}
             </div>
           )}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-foreground">Mọi khoản doanh thu đã có nhóm hoạt động.</p>
+        <p className="mt-3 text-sm text-foreground">{t('ui1.plhd.daXong')}</p>
       )}
     </section>
   );

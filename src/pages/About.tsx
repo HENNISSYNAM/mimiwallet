@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import TeamSection from '@/components/landing/TeamSection';
@@ -15,6 +16,7 @@ import MimiStory from '@/components/brand/MimiStory';
  * past nine product sections to find them.
  */
 export default function About() {
+  const { t } = useTranslation();
   // Deep links land at the top; without this the router keeps the scroll
   // position from whatever page the visitor came from.
   // `?muc=doi-ngu` (menu "Về chúng tôi" → Đội ngũ) thì cuộn tới phần đội ngũ.
@@ -40,7 +42,7 @@ export default function About() {
                 transition={{ duration: 0.5 }}
                 className="mimi-nhan-muc mb-4 text-mimi-green"
               >
-                Về chúng tôi
+                {t('ui2.footer.veChungToi')}
               </motion.p>
               <motion.h1
                 initial={{ opacity: 0, y: 22 }}
@@ -48,8 +50,8 @@ export default function About() {
                 transition={{ duration: 0.6, delay: 0.08 }}
                 className="mimi-tieu-de-trang text-foreground"
               >
-                Chúng tôi xây thứ
-                <br className="hidden sm:block" /> mình muốn có
+                {t('ui2.about.tieuDe1')}
+                <br className="hidden sm:block" /> {t('ui2.about.tieuDe2')}
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -57,11 +59,7 @@ export default function About() {
                 transition={{ duration: 0.6, delay: 0.16 }}
                 className="mimi-doan-dan mt-6 max-w-xl text-muted-foreground"
               >
-                Mimi Wallet bắt đầu từ một quan sát đơn giản: chủ hộ kinh doanh bán hàng cả ngày,
-                đến tối lại ngồi dò sao kê, tìm hoá đơn và tự hỏi mình có phải khai thuế không. Từ
-                2026 bỏ thuế khoán, sổ sách không còn là chuyện để sau — nên chúng tôi làm một trợ
-                lý đọc sao kê, chỉ ra khoản chi còn thiếu chứng từ và chuẩn bị sẵn hồ sơ thuế, để
-                chủ hộ tự kiểm và tự nộp.
+                {t('ui2.about.moTa')}
               </motion.p>
             </div>
 

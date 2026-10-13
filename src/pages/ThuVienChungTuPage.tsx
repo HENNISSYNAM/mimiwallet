@@ -36,6 +36,8 @@ import {
 type BangTho = { from: (bang: string) => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 /** Trần đọc một lần; vượt thì nói rõ là chưa hiện hết, không im lặng cắt. */
+/** Định dạng số/ngày hiển thị theo ngôn ngữ đang chọn (đơn vị ₫ giữ nguyên). */
+const locHienThi = () => (({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
 const TOI_DA_MUC = 20_000;
 /** `in('id', …)` dài quá thì URL vượt giới hạn của máy chủ — chia lô. */
 const LO_ID = 100;
@@ -79,7 +81,7 @@ export default function ThuVienChungTuPage() {
       ]);
       if (q.loi) throw new Error(q.loi);
       setChuaHet(q.du ? null
-        : i18n.t('app.thuVien.chuaHet', { n: q.dong.length.toLocaleString('vi-VN'), max: TOI_DA_MUC.toLocaleString('vi-VN') }));
+        : i18n.t('app.thuVien.chuaHet', { n: q.dong.length.toLocaleString(locHienThi()), max: TOI_DA_MUC.toLocaleString(locHienThi()) }));
       const quet = q.dong;
 
       const ids = [...new Set(quet.map((x) => x.giao_dich_id).filter(Boolean))] as string[];
@@ -135,7 +137,7 @@ export default function ThuVienChungTuPage() {
       }
       taiTepBase64(String(r.ots), `mimi-chung-tu-${m.id.slice(0, 8)}.ots`);
       toast.success(r.trang_thai === 'da_vao_bitcoin'
-        ? t('app.thuVien.daTaiKhoi', { khoi: Number(r.khoi_bitcoin).toLocaleString('vi-VN') })
+        ? t('app.thuVien.daTaiKhoi', { khoi: Number(r.khoi_bitcoin).toLocaleString(locHienThi()) })
         : t('app.thuVien.daTaiCho'));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t('app.thuVien.loiTaiBc'));

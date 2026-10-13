@@ -39,7 +39,12 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: (ten: strin
 vi.mock('@/lib/nguoiDung', () => ({ nguoiDungHienTai: async () => ({ id: 'u' }) }));
 vi.mock('@/lib/congTyDangDung', () => ({ congTyDangDung: async () => ({ id: 'cty-1', la_demo: false }) }));
 vi.mock('@/lib/csv', () => ({ taiCsv: may.csv }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+// Khoá cũ (fin.*) trả nguyên khoá như trước; chữ ui1.* (đợt chuyển i18n 13/10/2026) lấy bản tiếng Việt thật, Trans thật.
+vi.mock('react-i18next', async (goc) => {
+  const that = await goc<typeof import('react-i18next')>();
+  const { default: i18n } = await import('i18next');
+  return { ...that, useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (k.startsWith('ui1.') ? i18n.t(k, o) : k) }) };
+});
 
 import ReportsPage from './ReportsPage';
 

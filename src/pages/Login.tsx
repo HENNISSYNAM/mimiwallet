@@ -110,22 +110,22 @@ export default function Login() {
             className="mb-4 rounded-2xl border border-mimi-amber/25 bg-mimi-amber/5 p-4"
           >
             <p className="text-sm text-foreground">
-              Bạn đang đăng nhập bằng{' '}
-              <span className="font-semibold break-all">{user?.email ?? 'một tài khoản khác'}</span>
-              {isDemoSession && <span className="text-muted-foreground"> (tài khoản demo)</span>}
+              {t('ui2.auth.dangDangNhap')}{' '}
+              <span className="font-semibold break-all">{user?.email ?? t('ui2.auth.taiKhoanKhac')}</span>
+              {isDemoSession && <span className="text-muted-foreground"> ({t('ui2.auth.taiKhoanDemo')})</span>}
             </p>
             <div className="flex flex-wrap gap-2 mt-3">
               <button
                 onClick={() => navigate('/dashboard')}
                 className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                Vào dashboard
+                {t('ui2.auth.vaoDashboard')}
               </button>
               <button
-                onClick={async () => { await logout(); toast.success('Đã đăng xuất'); }}
+                onClick={async () => { await logout(); toast.success(t('ui2.auth.daDangXuat')); }}
                 className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border text-foreground hover:bg-accent transition-colors"
               >
-                Đăng xuất để dùng tài khoản khác
+                {t('ui2.auth.dangXuatDeDung')}
               </button>
             </div>
           </motion.div>
@@ -162,7 +162,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              aria-label={showPassword ? t('ui2.auth.anMk') : t('ui2.auth.hienMk')}
               className="absolute right-3 top-[1.85rem] text-muted-foreground hover:text-foreground transition-colors"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -186,7 +186,7 @@ export default function Login() {
             with a second, empty account under the same person. */}
         <div className="flex items-center gap-3 my-4" aria-hidden>
           <span className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">hoặc</span>
+          <span className="text-xs text-muted-foreground">{t('ui2.auth.hoac')}</span>
           <span className="h-px flex-1 bg-border" />
         </div>
 
@@ -216,7 +216,7 @@ export default function Login() {
               <path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.1 30 2 24 2 15.4 2 7.9 7 4.3 14.2l7.3 5.7c1.7-5.2 6.6-9.1 12.4-9.1z" />
             </svg>
           )}
-          Tiếp tục với Google
+          {t('ui2.auth.google')}
         </button>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
@@ -224,7 +224,7 @@ export default function Login() {
             onClick={() => navigate('/quen-mat-khau')}
             className="text-primary hover:underline font-medium"
           >
-            Quên mật khẩu?
+            {t('ui2.auth.quenMkHoi')}
           </button>
         </p>
 

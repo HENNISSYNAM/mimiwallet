@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 
 /**
@@ -29,6 +30,7 @@ import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 const CAU_XAC_NHAN = 'XOA TAI KHOAN CUA TOI';
 
 export function DeleteAccountSection() {
+  const { t } = useTranslation();
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const [moRong, setMoRong] = useState(false);
@@ -57,17 +59,16 @@ export function DeleteAccountSection() {
       const conLai = data?.bank_grants_not_revoked ?? [];
       if (conLai.length) {
         toast.warning(
-          `Tài khoản đã xoá. Còn ${conLai.length} liên kết ngân hàng chưa thu hồi được — ` +
-            'vui lòng vào ứng dụng ngân hàng huỷ quyền chia sẻ dữ liệu.',
+          t('ui2.xoaTk.conLienKet', { so: conLai.length }),
           { duration: 15000 },
         );
       } else {
-        toast.success('Tài khoản và toàn bộ dữ liệu đã được xoá.');
+        toast.success(t('ui2.xoaTk.daXoa'));
       }
       logout();
       navigate('/');
     } catch (e) {
-      toast.error('Không xoá được: ' + ((e as Error)?.message ?? 'lỗi không xác định'));
+      toast.error(t('ui2.xoaTk.khongXoa') + ' ' + ((e as Error)?.message ?? t('ui2.xoaTk.loiKhongRo')));
     } finally {
       setDangXoa(false);
     }
@@ -78,15 +79,13 @@ export function DeleteAccountSection() {
       <div className="flex items-start gap-3">
         <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">Xoá tài khoản</p>
+          <p className="text-sm font-semibold text-foreground">{t('ui2.footer.xoaTaiKhoan')}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Xoá vĩnh viễn tài khoản và toàn bộ dữ liệu: giao dịch đã đồng bộ, hoá đơn,
-            danh bạ khách hàng, liên kết ngân hàng và hồ sơ doanh nghiệp.
-            Thao tác này <strong className="text-foreground">không hoàn tác được</strong>.
+            {t('ui2.xoaTk.moTa')}{' '}
+            {t('ui2.xoaTk.thaoTac')} <strong className="text-foreground">{t('ui2.xoaTk.khongHoanTac')}</strong>.
           </p>
           <p className="text-sm text-muted-foreground mt-2">
-            Nếu bạn cần giữ chứng từ cho nghĩa vụ kế toán và thuế, hãy xuất dữ liệu ra
-            file trước khi xoá.
+            {t('ui2.xoaTk.xuatTruoc')}
           </p>
 
           {!moRong ? (
@@ -94,12 +93,12 @@ export function DeleteAccountSection() {
               onClick={() => setMoRong(true)}
               className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-destructive hover:underline tap-target"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Tôi muốn xoá tài khoản
+              <Trash2 className="w-3.5 h-3.5" /> {t('ui2.xoaTk.toiMuonXoa')}
             </button>
           ) : (
             <div className="mt-4 space-y-3">
               <label className="block text-sm text-muted-foreground">
-                Để xác nhận, gõ lại:{' '}
+                {t('ui2.xoaTk.goLai')}{' '}
                 <span className="font-mono font-semibold text-foreground">{CAU_XAC_NHAN}</span>
               </label>
               <input
@@ -117,14 +116,14 @@ export function DeleteAccountSection() {
                   className="h-11 px-4 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium disabled:opacity-40 inline-flex items-center gap-2 tap-target"
                 >
                   {dangXoa && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Xoá vĩnh viễn
+                  {t('ui2.xoaTk.xoaVinhVien')}
                 </button>
                 <button
                   onClick={() => { setMoRong(false); setNhap(''); }}
                   disabled={dangXoa}
                   className="h-11 px-4 rounded-xl border border-border text-sm tap-target"
                 >
-                  Huỷ
+                  {t('ui2.chung.huy')}
                 </button>
               </div>
             </div>

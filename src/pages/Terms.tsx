@@ -2,6 +2,7 @@ import { COMPANY, LEGAL_UPDATED_ON } from '@/config/company';
 import Footer from '@/components/layout/Footer';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Điều khoản sử dụng.
@@ -30,9 +31,15 @@ function Muc({ so, tieuDe, children }: { so: number; tieuDe: string; children: R
 }
 
 export default function Terms() {
+  const { t, i18n } = useTranslation();
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <main className="flex-1 max-w-3xl w-full mx-auto px-5 py-12 safe-top safe-x">
+        {!(i18n.language ?? 'vi').startsWith('vi') && (
+          <p role="note" className="mb-6 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            {t('ui2.phapLy.chiTiengViet')}
+          </p>
+        )}
         <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
           <ArrowLeft className="w-4 h-4" /> Về trang chủ
         </Link>

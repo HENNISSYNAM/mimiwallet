@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Loader2, MailCheck } from 'lucide-react';
 import mimiLogo from '@/assets/mimi-cat.png';
@@ -23,6 +24,7 @@ import mimiLogo from '@/assets/mimi-cat.png';
  * Vì lý do đó, lỗi từ Supabase cũng không hiển thị nguyên văn.
  */
 export default function ForgotPassword() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [dangGui, setDangGui] = useState(false);
   const [daGui, setDaGui] = useState(false);
@@ -52,30 +54,27 @@ export default function ForgotPassword() {
       >
         <div className="flex flex-col items-center mb-8">
           <img src={mimiLogo} alt="" aria-hidden className="h-14 w-14 mb-3" />
-          <h1 className="font-display font-bold text-2xl text-foreground">Quên mật khẩu</h1>
+          <h1 className="font-display font-bold text-2xl text-foreground">{t('ui2.auth.quenMk')}</h1>
         </div>
 
         {daGui ? (
           <div className="rounded-2xl border border-border bg-card p-6 text-center">
             <MailCheck className="w-8 h-8 text-mimi-green mx-auto" />
-            <p className="mt-3 text-sm text-foreground font-medium">Đã gửi thư khôi phục</p>
+            <p className="mt-3 text-sm text-foreground font-medium">{t('ui2.auth.daGuiThu')}</p>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              Nếu <span className="text-foreground">{email.trim()}</span> có trong hệ thống,
-              bạn sẽ nhận được đường dẫn đặt lại mật khẩu trong vài phút. Nhớ kiểm tra cả
-              hộp thư rác.
+              {t('ui2.auth.neuEmail', { email: email.trim() })}
             </p>
             <button
               onClick={() => { setDaGui(false); setEmail(''); }}
               className="mt-4 text-sm text-primary hover:underline"
             >
-              Gửi lại cho email khác
+              {t('ui2.auth.guiEmailKhac')}
             </button>
           </div>
         ) : (
           <div className="rounded-2xl border border-border bg-card p-6">
             <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-              Nhập email bạn dùng để đăng nhập. Chúng tôi sẽ gửi một đường dẫn để bạn
-              đặt lại mật khẩu.
+              {t('ui2.auth.nhapEmail')}
             </p>
             <label className="text-sm text-muted-foreground mb-1 block" htmlFor="fp-email">
               Email
@@ -96,7 +95,7 @@ export default function ForgotPassword() {
               className="mt-4 w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 inline-flex items-center justify-center gap-2 tap-target"
             >
               {dangGui && <Loader2 className="w-4 h-4 animate-spin" />}
-              Gửi thư khôi phục
+              {t('ui2.auth.guiThu')}
             </button>
           </div>
         )}
@@ -105,7 +104,7 @@ export default function ForgotPassword() {
           to="/login"
           className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
         >
-          <ArrowLeft className="w-4 h-4" /> Quay lại đăng nhập
+          <ArrowLeft className="w-4 h-4" /> {t('ui2.auth.quayLai')}
         </Link>
       </motion.div>
     </div>

@@ -26,6 +26,8 @@ import { dinhDangTien } from '@/lib/tien';
  * bước cụ thể cho đúng khuôn mẫu bộ luật vừa thấy. Chỉ là hướng dẫn — MIMI không tự làm việc nào thay bạn.
  */
 // Số bước theo từng dấu hiệu; chữ ở bộ dịch app.kiemChuyen.viec.<mã>.<chỉ số>.
+/** Định dạng số/ngày hiển thị theo ngôn ngữ đang chọn (đơn vị ₫ giữ nguyên). */
+const locHienThi = () => (({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
 const VIEC_THEO_DAU_HIEU: Partial<Record<DauHieu['ma'], number>> = {
   doi_so_tai_khoan: 3,
   nguoi_nhan_moi_so_lon: 2,
@@ -62,7 +64,7 @@ export default function KiemChuyenTienPage() {
   const dienSan = (viTri.state as { kiem?: DienSanKiem } | null)?.kiem ?? null;
   const [stk, setStk] = useState(dienSan?.stk ?? '');
   const [ten, setTen] = useState(dienSan?.ten ?? '');
-  const [soTien, setSoTien] = useState(() => { const s = chiSo(dienSan?.soTien ?? ''); return s ? new Intl.NumberFormat('vi-VN').format(Number(s)) : ''; });
+  const [soTien, setSoTien] = useState(() => { const s = chiSo(dienSan?.soTien ?? ''); return s ? new Intl.NumberFormat(locHienThi()).format(Number(s)) : ''; });
   const [noiDung, setNoiDung] = useState('');
   const [hoanCanh, setHoanCanh] = useState<MaHoanCanh[]>([]);
   const [dangKiem, setDangKiem] = useState(false);
@@ -127,7 +129,7 @@ export default function KiemChuyenTienPage() {
             <span className="mb-1 block font-medium text-foreground">{t('app.kiemChuyen.soTien')}</span>
             <input
               value={soTien}
-              onChange={(e) => { const s = chiSo(e.target.value); setSoTien(s ? new Intl.NumberFormat('vi-VN').format(Number(s)) : ''); }}
+              onChange={(e) => { const s = chiSo(e.target.value); setSoTien(s ? new Intl.NumberFormat(locHienThi()).format(Number(s)) : ''); }}
               inputMode="numeric"
               autoComplete="off"
               className={O_NHAP}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
@@ -55,6 +56,7 @@ interface NganhHoSo {
  * thuế) từ ngành chính — chỉ ghi vào hồ sơ khi người dùng bấm xác nhận. Lưu qua `to-khai` (quyền sửa hồ sơ thuế).
  */
 export function NganhNghe() {
+  const { t } = useTranslation();
   const [du, setDu] = useState<NganhHoSo | null>(null);
   const [ds, setDs] = useState<NganhVsic[]>([]);
   const [chinh, setChinh] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function NganhNghe() {
       nhan(await goiToKhai('luu_nganh', than) as NganhHoSo);
       toast.success(cau);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chưa lưu được ngành nghề.');
+      toast.error(e instanceof Error ? e.message : t('ui2.dn.chuaLuuNganh'));
     } finally {
       setDangLuu(false);
     }
@@ -81,9 +83,9 @@ export function NganhNghe() {
 
   const them = () => {
     const m = ma.trim();
-    if (!/^\d{4}$/.test(m)) { toast.error('Mã ngành cấp 4 gồm đúng 4 chữ số (ví dụ 4711).'); return; }
-    if (ten.trim().length < 2) { toast.error('Ghi tên ngành như trên giấy chứng nhận đăng ký.'); return; }
-    if (ds.some((n) => n.ma === m)) { toast.error(`Mã ngành ${m} đã có.`); return; }
+    if (!/^\d{4}$/.test(m)) { toast.error(t('ui2.dn.maNganh4So')); return; }
+    if (ten.trim().length < 2) { toast.error(t('ui2.dn.ghiTenNganh')); return; }
+    if (ds.some((n) => n.ma === m)) { toast.error(t('ui2.dn.maNganhDaCo', { ma: m })); return; }
     setDs([...ds, { ma: m, ten: ten.trim() }]);
     if (!chinh) setChinh(m);
     setMa(''); setTen('');
@@ -94,45 +96,45 @@ export function NganhNghe() {
 
   return (
     <div className="border-t border-border/20 pt-4">
-      <p className="mb-1.5 text-sm text-muted-foreground">Ngành nghề đăng ký (mã VSIC cấp 4)</p>
-      {ds.length === 0 && <p className="text-sm text-muted-foreground/60">Chưa khai ngành nào.</p>}
+      <p className="mb-1.5 text-sm text-muted-foreground">{t('ui2.dn.nganhDangKy')}</p>
+      {ds.length === 0 && <p className="text-sm text-muted-foreground/60">{t('ui2.dn.chuaKhaiNganh')}</p>}
       <ul className="space-y-1">
         {ds.map((n) => (
           <li key={n.ma} className="flex items-center gap-2 text-sm">
             <label className="flex min-w-0 flex-1 items-center gap-2">
-              <input type="radio" name="nganh-chinh" checked={chinh === n.ma} onChange={() => setChinh(n.ma)} aria-label={`Ngành chính ${n.ma}`} />
+              <input type="radio" name="nganh-chinh" checked={chinh === n.ma} onChange={() => setChinh(n.ma)} aria-label={t('ui2.dn.nganhChinhAria', { ma: n.ma })} />
               <span className="font-mono">{n.ma}</span> <span className="truncate">{n.ten}</span>
-              {chinh === n.ma && <span className="text-xs text-primary">(ngành chính)</span>}
+              {chinh === n.ma && <span className="text-xs text-primary">({t('ui2.dn.nganhChinh')})</span>}
             </label>
-            <button type="button" onClick={() => { const con = ds.filter((x) => x.ma !== n.ma); setDs(con); if (chinh === n.ma) setChinh(con[0]?.ma ?? null); }} className="text-xs text-muted-foreground hover:underline">Bỏ</button>
+            <button type="button" onClick={() => { const con = ds.filter((x) => x.ma !== n.ma); setDs(con); if (chinh === n.ma) setChinh(con[0]?.ma ?? null); }} className="text-xs text-muted-foreground hover:underline">{t('ui2.dn.bo')}</button>
           </li>
         ))}
       </ul>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-        <input inputMode="numeric" value={ma} onChange={(e) => setMa(e.target.value)} placeholder="Mã, ví dụ 4711" aria-label="Mã ngành" className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm sm:w-32" />
-        <input value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Tên ngành như trên giấy đăng ký" aria-label="Tên ngành" className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm" />
-        <button type="button" onClick={them} className="rounded-xl border border-border px-3 py-2 text-sm font-medium hover:bg-accent">Thêm</button>
+        <input inputMode="numeric" value={ma} onChange={(e) => setMa(e.target.value)} placeholder={t('ui2.dn.maPh')} aria-label={t('ui2.dn.maNganh')} className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm sm:w-32" />
+        <input value={ten} onChange={(e) => setTen(e.target.value)} placeholder={t('ui2.dn.tenPh')} aria-label={t('ui2.dn.tenNganh')} className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm" />
+        <button type="button" onClick={them} className="rounded-xl border border-border px-3 py-2 text-sm font-medium hover:bg-accent">{t('ui2.dn.them')}</button>
       </div>
       <button
         type="button"
-        onClick={() => void luu({ nganh: ds, nganh_chinh: chinh }, 'Đã lưu ngành nghề.')}
+        onClick={() => void luu({ nganh: ds, nganh_chinh: chinh }, t('ui2.dn.daLuuNganh'))}
         disabled={dangLuu || !doi}
         className="mt-2 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
       >
         {dangLuu && <Loader2 size={14} className="animate-spin" />}
-        {doi ? 'Lưu ngành nghề' : 'Đã lưu'}
+        {doi ? t('ui2.dn.luuNganh') : t('ui2.dn.daLuu')}
       </button>
       {g && g.nhom && !g.da_co && !doi && (
         <div className="mt-3 rounded-xl bg-muted/40 p-3 text-sm">
-          <p className="font-medium text-foreground">Gợi ý nhóm hoạt động tính thuế: {g.ten_nhom}</p>
+          <p className="font-medium text-foreground">{t('ui2.dn.goiYNhom')} {g.ten_nhom}</p>
           <p className="mt-1 text-xs text-muted-foreground">{g.vi_sao}</p>
-          <button type="button" disabled={dangLuu} onClick={() => void luu({ xac_nhan_nhom: g.nhom }, 'Đã thêm nhóm hoạt động vào hồ sơ thuế.')} className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40">
-            Đúng, dùng nhóm này
+          <button type="button" disabled={dangLuu} onClick={() => void luu({ xac_nhan_nhom: g.nhom }, t('ui2.dn.daThemNhom'))} className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40">
+            {t('ui2.dn.dungNhom')}
           </button>
         </div>
       )}
-      {g && !g.nhom && !doi && <p className="mt-2 text-xs text-muted-foreground">Chưa gợi ý nhóm tính thuế cho ngành {g.ma}: {g.vi_sao}</p>}
-      <p className="mt-2 text-xs text-muted-foreground">MIMI không tự lập danh sách ngành nghề kinh doanh có điều kiện — kiểm giấy phép con với cơ quan cấp phép.</p>
+      {g && !g.nhom && !doi && <p className="mt-2 text-xs text-muted-foreground">{t('ui2.dn.chuaGoiY', { ma: g.ma })} {g.vi_sao}</p>}
+      <p className="mt-2 text-xs text-muted-foreground">{t('ui2.dn.khongTuLap')}</p>
     </div>
   );
 }
@@ -146,17 +148,19 @@ interface DoanhNghiep {
 }
 
 function Dong({ nhan, giaTri }: { nhan: string; giaTri: string | null }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between border-b border-border/20 py-3 last:border-0">
       <span className="text-sm text-muted-foreground">{nhan}</span>
       <span className={giaTri ? 'text-sm font-medium text-foreground' : 'text-sm text-muted-foreground/60'}>
-        {giaTri || 'Chưa có'}
+        {giaTri || t('ui2.dn.chuaCo')}
       </span>
     </div>
   );
 }
 
 export function ThongTinDoanhNghiep() {
+  const { t } = useTranslation();
   const [dn, setDn] = useState<DoanhNghiep | null>(null);
   const [dangTai, setDangTai] = useState(true);
   const [loiTai, setLoiTai] = useState(false);
@@ -200,7 +204,7 @@ export function ThongTinDoanhNghiep() {
     if (!dn) return;
     const sach = chuanHoaMst(mst);
     if (!MST_HOP_LE(sach)) {
-      toast.error('Mã số thuế là 10 chữ số (có thể kèm 3 số chi nhánh), hoặc 12 chữ số với hộ kinh doanh.');
+      toast.error(t('ui2.dn.mstSai'));
       return;
     }
     setDangLuu(true);
@@ -213,26 +217,26 @@ export function ThongTinDoanhNghiep() {
     // Máy chủ có thể vừa điền tỉnh từ địa chỉ đăng ký: đọc lại để thấy ngay.
     void tai();
     toast.success(ct?.theo_mst?.ten
-      ? `Đã lưu mã số thuế của ${ct.theo_mst.ten}.`
-      : 'Đã lưu mã số thuế. Chưa tìm thấy mã này trên dữ liệu đăng ký thuế — kiểm lại nếu gõ nhầm.');
+      ? t('ui2.dn.daLuuMstCua', { ten: ct.theo_mst.ten })
+      : t('ui2.dn.daLuuMstKhongThay'));
   }, [dn, mst, docTheoMst, tai]);
 
   if (dangTai) {
     return (
       <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
-        <Loader2 size={14} className="animate-spin" /> Đang tải…
+        <Loader2 size={14} className="animate-spin" /> {t('ui2.chung.dangTai')}
       </div>
     );
   }
 
   if (!dn && loiTai) {
-    return <LoiTaiLai className="my-2" cau="Chưa tải được thông tin doanh nghiệp. Hồ sơ của bạn vẫn còn." thuLai={() => { setDangTai(true); void tai(); }} />;
+    return <LoiTaiLai className="my-2" cau={t('ui2.dn.loiTai')} thuLai={() => { setDangTai(true); void tai(); }} />;
   }
 
   if (!dn) {
     return (
       <p className="py-3 text-sm text-muted-foreground">
-        Chưa có hồ sơ doanh nghiệp nào. Đăng xuất rồi đăng nhập lại để tạo hồ sơ.
+        {t('ui2.dn.chuaCoHoSo')}
       </p>
     );
   }
@@ -241,21 +245,21 @@ export function ThongTinDoanhNghiep() {
 
   return (
     <div>
-      <Dong nhan="Tên doanh nghiệp" giaTri={dn.name} />
-      <Dong nhan="Ngành nghề" giaTri={dn.industry} />
-      <Dong nhan="Tỉnh / Thành phố" giaTri={dn.province} />
+      <Dong nhan={t('ui2.dn.tenDn')} giaTri={dn.name} />
+      <Dong nhan={t('ui2.dn.nganhNghe')} giaTri={dn.industry} />
+      <Dong nhan={t('ui2.dn.tinh')} giaTri={dn.province} />
 
       {/* Điều Tổng cục Thuế ghi cho mã này — chỉ hiện, không sửa ở đây: đổi mã thì tra lại. */}
       {theoMst?.theo_mst && (
         <div className="mt-2 rounded-xl bg-muted/40 p-3">
-          <p className="text-xs font-medium text-muted-foreground">Theo đăng ký thuế</p>
-          <Dong nhan="Tên đăng ký" giaTri={theoMst.theo_mst.ten} />
-          <Dong nhan="Loại hình" giaTri={theoMst.loai_theo_mst === 'doanh_nghiep' ? 'Doanh nghiệp' : theoMst.loai_theo_mst === 'ho_kinh_doanh' ? 'Hộ kinh doanh' : null} />
-          <Dong nhan="Địa chỉ" giaTri={theoMst.theo_mst.dia_chi} />
-          <Dong nhan="Cơ quan thuế quản lý" giaTri={theoMst.theo_mst.co_quan_thue} />
-          <Dong nhan="Trạng thái" giaTri={theoMst.theo_mst.trang_thai} />
+          <p className="text-xs font-medium text-muted-foreground">{t('ui2.dn.theoDkThue')}</p>
+          <Dong nhan={t('ui2.dn.tenDangKy')} giaTri={theoMst.theo_mst.ten} />
+          <Dong nhan={t('ui2.dn.loaiHinh')} giaTri={theoMst.loai_theo_mst === 'doanh_nghiep' ? t('ui2.dn.doanhNghiep') : theoMst.loai_theo_mst === 'ho_kinh_doanh' ? t('ui2.dn.hoKinhDoanh') : null} />
+          <Dong nhan={t('ui2.dn.diaChi')} giaTri={theoMst.theo_mst.dia_chi} />
+          <Dong nhan={t('ui2.dn.coQuanThue')} giaTri={theoMst.theo_mst.co_quan_thue} />
+          <Dong nhan={t('ui2.dn.trangThai')} giaTri={theoMst.theo_mst.trang_thai} />
           {!theoMst.theo_mst.con_hoat_dong && (
-            <p className="mt-2 text-xs text-destructive">Mã này không còn hoạt động trên dữ liệu thuế. Kiểm lại xem có gõ nhầm mã không.</p>
+            <p className="mt-2 text-xs text-destructive">{t('ui2.dn.mstNgung')}</p>
           )}
         </div>
       )}
@@ -264,13 +268,13 @@ export function ThongTinDoanhNghiep() {
 
       <div className="border-t border-border/20 pt-4">
         <label className="block">
-          <span className="mb-1.5 block text-sm text-muted-foreground">Mã số thuế</span>
+          <span className="mb-1.5 block text-sm text-muted-foreground">{t('ui2.dn.mst')}</span>
           <div className="flex gap-2">
             <input
               inputMode="numeric"
               value={mst}
               onChange={(e) => setMst(e.target.value)}
-              placeholder="10 số, hoặc 12 số với hộ kinh doanh"
+              placeholder={t('ui2.dn.mstPh')}
               className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 font-mono text-sm"
             />
             <button
@@ -279,12 +283,12 @@ export function ThongTinDoanhNghiep() {
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
             >
               {dangLuu && <Loader2 size={14} className="animate-spin" />}
-              {daLuu ? 'Đã lưu' : 'Lưu'}
+              {daLuu ? t('ui2.dn.daLuu') : t('ui2.chung.luu')}
             </button>
           </div>
         </label>
         <p className="mt-2 text-xs text-muted-foreground">
-          Cần mã số thuế để MIMI phân biệt hoá đơn bán ra và mua vào, và để điền tờ khai.
+          {t('ui2.dn.canMst')}
         </p>
       </div>
     </div>

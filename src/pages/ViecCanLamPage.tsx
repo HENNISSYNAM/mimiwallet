@@ -18,9 +18,11 @@ import {
  * Mọi thay đổi đi qua máy chủ; trình duyệt không ghi thẳng bảng nào. "Bạn xác nhận" không bao giờ hiện
  * như "đã xác minh".
  */
+/** Định dạng số/ngày hiển thị theo ngôn ngữ đang chọn (đơn vị ₫ giữ nguyên). */
+const locHienThi = () => (({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
 const loiCua = (e: unknown) => (e instanceof Error ? e.message : i18n.t('app.viec.loi'));
 const ngayVN = (ymd: string) => ymd.slice(0, 10).split('-').reverse().join('/');
-const gioVN = (iso: string) => new Date(iso).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const gioVN = (iso: string) => new Date(iso).toLocaleString(locHienThi(), { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 const MAU_NGAY: Record<string, string> = {
   han_luat: 'border-destructive/40 bg-destructive/5 text-destructive',

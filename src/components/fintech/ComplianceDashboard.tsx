@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Shield, Check, Lock, Clock, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { COMPANY } from '@/config/company';
 
 /**
@@ -43,36 +44,29 @@ interface Muc {
 /** Những cơ chế đã có thật, đối chiếu được với mã nguồn. */
 const DA_CO: Muc[] = [
   {
-    label: 'Mã hoá mã truy cập ngân hàng khi lưu',
+    label: 'ui2.tuanThu.maHoa',
     tinhTrang: 'co',
-    moTa:
-      'AES-256-GCM, khoá bọc bằng ML-KEM-768 (NIST FIPS 203) — kháng tấn công "thu thập hôm nay, giải mã sau".',
+    moTa: 'ui2.tuanThu.maHoaMo',
   },
   {
-    label: 'Cách ly dữ liệu giữa các doanh nghiệp',
+    label: 'ui2.tuanThu.cachLy',
     tinhTrang: 'co',
-    moTa:
-      'Row Level Security bật trên toàn bộ bảng, khoá theo tài khoản sở hữu. Không có đường truy vấn nào ' +
-      'từ tài khoản này chạm tới dữ liệu của doanh nghiệp khác.',
+    moTa: 'ui2.tuanThu.cachLyMo',
   },
   {
-    label: 'Người dùng tự thu hồi quyền',
+    label: 'ui2.tuanThu.thuHoi',
     tinhTrang: 'co',
-    moTa:
-      'Ngắt liên kết ngân hàng bất cứ lúc nào, và tự xoá toàn bộ tài khoản trong Cài đặt — ' +
-      'khi xoá, hệ thống thu hồi uỷ quyền ở phía nhà cung cấp trước.',
+    moTa: 'ui2.tuanThu.thuHoiMo',
   },
   {
-    label: 'Không chạm dữ liệu thẻ, không giữ tiền',
+    label: 'ui2.tuanThu.khongThe',
     tinhTrang: 'co',
-    moTa:
-      'MIMI chỉ đọc sao kê theo uỷ quyền. Không lưu số thẻ, không giữ số dư của ai, không chuyển tiền thay người dùng. ' +
-      'Mã QR nhận tiền do ngân hàng của bạn phát hành.',
+    moTa: 'ui2.tuanThu.khongTheMo',
   },
   {
-    label: 'Không bao giờ thấy mật khẩu ngân hàng',
+    label: 'ui2.tuanThu.matKhau',
     tinhTrang: 'co',
-    moTa: 'Người dùng cấp quyền trên giao diện của ngân hàng hoặc nhà cung cấp, không nhập vào MIMI.',
+    moTa: 'ui2.tuanThu.matKhauMo',
   },
 ];
 
@@ -87,28 +81,28 @@ const CHUA_CO: Muc[] = [
   {
     label: 'ISO 27001',
     tinhTrang: 'chua',
-    moTa: 'Chưa có tổ chức nào cấp. Khi có, mục này sẽ ghi rõ tổ chức chứng nhận và số hiệu.',
+    moTa: 'ui2.tuanThu.isoMo',
   },
   {
     label: 'PCI DSS',
     tinhTrang: 'chua',
-    moTa: 'Không áp dụng — MIMI không xử lý, truyền hay lưu dữ liệu thẻ thanh toán.',
+    moTa: 'ui2.tuanThu.pciMo',
   },
   {
-    label: 'Giấy phép trung gian thanh toán / tổ chức tín dụng',
+    label: 'ui2.tuanThu.giayPhep',
     tinhTrang: 'chua',
-    moTa:
-      `${COMPANY.shortName} không có và không hoạt động trong phạm vi cần các giấy phép này: ` +
-      'không cho vay, không giữ tiền, không chuyển tiền.',
+    moTa: 'ui2.tuanThu.giayPhepMo',
   },
   {
-    label: 'Kiểm toán an ninh độc lập',
+    label: 'ui2.tuanThu.kiemToan',
     tinhTrang: 'chua',
-    moTa: 'Chưa thực hiện. Kết quả sẽ được công bố tại đây khi có.',
+    moTa: 'ui2.tuanThu.kiemToanMo',
   },
 ];
 
+/** `label` và `moTa` là khoá i18n (khối `ui2.tuanThu`); tên chuẩn như ISO 27001 để nguyên. */
 function Dong({ muc }: { muc: Muc }) {
+  const { t } = useTranslation();
   const co = muc.tinhTrang === 'co';
   return (
     <div className="flex items-start gap-3 py-3.5 border-b border-border last:border-0">
@@ -120,14 +114,15 @@ function Dong({ muc }: { muc: Muc }) {
         {co ? <Check size={12} /> : <X size={12} />}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{muc.label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{muc.moTa}</p>
+        <p className="text-sm font-medium text-foreground">{muc.label.startsWith('ui2.') ? t(muc.label) : muc.label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{t(muc.moTa, { congTy: COMPANY.shortName })}</p>
       </div>
     </div>
   );
 }
 
 export default function ComplianceDashboard() {
+  const { t } = useTranslation();
   return (
     <motion.div
       variants={{ show: { transition: { staggerChildren: 0.06 } } }}
@@ -139,11 +134,9 @@ export default function ComplianceDashboard() {
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-primary mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-foreground">Bảo mật và tuân thủ</p>
+            <p className="text-sm font-semibold text-foreground">{t('ui2.tuanThu.tieuDe')}</p>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-              Trang này liệt kê cơ chế đang chạy trong hệ thống và cả những thứ chưa có.
-              Không có điểm tuân thủ tổng hợp, vì một con số như vậy gộp những thứ không
-              cùng đơn vị và tạo cảm giác đã đo lường trong khi chưa đo gì.
+              {t('ui2.tuanThu.moTa')}
             </p>
           </div>
         </div>
@@ -151,7 +144,7 @@ export default function ComplianceDashboard() {
 
       <motion.div variants={fadeUp} className="rounded-2xl border border-border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Lock size={14} className="text-mimi-green" /> Đang có
+          <Lock size={14} className="text-mimi-green" /> {t('ui2.tuanThu.dangCo')}
         </h3>
         <div className="mt-2">
           {DA_CO.map((m) => (
@@ -162,7 +155,7 @@ export default function ComplianceDashboard() {
 
       <motion.div variants={fadeUp} className="rounded-2xl border border-border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Clock size={14} className="text-muted-foreground" /> Chưa có
+          <Clock size={14} className="text-muted-foreground" /> {t('ui2.tuanThu.chuaCo')}
         </h3>
         <div className="mt-2">
           {CHUA_CO.map((m) => (

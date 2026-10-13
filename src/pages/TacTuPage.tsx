@@ -66,8 +66,10 @@ type NhatKy = Database['public']['Tables']['nhat_ky_tac_tu']['Row'];
 
 const dong = dinhDangTien;
 const tenNganHang = (bin: string) => DANH_SACH_NGAN_HANG.find((n) => n.bin === bin)?.ten ?? bin;
+const LOCALE: Record<string, string> = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' };
+const loc = () => LOCALE[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN';
 const luc = (s: string | null) =>
-  s ? new Date(s).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
+  s ? new Date(s).toLocaleString(loc(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
 const chuCai = (email: string | null) => (email?.split('@')[0] ?? '').slice(0, 2).toUpperCase() || '—';
 
 /** Nhãn trạng thái agent theo ngôn ngữ đang chọn; mã lạ hiện nguyên mã. */
@@ -2103,7 +2105,7 @@ function FormTaoYeuCau({
           <div className="relative">
             <input
               id="tyc-so-tien"
-              value={soTien > 0 ? soTien.toLocaleString('vi-VN') : ''}
+              value={soTien > 0 ? soTien.toLocaleString(loc()) : ''}
               onChange={(e) => setSoTienSo(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 14))}
               inputMode="numeric"
               placeholder="0"

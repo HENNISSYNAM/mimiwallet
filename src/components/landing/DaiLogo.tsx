@@ -1,4 +1,5 @@
 import thinhPhatLogo from '@/assets/logos/thinh-phat.png';
+import { useTranslation } from 'react-i18next';
 import cassoLogo from '@/assets/logos/casso.png';
 import cpGroupLogo from '@/assets/logos/cp-group.png';
 
@@ -20,10 +21,11 @@ export const DONG_HANH = [
 
 export default function DaiLogo({ className = '' }: { className?: string }) {
   // Ít logo thì lặp nhiều lần cho kín một vòng rộng hơn màn hình.
+  const { t } = useTranslation();
   const mot = Array.from({ length: 4 }, () => DONG_HANH).flat();
   return (
-    <section aria-label="Đồng hành cùng MIMI" className={`py-10 ${className}`}>
-      <p className="text-center text-[15px] text-muted-foreground">Đồng hành cùng MIMI</p>
+    <section aria-label={t('ui2.daiLogo.tieuDe')} className={`py-10 ${className}`}>
+      <p className="text-center text-[15px] text-muted-foreground">{t('ui2.daiLogo.tieuDe')}</p>
       <div className="mimi-dai-logo-khung mt-6 overflow-hidden">
         <ul className="mimi-dai-logo flex w-max items-center">
           {[...mot, ...mot].map((d, i) => (

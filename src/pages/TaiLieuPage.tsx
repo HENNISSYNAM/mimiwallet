@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import i18n from 'i18next';
+import { useTranslation } from 'react-i18next';
 import {
   chuanBiNop, daNopTaiLieu, dsNop, dsTaiLieu, duyetTaiLieu, moTaiLieu, TEN_DO_DAY, TEN_LOAI_TAI_LIEU, TEN_TRANG_THAI_TAI_LIEU,
   type TaiLieuTom, type YeuCauNop,
@@ -16,11 +18,13 @@ const NOP_DUOC = new Set(['explanation_letter', 'audit_pack', 'tax_readiness_pac
  * Mỗi tài liệu có phiên bản bất biến (mã băm in kèm) và nhãn in ngay trên trang. Duyệt và "đã nộp" đi
  * qua hộp xác nhận; tài liệu đã nộp thì cơ sở dữ liệu khoá, không sửa được.
  */
-const loiCua = (e: unknown) => (e instanceof Error ? e.message : 'Có lỗi. Thử lại sau ít phút.');
+const loiCua = (e: unknown) => (e instanceof Error ? e.message : i18n.t('ui1.tl.loiChung'));
+const LOCALE: Record<string, string> = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' };
 const DUYET_DUOC = new Set(['chu_so_huu', 'quan_tri', 'ke_toan']);
 const DA_KHOA = new Set(['signed', 'submitted', 'accepted']);
 
 function Dong({ t, vaiTro, onDoi, onChuanBi }: { t: TaiLieuTom; vaiTro: string; onDoi: (t: TaiLieuTom) => void; onChuanBi: (y: YeuCauNop) => void }) {
+  const { t: dich, i18n: ng } = useTranslation();
   const [dang, setDang] = useState(false);
   const [xacNhan, setXacNhan] = useState<null | 'approved' | 'submitted' | 'rejected'>(null);
   const [nhanXet, setNhanXet] = useState('');
@@ -37,44 +41,44 @@ function Dong({ t, vaiTro, onDoi, onChuanBi }: { t: TaiLieuTom; vaiTro: string; 
           <p className="text-sm font-medium text-foreground">{t.tieu_de}</p>
           <p className="text-xs text-muted-foreground">
             {TEN_LOAI_TAI_LIEU[t.loai] ?? t.loai} · {TEN_TRANG_THAI_TAI_LIEU[t.trang_thai] ?? t.trang_thai}
-            {t.do_day ? ` · ${TEN_DO_DAY[t.do_day] ?? t.do_day}` : ''} · phiên bản {t.phien_ban_hien_tai ?? 1} · {new Date(t.tao_luc).toLocaleDateString('vi-VN')}
+            {t.do_day ? ` · ${TEN_DO_DAY[t.do_day] ?? t.do_day}` : ''} · {dich('ui1.tl.phienBan', { n: t.phien_ban_hien_tai ?? 1 })} · {new Date(t.tao_luc).toLocaleDateString(LOCALE[(ng.language ?? 'vi').slice(0, 2)] ?? 'vi-VN')}
           </p>
         </div>
         <button type="button" className={`${nut} inline-flex items-center gap-1`} onClick={() => void moTaiLieu(t.id).then((r) => window.open(r.url, '_blank', 'noopener,noreferrer')).catch((e) => toast.error(loiCua(e)))}>
-          Mở <ExternalLink size={12} />
+          {dich('ui1.tl.mo')} <ExternalLink size={12} />
         </button>
       </div>
       {!khoa && !xacNhan && (
         <div className="flex flex-wrap gap-2">
           {DUYET_DUOC.has(vaiTro) && <>
-            <button type="button" className={nut} disabled={dang} onClick={() => void chay(() => duyetTaiLieu(t.id, 'needs_review'), 'Đã đánh dấu cần xem lại.')}>Cần xem lại</button>
-            <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('approved')}>Duyệt</button>
-            <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('rejected')}>Không duyệt</button>
+            <button type="button" className={nut} disabled={dang} onClick={() => void chay(() => duyetTaiLieu(t.id, 'needs_review'), dich('ui1.tl.daDanhDau'))}>{dich('ui1.tl.canXemLai')}</button>
+            <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('approved')}>{dich('ui1.agent.duyet')}</button>
+            <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('rejected')}>{dich('ui1.tl.khongDuyet')}</button>
           </>}
           {DUYET_DUOC.has(vaiTro) && NOP_DUOC.has(t.loai) && (
             <button type="button" className={nut} disabled={dang} onClick={async () => {
               setDang(true);
-              try { onChuanBi(await chuanBiNop(t.id)); toast.success('Đã khoá bản này để nộp — xem mục "Nộp & theo dõi".'); } catch (e) { toast.error(loiCua(e)); } finally { setDang(false); }
-            }}>Chuẩn bị nộp</button>
+              try { onChuanBi(await chuanBiNop(t.id)); toast.success(dich('ui1.tl.daKhoa')); } catch (e) { toast.error(loiCua(e)); } finally { setDang(false); }
+            }}>{dich('ui1.tl.chuanBi')}</button>
           )}
-          {DUYET_DUOC.has(vaiTro) && !NOP_DUOC.has(t.loai) && <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('submitted')}>Tôi đã tự nộp</button>}
+          {DUYET_DUOC.has(vaiTro) && !NOP_DUOC.has(t.loai) && <button type="button" className={nut} disabled={dang} onClick={() => setXacNhan('submitted')}>{dich('ui1.tl.daTuNop')}</button>}
         </div>
       )}
       {xacNhan && (
-        <div role="alertdialog" aria-label="Xác nhận" className="space-y-2 rounded-lg bg-accent/50 p-3 text-xs">
+        <div role="alertdialog" aria-label={dich('ui1.chung.xacNhan')} className="space-y-2 rounded-lg bg-accent/50 p-3 text-xs">
           <p>
-            {xacNhan === 'approved' && 'Duyệt tài liệu này? Việc duyệt được ghi lại kèm tên bạn và phiên bản đang xem.'}
-            {xacNhan === 'rejected' && 'Ghi lý do không duyệt:'}
-            {xacNhan === 'submitted' && 'Bạn đã tự nộp tài liệu này (ngoài MIMI)? Sau khi ghi nhận, tài liệu bị khoá, không sửa được.'}
+            {xacNhan === 'approved' && dich('ui1.tl.hoiDuyet')}
+            {xacNhan === 'rejected' && dich('ui1.tl.lyDoKhong')}
+            {xacNhan === 'submitted' && dich('ui1.tl.hoiDaNop')}
           </p>
-          {xacNhan === 'rejected' && <textarea aria-label="Lý do" value={nhanXet} onChange={(e) => setNhanXet(e.target.value)} maxLength={2000} rows={2} className="w-full rounded-lg border border-border bg-card p-2" />}
+          {xacNhan === 'rejected' && <textarea aria-label={dich('ui1.tl.lyDo')} value={nhanXet} onChange={(e) => setNhanXet(e.target.value)} maxLength={2000} rows={2} className="w-full rounded-lg border border-border bg-card p-2" />}
           <div className="flex gap-2">
             <button type="button" className={nut} disabled={dang || (xacNhan === 'rejected' && !nhanXet.trim())} onClick={() => {
-              if (xacNhan === 'approved') void chay(() => duyetTaiLieu(t.id, 'approved', undefined, true), 'Đã duyệt.');
-              else if (xacNhan === 'rejected') void chay(() => duyetTaiLieu(t.id, 'rejected', nhanXet), 'Đã ghi không duyệt.');
-              else void chay(() => daNopTaiLieu(t.id), 'Đã ghi nhận bạn đã nộp.');
-            }}>{dang ? <Loader2 size={12} className="animate-spin" /> : 'Xác nhận'}</button>
-            <button type="button" className={nut} onClick={() => setXacNhan(null)}>Huỷ</button>
+              if (xacNhan === 'approved') void chay(() => duyetTaiLieu(t.id, 'approved', undefined, true), dich('ui1.tl.daDuyet'));
+              else if (xacNhan === 'rejected') void chay(() => duyetTaiLieu(t.id, 'rejected', nhanXet), dich('ui1.tl.daKhongDuyet'));
+              else void chay(() => daNopTaiLieu(t.id), dich('ui1.tl.daGhiNop'));
+            }}>{dang ? <Loader2 size={12} className="animate-spin" /> : dich('ui1.chung.xacNhan')}</button>
+            <button type="button" className={nut} onClick={() => setXacNhan(null)}>{dich('ui1.agent.huy')}</button>
           </div>
         </div>
       )}
@@ -83,6 +87,7 @@ function Dong({ t, vaiTro, onDoi, onChuanBi }: { t: TaiLieuTom; vaiTro: string; 
 }
 
 export default function TaiLieuPage() {
+  const { t: dich } = useTranslation();
   const [ds, setDs] = useState<TaiLieuTom[] | null>(null);
   const [nop, setNop] = useState<YeuCauNop[]>([]);
   const doiNop = (y: YeuCauNop) => {
@@ -101,18 +106,18 @@ export default function TaiLieuPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tài liệu & Chứng từ</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Báo cáo, gói bằng chứng, công văn MIMI soạn — mỗi bản có nhãn, nguồn và mã băm để đối chiếu bản in.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{dich('ui1.tl.tieuDe')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{dich('ui1.tl.moTa')}</p>
       </div>
       {loi && (
         <div role="alert" className="flex items-center gap-3 text-sm text-destructive">
-          {loi} <button type="button" onClick={() => void nap()} className="h-9 rounded-lg border border-border px-3 text-xs text-foreground">Thử lại</button>
+          {loi} <button type="button" onClick={() => void nap()} className="h-9 rounded-lg border border-border px-3 text-xs text-foreground">{dich('ui1.chung.thuLai')}</button>
         </div>
       )}
-      {!ds && !loi && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Đang đọc thư viện…</p>}
+      {!ds && !loi && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> {dich('ui1.tl.dangDoc')}</p>}
       <NopVaTheoDoi ds={nop} vaiTro={vaiTro} onDoi={doiNop} />
       {ds && ds.length === 0 && (
-        <p className="text-sm text-muted-foreground">Chưa có tài liệu nào. Hỏi MIMI "Soạn báo cáo tháng này" hoặc làm một việc trong Việc cần làm — tài liệu MIMI soạn sẽ nằm ở đây.</p>
+        <p className="text-sm text-muted-foreground">{dich('ui1.tl.trong')}</p>
       )}
       {ds && ds.length > 0 && (
         <ul className="divide-y divide-border rounded-2xl border border-border bg-card">

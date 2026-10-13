@@ -3,6 +3,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { HoiQuyenMic } from '@/hooks/useNgheGiong';
+import { useTranslation } from 'react-i18next';
 
 /**
  * MIMI hỏi trước khi bật mic (26/09/2026) — xem `hooks/useNgheGiong.ts`.
@@ -10,35 +11,33 @@ import type { HoiQuyenMic } from '@/hooks/useNgheGiong';
  * "bi_chan": trình duyệt không hỏi lại được nữa — chỉ cách mở lại.
  */
 export function HopBatMic({ trangThai, onDongY, onDong }: { trangThai: HoiQuyenMic; onDongY: () => void; onDong: () => void }) {
+  const { t } = useTranslation();
   return (
     <AlertDialog open={trangThai !== null} onOpenChange={(mo) => { if (!mo) onDong(); }}>
       <AlertDialogContent>
         {trangThai === 'bi_chan' ? (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>Micro đang bị chặn</AlertDialogTitle>
+              <AlertDialogTitle>{t('ui2.mic.biChan')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Trình duyệt đã chặn micro cho trang này nên MIMI không hỏi lại được. Bấm biểu tượng ổ khoá (hoặc biểu tượng
-                cài đặt) bên trái địa chỉ trang → Micro → Cho phép, rồi bấm mic lần nữa.
+                {t('ui2.mic.biChanMo')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogAction onClick={onDong}>Đã hiểu</AlertDialogAction>
+              <AlertDialogAction onClick={onDong}>{t('ui2.mic.daHieu')}</AlertDialogAction>
             </AlertDialogFooter>
           </>
         ) : (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>MIMI xin bật micro nhé?</AlertDialogTitle>
+              <AlertDialogTitle>{t('ui2.mic.xinBat')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Để bạn nói câu hỏi thay vì gõ. Bấm "Cho phép", rồi chọn "Cho phép" ở hộp của trình duyệt. Dịch vụ nhận giọng của
-                trình duyệt (Chrome, Edge) đổi giọng thành chữ; MIMI chỉ nhận chữ, không lưu âm thanh. Bạn tắt lại được bất cứ lúc
-                nào ở biểu tượng ổ khoá cạnh địa chỉ trang.
+                {t('ui2.mic.xinBatMo')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Để sau</AlertDialogCancel>
-              <AlertDialogAction onClick={onDongY}>Cho phép</AlertDialogAction>
+              <AlertDialogCancel>{t('ui2.mic.deSau')}</AlertDialogCancel>
+              <AlertDialogAction onClick={onDongY}>{t('ui2.mic.choPhep')}</AlertDialogAction>
             </AlertDialogFooter>
           </>
         )}

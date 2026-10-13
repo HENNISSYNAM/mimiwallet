@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import i18n from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import { locMinhHoa } from '../../supabase/functions/_shared/minh-hoa.ts';
@@ -36,12 +38,14 @@ interface Khoan {
 }
 
 type Loc = 'chua' | 'ca_nhan' | 'kinh_doanh' | 'tat_ca';
-const TEN_LOC: Record<Loc, string> = { chua: 'Chưa phân loại', ca_nhan: 'Cá nhân', kinh_doanh: 'Kinh doanh', tat_ca: 'Tất cả' };
+const TEN_LOC: Record<Loc, string> = { chua: 'ui1.tccn.chua', ca_nhan: 'ui1.tccn.caNhan', kinh_doanh: 'ui1.tccn.kinhDoanh', tat_ca: 'ui1.tccn.tatCa' };
+const LOCALE: Record<string, string> = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' };
 
 const vnd = dinhDangTien;
 const ngayVN = (s: string) => s.slice(0, 10).split('-').reverse().join('/');
 
 export default function TachChiCaNhanPage() {
+  const { t: dich, i18n: ng } = useTranslation();
   const [ds, setDs] = useState<Khoan[] | null>(null);
   const [biCat, setBiCat] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -76,13 +80,13 @@ export default function TachChiCaNhanPage() {
         id: t.id,
         ngay: String(t.transaction_date),
         so_tien: doLonTien(t),
-        nguoi_nhan: t.counter_account_name ?? t.merchant_name ?? 'Không rõ người nhận',
+        nguoi_nhan: t.counter_account_name ?? t.merchant_name ?? i18n.t('ui1.tccn.khongRoNguoiNhan'),
         noi_dung: t.payment_reference,
         goi_y: goiYCaNhan(t)?.ly_do ?? null,
         ca_nhan: nguoiChon.has(t.id) ? !!nguoiChon.get(t.id) : null,
       })));
     } catch (e) {
-      setLoi(e instanceof Error ? e.message : 'Không tải được khoản chi.');
+      setLoi(e instanceof Error ? e.message : i18n.t('ui1.tccn.khongTai'));
     }
   }, []);
 
@@ -94,7 +98,7 @@ export default function TachChiCaNhanPage() {
       await goiTroLy('gan_nhan_chi', { giao_dich_id: k.id, ca_nhan: caNhan });
       setDs((cu) => cu?.map((x) => (x.id === k.id ? { ...x, ca_nhan: caNhan } : x)) ?? cu);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chưa lưu được.');
+      toast.error(e instanceof Error ? e.message : dich('ui1.chung.chuaLuu'));
     } finally {
       setDangLuu(null);
     }
@@ -116,18 +120,17 @@ export default function TachChiCaNhanPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tách chi cá nhân</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{dich('ui1.tccn.tieuDe')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Chi tiêu cá nhân không phải chi phí của hộ kinh doanh. Tách ra để phần chi phí bạn dùng khi tính thuế theo lợi nhuận chỉ gồm khoản
-          của cửa hàng. Không chắc một khoản thuộc bên nào thì hỏi kế toán.
+          {dich('ui1.tccn.moTa')}
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          MIMI chỉ gợi ý, bạn là người chọn. Lựa chọn ở đây chưa được dùng để tính lại các con số thuế trong MIMI.
+          {dich('ui1.tccn.chiGoiY')}
         </p>
       </div>
 
-      <dl className="grid gap-3 sm:grid-cols-3" aria-label={`Tổng chi ${SO_NGAY} ngày`}>
-        {([['Kinh doanh', tong.kinh_doanh], ['Cá nhân', tong.ca_nhan], ['Chưa phân loại', tong.chua]] as const).map(([nhan, so]) => (
+      <dl className="grid gap-3 sm:grid-cols-3" aria-label={dich('ui1.tccn.tongChi', { n: SO_NGAY })}>
+        {([[dich('ui1.tccn.kinhDoanh'), tong.kinh_doanh], [dich('ui1.tccn.caNhan'), tong.ca_nhan], [dich('ui1.tccn.chua'), tong.chua]] as const).map(([nhan, so]) => (
           <div key={nhan} className="rounded-xl border border-border bg-card p-4">
             <dt className="text-xs text-muted-foreground">{nhan}</dt>
             <dd className="mt-1 text-lg font-semibold tabular-nums text-foreground">{vnd(so)}</dd>
@@ -137,15 +140,15 @@ export default function TachChiCaNhanPage() {
 
       {biCat && (
         <p role="status" className="text-sm text-amber-700 dark:text-amber-400">
-          Chỉ hiện {TRAN.toLocaleString('vi-VN')} giao dịch gần nhất trong {SO_NGAY} ngày — tổng ở trên chưa gồm các khoản cũ hơn.
+          {dich('ui1.tccn.biCat', { tran: TRAN.toLocaleString(LOCALE[(ng.language ?? 'vi').slice(0, 2)] ?? 'vi-VN'), n: SO_NGAY })}
         </p>
       )}
       {loi && <p role="alert" className="text-sm text-destructive">{loi}</p>}
-      {!ds && !loi && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Đang tải khoản chi…</p>}
+      {!ds && !loi && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> {dich('ui1.tccn.dangTai')}</p>}
 
       {ds && (
         <>
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Lọc khoản chi">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label={dich('ui1.tccn.loc')}>
             {(Object.keys(TEN_LOC) as Loc[]).map((l) => (
               <button
                 key={l}
@@ -154,29 +157,29 @@ export default function TachChiCaNhanPage() {
                 onClick={() => setLoc(l)}
                 className={`rounded-full border px-3 py-1.5 text-sm ${loc === l ? 'border-primary bg-primary/10 text-primary' : 'border-border text-foreground'}`}
               >
-                {TEN_LOC[l]}
+                {dich(TEN_LOC[l])}
               </button>
             ))}
           </div>
 
           {hien.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              {ds.length === 0 ? `Chưa có khoản tiền ra nào trong ${SO_NGAY} ngày qua.` : 'Không có khoản nào ở mục này.'}
+              {ds.length === 0 ? dich('ui1.tccn.chuaCo', { n: SO_NGAY }) : dich('ui1.tccn.mucTrong')}
             </p>
           ) : (
-            <ul className="divide-y divide-border rounded-xl border border-border" aria-label="Khoản chi">
+            <ul className="divide-y divide-border rounded-xl border border-border" aria-label={dich('ui1.tccn.khoanChi')}>
               {hien.map((k) => (
                 <li key={k.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-foreground">{k.nguoi_nhan}</p>
                     <p className="truncate text-xs text-muted-foreground">{ngayVN(k.ngay)}{k.noi_dung ? ` · ${k.noi_dung}` : ''}</p>
                     {k.goi_y && k.ca_nhan === null && (
-                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Có vẻ là chi cá nhân: {k.goi_y.toLowerCase()}.</p>
+                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{dich('ui1.tccn.coVe', { ly_do: k.goi_y.toLowerCase() })}</p>
                     )}
                   </div>
                   <span className="font-mono tabular-nums text-foreground">{vnd(k.so_tien)}</span>
-                  <div className="flex gap-1" role="group" aria-label={`Phân loại khoản ${vnd(k.so_tien)} cho ${k.nguoi_nhan}`}>
-                    {([[false, 'Kinh doanh'], [true, 'Cá nhân']] as const).map(([gia, nhan]) => (
+                  <div className="flex gap-1" role="group" aria-label={dich('ui1.tccn.phanLoai', { tien: vnd(k.so_tien), nguoi: k.nguoi_nhan })}>
+                    {([[false, dich('ui1.tccn.kinhDoanh')], [true, dich('ui1.tccn.caNhan')]] as const).map(([gia, nhan]) => (
                       <button
                         key={nhan}
                         aria-pressed={k.ca_nhan === gia}

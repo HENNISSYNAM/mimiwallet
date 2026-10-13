@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -31,6 +32,10 @@ const O = 'rounded-lg border border-border bg-card px-3 py-2 text-sm text-foregr
 const traoDuoc = (toi: VaiTro): VaiTro[] => VAI_TRO.filter((v) => toi === 'chu_so_huu' || !VAI_TRO_CAO.includes(v));
 
 export function ThanhVienCongTy() {
+  const { t } = useTranslation();
+  const tenVai = Object.fromEntries(
+    VAI_TRO.map((v) => [v, t(`ui2.vaiTro.${v}`, { defaultValue: TEN_VAI_TRO[v] })]),
+  ) as Record<VaiTro, string>;
   const [dsCongTy, setDsCongTy] = useState<CongTyCuaToi[]>([]);
   const [dangDung, setDangDung] = useState<CongTyCuaToi | null>(null);
   const [ds, setDs] = useState<ThanhVien[] | null>(null);
@@ -50,7 +55,7 @@ export function ThanhVienCongTy() {
       setDs(tv.thanh_vien as ThanhVien[]);
       setVaiToi(tv.vai_tro_cua_toi as VaiTro);
     } catch (e) {
-      setLoiTai(e instanceof Error ? e.message : 'Không tải được danh sách thành viên.');
+      setLoiTai(e instanceof Error ? e.message : t('ui2.thanhVien.loiTai'));
     }
   }, []);
 
@@ -65,7 +70,7 @@ export function ThanhVienCongTy() {
       await tai();
       return true;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Chưa làm được.');
+      toast.error(e instanceof Error ? e.message : t('ui2.thanhVien.chuaLamDuoc'));
       return false;
     } finally {
       setDangLam(null);
@@ -75,8 +80,8 @@ export function ThanhVienCongTy() {
   const moi = async (e: React.FormEvent) => {
     e.preventDefault();
     const em = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { toast.error('Email chưa đúng.'); return; }
-    if (await lam('moi', 'moi', { email: em, vai_tro: vaiMoi }, `Đã thêm ${em} với vai trò ${TEN_VAI_TRO[vaiMoi]}.`)) setEmail('');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { toast.error(t('ui2.thanhVien.emailSai')); return; }
+    if (await lam('moi', 'moi', { email: em, vai_tro: vaiMoi }, t('ui2.thanhVien.daThem', { email: em, vaiTro: tenVai[vaiMoi] }))) setEmail('');
   };
 
   const quanLy = !!vaiToi && duocLam(vaiToi, 'quan_ly_thanh_vien');
@@ -87,58 +92,58 @@ export function ThanhVienCongTy() {
     <div className="space-y-5">
       {dsCongTy.length > 1 && (
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-foreground">Công ty đang làm việc</span>
+          <span className="mb-1 block font-medium text-foreground">{t('ui2.thanhVien.congTyDangLam')}</span>
           <select
-            aria-label="Công ty đang làm việc"
+            aria-label={t('ui2.thanhVien.congTyDangLam')}
             value={dangDung?.id ?? ''}
             onChange={(e) => { chonCongTy(e.target.value); window.location.reload(); }}
             className={`${O} w-full`}
           >
-            {dsCongTy.map((c) => <option key={c.id} value={c.id}>{c.ten ?? 'Công ty chưa đặt tên'} · {TEN_VAI_TRO[c.vai_tro]}</option>)}
+            {dsCongTy.map((c) => <option key={c.id} value={c.id}>{c.ten ?? t('ui2.thanhVien.chuaDatTen')} · {tenVai[c.vai_tro]}</option>)}
           </select>
-          <span className="mt-1 block text-xs text-muted-foreground">Đổi công ty thì trang tải lại, mọi số liệu đọc theo công ty mới.</span>
+          <span className="mt-1 block text-xs text-muted-foreground">{t('ui2.thanhVien.doiCongTy')}</span>
         </label>
       )}
 
       {loiTai && <p role="alert" className="text-sm text-destructive">{loiTai}</p>}
-      {!ds && !loiTai && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Đang tải thành viên…</p>}
+      {!ds && !loiTai && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> {t('ui2.thanhVien.dangTai')}</p>}
 
       {ds && (
-        <ul className="divide-y divide-border rounded-xl border border-border" aria-label="Thành viên">
+        <ul className="divide-y divide-border rounded-xl border border-border" aria-label={t('ui2.thanhVien.thanhVien')}>
           {ds.map((tv) => (
             <li key={tv.user_id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
               <span className="min-w-0 flex-1 truncate text-foreground">
-                {tv.email ?? 'Không rõ email'}{tv.la_toi && <span className="ml-1 text-muted-foreground">(bạn)</span>}
+                {tv.email ?? t('ui2.thanhVien.khongRoEmail')}{tv.la_toi && <span className="ml-1 text-muted-foreground">({t('ui2.thanhVien.ban')})</span>}
               </span>
               {tacDongDuoc(tv) ? (
                 <select
-                  aria-label={`Vai trò của ${tv.email ?? 'thành viên'}`}
+                  aria-label={t('ui2.thanhVien.vaiTroCua', { ten: tv.email ?? t('ui2.thanhVien.thanhVienNay') })}
                   value={tv.vai_tro}
                   disabled={dangLam !== null}
                   onChange={(e) => {
                     const v = e.target.value as VaiTro;
-                    void lam(`vai:${tv.user_id}`, 'doi_vai_tro', { user_id: tv.user_id, vai_tro: v }, `Đã đổi vai trò sang ${TEN_VAI_TRO[v]}.`);
+                    void lam(`vai:${tv.user_id}`, 'doi_vai_tro', { user_id: tv.user_id, vai_tro: v }, t('ui2.thanhVien.daDoiVai', { vaiTro: tenVai[v] }));
                   }}
                   className={O}
                 >
-                  {[...new Set([tv.vai_tro, ...traoDuoc(vaiToi as VaiTro)])].map((v) => <option key={v} value={v}>{TEN_VAI_TRO[v]}</option>)}
+                  {[...new Set([tv.vai_tro, ...traoDuoc(vaiToi as VaiTro)])].map((v) => <option key={v} value={v}>{tenVai[v]}</option>)}
                 </select>
               ) : (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">{TEN_VAI_TRO[tv.vai_tro]}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">{tenVai[tv.vai_tro]}</span>
               )}
               {tacDongDuoc(tv) && (
                 <button
                   type="button"
                   disabled={dangLam !== null}
                   onClick={() => setXacNhan({
-                    tieuDe: `Gỡ ${tv.email ?? 'thành viên này'} khỏi công ty?`,
-                    mo: 'Người này mất quyền xem và thao tác với dữ liệu của công ty ngay lập tức. Muốn thêm lại thì mời lại.',
-                    nut: 'Gỡ khỏi công ty',
-                    lam: () => { void lam(`go:${tv.user_id}`, 'go_bo', { user_id: tv.user_id }, 'Đã gỡ khỏi công ty.'); },
+                    tieuDe: t('ui2.thanhVien.goHoi', { ten: tv.email ?? t('ui2.thanhVien.thanhVienNay') }),
+                    mo: t('ui2.thanhVien.goMo'),
+                    nut: t('ui2.thanhVien.goNut'),
+                    lam: () => { void lam(`go:${tv.user_id}`, 'go_bo', { user_id: tv.user_id }, t('ui2.thanhVien.daGo')); },
                   })}
                   className="text-xs font-medium text-destructive hover:underline disabled:opacity-50"
                 >
-                  Gỡ
+                  {t('ui2.thanhVien.go')}
                 </button>
               )}
             </li>
@@ -147,26 +152,25 @@ export function ThanhVienCongTy() {
       )}
 
       {quanLy && (
-        <form onSubmit={moi} noValidate className="space-y-2 rounded-xl border border-border p-4" aria-label="Thêm thành viên">
-          <p className="text-sm font-medium text-foreground">Thêm thành viên</p>
+        <form onSubmit={moi} noValidate className="space-y-2 rounded-xl border border-border p-4" aria-label={t('ui2.thanhVien.themTv')}>
+          <p className="text-sm font-medium text-foreground">{t('ui2.thanhVien.themTv')}</p>
           <p className="text-xs text-muted-foreground">
-            Người được thêm cần có tài khoản MIMI trước — nhờ họ đăng ký (đăng nhập bằng Google là nhanh nhất), rồi nhập email đó ở đây.
-            MIMI chưa gửi email mời.
+            {t('ui2.thanhVien.themMo')}
           </p>
           <div className="flex flex-wrap gap-2">
             <input
               type="email"
-              aria-label="Email người được thêm"
+              aria-label={t('ui2.thanhVien.emailNguoiThem')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ketoan@congty.vn"
               className={`${O} min-w-0 flex-1`}
             />
-            <select aria-label="Vai trò người được thêm" value={vaiMoi} onChange={(e) => setVaiMoi(e.target.value as VaiTro)} className={O}>
-              {traoDuoc(vaiToi as VaiTro).map((v) => <option key={v} value={v}>{TEN_VAI_TRO[v]}</option>)}
+            <select aria-label={t('ui2.thanhVien.vaiNguoiThem')} value={vaiMoi} onChange={(e) => setVaiMoi(e.target.value as VaiTro)} className={O}>
+              {traoDuoc(vaiToi as VaiTro).map((v) => <option key={v} value={v}>{tenVai[v]}</option>)}
             </select>
             <button type="submit" disabled={dangLam !== null} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-              {dangLam === 'moi' ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />} Thêm
+              {dangLam === 'moi' ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />} {t('ui2.dn.them')}
             </button>
           </div>
         </form>
@@ -176,16 +180,16 @@ export function ThanhVienCongTy() {
         <button
           type="button"
           onClick={() => setXacNhan({
-            tieuDe: 'Rời công ty này?',
-            mo: 'Bạn mất quyền xem dữ liệu của công ty ngay lập tức. Muốn quay lại thì nhờ chủ công ty thêm lại.',
-            nut: 'Rời công ty',
+            tieuDe: t('ui2.thanhVien.roiHoi'),
+            mo: t('ui2.thanhVien.roiMo'),
+            nut: t('ui2.thanhVien.roi'),
             lam: () => {
-              void lam('roi', 'roi', {}, 'Đã rời công ty.').then((ok) => { if (ok) window.location.assign('/dashboard'); });
+              void lam('roi', 'roi', {}, t('ui2.thanhVien.daRoi')).then((ok) => { if (ok) window.location.assign('/dashboard'); });
             },
           })}
           className="text-xs font-medium text-muted-foreground hover:text-destructive hover:underline"
         >
-          Rời công ty
+          {t('ui2.thanhVien.roi')}
         </button>
       )}
 
@@ -196,7 +200,7 @@ export function ThanhVienCongTy() {
             <AlertDialogDescription>{xacNhan?.mo}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel autoFocus>Huỷ</AlertDialogCancel>
+            <AlertDialogCancel autoFocus>{t('ui2.chung.huy')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => { const x = xacNhan; setXacNhan(null); x?.lam(); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

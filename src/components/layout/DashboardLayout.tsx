@@ -282,12 +282,12 @@ export default function DashboardLayout() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tìm hóa đơn theo tên hoặc số..."
-                aria-label="Tìm hóa đơn"
+                placeholder={t('ui2.dash.timHoaDonPh')}
+                aria-label={t('ui2.dash.timHoaDon')}
                 className="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground w-44"
               />
               {query && (
-                <button type="button" onClick={() => setQuery('')} aria-label="Xoá tìm kiếm" className="text-muted-foreground hover:text-foreground shrink-0">
+                <button type="button" onClick={() => setQuery('')} aria-label={t('ui2.dash.xoaTim')} className="text-muted-foreground hover:text-foreground shrink-0">
                   <X size={13} />
                 </button>
               )}
@@ -295,7 +295,7 @@ export default function DashboardLayout() {
             <button
               onClick={() => setMobileSearch((v) => !v)}
               className="md:hidden w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
-              aria-label="Tìm kiếm"
+              aria-label={t('ui2.dash.timKiem')}
               aria-expanded={mobileSearch}
             >
               <Search size={19} />
@@ -322,13 +322,13 @@ export default function DashboardLayout() {
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tìm hóa đơn theo tên hoặc số..."
-                aria-label="Tìm hóa đơn"
+                placeholder={t('ui2.dash.timHoaDonPh')}
+                aria-label={t('ui2.dash.timHoaDon')}
                 className="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground flex-1 min-w-0"
               />
             </div>
             <button type="button" onClick={() => { setMobileSearch(false); setQuery(''); }} className="text-sm text-muted-foreground px-1">
-              Huỷ
+              {t('ui2.chung.huy')}
             </button>
           </form>
         )}
@@ -356,7 +356,7 @@ export default function DashboardLayout() {
           <div className="flex min-w-[64px] flex-col items-center justify-end pb-1">
             <NutQuetChungTu
               coMoHinh={coMoHinh}
-              nhanAn="Quét hoá đơn"
+              nhanAn={t('ui2.dash.quetHoaDon')}
               className="-mt-7 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_24px_hsla(var(--blue-500)/0.4)] ring-4 ring-background pressable"
             >
               <ScanLine size={26} strokeWidth={2.2} />
@@ -381,7 +381,7 @@ export default function DashboardLayout() {
               <SheetTitle className="truncate">{congTy?.ten ?? t('man.chung.congTyCuaBan')}</SheetTitle>
               <SheetDescription className="sr-only">{t('man.chung.moiTrangKhac')}</SheetDescription>
             </SheetHeader>
-            <nav className="mt-4 grid gap-1" aria-label="Thêm">
+            <nav className="mt-4 grid gap-1" aria-label={t('ui2.dash.them')}>
               {[
                 { icon: Puzzle, khoa: 'man.ten.ketNoi', duong: '/dashboard/ket-noi' },
                 { icon: LayoutDashboard, khoa: 'man.ten.tongQuanGiaoDich', duong: '/dashboard/cashflow' },
@@ -398,7 +398,7 @@ export default function DashboardLayout() {
                 </NavLink>
               ))}
               <button type="button" onClick={() => { setMoThem(false); setMoKho(true); }} className="flex min-h-11 items-center rounded-lg px-3 text-left text-[15px] text-primary hover:bg-accent">
-                + Tuỳ chỉnh công cụ
+                + {t('ui2.dash.tuyChinhCongCu')}
               </button>
               <p className="mt-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('man.chung.trangChiTiet')}</p>
               {TRANG_CHI_TIET.map((tr) => (
@@ -408,13 +408,13 @@ export default function DashboardLayout() {
               ))}
               <div className="mt-3 grid gap-1 border-t border-border pt-3">
                 <button type="button" onClick={() => { setMoThem(false); setMoTaiApp(true); }} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-left text-[15px] text-foreground hover:bg-accent">
-                  <Store size={20} className="text-muted-foreground" /> Dùng MIMI như ứng dụng
+                  <Store size={20} className="text-muted-foreground" /> {t('ui2.dash.dungNhuApp')}
                 </button>
                 <a href="mailto:hoc.qk2@gmail.com?subject=H%E1%BB%97%20tr%E1%BB%A3%20Mimi%20Wallet" className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-foreground hover:bg-accent">
-                  <HelpCircle size={20} className="text-muted-foreground" /> Hỗ trợ
+                  <HelpCircle size={20} className="text-muted-foreground" /> {t('ui2.dash.hoTro')}
                 </a>
                 <button type="button" onClick={() => { setMoThem(false); void logout(); navigate('/'); }} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-left text-[15px] text-destructive hover:bg-destructive/10">
-                  <LogOut size={20} /> Đăng xuất
+                  <LogOut size={20} /> {t('ui2.dash.dangXuat')}
                 </button>
               </div>
             </nav>

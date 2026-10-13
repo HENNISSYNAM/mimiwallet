@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import frSleep from '@/assets/mimi/sleep.png';
 import frStretch from '@/assets/mimi/stretch.png';
 import frWatch from '@/assets/mimi/watch.png';
@@ -33,94 +34,30 @@ type Beat = {
   lines: string[];
 };
 
-const BEATS: Beat[] = [
-  {
-    frame: frSleep,
-    w: 'w-[78%]',
-    kicker: 'Con hẻm nhỏ',
-    lines: [
-      'Ở đâu đó trong một con hẻm nhỏ của Việt Nam, có một chú mèo cam đang nằm cuộn mình trên chiếc ghế nhựa trước cửa một cửa hàng gia đình.',
-    ],
-  },
-  {
-    frame: frStretch,
-    w: 'w-[74%]',
-    kicker: 'Mỗi sáng',
-    lines: ['Khi cánh cửa kéo lên, MIMI thức dậy.'],
-  },
-  {
-    frame: frWatch,
-    w: 'w-[62%]',
-    kicker: 'Chú nhìn thấy',
-    lines: [
-      'Người chủ mở điện thoại kiểm tra đơn hàng. Những tin nhắn của khách, những hóa đơn chưa thanh toán, những khoản phải trả cho nhà cung cấp.',
-      'Có ngày cửa hàng đông khách, cả nhà cười nói. Cũng có ngày vắng khách, người chủ ngồi trước cuốn sổ, tính đi tính lại xem tháng này còn bao nhiêu tiền.',
-    ],
-  },
-  {
-    frame: frLove,
-    w: 'w-[62%]',
-    kicker: 'Nhưng MIMI biết một điều',
-    lines: [
-      'MIMI không biết đọc sổ sách. Chú cũng chẳng biết làm kinh doanh.',
-      'Nhưng chú biết đây là gia đình của mình. Biết ai bán hàng, ai nhập hàng, ngày nào đông khách, món nào thường được mua cùng nhau.',
-    ],
-  },
-  {
-    frame: frSurprised,
-    w: 'w-[62%]',
-    kicker: 'Rồi thế giới thay đổi',
-    lines: [
-      'AI xuất hiện. Máy móc bắt đầu đọc được dữ liệu, hiểu ngôn ngữ, phân tích thị trường.',
-      'Nhưng với một cửa hàng nhỏ, tất cả những điều ấy ở rất xa. Không đội ngũ dữ liệu. Không chuyên gia AI. Không phòng nghiên cứu. Chỉ có một cửa hàng, một chiếc điện thoại, và một giấc mơ rất giản dị.',
-    ],
-  },
-  {
-    frame: frWalk,
-    w: 'w-[72%]',
-    kicker: 'MIMI bước xuống khỏi chiếc ghế',
-    lines: [
-      'Một đầu là con người — những gia đình đang kinh doanh mỗi ngày. Đầu kia là dữ liệu, AI và tài chính.',
-      'MIMI đứng ở giữa.',
-    ],
-  },
-  {
-    frame: frSit,
-    w: 'w-[48%]',
-    kicker: 'Người chủ không cần hiểu AI',
-    lines: [
-      'Không cần biết dữ liệu nằm ở đâu. Không cần biết một mô hình đang tính toán ra sao.',
-      'Chỉ cần hỏi.',
-    ],
-  },
-  {
-    frame: frHappy,
-    w: 'w-[62%]',
-    kicker: 'Không thay thế người chủ',
-    lines: [
-      'Mà trao cho họ một năng lực mà trước đây chỉ doanh nghiệp lớn mới có.',
-      'Một cửa hàng nhỏ cũng xứng đáng có AI. Một gia đình kinh doanh cũng xứng đáng được tiếp cận dữ liệu.',
-    ],
-  },
-  {
-    frame: frHero,
-    w: 'w-[86%]',
-    kicker: 'Vẫn đôi mắt xanh ấy',
-    lines: [
-      'MIMI vẫn là chú mèo cam quen thuộc, vẫn nằm trên chiếc ghế trước cửa hàng. Nhưng giờ đây, phía sau đôi mắt ấy là cả một thế giới.',
-      'Mỗi gia đình có thể có một chú mèo. Nhưng từ hôm nay, mỗi gia đình kinh doanh có thể có MIMI.',
-    ],
-  },
+/*
+ * Chữ của câu chuyện nằm ở khối i18n `ui2.story.*` (bốn ngôn ngữ). `kicker` và `lines` dưới đây là
+ * khoá, dịch lúc vẽ. `hoi` đánh dấu nhịp "chỉ cần hỏi" — nơi hiện ba câu hỏi mẫu.
+ */
+const BEATS: (Beat & { hoi?: boolean })[] = [
+  { frame: frSleep, w: 'w-[78%]', kicker: 'ui2.story.b0.k', lines: ['ui2.story.b0.l0'] },
+  { frame: frStretch, w: 'w-[74%]', kicker: 'ui2.story.b1.k', lines: ['ui2.story.b1.l0'] },
+  { frame: frWatch, w: 'w-[62%]', kicker: 'ui2.story.b2.k', lines: ['ui2.story.b2.l0', 'ui2.story.b2.l1'] },
+  { frame: frLove, w: 'w-[62%]', kicker: 'ui2.story.b3.k', lines: ['ui2.story.b3.l0', 'ui2.story.b3.l1'] },
+  { frame: frSurprised, w: 'w-[62%]', kicker: 'ui2.story.b4.k', lines: ['ui2.story.b4.l0', 'ui2.story.b4.l1'] },
+  { frame: frWalk, w: 'w-[72%]', kicker: 'ui2.story.b5.k', lines: ['ui2.story.b5.l0', 'ui2.story.b5.l1'] },
+  { frame: frSit, w: 'w-[48%]', kicker: 'ui2.story.b6.k', lines: ['ui2.story.b6.l0', 'ui2.story.b6.l1'], hoi: true },
+  { frame: frHappy, w: 'w-[62%]', kicker: 'ui2.story.b7.k', lines: ['ui2.story.b7.l0', 'ui2.story.b7.l1'] },
+  { frame: frHero, w: 'w-[86%]', kicker: 'ui2.story.b8.k', lines: ['ui2.story.b8.l0', 'ui2.story.b8.l1'] },
 ];
 
-/** The three questions from the story, as the owner would actually type them. */
 const ASKS = [
-  { q: 'MIMI, hôm nay bán hàng thế nào?', a: 'Nhìn vào dữ liệu và trả lời.' },
-  { q: 'MIMI, tháng này tôi có nên nhập thêm hàng không?', a: 'Phân tích dòng tiền, doanh số và tồn kho.' },
-  { q: 'MIMI, tôi cần vốn để mở rộng cửa hàng.', a: 'Kết nối dữ liệu kinh doanh với dịch vụ tài chính phù hợp.' },
+  { q: 'ui2.story.hoi0.q', a: 'ui2.story.hoi0.a' },
+  { q: 'ui2.story.hoi1.q', a: 'ui2.story.hoi1.a' },
+  { q: 'ui2.story.hoi2.q', a: 'ui2.story.hoi2.a' },
 ];
 
 export default function MimiStory() {
+  const { t } = useTranslation();
   const [active, setActive] = useState(0);
   const refs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -203,13 +140,13 @@ export default function MimiStory() {
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <header className="max-w-2xl mb-14 sm:mb-20">
           <p className="mimi-nhan-muc mb-3 text-mimi-green">
-            Câu chuyện MIMI
+            {t('ui2.story.nhan')}
           </p>
           <h2 className="mimi-tieu-de-muc text-foreground">
-            Chú mèo cam của những gia đình Việt
+            {t('ui2.story.tieuDe')}
           </h2>
           <p className="mimi-doan-dan mt-4 text-muted-foreground">
-            Gần như nhà nào buôn bán nhỏ cũng có một chú mèo nằm trước cửa. MIMI bắt đầu từ đó.
+            {t('ui2.story.moTa')}
           </p>
         </header>
 
@@ -278,7 +215,7 @@ export default function MimiStory() {
                 />
                 {b.kicker && (
                   <p className="mimi-nhan-muc mb-3 text-mimi-green">
-                    {b.kicker}
+                    {t(b.kicker)}
                   </p>
                 )}
                 {b.lines.map((l, j) => (
@@ -286,20 +223,20 @@ export default function MimiStory() {
                     key={j}
                     className="text-lg sm:text-2xl text-foreground/90 leading-relaxed mb-4 max-w-xl"
                   >
-                    {l}
+                    {t(l)}
                   </p>
                 ))}
 
                 {/* The three questions belong to the "chỉ cần hỏi" beat. */}
-                {b.kicker === 'Người chủ không cần hiểu AI' && (
+                {b.hoi && (
                   <div className="mt-4 space-y-3 max-w-lg">
                     {ASKS.map((a) => (
                       <div key={a.q}>
                         <div className="inline-block rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5 text-sm sm:text-base">
-                          {a.q}
+                          {t(a.q)}
                         </div>
                         <div className="mt-1.5 inline-flex items-start gap-2 rounded-2xl rounded-bl-md bg-mimi-green/10 border border-mimi-green/20 px-4 py-2.5 text-sm sm:text-base text-foreground/85">
-                          {a.a}
+                          {t(a.a)}
                         </div>
                       </div>
                     ))}
@@ -312,9 +249,9 @@ export default function MimiStory() {
 
         <div className="mt-8 lg:mt-16 max-w-2xl">
           <p className="font-serif text-2xl font-normal leading-snug tracking-[-0.015em] text-foreground sm:text-4xl">
-            MIMI không đưa con người đến tương lai.
+            {t('ui2.story.ket0')}
             <br />
-            <span className="text-mimi-green">MIMI giúp tương lai đến gần con người hơn.</span>
+            <span className="text-mimi-green">{t('ui2.story.ket1')}</span>
           </p>
         </div>
       </div>

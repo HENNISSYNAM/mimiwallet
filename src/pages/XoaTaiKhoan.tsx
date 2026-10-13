@@ -3,6 +3,7 @@ import { ArrowRight, Trash2 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { COMPANY, CONTACT, coKenhLienHeVanBan } from '@/config/company';
+import { Trans, useTranslation } from 'react-i18next';
 
 /**
  * Trang công khai mô tả cách xoá tài khoản và dữ liệu.
@@ -22,6 +23,7 @@ import { COMPANY, CONTACT, coKenhLienHeVanBan } from '@/config/company';
  * cũng đọc được, rằng quyền đó tồn tại và đi tới nó bằng cách nào.
  */
 export default function XoaTaiKhoan() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -31,52 +33,48 @@ export default function XoaTaiKhoan() {
             <Trash2 size={18} />
           </span>
           <h1 className="font-display text-2xl font-bold text-foreground">
-            Xoá tài khoản và dữ liệu
+            {t('ui1.xtk.tieuDe')}
           </h1>
         </div>
 
         <div className="space-y-5 text-sm leading-relaxed text-muted-foreground">
           <p>
-            Bạn có quyền xoá tài khoản MIMI Wallet và toàn bộ dữ liệu bất cứ lúc nào,
-            không cần liên hệ ai và không cần nêu lý do.
+            {t('ui1.xtk.quyen')}
           </p>
 
           <section>
-            <h2 className="mb-2 text-base font-semibold text-foreground">Cách tự xoá</h2>
+            <h2 className="mb-2 text-base font-semibold text-foreground">{t('ui1.xtk.cachXoa')}</h2>
             <ol className="list-decimal space-y-1.5 pl-5">
-              <li>Đăng nhập vào MIMI Wallet.</li>
-              <li>Mở <strong className="text-foreground">Cài đặt</strong>.</li>
-              <li>Cuộn tới mục <strong className="text-foreground">Xoá tài khoản</strong>.</li>
-              <li>Gõ đúng câu xác nhận rồi bấm xoá.</li>
+              <li>{t('ui1.xtk.b1')}</li>
+              <li><Trans i18nKey="ui1.xtk.b2" components={{ b: <strong className="text-foreground" /> }} /></li>
+              <li><Trans i18nKey="ui1.xtk.b3" components={{ b: <strong className="text-foreground" /> }} /></li>
+              <li>{t('ui1.xtk.b4')}</li>
             </ol>
             <Link
               to="/dashboard/settings"
               className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
             >
-              Tới trang Cài đặt <ArrowRight size={13} />
+              {t('ui1.xtk.toiCaiDat')} <ArrowRight size={13} />
             </Link>
           </section>
 
           <section>
-            <h2 className="mb-2 text-base font-semibold text-foreground">Những gì bị xoá</h2>
+            <h2 className="mb-2 text-base font-semibold text-foreground">{t('ui1.xtk.biXoa')}</h2>
             <p>
-              Giao dịch đã đồng bộ, hoá đơn, chứng từ đã tải lên, danh bạ khách hàng,
-              liên kết ngân hàng và hồ sơ doanh nghiệp. Liên kết ngân hàng được thu hồi
-              uỷ quyền với nhà cung cấp, nên MIMI ngừng nhận giao dịch mới.
+              {t('ui1.xtk.biXoaMoTa')}
             </p>
             <p className="mt-2">
-              <strong className="text-foreground">Thao tác này không hoàn tác được.</strong>{' '}
-              Nếu bạn cần giữ chứng từ cho kỳ quyết toán, hãy xuất dữ liệu ra file trước
-              khi xoá.
+              <strong className="text-foreground">{t('ui1.xtk.khongHoanTac')}</strong>{' '}
+              {t('ui1.xtk.xuatTruoc')}
             </p>
           </section>
 
           <section>
             <h2 className="mb-2 text-base font-semibold text-foreground">
-              Nếu bạn đã gỡ ứng dụng hoặc không đăng nhập được
+              {t('ui1.xtk.daGo')}
             </h2>
             <p>
-              Gửi yêu cầu xoá tới{' '}
+              {t('ui1.xtk.guiToi')}{' '}
               {coKenhLienHeVanBan() ? (
                 <>
                   {CONTACT.email && (
@@ -84,7 +82,7 @@ export default function XoaTaiKhoan() {
                       {CONTACT.email}
                     </a>
                   )}
-                  {CONTACT.email && CONTACT.website && ' hoặc '}
+                  {CONTACT.email && CONTACT.website && ` ${t('ui1.xtk.hoac')} `}
                   {CONTACT.website && (
                     <a className="text-primary hover:underline" href={CONTACT.website} target="_blank" rel="noopener noreferrer">
                       {CONTACT.website}
@@ -93,20 +91,15 @@ export default function XoaTaiKhoan() {
                 </>
               ) : (
                 <>
-                  trụ sở {COMPANY.legalName}, {COMPANY.address}
+                  {t('ui1.xtk.truSo', { ten: COMPANY.legalName, dc: COMPANY.address })}
                 </>
               )}
-              , từ chính địa chỉ email bạn dùng để đăng ký. Chúng tôi cần đối chiếu email
-              để chắc chắn yêu cầu đến từ chủ tài khoản.
+              {t('ui1.xtk.tuEmail')}
             </p>
           </section>
 
           <p className="border-t border-border/60 pt-4 text-xs">
-            Chi tiết về dữ liệu MIMI thu thập và giữ trong bao lâu nằm ở{' '}
-            <Link to="/privacy" className="text-primary hover:underline">
-              Chính sách bảo mật
-            </Link>
-            .
+            <Trans i18nKey="ui1.xtk.chiTiet" components={{ l: <Link to="/privacy" className="text-primary hover:underline" /> }} />
           </p>
         </div>
       </main>

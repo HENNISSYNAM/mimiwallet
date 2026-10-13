@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -12,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
  * không hứa "đăng xuất ngay lập tức".
  */
 export function DangXuatMoiThietBi({ sauKhiXong }: { sauKhiXong: () => void }) {
+  const { t } = useTranslation();
   const [hoi, setHoi] = useState(false);
   const [dang, setDang] = useState(false);
 
@@ -20,10 +22,10 @@ export function DangXuatMoiThietBi({ sauKhiXong }: { sauKhiXong: () => void }) {
     const { error } = await supabase.auth.signOut({ scope: 'global' });
     setDang(false);
     if (error) {
-      toast.error(`Chưa đăng xuất được: ${error.message}. Thử lại sau ít phút.`);
+      toast.error(t('ui2.dangXuat.loi', { loi: error.message }));
       return;
     }
-    toast.success('Đã đăng xuất khỏi mọi thiết bị.');
+    toast.success(t('ui2.dangXuat.xong'));
     sauKhiXong();
   };
 
@@ -33,17 +35,17 @@ export function DangXuatMoiThietBi({ sauKhiXong }: { sauKhiXong: () => void }) {
         onClick={() => setHoi(true)}
         className="w-full flex items-center justify-between py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        Đăng xuất khỏi mọi thiết bị
+        {t('ui2.dangXuat.nut')}
         <ChevronRight size={14} />
       </button>
     );
   }
 
   return (
-    <div role="group" aria-label="Xác nhận đăng xuất khỏi mọi thiết bị" className="rounded-xl border border-border bg-accent/40 p-4 my-2 text-sm">
-      <p className="text-foreground font-medium">Đăng xuất khỏi mọi thiết bị, kể cả máy này?</p>
+    <div role="group" aria-label={t('ui2.dangXuat.aria')} className="rounded-xl border border-border bg-accent/40 p-4 my-2 text-sm">
+      <p className="text-foreground font-medium">{t('ui2.dangXuat.hoi')}</p>
       <p className="text-muted-foreground mt-1">
-        Dùng khi bạn mất máy hoặc nghi có người khác vào tài khoản. Máy khác sẽ bị đăng xuất chậm nhất trong khoảng 1 giờ.
+        {t('ui2.dangXuat.moTa')}
       </p>
       <div className="flex gap-2 mt-3">
         <button
@@ -51,10 +53,10 @@ export function DangXuatMoiThietBi({ sauKhiXong }: { sauKhiXong: () => void }) {
           disabled={dang}
           className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-destructive-foreground font-medium disabled:opacity-60"
         >
-          {dang && <Loader2 size={14} className="animate-spin" />} Đăng xuất hết
+          {dang && <Loader2 size={14} className="animate-spin" />} {t('ui2.dangXuat.het')}
         </button>
         <button onClick={() => setHoi(false)} disabled={dang} className="rounded-lg px-3 py-1.5 text-muted-foreground hover:text-foreground">
-          Huỷ
+          {t('ui2.chung.huy')}
         </button>
       </div>
     </div>

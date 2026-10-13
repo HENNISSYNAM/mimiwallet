@@ -39,7 +39,9 @@ interface NoiDungSaoLuu {
   neo_thoi_gian: Record<string, unknown>[];
 }
 
-const ngay = (iso: string) => new Date(iso).toLocaleDateString('vi-VN');
+/** Định dạng số/ngày hiển thị theo ngôn ngữ đang chọn (đơn vị ₫ giữ nguyên). */
+const locHienThi = () => (({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
+const ngay = (iso: string) => new Date(iso).toLocaleDateString(locHienThi());
 const TRANG = 1000;
 
 async function docHet(bang: string, cot: string, companyId: string, thuTu: string) {
@@ -108,7 +110,7 @@ export function ChongSuaChungTu() {
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t('app.chongSua.tomTat', { muc: tt.so_muc, vao: tt.so_da_vao_bitcoin })}
-                {tt.khoi_gan_nhat ? t('app.chongSua.khoi', { khoi: tt.khoi_gan_nhat.khoi_bitcoin.toLocaleString('vi-VN'), ngay: ngay(tt.khoi_gan_nhat.created_at) }) : ''}
+                {tt.khoi_gan_nhat ? t('app.chongSua.khoi', { khoi: tt.khoi_gan_nhat.khoi_bitcoin.toLocaleString(locHienThi()), ngay: ngay(tt.khoi_gan_nhat.created_at) }) : ''}
                 {tt.so_cho_bitcoin ? t('app.chongSua.cho', { n: tt.so_cho_bitcoin }) : ''}
                 {tt.so_chua_neo ? t('app.chongSua.chuaNeo', { n: tt.so_chua_neo }) : ''}.
               </p>

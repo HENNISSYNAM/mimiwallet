@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SU_KIEN_DOI_CONG_TY } from '@/lib/congTyDangDung';
 import { docThongBao, SU_KIEN_THONG_BAO, type ThongBao } from '@/lib/thongBao';
@@ -13,6 +14,7 @@ import { DanhSachThongBao } from './DanhSachThongBao';
  * vào cần xác nhận. Đọc lại khi mở, khi đổi công ty, khi quay lại tab, và hai phút một lần.
  */
 export function ChuongThongBao() {
+  const { t } = useTranslation();
   const [ds, setDs] = useState<ThongBao[]>([]);
   const [mo, setMo] = useState(false);
   const [loi, setLoi] = useState(false);
@@ -41,7 +43,7 @@ export function ChuongThongBao() {
       <PopoverTrigger asChild>
         <button
           className="relative w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors pressable"
-          aria-label={chuaDoc ? `Thông báo, ${chuaDoc} chưa đọc` : 'Thông báo'}
+          aria-label={chuaDoc ? t('ui2.tb.chuaDoc', { so: chuaDoc }) : t('ui2.tb.tieuDe')}
         >
           <Bell size={19} />
           {chuaDoc > 0 && (
@@ -53,8 +55,8 @@ export function ChuongThongBao() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(92vw,380px)] p-0">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <p className="text-sm font-medium text-foreground">Thông báo</p>
-          <Link to="/dashboard/nhac-thue" onClick={() => setMo(false)} className="text-xs text-primary hover:underline">Cài đặt và xem tất cả</Link>
+          <p className="text-sm font-medium text-foreground">{t('ui2.tb.tieuDe')}</p>
+          <Link to="/dashboard/nhac-thue" onClick={() => setMo(false)} className="text-xs text-primary hover:underline">{t('ui2.tb.caiDatXemTatCa')}</Link>
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
           <DanhSachThongBao ds={ds} onDoi={tai} gon loi={loi} />

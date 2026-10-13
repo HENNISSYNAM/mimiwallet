@@ -1,4 +1,5 @@
 import { Shield, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { NhatKyWebhook } from '@/components/fintech/NhatKyWebhook';
 import CasLink from './CasLink';
 
@@ -19,6 +20,7 @@ import CasLink from './CasLink';
  * có cách nào biết mình vừa nối thứ gì.
  */
 export default function OpenBanking() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <CasLink />
@@ -30,9 +32,9 @@ export default function OpenBanking() {
         <div className="flex items-center gap-3">
           <Shield size={20} className="text-primary shrink-0" />
           <div>
-            <p className="text-sm font-medium text-foreground">Cách dữ liệu ngân hàng được bảo vệ</p>
+            <p className="text-sm font-medium text-foreground">{t('ui2.openBanking.tieuDe')}</p>
             <p className="text-xs text-muted-foreground">
-              Kết nối qua Cas · Quyền chỉ đọc · Mã truy cập mã hoá ML-KEM-768 + AES-256-GCM
+              {t('ui2.openBanking.moTa')}
             </p>
           </div>
         </div>

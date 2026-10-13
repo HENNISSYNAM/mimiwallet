@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Loader2, Mail } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { useAuthStore } from '@/store/useAuthStore';
 import MimiCat from '@/components/brand/MimiCat';
 import { duoiEmailCongTy, ghiDichSauDangNhap, laEmail } from '@/lib/sauDangNhap';
@@ -21,18 +23,19 @@ import { duoiEmailCongTy, ghiDichSauDangNhap, laEmail } from '@/lib/sauDangNhap'
 function dichLoi(loi: string): string {
   const l = loi.toLowerCase();
   if (l.includes('rate limit') || l.includes('security purposes') || l.includes('seconds')) {
-    return 'Bạn vừa yêu cầu link. Đợi khoảng một phút rồi gửi lại.';
+    return i18n.t('ui2.dangKy.loiNhieu');
   }
   if (l.includes('signups not allowed') || l.includes('signup is disabled')) {
-    return 'MIMI đang mở cho khách được mời. Gửi email tới hoc.qk2@gmail.com để được mời.';
+    return i18n.t('ui2.dangKy.loiMoi', { email: 'hoc.qk2@gmail.com' });
   }
-  if (l.includes('invalid') && l.includes('email')) return 'Email chưa đúng, ví dụ ten@congty.vn.';
-  return `Chưa gửi được link: ${loi}`;
+  if (l.includes('invalid') && l.includes('email')) return i18n.t('ui2.dangKy.emailSai');
+  return i18n.t('ui2.dangKy.chuaGui', { loi });
 }
 
 const GIAY_CHO_GUI_LAI = 60;
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const signInWithEmailLink = useAuthStore((s) => s.signInWithEmailLink);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
@@ -58,7 +61,7 @@ export default function Onboarding() {
   const gui = async (dich = email) => {
     setLoi(null);
     if (!laEmail(dich)) {
-      setLoi('Email chưa đúng, ví dụ ten@congty.vn.');
+      setLoi(t('ui2.dangKy.emailSai'));
       return;
     }
     setDangGui(true);
@@ -83,10 +86,9 @@ export default function Onboarding() {
         {daGuiToi ? (
           <section aria-labelledby="da-gui" className="rounded-2xl border border-border bg-card p-6 text-center">
             <Mail size={28} className="mx-auto text-primary" aria-hidden />
-            <h1 id="da-gui" className="mt-3 font-display text-2xl font-semibold text-foreground">Kiểm tra hộp thư</h1>
+            <h1 id="da-gui" className="mt-3 font-display text-2xl font-semibold text-foreground">{t('ui2.dangKy.kiemHopThu')}</h1>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              MIMI đã gửi link tới <span className="break-all font-medium text-foreground">{daGuiToi}</span>. Bấm link trong email là vào
-              làm việc. Không thấy thư thì xem mục Spam hoặc Quảng cáo.
+              <Trans i18nKey="ui2.dangKy.daGuiToi" values={{ email: daGuiToi }} components={{ b: <span className="break-all font-medium text-foreground" /> }} />
             </p>
             {loi && <p className="mt-3 text-sm text-destructive" role="alert">{loi}</p>}
             <div className="mt-5 flex flex-col gap-2">
@@ -97,10 +99,10 @@ export default function Onboarding() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50"
               >
                 {dangGui && <Loader2 size={15} className="animate-spin" />}
-                {choGuiLai > 0 ? `Gửi lại sau ${choGuiLai} giây` : 'Gửi lại link'}
+                {choGuiLai > 0 ? t('ui2.dangKy.guiLaiSau', { so: choGuiLai }) : t('ui2.dangKy.guiLaiLink')}
               </button>
               <button type="button" onClick={() => { setDaGuiToi(null); setLoi(null); }} className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
-                Dùng email khác
+                {t('ui2.dangKy.emailKhac')}
               </button>
             </div>
 
@@ -111,7 +113,7 @@ export default function Onboarding() {
             */}
             <div className="mt-5 border-t border-border pt-4">
               <p className="text-sm text-muted-foreground">
-                Chờ 2 phút vẫn chưa thấy thư? Email công ty có thể đã chặn thư tự động — vào bằng Google, hoặc thử một email khác.
+                {t('ui2.dangKy.cho2Phut')}
               </p>
               <button
                 type="button"
@@ -122,20 +124,20 @@ export default function Onboarding() {
                 }}
                 className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-accent"
               >
-                Tiếp tục với Google
+                {t('ui2.auth.google')}
               </button>
             </div>
           </section>
         ) : (
           <section aria-labelledby="dang-ky" className="rounded-2xl border border-border bg-card p-6">
-            <h1 id="dang-ky" className="text-center font-display text-2xl font-semibold text-foreground">Bắt đầu với MIMI</h1>
+            <h1 id="dang-ky" className="text-center font-display text-2xl font-semibold text-foreground">{t('ui2.dangKy.batDau')}</h1>
             <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">
-              Chỉ cần email công ty. MIMI gửi link — bấm vào là vào làm việc, không cần mật khẩu.
+              {t('ui2.dangKy.chiCanEmail')}
             </p>
 
             <form onSubmit={(e) => { e.preventDefault(); void gui(); }} className="mt-6 space-y-3" noValidate>
               <div>
-                <label htmlFor="email-dang-ky" className="mb-1 block text-sm font-medium text-foreground">Email công ty</label>
+                <label htmlFor="email-dang-ky" className="mb-1 block text-sm font-medium text-foreground">{t('ui2.dangKy.emailCongTy')}</label>
                 <input
                   id="email-dang-ky"
                   type="email"
@@ -151,9 +153,9 @@ export default function Onboarding() {
                 />
                 <p id="goi-y-email" className="mt-1.5 min-h-[1.25rem] text-xs text-muted-foreground">
                   {duoi
-                    ? `Công ty sẽ mang tên ${duoi} — đổi được sau ở Cài đặt.`
+                    ? t('ui2.dangKy.tenCongTy', { ten: duoi })
                     : emailCaNhan
-                      ? 'Email cá nhân vẫn dùng được; email công ty giúp MIMI nhận ra công ty của bạn.'
+                      ? t('ui2.dangKy.emailCaNhan')
                       : ''}
                 </p>
               </div>
@@ -163,12 +165,12 @@ export default function Onboarding() {
                 disabled={dangGui || !email.trim()}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[15px] font-medium text-primary-foreground hover:brightness-110 disabled:opacity-50"
               >
-                {dangGui ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />} Gửi link vào email
+                {dangGui ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />} {t('ui2.dangKy.guiLink')}
               </button>
             </form>
 
             <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground" aria-hidden>
-              <span className="h-px flex-1 bg-border" /> hoặc <span className="h-px flex-1 bg-border" />
+              <span className="h-px flex-1 bg-border" /> {t('ui2.auth.hoac')} <span className="h-px flex-1 bg-border" />
             </div>
             <button
               type="button"
@@ -179,18 +181,17 @@ export default function Onboarding() {
               }}
               className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-accent"
             >
-              Tiếp tục với Google
+              {t('ui2.auth.google')}
             </button>
 
             <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
-              Tiếp tục là bạn đồng ý <Link to="/terms" className="underline underline-offset-2">Điều khoản sử dụng</Link> và{' '}
-              <Link to="/privacy" className="underline underline-offset-2">Chính sách bảo mật</Link>.
+              <Trans i18nKey="ui2.dangKy.dongY" components={{ dk: <Link to="/terms" className="underline underline-offset-2" />, bm: <Link to="/privacy" className="underline underline-offset-2" /> }} />
             </p>
           </section>
         )}
 
         <p className="mt-5 text-center text-sm text-muted-foreground">
-          Đã có tài khoản dùng mật khẩu? <Link to="/login" className="font-medium text-foreground underline underline-offset-4">Đăng nhập</Link>
+          {t('ui2.dangKy.daCoTk')} <Link to="/login" className="font-medium text-foreground underline underline-offset-4">{t('ui2.dangKy.dangNhap')}</Link>
         </p>
       </div>
     </main>

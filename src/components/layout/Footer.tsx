@@ -38,18 +38,18 @@ export default function Footer() {
 
   // Chỉ những đường dẫn thật sự tồn tại trong bảng route.
   const sanPham: NavItem[] = [
-    { label: 'MIMI Trợ lý', to: '/dashboard' },
-    { label: 'Hoá đơn', to: '/dashboard/invoices' },
-    { label: 'Báo cáo', to: '/dashboard/reports' },
+    { label: t('ui2.footer.troLy'), to: '/dashboard' },
+    { label: t('ui2.footer.hoaDon'), to: '/dashboard/invoices' },
+    { label: t('ui2.footer.baoCao'), to: '/dashboard/reports' },
   ];
 
   const phapLy: NavItem[] = [
-    { label: 'Chính sách bảo mật', to: '/privacy' },
-    { label: 'Điều khoản sử dụng', to: '/terms' },
+    { label: t('ui2.footer.chinhSachBaoMat'), to: '/privacy' },
+    { label: t('ui2.footer.dieuKhoan'), to: '/terms' },
     // Google Play đòi đường xoá tài khoản mở được không cần cài app; để ở chân
     // trang là chỗ người duyệt và người dùng đều tìm tới đầu tiên.
-    { label: 'Xoá tài khoản', to: '/xoa-tai-khoan' },
-    { label: 'Về chúng tôi', to: '/about' },
+    { label: t('ui2.footer.xoaTaiKhoan'), to: '/xoa-tai-khoan' },
+    { label: t('ui2.footer.veChungToi'), to: '/about' },
     { label: TRANG_THONG_TIN.tieuDe, to: TRANG_THONG_TIN.duong },
   ];
 
@@ -70,25 +70,25 @@ export default function Footer() {
 
             <dl className="space-y-1.5 text-sm text-muted-foreground">
               <div>
-                <dt className="sr-only">Đơn vị vận hành</dt>
+                <dt className="sr-only">{t('ui2.footer.donViVanHanh')}</dt>
                 <dd className="font-medium text-foreground">{COMPANY.legalName}</dd>
               </div>
               <div className="flex gap-2">
-                <dt className="shrink-0">Mã số doanh nghiệp:</dt>
+                <dt className="shrink-0">{t('ui2.footer.maSoDN')}</dt>
                 <dd className="font-mono">{COMPANY.taxCode}</dd>
               </div>
               <div className="flex gap-2">
-                <dt className="shrink-0">Cấp ngày:</dt>
+                <dt className="shrink-0">{t('ui2.footer.capNgay')}</dt>
                 <dd>
-                  {COMPANY.incorporatedOn} tại {hoacToken(COMPANY.registrationPlace, 'NOI_CAP_DKDN')}
+                  {COMPANY.incorporatedOn} {t('ui2.footer.tai')} {hoacToken(COMPANY.registrationPlace, 'NOI_CAP_DKDN')}
                 </dd>
               </div>
               <div className="flex gap-2">
-                <dt className="shrink-0">Trụ sở:</dt>
+                <dt className="shrink-0">{t('ui2.footer.truSo')}</dt>
                 <dd>{COMPANY.address}</dd>
               </div>
               <div className="flex gap-2">
-                <dt className="shrink-0">Người đại diện:</dt>
+                <dt className="shrink-0">{t('ui2.footer.nguoiDaiDien')}</dt>
                 <dd>
                   {COMPANY.legalRepresentative.name} — {COMPANY.legalRepresentative.title}
                 </dd>
@@ -106,7 +106,7 @@ export default function Footer() {
                   <Phone className="w-3.5 h-3.5" /> {hoacToken(CONTACT.phone, 'SO_DIEN_THOAI')}
                 </span>
                 {CONTACT.facebook && (
-                  <a href={CONTACT.facebook} target="_blank" rel="noopener noreferrer" aria-label="MIMI trên Facebook" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                  <a href={CONTACT.facebook} target="_blank" rel="noopener noreferrer" aria-label={t('ui2.footer.facebook')} className="inline-flex items-center gap-1.5 text-primary hover:underline">
                     <Facebook className="w-3.5 h-3.5" /> Facebook
                   </a>
                 )}
@@ -133,7 +133,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-body font-semibold text-foreground text-sm mb-4">Chính sách</h4>
+            <h4 className="font-body font-semibold text-foreground text-sm mb-4">{t('ui2.footer.chinhSach')}</h4>
             <ul className="space-y-2">
               {chinhSach.map((l) => (
                 <li key={l.to}>
@@ -161,19 +161,18 @@ export default function Footer() {
 
         <div className="border-t border-border pt-6 text-xs text-muted-foreground space-y-1.5">
           <p>
-            © {new Date().getFullYear()} {COMPANY.legalName}. {COMPANY.product.name} là sản phẩm
-            do {COMPANY.shortName} vận hành.
+            © {new Date().getFullYear()} {COMPANY.legalName}.{' '}
+            {t('ui2.footer.banQuyen', { sanPham: COMPANY.product.name, congTy: COMPANY.shortName })}
           </p>
           {/* Nói rõ cái KHÔNG có, vì bản trước của dòng này khẳng định ngược lại. */}
           <p>
-            {COMPANY.shortName} không phải tổ chức tín dụng và không phải trung gian thanh toán.
-            MIMI Wallet không cho vay, không giữ tiền và không chuyển tiền thay người dùng.
+            {t('ui2.footer.khongPhaiTCTD', { congTy: COMPANY.shortName })}
           </p>
           {/* Logo "Đã thông báo Bộ Công Thương": chỉ hiện khi đã được xác nhận và đã điền
               THONG_BAO_BCT trong config/company.ts — gắn trước khi được xác nhận là công bố sai. */}
           {THONG_BAO_BCT.url && THONG_BAO_BCT.anh && (
             <a href={THONG_BAO_BCT.url} target="_blank" rel="noopener noreferrer" className="inline-block pt-2">
-              <img src={THONG_BAO_BCT.anh} alt="Đã thông báo Bộ Công Thương" className="h-12 w-auto" />
+              <img src={THONG_BAO_BCT.anh} alt={t('ui2.footer.daThongBaoBCT')} className="h-12 w-auto" />
             </a>
           )}
         </div>

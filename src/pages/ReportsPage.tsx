@@ -8,7 +8,8 @@ import {
 } from 'recharts';
 import { Download, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung } from '@/lib/congTyDangDung';
@@ -72,17 +73,20 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 
 /** Trần đọc của trang; vượt thì trang cảnh báo chứ không vẽ như đủ. */
 const TOI_DA_DONG = 50_000;
+const LOCALE: Record<string, string> = { vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' };
+const so = (n: number) => n.toLocaleString(LOCALE[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
 
 type DongGiaoDich = { amount: number | string; type: string; transaction_date: string; category: string | null; is_synthetic: boolean | null };
 type DongHoaDon = HoaDon & { is_synthetic: boolean | null };
 type Trang<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null; count?: number | null }>;
 
 function Trong({ cau }: { cau: string }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
       <p className="max-w-xs text-sm text-muted-foreground">{cau}</p>
       <Link to="/dashboard/fintech" className="text-sm font-medium text-primary underline">
-        Nối nguồn dữ liệu trong Fintech Hub
+        {t('ui1.baoCao.noiNguon')}
       </Link>
     </div>
   );
@@ -136,8 +140,8 @@ export default function ReportsPage() {
       setDoDay({ daDoc: gd.dong.length, tong: gd.tong, du: gd.du });
       // Hoá đơn chưa đọc đủ thì khối tuổi nợ nói là chưa đủ — tuổi nợ thiếu dòng là số đòi nợ sai.
       setLoiHoaDon(hd.loi
-        ? `không đọc được hoá đơn: ${hd.loi}`
-        : hd.du ? null : `mới đọc ${hd.dong.length.toLocaleString('vi-VN')}/${hd.tong === null ? '—' : hd.tong.toLocaleString('vi-VN')} hoá đơn, chưa đủ để tính.`);
+        ? i18n.t('ui1.baoCao.loiDocHd', { loi: hd.loi })
+        : hd.du ? null : i18n.t('ui1.baoCao.hdChuaDu', { da: so(hd.dong.length), tong: hd.tong === null ? '—' : so(hd.tong) }));
 
       if (gd.loi) {
         // Không tính gì từ phần đọc dở.
@@ -180,7 +184,7 @@ export default function ReportsPage() {
    */
   const xuatCsv = useCallback(() => {
     if (!thang.length) {
-      toast('Chưa có dữ liệu để xuất.');
+      toast(i18n.t('ui1.baoCao.chuaCoXuat'));
       return;
     }
     // Tên cột theo từ điển chỉ số: tệp rời ứng dụng rồi thì không còn ngữ cảnh nào giải thích.
@@ -189,13 +193,13 @@ export default function ReportsPage() {
     if (catNgan) dong.push([`# CHUA DU DU LIEU: moi doc ${doDay?.daDoc} / ${doDay?.tong ?? 'khong ro'} giao dich`]);
     taiCsv(`dong-tien-ngan-hang-${new Date().toISOString().slice(0, 10)}.csv`,
       ['thang', 'tien_vao_ngan_hang', 'tien_ra_ngan_hang', 'chenh_lech_dong_tien'], dong);
-    toast.success(catNgan ? `Đã xuất ${thang.length} tháng — số liệu CHƯA đủ, tệp có ghi chú.` : `Đã xuất ${thang.length} tháng dòng tiền ra tệp CSV.`);
+    toast.success(catNgan ? i18n.t('ui1.baoCao.daXuatThieu', { n: thang.length }) : i18n.t('ui1.baoCao.daXuat', { n: thang.length }));
   }, [thang, catNgan, doDay]);
 
   if (dangTai) {
     return (
       <p className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
-        <Loader2 size={15} className="animate-spin" /> Đang đọc số liệu…
+        <Loader2 size={15} className="animate-spin" /> {t('ui1.baoCao.dangDoc')}
       </p>
     );
   }
@@ -209,12 +213,11 @@ export default function ReportsPage() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t('fin.reports.subtitle')}
-            {soDongThu > 0 && ` · đã bỏ ${soDongThu} dòng dữ liệu thử`}
+            {soDongThu > 0 && ` · ${t('ui1.baoCao.boDongThu', { n: soDongThu })}`}
           </p>
           {catNgan && doDay && (
             <p role="alert" className="mt-2 rounded-lg bg-mimi-amber/10 px-3 py-2 text-sm text-foreground">
-              Mới đọc {doDay.daDoc.toLocaleString('vi-VN')}/{doDay.tong === null ? '—' : doDay.tong.toLocaleString('vi-VN')} giao dịch
-              {' '}— các tổng dưới đây CHƯA đủ.
+              {t('ui1.baoCao.gdChuaDu', { da: so(doDay.daDoc), tong: doDay.tong === null ? '—' : so(doDay.tong) })}
             </p>
           )}
         </div>
@@ -229,15 +232,15 @@ export default function ReportsPage() {
 
       {loiGiaoDich && (
         <motion.div variants={fadeUp} role="alert" className="rounded-2xl border border-destructive/40 bg-card/60 p-6">
-          <p className="text-sm font-semibold text-foreground">Chưa đọc được giao dịch, nên chưa dựng báo cáo.</p>
+          <p className="text-sm font-semibold text-foreground">{t('ui1.baoCao.loiGd')}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Đây là lỗi đọc dữ liệu, không phải công ty chưa có giao dịch. Chi tiết: {loiGiaoDich}
+            {t('ui1.baoCao.loiGdChiTiet', { loi: loiGiaoDich })}
           </p>
           <button
             onClick={() => void tai()}
             className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
           >
-            <RefreshCw size={13} /> Thử lại
+            <RefreshCw size={13} /> {t('ui1.chung.thuLai')}
           </button>
         </motion.div>
       )}
@@ -253,13 +256,11 @@ export default function ReportsPage() {
         </h3>
         {/* Khoản giải ngân vay 100 tỷ là 100 tỷ tiền vào — đúng về dòng tiền, nhưng không phải doanh thu. */}
         <p className="mb-6 mt-1 text-xs text-muted-foreground">
-          Tiền vào gồm cả tiền vay, vốn góp, tiền chuyển giữa các tài khoản của bạn — không phải doanh thu; chênh lệch
-          không phải lợi nhuận. Doanh thu tính thuế xem ở{' '}
-          <Link to="/dashboard/to-khai" className="font-medium text-primary underline">Tờ khai</Link>.
+          <Trans i18nKey="ui1.baoCao.tienVaoGom" components={{ l: <Link to="/dashboard/to-khai" className="font-medium text-primary underline" /> }} />
         </p>
         <div className="h-72">
           {thang.length === 0 ? (
-            <Trong cau="Chưa có giao dịch nào để dựng biểu đồ. MIMI đọc tiền ra vào từ sao kê ngân hàng." />
+            <Trong cau={t('ui1.baoCao.chuaGd')} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={bieuDo}>
@@ -286,14 +287,14 @@ export default function ReportsPage() {
             {t('fin.reports.invoiceAging.title')}
           </h3>
           {/* Chỉ hoá đơn CHƯA thu. Gộp cả đã thu vào sẽ thổi phồng khoản phải đòi. */}
-          <p className="mb-6 mt-1 text-xs text-muted-foreground">Chỉ tính hoá đơn chưa thu</p>
+          <p className="mb-6 mt-1 text-xs text-muted-foreground">{t('ui1.baoCao.chiHdChuaThu')}</p>
 
           {loiHoaDon ? (
             <p role="alert" className="rounded-lg bg-mimi-amber/10 px-3 py-2 text-sm text-foreground">
-              Chưa dựng được tuổi nợ — {loiHoaDon}
+              {t('ui1.baoCao.loiTuoiNo', { loi: loiHoaDon })}
             </p>
           ) : tuoi.length === 0 ? (
-            <Trong cau="Chưa có hoá đơn nào chưa thu — hoặc chưa hoá đơn nào có hạn thanh toán." />
+            <Trong cau={t('ui1.baoCao.chuaHd')} />
           ) : (
             <div className="space-y-5">
               {tuoi.map((d) => (
@@ -334,7 +335,7 @@ export default function ReportsPage() {
           </h3>
           <div className="h-56">
             {chiPhi.length === 0 ? (
-              <Trong cau="Chưa có khoản chi nào trong dữ liệu." />
+              <Trong cau={t('ui1.baoCao.chuaChi')} />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MessageCircleQuestion, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import { daHoi, danhDauDaHoi, guiPhanHoi, soNgayDaDung, type CauHoi } from '@/lib/phanHoi';
 
@@ -28,6 +29,7 @@ export function CauHoiNhanh({ cauHoi, cau, luaChon, className }: {
   const [ghiChu, setGhiChu] = useState('');
   const [xong, setXong] = useState(false);
 
+  const { t } = useTranslation();
   useEffect(() => {
     let huy = false;
     void idCongTyDangDung().catch(() => null).then((id) => {
@@ -49,18 +51,18 @@ export function CauHoiNhanh({ cauHoi, cau, luaChon, className }: {
   if (xong) {
     return (
       <p role="status" className={`rounded-xl border border-border/60 bg-card/40 px-3 py-2 text-xs text-muted-foreground ${className ?? ''}`}>
-        Cảm ơn bạn — MIMI đọc từng phản hồi và báo lại khi đã sửa.
+        {t('ui2.phanHoi.camOn')}
       </p>
     );
   }
 
   return (
-    <div role="group" aria-label="Câu hỏi nhanh" className={`rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5 text-sm ${className ?? ''}`}>
+    <div role="group" aria-label={t('ui2.phanHoi.cauHoiNhanh')} className={`rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5 text-sm ${className ?? ''}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="flex items-start gap-1.5 text-foreground">
           <MessageCircleQuestion size={15} className="mt-0.5 shrink-0 text-primary" aria-hidden /> {cau}
         </p>
-        <button type="button" aria-label="Bỏ qua câu hỏi" onClick={() => { danhDauDaHoi(cauHoi, cty, 'bo_qua'); setHien(false); }}
+        <button type="button" aria-label={t('ui2.phanHoi.boQua')} onClick={() => { danhDauDaHoi(cauHoi, cty, 'bo_qua'); setHien(false); }}
           className="rounded p-0.5 text-muted-foreground hover:text-foreground"><X size={14} /></button>
       </div>
       {!chon ? (
@@ -74,10 +76,10 @@ export function CauHoiNhanh({ cauHoi, cau, luaChon, className }: {
         </div>
       ) : (
         <form className="mt-2 flex flex-col gap-1.5" onSubmit={(e) => { e.preventDefault(); gui(chon, ghiChu); }}>
-          <label className="text-xs text-muted-foreground" htmlFor={`ghi-chu-${cauHoi}`}>Vướng ở đâu? (không bắt buộc)</label>
+          <label className="text-xs text-muted-foreground" htmlFor={`ghi-chu-${cauHoi}`}>{t('ui2.phanHoi.vuong')}</label>
           <textarea id={`ghi-chu-${cauHoi}`} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} maxLength={500} rows={2}
             className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm" />
-          <button type="submit" className="self-end rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">Gửi</button>
+          <button type="submit" className="self-end rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">{t('ui2.phanHoi.gui')}</button>
         </form>
       )}
     </div>
@@ -89,6 +91,7 @@ export function CauHoiNhanh({ cauHoi, cau, luaChon, className }: {
  * Đây là thước đo PMF duy nhất trong sổ điểm có thể lên bằng dữ liệu của chính người dùng.
  */
 export function CauHoiSeanEllis({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const [du, setDu] = useState(false);
   useEffect(() => {
     let huy = false;
@@ -100,11 +103,11 @@ export function CauHoiSeanEllis({ className }: { className?: string }) {
     <CauHoiNhanh
       cauHoi="sean_ellis"
       className={className}
-      cau="Nếu từ mai không dùng MIMI được nữa, bạn thấy thế nào?"
+      cau={t('ui2.phanHoi.seanEllis')}
       luaChon={[
-        { gia: 'rat_that_vong', nhan: 'Rất thất vọng' },
-        { gia: 'hoi_that_vong', nhan: 'Hơi thất vọng', hoiThem: true },
-        { gia: 'khong_that_vong', nhan: 'Không thất vọng', hoiThem: true },
+        { gia: 'rat_that_vong', nhan: t('ui2.phanHoi.ratThatVong') },
+        { gia: 'hoi_that_vong', nhan: t('ui2.phanHoi.hoiThatVong'), hoiThem: true },
+        { gia: 'khong_that_vong', nhan: t('ui2.phanHoi.khongThatVong'), hoiThem: true },
       ]}
     />
   );

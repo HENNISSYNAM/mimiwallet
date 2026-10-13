@@ -127,7 +127,7 @@ function maskAccount(n: string): string {
 }
 
 export default function CasLink({ onSynced }: { onSynced?: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session } = useAuthStore();
   const [connections, setConnections] = useState<CasConnection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -905,7 +905,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium border border-dashed border-border text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
               >
                 <Shield size={14} />
-                Kiểm tra định danh (nghiệm thu)
+                {t('ui2.cas.kiemDinhDanh')}
               </button>
             )}
           </div>
@@ -971,7 +971,7 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                         noi dung chuyen gi dang xay ra. */}
                     {phuDe(c, bankNotes[c.id])
                       ?? (c.last_synced_at
-                          ? t('app.casLink.dongBoLuc', { luc: new Date(c.last_synced_at).toLocaleString('vi-VN', {
+                          ? t('app.casLink.dongBoLuc', { luc: new Date(c.last_synced_at).toLocaleString(i18n.language, {
                               hour: '2-digit',
                               minute: '2-digit',
                               day: '2-digit',
@@ -989,13 +989,13 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                       }}
                       defaultValue=""
                       className="text-[10px] rounded-lg border border-border bg-background px-1.5 py-1 text-muted-foreground"
-                      aria-label="Giả lập lỗi (chỉ sandbox)"
-                      title="Giả lập lỗi để kiểm thử — chỉ có trên sandbox"
+                      aria-label={t('ui2.cas.giaLapAria')}
+                      title={t('ui2.cas.giaLapTitle')}
                     >
-                      <option value="">Giả lập lỗi…</option>
-                      <option value="GRANT_LOGIN_REQUIRED">Đổi mật khẩu</option>
-                      <option value="OTP_REQUIRED">Xác thực thiết bị</option>
-                      <option value="PREVENTED">Chặn đăng nhập web</option>
+                      <option value="">{t('ui2.cas.giaLap')}</option>
+                      <option value="GRANT_LOGIN_REQUIRED">{t('ui2.cas.doiMatKhau')}</option>
+                      <option value="OTP_REQUIRED">{t('ui2.cas.xacThucThietBi')}</option>
+                      <option value="PREVENTED">{t('ui2.cas.chanWeb')}</option>
                     </select>
                   )}
                   {cachSua(c) === 'cap_nhat' && (
@@ -1056,14 +1056,14 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             it is diagnostic, not something a working flow should ever display. */}
         {(lastError || (linking && seenOrigins.length > 0)) && seenOrigins.length > 0 && (
           <p className="mt-2 text-[11px] text-muted-foreground break-all">
-            Origin nhận được: {seenOrigins.join(', ')}
+            {t('ui2.cas.originNhan')} {seenOrigins.join(', ')}
           </p>
         )}
 
         {dinhDanh && (
           <div className="mt-3 rounded-xl border border-mimi-green/25 bg-mimi-green/5 p-3 text-xs">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-mimi-green font-medium">Định danh đọc một lần — không lưu, đã thu hồi quyền</p>
+              <p className="text-mimi-green font-medium">{t('ui2.cas.dinhDanhMotLan')}</p>
               <button onClick={() => setDinhDanh(null)} className="text-muted-foreground hover:text-foreground">
                 <X size={12} />
               </button>
@@ -1071,20 +1071,20 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
             <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-muted-foreground">
               <dt>requestId /identity</dt>
               <dd className="font-mono text-foreground break-all">{dinhDanh.requestId ?? '—'}</dd>
-              <dt>Tài khoản</dt>
+              <dt>{t('ui2.cas.taiKhoan')}</dt>
               <dd className="text-foreground">
                 {dinhDanh.soTaiKhoan}
-                {dinhDanh.duoiTaiKhoan.length > 0 && ` · đuôi ${dinhDanh.duoiTaiKhoan.join(', ')}`}
+                {dinhDanh.duoiTaiKhoan.length > 0 && ` · ${t('ui2.cas.duoi')} ${dinhDanh.duoiTaiKhoan.join(', ')}`}
               </dd>
-              <dt>Thu hồi grant</dt>
+              <dt>{t('ui2.cas.thuHoiGrant')}</dt>
               <dd className="font-mono text-foreground break-all">
                 {dinhDanh.thuHoi?.loi
-                  ? `lỗi: ${dinhDanh.thuHoi.loi}`
-                  : dinhDanh.thuHoi?.requestId ?? 'đã gọi'}
+                  ? `${t('ui2.cas.loi')}: ${dinhDanh.thuHoi.loi}`
+                  : dinhDanh.thuHoi?.requestId ?? t('ui2.cas.daGoi')}
               </dd>
             </dl>
             <p className="mt-1.5 text-muted-foreground">
-              Cas trả các trường (chỉ tên, không giá trị):{' '}
+              {t('ui2.cas.casTraTruong')}{' '}
               <span className="font-mono text-foreground">{dinhDanh.cacTruong.join(', ') || '—'}</span>
             </p>
           </div>
@@ -1139,22 +1139,19 @@ export default function CasLink({ onSynced }: { onSynced?: () => void }) {
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Đây là <strong className="text-foreground">kiểm tra nghiệm thu</strong> quyền định danh
-                    của Cas (CCCD, ngày sinh, địa chỉ) — MIMI không dùng những thông tin này.
+                    <Trans i18nKey="ui2.cas.id1" components={{ b: <strong className="text-foreground" /> }} />
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Máy chủ đọc <strong className="text-foreground">một lần</strong>, chỉ giữ tên các trường
-                    và mã yêu cầu, <strong className="text-foreground">không lưu giá trị nào</strong>.
+                    <Trans i18nKey="ui2.cas.id2" components={{ b: <strong className="text-foreground" /> }} />
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <Check size={15} className="text-mimi-green shrink-0 mt-0.5" />
                   <span>
-                    Quyền truy cập bị <strong className="text-foreground">thu hồi ngay</strong> sau lần đọc
-                    đó; không có liên kết nào được tạo.
+                    <Trans i18nKey="ui2.cas.id3" components={{ b: <strong className="text-foreground" /> }} />
                   </span>
                 </li>
               </ul>

@@ -77,6 +77,8 @@ interface XacNhan {
 }
 
 /* ── Kiểu dáng (cùng hệ với màn Kiểm soát chi) ─────────────────────── */
+/** Định dạng số/ngày hiển thị theo ngôn ngữ đang chọn (đơn vị ₫ giữ nguyên). */
+const locHienThi = () => (({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
 const vien = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 const vienTrong = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
 const nutGoc = `inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 sm:min-h-9 ${vien}`;
@@ -104,7 +106,7 @@ const MAU_NCC: Record<NhaCungCapAi, string> = {
 
 const ngayVN = (iso: string | null) => (iso ? iso.split('-').reverse().join('/') : '—');
 const luc = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
+  iso ? new Date(iso).toLocaleString(locHienThi(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
 const thongDiep = (e: unknown) => (e instanceof Error ? e.message : i18n.t('app.chung.khongThucHienDuoc'));
 
 export default function ChiPhiAiPage() {
@@ -155,7 +157,7 @@ export default function ChiPhiAiPage() {
     setDangLam('nhap');
     try {
       const kq = await goi('nhap_file', { nha_cung_cap: ncc, ten_file: tenFile, dong, thay_the: thayThe });
-      toast.success(t('app.chiPhiAi.toast.daNhap', { n: Number(kq.lo_nhap?.so_dong ?? dong.length).toLocaleString('vi-VN'), ncc: TEN_NCC[ncc] }));
+      toast.success(t('app.chiPhiAi.toast.daNhap', { n: Number(kq.lo_nhap?.so_dong ?? dong.length).toLocaleString(locHienThi()), ncc: TEN_NCC[ncc] }));
       setMo(null);
       await tai();
     } catch (e) {
@@ -372,7 +374,7 @@ export default function ChiPhiAiPage() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-foreground" title={l.ten_file}>{l.ten_file}</p>
                         <p className="text-xs text-muted-foreground">
-                          {TEN_NCC[l.nha_cung_cap]} · {ngayVN(l.tu_ngay)}–{ngayVN(l.den_ngay)} · {t('app.chiPhiAi.soDong', { n: l.so_dong.toLocaleString('vi-VN') })}
+                          {TEN_NCC[l.nha_cung_cap]} · {ngayVN(l.tu_ngay)}–{ngayVN(l.den_ngay)} · {t('app.chiPhiAi.soDong', { n: l.so_dong.toLocaleString(locHienThi()) })}
                         </p>
                         <p className="text-xs tabular-nums text-foreground">{usd(l.tong_usd)}</p>
                       </div>
@@ -381,7 +383,7 @@ export default function ChiPhiAiPage() {
                         disabled={dangLam === l.id}
                         onClick={() => setXacNhan({
                           tieuDe: t('app.chiPhiAi.xoa.tieuDe', { ten: l.ten_file }),
-                          mo: t('app.chiPhiAi.xoa.mo', { n: l.so_dong.toLocaleString('vi-VN'), ncc: TEN_NCC[l.nha_cung_cap], tien: usd(l.tong_usd) }),
+                          mo: t('app.chiPhiAi.xoa.mo', { n: l.so_dong.toLocaleString(locHienThi()), ncc: TEN_NCC[l.nha_cung_cap], tien: usd(l.tong_usd) }),
                           nut: t('app.chiPhiAi.xoa.nut'),
                           nguyHiem: true,
                           lam: () => { void lam(l.id, 'xoa_lo_nhap', { id: l.id }, t('app.chiPhiAi.toast.daXoaLan')); },
@@ -856,12 +858,12 @@ function FormNhapFile({
               <section aria-labelledby="nf-xem-truoc" aria-live="polite" className="space-y-2">
                 <h3 id="nf-xem-truoc" className={nhanNho}>{t('app.chiPhiAi.nhap.xemTruoc')}</h3>
                 <p className="text-sm text-foreground">
-                  <strong>{t('app.chiPhiAi.nhap.hopLe', { n: tt.soDong.toLocaleString('vi-VN') })}</strong>
+                  <strong>{t('app.chiPhiAi.nhap.hopLe', { n: tt.soDong.toLocaleString(locHienThi()) })}</strong>
                   {tt.soDong > 0 && <> · {ngayVN(tt.tuNgay)}–{ngayVN(tt.denNgay)} · {t('app.chiPhiAi.nhap.tong')} <span className="tabular-nums">{usd(tt.tong)}</span></>}
                 </p>
                 {kq.boQua.length > 0 && (
                   <div className="rounded-lg border border-border p-2 text-xs">
-                    <p className="font-medium text-foreground">{t('app.chiPhiAi.nhap.boQua', { n: kq.boQua.length.toLocaleString('vi-VN') })}</p>
+                    <p className="font-medium text-foreground">{t('app.chiPhiAi.nhap.boQua', { n: kq.boQua.length.toLocaleString(locHienThi()) })}</p>
                     <ul className="mt-1 space-y-0.5 text-muted-foreground">
                       {kq.boQua.slice(0, 5).map((b) => <li key={b.dongSo}>{t('app.chiPhiAi.nhap.dongLyDo', { so: b.dongSo, lyDo: b.lyDo })}</li>)}
                       {kq.boQua.length > 5 && <li>{t('app.chiPhiAi.nhap.conNua', { n: kq.boQua.length - 5 })}</li>}
@@ -903,7 +905,7 @@ function FormNhapFile({
           onClick={() => kq && gui(ncc, tenFile, kq.dong)}
           className={`${nutChinh} w-full`}
         >
-          {dangGui ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {kq?.dong.length ? t('app.chiPhiAi.nhap.nutDong', { n: kq.dong.length.toLocaleString('vi-VN') }) : t('app.chiPhiAi.nhap.nutFile')}
+          {dangGui ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {kq?.dong.length ? t('app.chiPhiAi.nhap.nutDong', { n: kq.dong.length.toLocaleString(locHienThi()) }) : t('app.chiPhiAi.nhap.nutFile')}
         </button>
       </div>
     </>

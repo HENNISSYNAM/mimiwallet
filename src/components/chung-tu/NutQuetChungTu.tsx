@@ -274,7 +274,7 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
                 {/* Quét thay vì đính ảnh trần: nắn phẳng, khử bóng — bản lưu kho dễ đọc khi kiểm tra. */}
                 <button type="button" onClick={() => setMoQuetKem(true)}
                   className="inline-flex h-10 w-fit items-center gap-2 rounded-lg border border-border px-3 text-sm text-foreground hover:bg-accent">
-                  <ScanLine size={14} /> Quét giấy tờ
+                  <ScanLine size={14} /> {tr('ui1.quet.tieuDe')}
                 </button>
               </label>
             )}
@@ -295,7 +295,7 @@ function HopXemLai({ quet, giaoDichId, onDong, onDaLuu }: {
         )}
         {/* Đặt TRONG hộp xem lại để Radix xếp lớp đúng: đóng máy quét không đóng luôn hộp nhập tay. */}
         <QuetTaiLieu mo={moQuetKem} onDong={() => setMoQuetKem(false)} cheDoMacDinh="mau" tenTep="chung-tu-mimi"
-          nhanDungAnh="Đính kèm trang đầu" onDungAnh={(a) => { setAnhKem(a); setMoQuetKem(false); }} />
+          nhanDungAnh={tr('ui1.quet.dinhKem')} onDungAnh={(a) => { setAnhKem(a); setMoQuetKem(false); }} />
       </DialogContent>
     </Dialog>
   );

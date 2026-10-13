@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -28,6 +29,7 @@ export const GIAY_TOI_THIEU = 1500;
 export const laBot = (o: { bay: string; batDau: number; luc: number }) => o.bay.trim() !== '' || o.luc - o.batDau < GIAY_TOI_THIEU;
 
 export default function MoTaiKhoan() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [congTy, setCongTy] = useState('');
@@ -41,7 +43,7 @@ export default function MoTaiKhoan() {
     const em = email.trim();
     const ct = congTy.trim();
     if (!LA_EMAIL.test(em)) {
-      setLoi('Email chưa đúng. Ví dụ: ten@congty.vn');
+      setLoi(t('ui2.dangKy.emailSai'));
       return;
     }
     setLoi(null);
@@ -67,15 +69,15 @@ export default function MoTaiKhoan() {
           type="email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setLoi(null); }}
-          aria-label="Email doanh nghiệp"
-          placeholder="Email doanh nghiệp"
+          aria-label={t('ui2.moTk.email')}
+          placeholder={t('ui2.moTk.email')}
           className="w-full flex-1 rounded-xl border border-border bg-card px-5 py-3.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-primary/10 sm:w-auto"
         />
         <input
           value={congTy}
           onChange={(e) => setCongTy(e.target.value)}
-          aria-label="Tên công ty (không bắt buộc)"
-          placeholder="Tên công ty (không bắt buộc)"
+          aria-label={t('ui2.moTk.congTy')}
+          placeholder={t('ui2.moTk.congTy')}
           className="w-full flex-1 rounded-xl border border-border bg-card px-5 py-3.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-primary/10 sm:w-auto"
         />
         {/* Ô bẫy bot: ngoài màn hình, không đọc bởi trình đọc màn hình, không tab tới. */}
@@ -89,12 +91,12 @@ export default function MoTaiKhoan() {
           disabled={dangDi}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 font-display text-sm font-bold text-primary-foreground shadow-[0_8px_30px_hsla(225,100%,57%,0.25)] transition-all hover:shadow-[0_12px_40px_hsla(225,100%,57%,0.35)] disabled:opacity-60 sm:w-auto"
         >
-          Bắt đầu ngay <ArrowRight size={14} />
+          {t('ui2.moTk.batDau')} <ArrowRight size={14} />
         </button>
       </form>
       {loi && <p role="alert" className="mt-3 text-sm text-destructive">{loi}</p>}
       <p className="mt-4 text-sm text-muted-foreground">
-        MIMI sẽ gửi link vào email này. Bấm link là vào, không cần mật khẩu.
+        {t('ui2.moTk.guiLink')}
       </p>
     </>
   );

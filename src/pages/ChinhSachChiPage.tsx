@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Trans, useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
@@ -41,6 +42,8 @@ type NguoiNhan = Bang<'nguoi_nhan_duoc_phep'>;
 type Khoa = 'duyet' | 'nguoi-la' | 'han-muc' | 'tan-suat' | 'het-han' | 'nhom-chi' | 'nguoi-nhan' | 'nguoi-nhan-moi' | 'doi-so-tk';
 
 // Tên nhóm, tên luật và câu hỏi của từng hàng nằm ở bộ dịch: app.chinhSach.nhom.<id>, app.chinhSach.hang.<khoa>.{ten,hoi}.
+/** Định dạng số/ngày hiển thị theo ngôn ngữ đang chọn (đơn vị ₫ giữ nguyên). */
+const locHienThi = () => (({ vi: 'vi-VN', en: 'en-US', ko: 'ko-KR', zh: 'zh-CN' } as Record<string, string>)[(i18n.language ?? 'vi').slice(0, 2)] ?? 'vi-VN');
 const NHOM_HANG: Array<{ id: 'duyet' | 'hanMuc' | 'phamVi' | 'luonBat'; hang: Array<{ khoa: Khoa; icon: LucideIcon; coDinh?: boolean }> }> = [
   {
     id: 'duyet',
@@ -77,7 +80,7 @@ const o = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-s
 const nut = 'inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50';
 const soTu = (s: string) => Number(s.replace(/\D/g, '') || 0);
 const luc = (s: string | null) =>
-  s ? new Date(s).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+  s ? new Date(s).toLocaleString(locHienThi(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
 
 /** Toàn bộ trường mà `luu_chinh_sach` đòi — màn này chỉ đổi một phần, phần còn lại giữ nguyên. */
 const thanGui = (cs: ChinhSachDoc): Record<string, unknown> => ({

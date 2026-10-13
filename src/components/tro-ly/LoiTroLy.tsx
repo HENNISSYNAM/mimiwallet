@@ -6,6 +6,8 @@
  * câu này trả lời trước khi họ phải đọc bảng. Câu phải tính từ dữ liệu thật; thành phần
  * này chỉ hiển thị, không tự sinh nội dung.
  */
+import { useTranslation } from 'react-i18next';
+
 export interface ViecTroLy {
   khoa: string;
   cau: string;
@@ -13,11 +15,12 @@ export interface ViecTroLy {
 }
 
 export function LoiTroLy({ cau, viec = [] }: { cau: string; viec?: ViecTroLy[] }) {
+  const { t } = useTranslation();
   return (
-    <section aria-label="Tóm tắt của trợ lý" className="rounded-lg border border-border bg-card p-4">
+    <section aria-label={t('ui1.troLy.tomTat')} className="rounded-lg border border-border bg-card p-4">
       <p className="text-[15px] leading-relaxed text-foreground">{cau}</p>
       {viec.length > 0 && (
-        <ul className="mt-3 space-y-2 border-t border-border pt-3" aria-label="Việc cần làm">
+        <ul className="mt-3 space-y-2 border-t border-border pt-3" aria-label={t('ui1.troLy.viecCanLam')}>
           {viec.map((v) => (
             <li key={v.khoa} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span className="flex items-start gap-2 text-foreground">

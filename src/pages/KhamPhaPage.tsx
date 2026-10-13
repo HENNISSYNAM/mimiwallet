@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Landing from '@/pages/Landing';
 import { KHAM_PHA_THEO_SLUG, TRANG_KHAM_PHA } from '@/content/khamPha';
 
 /** /kham-pha/:trang — các khối trình diễn dời khỏi trang chủ (xem `content/khamPha.ts`). */
 export default function KhamPhaPage() {
+  const { t: dich } = useTranslation();
   const { trang = '' } = useParams();
   const { hash } = useLocation();
   const t = KHAM_PHA_THEO_SLUG[trang];
@@ -23,8 +25,8 @@ export default function KhamPhaPage() {
       dauTrang={
         <header className="border-b border-border bg-background pt-28 pb-10">
           <div className="container mx-auto px-4">
-            <nav aria-label="Khám phá" className="flex flex-wrap gap-2 text-sm">
-              <Link to="/" className="text-muted-foreground hover:text-foreground">Trang chủ</Link>
+            <nav aria-label={dich('ui2.khamPha.nhan')} className="flex flex-wrap gap-2 text-sm">
+              <Link to="/" className="text-muted-foreground hover:text-foreground">{dich('ui2.taiNguyen.trangChu')}</Link>
               <span className="text-muted-foreground">/</span>
               <span className="text-foreground">{t.ten}</span>
             </nav>

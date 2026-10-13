@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { MST_HOP_LE, chuanHoaMst } from '@/lib/maSoThue';
@@ -52,50 +53,52 @@ const TAX_ID_OK = MST_HOP_LE;
 const STEPS: Step[] = [
   {
     key: 'account_type',
-    title: 'Bạn đang dùng MIMI cho việc gì?',
-    hint: 'Quyết định phần thuế và báo cáo nào áp dụng cho bạn.',
+    title: 'ui2.wc.loaiTieuDe',
+    hint: 'ui2.wc.loaiGoiY',
     options: [
-      { value: 'household', label: 'Hộ kinh doanh' },
-      { value: 'business', label: 'Doanh nghiệp' },
-      { value: 'personal', label: 'Chi tiêu cá nhân' },
+      { value: 'household', label: 'ui2.dn.hoKinhDoanh' },
+      { value: 'business', label: 'ui2.dn.doanhNghiep' },
+      { value: 'personal', label: 'ui2.wc.caNhan' },
     ],
   },
   {
     key: 'industry',
-    title: 'Bạn đang kinh doanh ngành gì?',
+    title: 'ui2.wc.nganhTieuDe',
     options: [
-      { value: 'fnb', label: 'Ăn uống' },
-      { value: 'retail', label: 'Bán lẻ' },
-      { value: 'manufacturing', label: 'Sản xuất' },
-      { value: 'services', label: 'Dịch vụ' },
-      { value: 'import_export', label: 'Xuất nhập khẩu' },
-      { value: 'other', label: 'Khác' },
+      { value: 'fnb', label: 'ui2.wc.anUong' },
+      { value: 'retail', label: 'ui2.wc.banLe' },
+      { value: 'manufacturing', label: 'ui2.wc.sanXuat' },
+      { value: 'services', label: 'ui2.wc.dichVu' },
+      { value: 'import_export', label: 'ui2.wc.xnk' },
+      { value: 'other', label: 'ui2.wc.khac' },
     ],
   },
   {
     key: 'size',
-    title: 'Cửa hàng có bao nhiêu người?',
+    title: 'ui2.wc.nguoiTieuDe',
     options: [
-      { value: '1', label: 'Chỉ mình tôi' },
-      { value: '2-9', label: '2 – 9' },
-      { value: '10-49', label: '10 – 49' },
-      { value: '50+', label: 'Trên 50' },
+      { value: '1', label: 'ui2.wc.minhToi' },
+      { value: '2-9', label: 'ui2.wc.tu2' },
+      { value: '10-49', label: 'ui2.wc.tu10' },
+      { value: '50+', label: 'ui2.wc.tren50' },
     ],
   },
   {
     key: 'goal',
-    title: 'Điều bạn cần nhất lúc này?',
-    hint: 'MIMI sẽ ưu tiên phần đó trước.',
+    title: 'ui2.wc.canTieuDe',
+    hint: 'ui2.wc.canGoiY',
     options: [
-      { value: 'cashflow', label: 'Nắm được dòng tiền' },
-      { value: 'tax', label: 'Chuẩn bị số liệu thuế' },
-      { value: 'capital', label: 'Tìm vốn' },
-      { value: 'all', label: 'Cả ba' },
+      { value: 'cashflow', label: 'ui2.wc.dongTien' },
+      { value: 'tax', label: 'ui2.wc.soLieuThue' },
+      { value: 'capital', label: 'ui2.wc.timVon' },
+      { value: 'all', label: 'ui2.wc.caBa' },
     ],
   },
 ];
 
+/** `title`, `hint`, `label` trong STEPS là khoá i18n (khối `ui2.wc`), dịch lúc vẽ. */
 export default function WelcomeCards() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [step, setStep] = useState(0);
@@ -192,7 +195,7 @@ export default function WelcomeCards() {
 
         <button
           onClick={() => finish(answers)}
-          aria-label="Bỏ qua"
+          aria-label={t('ui2.wc.boQua')}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X size={16} />
@@ -201,8 +204,8 @@ export default function WelcomeCards() {
         <div className="flex items-start gap-3 pr-8">
           <img src={mimiWatch} alt="" aria-hidden draggable={false} className="w-10 h-10 shrink-0 no-save" />
           <div className="min-w-0">
-            <p className="text-base sm:text-lg font-display font-bold text-foreground">{thay ? 'MIMI đã tìm thấy cửa hàng của bạn' : s.title}</p>
-            {!thay && s.hint && <p className="text-xs text-muted-foreground mt-0.5">{s.hint}</p>}
+            <p className="text-base sm:text-lg font-display font-bold text-foreground">{thay ? t('ui2.wc.daTimThay') : t(s.title)}</p>
+            {!thay && s.hint && <p className="text-xs text-muted-foreground mt-0.5">{t(s.hint)}</p>}
           </div>
         </div>
 
@@ -210,7 +213,7 @@ export default function WelcomeCards() {
         {step === 0 && (
           <div className="mt-4">
             <label className="text-xs text-muted-foreground mb-1.5 block">
-              Mã số thuế <span className="text-muted-foreground/60">(nếu có — MIMI tự điền tên và loại hình)</span>
+              {t('ui2.dn.mst')} <span className="text-muted-foreground/60">({t('ui2.wc.neuCo')})</span>
             </label>
             <input
               value={taxId}
@@ -222,10 +225,10 @@ export default function WelcomeCards() {
               }`}
             />
             {taxId && !TAX_ID_OK(taxId) && (
-              <p className="text-xs text-mimi-red mt-1">Mã số thuế gồm 10 chữ số (có thể kèm “-” và 3 số chi nhánh), hoặc 12 chữ số với hộ kinh doanh.</p>
+              <p className="text-xs text-mimi-red mt-1">{t('ui2.wc.mstSai')}</p>
             )}
-            {tra.trang_thai === 'dang_tra' && <p className="text-xs text-muted-foreground mt-1">Đang tra dữ liệu đăng ký thuế…</p>}
-            {tra.trang_thai === 'khong_thay' && <p className="text-xs text-muted-foreground mt-1">Chưa thấy mã này trên dữ liệu thuế. Vẫn lưu được — điền tên bên dưới.</p>}
+            {tra.trang_thai === 'dang_tra' && <p className="text-xs text-muted-foreground mt-1">{t('ui2.wc.dangTra')}</p>}
+            {tra.trang_thai === 'khong_thay' && <p className="text-xs text-muted-foreground mt-1">{t('ui2.wc.chuaThay')}</p>}
           </div>
         )}
 
@@ -233,9 +236,9 @@ export default function WelcomeCards() {
           <div className="mt-3 rounded-xl border border-mimi-green/40 bg-mimi-green/5 px-3 py-2.5">
             <p className="text-sm font-medium text-foreground">{thay.ten}</p>
             <p className="text-xs text-muted-foreground">
-              {thay.loai === 'doanh_nghiep' ? 'Doanh nghiệp' : thay.loai === 'ho_kinh_doanh' ? 'Hộ kinh doanh' : 'Theo đăng ký thuế'} · {thay.trang_thai_nnt}
+              {thay.loai === 'doanh_nghiep' ? t('ui2.dn.doanhNghiep') : thay.loai === 'ho_kinh_doanh' ? t('ui2.dn.hoKinhDoanh') : t('ui2.dn.theoDkThue')} · {thay.trang_thai_nnt}
             </p>
-            {!thay.con_hoat_dong && <p className="text-xs text-mimi-red mt-1">Mã này không còn hoạt động trên dữ liệu thuế — kiểm lại xem có gõ nhầm.</p>}
+            {!thay.con_hoat_dong && <p className="text-xs text-mimi-red mt-1">{t('ui2.dn.mstNgung')}</p>}
           </div>
         )}
 
@@ -244,11 +247,11 @@ export default function WelcomeCards() {
             Hidden once the tax code has given the registered name. */}
         {step === 0 && !thay && (
           <div className="mt-4">
-            <label className="text-xs text-muted-foreground mb-1.5 block">Tên cửa hàng / công ty</label>
+            <label className="text-xs text-muted-foreground mb-1.5 block">{t('ui2.wc.tenCuaHang')}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ví dụ: Tạp hoá Minh Anh"
+              placeholder={t('ui2.wc.tenPh')}
               className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
             />
           </div>
@@ -262,7 +265,7 @@ export default function WelcomeCards() {
               onClick={() => choose(thay.loai === 'doanh_nghiep' ? 'business' : 'household')}
               className="px-4 py-2 rounded-xl bg-primary text-sm font-medium text-primary-foreground hover:brightness-110 disabled:opacity-50"
             >
-              Đúng, tiếp tục
+              {t('ui2.wc.dungTiepTuc')}
             </button>
           ) : s.options.map((o) => (
             <button
@@ -271,7 +274,7 @@ export default function WelcomeCards() {
               onClick={() => choose(o.value)}
               className="px-3.5 py-2 rounded-xl border border-border bg-background text-sm text-foreground hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
             >
-              {o.label}
+              {t(o.label)}
             </button>
           ))}
         </div>
@@ -291,7 +294,7 @@ export default function WelcomeCards() {
             onClick={() => finish(answers)}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
           >
-            {step === STEPS.length - 1 ? <>Xong <Check size={11} /></> : <>Bỏ qua <ArrowRight size={11} /></>}
+            {step === STEPS.length - 1 ? <>{t('ui2.wc.xong')} <Check size={11} /></> : <>{t('ui2.wc.boQua')} <ArrowRight size={11} /></>}
           </button>
         </div>
       </motion.div>

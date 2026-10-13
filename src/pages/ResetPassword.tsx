@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ShieldAlert } from 'lucide-react';
@@ -31,6 +32,7 @@ type TrangThai = 'dang-kiem-tra' | 'san-sang' | 'link-hong';
 const DO_DAI_TOI_THIEU = 8;
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [trangThai, setTrangThai] = useState<TrangThai>('dang-kiem-tra');
   const [mk, setMk] = useState('');
@@ -65,11 +67,11 @@ export default function ResetPassword() {
 
   const luu = async () => {
     if (mk.length < DO_DAI_TOI_THIEU) {
-      toast.error(`Mật khẩu cần tối thiểu ${DO_DAI_TOI_THIEU} ký tự`);
+      toast.error(t('ui2.auth.mkToiThieu', { so: DO_DAI_TOI_THIEU }));
       return;
     }
     if (mk !== xacNhan) {
-      toast.error('Mật khẩu xác nhận không khớp');
+      toast.error(t('ui2.auth.mkKhongKhop'));
       return;
     }
     setDangLuu(true);
@@ -79,7 +81,7 @@ export default function ResetPassword() {
       toast.error(error.message);
       return;
     }
-    toast.success('Đã đặt lại mật khẩu. Bạn đã được đăng nhập.');
+    toast.success(t('ui2.auth.daDatLai'));
     navigate('/dashboard');
   };
 
@@ -88,28 +90,27 @@ export default function ResetPassword() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <img src={mimiLogo} alt="" aria-hidden className="h-14 w-14 mb-3" />
-          <h1 className="font-display font-bold text-2xl text-foreground">Đặt lại mật khẩu</h1>
+          <h1 className="font-display font-bold text-2xl text-foreground">{t('ui2.auth.datLaiMk')}</h1>
         </div>
 
         {trangThai === 'dang-kiem-tra' && (
           <div className="flex items-center justify-center gap-2 text-muted-foreground py-10">
-            <Loader2 className="w-4 h-4 animate-spin" /> Đang kiểm tra đường dẫn…
+            <Loader2 className="w-4 h-4 animate-spin" /> {t('ui2.auth.dangKiemTra')}
           </div>
         )}
 
         {trangThai === 'link-hong' && (
           <div className="rounded-2xl border border-mimi-amber/30 bg-mimi-amber/5 p-6 text-center">
             <ShieldAlert className="w-8 h-8 text-mimi-amber mx-auto" />
-            <p className="mt-3 text-sm font-medium text-foreground">Đường dẫn không còn hiệu lực</p>
+            <p className="mt-3 text-sm font-medium text-foreground">{t('ui2.auth.linkHong')}</p>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              Link khôi phục có hạn sử dụng và chỉ dùng được một lần. Hãy yêu cầu một
-              link mới.
+              {t('ui2.auth.linkHongMo')}
             </p>
             <button
               onClick={() => navigate('/quen-mat-khau')}
               className="mt-4 h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium tap-target"
             >
-              Gửi lại thư khôi phục
+              {t('ui2.auth.guiLaiThu')}
             </button>
           </div>
         )}
@@ -118,7 +119,7 @@ export default function ResetPassword() {
           <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
             <div>
               <label className="text-sm text-muted-foreground mb-1 block" htmlFor="rp-new">
-                Mật khẩu mới
+                {t('ui2.auth.mkMoi')}
               </label>
               <input
                 id="rp-new" type="password" autoComplete="new-password"
@@ -128,7 +129,7 @@ export default function ResetPassword() {
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-1 block" htmlFor="rp-confirm">
-                Nhập lại mật khẩu mới
+                {t('ui2.auth.nhapLaiMk')}
               </label>
               <input
                 id="rp-confirm" type="password" autoComplete="new-password"
@@ -138,7 +139,7 @@ export default function ResetPassword() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Tối thiểu {DO_DAI_TOI_THIEU} ký tự.
+              {t('ui2.auth.toiThieu', { so: DO_DAI_TOI_THIEU })}
             </p>
             <button
               onClick={() => void luu()}
@@ -146,7 +147,7 @@ export default function ResetPassword() {
               className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 inline-flex items-center justify-center gap-2 tap-target"
             >
               {dangLuu && <Loader2 className="w-4 h-4 animate-spin" />}
-              Đặt lại mật khẩu
+              {t('ui2.auth.datLaiMk')}
             </button>
           </div>
         )}

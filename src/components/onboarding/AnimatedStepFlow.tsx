@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Smartphone, Brain, FileCheck, ArrowRight } from 'lucide-react';
 
 /**
@@ -16,25 +17,26 @@ import { Smartphone, Brain, FileCheck, ArrowRight } from 'lucide-react';
 const steps = [
   {
     icon: Smartphone,
-    label: 'Kết nối\nNgân hàng',
+    label: 'ui2.buoc.ketNoi',
     gradient: 'from-primary to-blue-400',
     bgGlow: 'bg-primary/20',
   },
   {
     icon: Brain,
-    label: 'Phân loại\nDòng tiền',
+    label: 'ui2.buoc.phanLoai',
     gradient: 'from-blue-400 to-mimi-green',
     bgGlow: 'bg-blue-400/20',
   },
   {
     icon: FileCheck,
-    label: 'Bộ chứng từ\nkê khai thuế',
+    label: 'ui2.buoc.boChungTu',
     gradient: 'from-mimi-green to-green-400',
     bgGlow: 'bg-mimi-green/20',
   },
 ];
 
 export default function AnimatedStepFlow({ activeStep = -1 }: { activeStep?: number }) {
+  const { t } = useTranslation();
   return (
     <div className="relative py-8">
       {/* Wave gradient background */}
@@ -112,10 +114,10 @@ export default function AnimatedStepFlow({ activeStep = -1 }: { activeStep?: num
               </motion.div>
               <div className="text-center">
                 <p className="text-xs font-bold text-foreground leading-tight whitespace-pre-line">
-                  Bước {i + 1}
+                  {t('ui2.buoc.buoc', { so: i + 1 })}
                 </p>
                 <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 whitespace-pre-line">
-                  {step.label}
+                  {t(step.label)}
                 </p>
               </div>
             </motion.div>

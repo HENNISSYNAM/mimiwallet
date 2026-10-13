@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CalendarClock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { mucKhan } from '@/lib/hanKeKhai';
 import { cauConLai, ngayMoc, useLichThue } from '@/lib/lichThue';
 import { motion } from 'framer-motion';
@@ -31,6 +32,7 @@ import { track } from '@/lib/track';
 const KHOA_DA_DONG = 'mimi.batdau.daDong';
 
 export default function BatDauTuDau() {
+  const { t } = useTranslation();
   const session = useAuthStore((s) => s.session);
   const navigate = useNavigate();
   const [buocs, setBuocs] = useState<Buoc[] | null>(null);
@@ -111,14 +113,14 @@ export default function BatDauTuDau() {
     >
       <button
         onClick={dong}
-        aria-label="Đóng hướng dẫn"
+        aria-label={t('ui2.batDau.dong')}
         className="absolute top-3 right-3 tap-target flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       >
         <X className="w-4 h-4" />
       </button>
 
       <div className="pr-10">
-        <h3 className="font-semibold text-foreground">Bắt đầu từ đâu</h3>
+        <h3 className="font-semibold text-foreground">{t('ui2.batDau.tieuDe')}</h3>
         {/*
           NÓI VÌ SAO TRƯỚC KHI NÓI LÀM GÌ.
           Bản trước mở đầu bằng "2/3 bước" — đúng nhưng vô nghĩa với người vừa
@@ -127,7 +129,7 @@ export default function BatDauTuDau() {
           có thật cho biết vì sao nên bấm tiếp.
         */}
         <p className="text-sm text-muted-foreground mt-0.5">
-          Nối tài khoản ngân hàng, MIMI đọc sao kê và dựng sẵn bộ chi phí cho kỳ kê khai.
+          {t('ui2.batDau.moTa')}
         </p>
         {moc && <p className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${
           khan === 'gap'
@@ -136,10 +138,10 @@ export default function BatDauTuDau() {
               ? 'bg-mimi-amber/12 text-mimi-amber'
               : 'bg-muted text-muted-foreground'
         }`}>
-          <CalendarClock size={13} /> {moc.ten}: hạn {ngayMoc(moc.han)} ({cauConLai(moc)})
+          <CalendarClock size={13} /> {moc.ten}: {t('ui2.batDau.han')} {ngayMoc(moc.han)} ({cauConLai(moc)})
         </p>}
         <p className="text-sm text-muted-foreground mt-2">
-          {xong}/{buocs.length} bước — các bước tự đánh dấu khi bạn làm xong, không cần bấm.
+          {t('ui2.batDau.tienDo', { xong, tong: buocs.length })}
         </p>
       </div>
 
@@ -176,7 +178,7 @@ export default function BatDauTuDau() {
               {!b.xong && (
                 <span className="block text-xs text-muted-foreground mt-0.5 leading-relaxed">
                   {b.moTa}
-                  {!b.moKhoa && ' — cần liên kết ngân hàng trước.'}
+                  {!b.moKhoa && ` — ${t('ui2.batDau.canLienKet')}`}
                 </span>
               )}
             </span>

@@ -13,6 +13,7 @@ import { Plus, Download, Search, X, ArrowRight, FileText, Loader2, QrCode } from
 import { InsightSpark } from '@/components/illustrations/BrandIcons';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { GlassTabs } from '@/components/ui/glass-tabs';
 import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 import { KiemHoaDonXml } from '@/components/hoa-don/KiemHoaDonXml';
@@ -57,7 +58,7 @@ function exportInvoicesCsv(rows: Invoice[]) {
     ['invoice_number', 'client_name', 'issued_date', 'due_date', 'amount', 'total', 'status', 'minh_hoa'],
     rows.map((r) => [r.invoice_number, r.client_name, r.issued_date, r.due_date, r.amount, r.total, r.status, !!r.is_synthetic]),
   );
-  toast.success(`Đã xuất ${n} hoá đơn ra tệp CSV.`);
+  toast.success(i18n.t('ui1.hoaDon.daXuat', { n }));
 }
 
 function CreateInvoiceModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
@@ -299,8 +300,8 @@ export default function InvoicesPage() {
           <button
             onClick={() => exportInvoicesCsv(filtered)}
             disabled={filtered.length === 0}
-            aria-label={filtered.length ? `Xuất ${filtered.length} hoá đơn đang hiện ra CSV` : 'Không có hoá đơn để xuất'}
-            title={filtered.length ? `Xuất ${filtered.length} hoá đơn đang hiện ra CSV` : 'Không có hoá đơn để xuất'}
+            aria-label={filtered.length ? t('ui1.hoaDon.xuatN', { n: filtered.length }) : t('ui1.hoaDon.khongCoDeXuat')}
+            title={filtered.length ? t('ui1.hoaDon.xuatN', { n: filtered.length }) : t('ui1.hoaDon.khongCoDeXuat')}
             className="bg-card/60 border border-border/60 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:border-primary/20 transition-all disabled:opacity-40"
           >
             <Download size={14} />
@@ -373,7 +374,7 @@ export default function InvoicesPage() {
             <Loader2 size={20} className="animate-spin text-primary" />
           </div>
         ) : loiTai && invoiceList.length === 0 ? (
-          <div className="p-6"><LoiTaiLai cau="Chưa tải được danh sách hoá đơn. Hoá đơn của bạn vẫn còn nguyên." thuLai={() => void loadInvoices()} /></div>
+          <div className="p-6"><LoiTaiLai cau={t('ui1.hoaDon.loiTai')} thuLai={() => void loadInvoices()} /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 px-6">
             <FileText size={28} className="text-muted-foreground mx-auto mb-3" />
@@ -436,7 +437,7 @@ export default function InvoicesPage() {
                           onClick={(e) => { e.stopPropagation(); setQrInvoice(inv); }}
                           className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
                         >
-                          <QrCode size={11} /> Nhận tiền QR
+                          <QrCode size={11} /> {t('ui1.hoaDon.nhanQr')}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelectedInvoice(inv); }}

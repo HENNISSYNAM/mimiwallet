@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Check, CreditCard, QrCode } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
@@ -55,6 +56,7 @@ interface TrangThai {
 }
 
 export default function PaymentMethods() {
+  const { t, i18n } = useTranslation();
   const [tt, setTt] = useState<TrangThai>({
     qrSan: false, qrTen: null, goi: null, hetHan: null, dangTai: true,
   });
@@ -156,30 +158,30 @@ export default function PaymentMethods() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-display font-bold text-foreground text-lg">Phương thức thanh toán</h3>
+        <h3 className="font-display font-bold text-foreground text-lg">{t('ui2.ptThanhToan.tieuDe')}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Cách MIMI nhận tiền từ khách của bạn, và cách bạn trả phí dịch vụ
+          {t('ui2.ptThanhToan.moTa')}
         </p>
       </div>
 
-      {tt.loi && <LoiTaiLai cau="Chưa tải được trạng thái nhận tiền QR và gói dịch vụ. Tải lại trang để thử lại." />}
+      {tt.loi && <LoiTaiLai cau={t('ui2.ptThanhToan.loiTai')} />}
 
       {/* ── Đang dùng được ─────────────────────────────────────────────── */}
       <div className="space-y-3">
         <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-          Đang dùng được
+          {t('ui2.ptThanhToan.dangDungDuoc')}
         </p>
 
         <ThePhuongThuc
           bieuTuong={<QrCode size={20} className="text-primary" />}
-          ten="Nhận tiền bằng mã QR"
-          mo="Khách quét mã, tiền vào thẳng tài khoản ngân hàng của bạn. MIMI không giữ tiền."
+          ten={t('ui2.ptThanhToan.nhanQrTen')}
+          mo={t('ui2.ptThanhToan.nhanQrMo')}
           sanSang={tt.qrSan}
           dangTai={tt.dangTai}
           chuThich={
             tt.qrSan
               ? tt.qrTen
-              : 'Chưa liên kết tài khoản nhận tiền QR — làm ở tab Open Banking'
+              : t('ui2.ptThanhToan.chuaLienKetQr')
           }
           hanhDong={
             tt.qrSan && !tt.dangTai ? (
@@ -187,7 +189,7 @@ export default function PaymentMethods() {
                 onClick={() => setMoForm(true)}
                 className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                Tạo mã QR
+                {t('ui2.ptThanhToan.taoMaQr')}
               </button>
             ) : null
           }
@@ -195,14 +197,14 @@ export default function PaymentMethods() {
 
         <ThePhuongThuc
           bieuTuong={<CreditCard size={20} className="text-primary" />}
-          ten="Trả phí MIMI bằng chuyển khoản"
-          mo="Quét mã hoặc chuyển khoản kèm mã thanh toán; tiền về là gói tự chạy. Làm trong Cài đặt."
+          ten={t('ui2.ptThanhToan.traPhiTen')}
+          mo={t('ui2.ptThanhToan.traPhiMo')}
           sanSang={!!tt.goi}
           dangTai={tt.dangTai}
           chuThich={
             tt.goi
-              ? `Gói ${tt.goi}${tt.hetHan ? ` · đến ${new Date(tt.hetHan).toLocaleDateString('vi-VN')}` : ''}`
-              : 'Chưa có gói thuê bao nào đang chạy'
+              ? `${t('ui2.ptThanhToan.goi', { goi: tt.goi })}${tt.hetHan ? ` · ${t('ui2.ptThanhToan.den', { ngay: new Date(tt.hetHan).toLocaleDateString(i18n.language) })}` : ''}`
+              : t('ui2.ptThanhToan.chuaCoGoi')
           }
         />
       </div>
@@ -210,12 +212,12 @@ export default function PaymentMethods() {
       {/* ── Lộ trình ───────────────────────────────────────────────────── */}
       <div className="space-y-3">
         <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-          Chưa tích hợp
+          {t('ui2.ptThanhToan.chuaTichHop')}
         </p>
         {[
-          { logo: logoVnpay, ten: 'VNPay', mo: 'Cổng thanh toán nội địa' },
-          { logo: logoMomo, ten: 'MoMo', mo: 'Ví điện tử' },
-          { logo: logoZalopay, ten: 'ZaloPay', mo: 'Ví điện tử' },
+          { logo: logoVnpay, ten: 'VNPay', mo: t('ui2.ptThanhToan.congNoiDia') },
+          { logo: logoMomo, ten: 'MoMo', mo: t('ui2.ptThanhToan.viDienTu') },
+          { logo: logoZalopay, ten: 'ZaloPay', mo: t('ui2.ptThanhToan.viDienTu') },
         ].map((m) => (
           <div
             key={m.ten}
@@ -234,7 +236,7 @@ export default function PaymentMethods() {
                 trong bộ nhớ trình duyệt rồi hiện nhãn xanh — tức là bịa thêm
                 một lần nữa, lần này do chính người dùng bấm ra. */}
             <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-              Chưa tích hợp
+              {t('ui2.ptThanhToan.chuaTichHop')}
             </span>
           </div>
         ))}
@@ -257,14 +259,14 @@ export default function PaymentMethods() {
           onClick={() => setMoForm(false)}
         >
           <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-lg font-bold text-foreground">Tạo mã QR nhận tiền</h3>
+            <h3 className="font-display text-lg font-bold text-foreground">{t('ui2.ptThanhToan.formTieuDe')}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Khách quét mã và chuyển thẳng vào tài khoản của bạn. MIMI không giữ tiền.
+              {t('ui2.ptThanhToan.formMoTa')}
             </p>
 
             <div className="mt-5 space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Số tiền</span>
+                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{t('ui2.ptThanhToan.soTien')}</span>
                 <input
                   inputMode="numeric"
                   autoFocus
@@ -275,14 +277,14 @@ export default function PaymentMethods() {
                 />
                 {soTien > 0 && (
                   <p className="mt-1.5 font-mono text-xs text-muted-foreground">
-                    ₫{soTien.toLocaleString('vi-VN')}
+                    ₫{soTien.toLocaleString(i18n.language)}
                   </p>
                 )}
               </label>
 
               <label className="block">
                 <span className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted-foreground">
-                  <span>Nội dung</span>
+                  <span>{t('ui2.ptThanhToan.noiDung')}</span>
                   {/* Đếm ngược hiện sẵn, không đợi người ta gõ thừa rồi mới báo.
                       Chín ký tự ngắn tới mức không ai đoán được nếu không nói. */}
                   <span className={`font-mono ${noiDung.trim().length > MO_TA_TOI_DA ? 'text-destructive' : ''}`}>
@@ -299,8 +301,7 @@ export default function PaymentMethods() {
                   <p className="mt-1.5 text-xs text-destructive">{moTa.vuong}</p>
                 )}
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  Ngân hàng giới hạn {MO_TA_TOI_DA} ký tự. Đối soát không dựa vào ô này —
-                  MIMI khớp bằng mã tham chiếu riêng.
+                  {t('ui2.ptThanhToan.gioiHan', { so: MO_TA_TOI_DA })}
                 </p>
               </label>
 
@@ -312,7 +313,7 @@ export default function PaymentMethods() {
                   className="mt-0.5"
                 />
                 <span>
-                  Tạo qua Cas QR Pay (nghiệm thu webhook Casso). Bỏ trống thì dùng VietQR như bình thường; tiền về khớp khi giao dịch về sổ.
+                  {t('ui2.ptThanhToan.quaCas')}
                 </span>
               </label>
             </div>
@@ -322,14 +323,14 @@ export default function PaymentMethods() {
                 onClick={() => setMoForm(false)}
                 className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground"
               >
-                Huỷ
+                {t('ui2.chung.huy')}
               </button>
               <button
                 disabled={!taoDuoc}
                 onClick={() => { setMoForm(false); setMoQr(true); }}
                 className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
               >
-                Tạo mã
+                {t('ui2.ptThanhToan.taoMa')}
               </button>
             </div>
           </div>
@@ -360,6 +361,7 @@ function ThePhuongThuc({
   chuThich: string | null;
   hanhDong?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       whileHover={{ y: -2 }}
@@ -380,7 +382,7 @@ function ThePhuongThuc({
                   cái sai trước cái đúng. */}
               {!dangTai && sanSang && (
                 <span className="rounded-full bg-mimi-green/10 px-2 py-0.5 text-[10px] font-medium text-mimi-green">
-                  Đang chạy
+                  {t('ui2.ptThanhToan.dangChay')}
                 </span>
               )}
             </div>

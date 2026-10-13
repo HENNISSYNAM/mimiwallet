@@ -45,6 +45,7 @@ interface HoaDon {
 function DongChep({ nhan, giaTri, icon: Icon, mono }: {
   nhan: string; giaTri: string; icon: typeof Hash; mono?: boolean;
 }) {
+  const { t } = useTranslation();
   const [chep, setChep] = useState(false);
   return (
     <div className="flex items-start justify-between gap-3 py-2.5 border-b border-border last:border-0">
@@ -64,7 +65,7 @@ function DongChep({ nhan, giaTri, icon: Icon, mono }: {
           setTimeout(() => setChep(false), 1500);
         }}
         className="shrink-0 tap-target flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
-        aria-label={`Sao chép ${nhan}`}
+        aria-label={t('ui2.goi.saoChep', { nhan })}
       >
         {chep ? <Check className="w-4 h-4 text-mimi-green" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
       </button>
@@ -92,6 +93,7 @@ export function ChuaBanTrongApp() {
 }
 
 function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot?: number; goiXu?: string; onPaid?: () => void }) {
+  const { t: dich } = useTranslation();
   const [hoaDon, setHoaDon] = useState<HoaDon | null>(null);
   const [dangTao, setDangTao] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -109,7 +111,7 @@ function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot
       if (data?.error) throw new Error(data.error);
       setHoaDon(data as HoaDon);
     } catch (e) {
-      setLoi((e as Error)?.message ?? 'Không tạo được hoá đơn');
+      setLoi((e as Error)?.message ?? dich('ui2.goi.khongTaoHd'));
     } finally {
       setDangTao(false);
     }
@@ -130,7 +132,7 @@ function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot
       void QRCode.toCanvas(canvasRef.current, chuoi, { width: 240, margin: 1 });
     } catch (e) {
       // Dựng QR hỏng thì vẫn còn đường chuyển tay bên dưới — nói ra, không giấu.
-      setLoi('Không dựng được mã QR: ' + ((e as Error)?.message ?? ''));
+      setLoi(dich('ui2.goi.khongDungQr') + ' ' + ((e as Error)?.message ?? ''));
     }
   }, [hoaDon]);
 
@@ -147,7 +149,7 @@ function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot
     const t = setInterval(async () => {
       if (Date.now() - batDau > 15 * 60_000) {
         clearInterval(t);
-        toast.info('Chưa thấy tiền về sau 15 phút. Nếu bạn đã chuyển, MIMI vẫn tự kích hoạt khi tiền tới; tải lại trang để xem.', { duration: 15000 });
+        toast.info(dich('ui2.goi.chua15Phut'), { duration: 15000 });
         return;
       }
       const { data } = await supabase
@@ -158,27 +160,26 @@ function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot
       if (data?.status === 'paid') {
         clearInterval(t);
         toast.success(goiXu
-          ? 'Đã nhận tiền. Đã cộng xu vào năng lượng MIMI.'
+          ? dich('ui2.goi.daNhanXu')
           : soLuot
-          ? `Đã nhận tiền. Đã cộng ${soLuot} lượt xuất tờ khai.`
-          : 'Đã nhận được thanh toán. Gói đã kích hoạt.');
+          ? dich('ui2.goi.daNhanLuot', { so: soLuot })
+          : dich('ui2.goi.daNhanGoi'));
         onPaid?.();
       } else if (data?.status === 'underpaid' || data?.status === 'overpaid') {
         clearInterval(t);
         toast.warning(
-          'Số tiền nhận được không khớp hoá đơn nên chưa kích hoạt tự động. ' +
-            'Chúng tôi sẽ liên hệ với bạn.',
+          dich('ui2.goi.khongKhop'),
           { duration: 12000 },
         );
       }
     }, 5_000);
     return () => clearInterval(t);
-  }, [hoaDon, onPaid, soLuot, goiXu]);
+  }, [hoaDon, onPaid, soLuot, goiXu, dich]);
 
   if (dangTao) {
     return (
       <div className="flex items-center gap-2 justify-center py-10 text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin" /> Đang tạo hoá đơn…
+        <Loader2 className="w-4 h-4 animate-spin" /> {dich('ui2.goi.dangTaoHd')}
       </div>
     );
   }
@@ -188,7 +189,7 @@ function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot
       <div className="rounded-xl border border-destructive/25 bg-destructive/[0.03] p-4">
         <p className="text-sm text-foreground">{loi}</p>
         <button onClick={() => void tao()} className="mt-3 text-sm text-primary hover:underline">
-          Thử lại
+          {dich('ui2.chung.thuLai')}
         </button>
       </div>
     );
@@ -203,7 +204,7 @@ function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot
       className="rounded-2xl border border-border bg-card p-5 space-y-5"
     >
       <div className="text-center">
-        <p className="text-sm text-muted-foreground">Gói {hoaDon.plan_name}</p>
+        <p className="text-sm text-muted-foreground">{dich('ui2.ptThanhToan.goi', { goi: hoaDon.plan_name })}</p>
         <p className="text-2xl font-bold tracking-tight mt-0.5">{formatVND(hoaDon.amount)}</p>
       </div>
 
@@ -214,22 +215,19 @@ function ManChuyenKhoan({ plan, soLuot, goiXu, onPaid }: { plan?: string; soLuot
       </div>
 
       <p className="text-xs text-center text-muted-foreground">
-        Quét bằng ứng dụng ngân hàng — số tiền và nội dung đã điền sẵn.
+        {dich('ui2.goi.quetBangApp')}
       </p>
 
       <div className="rounded-xl bg-muted/40 px-4">
-        <DongChep nhan="Ngân hàng" giaTri={hoaDon.bank.nganHang} icon={Landmark} />
-        <DongChep nhan="Chủ tài khoản" giaTri={hoaDon.bank.chuTaiKhoan} icon={Building2} />
-        <DongChep nhan="Số tài khoản" giaTri={hoaDon.bank.soTaiKhoan} icon={Hash} mono />
-        <DongChep nhan="Nội dung chuyển khoản" giaTri={hoaDon.reference_code} icon={Hash} mono />
+        <DongChep nhan={dich('ui2.goi.nganHang')} giaTri={hoaDon.bank.nganHang} icon={Landmark} />
+        <DongChep nhan={dich('ui2.goi.chuTk')} giaTri={hoaDon.bank.chuTaiKhoan} icon={Building2} />
+        <DongChep nhan={dich('ui2.goi.soTk')} giaTri={hoaDon.bank.soTaiKhoan} icon={Hash} mono />
+        <DongChep nhan={dich('ui2.qr.noiDungCk')} giaTri={hoaDon.reference_code} icon={Hash} mono />
       </div>
 
       {/* Câu quan trọng nhất trên màn hình: sai nội dung là đối soát không khớp. */}
       <p className="text-xs text-muted-foreground leading-relaxed">
-        <strong className="text-foreground">Phải ghi đúng nội dung chuyển khoản</strong> —
-        đó là thứ hệ thống dùng để nhận ra khoản tiền của bạn. Chuyển đúng số tiền,
-        thuê bao kích hoạt tự động trong vài phút. Màn hình này tự cập nhật, bạn không
-        cần làm gì thêm.
+        <strong className="text-foreground">{dich('ui2.goi.phaiGhiDung')}</strong> — {dich('ui2.goi.phaiGhiDungMo')}
       </p>
     </motion.div>
   );

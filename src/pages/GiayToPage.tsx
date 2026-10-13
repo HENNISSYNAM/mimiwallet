@@ -166,9 +166,9 @@ export default function GiayToPage() {
             <Truong nhan={t('app.giayTo.f.diaChi')} gia={donVi.dia_chi} doi={dv('dia_chi')} />
             <div className="grid gap-3 sm:grid-cols-2">
               <Truong nhan={t('app.giayTo.f.daiDien')} gia={donVi.nguoi_dai_dien} doi={dv('nguoi_dai_dien')} />
-              <Truong nhan={t('app.giayTo.f.chucVu')} gia={donVi.chuc_vu} doi={dv('chuc_vu')} goiY="Giám đốc, Chủ hộ…" />
+              <Truong nhan={t('app.giayTo.f.chucVu')} gia={donVi.chuc_vu} doi={dv('chuc_vu')} goiY={t('ui1.giayTo.goiYChucVu')} />
               <Truong nhan={t('app.giayTo.f.dienThoai')} gia={donVi.dien_thoai} doi={dv('dien_thoai')} />
-              <Truong nhan={t('app.giayTo.f.diaDanh')} gia={donVi.dia_danh} doi={dv('dia_danh')} goiY="TP. Hồ Chí Minh" />
+              <Truong nhan={t('app.giayTo.f.diaDanh')} gia={donVi.dia_danh} doi={dv('dia_danh')} goiY={t('ui1.dkh.goiYDiaDanh')} />
             </div>
           </fieldset>
 
@@ -200,14 +200,14 @@ export default function GiayToPage() {
           {loai !== 'don_tra_soat' && (
             <fieldset className="space-y-3 rounded-xl border border-border p-4">
               <legend className="px-1 text-sm font-semibold text-foreground">{loai === 'cong_van_giai_trinh' ? t('app.giayTo.giaiTrinhTd') : t('app.giayTo.huyTd')}</legend>
-              <Truong nhan={t('app.giayTo.coQuan')} gia={coQuanThue} doi={setCoQuanThue} goiY="Thuế cơ sở …" />
+              <Truong nhan={t('app.giayTo.coQuan')} gia={coQuanThue} doi={setCoQuanThue} goiY={t('ui1.giayTo.goiYCoQuan')} />
               {loai === 'cong_van_giai_trinh' ? (
                 <>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Truong nhan={t('app.giayTo.soTb')} gia={soThongBao} doi={setSoThongBao} />
                     <Truong nhan={t('app.giayTo.ngayTb')} gia={ngayThongBao} doi={setNgayThongBao} goiY="2026-09-01" />
                   </div>
-                  <Truong nhan={t('app.giayTo.yeuCauVe')} gia={noiDungYeuCau} doi={setNoiDungYeuCau} goiY="doanh thu quý 2/2026" />
+                  <Truong nhan={t('app.giayTo.yeuCauVe')} gia={noiDungYeuCau} doi={setNoiDungYeuCau} goiY={t('ui1.giayTo.goiYYeuCau')} />
                   <Truong nhan={t('app.giayTo.noiDungGt')} gia={giaiTrinh} doi={setGiaiTrinh} nhieuDong />
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-foreground">{t('app.giayTo.soLieu')}</p>
@@ -226,7 +226,7 @@ export default function GiayToPage() {
                 <>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Truong nhan={t('app.giayTo.mau')} gia={mauToKhai} doi={setMauToKhai} goiY="01/CNKD" />
-                    <Truong nhan={t('app.giayTo.ky')} gia={kyTinhThue} doi={setKyTinhThue} goiY="Quý 2/2026" />
+                    <Truong nhan={t('app.giayTo.ky')} gia={kyTinhThue} doi={setKyTinhThue} goiY={t('ui1.giayTo.goiYKy')} />
                     <Truong nhan={t('app.giayTo.ngayNop')} gia={ngayNop} doi={setNgayNop} goiY="2026-07-20" />
                     <Truong nhan={t('app.giayTo.maGd')} gia={maGiaoDich} doi={setMaGiaoDich} />
                   </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, CalendarDays, ChevronRight, Loader2, MapPin } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -8,17 +9,19 @@ import { ngayGio } from '@/components/tai-nguyen/TheBai';
 import { CAU_HINH_LOAI, docBai, duongDanLoai, loaiTuDuong, type BaiTaiNguyen, type LoaiTaiNguyen } from '@/lib/taiNguyen';
 import NotFound from './NotFound';
 
+/* Nhãn nút theo loại bài — khoá i18n. Nội dung bài (tiêu đề, tóm tắt, thân bài) giữ nguyên ngôn ngữ gốc. */
 const NHAN_NUT: Record<LoaiTaiNguyen, string> = {
-  su_kien: 'Đăng ký tham dự',
-  blog: 'Đọc thêm',
-  goc_nhin: 'Đọc thêm',
-  bao_cao: 'Tải báo cáo',
-  tin_tuc: 'Đọc bài gốc',
-  tuyen_dung: 'Ứng tuyển',
+  su_kien: 'ui2.taiNguyen.nut.dangKy',
+  blog: 'ui2.taiNguyen.nut.docThem',
+  goc_nhin: 'ui2.taiNguyen.nut.docThem',
+  bao_cao: 'ui2.taiNguyen.nut.taiBaoCao',
+  tin_tuc: 'ui2.taiNguyen.nut.docBaiGoc',
+  tuyen_dung: 'ui2.taiNguyen.nut.ungTuyen',
 };
 
 /** Một bài tài nguyên (/tai-nguyen/:loai/:slug), hoặc một tin tuyển dụng (/tuyen-dung/:slug). */
 export default function TaiNguyenBai({ loaiCoDinh }: { loaiCoDinh?: LoaiTaiNguyen }) {
+  const { t } = useTranslation();
   const { loai: duong, slug = '' } = useParams();
   const loai = loaiCoDinh ?? loaiTuDuong(duong);
   const [bai, setBai] = useState<BaiTaiNguyen | null | undefined>(undefined);
@@ -45,15 +48,15 @@ export default function TaiNguyenBai({ loaiCoDinh }: { loaiCoDinh?: LoaiTaiNguye
     <div className="min-h-screen bg-background">
       <Navbar />
       <article className="container mx-auto max-w-3xl px-4 pt-32 pb-20 lg:pt-40">
-        <nav aria-label="Đường dẫn" className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Link to="/" className="hover:text-foreground">Trang chủ</Link>
+        <nav aria-label={t('ui2.taiNguyen.duongDan')} className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Link to="/" className="hover:text-foreground">{t('ui2.taiNguyen.trangChu')}</Link>
           <ChevronRight size={14} />
-          <Link to={duongDanLoai(loai)} className="hover:text-foreground">{CAU_HINH_LOAI[loai].ten}</Link>
+          <Link to={duongDanLoai(loai)} className="hover:text-foreground">{t(`ui2.taiNguyen.loai.${loai}.ten`, { defaultValue: CAU_HINH_LOAI[loai].ten })}</Link>
         </nav>
 
-        {loi && <p className="mt-8 text-muted-foreground">Chưa tải được bài. Thử lại sau ít phút.</p>}
+        {loi && <p className="mt-8 text-muted-foreground">{t('ui2.taiNguyen.loiBai')}</p>}
         {!loi && bai === undefined && (
-          <p className="mt-8 flex items-center gap-2 text-muted-foreground"><Loader2 size={16} className="animate-spin" /> Đang tải…</p>
+          <p className="mt-8 flex items-center gap-2 text-muted-foreground"><Loader2 size={16} className="animate-spin" /> {t('ui2.chung.dangTai')}</p>
         )}
 
         {bai && (
@@ -66,7 +69,7 @@ export default function TaiNguyenBai({ loaiCoDinh }: { loaiCoDinh?: LoaiTaiNguye
                   {bai.ket_thuc && ` – ${ngayGio(bai.ket_thuc, true)}`}
                 </span>
               )}
-              {bai.loai !== 'su_kien' && bai.xuat_ban_luc && <span>Đăng {ngayGio(bai.xuat_ban_luc)}</span>}
+              {bai.loai !== 'su_kien' && bai.xuat_ban_luc && <span>{t('ui2.taiNguyen.dang', { ngay: ngayGio(bai.xuat_ban_luc) })}</span>}
               {bai.dia_diem && <span className="inline-flex items-center gap-1.5"><MapPin size={15} aria-hidden /> {bai.dia_diem}</span>}
               {bai.hinh_thuc && <span className="rounded-full bg-muted px-2.5 py-0.5">{bai.hinh_thuc}</span>}
             </div>
@@ -78,7 +81,7 @@ export default function TaiNguyenBai({ loaiCoDinh }: { loaiCoDinh?: LoaiTaiNguye
                 rel="noopener noreferrer nofollow"
                 className="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-[15px] font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                {NHAN_NUT[bai.loai]} <ArrowUpRight size={16} />
+                {t(NHAN_NUT[bai.loai])} <ArrowUpRight size={16} />
               </a>
             )}
             {bai.anh_bia && (

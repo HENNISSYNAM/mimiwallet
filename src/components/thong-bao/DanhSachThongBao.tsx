@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, BellRing, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { danhDauThongBao, type HanhDongThongBao, type ThongBao } from '@/lib/thongBao';
@@ -17,14 +19,15 @@ import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 
 const tuongDoi = (iso: string) => {
   const phut = Math.round((Date.now() - Date.parse(iso)) / 60_000);
-  if (phut < 1) return 'vừa xong';
-  if (phut < 60) return `${phut} phút trước`;
+  if (phut < 1) return i18n.t('ui2.tb.vuaXong');
+  if (phut < 60) return i18n.t('ui2.tb.phutTruoc', { so: phut });
   const gio = Math.round(phut / 60);
-  if (gio < 24) return `${gio} giờ trước`;
-  return new Date(iso).toLocaleDateString('vi-VN');
+  if (gio < 24) return i18n.t('ui2.tb.gioTruoc', { so: gio });
+  return new Date(iso).toLocaleDateString(i18n.language);
 };
 
 export function DanhSachThongBao({ ds, onDoi, gon, loi }: { ds: ThongBao[]; onDoi: () => void; gon?: boolean; loi?: boolean }) {
+  const { t: dich } = useTranslation();
   const navigate = useNavigate();
   const [dang, setDang] = useState<string | null>(null);
 
@@ -33,12 +36,12 @@ export function DanhSachThongBao({ ds, onDoi, gon, loi }: { ds: ThongBao[]; onDo
     try {
       await goiToKhai(h.goi, h.tham_so);
       await danhDauThongBao([t.id], true);
-      toast.success(h.tham_so.loai === 'business_revenue' ? 'Đã ghi: khoản này là tiền bán hàng.' : 'Đã ghi: khoản này không tính vào doanh thu nữa.');
+      toast.success(h.tham_so.loai === 'business_revenue' ? dich('ui2.tb.daGhiBanHang') : dich('ui2.tb.daGhiKhongTinh'));
       onDoi();
     } catch (e) {
       if (e instanceof LoiGoiHam && e.status === 402) {
-        toast.error(e.message, { action: { label: 'Xem gói', onClick: () => navigate('/dashboard/settings') } });
-      } else toast.error(e instanceof Error ? e.message : 'Chưa ghi được.');
+        toast.error(e.message, { action: { label: dich('ui2.tb.xemGoi'), onClick: () => navigate('/dashboard/settings') } });
+      } else toast.error(e instanceof Error ? e.message : dich('ui2.tb.chuaGhi'));
     } finally {
       setDang(null);
     }
@@ -52,11 +55,11 @@ export function DanhSachThongBao({ ds, onDoi, gon, loi }: { ds: ThongBao[]; onDo
 
   // Đọc lỗi thì không được nói "Chưa có thông báo nào" — thông báo có thể là hạn nộp thuế.
   if (!ds.length && loi) {
-    return <div className="p-3"><LoiTaiLai cau="Chưa tải được thông báo." thuLai={onDoi} /></div>;
+    return <div className="p-3"><LoiTaiLai cau={dich('ui2.tb.loiTai')} thuLai={onDoi} /></div>;
   }
 
   if (!ds.length) {
-    return <p className="p-4 text-sm text-muted-foreground">Chưa có thông báo nào. MIMI sẽ báo khi tới hạn khai thuế, có văn bản luật mới, hoặc có khoản tiền vào cần bạn xác nhận.</p>;
+    return <p className="p-4 text-sm text-muted-foreground">{dich('ui2.tb.rong')}</p>;
   }
 
   return (
@@ -87,7 +90,7 @@ export function DanhSachThongBao({ ds, onDoi, gon, loi }: { ds: ThongBao[]; onDo
               </div>
             )}
             {t.hanh_dong.length > 0 && t.da_xu_ly_luc && (
-              <p className="mt-1 flex items-center gap-1 pl-6 text-xs text-muted-foreground"><Check size={12} className="text-mimi-green" /> Đã xử lý</p>
+              <p className="mt-1 flex items-center gap-1 pl-6 text-xs text-muted-foreground"><Check size={12} className="text-mimi-green" /> {dich('ui2.tb.daXuLy')}</p>
             )}
           </li>
         );

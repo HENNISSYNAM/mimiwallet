@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -27,6 +28,7 @@ export default function HopXacMinh({
   onHuy: () => void;
   onVanDuyet: () => void;
 }) {
+  const { t } = useTranslation();
   const [daKiem, setDaKiem] = useState(false);
   useEffect(() => { if (dauHieu) setDaKiem(false); }, [dauHieu]);
 
@@ -36,15 +38,14 @@ export default function HopXacMinh({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-destructive" aria-hidden />
-            Dừng lại trước khi duyệt
+            {t('ui2.canhBao.dungLai')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            MIMI thấy {dauHieu?.length ?? 0} dấu hiệu bất thường ở khoản này. Đây là dấu hiệu, chưa phải kết luận — nhưng
-            tiền đã chuyển thì rất khó lấy lại.
+            {t('ui2.canhBao.thayDauHieu', { so: dauHieu?.length ?? 0 })}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <ul className="space-y-2" aria-label="Dấu hiệu bất thường">
+        <ul className="space-y-2" aria-label={t('ui2.canhBao.dauHieu')}>
           {(dauHieu ?? []).map((d) => (
             <li key={d.ma} className="rounded-md border border-border p-3 text-sm">
               <span
@@ -52,7 +53,7 @@ export default function HopXacMinh({
                   d.muc_do === 'cao' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-foreground'
                 }`}
               >
-                {d.muc_do === 'cao' ? 'Mức cao' : 'Cần để ý'}
+                {d.muc_do === 'cao' ? t('ui2.canhBao.mucCao') : t('ui2.canhBao.canDeY')}
               </span>
               {d.cau}
             </li>
@@ -61,7 +62,7 @@ export default function HopXacMinh({
 
         {!lichSuDu && (
           <p className="text-xs text-muted-foreground">
-            MIMI chỉ đọc được một phần lịch sử chi của công ty, nên có thể báo "người nhận mới" cho người bạn đã từng trả.
+            {t('ui2.canhBao.motPhanLichSu')}
           </p>
         )}
 
@@ -69,23 +70,22 @@ export default function HopXacMinh({
           <Checkbox
             checked={daKiem}
             onCheckedChange={(v) => setDaKiem(v === true)}
-            aria-label="Tôi đã xác minh người nhận"
+            aria-label={t('ui2.canhBao.daXacMinhAria')}
             className="mt-0.5"
           />
           <span>
-            Tôi đã gọi lại người nhận qua số điện thoại có từ trước — không dùng số trong tin nhắn hay email yêu cầu chuyển
-            tiền — và xác nhận đúng người, đúng số tài khoản.
+            {t('ui2.canhBao.daGoiLai')}
           </span>
         </label>
 
         <AlertDialogFooter>
-          <AlertDialogCancel autoFocus>Chưa duyệt</AlertDialogCancel>
+          <AlertDialogCancel autoFocus>{t('ui2.canhBao.chuaDuyet')}</AlertDialogCancel>
           <AlertDialogAction
             disabled={!daKiem}
             onClick={onVanDuyet}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Đã xác minh, vẫn duyệt
+            {t('ui2.canhBao.vanDuyet')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

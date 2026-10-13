@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Scale } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { soSanhThue, NGUONG_MIEN, TY_LE_TREN_LAI } from '@/lib/soSanhThue';
 import { dinhDangTien } from '@/lib/tien';
 
@@ -32,16 +33,16 @@ import { dinhDangTien } from '@/lib/tien';
  * 2% cho hai lời khuyên ngược nhau — có test khoá điều đó trong `soSanhThue`.
  */
 const NGANH = [
-  { ma: 'phan_phoi', ten: 'Bán hàng, phân phối hàng hoá', tyLe: 0.005 },
-  { ma: 'khac', ten: 'Kinh doanh khác', tyLe: 0.01 },
-  { ma: 'san_xuat', ten: 'Sản xuất, vận tải, dịch vụ có kèm hàng hoá', tyLe: 0.015 },
-  { ma: 'dich_vu', ten: 'Dịch vụ, xây dựng không bao thầu vật liệu', tyLe: 0.02 },
+  { ma: 'phan_phoi', ten: 'ui2.thue.nganhPhanPhoi', tyLe: 0.005 },
+  { ma: 'khac', ten: 'ui2.thue.nganhKhac', tyLe: 0.01 },
+  { ma: 'san_xuat', ten: 'ui2.thue.nganhSanXuat', tyLe: 0.015 },
+  { ma: 'dich_vu', ten: 'ui2.thue.nganhDichVu', tyLe: 0.02 },
 ] as const;
 
 const dong = dinhDangTien;
 
 /** "1 tỷ" — đọc từ hằng số, để lần sau luật đổi ngưỡng thì chữ trên màn hình đổi theo. */
-const NGUONG_CHU = `${(NGUONG_MIEN / 1_000_000_000).toString().replace('.', ',')} tỷ`;
+const NGUONG_SO = (NGUONG_MIEN / 1_000_000_000).toString().replace('.', ',');
 
 export function ChonCachTinhThue({
   doanhThu,
@@ -67,6 +68,8 @@ export function ChonCachTinhThue({
    * minh để hai cách hoà nhau — đúng con số cần nói. Ngày nào MIMI đếm được
    * chi phí có chứng từ thật thì truyền vào đây, và câu chữ tự đổi.
    */
+  const { t } = useTranslation();
+  const NGUONG_CHU = t('ui2.thue.ty', { so: NGUONG_SO });
   const kq = useMemo(
     () => soSanhThue({ doanhThu, chiPhiCoChungTu, tyLeNganh: nganh.tyLe }),
     [doanhThu, chiPhiCoChungTu, nganh.tyLe],
@@ -79,7 +82,7 @@ export function ChonCachTinhThue({
       <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
         <div className="flex items-center gap-2">
           <Scale size={15} className="text-muted-foreground" />
-          <p className="text-sm font-semibold">Chọn cách tính thuế</p>
+          <p className="text-sm font-semibold">{t('ui2.thue.chonCach')}</p>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">{kq.cau}</p>
       </div>
@@ -93,15 +96,14 @@ export function ChonCachTinhThue({
     <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
       <div className="flex items-center gap-2">
         <Scale size={15} className="text-muted-foreground" />
-        <p className="text-sm font-semibold">Bạn nên tính thuế theo cách nào</p>
+        <p className="text-sm font-semibold">{t('ui2.thue.nenTinh')}</p>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Doanh thu {dong(doanhThu)} nằm trong nhóm được chọn (trên {NGUONG_CHU} đến 3 tỷ). Chọn
-        ngành để xem mức chi phí cần chứng minh.
+        {t('ui2.thue.doanhThuNhom', { doanhThu: dong(doanhThu), nguong: NGUONG_CHU, tran: t('ui2.thue.ty', { so: 3 }) })}
       </p>
 
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Ngành của bạn</span>
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{t('ui2.thue.nganhCuaBan')}</span>
         <select
           value={maNganh}
           onChange={(e) => setMaNganh(e.target.value)}
@@ -109,7 +111,7 @@ export function ChonCachTinhThue({
         >
           {NGANH.map((n) => (
             <option key={n.ma} value={n.ma}>
-              {n.ten} — {(n.tyLe * 100).toString().replace('.', ',')}%
+              {t(n.ten)} — {(n.tyLe * 100).toString().replace('.', ',')}%
             </option>
           ))}
         </select>
@@ -120,27 +122,26 @@ export function ChonCachTinhThue({
         <p className="font-mono text-2xl font-bold text-foreground">{dong(mucHoa)}</p>
         <p className="mt-1 text-sm text-foreground/80">
           {chiPhiCoChungTu > 0
-            ? `là phần còn thiếu — bạn đã chứng minh được ${dong(chiPhiCoChungTu)} — để tính theo lợi nhuận rẻ hơn tính theo tỷ lệ.`
-            : `là mức chi phí bạn cần chứng minh được — khoảng ${phanTram}% doanh thu — để tính theo lợi nhuận rẻ hơn tính theo tỷ lệ.`}
+            ? t('ui2.thue.conThieu', { daCo: dong(chiPhiCoChungTu) })
+            : t('ui2.thue.canChungMinh', { phanTram })}
         </p>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
         <div className="rounded-xl bg-muted/40 p-3">
-          <p className="text-xs text-muted-foreground">Theo tỷ lệ doanh thu</p>
+          <p className="text-xs text-muted-foreground">{t('ui2.thue.theoTyLe')}</p>
           <p className="mt-0.5 font-mono font-semibold">{dong(kq.theoDoanhThu ?? 0)}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {(nganh.tyLe * 100).toString().replace('.', ',')}% × (doanh thu − {NGUONG_CHU}) · không cần
-            chứng từ
+            {(nganh.tyLe * 100).toString().replace('.', ',')}% × ({t('ui2.thue.doanhThu')} − {NGUONG_CHU}) · {t('ui2.thue.khongCanChungTu')}
           </p>
         </div>
         <div className="rounded-xl bg-muted/40 p-3">
-          <p className="text-xs text-muted-foreground">Theo thu nhập</p>
+          <p className="text-xs text-muted-foreground">{t('ui2.thue.theoThuNhap')}</p>
           <p className="mt-0.5 font-mono font-semibold">
-            {(TY_LE_TREN_LAI * 100).toString()}% × lãi
+            {(TY_LE_TREN_LAI * 100).toString()}% × {t('ui2.thue.lai')}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Cần chứng từ cho từng khoản chi
+            {t('ui2.thue.canChungTuTungKhoan')}
           </p>
         </div>
       </div>
@@ -151,10 +152,7 @@ export function ChonCachTinhThue({
         cơ quan thuế.
       */}
       <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-        Đây là ước tính thuế thu nhập cá nhân, chưa gồm thuế giá trị gia tăng, và không
-        phải một xác định thuế. Căn cứ: Luật Thuế thu nhập cá nhân 109/2025/QH15; ngưỡng{' '}
-        {NGUONG_CHU} theo Nghị định 141/2026/NĐ-CP, áp dụng từ 01/01/2026. Tỷ lệ theo ngành lấy
-        từ biểu áp cho hộ kinh doanh.
+        {t('ui2.thue.canCu', { nguong: NGUONG_CHU })}
       </p>
     </div>
   );

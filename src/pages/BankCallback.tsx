@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { consumeLinkState, consumeLinkFeature } from '@/components/fintech/CasLink';
@@ -31,6 +32,7 @@ import { consumeLinkState, consumeLinkFeature } from '@/components/fintech/CasLi
  * has no way to know the victim's stored value.
  */
 export default function BankCallback() {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { session } = useAuthStore();
@@ -44,7 +46,7 @@ export default function BankCallback() {
     const publicToken = params.get('publicToken') ?? params.get('public_token');
     if (!publicToken) {
       setState('error');
-      setDetail('Không tìm thấy publicToken trong đường dẫn trả về.');
+      setDetail(t('ui2.bankCb.khongToken'));
       return;
     }
     if (!session) return; // wait for the store to settle
@@ -60,7 +62,7 @@ export default function BankCallback() {
     if (!consumeLinkState(returnedState)) {
       setState('error');
       setDetail(
-        'Phiên liên kết không khớp trình duyệt này. Nếu bạn không tự bắt đầu liên kết ngân hàng, hãy bỏ qua trang này.',
+        t('ui2.bankCb.khongKhop'),
       );
       return;
     }
@@ -91,7 +93,7 @@ export default function BankCallback() {
         const ex = await post('exchange', feature ? { publicToken, feature } : { publicToken });
         if (!ex.ok || ex.body?.error) {
           setState('error');
-          setDetail(ex.body?.error ?? `Lỗi ${'' + ex.ok}`);
+          setDetail(ex.body?.error ?? t('ui2.webhook.loiMa', { ma: '' + ex.ok }));
           return;
         }
         // Case 18: định danh một lần — không có liên kết nào để đồng bộ. Hiện
@@ -99,8 +101,8 @@ export default function BankCallback() {
         if (feature === 'identity' && ex.body?.dinhDanh) {
           const d = ex.body.dinhDanh as { requestId: string | null; cacTruong: string[] };
           setDetail(
-            `requestId /identity: ${d.requestId ?? '—'} · Trường Cas trả: ${d.cacTruong.join(', ') || '—'} · Thu hồi grant: ${
-              ex.body.thuHoi?.loi ? `lỗi ${ex.body.thuHoi.loi}` : ex.body.thuHoi?.requestId ?? 'đã gọi'
+            `requestId /identity: ${d.requestId ?? '—'} · ${t('ui2.bankCb.truongCas')} ${d.cacTruong.join(', ') || '—'} · ${t('ui2.cas.thuHoiGrant')}: ${
+              ex.body.thuHoi?.loi ? `${t('ui2.cas.loi')} ${ex.body.thuHoi.loi}` : ex.body.thuHoi?.requestId ?? t('ui2.cas.daGoi')
             }`,
           );
           setState('done');
@@ -113,7 +115,7 @@ export default function BankCallback() {
         setTimeout(() => navigate('/dashboard/fintech'), 1200);
       } catch (e) {
         setState('error');
-        setDetail((e as Error)?.message ?? 'Lỗi không xác định');
+        setDetail((e as Error)?.message ?? t('ui2.xoaTk.loiKhongRo'));
       }
     })();
   }, [params, session, navigate]);
@@ -124,8 +126,8 @@ export default function BankCallback() {
         {state === 'working' && (
           <>
             <Loader2 className="animate-spin text-primary mx-auto mb-4" size={30} />
-            <p className="text-sm text-foreground font-medium">Đang lưu liên kết ngân hàng…</p>
-            <p className="text-xs text-muted-foreground mt-1">Vui lòng không đóng cửa sổ này.</p>
+            <p className="text-sm text-foreground font-medium">{t('ui2.bankCb.dangLuu')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('ui2.bankCb.khongDong')}</p>
           </>
         )}
         {state === 'done' && (
@@ -133,19 +135,19 @@ export default function BankCallback() {
             <CheckCircle2 className="text-mimi-green mx-auto mb-4" size={30} />
             {detail ? (
               <>
-                <p className="text-sm text-foreground font-medium">Đã đọc định danh một lần, không lưu, đã thu hồi quyền</p>
+                <p className="text-sm text-foreground font-medium">{t('ui2.cas.dinhDanhMotLan')}</p>
                 <p className="text-xs text-muted-foreground mt-1 break-words font-mono">{detail}</p>
                 <button
                   onClick={() => navigate('/dashboard/fintech')}
                   className="text-xs text-primary hover:underline font-medium mt-4 inline-flex items-center gap-1"
                 >
-                  Về Fintech Hub <ArrowRight size={11} />
+                  {t('ui2.bankCb.veHub')} <ArrowRight size={11} />
                 </button>
               </>
             ) : (
               <>
-                <p className="text-sm text-foreground font-medium">Đã liên kết xong</p>
-                <p className="text-xs text-muted-foreground mt-1">Đang đưa bạn về Fintech Hub…</p>
+                <p className="text-sm text-foreground font-medium">{t('ui2.bankCb.daLienKet')}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('ui2.bankCb.dangDua')}</p>
               </>
             )}
           </>
@@ -153,13 +155,13 @@ export default function BankCallback() {
         {state === 'error' && (
           <>
             <AlertTriangle className="text-mimi-red mx-auto mb-4" size={30} />
-            <p className="text-sm text-foreground font-medium">Chưa lưu được liên kết</p>
+            <p className="text-sm text-foreground font-medium">{t('ui2.bankCb.chuaLuu')}</p>
             <p className="text-xs text-muted-foreground mt-1 break-words">{detail}</p>
             <button
               onClick={() => navigate('/dashboard/fintech')}
               className="text-xs text-primary hover:underline font-medium mt-4 inline-flex items-center gap-1"
             >
-              Về Fintech Hub <ArrowRight size={11} />
+              {t('ui2.bankCb.veHub')} <ArrowRight size={11} />
             </button>
           </>
         )}

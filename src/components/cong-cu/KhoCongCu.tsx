@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Loader2, Plus, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCongCuGhim } from '@/hooks/useCongCuGhim';
@@ -10,6 +11,7 @@ import { IconCongCu } from './IconCongCu';
  * Assistant, bảng "Thêm" trên điện thoại). Ghim/bỏ ghim lưu ngay vào tài khoản.
  */
 export function KhoCongCu({ mo, onDong }: { mo: boolean; onDong: () => void }) {
+  const { t } = useTranslation();
   const { ds, ghim, boGhim, dangLuu, loi } = useCongCuGhim();
   const [tuKhoa, setTuKhoa] = useState('');
   const daGhim = useMemo(() => new Set(ds.map((c) => c.khoa)), [ds]);
@@ -20,26 +22,26 @@ export function KhoCongCu({ mo, onDong }: { mo: boolean; onDong: () => void }) {
     <Dialog open={mo} onOpenChange={(v) => { if (!v) onDong(); }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Công cụ</DialogTitle>
+          <DialogTitle>{t('ui2.congCu.tieuDe')}</DialogTitle>
           <DialogDescription>
-            Ghim công cụ bạn dùng hằng ngày lên thanh bên và màn MIMI Assistant. Tối đa {SO_CONG_CU_TOI_DA} công cụ, đang ghim {ds.length}.
+            {t('ui2.congCu.moTa', { toiDa: SO_CONG_CU_TOI_DA, dangGhim: ds.length })}
           </DialogDescription>
         </DialogHeader>
 
         <label className="flex h-11 items-center gap-2 rounded-lg border border-border bg-background px-3">
           <Search size={16} className="text-muted-foreground" aria-hidden />
-          <span className="sr-only">Tìm công cụ</span>
+          <span className="sr-only">{t('ui2.congCu.tim')}</span>
           <input
             value={tuKhoa}
             onChange={(e) => setTuKhoa(e.target.value)}
-            placeholder="Tìm theo việc: hoá đơn, tờ khai, đối soát…"
+            placeholder={t('ui2.congCu.timPh')}
             className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-          {dangLuu && <Loader2 size={15} className="animate-spin text-muted-foreground" aria-label="Đang lưu" />}
+          {dangLuu && <Loader2 size={15} className="animate-spin text-muted-foreground" aria-label={t('ui2.congCu.dangLuu')} />}
         </label>
         {loi && <p className="text-sm text-destructive" role="alert">{loi}</p>}
 
-        {kq.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Không có công cụ khớp “{tuKhoa}”.</p>}
+        {kq.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">{t('ui2.congCu.khongKhop', { tuKhoa })}</p>}
 
         <div className="space-y-5">
           {nhom.map((n) => (
@@ -58,14 +60,14 @@ export function KhoCongCu({ mo, onDong }: { mo: boolean; onDong: () => void }) {
                       <button
                         type="button"
                         aria-pressed={on}
-                        aria-label={on ? `Bỏ ghim ${c.ten}` : `Ghim ${c.ten}`}
+                        aria-label={on ? t('ui2.congCu.boGhimTen', { ten: c.ten }) : t('ui2.congCu.ghimTen', { ten: c.ten })}
                         disabled={dangLuu}
                         onClick={() => void (on ? boGhim(c.khoa) : ghim(c.khoa))}
                         className={`inline-flex h-9 shrink-0 items-center gap-1 rounded-lg px-2.5 text-xs font-medium disabled:opacity-50 ${
                           on ? 'bg-primary/10 text-primary' : 'border border-border text-foreground hover:bg-accent'
                         }`}
                       >
-                        {on ? <><Check size={13} /> Đã ghim</> : <><Plus size={13} /> Ghim</>}
+                        {on ? <><Check size={13} /> {t('ui2.congCu.daGhim')}</> : <><Plus size={13} /> {t('ui2.congCu.ghim')}</>}
                       </button>
                     </li>
                   );
