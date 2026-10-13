@@ -26,6 +26,8 @@ const tacTu = (x: Partial<TacTu>): TacTu => ({
 });
 const cs = (x: Partial<ChinhSachRow> = {}): ChinhSachRow => ({
   chi_tra_nguoi_nhan_da_duyet: true, company_id: 'c', han_muc_moi_lan: 5_000_000, han_muc_ngay: 5_000_000,
+  // Ba cột thêm 11/10/2026 (khung giờ, trần theo người nhận) — có trong types.ts sinh lại từ CSDL.
+  han_muc_moi_nguoi_nhan_thang: null, khung_gio_chi: null, ngoai_khung_gio: 'cho_duyet',
   han_muc_thang: 20_000_000, het_han: null, nguong_can_duyet: 0, nhom_chi_duoc_phep: null, so_yeu_cau_moi_gio: 30,
   tac_tu_id: 't1', updated_at: THANG_TRUOC, ...x,
 });

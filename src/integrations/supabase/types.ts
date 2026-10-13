@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       bang_chung_viec: {
@@ -463,9 +488,12 @@ export type Database = {
           chi_tra_nguoi_nhan_da_duyet: boolean
           company_id: string
           han_muc_moi_lan: number
+          han_muc_moi_nguoi_nhan_thang: number | null
           han_muc_ngay: number
           han_muc_thang: number
           het_han: string | null
+          khung_gio_chi: Json | null
+          ngoai_khung_gio: string
           nguong_can_duyet: number
           nhom_chi_duoc_phep: string[] | null
           so_yeu_cau_moi_gio: number | null
@@ -476,9 +504,12 @@ export type Database = {
           chi_tra_nguoi_nhan_da_duyet?: boolean
           company_id: string
           han_muc_moi_lan?: number
+          han_muc_moi_nguoi_nhan_thang?: number | null
           han_muc_ngay?: number
           han_muc_thang?: number
           het_han?: string | null
+          khung_gio_chi?: Json | null
+          ngoai_khung_gio?: string
           nguong_can_duyet?: number
           nhom_chi_duoc_phep?: string[] | null
           so_yeu_cau_moi_gio?: number | null
@@ -489,9 +520,12 @@ export type Database = {
           chi_tra_nguoi_nhan_da_duyet?: boolean
           company_id?: string
           han_muc_moi_lan?: number
+          han_muc_moi_nguoi_nhan_thang?: number | null
           han_muc_ngay?: number
           han_muc_thang?: number
           het_han?: string | null
+          khung_gio_chi?: Json | null
+          ngoai_khung_gio?: string
           nguong_can_duyet?: number
           nhom_chi_duoc_phep?: string[] | null
           so_yeu_cau_moi_gio?: number | null
@@ -1508,10 +1542,17 @@ export type Database = {
           da_nop_thue_trong_nam: boolean | null
           doanh_thu_nam_truoc: number | null
           kenh: string | null
+          ky_khai_gtgt: string | null
           loai_nguoi_nop: string | null
+          nganh_chinh: string | null
           nganh_dac_thu: string | null
+          nganh_vsic: Json
           nhom_nganh: string[]
           phuong_phap_tncn: string | null
+          phuong_phap_tndn: string | null
+          sieu_nho: boolean | null
+          tien_mat: string | null
+          tra_luong: boolean | null
           updated_at: string
           updated_by: string | null
         }
@@ -1522,10 +1563,17 @@ export type Database = {
           da_nop_thue_trong_nam?: boolean | null
           doanh_thu_nam_truoc?: number | null
           kenh?: string | null
+          ky_khai_gtgt?: string | null
           loai_nguoi_nop?: string | null
+          nganh_chinh?: string | null
           nganh_dac_thu?: string | null
+          nganh_vsic?: Json
           nhom_nganh?: string[]
           phuong_phap_tncn?: string | null
+          phuong_phap_tndn?: string | null
+          sieu_nho?: boolean | null
+          tien_mat?: string | null
+          tra_luong?: boolean | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1536,10 +1584,17 @@ export type Database = {
           da_nop_thue_trong_nam?: boolean | null
           doanh_thu_nam_truoc?: number | null
           kenh?: string | null
+          ky_khai_gtgt?: string | null
           loai_nguoi_nop?: string | null
+          nganh_chinh?: string | null
           nganh_dac_thu?: string | null
+          nganh_vsic?: Json
           nhom_nganh?: string[]
           phuong_phap_tncn?: string | null
+          phuong_phap_tndn?: string | null
+          sieu_nho?: boolean | null
+          tien_mat?: string | null
+          tra_luong?: boolean | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1977,6 +2032,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      khao_sat_gia: {
+        Row: {
+          cach_thu_tien: string
+          dang_ghi_so: string
+          gia_bat_dau_dat: number
+          gia_hoi: number
+          gia_qua_dat: number
+          gia_qua_re: number
+          id: string
+          lien_he: string | null
+          nguon: string | null
+          nhom_doanh_thu: string
+          tao_luc: string
+          tra_ke_toan_thang: number | null
+          viec_dang_tien: string
+        }
+        Insert: {
+          cach_thu_tien: string
+          dang_ghi_so: string
+          gia_bat_dau_dat: number
+          gia_hoi: number
+          gia_qua_dat: number
+          gia_qua_re: number
+          id?: string
+          lien_he?: string | null
+          nguon?: string | null
+          nhom_doanh_thu: string
+          tao_luc?: string
+          tra_ke_toan_thang?: number | null
+          viec_dang_tien: string
+        }
+        Update: {
+          cach_thu_tien?: string
+          dang_ghi_so?: string
+          gia_bat_dau_dat?: number
+          gia_hoi?: number
+          gia_qua_dat?: number
+          gia_qua_re?: number
+          id?: string
+          lien_he?: string | null
+          nguon?: string | null
+          nhom_doanh_thu?: string
+          tao_luc?: string
+          tra_ke_toan_thang?: number | null
+          viec_dang_tien?: string
+        }
+        Relationships: []
       }
       kyc_verifications: {
         Row: {
@@ -2741,6 +2844,83 @@ export type Database = {
           },
         ]
       }
+      nhat_ky_dien_cong: {
+        Row: {
+          company_id: string
+          ghi_chu: string | null
+          hanh_dong: string
+          id: number
+          ket_qua: string
+          khoa_truong: string | null
+          luc: string
+          ma_bam_gia_tri: string | null
+          ma_bam_nhap: string
+          phien_ban_bo_chuyen: string
+          phien_id: string
+          phuong_phap: string
+          tac_nhan: string
+        }
+        Insert: {
+          company_id: string
+          ghi_chu?: string | null
+          hanh_dong: string
+          id?: never
+          ket_qua: string
+          khoa_truong?: string | null
+          luc?: string
+          ma_bam_gia_tri?: string | null
+          ma_bam_nhap: string
+          phien_ban_bo_chuyen: string
+          phien_id: string
+          phuong_phap?: string
+          tac_nhan: string
+        }
+        Update: {
+          company_id?: string
+          ghi_chu?: string | null
+          hanh_dong?: string
+          id?: never
+          ket_qua?: string
+          khoa_truong?: string | null
+          luc?: string
+          ma_bam_gia_tri?: string | null
+          ma_bam_nhap?: string
+          phien_ban_bo_chuyen?: string
+          phien_id?: string
+          phuong_phap?: string
+          tac_nhan?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nhat_ky_dien_cong_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chi_so_pilot"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "nhat_ky_dien_cong_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nhat_ky_dien_cong_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "nhat_ky_dien_cong_phien_id_fkey"
+            columns: ["phien_id"]
+            isOneToOne: false
+            referencedRelation: "phien_dien_cong"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nhat_ky_quyet_dinh: {
         Row: {
           cau_hoi_luc_do: string
@@ -3080,6 +3260,73 @@ export type Database = {
           },
         ]
       }
+      phan_hoi_khach: {
+        Row: {
+          cau_hoi: string
+          company_id: string | null
+          da_doc_luc: string | null
+          diem: number | null
+          dong_vong_luc: string | null
+          ghi_chu: string | null
+          id: string
+          tao_luc: string
+          tra_loi: string
+          trang: string | null
+          user_id: string
+          xu_ly: string | null
+        }
+        Insert: {
+          cau_hoi: string
+          company_id?: string | null
+          da_doc_luc?: string | null
+          diem?: number | null
+          dong_vong_luc?: string | null
+          ghi_chu?: string | null
+          id?: string
+          tao_luc?: string
+          tra_loi: string
+          trang?: string | null
+          user_id: string
+          xu_ly?: string | null
+        }
+        Update: {
+          cau_hoi?: string
+          company_id?: string | null
+          da_doc_luc?: string | null
+          diem?: number | null
+          dong_vong_luc?: string | null
+          ghi_chu?: string | null
+          id?: string
+          tao_luc?: string
+          tra_loi?: string
+          trang?: string | null
+          user_id?: string
+          xu_ly?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phan_hoi_khach_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chi_so_pilot"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "phan_hoi_khach_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phan_hoi_khach_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       phan_loai_hoat_dong: {
         Row: {
           company_id: string
@@ -3281,6 +3528,86 @@ export type Database = {
             columns: ["tai_lieu_id"]
             isOneToOne: false
             referencedRelation: "tai_lieu"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phien_dien_cong: {
+        Row: {
+          bo_chuyen: string
+          cap_nhat_luc: string
+          company_id: string
+          het_han: string
+          id: string
+          ket_qua: Json
+          khoa_chong_trung: string
+          ma_bam_ke_hoach: string
+          ma_bam_nhap: string
+          nhap_id: string
+          phien_ban_bo_chuyen: string
+          tao_luc: string
+          trang_thai: string
+          user_id: string
+        }
+        Insert: {
+          bo_chuyen: string
+          cap_nhat_luc?: string
+          company_id: string
+          het_han: string
+          id?: string
+          ket_qua?: Json
+          khoa_chong_trung: string
+          ma_bam_ke_hoach: string
+          ma_bam_nhap: string
+          nhap_id: string
+          phien_ban_bo_chuyen: string
+          tao_luc?: string
+          trang_thai?: string
+          user_id: string
+        }
+        Update: {
+          bo_chuyen?: string
+          cap_nhat_luc?: string
+          company_id?: string
+          het_han?: string
+          id?: string
+          ket_qua?: Json
+          khoa_chong_trung?: string
+          ma_bam_ke_hoach?: string
+          ma_bam_nhap?: string
+          nhap_id?: string
+          phien_ban_bo_chuyen?: string
+          tao_luc?: string
+          trang_thai?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phien_dien_cong_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chi_so_pilot"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "phien_dien_cong_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phien_dien_cong_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "phien_dien_cong_nhap_id_fkey"
+            columns: ["nhap_id"]
+            isOneToOne: false
+            referencedRelation: "to_khai_nhap"
             referencedColumns: ["id"]
           },
         ]
@@ -3629,6 +3956,71 @@ export type Database = {
           },
         ]
       }
+      quyet_dinh_chung_tu: {
+        Row: {
+          company_id: string
+          ghi_chu: string | null
+          huy_boi: string | null
+          huy_luc: string | null
+          id: string
+          ly_do: string
+          tao_luc: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          ghi_chu?: string | null
+          huy_boi?: string | null
+          huy_luc?: string | null
+          id?: string
+          ly_do: string
+          tao_luc?: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          ghi_chu?: string | null
+          huy_boi?: string | null
+          huy_luc?: string | null
+          id?: string
+          ly_do?: string
+          tao_luc?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quyet_dinh_chung_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chi_so_pilot"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "quyet_dinh_chung_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quyet_dinh_chung_tu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "quyet_dinh_chung_tu_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revenue_classification_events: {
         Row: {
           actor: string
@@ -3921,9 +4313,81 @@ export type Database = {
           },
         ]
       }
+      so_xu: {
+        Row: {
+          chi_tiet: Json
+          company_id: string
+          hoa_don_id: string | null
+          id: string
+          ky_thang: string | null
+          ly_do: string
+          so_du_sau: number
+          tao_luc: string
+          tham_chieu: string | null
+          thay_doi: number
+          thu_tu: number
+        }
+        Insert: {
+          chi_tiet?: Json
+          company_id: string
+          hoa_don_id?: string | null
+          id?: string
+          ky_thang?: string | null
+          ly_do: string
+          so_du_sau: number
+          tao_luc?: string
+          tham_chieu?: string | null
+          thay_doi: number
+          thu_tu?: never
+        }
+        Update: {
+          chi_tiet?: Json
+          company_id?: string
+          hoa_don_id?: string | null
+          id?: string
+          ky_thang?: string | null
+          ly_do?: string
+          so_du_sau?: number
+          tao_luc?: string
+          tham_chieu?: string | null
+          thay_doi?: number
+          thu_tu?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "so_xu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "chi_so_pilot"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "so_xu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "so_xu_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "hanh_trinh_kich_hoat"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "so_xu_hoa_don_id_fkey"
+            columns: ["hoa_don_id"]
+            isOneToOne: true
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_invoices: {
         Row: {
           amount: number
+          ap_dung_luc: string | null
           company_id: string
           created_at: string
           id: string
@@ -3935,12 +4399,14 @@ export type Database = {
           received_amount: number | null
           reference_code: string
           so_luot: number | null
+          so_xu: number | null
           status: string
           tien_ve_id: string | null
           updated_at: string
         }
         Insert: {
           amount: number
+          ap_dung_luc?: string | null
           company_id: string
           created_at?: string
           id?: string
@@ -3952,12 +4418,14 @@ export type Database = {
           received_amount?: number | null
           reference_code: string
           so_luot?: number | null
+          so_xu?: number | null
           status?: string
           tien_ve_id?: string | null
           updated_at?: string
         }
         Update: {
           amount?: number
+          ap_dung_luc?: string | null
           company_id?: string
           created_at?: string
           id?: string
@@ -3969,6 +4437,7 @@ export type Database = {
           received_amount?: number | null
           reference_code?: string
           so_luot?: number | null
+          so_xu?: number | null
           status?: string
           tien_ve_id?: string | null
           updated_at?: string
@@ -5419,6 +5888,15 @@ export type Database = {
       chay_doi_soat_thue_bao: { Args: never; Returns: undefined }
       chay_quet_thong_bao: { Args: never; Returns: undefined }
       chuan_truong: { Args: { t: string }; Returns: string }
+      cong_xu_hoa_don: {
+        Args: {
+          p_company: string
+          p_hoa_don: string
+          p_ly_do: string
+          p_so_xu: number
+        }
+        Returns: Json
+      }
       current_role: { Args: never; Returns: string }
       danh_dau_thong_bao: {
         Args: { p_da_xu_ly?: boolean; p_ids: string[] }
@@ -5452,7 +5930,12 @@ export type Database = {
           so_mat_xich_hong: number
         }[]
       }
+      la_chu_cong_ty: { Args: { p_company: string }; Returns: boolean }
       la_thanh_vien: { Args: { p_company: string }; Returns: boolean }
+      la_thanh_vien_thu_muc: {
+        Args: { p_chi_chu?: boolean; p_thu_muc: string }
+        Returns: boolean
+      }
       lam_moi_tu_pho_bien: { Args: never; Returns: number }
       nap_du_lieu_minh_hoa: { Args: { p_company: string }; Returns: number }
       ngau_nhien_minh_hoa: { Args: { p_khoa: string }; Returns: number }
@@ -5496,6 +5979,17 @@ export type Database = {
       tru_luot_to_khai: {
         Args: { p_company: string; p_ky_khoa: string; p_to_khai_nhap: string }
         Returns: string
+      }
+      tru_xu: {
+        Args: {
+          p_chi_tiet: Json
+          p_company: string
+          p_han_muc_thang: number
+          p_ky_thang: string
+          p_so_xu: number
+          p_tham_chieu: string
+        }
+        Returns: Json
       }
       user_company_ids: { Args: { uid: string }; Returns: string[] }
     }
@@ -5626,6 +6120,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
