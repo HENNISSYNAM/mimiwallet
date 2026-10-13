@@ -21,6 +21,9 @@ import { toast } from 'sonner';
 import { docCaiDat, laLenhPet, luuCaiDat, SU_KIEN_LENH_PET } from '@/lib/petMimi';
 import { kiemKichBan, nhanViec, type KichBan } from '@/lib/mimiLamHo';
 import { laCauNhoViec } from '../../supabase/functions/_shared/tro-ly/lap-kich-ban.ts';
+import { laNhiemVuWeb } from '../../supabase/functions/_shared/agent/dang-ky.ts';
+import { goiDieuPhoi, khoaChongTrungMoi, type NhiemVuAgent } from '@/lib/goiDieuPhoi';
+import { TheNhiemVuAgent } from '@/components/tro-ly/TheNhiemVuAgent';
 import { useMimiLamHoNeuCo } from '@/components/mimi/MimiLamHo';
 import { useTranslation } from 'react-i18next';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
@@ -82,6 +85,9 @@ interface Luot {
 }
 
 type TrangThaiViec = { trangThai: 'dang' | 'xong' | 'loi'; cau: string };
+
+/** Nhiệm vụ web giao cho agent cloud (13/10/2026) — một thẻ trong luồng hội thoại, trạng thái thật từ máy chủ. */
+interface NhiemVuTrongHoiThoai { khoa: string; cau: string; nv: NhiemVuAgent | null; dang: boolean; loi: string | null }
 
 const KHOA_TRANG_THAI_KET_NOI: Record<KetNoiHienThi['trang_thai'], string> = {
   dang_chay: 'man.troLy.trangThai.dangChay',
@@ -151,9 +157,63 @@ export default function TroLyPage() {
   }, [dangDoc]);
   useEffect(() => () => dungDoc(), []);
 
+  /*
+   * Nhiệm vụ web (13/10/2026): câu như "tìm văn bản…", "mở trang <địa chỉ>" → agent cloud (`agent-dieu-phoi`). Máy chủ
+   * chọn agent, lập + kiểm kế hoạch, chạy trên trình duyệt cloud, dừng ở bước cần duyệt. Thẻ chỉ hiện trạng thái thật
+   * máy chủ trả — runtime chưa cấu hình thì hiện đúng lỗi đó, không giả vờ chạy.
+   */
+  const [nhiemVuWeb, setNhiemVuWeb] = useState<NhiemVuTrongHoiThoai[]>([]);
+  const suaNhiemVu = useCallback((khoa: string, sua: Partial<NhiemVuTrongHoiThoai>) =>
+    setNhiemVuWeb((ds) => ds.map((x) => (x.khoa === khoa ? { ...x, ...sua } : x))), []);
+  const loiCua = (e: unknown) => (e instanceof Error ? e.message : 'Agent gặp lỗi.');
+  const chayNhiemVu = useCallback(async (khoa: string, id: string) => {
+    suaNhiemVu(khoa, { dang: true, loi: null });
+    try {
+      const r = await goiDieuPhoi('chay', { id });
+      suaNhiemVu(khoa, { nv: r.nhiem_vu ?? null, dang: false });
+    } catch (e) {
+      suaNhiemVu(khoa, { dang: false, loi: loiCua(e) });
+    }
+  }, [suaNhiemVu]);
+  const lamNhiemVuWeb = useCallback(async (cau: string) => {
+    const khoa = khoaChongTrungMoi();
+    setNhiemVuWeb((ds) => [...ds, { khoa, cau, nv: null, dang: true, loi: null }]);
+    try {
+      const r = await goiDieuPhoi('tao', { muc_tieu: cau, khoa_chong_trung: khoa });
+      suaNhiemVu(khoa, { nv: r.nhiem_vu ?? null });
+      if (r.nhiem_vu) await chayNhiemVu(khoa, r.nhiem_vu.id);
+      else suaNhiemVu(khoa, { dang: false });
+    } catch (e) {
+      suaNhiemVu(khoa, { dang: false, loi: loiCua(e) });
+    }
+  }, [suaNhiemVu, chayNhiemVu]);
+  const duyetNhiemVu = useCallback(async (khoa: string, id: string, buoc: number) => {
+    suaNhiemVu(khoa, { dang: true, loi: null });
+    try {
+      await goiDieuPhoi('duyet_buoc', { id, buoc });
+      await chayNhiemVu(khoa, id);
+    } catch (e) {
+      suaNhiemVu(khoa, { dang: false, loi: loiCua(e) });
+    }
+  }, [suaNhiemVu, chayNhiemVu]);
+  const huyNhiemVu = useCallback(async (khoa: string, id: string) => {
+    suaNhiemVu(khoa, { dang: true, loi: null });
+    try {
+      const r = await goiDieuPhoi('huy', { id });
+      suaNhiemVu(khoa, { nv: r.nhiem_vu ?? null, dang: false });
+    } catch (e) {
+      suaNhiemVu(khoa, { dang: false, loi: loiCua(e) });
+    }
+  }, [suaNhiemVu]);
+
   const hoi = useCallback(async (cauHoi: string, pv: NhomNangLuc | null = phamVi, bangGiong = false) => {
     const cau = cauHoi.trim();
     if (!cau || dangHoi) return;
+    if (laNhiemVuWeb(cau)) {
+      setNhap('');
+      await lamNhiemVuWeb(cau);
+      return;
+    }
     // `/pet`: ẩn/hiện pet MIMI (pet không có khung chat riêng — lệnh gõ ở đây).
     if (laLenhPet(cau)) {
       const c = docCaiDat();
@@ -191,7 +251,7 @@ export default function TroLyPage() {
     const kq = await useNaoMimi.getState().hoi(cau, { phamVi: pv, nguon: 'tro_ly', lichSu });
     // Hỏi bằng giọng thì nghe trả lời bằng giọng — cuộc nói chuyện, không phải đọc màn hình.
     if (bangGiong && kq.trangThai === 'xong' && kq.traLoi?.cau) void docTraLoi(kq.id, kq.traLoi.cau);
-  }, [dangHoi, luot, phamVi, docTraLoi, lamHo]);
+  }, [dangHoi, luot, phamVi, docTraLoi, lamHo, lamNhiemVuWeb]);
 
   const nghe = useNgheGiong({
     onCau: (cau) => void hoi(cau.slice(0, 1000), phamVi, true),
@@ -279,7 +339,7 @@ export default function TroLyPage() {
   const soCanXuLy = ketNoi.filter((k) => k.trang_thai === 'can_xu_ly').length;
   const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
   const ketNoiLoc = ketNoi.filter((k) => boDau(k.ten).includes(boDau(timKetNoi.trim())));
-  const coHoiThoai = luot.length > 0;
+  const coHoiThoai = luot.length > 0 || nhiemVuWeb.length > 0;
 
   return (
     <div className="pb-10">
@@ -546,7 +606,7 @@ export default function TroLyPage() {
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => { useNaoMimi.getState().xoaLuotDaXong(); setViec({}); void taiBoiCanh(); }}
+              onClick={() => { useNaoMimi.getState().xoaLuotDaXong(); setViec({}); setNhiemVuWeb((ds) => ds.filter((x) => x.dang)); void taiBoiCanh(); }}
               disabled={dangHoi}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
             >
@@ -587,6 +647,22 @@ export default function TroLyPage() {
                 />
               )}
               {l.traLoi?.dan_agent && <DanAgentBaoCao dan={l.traLoi.dan_agent} />}
+            </article>
+          ))}
+          {nhiemVuWeb.map((x) => (
+            <article key={x.khoa} aria-label={t('man.troLy.cauHoiLa', { cau: x.cau })} className="flex flex-col gap-4">
+              <div className="flex justify-end">
+                <p className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] text-primary-foreground">{x.cau}</p>
+              </div>
+              <TheNhiemVuAgent
+                cau={x.cau}
+                nv={x.nv}
+                dang={x.dang}
+                loi={x.loi}
+                onDuyet={(buoc) => { if (x.nv) void duyetNhiemVu(x.khoa, x.nv.id, buoc); }}
+                onHuy={() => { if (x.nv) void huyNhiemVu(x.khoa, x.nv.id); }}
+                onChayTiep={() => { if (x.nv) void chayNhiemVu(x.khoa, x.nv.id); }}
+              />
             </article>
           ))}
         </div>

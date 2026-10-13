@@ -16,6 +16,8 @@ class RO { observe() {} unobserve() {} disconnect() {} }
 const gia = vi.hoisted(() => ({ troLy: vi.fn(), tacTu: vi.fn(), chiPhiAi: vi.fn(), saoKe: vi.fn(), toKhai: vi.fn(), datLai: vi.fn() }));
 vi.mock('@/lib/goiTroLy', () => ({ goiTroLy: gia.troLy, dongBoSaoKe: gia.saoKe }));
 vi.mock('@/lib/goiTacTu', () => ({ goiTacTu: gia.tacTu }));
+const dieuPhoi = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/goiDieuPhoi', () => ({ goiDieuPhoi: dieuPhoi, khoaChongTrungMoi: () => 'nv-khoa-thu-0001' }));
 vi.mock('@/lib/goiChiPhiAi', () => ({ goiChiPhiAi: gia.chiPhiAi }));
 vi.mock('@/lib/goiToKhai', () => ({ goiToKhai: gia.toKhai, DUONG_DAN_NOP_TO_KHAI: 'https://dichvucong.gdt.gov.vn/tthc/homelogin' }));
 // Canvas và ảnh động không chạy trong jsdom; cả hai chỉ trang trí.
@@ -581,5 +583,43 @@ describe('trỏ tự lập kế hoạch khi luật không nhận ra câu (12/10/
     await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
     hoiBangTay('Giúp tôi gửi yêu cầu chi');
     await waitFor(() => expect(gia.troLy).toHaveBeenCalledWith('hoi', expect.objectContaining({ cau: 'Giúp tôi gửi yêu cầu chi' }), expect.anything()));
+  }, 30_000);
+});
+
+describe('nhiệm vụ web → agent cloud (13/10/2026)', () => {
+  const NV = {
+    id: '00000000-0000-0000-0000-0000000000aa', agent: 'tai_lieu', ten_agent: 'Agent Tài liệu', muc_tieu: 'tìm văn bản thông tư 80',
+    buoc: [{ chi_so: 0, mo_ta: 'Mở https://vanban.chinhphu.vn/', cong_cu: 'mo_trang', xong: true, can_duyet: false }],
+    buoc_tiep: 1, url_hien_tai: 'https://vanban.chinhphu.vn/kq', loi: null, can_duyet: null, ke_hoach_tu: 'mau',
+  };
+
+  it('"tìm văn bản…" → tạo + chạy nhiệm vụ, thẻ hiện agent, kết quả và nguồn ngay trong hội thoại; không hỏi bộ não AI', async () => {
+    dieuPhoi.mockReset();
+    dieuPhoi.mockImplementation(async (hanhDong: string) => hanhDong === 'tao'
+      ? { nhiem_vu: { ...NV, trang_thai: 'cho', tom_tat: null, nguon: [] } }
+      : { nhiem_vu: { ...NV, trang_thai: 'xong', tom_tat: 'Thông tư 80/2021/TT-BTC hướng dẫn Luật Quản lý thuế.', nguon: [{ url: 'https://vanban.chinhphu.vn/kq', tieu_de: 'Kết quả' }] } });
+    dung();
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
+    hoiBangTay('tìm văn bản thông tư 80');
+    const the = await screen.findByRole('region', { name: 'Nhiệm vụ agent: tìm văn bản thông tư 80' });
+    await within(the).findByText(/Thông tư 80\/2021\/TT-BTC/);
+    expect(within(the).getByText('Agent Tài liệu')).toBeTruthy();
+    expect(within(the).getByRole('link', { name: /Kết quả/ }).getAttribute('href')).toBe('https://vanban.chinhphu.vn/kq');
+    expect(dieuPhoi).toHaveBeenCalledWith('tao', { muc_tieu: 'tìm văn bản thông tư 80', khoa_chong_trung: 'nv-khoa-thu-0001' });
+    expect(dieuPhoi).toHaveBeenCalledWith('chay', { id: NV.id });
+    expect(gia.troLy).not.toHaveBeenCalledWith('hoi', expect.anything(), expect.anything());
+  }, 30_000);
+
+  it('runtime chưa cấu hình → thẻ hiện đúng lỗi máy chủ', async () => {
+    dieuPhoi.mockReset();
+    dieuPhoi.mockImplementation(async (hanhDong: string) => {
+      if (hanhDong === 'tao') return { nhiem_vu: { ...NV, buoc_tiep: 0, trang_thai: 'cho', tom_tat: null, nguon: [] } };
+      throw new Error('Runtime chưa cấu hình (thiếu khoá ký hoặc địa chỉ runtime) — agent chưa chạy được, MIMI không giả vờ chạy.');
+    });
+    dung();
+    await screen.findByRole('region', { name: 'Cần bạn xác nhận' }, { timeout: 20_000 });
+    hoiBangTay('mở trang vanban.chinhphu.vn');
+    const the = await screen.findByRole('region', { name: 'Nhiệm vụ agent: mở trang vanban.chinhphu.vn' });
+    await within(the).findByText(/Runtime chưa cấu hình/);
   }, 30_000);
 });
