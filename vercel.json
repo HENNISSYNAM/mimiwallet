@@ -1,8 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/agent-runtime.ts": {
+      "maxDuration": 60,
+      "includeFiles": "node_modules/@sparticuz/chromium/bin/**"
+    }
+  },
   "rewrites": [
     {
-      "source": "/((?!assets/|[.]well-known/).*)",
+      "source": "/((?!assets/|[.]well-known/|api/).*)",
       "destination": "/app-shell.html"
     }
   ],
