@@ -10,4 +10,4 @@
  *
  * Còn rỗng → runtime trả 503 "chưa cấu hình khoá", KHÔNG chạy lệnh nào (không có đường lùi về khoá DEV).
  */
-export const KHOA_CONG_KHAI_ORCHESTRATOR = '';
+export const KHOA_CONG_KHAI_ORCHESTRATOR = 'LP3ViRNbu3h6q8dKpVSvsCDgbOtXZjbcKxs4Q3RRGHQ';
