@@ -108,6 +108,7 @@ const m = {
       kiemTra: 'Kiểm tra',
       xemNguyenNhan: 'Xem vì sao',
       hoanThien: 'Bổ sung chứng từ',
+      nhacThu: 'Nhắc khách trả',
       moBaoCao: 'Mở báo cáo',
       moTrang: 'Mở trang cho: {{cau}}',
     },

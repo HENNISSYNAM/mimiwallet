@@ -78,12 +78,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        // Supabase creates the user on first link if this is true. Left true on
-        // purpose: the closed pilot is enforced by the invite trigger and by
-        // turning off public sign-up in the project's auth settings, not by
-        // this flag. Setting it false here would break sign-in for people who
-        // were invited but have not clicked their first link yet.
-        shouldCreateUser: true,
+        // Tài khoản MỚI chỉ đăng ký bằng Google (15/10/2026). Link email chỉ để đăng nhập người đã có tài khoản
+        // (kể cả người được mời, tài khoản đã tạo sẵn lúc mời). Luật thật nằm ở máy chủ: trigger
+        // `chi_dang_ky_google` trên auth.users; cờ này chỉ để giao diện không tạo tài khoản ngoài ý muốn.
+        shouldCreateUser: false,
         emailRedirectTo: `${window.location.origin}/dashboard`,
       },
     });
@@ -94,6 +92,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
+        // Hỏi chọn tài khoản mỗi lần: máy dùng chung nhiều tài khoản Google không tự vào nhầm tài khoản.
+        queryParams: { prompt: 'select_account' },
         // Must also be listed under Authentication → URL Configuration →
         // Redirect URLs in Supabase, for every origin the app runs on. An
         // origin that is missing there fails after Google has already accepted

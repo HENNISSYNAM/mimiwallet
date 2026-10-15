@@ -316,6 +316,27 @@ describe('tiền vào không phải doanh thu — đọc sao kê thật', () => 
     expect(r.tom_tat).toContain('chưa thấy khoản nào');
   });
 
+  it('khoản người dùng đã xác nhận không phải doanh thu thì nói ĐÃ trừ, không giục xác nhận lại', () => {
+    const a = { ...vao('CON GUI BA ME', 3_000_000), id: 'a' };
+    const b = { ...vao('CON GUI BA ME', 3_000_000, '2026-09-10'), id: 'b' };
+    const r = NANG_LUC.tien_vao_khong_phai_doanh_thu.chay(moi({ giaoDich: [a, b], phanLoaiTienVao: { a: 'exclude', b: 'exclude' } }));
+    expect(r.tom_tat).toContain('2 khoản (6.000.000');
+    expect(r.tom_tat).toContain('đã trừ');
+    expect(r.tom_tat).not.toContain('chờ bạn xác nhận');
+    expect(JSON.stringify(r.the)).not.toContain('không tự trừ');
+    expect(r.de_xuat.some((x) => x.nhan.startsWith('Xác nhận'))).toBe(false);
+  });
+
+  it('trộn đã trừ và chờ xác nhận: khoản chờ lên đầu bảng, nút ghi đúng số khoản còn chờ', () => {
+    const a = { ...vao('CON GUI BA ME', 3_000_000), id: 'a' };
+    const b = { ...vao('GIAI NGAN HDTD 99', 100_000_000, '2026-09-10'), id: 'b' };
+    const r = NANG_LUC.tien_vao_khong_phai_doanh_thu.chay(moi({ giaoDich: [a, b], phanLoaiTienVao: { a: 'exclude' } }));
+    expect(r.tom_tat).toContain('1 khoản (100.000.000');
+    const bang = r.the.find((t) => t.loai === 'bang');
+    expect(bang && bang.loai === 'bang' ? bang.dong[0][4] : null).toBe('Chờ bạn xác nhận');
+    expect(r.de_xuat.map((x) => x.nhan)).toContain('Xác nhận 1 khoản');
+  });
+
   it('không nội dung nào ghi rõ thì nói thật là không nhận ra được', () => {
     const r = chay([vao('chuyen khoan', 1_000_000)]);
     expect(r.tom_tat).toContain('đã đọc nội dung 1 khoản tiền vào');

@@ -146,6 +146,27 @@ const m = {
       },
     },
 
+    nguoiMoi: {
+      buoc: { dieuKhoan: 'Điều khoản', huongDan: 'Hướng dẫn', khaoSat: 'Khảo sát' },
+      chao: 'Chào mừng đến MIMI',
+      chaoMoTa: 'Trợ lý sổ sách và thuế cho hộ kinh doanh. Trước khi bắt đầu, xin bạn xem nhanh ba điều:',
+      y1: 'MIMI chỉ đọc dữ liệu bạn cho phép (sao kê, chứng từ) để làm sổ sách và chuẩn bị thuế.',
+      y2: 'MIMI không giữ tiền, không chuyển tiền và không nộp hồ sơ thay bạn — bạn luôn là người duyệt.',
+      y3: 'Bạn có thể xoá tài khoản và dữ liệu của mình bất cứ lúc nào.',
+      dongY: 'Đồng ý và tiếp tục',
+      dangLuu: 'Đang lưu…',
+      loiLuu: 'Chưa lưu được sự đồng ý của bạn. Thử lại nhé.',
+      buocSo: 'Bước {{so}}/{{tong}}',
+      tiep: 'Tiếp',
+      quayLai: 'Quay lại',
+      boQua: 'Bỏ qua hướng dẫn',
+      batDau: 'Trả lời bốn câu hỏi',
+      t1: { tieuDe: 'Hỏi MIMI như hỏi một kế toán', moTa: 'Gõ bằng lời thường: “Tiền anh trai chuyển có tính doanh thu không?”, “Khoản chi nào thiếu chứng từ?”, “Khách nào nợ quá hạn?”' },
+      t2: { tieuDe: 'MIMI chuẩn bị, bạn quyết định', moTa: 'Một nhóm agent AI cùng làm việc và hiện từng bước. Việc ảnh hưởng ra bên ngoài luôn chờ bạn duyệt, và bạn đổi ý được.' },
+      t3: { tieuDe: 'Mỗi con số đều có nguồn', moTa: 'Bấm “Căn cứ” để xem văn bản pháp luật hoặc giao dịch nào tạo ra con số. Chưa chắc thì MIMI nói “chưa biết” và hỏi lại.' },
+      t4: { tieuDe: 'Bắt đầu: bốn câu hỏi nhanh', moTa: 'Để MIMI nói đúng nghĩa vụ thuế của bạn, hãy chạm trả lời bốn câu về loại hình và ngành. Sau đó tải sao kê hoặc kết nối ngân hàng khi bạn sẵn sàng.' },
+    },
+
     khaoSat: {
       buoc: 'Câu {{so}}/{{tong}}',
       deSau: 'Để sau',

@@ -7,12 +7,11 @@ import { toast } from 'sonner';
 import { Loader2, Leaf, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import MimiCat from '@/components/brand/MimiCat';
-import { ghiDichSauDangNhap } from '@/lib/sauDangNhap';
+import { NutGoogle } from '@/components/auth/NutGoogle';
 
 export default function Login() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
-  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -23,7 +22,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   // Covers focus and typing, and stays on through submit — the eyes should not
   // pop open at the exact moment the form is being sent.
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -37,7 +35,7 @@ export default function Login() {
   useEffect(() => {
     const u = `${window.location.search}&${window.location.hash.replace(/^#/, '')}`;
     const moTa = new URLSearchParams(u).get('error_description') ?? '';
-    if (moTa) toast.error(/signup/i.test(moTa) ? t('login.errorNotOpened') : moTa);
+    if (moTa) toast.error(/signup/i.test(moTa) ? t('ui2.auth.loiGoogleKhongMo') : moTa);
   }, [t]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -50,7 +48,7 @@ export default function Login() {
     const { error } = await login(email, password);
     setLoading(false);
     if (error) {
-      toast.error(error === 'Invalid login credentials' ? t('login.errorInvalid') : /signup/i.test(error) ? t('login.errorNotOpened') : error);
+      toast.error(error === 'Invalid login credentials' ? t('login.errorInvalid') : /signup/i.test(error) ? t('ui2.auth.loiGoogleKhongMo') : error);
     } else {
       // MIMI Assistant là màn làm việc chính từ 15/09/2026.
       if (dich.startsWith('/.lovable/')) window.location.href = dich; else navigate(dich);
@@ -190,34 +188,7 @@ export default function Login() {
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <button
-          type="button"
-          onClick={async () => {
-            setGoogleLoading(true);
-            ghiDichSauDangNhap(dich);
-            const { error } = await signInWithGoogle();
-            // Only reached when the redirect never happened; on success the
-            // browser has already left this page.
-            if (error) {
-              setGoogleLoading(false);
-              toast.error(error);
-            }
-          }}
-          disabled={googleLoading}
-          className="w-full border border-border bg-card text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-accent transition-colors flex items-center justify-center gap-2.5 disabled:opacity-60"
-        >
-          {googleLoading ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden>
-              <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.1z" />
-              <path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.3v5.7C7.9 41 15.4 46 24 46z" />
-              <path fill="#FBBC05" d="M11.6 28.1c-.4-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3A22 22 0 0 0 2 24c0 3.5.8 6.9 2.3 9.8l7.3-5.7z" />
-              <path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.1 30 2 24 2 15.4 2 7.9 7 4.3 14.2l7.3 5.7c1.7-5.2 6.6-9.1 12.4-9.1z" />
-            </svg>
-          )}
-          {t('ui2.auth.google')}
-        </button>
+        <NutGoogle dich={dich} />
 
         <p className="text-center text-xs text-muted-foreground mt-4">
           <button

@@ -104,6 +104,7 @@ const m = {
       kiemTra: '检查',
       xemNguyenNhan: '查看原因',
       hoanThien: '补全凭证',
+      nhacThu: '提醒客户付款',
       moBaoCao: '打开报表',
       moTrang: '打开相关页面：{{cau}}',
     },

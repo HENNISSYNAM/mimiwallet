@@ -8,27 +8,30 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { CONTACT } from '@/config/company';
 import { ManHinhChoDemo } from '@/components/landing/ManHinhChoDemo';
 import { IconMeo } from '@/components/brand/IconMeo';
+import { NutGoogle } from '@/components/auth/NutGoogle';
 import Onboarding from './Onboarding';
 
 /**
- * /register (06/10/2026, theo chủ sản phẩm): ai cũng DÙNG THỬ ĐƯỢC BẢN DEMO; dùng bản thật thì phải LIÊN HỆ MIMI để
- * được cấp quyền. Trang này thay form tự đăng ký. Người đã đăng nhập (được mời) vẫn vào luồng thiết lập cũ.
+ * /register (15/10/2026, theo chủ sản phẩm): đăng ký tài khoản MỚI chỉ qua GOOGLE (một chạm, vào luôn); ai cũng xem được
+ * BẢN DEMO; ai không có Google thì để lại liên hệ. Trước đó (06/10) trang này chỉ nhận liên hệ vì đăng ký đang đóng.
  *
- * Chặn thật nằm ở máy chủ: tắt "Allow new users to sign up" trong Supabase Auth — khi đó link email/Google với email lạ
- * bị từ chối ("Signups not allowed"), Onboarding và Login đã có câu báo dễ hiểu. Trang này chỉ là lối vào đúng.
+ * Luật "chỉ Google tự mở tài khoản" nằm ở máy chủ (trigger chi_dang_ky_google trên auth.users), nên nút ở đây không phải
+ * là hàng rào duy nhất. Người đã đăng nhập vẫn vào luồng cũ.
  */
 
 const LA_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const CHU: Record<string, Record<string, string>> = {
   vi: {
-    tieuDe: 'Dùng thử MIMI',
-    dan: 'Bạn có thể xem ngay bản demo với một cửa hàng mẫu. Muốn dùng MIMI cho sổ sách thật của doanh nghiệp, hãy để lại liên hệ, đội MIMI sẽ mở tài khoản cho bạn.',
+    tieuDe: 'Bắt đầu với MIMI',
+    dan: 'Đăng ký mất vài giây bằng tài khoản Google. Muốn xem trước, vào bản demo với một cửa hàng mẫu.',
+    googleTieuDe: 'Dùng MIMI cho sổ sách thật',
+    googleMoTa: 'Một chạm bằng Google, không cần nhớ mật khẩu. Lần đầu vào, bạn đồng ý điều khoản và đi qua phần hướng dẫn ngắn.',
     demoTieuDe: 'Xem bản demo',
     demoMoTa: 'Vào ngay, không cần đăng ký. Mọi số liệu là dữ liệu mẫu.',
     demoNut: 'Vào bản demo',
-    thatTieuDe: 'Dùng bản thật',
-    thatMoTa: 'Để lại email và tên doanh nghiệp. MIMI liên hệ trong 1 ngày làm việc để mở tài khoản.',
+    thatTieuDe: 'Chưa dùng Google?',
+    thatMoTa: 'Để lại email và tên doanh nghiệp. MIMI liên hệ trong 1 ngày làm việc để hướng dẫn bạn.',
     email: 'Email doanh nghiệp',
     congTy: 'Tên doanh nghiệp hoặc hộ kinh doanh',
     gui: 'Gửi yêu cầu',
@@ -40,13 +43,15 @@ const CHU: Record<string, Record<string, string>> = {
     dangNhap: 'Đăng nhập',
   },
   en: {
-    tieuDe: 'Try MIMI',
-    dan: 'You can explore the demo right away with a sample shop. To use MIMI for your real business records, leave your contact and the MIMI team will open an account for you.',
+    tieuDe: 'Get started with MIMI',
+    dan: 'Signing up takes seconds with your Google account. Want a look first? Open the demo with a sample shop.',
+    googleTieuDe: 'Use MIMI for your real books',
+    googleMoTa: 'One tap with Google, no password to remember. On your first visit you agree to the terms and take a short guided tour.',
     demoTieuDe: 'See the demo',
     demoMoTa: 'Jump straight in, no sign-up. All numbers are sample data.',
     demoNut: 'Open the demo',
-    thatTieuDe: 'Use the real version',
-    thatMoTa: 'Leave your email and business name. MIMI will contact you within 1 business day to open your account.',
+    thatTieuDe: 'No Google account?',
+    thatMoTa: 'Leave your email and business name. MIMI will contact you within 1 business day to help you get started.',
     email: 'Business email',
     congTy: 'Business name',
     gui: 'Send request',
@@ -58,13 +63,15 @@ const CHU: Record<string, Record<string, string>> = {
     dangNhap: 'Log in',
   },
   ko: {
-    tieuDe: 'MIMI 체험하기',
-    dan: '샘플 가게로 데모를 바로 볼 수 있습니다. 실제 사업 장부에 MIMI를 쓰려면 연락처를 남겨 주세요. MIMI 팀이 계정을 열어 드립니다.',
+    tieuDe: 'MIMI 시작하기',
+    dan: 'Google 계정으로 몇 초 만에 가입할 수 있습니다. 먼저 보고 싶다면 샘플 가게 데모를 열어 보세요.',
+    googleTieuDe: '실제 장부에 MIMI 사용',
+    googleMoTa: 'Google로 한 번에, 비밀번호가 필요 없습니다. 처음 들어오면 약관에 동의하고 짧은 안내를 거칩니다.',
     demoTieuDe: '데모 보기',
     demoMoTa: '가입 없이 바로 들어갑니다. 모든 숫자는 샘플 데이터입니다.',
     demoNut: '데모 열기',
-    thatTieuDe: '실제 버전 사용',
-    thatMoTa: '이메일과 사업체 이름을 남겨 주세요. 영업일 기준 1일 안에 연락드려 계정을 열어 드립니다.',
+    thatTieuDe: 'Google 계정이 없나요?',
+    thatMoTa: '이메일과 사업체 이름을 남겨 주세요. 영업일 기준 1일 안에 연락드려 시작을 도와 드립니다.',
     email: '사업용 이메일',
     congTy: '사업체 이름',
     gui: '요청 보내기',
@@ -76,13 +83,15 @@ const CHU: Record<string, Record<string, string>> = {
     dangNhap: '로그인',
   },
   zh: {
-    tieuDe: '试用 MIMI',
-    dan: '您可以立即用示例店铺体验演示版。如需把 MIMI 用于真实的业务账目，请留下联系方式，MIMI 团队会为您开通账户。',
+    tieuDe: '开始使用 MIMI',
+    dan: '用 Google 账户注册只需几秒。想先看看？可以打开示例店铺的演示版。',
+    googleTieuDe: '把 MIMI 用于真实账目',
+    googleMoTa: '用 Google 一键完成，无需记密码。首次进入时，您会确认条款并完成简短的引导。',
     demoTieuDe: '查看演示',
     demoMoTa: '无需注册，直接进入。所有数字均为示例数据。',
     demoNut: '打开演示',
-    thatTieuDe: '使用正式版',
-    thatMoTa: '请留下邮箱和企业名称，MIMI 会在 1 个工作日内联系您开通账户。',
+    thatTieuDe: '没有 Google 账户？',
+    thatMoTa: '请留下邮箱和企业名称，MIMI 会在 1 个工作日内联系您协助开始使用。',
     email: '企业邮箱',
     congTy: '企业或个体户名称',
     gui: '发送申请',
@@ -144,6 +153,12 @@ export function LienHeDungThat() {
         <p className="mt-3 max-w-2xl text-muted-foreground">{c.dan}</p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <section className="flex flex-col rounded-2xl border border-primary/40 bg-card p-6 md:col-span-2">
+            <h2 className="font-semibold text-foreground">{c.googleTieuDe}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{c.googleMoTa}</p>
+            <div className="mt-5 max-w-sm"><NutGoogle /></div>
+          </section>
+
           <section className="flex flex-col rounded-2xl border border-border/70 bg-card p-6">
             <h2 className="font-semibold text-foreground">{c.demoTieuDe}</h2>
             <p className="mt-2 flex-1 text-sm text-muted-foreground">{c.demoMoTa}</p>

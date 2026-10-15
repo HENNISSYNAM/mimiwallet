@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ghepChungTu, LECH_TIEN, locKhoanCanChungTu, type HoaDonVao, type KhoanChi } from './khopChungTu';
+import { ghepChungTu, goiYKhongChungTu, LECH_TIEN, locKhoanCanChungTu, type HoaDonVao, type KhoanChi } from './khopChungTu';
 
 const chi = (
   id: string,
@@ -245,5 +245,22 @@ describe('số hoá đơn không được đọc từ số tiền', () => {
     );
     expect(r.daGhep).toHaveLength(0);
     expect(r.canXem).toHaveLength(1);
+  });
+});
+
+describe('gợi ý khoản chi không cần hoá đơn', () => {
+  it('nhận ra trả nợ vay, nộp thuế, lương/bảo hiểm và chuyển sang tài khoản của chính mình', () => {
+    expect(goiYKhongChungTu({ noiDung: 'Trả nợ vay TRA NO GOC LAI HDTD 0126 KY 9', tenNguoiNhan: 'NGAN HANG TMCP (MINH HOA)' })?.ly_do).toBe('phi_lai_ngan_hang');
+    expect(goiYKhongChungTu({ noiDung: 'NOP THUE GTGT QUY 3', tenNguoiNhan: 'KBNN TP HCM' })?.ly_do).toBe('thue_phi_nha_nuoc');
+    expect(goiYKhongChungTu({ noiDung: 'Đóng BHXH tháng 9', tenNguoiNhan: null })?.ly_do).toBe('luong_bao_hiem');
+    const noiBo = goiYKhongChungTu({ noiDung: 'CHUYEN TIEN SANG TK THU HAI', tenNguoiNhan: 'CHU HO (MINH HOA)' });
+    expect(noiBo?.ly_do).toBe('khac');
+    expect(noiBo?.ghi_chu).toContain('tài khoản của chính mình');
+  });
+
+  it('không đoán bừa: tiền thuê mặt bằng, tiền hàng nhà cung cấp vẫn cần chứng từ', () => {
+    expect(goiYKhongChungTu({ noiDung: 'TIEN THUE MAT BANG T9', tenNguoiNhan: 'CO LAN' })).toBeNull();
+    expect(goiYKhongChungTu({ noiDung: 'TT TIEN HANG', tenNguoiNhan: 'NHA CUNG CAP GAO B' })).toBeNull();
+    expect(goiYKhongChungTu({ noiDung: null, tenNguoiNhan: null })).toBeNull();
   });
 });

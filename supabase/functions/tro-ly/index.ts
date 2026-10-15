@@ -639,6 +639,13 @@ async function docDuLieu(
       d.doDay.chung_tu_quet = danhGiaDoDay({ nguon: "chung_tu_quet", ten: "Chứng từ đã quét", daDoc: dong.length, tong, gioiHan: 5000 });
     }));
   }
+  if (can.has("giao_dich")) {
+    // Phân loại tiền vào người đã quyết — cùng bảng doanh thu năm đọc, để trợ lý nói đúng khoản nào đã trừ.
+    viec.push(docHet((a, b) => db.from("revenue_classifications").select("transaction_id, revenue_effect")
+      .eq("company_id", companyId).order("transaction_id").range(a, b), "phân loại tiền vào")
+      .then((ds) => { d.phanLoaiTienVao = Object.fromEntries(ds.map((r) => [String(r.transaction_id), r.revenue_effect])); })
+      .catch((e) => { console.error("phân loại tiền vào:", e instanceof Error ? e.message : e); }));
+  }
   if (can.has("chung_tu_quet")) {
     // Ngoại lệ người duyệt đã xử lý (29/09/2026): chi cá nhân (nhãn người chọn) và "không có chứng từ".
     viec.push((async () => {

@@ -104,6 +104,7 @@ const m = {
       kiemTra: '확인',
       xemNguyenNhan: '원인 보기',
       hoanThien: '빠진 증빙 채우기',
+      nhacThu: '고객에게 결제 알림',
       moBaoCao: '보고서 열기',
       moTrang: '다음 항목의 페이지 열기: {{cau}}',
     },

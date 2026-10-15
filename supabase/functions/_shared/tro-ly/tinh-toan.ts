@@ -12,7 +12,7 @@
  */
 import type { BangChung, DeXuat, DoDayNguon, KetNoiHienThi, KetQuaNangLuc, LoaiBangChung, NguonDuLieu, NhomNangLuc, O, PhanTichNhanh, The, TrangChiTiet, ViecHomNay } from './kieu.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
-import { ghepChungTu, locKhoanCanChungTu, type HoaDonVao, type KhoanChi, type QuyetDinhChungTu } from '../chung-tu/khop-chung-tu.ts';
+import { ghepChungTu, goiYKhongChungTu, locKhoanCanChungTu, type GoiYKhongChungTu, type HoaDonVao, type KhoanChi, type QuyetDinhChungTu } from '../chung-tu/khop-chung-tu.ts';
 import { CAN_DO_TRUOC_KHI_DOI, chuanHoaTenModel, deXuatModelReHon, type GiaModel } from '../chi-phi-ai/bang-gia.ts';
 import { CAN_CU, NGUONG_DOANH_THU as NGUONG_THUE, PHIEN_BAN_HE_LUAT, suyLuan as suyLuanThue, TEN_NGUON_DOANH_THU, TEN_NHOM_NGANH, type SuKienThue } from '../luat/he-luat.ts';
 import { HOAT_DONG } from '../doanh-thu/theo-hoat-dong.ts';
@@ -127,6 +127,12 @@ export interface DuLieu {
   chiCaNhan?: string[];
   /** Quyết định "không có chứng từ" còn hiệu lực. */
   quyetDinhChungTu?: QuyetDinhChungTu[];
+  /**
+   * Phân loại tiền vào người dùng đã quyết (`revenue_classifications`), theo id giao dịch. Cùng bảng mà
+   * doanh thu năm (`doanh-thu/so-lieu.ts`) đọc — để câu trả lời không nói "chưa trừ" một khoản đã trừ.
+   * undefined = chưa đọc.
+   */
+  phanLoaiTienVao?: Record<string, 'include' | 'exclude' | 'pending'>;
   /**
    * Hồ sơ thuế + doanh thu đã chọn nguồn, cho hệ luật thuế. `canCuDaKiem` là kết quả đối chiếu
    * từng câu trích với kho Công báo (`luat/doc-can-cu.ts`) — năng lực chỉ nói "đã đối chiếu"
@@ -502,7 +508,16 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
     });
   }
 
+  // Tách khoản có vẻ KHÔNG cần hoá đơn (trả nợ vay, nộp thuế, lương, chuyển sang tài khoản của mình) khỏi khoản
+  // thật sự phải đi xin giấy tờ — chỉ gợi ý, người xác nhận một chạm ở trang Chứng từ chi phí.
+  const goiY = conThieu.map((c) => ({ c, g: goiYKhongChungTu(c) })).filter((x): x is { c: typeof x.c; g: GoiYKhongChungTu } => x.g !== null);
+  const idGoiY = new Set(goiY.map((x) => x.c.id));
+  const canThat = conThieu.filter((c) => !idGoiY.has(c.id));
+  const tongGoiY = goiY.reduce((s, x) => s + x.c.soTien, 0);
+  const tongCanThat = canThat.reduce((s, c) => s + c.soTien, 0);
+
   let cau = `${nhan[0].toUpperCase()}${nhan.slice(1)} (${ngayVN(tu)}–${ngayVN(den)}) bạn đã chi ${vnd(g.tongDaChi)}; ${g.chuaCoGiay.length} khoản, tổng ${vnd(g.tongChuaCoGiay)}, chưa có chứng từ.`;
+  if (goiY.length) cau += ` Trong đó ${goiY.length} khoản (${vnd(tongGoiY)}) có vẻ không cần hoá đơn — trả nợ vay, nộp thuế, lương, chuyển sang tài khoản của chính bạn — chỉ cần bạn xác nhận; còn ${canThat.length} khoản (${vnd(tongCanThat)}) thật sự cần chứng từ.`;
   if (g.canXem.length) cau += ` ${g.canXem.length} khoản khớp nhiều chứng từ cùng lúc — cần bạn chọn.`;
   if (!g.chuaCoGiay.length) cau = `${nhan[0].toUpperCase()}${nhan.slice(1)}: mọi khoản chi ngân hàng đều đã có chứng từ.`;
 
@@ -528,13 +543,24 @@ export function thieuChungTu(d: DuLieu): KetQuaNangLuc {
           { nhan: 'Cần bạn chọn chứng từ', gia_tri: g.canXem.length, don_vi: 'so', bang_chung: bangChung('giao_dich', g.canXem.map((x) => ({ id: x.khoanChiId }))) },
         ],
       },
-      ...(conThieu.length ? [{
+      ...(canThat.length ? [{
         loai: 'bang' as const,
-        tieu_de: 'Khoản chi lớn nhất chưa có giấy tờ',
+        tieu_de: 'Khoản chi lớn nhất cần đi xin chứng từ',
         cot: [{ nhan: 'Ngày', don_vi: 'ngay' as const }, { nhan: 'Người nhận', don_vi: 'chu' as const }, { nhan: 'Số tiền', don_vi: 'vnd' as const }],
-        dong: conThieu.slice(0, 8).map((c) => [c.ngay, tenChi.get(c.id) ?? 'Không rõ người nhận', c.soTien] as O[]),
-        bang_chung: bangChung('giao_dich', conThieu),
-        con_lai: Math.max(0, conThieu.length - 8),
+        dong: canThat.slice(0, 8).map((c) => [c.ngay, tenChi.get(c.id) ?? 'Không rõ người nhận', c.soTien] as O[]),
+        bang_chung: bangChung('giao_dich', canThat),
+        con_lai: Math.max(0, canThat.length - 8),
+      }] : []),
+      ...(goiY.length ? [{
+        loai: 'bang' as const,
+        tieu_de: 'Có vẻ không cần hoá đơn — chờ bạn xác nhận',
+        cot: [{ nhan: 'Ngày', don_vi: 'ngay' as const }, { nhan: 'Người nhận', don_vi: 'chu' as const }, { nhan: 'Số tiền', don_vi: 'vnd' as const }, { nhan: 'Có vẻ là', don_vi: 'chu' as const }],
+        dong: goiY.slice(0, 8).map((x) => [x.c.ngay, tenChi.get(x.c.id) ?? 'Không rõ người nhận', x.c.soTien, x.g.ghi_chu] as O[]),
+        bang_chung: bangChung('giao_dich', goiY.map((x) => x.c)),
+        con_lai: Math.max(0, goiY.length - 8),
+      }, {
+        loai: 'ghi_chu' as const, muc_do: 'thong_tin' as const,
+        cau: 'MIMI chỉ gợi ý theo nội dung chuyển khoản, không tự bỏ khoản nào khỏi danh sách: trả nhầm một khoản mua hàng thành "trả nợ" là mất chi phí. Mở Chứng từ chi phí để xác nhận từng khoản hoặc cả nhóm; hoàn tác được.',
       }] : []),
     ],
     nguon: [N.giaoDich, N.chungTuQuet],
@@ -1970,48 +1996,72 @@ function tienVaoKhongPhaiDoanhThu(d: DuLieu): KetQuaNangLuc {
       });
   }
 
-  const tong = nghi.reduce((s, x) => s + doLonTien(x.t), 0);
+  // Đối chiếu với điều người dùng ĐÃ quyết: khoản đã xác nhận "không phải doanh thu" đã được trừ — nói "chưa
+  // trừ" là làm chủ hộ tưởng doanh thu đang bị tính dư (lỗi thấy trên cửa hàng mẫu 14/10/2026).
+  const pl = d.phanLoaiTienVao ?? {};
+  const trangThai = (t: GiaoDichTL) => pl[String(t.id)] ?? 'pending';
+  const daTru = nghi.filter((x) => trangThai(x.t) === 'exclude');
+  const laDoanhThu = nghi.filter((x) => trangThai(x.t) === 'include');
+  const choXacNhan = nghi.filter((x) => trangThai(x.t) === 'pending');
+  const cong = (ds: { t: GiaoDichTL }[]) => ds.reduce((s, x) => s + doLonTien(x.t), 0);
+
+  const tong = cong(nghi);
   const ds = nghi.map((x) => x.t);
   const theoLoai = new Map<LoaiTienVao, number>();
   for (const x of nghi) theoLoai.set(x.g.loai, (theoLoai.get(x.g.loai) ?? 0) + 1);
   const loaiNoi = [...theoLoai.entries()].map(([l, n]) => `${n} khoản ${TEN_LOAI_TIEN_VAO[l].toLowerCase()}`).join(', ');
   const SO_DONG = 10;
+  const TEN_TRANG_THAI = { exclude: 'Đã trừ khỏi doanh thu', include: 'Bạn xác nhận là doanh thu', pending: 'Chờ bạn xác nhận' } as const;
+
+  const cauTrangThai = [
+    daTru.length ? `${daTru.length} khoản (${vnd(cong(daTru))}) bạn đã xác nhận không phải doanh thu — đã trừ` : '',
+    laDoanhThu.length ? `${laDoanhThu.length} khoản (${vnd(cong(laDoanhThu))}) bạn đã xác nhận là doanh thu` : '',
+    choXacNhan.length ? `${choXacNhan.length} khoản (${vnd(cong(choXacNhan))}) còn chờ bạn xác nhận, đang tạm tính là doanh thu` : '',
+  ].filter(Boolean).join('; ');
+
+  const the: The[] = [
+    {
+      loai: 'so_lieu',
+      tieu_de: `Tiền vào năm ${d.homNay.slice(0, 4)} có vẻ không phải doanh thu`,
+      muc: [
+        { nhan: 'Có vẻ không phải doanh thu', gia_tri: tong, don_vi: 'vnd', bang_chung: bangChung('giao_dich', ds) },
+        { nhan: 'Đã trừ khỏi doanh thu', gia_tri: cong(daTru), don_vi: 'vnd', bang_chung: daTru.length ? bangChung('giao_dich', daTru.map((x) => x.t)) : undefined },
+        { nhan: `Chờ bạn xác nhận (${choXacNhan.length} khoản)`, gia_tri: cong(choXacNhan), don_vi: 'vnd', can_chu_y: choXacNhan.length > 0, bang_chung: choXacNhan.length ? bangChung('giao_dich', choXacNhan.map((x) => x.t)) : undefined },
+      ],
+    },
+    {
+      loai: 'bang',
+      tieu_de: 'Từng khoản, kèm nguyên văn nội dung',
+      cot: [
+        { nhan: 'Ngày', don_vi: 'ngay' }, { nhan: 'Số tiền', don_vi: 'vnd' },
+        { nhan: 'Nội dung chuyển khoản', don_vi: 'chu' }, { nhan: 'Có vẻ là', don_vi: 'chu' }, { nhan: 'Trạng thái', don_vi: 'chu' },
+      ],
+      // Khoản còn chờ xác nhận lên đầu: đó là việc chủ hộ còn phải làm.
+      dong: [...choXacNhan, ...laDoanhThu, ...daTru].slice(0, SO_DONG).map((x) => [
+        x.t.transaction_date, doLonTien(x.t),
+        [x.t.counter_account_name, x.t.payment_reference].filter(Boolean).join(' — ') || x.t.merchant_name || '—',
+        TEN_LOAI_TIEN_VAO[x.g.loai], TEN_TRANG_THAI[trangThai(x.t)],
+      ] as O[]),
+      con_lai: Math.max(0, nghi.length - SO_DONG),
+      bang_chung: bangChung('giao_dich', ds),
+    },
+  ];
+  if (choXacNhan.length) {
+    the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI chỉ chỉ ra, không tự trừ: khoản chờ xác nhận vẫn được cộng vào doanh thu ước từ sao kê cho tới khi bạn xác nhận. "Hoàn tiền" có thể là khách trả nốt, "đặt cọc" có thể là tiền bán hàng trả trước — trừ nhầm một khoản bán hàng là khai thiếu. Xác nhận một chạm trong thông báo; khoản đã xác nhận được trừ khỏi doanh thu trên tờ khai.' });
+  } else {
+    the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Không còn khoản nào chờ bạn xác nhận: doanh thu năm trên Tờ khai đã phản ánh đúng các quyết định trên. Thấy khoản nào xếp sai thì sửa ở Nhắc thuế — doanh thu tính lại ngay.' });
+  }
+  the.push(NOI_TC);
 
   return kq('tien_vao_khong_phai_doanh_thu', 'chung_tu',
-    `${TRA_LOI} Đọc nội dung chuyển khoản ${khoang}, MIMI thấy ${nghi.length} khoản tiền vào có vẻ không phải tiền bán hàng (${loaiNoi}), cộng lại ${vnd(tong)}.`, {
-      the: [
-        {
-          loai: 'so_lieu',
-          tieu_de: `Tiền vào năm ${d.homNay.slice(0, 4)} có vẻ không phải doanh thu`,
-          muc: [
-            { nhan: 'Có vẻ không phải doanh thu', gia_tri: tong, don_vi: 'vnd', can_chu_y: true, bang_chung: bangChung('giao_dich', ds) },
-            { nhan: 'Số khoản', gia_tri: nghi.length, don_vi: 'so', bang_chung: bangChung('giao_dich', ds) },
-          ],
-        },
-        {
-          loai: 'bang',
-          tieu_de: 'Từng khoản, kèm nguyên văn nội dung',
-          cot: [
-            { nhan: 'Ngày', don_vi: 'ngay' }, { nhan: 'Số tiền', don_vi: 'vnd' },
-            { nhan: 'Nội dung chuyển khoản', don_vi: 'chu' }, { nhan: 'Có vẻ là', don_vi: 'chu' },
-          ],
-          dong: nghi.slice(0, SO_DONG).map((x) => [
-            x.t.transaction_date, doLonTien(x.t),
-            [x.t.counter_account_name, x.t.payment_reference].filter(Boolean).join(' — ') || x.t.merchant_name || '—',
-            TEN_LOAI_TIEN_VAO[x.g.loai],
-          ] as O[]),
-          con_lai: Math.max(0, nghi.length - SO_DONG),
-          bang_chung: bangChung('giao_dich', ds),
-        },
-        { loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI chỉ chỉ ra, không tự trừ: doanh thu ước từ sao kê vẫn đang cộng các khoản này cho tới khi bạn xác nhận. "Hoàn tiền" có thể là khách trả nốt, "đặt cọc" có thể là tiền bán hàng trả trước — trừ nhầm một khoản bán hàng là khai thiếu. MIMI báo từng khoản trong thông báo để bạn xác nhận một chạm; khoản đã xác nhận được trừ khỏi doanh thu trên tờ khai.' },
-        NOI_TC,
-      ],
+    `${TRA_LOI} Đọc nội dung chuyển khoản ${khoang}, MIMI thấy ${nghi.length} khoản tiền vào có vẻ không phải tiền bán hàng (${loaiNoi}), cộng lại ${vnd(tong)}. Trong đó: ${cauTrangThai}.`, {
+      the,
       de_xuat: [
-        {
-          khoa: 'mo_trang:nhac_thue', loai: 'mo_trang', nhan: 'Xem thông báo cần xác nhận',
+        ...(choXacNhan.length ? [{
+          khoa: 'mo_trang:nhac_thue', loai: 'mo_trang' as const, nhan: `Xác nhận ${choXacNhan.length} khoản`,
           mo_ta: 'Mỗi khoản MIMI thấy đáng ngờ có một thông báo; xác nhận một chạm, MIMI trừ khỏi doanh thu trên tờ khai.',
           tham_so: { duong_dan: '/dashboard/nhac-thue' },
-        },
+        }] : []),
         DX_TC,
       ],
       nguon: [N.giaoDich],

@@ -30,6 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung, idCongTyDangDung } from '@/lib/congTyDangDung';
 import { layDichSauDangNhap } from '@/lib/sauDangNhap';
+import { LuongNguoiMoi } from '@/components/onboarding/LuongNguoiMoi';
 import { ghiMoUngDung } from '@/lib/track';
 import { ganPhamViNao } from '@/store/naoMimi';
 import { ThanhCongCuNguCanh } from '@/components/khong-gian/ThanhCongCuNguCanh';
@@ -348,6 +349,9 @@ export default function DashboardLayout() {
           )}
           <Outlet />
         </main>
+
+        {/* Lần đầu vào: đồng ý điều khoản → hướng dẫn nhanh → (khảo sát ở màn MIMI Assistant). Xem LuongNguoiMoi. */}
+        <LuongNguoiMoi onXong={() => { if (!laKhongGianTroLy(location.pathname)) navigate('/dashboard/tro-ly'); }} />
 
         {/* Mobile bottom nav — iOS tab bar */}
         {/* Tab bar always has content underneath, so it always reads as glass. */}

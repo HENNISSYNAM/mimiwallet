@@ -432,7 +432,8 @@ export default function InvoicesPage() {
                   </td>
                   <td className="px-5 py-4">
                     {(inv.status === 'pending' || inv.status === 'overdue') && (
-                      <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      /* Điện thoại không có "di chuột": ẩn-chờ-hover làm nút thu tiền biến mất trên máy chủ hộ hay dùng nhất. */
+                      <div className="flex items-center gap-3 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
                         <button
                           onClick={(e) => { e.stopPropagation(); setQrInvoice(inv); }}
                           className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
@@ -547,6 +548,8 @@ export default function InvoicesPage() {
         description={moTaQr(qrInvoice?.invoice_number ?? '')}
         onPaid={() => { void loadInvoices(); }}
         laMinhHoa={!!qrInvoice?.is_synthetic}
+        tenKhach={qrInvoice?.client_name ?? null}
+        hanTra={qrInvoice?.due_date ?? null}
       />
     </motion.div>
   );

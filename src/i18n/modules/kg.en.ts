@@ -104,6 +104,7 @@ const m = {
       kiemTra: 'Review',
       xemNguyenNhan: 'See why',
       hoanThien: 'Add missing documents',
+      nhacThu: 'Remind customers',
       moBaoCao: 'Open report',
       moTrang: 'Open the page for: {{cau}}',
     },

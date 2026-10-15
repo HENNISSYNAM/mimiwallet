@@ -275,6 +275,44 @@ export type LyDoKhongChungTu = keyof typeof LY_DO_KHONG_CHUNG_TU;
 export interface QuyetDinhChungTu { id: string; transaction_id: string; ly_do: LyDoKhongChungTu; ghi_chu: string | null; tao_luc: string }
 
 /**
+ * GỢI Ý "KHÔNG CẦN HOÁ ĐƠN" (14/10/2026). Trên cửa hàng mẫu, danh sách "chưa có chứng từ" có 46 khoản — trong đó
+ * tiền chuyển sang tài khoản thứ hai của chính chủ hộ và tiền trả nợ vay ngân hàng, là những khoản không ai đi xin
+ * hoá đơn được. Danh sách dài vì những khoản đó làm chủ hộ bỏ cuộc trước khi tới khoản thật sự cần giấy tờ.
+ *
+ * MIMI chỉ GỢI Ý theo nội dung chuyển khoản và để người bấm xác nhận (ghi vào `quyet_dinh_chung_tu`, hoàn tác
+ * được) — không tự loại khoản nào khỏi danh sách. Đọc nhầm một khoản mua hàng thành "trả nợ" là mất chi phí.
+ */
+export interface GoiYKhongChungTu { ly_do: LyDoKhongChungTu; ghi_chu: string; vi_sao: string }
+
+const bo = (s: string | null | undefined) => (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().replace(/[^A-Z0-9]+/g, ' ');
+
+const MAU_GOI_Y: { mau: RegExp; goi_y: GoiYKhongChungTu }[] = [
+  {
+    mau: /\b(KBNN|KHO BAC|NSNN|NGAN SACH NHA NUOC|NOP THUE|THUE MON BAI|LE PHI MON BAI|THUE GTGT|THUE TNCN|THUE TNDN)\b/,
+    goi_y: { ly_do: 'thue_phi_nha_nuoc', ghi_chu: 'Nộp thuế, phí cho nhà nước', vi_sao: 'Nộp ngân sách nhà nước: chứng từ là giấy nộp tiền / biên lai của kho bạc, không phải hoá đơn.' },
+  },
+  {
+    mau: /\b(BHXH|BHYT|BHTN|BAO HIEM XA HOI|TRA LUONG|CHI LUONG|LUONG THANG|TIEN LUONG)\b/,
+    goi_y: { ly_do: 'luong_bao_hiem', ghi_chu: 'Lương, bảo hiểm', vi_sao: 'Lương và bảo hiểm chứng minh bằng bảng lương, hợp đồng lao động, chứng từ nộp bảo hiểm — không có hoá đơn.' },
+  },
+  {
+    mau: /\b(TRA NO|TRA GOC|GOC LAI|TRA LAI VAY|KHOAN VAY|HDTD|HOP DONG TIN DUNG|PHI QUAN LY TAI KHOAN|PHI SMS|PHI DICH VU NGAN HANG)\b/,
+    goi_y: { ly_do: 'phi_lai_ngan_hang', ghi_chu: 'Trả nợ vay / phí ngân hàng', vi_sao: 'Trả nợ vay: tiền gốc không phải chi phí; tiền lãi và phí ngân hàng chứng minh bằng hợp đồng tín dụng và sao kê — không cần hoá đơn.' },
+  },
+  {
+    mau: /\b(CHUYEN TIEN SANG TK|SANG TK THU HAI|CHUYEN NOI BO|TAI KHOAN CUA TOI|CHUYEN SANG TAI KHOAN)\b/,
+    goi_y: { ly_do: 'khac', ghi_chu: 'Chuyển giữa các tài khoản của chính mình', vi_sao: 'Tiền chuyển sang tài khoản khác của chính bạn không phải khoản chi, nên không có hoá đơn.' },
+  },
+];
+
+/** Gợi ý một khoản chi có vẻ không cần hoá đơn, từ tên người nhận và nội dung chuyển khoản. null = không chắc. */
+export function goiYKhongChungTu(k: { noiDung?: string | null; tenNguoiNhan?: string | null }): GoiYKhongChungTu | null {
+  const chu = ` ${bo(k.noiDung)} ${bo(k.tenNguoiNhan)} `;
+  return MAU_GOI_Y.find((m) => m.mau.test(chu))?.goi_y ?? null;
+}
+
+/**
  * Tách khoản chi CẦN chứng từ khỏi khoản người duyệt đã quyết: chi cá nhân (nhãn người chọn) và "không có
  * chứng từ" kèm lý do. Trang Chứng từ chi phí và trợ lý dùng CÙNG hàm này để ra cùng một con số.
  */

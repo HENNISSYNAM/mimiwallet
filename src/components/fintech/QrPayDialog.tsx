@@ -73,6 +73,31 @@ interface Props {
    * phải thu thì không. Hộp chỉ hiện bản xem trước: số tiền, nội dung chuyển khoản, số hoá đơn.
    */
   laMinhHoa?: boolean;
+  /** Tên khách và hạn trả — để soạn sẵn tin nhắc nợ gửi kèm mã (14/10/2026). */
+  tenKhach?: string | null;
+  hanTra?: string | null;
+}
+
+/**
+ * TIN NHẮC NỢ SOẠN SẴN. Trước đây MIMI chỉ liệt kê khách nợ quá hạn; việc chủ hộ thật sự phải làm — nhắn cho
+ * khách — vẫn phải tự gõ, tự chụp màn hình mã. Giờ một chạm sao chép tin (có số tiền, hạn, số tài khoản và
+ * ĐÚNG nội dung chuyển khoản để tiền về tự đóng hoá đơn) và một chạm tải ảnh mã để gửi qua Zalo/Messenger.
+ * Tin viết bằng ngôn ngữ đang chọn của giao diện; MIMI không tự gửi cho ai.
+ */
+export function soanTinNhacNo(o: {
+  t: (k: string, v?: Record<string, unknown>) => string;
+  tenKhach?: string | null; soHoaDon?: string | null; soTien: number; hanTra?: string | null;
+  taiKhoan?: string | null; nganHang?: string | null; chuTaiKhoan?: string | null; noiDung?: string | null;
+}): string {
+  const dong = [
+    o.t('ui2.qr.nhacNo.chao', { ten: o.tenKhach?.trim() || o.t('ui2.qr.nhacNo.khach') }),
+    o.t('ui2.qr.nhacNo.hoaDon', { so: o.soHoaDon ?? '—', tien: dinhDangTien(o.soTien) })
+      + (o.hanTra ? ` ${o.t('ui2.qr.nhacNo.han', { ngay: o.hanTra.split('-').reverse().join('/') })}` : ''),
+  ];
+  if (o.taiKhoan) dong.push(o.t('ui2.qr.nhacNo.chuyen', { tk: o.taiKhoan, nh: [o.nganHang, o.chuTaiKhoan].filter(Boolean).join(' · ') || '—' }));
+  if (o.noiDung) dong.push(o.t('ui2.qr.nhacNo.noiDung', { nd: o.noiDung }));
+  dong.push(o.t('ui2.qr.nhacNo.camOn'));
+  return dong.join('\n');
 }
 
 const dong = dinhDangTien;
@@ -87,6 +112,8 @@ export function QrPayDialog({
   description,
   onPaid,
   laMinhHoa = false,
+  tenKhach = null,
+  hanTra = null,
 }: Props) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -244,6 +271,28 @@ export function QrPayDialog({
     return () => clearInterval(timer);
   }, [open, qr?.id, qr?.status, amount, onPaid, toast]);
 
+  const tinNhac = soanTinNhacNo({
+    t, tenKhach, soHoaDon: invoiceNumber ?? null, soTien: amount, hanTra,
+    taiKhoan: qr?.virtual_account_number ?? qr?.account_number ?? null, nganHang, chuTaiKhoan,
+    noiDung: qr ? (qr.virtual_account_number ? null : qr.reference_number) : null,
+  });
+  const saoChepTin = async () => {
+    try {
+      await navigator.clipboard.writeText(tinNhac);
+      toast({ title: t('ui2.qr.nhacNo.daChep') });
+    } catch {
+      toast({ title: t('ui2.qr.nhacNo.khongChep'), variant: 'destructive' });
+    }
+  };
+  const taiAnhMa = () => {
+    const src = qr?.qr_code?.startsWith('data:image') ? qr.qr_code : canvasRef.current?.toDataURL('image/png');
+    if (!src) return;
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = `ma-qr-${invoiceNumber ?? 'thu-tien'}.png`;
+    a.click();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -343,6 +392,23 @@ export function QrPayDialog({
             >
               {qr.status === 'paid' ? t('ui2.qr.daNhan') : t('ui2.qr.dangCho')}
             </p>
+            {qr.status !== 'paid' && invoiceId && (
+              <div className="space-y-2 rounded-lg border border-border p-3" data-testid="tin-nhac-no">
+                <p className="text-xs font-medium text-foreground">{t('ui2.qr.nhacNo.tieuDe')}</p>
+                <pre className="whitespace-pre-wrap rounded-md bg-muted/60 p-2 font-sans text-xs text-foreground">{tinNhac}</pre>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => void saoChepTin()}>{t('ui2.qr.nhacNo.chep')}</Button>
+                  <Button size="sm" variant="outline" onClick={taiAnhMa}>{t('ui2.qr.nhacNo.taiMa')}</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {laMinhHoa && invoiceId && (
+          <div className="space-y-2 rounded-lg border border-border p-3" data-testid="tin-nhac-no">
+            <p className="text-xs font-medium text-foreground">{t('ui2.qr.nhacNo.tieuDe')}</p>
+            <pre className="whitespace-pre-wrap rounded-md bg-muted/60 p-2 font-sans text-xs text-foreground">{tinNhac}</pre>
+            <Button size="sm" onClick={() => void saoChepTin()}>{t('ui2.qr.nhacNo.chep')}</Button>
           </div>
         )}
       </DialogContent>

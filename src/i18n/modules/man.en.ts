@@ -135,6 +135,27 @@ const m = {
       },
     },
 
+    nguoiMoi: {
+      buoc: { dieuKhoan: 'Terms', huongDan: 'Tour', khaoSat: 'Survey' },
+      chao: 'Welcome to MIMI',
+      chaoMoTa: 'Your bookkeeping and tax assistant for small businesses. Before you start, three quick things:',
+      y1: 'MIMI only reads the data you allow (bank statements, documents) to keep your books and prepare your taxes.',
+      y2: 'MIMI never holds or moves money and never files anything for you — you always approve.',
+      y3: 'You can delete your account and your data at any time.',
+      dongY: 'Agree and continue',
+      dangLuu: 'Saving…',
+      loiLuu: 'Could not save your agreement. Please try again.',
+      buocSo: 'Step {{so}} of {{tong}}',
+      tiep: 'Next',
+      quayLai: 'Back',
+      boQua: 'Skip the tour',
+      batDau: 'Answer four questions',
+      t1: { tieuDe: 'Ask MIMI like you would ask an accountant', moTa: 'Type in plain words: “Does money my brother sent count as revenue?”, “Which expenses are missing documents?”, “Which customers are overdue?”' },
+      t2: { tieuDe: 'MIMI prepares, you decide', moTa: 'A team of AI agents works together and shows each step. Anything that affects the outside world waits for your approval, and you can change your mind.' },
+      t3: { tieuDe: 'Every number has a source', moTa: 'Tap “Basis” to see which law or transaction produced a number. When MIMI is not sure, it says “I don’t know yet” and asks.' },
+      t4: { tieuDe: 'Start with four quick questions', moTa: 'So MIMI can state the tax duties that apply to you, tap through four questions about your business type and industry. Then upload a statement or connect your bank when you are ready.' },
+    },
+
     khaoSat: {
       buoc: 'Question {{so}} of {{tong}}',
       deSau: 'Later',

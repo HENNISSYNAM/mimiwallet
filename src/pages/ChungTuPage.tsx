@@ -8,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { nguoiDungHienTai } from '@/lib/nguoiDung';
 import { congTyDangDung } from '@/lib/congTyDangDung';
 import {
-  ghepChungTu, locKhoanCanChungTu, LY_DO_KHONG_CHUNG_TU, type HoaDonVao, type KhoanChi, type LyDoKhongChungTu, type QuyetDinhChungTu,
+  ghepChungTu, goiYKhongChungTu, locKhoanCanChungTu, LY_DO_KHONG_CHUNG_TU,
+  type GoiYKhongChungTu, type HoaDonVao, type KhoanChi, type LyDoKhongChungTu, type QuyetDinhChungTu,
 } from '@/lib/khopChungTu';
 import { goiTroLy } from '@/lib/goiTroLy';
 import { NutQuetChungTu } from '@/components/chung-tu/NutQuetChungTu';
@@ -268,6 +269,30 @@ export default function ChungTuPage() {
     }
   };
 
+  /** Khoản chưa có giấy tờ mà MIMI thấy có vẻ không cần hoá đơn — chỉ gợi ý, người bấm xác nhận. */
+  const goiY = useMemo(() => {
+    const m = new Map<string, GoiYKhongChungTu>();
+    for (const c of kq.chuaCoGiay) { const g = goiYKhongChungTu(c); if (g) m.set(c.id, g); }
+    return m;
+  }, [kq]);
+  const nhanGoiY = (g: GoiYKhongChungTu) => (g.ly_do === 'khac' ? t('app.chungTu.goiYNoiBo') : nhanLyDo(g.ly_do));
+  const ghiQuyetDinh = (id: string, g: GoiYKhongChungTu) =>
+    goiTroLy('quyet_dinh_chung_tu', { giao_dich_id: id, ly_do: g.ly_do, ghi_chu: g.ghi_chu });
+  /** Xác nhận cả nhóm: ghi lần lượt (mỗi khoản một quyết định, hoàn tác riêng được), tải lại một lần. */
+  const xacNhanTatCaGoiY = async () => {
+    setDangXuLy('goi_y');
+    let da = 0;
+    try {
+      for (const [id, g] of goiY) { await ghiQuyetDinh(id, g); da += 1; }
+      toast.success(t('app.chungTu.daGhiNhom', { n: da }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('app.chungTu.loi.chuaLuu'));
+    } finally {
+      setDangXuLy(null);
+      await tai();
+    }
+  };
+
   const tenHoaDon = useMemo(() => {
     const m = new Map<string, HoaDonVao>();
     for (const h of hoaDon) m.set(h.id, h);
@@ -394,6 +419,17 @@ export default function ChungTuPage() {
           <p className="mt-1 text-xs text-muted-foreground">
             {t('app.chungTu.xepLon')}
           </p>
+          {goiY.size > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5">
+              <p className="min-w-0 flex-1 text-xs text-foreground">
+                {t('app.chungTu.goiYNhom', { n: goiY.size, tong: dong(kq.chuaCoGiay.filter((c) => goiY.has(c.id)).reduce((s, c) => s + c.soTien, 0)) })}
+              </p>
+              <button type="button" disabled={dangXuLy !== null} onClick={() => void xacNhanTatCaGoiY()}
+                className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">
+                {dangXuLy === 'goi_y' ? <Loader2 size={13} className="animate-spin" /> : t('app.chungTu.goiYTatCa', { n: goiY.size })}
+              </button>
+            </div>
+          )}
 
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[460px] text-sm">
@@ -436,6 +472,13 @@ export default function ChungTuPage() {
                         </form>
                       ) : (
                         <span className="inline-flex flex-wrap justify-end gap-1.5">
+                          {goiY.has(c.id) && (
+                            <button type="button" disabled={dangXuLy !== null} title={goiY.get(c.id)!.vi_sao}
+                              onClick={() => void lam(c.id, 'quyet_dinh_chung_tu', { giao_dich_id: c.id, ly_do: goiY.get(c.id)!.ly_do, ghi_chu: goiY.get(c.id)!.ghi_chu }, t('app.chungTu.daGhiKhongCt'))}
+                              className="rounded-lg bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50">
+                              {t('app.chungTu.goiYXacNhan', { nhan: nhanGoiY(goiY.get(c.id)!) })}
+                            </button>
+                          )}
                           <NutQuetChungTu coMoHinh={coMoHinh} giaoDichId={c.id} onDaLuu={() => void tai()}
                             className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent">{t('app.chungTu.ganCt')}</NutQuetChungTu>
                           <button type="button" disabled={dangXuLy === c.id}

@@ -19,6 +19,14 @@ const CTA: Record<NhomNangLuc, { nut: string; duong: string | null }> = {
   ket_noi: { nut: 'kiemTra', duong: '/dashboard/ket-noi' },
 };
 
+/**
+ * Một số việc mang nhóm chung nhưng việc phải làm khác hẳn: "hoá đơn bán ra quá hạn" thuộc nhóm hoá đơn & chứng từ,
+ * nhưng việc là ĐÒI TIỀN KHÁCH, không phải bổ sung chứng từ (nút cũ ghi "Bổ sung chứng từ" — thấy 14/10/2026).
+ */
+const CTA_THEO_VIEC: Record<string, { nut: string; duong: string | null }> = {
+  qua_han: { nut: 'nhacThu', duong: '/dashboard/invoices?filter=overdue' },
+};
+
 export function ViecCanChuY({ viec, soChoDuyet, onHoi, dangHoi }: {
   viec: ViecHomNay[];
   /** Khoản agent đang chờ duyệt (đã có thẻ duyệt riêng) — chỉ nhắc một dòng. */
@@ -41,9 +49,9 @@ export function ViecCanChuY({ viec, soChoDuyet, onHoi, dangHoi }: {
           </li>
         )}
         {viec.map((v) => {
-          const c = CTA[v.nhom];
+          const c = CTA_THEO_VIEC[v.khoa] ?? CTA[v.nhom];
           // Mục thuế mang lối vào riêng (cùng đường dẫn với chuông và Việc cần làm).
-          const duong = v.duong_dan ?? c.duong;
+          const duong = CTA_THEO_VIEC[v.khoa]?.duong ?? v.duong_dan ?? c.duong;
           return (
             <li key={v.khoa} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
@@ -51,9 +59,14 @@ export function ViecCanChuY({ viec, soChoDuyet, onHoi, dangHoi }: {
                 {v.cau}
               </span>
               <span className="flex shrink-0 items-center gap-1.5">
-                <button type="button" disabled={dangHoi} onClick={() => onHoi(v)}
-                  className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50">{t(`kg.viec.${c.nut}`)}</button>
-                {duong && (
+                {/* Việc có trang làm thẳng (đòi tiền khách): nút chính mở trang đó, không hỏi lại MIMI. */}
+                {CTA_THEO_VIEC[v.khoa] && duong ? (
+                  <Link to={duong} className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">{t(`kg.viec.${c.nut}`)}</Link>
+                ) : (
+                  <button type="button" disabled={dangHoi} onClick={() => onHoi(v)}
+                    className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50">{t(`kg.viec.${c.nut}`)}</button>
+                )}
+                {duong && !CTA_THEO_VIEC[v.khoa] && (
                   <Link to={duong} aria-label={t('kg.viec.moTrang', { cau: v.cau })} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent">
                     <ChevronRight size={15} />
                   </Link>
