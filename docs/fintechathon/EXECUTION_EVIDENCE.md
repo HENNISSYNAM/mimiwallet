@@ -27,8 +27,16 @@ This shows the intended behaviour: MIMI declines to recommend a loan the data ca
 ## Run 3 and 4 — books check and "does my brother's transfer count as revenue?"
 Recorded in the video (`ft-en-ky`, `ft-en-doanh-thu`). Revenue separation shows the exact transfer text, and nothing is subtracted until the owner confirms.
 
+## Run 5 — natural-language delegation ("CFO command", capability `lenh_cfo`, commit 2977dec)
+Asked in English: "Set my agent: at most 2 million per payment, 20 million a month, ask me above 1 million, office hours only". Also asked in Chinese with the same meaning.
+- MIMI read four changes against the agent's stored policy and labelled each one: allowed hours Any time → 08:00–17:30 Mon–Fri (tighter); approval threshold "every payment needs approval" → above 1,000,000 VND (looser); cap per payment 2,000,000 VND (unchanged); cap per month 50,000,000 → 20,000,000 VND (tighter).
+- It stated its assumption ("office hours" read as 08:00–17:30, Monday–Friday) instead of guessing silently.
+- It replayed the new policy on the agent's 1 request in the last 62 days using the same rule engine (`xetYeuCau`): outcome unchanged, with evidence links to the row.
+- Nothing was saved. The only action is "Apply new policy to <agent>", which goes through `tac-tu → luu_chinh_sach` (role check on the server, before/after log). The save is refused with 409 if the policy changed after the preview.
+- Covered by 50 unit tests: Vietnamese/English/Chinese parsing; red lines (agent moving money, filing tax, signing, removing caps are refused); contradictory commands get no Apply button; viewer role sees no button; least-privilege role suggestion for people ("let my accountant draft tax forms but not approve payments" → Accountant).
+
 ## Automated evidence
-- `npx vitest run`: 240 files, 2,390 tests passed (16/10/2026).
+- `npx vitest run`: 242 files, 2,445 tests passed (16/10/2026, after the delegation feature).
 - `npm run build`: passes. `npx tsc --noEmit -p tsconfig.app.json`: clean.
 - Forecast and financing tests: `supabase/functions/_shared/tai-chinh/tai-chinh.test.ts` (refuses under 3 closed months; capacity unchanged by a 500 million VND loan; routing of "does a loan count as revenue" to revenue separation).
 
