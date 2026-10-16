@@ -27,6 +27,10 @@ const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   // Prompt 4: soạn báo cáo tháng (phân tích quản trị, không phải BCTC) và giải thích thay đổi.
   [/\b((soan|lap|lam|tao|viet)\b.*\bbao cao|bao cao (tai chinh )?(ngan|thang nay|thang))\b/, 'bao_cao_thang'],
   [/\b((vi sao|tai sao|vi gi|ly do|do dau)\b.*\b(doanh thu|dong tien|chi phi|tien mat)|(doanh thu|dong tien|chi phi|tien mat)\b.*\b(vi sao|tai sao|vi gi|do dau|o dau)|(doanh thu|dong tien)\b.*\bkhac hoa don|thay doi vi gi)\b/, 'phan_tich_chenh_lech'],
+  // 16/10/2026 (Chủ đề E, FinTechathon): dự báo dòng tiền có cảnh báo và ghép phương án tài trợ. Trước đây "dự báo" bị
+  // trả "chưa làm" và "vay vốn" không có đường nào. Đứng trước các luật dòng tiền/báo cáo vì cùng chữ "dòng tiền", "doanh thu".
+  [/\b(du bao|du doan|canh bao dong tien|thieu hut|se thieu tien|het tien|co du tien|du tien de)\b/, 'du_bao_dong_tien'],
+  [/\b(vay von|co nen vay|nen vay|can vay|vay ngan hang|von luu dong|han muc (tin dung|von)|bao thanh toan|ung von|tai tro|dieu kien vay|vay (duoc )?bao nhieu)\b/, 'phuong_an_tai_tro'],
   [/\b(tra soat|chuyen nham|chuyen sai|chuyen trung)\b/, 'giay_to_tra_soat'],
   [/\b(giai trinh|cong van giai trinh)\b/, 'giay_to_giai_trinh'],
   [/\b(huy to khai|nop nham|nop trung|to khai nop nham|khai nham)\b/, 'giay_to_huy_to_khai'],
@@ -96,7 +100,6 @@ const CHUA_LAM_DUOC: ReadonlyArray<readonly [RegExp, string, string[]]> = [
   [/\b(phai tra|no nha cung cap|tra nha cung cap|no ncc)\b/, 'chua_co_cong_no_phai_tra', ['hoa_don_qua_han']],
   [/\b(ton kho|hang ton|kiem kho)\b/, 'chua_co_ton_kho', []],
   [/\b(khau hao)\b/, 'chua_co_khau_hao', []],
-  [/\b(du bao|du doan dong tien)\b/, 'chua_co_du_bao', ['dong_tien', 'bao_cao_tai_chinh']],
   [/\b(bang luong|tinh luong|tra luong bao nhieu)\b/, 'chua_co_luong', []],
 ];
 
@@ -187,7 +190,8 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
     if (i >= 0) khop.splice(i, 1);
   }
   if (TIEN_VAO_KHONG_PHAI_DOANH_THU.test(s)) {
-    for (const g of ['bao_cao_tai_chinh', 'ket_noi_ngan_hang', 'dong_tien']) { const i = khop.indexOf(g); if (i >= 0) khop.splice(i, 1); }
+    // "khoản vay có tính doanh thu không" là hỏi phân loại tiền vào, không phải hỏi có nên vay không.
+    for (const g of ['bao_cao_tai_chinh', 'ket_noi_ngan_hang', 'dong_tien', 'phuong_an_tai_tro']) { const i = khop.indexOf(g); if (i >= 0) khop.splice(i, 1); }
     if (!khop.includes('tien_vao_khong_phai_doanh_thu')) khop.unshift('tien_vao_khong_phai_doanh_thu');
   }
   if (GIUP_NGUOI_NHA.test(s) && !khop.includes('giup_nguoi_nha')) khop.unshift('giup_nguoi_nha');

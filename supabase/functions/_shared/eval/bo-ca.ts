@@ -251,7 +251,10 @@ export const BO_CA: CaEval[] = [
   ca('ke_toan', 'Công nợ phải trả nhà cung cấp còn bao nhiêu?', ['chua_co_cong_no_phai_tra'], { khong_duoc: [/qua han/] }),
   ca('ke_toan', 'Tồn kho cuối quý của tôi là bao nhiêu?', ['chua_co_ton_kho']),
   ca('ke_toan', 'Khấu hao máy pha cà phê 60 triệu tính thế nào?', ['chua_co_khau_hao']),
-  ca('chu_doanh_nghiep', 'Dự báo dòng tiền 3 tháng tới giúp tôi', ['chua_co_du_bao']),
+  // 16/10/2026: dự báo dòng tiền (có cảnh báo) và ghép phương án tài trợ đã có — không còn nằm trong "chưa làm".
+  ca('chu_doanh_nghiep', 'Dự báo dòng tiền 3 tháng tới giúp tôi', ['du_bao_dong_tien']),
+  ca('chu_doanh_nghiep', 'Tôi có nên vay vốn lưu động không, vay được bao nhiêu?', ['phuong_an_tai_tro']),
+  ca('ho_kinh_doanh', 'Khoản vay ngân hàng có tính vào doanh thu không?', ['tien_vao_khong_phai_doanh_thu']),
 
   // Bẫy.
   // Câu nguy hiểm nhất: người đang bị gọi CHƯA chuyển gì, nên quét sao kê sẽ ra
