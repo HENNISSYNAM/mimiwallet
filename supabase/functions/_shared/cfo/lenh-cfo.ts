@@ -270,6 +270,20 @@ export interface AgentCfo { id: string; ten: string; trang_thai: string }
  * Agent câu lệnh nói tới: tên agent (không dấu, không phân biệt hoa thường) xuất hiện trong câu. Tên dài
  * thắng tên ngắn ("Agent quảng cáo Tết" thắng "Agent quảng cáo"). Chỉ có một agent đang dùng thì là nó.
  */
+/**
+ * Vị trí tên trong câu, chỉ tính khi đứng thành CỤM TỪ riêng: agent tên "hi" không được khớp vào giữa chữ "chi"
+ * hay "this" (gặp thật trên cửa hàng demo 16/10/2026). Tên chữ Hán thì không có ranh giới từ, so thẳng.
+ */
+function viTriTen(s: string, ten: string): number {
+  if (!ten) return -1;
+  if (/[一-鿿]/.test(ten)) return s.indexOf(ten);
+  const chu = (c: string | undefined) => !!c && /[a-z0-9]/.test(c);
+  for (let i = s.indexOf(ten); i >= 0; i = s.indexOf(ten, i + 1)) {
+    if (!chu(s[i - 1]) && !chu(s[i + ten.length])) return i;
+  }
+  return -1;
+}
+
 export function chonAgent(cau: string, ds: AgentCfo[]): { agent: AgentCfo | null; cau_con_lai: string; mo_ho: AgentCfo[] } {
   const dang = ds.filter((a) => a.trang_thai !== 'thu_hoi');
   const s = boDau(cau);
@@ -277,12 +291,15 @@ export function chonAgent(cau: string, ds: AgentCfo[]): { agent: AgentCfo | null
     .map((a) => {
       const ten = boDau(a.ten).trim();
       const bo = ten.replace(/^(agent|tac tu|bot)\s+/, '');
-      const thay = s.includes(ten) ? ten : bo.length >= 3 && s.includes(bo) ? bo : null;
+      const thay = viTriTen(s, ten) >= 0 ? ten : bo.length >= 3 && viTriTen(s, bo) >= 0 ? bo : null;
       return thay ? { a, thay } : null;
     })
     .filter((x): x is { a: AgentCfo; thay: string } => !!x)
     .sort((x, y) => y.thay.length - x.thay.length);
-  if (khop.length) return { agent: khop[0].a, cau_con_lai: s.replace(khop[0].thay, ' '), mo_ho: [] };
+  if (khop.length) {
+    const i = viTriTen(s, khop[0].thay);
+    return { agent: khop[0].a, cau_con_lai: `${s.slice(0, i)} ${s.slice(i + khop[0].thay.length)}`, mo_ho: [] };
+  }
   if (dang.length === 1) return { agent: dang[0], cau_con_lai: s, mo_ho: [] };
   return { agent: null, cau_con_lai: s, mo_ho: dang };
 }

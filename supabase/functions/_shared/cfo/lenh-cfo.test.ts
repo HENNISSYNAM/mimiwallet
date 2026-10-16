@@ -137,6 +137,12 @@ describe('chọn agent và định tuyến', () => {
     expect(c.agent?.id).toBe('a1');
     expect(c.cau_con_lai).not.toContain('quang cao');
   });
+  it('tên ngắn không khớp vào giữa chữ khác (agent "hi" và chữ "chỉ")', () => {
+    const c = chonAgent('chỉ được chi cho quảng cáo, mỗi lần tối đa 2 triệu', [{ id: 'h', ten: 'hi', trang_thai: 'hoat_dong' }]);
+    expect(c.agent?.id).toBe('h');
+    expect(c.cau_con_lai).toContain('chi duoc chi cho quang cao');
+    expect(chonAgent('agent hi: at most 2 million per payment', [{ id: 'h', ten: 'hi', trang_thai: 'hoat_dong' }, ...ds]).agent?.id).toBe('h');
+  });
   it('nhiều agent mà không nói tên thì hỏi lại', () => {
     expect(chonAgent('mỗi lần tối đa 2 triệu', ds).agent).toBeNull();
   });
