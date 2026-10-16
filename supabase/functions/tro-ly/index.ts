@@ -385,10 +385,11 @@ async function docDuLieu(
   companyId: string,
   can: Set<NguonCan>,
   moc: ReturnType<typeof mocThoiGian>,
-  tuyChon: { soThangAi?: number; cauHoi?: string; hanhTrinh?: DuLieu["hanhTrinh"] } = {},
+  tuyChon: { soThangAi?: number; cauHoi?: string; hanhTrinh?: DuLieu["hanhTrinh"]; vaiTro?: VaiTro } = {},
 ): Promise<DuLieu> {
   const d = duLieuTrong(moc.homNay, moc.ky);
   d.cauHoi = tuyChon.cauHoi;
+  d.vaiTro = tuyChon.vaiTro;
   d.hanhTrinh = tuyChon.hanhTrinh ?? null;
   const laDemo = await congTyLaDemo(db, companyId);
   const tuLichSu = [congNgay(moc.homNay, -NGAY_LICH_SU), moc.ky.tu].sort()[0];
@@ -455,7 +456,7 @@ async function docDuLieu(
     }));
   }
   if (can.has("yeu_cau")) {
-    const COT_YC = "id, tac_tu_id, so_tien, ten_nguoi_nhan, muc_dich, trang_thai, created_at, so_tien_thuc_chi, ly_do";
+    const COT_YC = "id, tac_tu_id, so_tien, ten_nguoi_nhan, muc_dich, trang_thai, created_at, so_tien_thuc_chi, ly_do, nhom_chi, ngan_hang_bin, so_tai_khoan";
     viec.push(Promise.all([
       docTrang(
         (a, b, c) => db.from("yeu_cau_chi").select(COT_YC, dem(c))
@@ -471,7 +472,8 @@ async function docDuLieu(
         "yêu cầu chờ duyệt", 1000,
       ),
       db.from("tac_tu").select("id, ten, trang_thai").eq("company_id", companyId),
-      db.from("chinh_sach_chi").select("tac_tu_id, han_muc_thang").eq("company_id", companyId),
+      // Đủ cột: lệnh CFO bằng lời dựng lại toàn bộ chính sách khi lưu, thiếu cột là lặng lẽ xoá cột đó.
+      db.from("chinh_sach_chi").select("*").eq("company_id", companyId),
     ]).then(([yc, cho, tt, cs]) => {
       const m = new Map<string, Row>();
       for (const y of [...yc.dong, ...cho.dong]) m.set(y.id, y);
@@ -923,7 +925,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         if (thieu.length || !dl) {
           // Đọc lại đủ các nguồn đã cần từ trước cộng nguồn mới: gọn hơn ghép hai lần đọc.
           thieu.forEach((n) => nguonDaDoc.add(n));
-          dl = docDuLieu(db, company.id, new Set(nguonDaDoc), moc, { cauHoi: cau, hanhTrinh });
+          dl = docDuLieu(db, company.id, new Set(nguonDaDoc), moc, { cauHoi: cau, hanhTrinh, vaiTro });
         }
         const d = await (dl as Promise<DuLieu>);
         // P0-002: mỗi kết quả mang độ đầy đủ của đúng các nguồn nó đã dùng.

@@ -255,6 +255,9 @@ export const BO_CA: CaEval[] = [
   ca('chu_doanh_nghiep', 'Dự báo dòng tiền 3 tháng tới giúp tôi', ['du_bao_dong_tien']),
   ca('chu_doanh_nghiep', 'Tôi có nên vay vốn lưu động không, vay được bao nhiêu?', ['phuong_an_tai_tro']),
   ca('ho_kinh_doanh', 'Khoản vay ngân hàng có tính vào doanh thu không?', ['tien_vao_khong_phai_doanh_thu']),
+  // Lệnh CFO bằng lời: phân quyền cho agent và cho người là một việc trọn vẹn, không kéo bảng tình hình agent.
+  ca('chu_doanh_nghiep', 'Agent quảng cáo mỗi lần tối đa 2 triệu, trên 1 triệu phải hỏi tôi, chỉ giờ hành chính', ['lenh_cfo']),
+  ca('chu_doanh_nghiep', 'Cho kế toán soạn tờ khai nhưng không được duyệt chi', ['lenh_cfo']),
 
   // Bẫy.
   // Câu nguy hiểm nhất: người đang bị gọi CHƯA chuyển gì, nên quét sao kê sẽ ra

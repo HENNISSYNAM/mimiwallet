@@ -146,6 +146,12 @@ export async function thucHienDeXuat(dx: DeXuat, g: BoGoi, tc: { daXacMinh?: boo
       const tl = kq.tai_lieu as { tieu_de?: string } | undefined;
       return `Đã lưu "${tl?.tieu_de ?? 'tài liệu'}" vào Tài liệu & Chứng từ.`;
     }
+    case 'luu_chinh_sach_agent': {
+      // Thân lệnh do máy chủ dựng đủ mọi trường (lenh-cfo.ts → thanLuuChinhSach); giao diện không sửa con số nào.
+      const than = JSON.parse(String(t.chinh_sach ?? '{}')) as Record<string, unknown>;
+      await g.goiTacTu('luu_chinh_sach', than);
+      return 'Đã lưu chính sách chi mới. Nhật ký agent ghi lại trước và sau.';
+    }
     case 'mo_trang':
       return '';
   }

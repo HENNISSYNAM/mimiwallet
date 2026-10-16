@@ -214,6 +214,17 @@ async function xuLyChu(db: Db, userId: string, companyId: string, vaiTro: VaiTro
         else return loi("HAN_MUC_NGUOI_NHAN", "Trần mỗi người nhận là số nguyên đồng lớn hơn 0, hoặc để trống nếu không giới hạn.", 400);
       }
 
+      /*
+       * Lệnh CFO bằng lời dựng đề xuất từ chính sách lúc hỏi. Có `ky_vong_cap_nhat` thì chỉ lưu khi chính sách
+       * vẫn đúng bản đó — ai vừa sửa ở màn khác thì từ chối, không lặng lẽ ghi đè (hai người cùng chỉnh trần).
+       */
+      if (typeof body.ky_vong_cap_nhat === "string" || body.ky_vong_cap_nhat === null) {
+        const { data: hienTai } = await db.from("chinh_sach_chi").select("updated_at").eq("tac_tu_id", tt.id).maybeSingle();
+        const nay = hienTai?.updated_at ?? null;
+        const khop = body.ky_vong_cap_nhat === null ? nay === null : nay !== null && new Date(nay).getTime() === new Date(String(body.ky_vong_cap_nhat)).getTime();
+        if (!khop) return loi("DA_DOI", "Chính sách chi của agent này vừa được sửa ở nơi khác. Hỏi lại MIMI để xem bản mới rồi mới áp dụng.", 409);
+      }
+
       const truoc = await docChinhSach(db, tt.id);
       const { error } = await db.from("chinh_sach_chi").upsert({
         tac_tu_id: tt.id,

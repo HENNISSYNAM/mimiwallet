@@ -8,6 +8,7 @@
 import type { NhomNangLuc } from './kieu.ts';
 import { canTraLuat } from '../luat/nguon-luat.ts';
 import { nhanHanhTrinh } from '../hanh-trinh/dong-co.ts';
+import { laLenhPhanQuyenNguoi } from '../cfo/lenh-cfo.ts';
 
 export const boDau = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
@@ -134,6 +135,21 @@ const HOI_THONG_TIN_THU_TUC = /\b(thu tuc gi|the nao|ra sao|lam sao|ho so gom|ho
 
 export const SO_NANG_LUC_TOI_DA = 3;
 
+/*
+ * Lệnh CFO bằng lời: có nói tới agent VÀ có động từ đặt luật (hoặc một số tiền kèm kỳ), hoặc giao việc cho một
+ * người kèm quyền. "Agent đã dùng bao nhiêu hạn mức" chỉ là hỏi tình hình — không có động từ đặt luật nên không vào.
+ */
+const CO_AGENT = /\b(agent|agents|tac tu|bot)\b/;
+const DONG_TU_LUAT = /\b(dat|doi|cho phep|chi duoc|toi da|khong qua|phai hoi|hoi toi|phai duyet|can duyet|nang|giam|tang|ha tran|tam dung|ngung|gio hanh chinh|ngoai gio|set|change|limit|cap|at most|ask me|approval|pause|freeze|only|office hours|outside hours)\b/;
+const SO_TIEN_KY = /\b\d+([.,]\d+)?\s*(trieu|tr|m|k|nghin|million|thousand)\b.*\b(moi|mot|per|a|each)\s+(lan|khoan|ngay|thang|payment|day|month|transaction)\b/;
+const LENH_CFO_ZH = /(智能体|代理)[\s\S]*(上限|单笔|每笔|每天|每日|每月|审批|工作时间|暂停|冻结|只能)/;
+
+export function laLenhCfo(cau: string, s = ` ${boDau(cau).replace(/[^a-z0-9]+/g, ' ').trim()} `): boolean {
+  if (LENH_CFO_ZH.test(cau)) return true;
+  if (laLenhPhanQuyenNguoi(cau) && !CO_AGENT.test(s)) return true;
+  return CO_AGENT.test(s) && (DONG_TU_LUAT.test(s) || SO_TIEN_KY.test(` ${boDau(cau)} `));
+}
+
 export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   const s = ` ${boDau(cau).replace(/[^a-z0-9]+/g, ' ').trim()} `;
   if (KHAI_SAI_TRON_THUE.test(s)) return ['tu_choi_khai_sai'];
@@ -143,6 +159,9 @@ export function nhanYDinh(cau: string, phamVi?: NhomNangLuc | null): string[] {
   if (HOI_TIEN_DO_HO_SO.test(s)) return ['trang_thai_ho_so'];
   if (NHO_KY.test(s)) return ['ky_van_ban'];
   if (NHO_CHUYEN_TIEN.test(s)) return ['khong_chuyen_tien'];
+  // Ra lệnh phân quyền ("agent quảng cáo mỗi lần tối đa 2 triệu…", "cho kế toán soạn tờ khai") là một việc trọn vẹn:
+  // không kéo theo bảng tình hình agent hay danh sách chờ duyệt.
+  if (laLenhCfo(cau, s)) return ['lenh_cfo'];
   const khop: string[] = [];
   for (const [re, id] of LUAT) if (re.test(s) && !khop.includes(id)) khop.push(id);
   // Báo cáo tháng và phân tích thay đổi đã gồm dòng tiền và doanh thu: bỏ bảng chung trùng lặp.

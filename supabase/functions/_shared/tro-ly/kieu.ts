@@ -66,6 +66,8 @@ export const LOAI_DE_XUAT = [
   'luu_chung_tu_quet',
   // Prompt 4: lưu kết quả thành tài liệu trong thư viện. Máy chủ dựng lại từ dữ liệu mới lúc bấm.
   'tao_tai_lieu',
+  // Lệnh CFO bằng lời: lưu chính sách chi mới cho một agent qua tac-tu → luu_chinh_sach (đủ trường, có kiểm sửa chồng).
+  'luu_chinh_sach_agent',
   'mo_trang',
 ] as const;
 

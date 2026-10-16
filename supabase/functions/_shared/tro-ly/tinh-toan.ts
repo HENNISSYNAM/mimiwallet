@@ -35,6 +35,11 @@ import { MAU_HANH_TRINH, type LoaiHanhTrinh } from '../hanh-trinh/mau.ts';
 import { phanTichChenhLech } from '../phan-tich/chenh-lech.ts';
 import type { YeuCauNop } from '../thuc-thi/luu.ts';
 import { kiemNangLuc } from '../thuc-thi/nang-luc.ts';
+import { duocLam, type VaiTro } from '../quyen/vai-tro.ts';
+import {
+  apThayDoi, chayThu, chinhSachTuDong, chonAgent, docLenh, goiYVaiTro, laLenhPhanQuyenNguoi, nhanNgonNgu,
+  tenVaiTro, tenViec, thanLuuChinhSach, tuCfo, VIEC_HIEN, type NgonNgu,
+} from '../cfo/lenh-cfo.ts';
 
 // ── Dữ liệu đầu vào ──────────────────────────────────────────────────────────
 
@@ -75,9 +80,14 @@ export interface YeuCauTL {
   created_at: string;
   so_tien_thuc_chi: number | null;
   ly_do: { ma?: string; cau?: string }[] | null;
+  /** Cho chạy thử chính sách (lệnh CFO). Không có ở dữ liệu test cũ. */
+  nhom_chi?: string | null;
+  ngan_hang_bin?: string | null;
+  so_tai_khoan?: string | null;
 }
 export interface TacTuTL { id: string; ten: string; trang_thai: string }
-export interface ChinhSachTL { tac_tu_id: string; han_muc_thang: number }
+/** Dòng `chinh_sach_chi`. Ngoài hai cột đầu, máy chủ gửi đủ cột (`select *`) cho lệnh CFO bằng lời. */
+export interface ChinhSachTL { tac_tu_id: string; han_muc_thang: number; updated_at?: string | null; [cot: string]: unknown }
 export interface KetNoiNganHangTL {
   id: string;
   bank_name: string | null;
@@ -172,6 +182,8 @@ export interface DuLieu {
   lichThue?: LichCongTy | null;
   /** Câu hỏi nguyên văn — cho năng lực cần đọc một con số trong câu ("nêu 3 việc"). */
   cauHoi?: string;
+  /** Vai trò người hỏi — lệnh CFO nói rõ ai áp dụng được khi người hỏi không đủ quyền. */
+  vaiTro?: VaiTro;
   /**
    * Prompt 4: hành trình câu hỏi này vừa mở (hoặc mở tiếp). `luu: false` khi vai trò không được mở
    * việc — khi đó chỉ là bản xem trước tính từ mẫu, không có id.
@@ -1853,6 +1865,229 @@ export function baoCaoThang(d: DuLieu): KetQuaNangLuc {
   };
 }
 
+// ── Lệnh CFO bằng lời: phân quyền cho agent và cho người ─────────────────────
+
+const LOI_CFO = {
+  vi: {
+    tieuDe: (a: string) => `Chính sách chi của ${a}: trước → sau`,
+    cot: ['Mục', 'Trước', 'Sau', 'Loại'], siet: 'Siết', noi: 'Nới', giu: 'Giữ nguyên',
+    chayThu: (n: number) => `Chạy thử chính sách mới trên ${n} khoản agent đã xin (62 ngày qua)`,
+    tu: 'Tự duyệt', cho: 'Chờ người duyệt', tc: 'Bị từ chối', doi: 'Khoản đổi kết quả',
+    chuaChon: (ds: string) => `Câu lệnh chưa nói agent nào. Công ty có: ${ds}. Nói lại kèm tên agent.`,
+    chuaCo: 'Công ty chưa có agent nào. Tạo agent ở Kiểm soát agent trước, rồi giao việc cho nó bằng lời.',
+    khongHieu: 'MIMI chưa đọc ra thay đổi nào. Ví dụ: "Agent quảng cáo mỗi lần tối đa 2 triệu, 20 triệu một tháng, trên 1 triệu phải hỏi tôi, chỉ giờ hành chính."',
+    chuaHieu: (x: string) => `Chưa hiểu phần "${x}" — nói rõ mỗi lần, mỗi ngày hay mỗi tháng. MIMI không đoán con số.`,
+    lanRanh: {
+      chuyen_tien: 'Không lệnh nào cho agent tự chuyển tiền: MIMI không giữ và không chuyển tiền của khách (Nghị định 52/2024/NĐ-CP). Duyệt chỉ cho phép trả; người trả vẫn là người, bằng app ngân hàng.',
+      nop_thue: 'Không lệnh nào cho agent tự nộp thuế: MIMI soạn tờ khai, người có quyền tự nộp.',
+      ky_so: 'Không lệnh nào cho agent ký số: chữ ký số là của người, không giao cho máy.',
+      bo_tran: 'Không bỏ hẳn trần chi được: mỗi agent luôn có trần mỗi khoản, mỗi ngày, mỗi tháng do chủ đặt. Nói con số trần mới thay vì "không giới hạn".',
+    },
+    gioHanhChinh: 'MIMI hiểu "giờ hành chính" là 08:00–17:30, thứ Hai–thứ Sáu. Nói giờ khác nếu công ty làm khác.',
+    khongQuyen: (v: string, duoc: string) => `Bạn (${v}) xem được bản đề xuất này nhưng không áp dụng được. Người áp dụng được: ${duoc}.`,
+    tom: (a: string, n: number, s: number, o: number) => `MIMI đọc lệnh thành ${n} thay đổi cho ${a} (${s} siết, ${o} nới). Chưa có gì được lưu — bấm Áp dụng để lưu qua cổng kiểm soát agent; nhật ký ghi lại trước và sau.`,
+    tomKhongDoi: (a: string) => `Chính sách của ${a} đã đúng như lệnh — không có gì để đổi.`,
+    tomLoi: (a: string) => `MIMI đọc được lệnh cho ${a} nhưng lệnh tự mâu thuẫn, nên chưa có nút áp dụng.`,
+    nutAp: (a: string) => `Áp dụng chính sách mới cho ${a}`,
+    moTaAp: (a: string, ds: string) => `Lưu chính sách chi mới cho ${a}: ${ds}. Máy chủ kiểm quyền và kiểm lại khuôn số trước khi lưu; nếu ai đó vừa sửa chính sách này, lệnh bị từ chối để bạn xem lại.`,
+    nutDung: (a: string) => `Tạm dừng ${a}`,
+    moTaDung: (a: string) => `Tạm dừng ${a}: mọi yêu cầu chi mới bị từ chối cho tới khi bạn bật lại. Khoản đã duyệt không bị huỷ.`,
+    batLaiTay: 'Bật lại agent làm ở Kiểm soát agent — MIMI không bật lại một agent bằng một câu nói.',
+    nguoiTieuDe: 'Vai trò ít quyền nhất đủ cho việc này', nguoiCot: ['Việc', 'Vai trò gợi ý làm được?'],
+    co: 'Được', khong: 'Không',
+    nguoiTom: (v: string) => `Vai trò hợp nhất là "${v}": làm được đúng những việc bạn nêu, không hơn. Đổi vai trò ở Cài đặt → Thành viên; MIMI không tự đổi quyền của người.`,
+    nguoiMauThuan: 'Không vai trò nào vừa làm được các việc bạn muốn vừa tránh được việc bạn cấm (ví dụ: duyệt chi mà không xem được số liệu). Bỏ bớt một điều kiện.',
+    nguoiCao: 'Vai trò này chỉ chủ doanh nghiệp trao được.',
+    moThanhVien: 'Mở Cài đặt → Thành viên',
+  },
+  en: {
+    tieuDe: (a: string) => `${a} spending policy: before → after`,
+    cot: ['Item', 'Before', 'After', 'Change'], siet: 'Tighter', noi: 'Looser', giu: 'Unchanged',
+    chayThu: (n: number) => `Replay of the new policy on ${n} requests this agent made (last 62 days)`,
+    tu: 'Auto-approved', cho: 'Waiting for approver', tc: 'Refused', doi: 'Requests whose outcome changes',
+    chuaChon: (ds: string) => `The command does not name an agent. This company has: ${ds}. Say it again with the agent's name.`,
+    chuaCo: 'This company has no agent yet. Create one under Agent control first, then delegate to it in plain language.',
+    khongHieu: 'MIMI could not read a change. Example: "Ads agent: at most 2 million per payment, 20 million a month, ask me above 1 million, office hours only."',
+    chuaHieu: (x: string) => `Did not understand "${x}" — say per payment, per day or per month. MIMI does not guess amounts.`,
+    lanRanh: {
+      chuyen_tien: 'No command lets an agent move money: MIMI never holds or transfers customer funds (Decree 52/2024). Approval only authorises a payment; a person still pays from the banking app.',
+      nop_thue: 'No command lets an agent file taxes: MIMI drafts forms, an authorised person submits them.',
+      ky_so: 'No command lets an agent sign: a digital signature belongs to a person, not a machine.',
+      bo_tran: 'Caps cannot be removed: every agent always has owner-set per-payment, daily and monthly caps. Give the new cap instead of "unlimited".',
+    },
+    gioHanhChinh: 'MIMI reads "office hours" as 08:00–17:30, Monday–Friday. Say other hours if your business differs.',
+    khongQuyen: (v: string, duoc: string) => `You (${v}) can see this proposal but cannot apply it. Who can: ${duoc}.`,
+    tom: (a: string, n: number, s: number, o: number) => `MIMI read the command as ${n} changes to ${a} (${s} tighter, ${o} looser). Nothing is saved yet — press Apply to save through agent control; the log keeps before and after.`,
+    tomKhongDoi: (a: string) => `${a} already has this policy — nothing to change.`,
+    tomLoi: (a: string) => `MIMI read a command for ${a}, but it contradicts itself, so there is no Apply button yet.`,
+    nutAp: (a: string) => `Apply new policy to ${a}`,
+    moTaAp: (a: string, ds: string) => `Save the new spending policy for ${a}: ${ds}. The server checks your role and the number rules again before saving; if someone changed this policy in the meantime, the save is refused so you can review.`,
+    nutDung: (a: string) => `Pause ${a}`,
+    moTaDung: (a: string) => `Pause ${a}: every new spending request is refused until you resume it. Approved payments are not cancelled.`,
+    batLaiTay: 'Resuming an agent is done in Agent control — MIMI does not switch an agent back on from one sentence.',
+    nguoiTieuDe: 'Least-privilege role for this job', nguoiCot: ['Task', 'Suggested role can do it?'],
+    co: 'Yes', khong: 'No',
+    nguoiTom: (v: string) => `The best fit is "${v}": it does exactly what you listed, nothing more. Change roles under Settings → Members; MIMI never changes a person's access by itself.`,
+    nguoiMauThuan: 'No role can do everything you want while avoiding what you forbade (for example: approve payments without seeing the numbers). Drop one condition.',
+    nguoiCao: 'Only the owner can grant this role.',
+    moThanhVien: 'Open Settings → Members',
+  },
+  zh: {
+    tieuDe: (a: string) => `${a} 的支出规则：调整前 → 调整后`,
+    cot: ['项目', '调整前', '调整后', '变化'], siet: '收紧', noi: '放宽', giu: '不变',
+    chayThu: (n: number) => `用新规则回放该智能体过去 62 天的 ${n} 笔申请`,
+    tu: '自动批准', cho: '等待审批', tc: '被拒绝', doi: '结果发生变化的申请',
+    chuaChon: (ds: string) => `指令没有指明是哪个智能体。本公司有：${ds}。请带上智能体名称再说一次。`,
+    chuaCo: '本公司还没有智能体。请先在“智能体管控”中创建，再用自然语言给它授权。',
+    khongHieu: 'MIMI 没有读出任何调整。示例：“广告智能体单笔最多 200 万，每月 2000 万，超过 100 万要问我，只在工作时间。”',
+    chuaHieu: (x: string) => `没看懂“${x}”——请说明是单笔、每天还是每月。MIMI 不猜金额。`,
+    lanRanh: {
+      chuyen_tien: '任何指令都不能让智能体自行转账：MIMI 不保管、不转移客户资金（第 52/2024 号法令）。审批只是授权付款，付款仍由人在银行 App 完成。',
+      nop_thue: '任何指令都不能让智能体自行报税：MIMI 只起草，由有权限的人提交。',
+      ky_so: '任何指令都不能让智能体签名：数字签名属于人，不交给机器。',
+      bo_tran: '不能取消上限：每个智能体始终有企业主设定的单笔、每日、每月上限。请给出新的上限，而不是“无限”。',
+    },
+    gioHanhChinh: 'MIMI 将“工作时间”理解为周一至周五 08:00–17:30。如有不同请说明。',
+    khongQuyen: (v: string, duoc: string) => `您（${v}）可以查看此提案，但无权应用。可应用的角色：${duoc}。`,
+    tom: (a: string, n: number, s: number, o: number) => `MIMI 将指令解读为对 ${a} 的 ${n} 项调整（收紧 ${s} 项，放宽 ${o} 项）。尚未保存——点击“应用”后经智能体管控保存，日志记录调整前后。`,
+    tomKhongDoi: (a: string) => `${a} 的规则已与指令一致，无需调整。`,
+    tomLoi: (a: string) => `MIMI 读到了针对 ${a} 的指令，但指令自相矛盾，因此暂不提供“应用”按钮。`,
+    nutAp: (a: string) => `将新规则应用于 ${a}`,
+    moTaAp: (a: string, ds: string) => `为 ${a} 保存新的支出规则：${ds}。服务器保存前会再次检查角色和数值规则；如果期间有人修改过此规则，保存会被拒绝以便您复核。`,
+    nutDung: (a: string) => `暂停 ${a}`,
+    moTaDung: (a: string) => `暂停 ${a}：在您恢复之前，所有新的付款申请都会被拒绝。已批准的付款不会被取消。`,
+    batLaiTay: '恢复智能体请在“智能体管控”中操作——MIMI 不会凭一句话重新启用智能体。',
+    nguoiTieuDe: '满足此工作的最小权限角色', nguoiCot: ['事项', '建议角色能否执行'],
+    co: '能', khong: '不能',
+    nguoiTom: (v: string) => `最合适的角色是“${v}”：恰好能做您列出的事，不多给。请在“设置 → 成员”中调整角色；MIMI 不会自行更改任何人的权限。`,
+    nguoiMauThuan: '没有任何角色能同时满足您要的事项并避开您禁止的事项（例如：审批付款却看不到数据）。请去掉一个条件。',
+    nguoiCao: '只有企业主可以授予此角色。',
+    moThanhVien: '打开 设置 → 成员',
+  },
+} as const;
+
+function phanQuyenNguoi(cau: string, n: NgonNgu, vai: VaiTro | undefined): KetQuaNangLuc {
+  const t = LOI_CFO[n];
+  const g = goiYVaiTro(cau);
+  const the: The[] = [];
+  let tom: string;
+  if (g.vai_tro) {
+    const v = g.vai_tro;
+    tom = t.nguoiTom(tenVaiTro(v, n));
+    the.push({
+      loai: 'bang', tieu_de: t.nguoiTieuDe,
+      cot: [{ nhan: t.nguoiCot[0], don_vi: 'chu' }, { nhan: t.nguoiCot[1], don_vi: 'chu' }],
+      dong: VIEC_HIEN.map((h) => [
+        `${tenViec(h, n)}${g.can.includes(h) ? ' ✓' : g.cam.includes(h) ? ' ✗' : ''}`,
+        duocLam(v, h) ? t.co : t.khong,
+      ]),
+    });
+    if ((v === 'quan_tri' || v === 'chu_so_huu') && vai !== 'chu_so_huu') the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: t.nguoiCao });
+  } else {
+    tom = t.nguoiMauThuan;
+  }
+  return kq('lenh_cfo', 'tro_ly', tom, {
+    the,
+    de_xuat: [{ khoa: 'mo_trang:thanh_vien', loai: 'mo_trang', nhan: t.moThanhVien, mo_ta: t.moThanhVien, tham_so: { duong_dan: '/dashboard/settings' } }],
+  });
+}
+
+/**
+ * "Agent quảng cáo mỗi lần tối đa 2 triệu…" → bảng trước/sau, chạy thử trên các khoản đã xin, nút áp dụng.
+ * Câu nói về người ("cho kế toán soạn tờ khai nhưng không duyệt chi") → vai trò ít quyền nhất đủ việc.
+ * Không ghi gì: nút áp dụng đi qua `tac-tu → luu_chinh_sach` như màn Chính sách chi.
+ */
+export function lenhCfo(d: DuLieu): KetQuaNangLuc {
+  const cau = d.cauHoi ?? '';
+  let n = nhanNgonNgu(cau);
+  let t = LOI_CFO[n];
+  if (laLenhPhanQuyenNguoi(cau) && !/agent|tac tu|tác tử|智能体|代理/i.test(cau)) return phanQuyenNguoi(cau, n, d.vaiTro);
+
+  const ds = d.tacTu.filter((a) => a.trang_thai !== 'thu_hoi');
+  if (!ds.length) return kq('lenh_cfo', 'tro_ly', t.chuaCo, { nguon: [N.yeuCau], trang: [T.agent] });
+  const chon = chonAgent(cau, d.tacTu);
+  if (!chon.agent) return kq('lenh_cfo', 'tro_ly', t.chuaChon(chon.mo_ho.map((a) => a.ten).join(', ')), { nguon: [N.yeuCau], trang: [T.agent] });
+  const agent = chon.agent;
+  // Tên agent có dấu tiếng Việt không quyết ngôn ngữ của lệnh ("Agent quảng cáo: at most 2 million…" là tiếng Anh).
+  const i0 = cau.toLowerCase().indexOf(agent.ten.toLowerCase());
+  n = nhanNgonNgu(i0 >= 0 ? cau.slice(0, i0) + cau.slice(i0 + agent.ten.length) : cau);
+  t = LOI_CFO[n];
+  const tu = tuCfo(n);
+  const lenh = docLenh(chon.cau_con_lai);
+  const the: The[] = [];
+  for (const l of lenh.lan_ranh) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: t.lanRanh[l] });
+  for (const x of lenh.chua_hieu) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: t.chuaHieu(x) });
+
+  if (!lenh.thay_doi.length) {
+    return kq('lenh_cfo', 'tro_ly', lenh.lan_ranh.length ? t.lanRanh[lenh.lan_ranh[0]] : t.khongHieu, { the, nguon: [N.yeuCau], trang: [T.agent, T.chinhSach] });
+  }
+
+  const dong = d.chinhSach.find((c) => c.tac_tu_id === agent.id) ?? null;
+  const cu = chinhSachTuDong(dong as Record<string, unknown> | null);
+  const ap = apThayDoi(cu, lenh.thay_doi, n, agent.trang_thai);
+  if (lenh.thay_doi.some((x) => x.loai === 'khung_gio' && x.gia_dinh === 'gio_hanh_chinh')) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: t.gioHanhChinh });
+  if (lenh.thay_doi.some((x) => x.loai === 'bat_lai')) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: t.batLaiTay });
+
+  const ten = (h: string) => (h === 'siet' ? t.siet : h === 'noi' ? t.noi : t.giu);
+  const doi = ap.dong.filter((x) => x.huong !== 'giu');
+  if (ap.dong.length) {
+    the.unshift({
+      loai: 'bang', tieu_de: t.tieuDe(agent.ten),
+      cot: t.cot.map((c) => ({ nhan: c, don_vi: 'chu' as const })),
+      dong: ap.dong.map((x) => [x.muc, x.truoc, x.sau, ten(x.huong)]),
+    });
+  }
+  for (const c of ap.canh_bao) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: c });
+  for (const l of ap.loi) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: l });
+
+  const doiChinhSach = doi.filter((x) => x.muc !== tu.trangThai);
+  const lich = d.yeuCau.filter((y) => y.tac_tu_id === agent.id);
+  if (doiChinhSach.length && lich.length && !ap.loi.length) {
+    const ct = chayThu(lich.map((y) => ({
+      id: y.id, so_tien: y.so_tien, created_at: y.created_at, nhom_chi: y.nhom_chi ?? null,
+      ngan_hang_bin: y.ngan_hang_bin ?? null, so_tai_khoan: y.so_tai_khoan ?? null, muc_dich: y.muc_dich,
+    })), cu, ap.moi);
+    const bc = bangChung('yeu_cau_chi', lich);
+    const muc = (nhan: string, a: number, b: number) => ({
+      nhan, gia_tri: `${a} → ${b}`, don_vi: 'chu' as const, bang_chung: bc, ...(a !== b ? { can_chu_y: true } : {}),
+    });
+    the.push({
+      loai: 'so_lieu', tieu_de: t.chayThu(ct.so_khoan),
+      muc: [
+        muc(t.tu, ct.truoc.tu_dong_duyet, ct.sau.tu_dong_duyet),
+        muc(t.cho, ct.truoc.cho_duyet, ct.sau.cho_duyet),
+        muc(t.tc, ct.truoc.tu_choi, ct.sau.tu_choi),
+        { nhan: t.doi, gia_tri: ct.doi.length, don_vi: 'so', bang_chung: ct.doi.length ? bangChung('yeu_cau_chi', ct.doi) : bc },
+      ],
+    });
+  }
+
+  if (d.vaiTro && !duocLam(d.vaiTro, 'quan_ly_agent')) {
+    the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: t.khongQuyen(tenVaiTro(d.vaiTro, n), [tenVaiTro('chu_so_huu', n), tenVaiTro('quan_tri', n)].join(', ')) });
+  }
+  const de_xuat: DeXuat[] = [];
+  if (!ap.loi.length && doiChinhSach.length) {
+    const tomDoi = doiChinhSach.map((x) => `${x.muc}: ${x.truoc} → ${x.sau}`).join('; ');
+    de_xuat.push({
+      khoa: `luu_chinh_sach:${agent.id}`,
+      loai: 'luu_chinh_sach_agent',
+      nhan: t.nutAp(agent.ten),
+      mo_ta: [t.moTaAp(agent.ten, tomDoi), ...ap.canh_bao].join(' '),
+      tham_so: {
+        tac_tu_id: agent.id,
+        chinh_sach: JSON.stringify(thanLuuChinhSach(agent.id, ap.moi, typeof dong?.updated_at === 'string' ? dong.updated_at : null)),
+      },
+    });
+  }
+  if (ap.tam_dung) {
+    de_xuat.push({ khoa: `tam_dung:${agent.id}`, loai: 'tam_dung_agent', nhan: t.nutDung(agent.ten), mo_ta: t.moTaDung(agent.ten), tham_so: { tac_tu_id: agent.id } });
+  }
+  const tom = ap.loi.length ? t.tomLoi(agent.ten)
+    : !doi.length ? t.tomKhongDoi(agent.ten)
+      : t.tom(agent.ten, doi.length, doi.filter((x) => x.huong === 'siet').length, doi.filter((x) => x.huong === 'noi').length);
+  return kq('lenh_cfo', 'tro_ly', tom, { the, de_xuat, nguon: [N.yeuCau], trang: [T.agent, T.chinhSach] });
+}
+
 export interface NangLuc {
   nhom: NhomNangLuc;
   /** Mô tả cho mô hình chọn công cụ — viết như dặn một nhân viên kế toán. */
@@ -2370,6 +2605,7 @@ export const NANG_LUC: Record<string, NangLuc> = {
   hoa_don_qua_han: { nhom: 'chung_tu', can: ['hoa_don_ban'], chay: hoaDonQuaHan, mo_ta: 'Hoá đơn bán ra quá hạn thanh toán và chưa tới hạn (công nợ phải thu).' },
   dong_tien: { nhom: 'ngan_hang', can: ['giao_dich'], chay: dongTien, mo_ta: 'Tiền vào, tiền ra và chênh lệch theo tháng, 6 tháng gần nhất.' },
   du_bao_dong_tien: { nhom: 'ngan_hang', can: ['giao_dich', 'hoa_don_ban'], chay: duBaoDongTienNL, mo_ta: 'Dự báo dòng tiền RÒNG ba tháng tới theo ba kịch bản (tốt, cơ sở, xấu) từ các tháng đã khép sổ, kèm cảnh báo: chênh lệch âm liên tiếp, kịch bản xấu thiếu hụt, công nợ quá hạn lớn, phụ thuộc một khách, tiền vào biến động, tháng này chi vượt thường lệ. Tiền vào đã loại khoản nghi là vay/góp vốn/người nhà. Dưới ba tháng sao kê thì nói thẳng là chưa dự báo được.' },
+  lenh_cfo: { nhom: 'tro_ly', can: ['yeu_cau'], chay: lenhCfo, mo_ta: 'Chủ doanh nghiệp RA LỆNH phân quyền bằng lời, như nói với giám đốc tài chính: đặt hoặc đổi trần chi mỗi khoản / mỗi ngày / mỗi tháng của một agent, ngưỡng phải duyệt, khung giờ được chi, nhóm chi được phép, người nhận lạ, tạm dừng agent; hoặc hỏi nên cho một người (kế toán, người nhà) vai trò nào. Trả bảng trước/sau, chạy thử trên các khoản đã xin, và nút áp dụng chờ chủ bấm. Từ chối mọi lệnh cho agent tự chuyển tiền, nộp thuế, ký số hoặc bỏ trần.' },
   phuong_an_tai_tro: { nhom: 'bao_cao', can: ['giao_dich', 'hoa_don_ban'], chay: phuongAnTaiTroNL, mo_ta: 'Người dùng hỏi có nên vay vốn, vay kiểu nào, vay được khoảng bao nhiêu, cần gì để đủ điều kiện: ghép các phương án (thu công nợ trước, hạn mức vốn lưu động, ứng vốn theo hoá đơn, vay thiết bị) với sức trả nợ tính trên dòng tiền kinh doanh đã làm sạch và nói điều còn thiếu. MIMI không cho vay và không hứa duyệt; số là ước tính theo giả định ghi rõ.' },
   doi_soat: { nhom: 'ngan_hang', can: ['giao_dich', 'hoa_don_ban', 'ket_noi_ngan_hang'], chay: doiSoat, mo_ta: 'Tiền về 30 ngày qua có thể khớp với hoá đơn bán ra nào đang chờ thu.' },
   ket_noi_ngan_hang: { nhom: 'ngan_hang', can: ['ket_noi_ngan_hang'], chay: ketNoiNganHang, mo_ta: 'Các kết nối ngân hàng, tài khoản nào cần đăng nhập lại; đề xuất đồng bộ sao kê.' },
