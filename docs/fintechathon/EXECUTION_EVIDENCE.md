@@ -41,5 +41,6 @@ Asked in English: "Set my agent: at most 2 million per payment, 20 million a mon
 - Forecast and financing tests: `supabase/functions/_shared/tai-chinh/tai-chinh.test.ts` (refuses under 3 closed months; capacity unchanged by a 500 million VND loan; routing of "does a loan count as revenue" to revenue separation).
 
 ## Known rough edges seen in this run
-- The assistant's prose followed the English question, but the result cards (titles, column headers, alert sentences) are still in Vietnamese; localisation of the cards is not finished.
-- Two answers show literal `**` where the model's markdown was not rendered.
+- The delegation cards (Run 5) follow the language of the command (Vietnamese, English, Chinese). The forecast and financing cards (Runs 1–2), the step line above each answer and the group label are still in Vietnamese; their localisation is not finished.
+- Literal `**` from the model's markdown appeared in Runs 1–2; fixed in commit e157f4b (bold is rendered, the voice reader skips the asterisks).
+- Without a language model, the rule-based router only reads Latin script, so Chinese commands are recognised only when the model is available.
