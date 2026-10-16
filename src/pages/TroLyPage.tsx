@@ -68,6 +68,7 @@ import thueLogo from '@/assets/logos/tax-authority.png';
 import { TRANG_CHI_TIET } from '@/lib/trangChiTiet';
 import { daHoanKhaoSatTrongPhien, KhaoSatThue } from '@/components/onboarding/KhaoSatThue';
 import type { HoSoThue } from '@/lib/heLuat';
+import { boDauSao, ChuDam } from '@/lib/chuDam';
 
 /** Việc đã có thẻ riêng ở màn đầu thì không lặp lại thành chip. */
 const VIEC_DA_CO_THE = new Set(['cho_duyet', 'ngan_sach_ai']);
@@ -151,7 +152,7 @@ export default function TroLyPage() {
   const docTraLoi = useCallback(async (luotId: number, van: string) => {
     if (dangDoc === luotId) { dungDoc(); setDangDoc(null); return; }
     setDangDoc(luotId);
-    const kq = await docGiong(van);
+    const kq = await docGiong(boDauSao(van));
     setDangDoc((d) => (d === luotId ? null : d));
     if (kq === 'khong_co_giong_viet') toast.error('Máy này chưa có giọng đọc tiếng Việt. Trên Windows: Cài đặt → Thời gian & ngôn ngữ → Giọng nói → thêm Tiếng Việt.');
     if (kq === 'khong_ho_tro') toast.error('Trình duyệt này chưa đọc được thành tiếng.');
@@ -877,7 +878,7 @@ function TraLoiMimi({ luotId, traLoi, dangDoc, onDoc, viec, onChon }: {
         </ol>
       )}
       <div className="flex items-start gap-2">
-        <p className="flex-1 whitespace-pre-line text-[15px] leading-relaxed text-foreground">{traLoi.cau}</p>
+        <p className="flex-1 whitespace-pre-line text-[15px] leading-relaxed text-foreground"><ChuDam van={traLoi.cau} /></p>
         <button
           type="button" onClick={onDoc} aria-pressed={dangDoc}
           aria-label={dangDoc ? 'Dừng đọc' : 'Đọc to câu trả lời'} title={dangDoc ? 'Dừng đọc' : 'Đọc to câu trả lời'}
