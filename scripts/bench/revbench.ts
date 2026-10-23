@@ -18,6 +18,7 @@ import { join } from 'node:path';
 import { chayMimi, HAT_GIU_LAI, HAT_PHAT_TRIEN, NAM, sinhCa, TAI_KHOAN, type CaDoiKhang, type Row } from '../../supabase/functions/_shared/doanh-thu/sinh-ca-doi-khang.ts';
 import { tinhTienVao, type GiaoDichTinh } from '../../supabase/functions/_shared/doanh-thu/so-lieu.ts';
 import { goiYTienVao } from '../../supabase/functions/_shared/phan-loai/tien-vao.ts';
+import { gopLuatVaAi } from '../../supabase/functions/_shared/phan-loai/de-xuat-ai.ts';
 import { NGUONG_DOANH_THU, NGUONG_THU_NHAP } from '../../supabase/functions/_shared/luat/he-luat.ts';
 
 type QD = 'r' | 'n' | 'u';
@@ -173,6 +174,7 @@ async function cham() {
       llm[ten] ??= {};
       for (const [ca, m] of Object.entries(j)) llm[ten][ca] = Object.fromEntries(Object.entries(m).map(([id, v]) => [id, (['r', 'n', 'u'].includes(v) ? v : 'u') as QD]));
       he[ten] ??= moi(`LLM · ${ten} (hỏi một lần, không ngữ cảnh)`);
+      he[`AI+${ten}`] ??= moi(`MIMI + AI chỉ đề xuất (${ten}) — AI không bao giờ tự trừ`);
     }
   }
   const casDaCham: Record<string, number> = {};
@@ -188,6 +190,8 @@ async function cham() {
       if (!qd) continue; // mô hình chưa làm ca này: không chấm, không tính vào mẫu số
       casDaCham[ten] = (casDaCham[ten] ?? 0) + 1;
       cong(he[ten], ca, qd);
+      const luat = await mimi(ca);
+      cong(he[`AI+${ten}`], ca, Object.fromEntries(Object.entries(luat).map(([id, v]) => [id, gopLuatVaAi(v, qd[id])])));
     }
   }
 

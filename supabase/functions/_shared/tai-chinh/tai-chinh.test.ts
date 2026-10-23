@@ -185,6 +185,23 @@ describe('năng lực trong trợ lý', () => {
     const r = NANG_LUC.du_bao_dong_tien.chay(moi({ giaoDich: sinh(), hoaDonBan: [qua] }));
     expect(r.de_xuat[0]).toMatchObject({ loai: 'mo_trang', tham_so: { duong_dan: '/dashboard/invoices?filter=overdue' } });
   });
+
+  describe('thẻ dự báo và tài trợ theo ngôn ngữ câu hỏi', () => {
+    const coDau = /[ạảãàáâậầấẩẫăắằặẳẵđêềếệểễôồốộổỗơờớợởỡưừứựửữ]/i;
+    it('hỏi tiếng Anh: tiêu đề, cột, cảnh báo và tên phương án đều tiếng Anh', () => {
+      const qua: HoaDonBanTL = { id: 'h1', invoice_number: 'HD1', client_name: 'KHACH X', total: 60e6, issued_date: '2026-08-01', due_date: '2026-08-30', status: 'pending' };
+      for (const id of ['du_bao_dong_tien', 'phuong_an_tai_tro'] as const) {
+        const r = NANG_LUC[id].chay(moi({ giaoDich: sinh(), hoaDonBan: [qua], cauHoi: 'Forecast my cash flow and financing options for the next 3 months' }));
+        const chu = JSON.stringify({ t: r.tom_tat, the: r.the.map((t) => ({ ...t, bang_chung: undefined, muc: 'muc' in t ? t.muc.map((m) => ({ ...m, bang_chung: undefined })) : undefined })) });
+        expect(chu.replace(/KHACH X|HD1|₫/g, '')).not.toMatch(coDau);
+      }
+    });
+    it('hỏi tiếng Trung: dùng chữ Trung; không có câu hỏi: vẫn tiếng Việt như cũ', () => {
+      const zh = NANG_LUC.phuong_an_tai_tro.chay(moi({ giaoDich: sinh(), cauHoi: '我的公司可以申请多少流动资金贷款？' }));
+      expect(zh.tom_tat).toContain('MIMI 不放贷');
+      expect(NANG_LUC.phuong_an_tai_tro.chay(moi({ giaoDich: sinh() })).tom_tat).toContain('không cho vay');
+    });
+  });
 });
 
 describe('định tuyến câu hỏi', () => {

@@ -68,6 +68,8 @@ export const LOAI_DE_XUAT = [
   'tao_tai_lieu',
   // Lệnh CFO bằng lời: lưu chính sách chi mới cho một agent qua tac-tu → luu_chinh_sach (đủ trường, có kiểm sửa chồng).
   'luu_chinh_sach_agent',
+  // Lớp AI chỉ đề xuất: chủ hộ xác nhận một khoản tiền vào AI chỉ ra là không phải doanh thu (to-khai → xac_nhan_tien_vao).
+  'xac_nhan_tien_vao',
   'mo_trang',
 ] as const;
 
@@ -212,6 +214,19 @@ export interface ThueManDau {
   thieu: { truong: string; cau: string }[];
 }
 
+/**
+ * Sức khoẻ tài chính — mức sẵn sàng vay vốn tính từ dòng tiền đã làm sạch (`tai-chinh/diem-san-sang.ts`).
+ * KHÔNG phải điểm tín dụng: chỉ chủ doanh nghiệp xem, không gửi cho ai, trọng số công khai và chưa kiểm định.
+ */
+export interface SucKhoeTaiChinh {
+  co_diem: boolean;
+  so_thang: number;
+  diem?: number;
+  muc?: 'vung' | 'kha' | 'can_cai_thien';
+  ly_do?: string;
+  yeu_to?: { khoa: 'lich_su' | 'dong_tien_rong' | 'on_dinh' | 'thu_no' | 'tap_trung' | 'minh_bach'; diem: number; toi_da: number; gia_tri: string; goi_y: string; so: number | null }[];
+}
+
 export interface BoiCanh {
   cong_ty: string | null;
   viec: ViecHomNay[];
@@ -229,6 +244,8 @@ export interface BoiCanh {
   /** MIMI-P0-002: độ đầy đủ của các nguồn màn đầu đã đọc. Bản máy chủ cũ không gửi. */
   do_day?: DoDayNguon[];
   do_day_chung?: TrangThaiDoDay;
+  /** Sức khoẻ tài chính (bản máy chủ cũ không gửi). */
+  suc_khoe?: SucKhoeTaiChinh;
 }
 
 export interface KetQuaQuet {

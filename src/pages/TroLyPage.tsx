@@ -69,6 +69,8 @@ import { TRANG_CHI_TIET } from '@/lib/trangChiTiet';
 import { daHoanKhaoSatTrongPhien, KhaoSatThue } from '@/components/onboarding/KhaoSatThue';
 import type { HoSoThue } from '@/lib/heLuat';
 import { boDauSao, ChuDam } from '@/lib/chuDam';
+import { goiToKhai } from '@/lib/goiToKhai';
+import { SucKhoeTaiChinh } from '@/components/tro-ly/SucKhoeTaiChinh';
 
 /** Việc đã có thẻ riêng ở màn đầu thì không lặp lại thành chip. */
 const VIEC_DA_CO_THE = new Set(['cho_duyet', 'ngan_sach_ai']);
@@ -313,7 +315,7 @@ export default function TroLyPage() {
       const xn = await goiTroLy('xac_nhan', { de_xuat_khoa: dx.khoa, hoi_thoai_id: hoiThoaiId });
       quyetDinhId = typeof xn.quyet_dinh_id === 'number' ? xn.quyet_dinh_id : null;
       const dxThat = (xn.de_xuat ?? dx) as DeXuat;
-      const cau = await thucHienDeXuat(dxThat, { goiTacTu, goiChiPhiAi, goiTroLy, dongBoSaoKe }, { daXacMinh });
+      const cau = await thucHienDeXuat(dxThat, { goiTacTu, goiChiPhiAi, goiTroLy, dongBoSaoKe, goiToKhai }, { daXacMinh });
       setViec((m) => ({ ...m, [k]: { trangThai: 'xong', cau } }));
       if (quyetDinhId) void goiTroLy('ket_qua_quyet_dinh', { quyet_dinh_id: quyetDinhId, ok: true, cau }).catch(() => {});
       // Thẻ ở màn đầu sẽ tải lại và khoản vừa làm biến khỏi thẻ — nên báo kết quả bằng toast.
@@ -562,6 +564,7 @@ export default function TroLyPage() {
               </Popover>
 
               <span className="ml-auto" />
+              <SucKhoeTaiChinh sk={boiCanh?.suc_khoe} onHoi={(cau) => void hoi(cau)} />
               <button
                 type="button"
                 onClick={() => setMoTaiApp(true)}

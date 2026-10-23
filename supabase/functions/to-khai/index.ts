@@ -45,6 +45,7 @@ import { TEN_NHOM_NGANH } from "../_shared/luat/he-luat.ts";
 import { docBangLuong } from "../_shared/thue-tncn/khau-tru.ts";
 import { MAU_05, soanToKhai05 } from "../_shared/thue-tncn/to-khai-05.ts";
 import { xuLyHoSoNghiaVu } from "../_shared/luat/ho-so-nghia-vu.ts";
+import { biGioiHan } from "../_shared/da-co-so/pham-vi.ts";
 
 /** Điều giao diện cần để khỏi hỏi lại những gì mã số thuế đã trả lời. */
 const congTyChoGiaoDien = (c: HoSoCongTy) => ({
@@ -416,6 +417,12 @@ const dienCongBat = (congTyId: string) => coBatDienCong(Deno.env.get("DIEN_CONG_
 async function xuLy(db: Db, userId: string, company: { id: string; name: string | null }, vaiTro: VaiTro, hanhDong: string, body: Row): Promise<Response> {
   const can = QUYEN_HANH_DONG[hanhDong];
   if (can) kiemQuyen(vaiTro, can, cauTuChoi(vaiTro, can));
+  // 23/10/2026: tờ khai và doanh thu là của cả đơn vị khai thuế. Kế toán phụ trách một cơ sở không xem, không sửa ở đây.
+  const tv = await db.from("thanh_vien_cong_ty").select("co_so_id").eq("company_id", company.id).eq("user_id", userId).maybeSingle();
+  if (tv.error && !/co_so_id/.test(tv.error.message)) throw new Error(tv.error.message);
+  if (biGioiHan(vaiTro, (tv.data?.co_so_id as string | null) ?? null)) {
+    return loi("KHONG_DU_QUYEN", "Bạn phụ trách một cơ sở; tờ khai thuế là của cả công ty. Nhờ chủ doanh nghiệp hoặc quản trị mở quyền toàn công ty.", 403);
+  }
   switch (hanhDong) {
     case "ho_so": {
       // Cài đặt gọi hành động này ngay sau khi lưu mã số thuế: tra lần đầu ở đây.
@@ -586,18 +593,22 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const vao = ((gds ?? []) as Row[]).filter((g) => chieuTien(g) === "vao");
       if (vao.length !== x.transaction_ids.length) return loi("KHONG_THAY", "Có khoản không thuộc công ty này, hoặc không phải tiền vào.", 404);
 
-      const { data: cu } = await db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect").in("transaction_id", x.transaction_ids);
+      const { data: cu } = await db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect").eq("company_id", company.id).in("transaction_id", x.transaction_ids);
       const cuTheoGd = new Map(((cu ?? []) as Row[]).map((r) => [r.transaction_id, r]));
       const bayGio = new Date().toISOString();
       const nhom = x.transaction_ids.length > 1 ? crypto.randomUUID() : null;
       const hieuLuc = anhHuong(x.loai);
+      const goiYAi = typeof body.goi_y_ai === "string" && body.goi_y_ai.trim() ? `AI: ${body.goi_y_ai.trim().slice(0, 160)}` : null;
 
       const { error: loiGhi } = await db.from("revenue_classifications").upsert(vao.map((g) => {
         const goiY = goiYPhanLoai(g as { merchant_name: string | null; counter_account_name: string | null; payment_reference: string | null });
         return {
           company_id: company.id, transaction_id: g.id,
-          suggested_type: goiY?.loai ?? null, suggestion_source: goiY ? "pattern" : "human",
-          reason_text: goiY?.ly_do ?? null,
+          // Lớp AI chỉ đề xuất (16/10/2026): luật không có gợi ý mà trợ lý gửi kèm lý do của AI thì ghi nguồn "model".
+          // Đây chỉ là nhãn nguồn; loại được ghi vẫn là loại CHỦ HỘ chọn.
+          suggested_type: goiY?.loai ?? (goiYAi ? x.loai : null),
+          suggestion_source: goiY ? "pattern" : goiYAi ? "model" : "human",
+          reason_text: goiY?.ly_do ?? goiYAi,
           confirmed_type: x.loai, revenue_effect: hieuLuc, requires_review: x.loai === "unknown",
           ghi_chu: x.ghi_chu, confirmed_by: userId, confirmed_role: vaiTro, confirmed_at: bayGio, updated_at: bayGio,
         };
@@ -646,7 +657,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       if (!ls?.length) return loi("KHONG_THAY", "Không có gì để hoàn tác.", 404);
 
       const { data: hienTai } = await db.from("revenue_classifications").select("transaction_id, confirmed_type, revenue_effect")
-        .in("transaction_id", ls.map((s: Row) => s.transaction_id));
+        .eq("company_id", company.id).in("transaction_id", ls.map((s: Row) => s.transaction_id));
       const htTheoGd = new Map(((hienTai ?? []) as Row[]).map((r) => [r.transaction_id, r]));
       const bayGio = new Date().toISOString();
       for (const k of keHoachHoanTac(ls as never)) {

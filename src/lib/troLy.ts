@@ -92,6 +92,8 @@ export interface BoGoi {
   goiChiPhiAi: GoiHam;
   goiTroLy: GoiHam;
   dongBoSaoKe: () => Promise<Record<string, unknown>>;
+  /** Cổng to-khai — xác nhận phân loại tiền vào. Không truyền thì đề xuất đó báo lỗi rõ. */
+  goiToKhai?: GoiHam;
 }
 
 /** Việc không đổi dữ liệu nào (mở trang) thì không cần hộp xác nhận. */
@@ -151,6 +153,11 @@ export async function thucHienDeXuat(dx: DeXuat, g: BoGoi, tc: { daXacMinh?: boo
       const than = JSON.parse(String(t.chinh_sach ?? '{}')) as Record<string, unknown>;
       await g.goiTacTu('luu_chinh_sach', than);
       return 'Đã lưu chính sách chi mới. Nhật ký agent ghi lại trước và sau.';
+    }
+    case 'xac_nhan_tien_vao': {
+      if (!g.goiToKhai) throw new Error('Chưa xác nhận được ở màn này. Mở Tổng quan → Tiền vào để xác nhận.');
+      await g.goiToKhai('xac_nhan_tien_vao', { transaction_ids: [t.transaction_id], loai: t.loai, goi_y_ai: t.ly_do });
+      return 'Đã ghi: khoản này không tính vào doanh thu. Hoàn tác được ở Tổng quan → Tiền vào.';
     }
     case 'mo_trang':
       return '';

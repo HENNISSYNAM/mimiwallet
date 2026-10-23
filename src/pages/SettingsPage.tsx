@@ -14,6 +14,7 @@ import { ChuaBanTrongApp, SubscriptionPayment } from '@/components/settings/Subs
 import { laTrongApp } from '@/lib/chayTrongApp';
 import { ThongTinDoanhNghiep } from '@/components/settings/ThongTinDoanhNghiep';
 import { ThanhVienCongTy } from '@/components/settings/ThanhVienCongTy';
+import { CoSoCongTy } from '@/components/settings/CoSoCongTy';
 import { DangXuatMoiThietBi } from '@/components/settings/DangXuatMoiThietBi';
 import { CaiDatThongBao } from '@/components/thong-bao/CaiDatThongBao';
 import { DEMO_EMAIL } from '@/lib/env';
@@ -413,6 +414,11 @@ export default function SettingsPage() {
       <SettingsSection icon={UsersRound} title="Thành viên">
         <ThanhVienCongTy />
       </SettingsSection>
+
+      {/* Đa cơ sở (22/10/2026): mỗi cơ sở một tài khoản, một kế toán — MIMI tách và hợp nhất dòng tiền. */}
+      <div id="co-so"><SettingsSection icon={Building} title="Cơ sở và chi nhánh">
+        <CoSoCongTy />
+      </SettingsSection></div>
 
       <SettingsSection icon={CreditCard} title={t('settings.subscription')}>
         <SubscriptionSection />

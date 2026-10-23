@@ -23,8 +23,12 @@ import type { CanhBao, MaDauHieu } from '../bat-thuong/phat-hien.ts';
 import { duongDanGiayTo, MO_TA_GIAY_TO, type LoaiGiayTo } from '../giay-to/loai.ts';
 import { ghepTienVe, type Cap } from '../doi-soat/cham-diem.ts';
 import { goiYTienVao, TEN_LOAI_TIEN_VAO, type GoiYTienVao, type LoaiTienVao } from '../phan-loai/tien-vao.ts';
+import { laChiRaKhongPhaiDoanhThu, type DeXuatAi } from '../phan-loai/de-xuat-ai.ts';
 import { duBaoDongTien, SO_THANG_DU_BAO, SO_THANG_TOI_THIEU, type KhachTop, type ThangTien } from '../tai-chinh/du-bao.ts';
 import { ghepPhuongAn, GIA_DINH, type HoSoTaiTro } from '../tai-chinh/phuong-an.ts';
+import { THE_TC, type NgonTC } from '../tai-chinh/loi.ts';
+import { cauHoiVatLechChieu, chuanTaiKhoan, hopNhat, type CoSo, type VatCoSo } from '../da-co-so/hop-nhat.ts';
+import { LOI_KHONG_PHAI_DIEM_TIN_DUNG, TEN_MUC as TEN_MUC_SUC_KHOE, TEN_YEU_TO, tinhDiemSanSang, type KetQuaSanSang } from '../tai-chinh/diem-san-sang.ts';
 import { mocKeTiep, TEN_LOAI_MOC, type MocThue } from '../luat/lich-thue.ts';
 import type { LichCongTy } from '../luat/doc-lich-thue.ts';
 import { mucNhacTuLich, NGAY_BAO_TRUOC } from '../thong-bao/muc-nhac.ts';
@@ -52,6 +56,9 @@ export interface GiaoDichTL {
   category: string | null;
   counter_account_name: string | null;
   payment_reference: string | null;
+  /** Đa cơ sở: tài khoản của công ty nhận/chi và tài khoản đối ứng. Dữ liệu test cũ không có. */
+  account_number?: string | null;
+  counter_account_number?: string | null;
 }
 export interface HoaDonVaoTL {
   id: string;
@@ -63,6 +70,8 @@ export interface HoaDonVaoTL {
 }
 export interface HoaDonBanTL {
   id: string;
+  /** Đa cơ sở: hoá đơn thuộc cơ sở nào (null = chưa gán). */
+  co_so_id?: string | null;
   invoice_number: string;
   client_name: string;
   total: number;
@@ -146,6 +155,17 @@ export interface DuLieu {
    */
   phanLoaiTienVao?: Record<string, 'include' | 'exclude' | 'pending'>;
   /**
+   * Lớp AI chỉ đề xuất cho tiền vào bộ luật không nhận ra (`phan-loai/de-xuat-ai.ts`), theo id giao dịch.
+   * undefined = chưa hỏi (không có mô hình hoặc hết xu); {} = đã hỏi, không có gì.
+   */
+  deXuatAiTienVao?: Record<string, DeXuatAi>;
+  /** Đa cơ sở: cơ sở đã khai báo, tài khoản (chỉ chữ số) → id cơ sở, VAT đầu ra/vào theo cơ sở. undefined = chưa đọc. */
+  coSo?: CoSo[];
+  taiKhoanCoSo?: Record<string, string>;
+  vatCoSo?: VatCoSo[];
+  /** Người hỏi là kế toán của MỘT cơ sở: dữ liệu đã lọc về cơ sở này (da-co-so/pham-vi.ts). */
+  phamViCoSo?: { co_so_id: string; ten: string | null } | null;
+  /**
    * Hồ sơ thuế + doanh thu đã chọn nguồn, cho hệ luật thuế. `canCuDaKiem` là kết quả đối chiếu
    * từng câu trích với kho Công báo (`luat/doc-can-cu.ts`) — năng lực chỉ nói "đã đối chiếu"
    * khi kho xác nhận.
@@ -199,7 +219,7 @@ export interface DuLieu {
 
 export type NguonCan =
   | 'giao_dich' | 'hoa_don_vao' | 'hoa_don_ban' | 'yeu_cau' | 'ket_noi_ngan_hang'
-  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong' | 'thu_tuc' | 'lich_thue' | 'hanh_trinh' | 'thuc_thi';
+  | 'chi_phi_ai' | 'token_ai' | 'bang_gia' | 'chung_tu_quet' | 'thue' | 'kho_luat' | 'bat_thuong' | 'thu_tuc' | 'lich_thue' | 'hanh_trinh' | 'thuc_thi' | 'co_so';
 
 export function duLieuTrong(homNay: string, kyChungTu: DuLieu['kyChungTu']): DuLieu {
   return {
@@ -711,62 +731,174 @@ export function dongTienLamSach(d: DuLieu) {
 
 const TEN_KICH_BAN = { tot: 'Tốt', co_so: 'Cơ sở', xau: 'Xấu' } as const;
 
+/** Ngôn ngữ thẻ kết quả theo câu hỏi; không có câu hỏi (màn đầu, test) thì tiếng Việt. */
+const ngonCauHoi = (d: DuLieu): NgonTC => (d.cauHoi ? nhanNgonNgu(d.cauHoi) : 'vi');
+
 export function duBaoDongTienNL(d: DuLieu): KetQuaNangLuc {
+  const n = ngonCauHoi(d);
+  const X = THE_TC[n];
   if (!d.giaoDich.length) return kq('du_bao_dong_tien', 'ngan_hang', CHUA_CO_SAO_KE, { nguon: [N.giaoDich], trang: [T.ketNoi] });
   const ls = dongTienLamSach(d);
   const dsQuaHan = d.hoaDonBan.filter((h) => laQuaHan(h, d.homNay));
   const congNo = dsQuaHan.reduce((s, h) => s + Number(h.total), 0);
-  const kqDb = duBaoDongTien(ls.thang, { homNay: d.homNay, congNoQuaHan: congNo, khachTop: ls.khachTop });
+  const kqDb = duBaoDongTien(ls.thang, { homNay: d.homNay, congNoQuaHan: congNo, khachTop: ls.khachTop, ngon: n });
   const nguon = [N.giaoDich, N.hoaDonBan];
   const trang = [T.giaoDich, T.hoaDon];
 
   if (!kqDb.du_du_lieu) {
-    return kq('du_bao_dong_tien', 'ngan_hang', `Chưa dự báo được dòng tiền. ${kqDb.ly_do_thieu}`, {
-      the: [{ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'MIMI không điền số cho đủ: dự báo trên một hai tháng chỉ là đoán. Tải thêm sao kê hoặc kết nối ngân hàng để có tối thiểu ba tháng.' }],
+    return kq('du_bao_dong_tien', 'ngan_hang', X.chuaDuBao(kqDb.ly_do_thieu ?? ''), {
+      the: [{ loai: 'ghi_chu', muc_do: 'thong_tin', cau: X.khongDien }],
       nguon, trang: [T.ketNoi],
     });
   }
 
   const [tot, coSo, xau] = kqDb.kich_ban;
   const cau = [
-    `Dự báo dòng tiền RÒNG ${SO_THANG_DU_BAO} tháng tới (từ ${kqDb.so_thang_da_khep} tháng đã khép sổ): cơ sở ${vnd(coSo.tong_rong)}, tốt ${vnd(tot.tong_rong)}, xấu ${vnd(xau.tong_rong)}.`,
-    kqDb.canh_bao.length ? `Có ${kqDb.canh_bao.length} cảnh báo: ${kqDb.canh_bao.map((c) => c.cau).join(' ')}` : 'Chưa có cảnh báo nào.',
+    X.tomDuBao(SO_THANG_DU_BAO, kqDb.so_thang_da_khep, vnd(coSo.tong_rong), vnd(tot.tong_rong), vnd(xau.tong_rong)),
+    kqDb.canh_bao.length ? X.coCanhBao(kqDb.canh_bao.length, kqDb.canh_bao.map((c) => c.cau).join(' ')) : X.khongCanhBao,
   ].join(' ');
 
   const the: The[] = [
     {
-      loai: 'bang', tieu_de: `Dòng tiền ròng ${SO_THANG_DU_BAO} tháng tới theo ba kịch bản`,
-      cot: [{ nhan: 'Tháng', don_vi: 'chu' }, { nhan: 'Tốt', don_vi: 'vnd' }, { nhan: 'Cơ sở', don_vi: 'vnd' }, { nhan: 'Xấu', don_vi: 'vnd' }],
+      loai: 'bang', tieu_de: X.bangDuBao(SO_THANG_DU_BAO),
+      cot: [{ nhan: X.thang, don_vi: 'chu' }, { nhan: X.tot, don_vi: 'vnd' }, { nhan: X.coSo, don_vi: 'vnd' }, { nhan: X.xau, don_vi: 'vnd' }],
       dong: [
         ...coSo.thang.map((t, i) => [`${t.khoa.slice(5, 7)}/${t.khoa.slice(0, 4)}`, tot.thang[i].rong, t.rong, xau.thang[i].rong] as O[]),
-        ['Cộng dồn', tot.tong_rong, coSo.tong_rong, xau.tong_rong] as O[],
+        [X.congDon, tot.tong_rong, coSo.tong_rong, xau.tong_rong] as O[],
       ],
       bang_chung: bangChung('giao_dich', d.giaoDich),
     },
     {
-      loai: 'so_lieu', tieu_de: 'Cơ sở của dự báo', muc: [
-        { nhan: 'Tiền vào kinh doanh (trung vị mỗi tháng)', gia_tri: kqDb.trung_vi!.vao, don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
-        { nhan: 'Tiền ra (trung vị mỗi tháng)', gia_tri: kqDb.trung_vi!.ra, don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
-        { nhan: 'Đã loại khỏi tiền vào vì nghi không phải doanh thu', gia_tri: ls.tienBiLoai, don_vi: 'vnd', ghi_chu: `${ls.biLoai.length} khoản (vay, góp vốn, người nhà, hoàn tiền)`, bang_chung: bangChung('giao_dich', ls.biLoai) },
-        { nhan: 'Công nợ phải thu quá hạn', gia_tri: congNo, don_vi: 'vnd', can_chu_y: congNo > 0, bang_chung: bangChung('hoa_don_ban', dsQuaHan) },
+      loai: 'so_lieu', tieu_de: X.coSoDuBao, muc: [
+        { nhan: X.vaoTv, gia_tri: kqDb.trung_vi!.vao, don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
+        { nhan: X.raTv, gia_tri: kqDb.trung_vi!.ra, don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
+        { nhan: X.daLoai, gia_tri: ls.tienBiLoai, don_vi: 'vnd', ghi_chu: X.daLoaiGhi(ls.biLoai.length), bang_chung: bangChung('giao_dich', ls.biLoai) },
+        { nhan: X.congNoQh, gia_tri: congNo, don_vi: 'vnd', can_chu_y: congNo > 0, bang_chung: bangChung('hoa_don_ban', dsQuaHan) },
       ],
     },
     ...kqDb.canh_bao.map((c): The => ({ loai: 'ghi_chu', muc_do: c.muc_do === 'cao' ? 'can_chu_y' : 'thong_tin', cau: c.cau })),
-    { loai: 'ghi_chu', muc_do: 'thong_tin', cau: `Đây là dự báo dòng tiền ròng, không phải số dư: MIMI chưa có số dư tài khoản. Ba kịch bản lấy từ phân vị của chính các tháng đã có (tốt = tiền vào phân vị 75 và tiền ra phân vị 25; xấu = ngược lại), là khoảng thô để thấy rủi ro, không phải mô hình thống kê. Cần ít nhất ${SO_THANG_TOI_THIEU} tháng đã khép sổ.` },
+    { loai: 'ghi_chu', muc_do: 'thong_tin', cau: X.giaiThich(SO_THANG_TOI_THIEU) },
   ];
   const deXuat: DeXuat[] = congNo > 0
-    ? [{ khoa: 'mo_trang:hoa_don_qua_han', loai: 'mo_trang', nhan: 'Nhắc khách trả', mo_ta: 'Mở danh sách hoá đơn quá hạn để soạn tin nhắc kèm mã VietQR.', tham_so: { duong_dan: '/dashboard/invoices?filter=overdue' } }]
+    ? [{ khoa: 'mo_trang:hoa_don_qua_han', loai: 'mo_trang', nhan: X.nhacKhach, mo_ta: X.nhacKhachMoTa, tham_so: { duong_dan: '/dashboard/invoices?filter=overdue' } }]
     : [];
   return kq('du_bao_dong_tien', 'ngan_hang', cau, { the, de_xuat: deXuat, nguon, trang });
 }
 
+/**
+ * Sức khoẻ tài chính (mức sẵn sàng vay vốn) từ dòng tiền ĐÃ LÀM SẠCH của tối đa 12 tháng đã khép sổ. Không phải điểm
+ * tín dụng — xem `tai-chinh/diem-san-sang.ts`. Cùng dữ liệu với màn đầu (`boi_canh`), không truy vấn thêm.
+ */
+export function sucKhoeTaiChinh(d: DuLieu): KetQuaSanSang {
+  const ls = dongTienLamSach(d);
+  const khoaNay = d.homNay.slice(0, 7);
+  const daKhep = ls.thang.filter((t) => t.khoa < khoaNay).slice(-12);
+  const tu = daKhep[0]?.khoa ?? khoaNay;
+  const pl = d.phanLoaiTienVao ?? {};
+  let tongVao = 0;
+  let nghiChua = 0;
+  for (const t of d.giaoDich) {
+    const k = t.transaction_date.slice(0, 7);
+    if (chieuTien(t) !== 'vao' || k < tu || k >= khoaNay) continue;
+    const tien = doLonTien(t);
+    tongVao += tien;
+    if ((pl[t.id] ?? 'pending') === 'pending' && (t.type === 'loan' || goiYTienVao(t) !== null)) nghiChua += tien;
+  }
+  const congNo = d.hoaDonBan.filter((h) => laQuaHan(h, d.homNay)).reduce((s, h) => s + Number(h.total), 0);
+  return tinhDiemSanSang({
+    thang: daKhep, cong_no_qua_han: congNo, ty_le_khach_lon_nhat: ls.khachTop?.ty_le ?? null,
+    tien_nghi_chua_xac_nhan: nghiChua, tong_tien_vao: tongVao,
+  });
+}
+
+/** "Điểm tín dụng của tôi?", "Hồ sơ có đủ đẹp để vay không?" — trả lời bằng sức khoẻ tài chính, nói rõ không phải điểm tín dụng. */
+function sucKhoeTaiChinhNL(d: DuLieu): KetQuaNangLuc {
+  if (!d.giaoDich.length) return kq('suc_khoe_tai_chinh', 'bao_cao', CHUA_CO_SAO_KE, { nguon: [N.giaoDich], trang: [T.ketNoi] });
+  const r = sucKhoeTaiChinh(d);
+  const ghi = { loai: 'ghi_chu' as const, muc_do: 'thong_tin' as const, cau: LOI_KHONG_PHAI_DIEM_TIN_DUNG };
+  if (!r.co_diem) return kq('suc_khoe_tai_chinh', 'bao_cao', r.ly_do, { the: [ghi], nguon: [N.giaoDich], trang: [T.ketNoi] });
+  const yeuNhat = [...r.yeu_to].sort((a, b) => (a.diem / a.toi_da) - (b.diem / b.toi_da))[0];
+  return kq('suc_khoe_tai_chinh', 'bao_cao',
+    `Sức khoẻ tài chính của bạn: ${r.diem}/100 — ${TEN_MUC_SUC_KHOE[r.muc]}. Tính trên ${r.so_thang} tháng dòng tiền kinh doanh đã làm sạch. Chỗ nên cải thiện trước: ${TEN_YEU_TO[yeuNhat.khoa].toLowerCase()} (${yeuNhat.gia_tri}).`, {
+      the: [
+        {
+          loai: 'bang', tieu_de: `Sức khoẻ tài chính ${r.diem}/100 — từng yếu tố`,
+          cot: [{ nhan: 'Yếu tố', don_vi: 'chu' }, { nhan: 'Điểm', don_vi: 'chu' }, { nhan: 'Đo được', don_vi: 'chu' }, { nhan: 'Cách cải thiện', don_vi: 'chu' }],
+          dong: r.yeu_to.map((y) => [TEN_YEU_TO[y.khoa], `${y.diem}/${y.toi_da}`, y.gia_tri, y.goi_y || '—']),
+          bang_chung: bangChung('giao_dich', d.giaoDich),
+        },
+        ghi,
+      ],
+      nguon: [N.giaoDich, N.hoaDonBan], trang: [T.baoCao],
+    });
+}
+
+/**
+ * ĐA CƠ SỞ (22/10/2026): dòng tiền từng cơ sở, ai đang bù cho ai, số hợp nhất không đếm hai lần, VAT theo đơn vị khai.
+ * Bộ máy ở `da-co-so/hop-nhat.ts`. Chưa khai báo cơ sở mà sao kê có nhiều tài khoản của công ty: chỉ đường khai báo.
+ */
+export function daCoSoNL(d: DuLieu): KetQuaNangLuc {
+  if (!d.giaoDich.length) return kq('da_co_so', 'bao_cao', CHUA_CO_SAO_KE, { nguon: [N.giaoDich], trang: [T.ketNoi] });
+  const TRANG_CO_SO = { nhan: 'Mở Cài đặt → Cơ sở', duong_dan: '/dashboard/settings#co-so' };
+  const tkCty = [...new Set(d.giaoDich.map((t) => chuanTaiKhoan(t.account_number)).filter(Boolean))];
+  if (!d.coSo?.length) {
+    return kq('da_co_so', 'bao_cao',
+      tkCty.length > 1
+        ? `Sao kê của bạn có ${tkCty.length} tài khoản của công ty nhưng chưa khai báo cơ sở. Khai báo từng cơ sở (chi nhánh, cửa hàng, cơ sở đào tạo…) và gán tài khoản cho nó để MIMI tách dòng tiền từng nơi, thấy nơi nào đang bù cho nơi nào, và cộng hợp nhất mà không đếm hai lần tiền chuyển giữa các cơ sở.`
+        : 'Công ty chưa khai báo cơ sở nào. Nếu bạn có nhiều chi nhánh hay cơ sở, mỗi nơi một tài khoản và một kế toán, hãy khai báo để MIMI tách và hợp nhất dòng tiền.',
+      { nguon: [N.giaoDich], trang: [TRANG_CO_SO] });
+  }
+  const dauNam = `${d.homNay.slice(0, 4)}-01-01`;
+  const gd = d.giaoDich.filter((t) => t.transaction_date >= dauNam && chieuTien(t))
+    .map((t) => ({ id: String(t.id), so_tien: chieuTien(t) === 'vao' ? doLonTien(t) : -doLonTien(t), ngay: t.transaction_date, tai_khoan: t.account_number ?? null, tai_khoan_doi_ung: t.counter_account_number ?? null }));
+  const r = hopNhat({ co_so: d.coSo, tai_khoan_co_so: d.taiKhoanCoSo ?? {}, giao_dich: gd, vat: d.vatCoSo });
+  const the: The[] = [
+    {
+      loai: 'so_lieu', tieu_de: `Hợp nhất ${d.coSo.length} cơ sở từ đầu năm ${d.homNay.slice(0, 4)} (đã loại tiền chuyển giữa các cơ sở)`,
+      muc: [
+        { nhan: 'Tiền vào từ bên ngoài', gia_tri: r.hop_nhat.vao, don_vi: 'vnd', bang_chung: bangChung('giao_dich', gd.filter((g) => g.so_tien > 0)) },
+        { nhan: 'Tiền ra bên ngoài', gia_tri: r.hop_nhat.ra, don_vi: 'vnd', bang_chung: bangChung('giao_dich', gd.filter((g) => g.so_tien < 0)) },
+        { nhan: 'Dòng tiền ròng toàn hệ thống', gia_tri: r.hop_nhat.rong, don_vi: 'vnd', can_chu_y: r.hop_nhat.rong < 0, bang_chung: bangChung('giao_dich', gd) },
+        { nhan: 'Tiền chuyển giữa các cơ sở (đã loại)', gia_tri: r.hop_nhat.noi_bo_da_loai, don_vi: 'vnd', bang_chung: bangChung('giao_dich', gd) },
+      ],
+    },
+    {
+      loai: 'bang', tieu_de: 'Từng cơ sở — tự nuôi mình hay đang được bù',
+      cot: [{ nhan: 'Cơ sở', don_vi: 'chu' }, { nhan: 'Vào từ ngoài', don_vi: 'vnd' }, { nhan: 'Ra ngoài', don_vi: 'vnd' }, { nhan: 'Ròng tự thân', don_vi: 'vnd' }, { nhan: 'Nhận từ cơ sở khác', don_vi: 'vnd' }, { nhan: 'Chuyển cho cơ sở khác', don_vi: 'vnd' }],
+      dong: [...r.co_so, ...(r.chua_gan ? [r.chua_gan] : [])].map((s) => [s.ten, s.vao_ngoai, s.ra_ngoai, s.rong_ngoai, s.nhan_noi_bo, s.chuyen_noi_bo]),
+      bang_chung: bangChung('giao_dich', gd),
+    },
+  ];
+  if (r.bu_dap.length) {
+    the.push({ loai: 'bang', tieu_de: 'Ai đang bù cho ai', cot: [{ nhan: 'Từ', don_vi: 'chu' }, { nhan: 'Sang', don_vi: 'chu' }, { nhan: 'Số tiền', don_vi: 'vnd' }, { nhan: 'Số lần', don_vi: 'so' }],
+      dong: r.bu_dap.slice(0, 10).map((b) => [b.tu, b.den, b.so_tien, b.so_lan]) });
+  }
+  if (r.vat.length) {
+    the.push({ loai: 'bang', tieu_de: 'VAT theo đơn vị khai thuế (đầu ra từ hoá đơn bán của từng cơ sở)',
+      cot: [{ nhan: 'Đơn vị khai', don_vi: 'chu' }, { nhan: 'Cơ sở', don_vi: 'chu' }, { nhan: 'Đầu ra', don_vi: 'vnd' }, { nhan: 'Đầu vào', don_vi: 'vnd' }, { nhan: 'Phải nộp (+) / dư (−)', don_vi: 'vnd' }],
+      dong: r.vat.map((v) => [v.don_vi, v.cac_co_so.join(', '), v.dau_ra, v.dau_vao, v.phai_nop]) });
+  }
+  const cauVat = cauHoiVatLechChieu(r.vat);
+  if (cauVat) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: cauVat });
+  if (r.tai_khoan_chua_gan.length) the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: `${r.tai_khoan_chua_gan.length} tài khoản của công ty chưa gán cơ sở (${r.tai_khoan_chua_gan.map((x) => `•••${x.slice(-4)}`).join(', ')}): giao dịch của chúng đứng riêng ở dòng "Chưa gán cơ sở".` });
+  if (r.vat.some((v) => v.dau_vao === null)) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'Đầu vào VAT theo từng cơ sở chưa có: MIMI chưa nhận hoá đơn điện tử mua vào gắn cơ sở. Cột đầu vào để trống, không coi là 0.' });
+
+  const songNho = r.song_nho.length ? ` ${r.song_nho.join(', ')} đang chi nhiều hơn thu từ bên ngoài và được cơ sở khác chuyển tiền bù.` : '';
+  const lon = r.bu_dap[0];
+  return kq('da_co_so', 'bao_cao',
+    `Toàn hệ thống ${d.coSo.length} cơ sở từ đầu năm: vào ${vnd(r.hop_nhat.vao)}, ra ${vnd(r.hop_nhat.ra)}, ròng ${vnd(r.hop_nhat.rong)} — đã loại ${vnd(r.hop_nhat.noi_bo_da_loai)} tiền chuyển qua lại giữa các cơ sở để không đếm hai lần.${songNho}${lon ? ` Dòng bù lớn nhất: ${lon.tu} → ${lon.den} ${vnd(lon.so_tien)} (${lon.so_lan} lần).` : ''}`,
+    { the, nguon: [N.giaoDich, N.hoaDonBan], trang: [TRANG_CO_SO, T.baoCao] });
+}
+
 export function phuongAnTaiTroNL(d: DuLieu): KetQuaNangLuc {
+  const n = ngonCauHoi(d);
+  const X = THE_TC[n];
   if (!d.giaoDich.length) return kq('phuong_an_tai_tro', 'bao_cao', CHUA_CO_SAO_KE, { nguon: [N.giaoDich], trang: [T.ketNoi] });
   const ls = dongTienLamSach(d);
   const khoaNay = d.homNay.slice(0, 7);
   const daKhep = ls.thang.filter((t) => t.khoa < khoaNay).slice(-6);
   if (daKhep.length < 1) {
-    return kq('phuong_an_tai_tro', 'bao_cao', 'Chưa đủ sao kê đã khép sổ để ước sức trả nợ. Tải thêm sao kê hoặc kết nối ngân hàng.', { nguon: [N.giaoDich], trang: [T.ketNoi] });
+    return kq('phuong_an_tai_tro', 'bao_cao', X.chuaDuTaiTro, { nguon: [N.giaoDich], trang: [T.ketNoi] });
   }
   const tb = (f: (t: ThangTien) => number) => daKhep.reduce((s, t) => s + f(t), 0) / daKhep.length;
   const vaoTb = tb((t) => t.vao);
@@ -782,40 +914,40 @@ export function phuongAnTaiTroNL(d: DuLieu): KetQuaNangLuc {
     cong_no_qua_han: congNo,
     hoa_don_cho_chua_han: { tong: choChuaHan.reduce((s, h) => s + Number(h.total), 0), so: choChuaHan.length },
   };
-  const pa = ghepPhuongAn(hoSo);
-  const TEN_MUC = { co_the: 'Có thể cân nhắc', chua_du: 'Chưa đủ điều kiện', khong_can: 'Không cần' } as const;
+  const pa = ghepPhuongAn(hoSo, n);
+  const TEN_MUC = X.muc;
   const suc = (p: (typeof pa)[number]) => (p.suc_chua ? (p.suc_chua.thap === p.suc_chua.cao ? vnd(p.suc_chua.cao) : `${vnd(p.suc_chua.thap)} – ${vnd(p.suc_chua.cao)}`) : '—');
 
   const coThe = pa.filter((p) => p.phu_hop === 'co_the');
   const cau = [
-    `Trên dòng tiền kinh doanh đã làm sạch của ${daKhep.length} tháng gần nhất, dòng tiền ròng trung bình ${vnd(hoSo.rong_tb)}/tháng${ls.biLoai.length ? ` (đã loại ${vnd(ls.tienBiLoai)} tiền vào nghi không phải doanh thu)` : ''}.`,
+    X.tomTaiTro1(daKhep.length, vnd(hoSo.rong_tb), ls.biLoai.length ? vnd(ls.tienBiLoai) : null),
     hoSo.rong_tb > 0
-      ? `Nếu dành ${Math.round(GIA_DINH.ty_le_tra_no_tren_dong_tien_rong * 100)}% cho trả nợ thì mỗi tháng trả được khoảng ${vnd(hoSo.rong_tb * GIA_DINH.ty_le_tra_no_tren_dong_tien_rong)} (giả định).`
-      : 'Dòng tiền ròng không dương nên chưa có phần để trả nợ.',
-    coThe.length ? `Có thể cân nhắc: ${coThe.map((p) => p.ten).join('; ')}.` : 'Chưa phương án nào đủ điều kiện; xem phần còn thiếu.',
-    'MIMI không cho vay và không hứa khoản nào được duyệt.',
+      ? X.tomTaiTro2(Math.round(GIA_DINH.ty_le_tra_no_tren_dong_tien_rong * 100), vnd(hoSo.rong_tb * GIA_DINH.ty_le_tra_no_tren_dong_tien_rong))
+      : X.tomTaiTroAm,
+    coThe.length ? X.coThe(coThe.map((p) => p.ten).join('; ')) : X.khongPa,
+    X.khongChoVay,
   ].join(' ');
 
   const the: The[] = [
     {
-      loai: 'so_lieu', tieu_de: 'Đầu vào đã làm sạch', muc: [
-        { nhan: 'Tiền vào kinh doanh trung bình/tháng', gia_tri: Math.round(vaoTb), don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
-        { nhan: 'Tiền ra trung bình/tháng', gia_tri: Math.round(raTb), don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
-        { nhan: 'Dòng tiền ròng trung bình/tháng', gia_tri: Math.round(hoSo.rong_tb), don_vi: 'vnd', can_chu_y: hoSo.rong_tb <= 0, bang_chung: bangChung('giao_dich', d.giaoDich) },
-        { nhan: 'Đã loại khỏi tiền vào', gia_tri: ls.tienBiLoai, don_vi: 'vnd', ghi_chu: 'vay, góp vốn, người nhà, hoàn tiền — không phải sức trả nợ', bang_chung: bangChung('giao_dich', ls.biLoai) },
-        { nhan: 'Công nợ phải thu quá hạn', gia_tri: congNo, don_vi: 'vnd', bang_chung: bangChung('hoa_don_ban', dsQuaHan) },
+      loai: 'so_lieu', tieu_de: X.dauVao, muc: [
+        { nhan: X.vaoTb, gia_tri: Math.round(vaoTb), don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
+        { nhan: X.raTb, gia_tri: Math.round(raTb), don_vi: 'vnd', bang_chung: bangChung('giao_dich', d.giaoDich) },
+        { nhan: X.rongTb, gia_tri: Math.round(hoSo.rong_tb), don_vi: 'vnd', can_chu_y: hoSo.rong_tb <= 0, bang_chung: bangChung('giao_dich', d.giaoDich) },
+        { nhan: X.daLoaiNgan, gia_tri: ls.tienBiLoai, don_vi: 'vnd', ghi_chu: X.daLoaiNganGhi, bang_chung: bangChung('giao_dich', ls.biLoai) },
+        { nhan: X.congNoQh, gia_tri: congNo, don_vi: 'vnd', bang_chung: bangChung('hoa_don_ban', dsQuaHan) },
       ],
     },
     {
-      loai: 'bang', tieu_de: 'Các phương án và điều còn thiếu',
-      cot: [{ nhan: 'Phương án', don_vi: 'chu' }, { nhan: 'Đánh giá', don_vi: 'chu' }, { nhan: 'Sức chứa ước tính (giả định)', don_vi: 'chu' }, { nhan: 'Còn thiếu', don_vi: 'chu' }],
+      loai: 'bang', tieu_de: X.bangPa,
+      cot: X.cotPa.map((c) => ({ nhan: c, don_vi: 'chu' as const })),
       dong: pa.map((p) => [p.ten, TEN_MUC[p.phu_hop], suc(p), p.con_thieu.join(' ') || '—'] as O[]),
     },
     {
       loai: 'ghi_chu', muc_do: 'can_chu_y',
-      cau: `Giả định ĐỀ XUẤT để minh hoạ, không phải điều kiện hay lãi suất của tổ chức nào: dành ${Math.round(GIA_DINH.ty_le_tra_no_tren_dong_tien_rong * 100)}% dòng tiền ròng trung bình để trả nợ; lãi ${Math.round(GIA_DINH.lai_nam_thap * 100)}–${Math.round(GIA_DINH.lai_nam_cao * 100)}%/năm; kỳ hạn ${GIA_DINH.ky_han_von_luu_dong_thang} tháng (hạn mức) và ${GIA_DINH.ky_han_thiet_bi_thang} tháng (thiết bị); ứng ${Math.round(GIA_DINH.ty_le_ung_von_hoa_don * 100)}% giá trị hoá đơn còn hạn. Thay bằng biểu thật của nơi bạn định vay.`,
+      cau: X.giaDinh(Math.round(GIA_DINH.ty_le_tra_no_tren_dong_tien_rong * 100), Math.round(GIA_DINH.lai_nam_thap * 100), Math.round(GIA_DINH.lai_nam_cao * 100), GIA_DINH.ky_han_von_luu_dong_thang, GIA_DINH.ky_han_thiet_bi_thang, Math.round(GIA_DINH.ty_le_ung_von_hoa_don * 100)),
     },
-    { loai: 'ghi_chu', muc_do: 'thong_tin', cau: 'MIMI chỉ chuẩn bị số liệu và chỉ ra điều kiện còn thiếu. Việc vay, ký và nhận tiền là của bạn với tổ chức tín dụng được cấp phép; MIMI không giữ hay chuyển tiền và không nhận hoa hồng.' },
+    { loai: 'ghi_chu', muc_do: 'thong_tin', cau: X.chiChuanBi },
   ];
   return kq('phuong_an_tai_tro', 'bao_cao', cau, { the, nguon: [N.giaoDich, N.hoaDonBan], trang: [T.giaoDich, T.hoaDon, T.baoCao] });
 }
@@ -2338,6 +2470,11 @@ function tuChoiKhaiSai(): KetQuaNangLuc {
  * vay chỉ làm con số cao hơn thật. Nên tổng ước từ sao kê vẫn cộng các khoản này, và câu trả lời
  * nói rõ điều đó cùng đường sửa số trên trang Tờ khai.
  */
+/** Loại tiền vào của trợ lý → loại lưu ở `revenue_classifications` (cổng to-khai → xac_nhan_tien_vao). */
+const LOAI_PHAN_LOAI_TU_AI: Record<LoaiTienVao, string> = {
+  vay: 'loan', gop_von: 'capital_contribution', nguoi_nha: 'family_transfer', hoan_tien: 'refund', dat_coc: 'deposit',
+};
+
 function tienVaoKhongPhaiDoanhThu(d: DuLieu): KetQuaNangLuc {
   const TRA_LOI = 'Không. Tiền người nhà chuyển cho, tiền vay, tiền góp vốn không phải doanh thu bán hàng.';
   const NOI_TC = { loai: 'ghi_chu' as const, muc_do: 'thong_tin' as const, cau: 'Cách chắc nhất: nối Tổng cục Thuế. Khi có hoá đơn điện tử, MIMI tính doanh thu từ hoá đơn — đó là số của chính cơ quan thuế — thay vì từ sao kê.' };
@@ -2361,10 +2498,17 @@ function tienVaoKhongPhaiDoanhThu(d: DuLieu): KetQuaNangLuc {
 
   const dauNam = `${d.homNay.slice(0, 4)}-01-01`;
   const vao = d.giaoDich.filter((t) => chieuTien(t) === 'vao' && t.transaction_date >= dauNam && t.transaction_date <= d.homNay);
-  const nghi = vao
-    .map((t) => ({ t, g: goiYTienVao(t) }))
-    .filter((x): x is { t: GiaoDichTL; g: GoiYTienVao } => x.g !== null)
-    .sort((a, b) => doLonTien(b.t) - doLonTien(a.t));
+  const nghiLuat = vao
+    .map((t) => ({ t, g: goiYTienVao(t), ai: false }))
+    .filter((x): x is { t: GiaoDichTL; g: GoiYTienVao; ai: boolean } => x.g !== null);
+  // Lớp AI chỉ đề xuất: chỉ thêm khoản luật KHÔNG nhận ra; luật thắng AI. Khoản AI chỉ ra vẫn tính là doanh thu cho
+  // tới khi chủ hộ xác nhận — không có đường nào để AI trừ một đồng.
+  const deXuatAi = d.deXuatAiTienVao ?? {};
+  const daCoLuat = new Set(nghiLuat.map((x) => String(x.t.id)));
+  const nghiAi = vao
+    .filter((t) => !daCoLuat.has(String(t.id)) && laChiRaKhongPhaiDoanhThu(deXuatAi[String(t.id)]))
+    .map((t) => { const a = deXuatAi[String(t.id)] as DeXuatAi & { loai: LoaiTienVao }; return { t, g: { loai: a.loai, ly_do: a.ly_do }, ai: true }; });
+  const nghi = [...nghiLuat, ...nghiAi].sort((a, b) => doLonTien(b.t) - doLonTien(a.t));
   const tuNgay = vao.reduce((m, t) => (t.transaction_date < m ? t.transaction_date : m), d.homNay);
   const khoang = `từ ${ngayVN(tuNgay)} tới ${ngayVN(d.homNay)}`;
 
@@ -2425,12 +2569,17 @@ function tienVaoKhongPhaiDoanhThu(d: DuLieu): KetQuaNangLuc {
       dong: [...choXacNhan, ...laDoanhThu, ...daTru].slice(0, SO_DONG).map((x) => [
         x.t.transaction_date, doLonTien(x.t),
         [x.t.counter_account_name, x.t.payment_reference].filter(Boolean).join(' — ') || x.t.merchant_name || '—',
-        TEN_LOAI_TIEN_VAO[x.g.loai], TEN_TRANG_THAI[trangThai(x.t)],
+        `${TEN_LOAI_TIEN_VAO[x.g.loai]}${x.ai ? ' (AI chỉ ra)' : ''}`, TEN_TRANG_THAI[trangThai(x.t)],
       ] as O[]),
       con_lai: Math.max(0, nghi.length - SO_DONG),
       bang_chung: bangChung('giao_dich', ds),
     },
   ];
+  const choAi = choXacNhan.filter((x) => x.ai);
+  const choLuat = choXacNhan.filter((x) => !x.ai);
+  if (nghiAi.length) {
+    the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: `${nghiAi.length} khoản do AI chỉ ra từ nội dung chuyển khoản mơ hồ mà bộ luật không đọc được. AI chỉ gợi ý: khoản đó vẫn tính là doanh thu cho tới khi bạn bấm xác nhận. MIMI không gửi tên người chuyển hay số tài khoản cho AI.` });
+  }
   if (choXacNhan.length) {
     the.push({ loai: 'ghi_chu', muc_do: 'can_chu_y', cau: 'MIMI chỉ chỉ ra, không tự trừ: khoản chờ xác nhận vẫn được cộng vào doanh thu ước từ sao kê cho tới khi bạn xác nhận. "Hoàn tiền" có thể là khách trả nốt, "đặt cọc" có thể là tiền bán hàng trả trước — trừ nhầm một khoản bán hàng là khai thiếu. Xác nhận một chạm trong thông báo; khoản đã xác nhận được trừ khỏi doanh thu trên tờ khai.' });
   } else {
@@ -2442,8 +2591,14 @@ function tienVaoKhongPhaiDoanhThu(d: DuLieu): KetQuaNangLuc {
     `${TRA_LOI} Đọc nội dung chuyển khoản ${khoang}, MIMI thấy ${nghi.length} khoản tiền vào có vẻ không phải tiền bán hàng (${loaiNoi}), cộng lại ${vnd(tong)}. Trong đó: ${cauTrangThai}.`, {
       the,
       de_xuat: [
-        ...(choXacNhan.length ? [{
-          khoa: 'mo_trang:nhac_thue', loai: 'mo_trang' as const, nhan: `Xác nhận ${choXacNhan.length} khoản`,
+        ...choAi.slice(0, 5).map((x) => ({
+          khoa: `xac_nhan_tien_vao:${x.t.id}`, loai: 'xac_nhan_tien_vao' as const,
+          nhan: `Không tính: ${TEN_LOAI_TIEN_VAO[x.g.loai]} ${vnd(doLonTien(x.t))}`,
+          mo_ta: `Khoản ${vnd(doLonTien(x.t))} ngày ${ngayVN(x.t.transaction_date)} ("${(x.t.payment_reference || x.t.merchant_name || '—').slice(0, 60)}") sẽ được ghi là ${TEN_LOAI_TIEN_VAO[x.g.loai].toLowerCase()}, không cộng vào doanh thu. AI gợi ý: ${x.g.ly_do || '—'}. Bạn là người quyết; hoàn tác được.`,
+          tham_so: { transaction_id: String(x.t.id), loai: LOAI_PHAN_LOAI_TU_AI[x.g.loai], ly_do: x.g.ly_do || null },
+        })),
+        ...(choLuat.length ? [{
+          khoa: 'mo_trang:nhac_thue', loai: 'mo_trang' as const, nhan: `Xác nhận ${choLuat.length} khoản`,
           mo_ta: 'Mỗi khoản MIMI thấy đáng ngờ có một thông báo; xác nhận một chạm, MIMI trừ khỏi doanh thu trên tờ khai.',
           tham_so: { duong_dan: '/dashboard/nhac-thue' },
         }] : []),
@@ -2606,6 +2761,8 @@ export const NANG_LUC: Record<string, NangLuc> = {
   dong_tien: { nhom: 'ngan_hang', can: ['giao_dich'], chay: dongTien, mo_ta: 'Tiền vào, tiền ra và chênh lệch theo tháng, 6 tháng gần nhất.' },
   du_bao_dong_tien: { nhom: 'ngan_hang', can: ['giao_dich', 'hoa_don_ban'], chay: duBaoDongTienNL, mo_ta: 'Dự báo dòng tiền RÒNG ba tháng tới theo ba kịch bản (tốt, cơ sở, xấu) từ các tháng đã khép sổ, kèm cảnh báo: chênh lệch âm liên tiếp, kịch bản xấu thiếu hụt, công nợ quá hạn lớn, phụ thuộc một khách, tiền vào biến động, tháng này chi vượt thường lệ. Tiền vào đã loại khoản nghi là vay/góp vốn/người nhà. Dưới ba tháng sao kê thì nói thẳng là chưa dự báo được.' },
   lenh_cfo: { nhom: 'tro_ly', can: ['yeu_cau'], chay: lenhCfo, mo_ta: 'Chủ doanh nghiệp RA LỆNH phân quyền bằng lời, như nói với giám đốc tài chính: đặt hoặc đổi trần chi mỗi khoản / mỗi ngày / mỗi tháng của một agent, ngưỡng phải duyệt, khung giờ được chi, nhóm chi được phép, người nhận lạ, tạm dừng agent; hoặc hỏi nên cho một người (kế toán, người nhà) vai trò nào. Trả bảng trước/sau, chạy thử trên các khoản đã xin, và nút áp dụng chờ chủ bấm. Từ chối mọi lệnh cho agent tự chuyển tiền, nộp thuế, ký số hoặc bỏ trần.' },
+  suc_khoe_tai_chinh: { nhom: 'bao_cao', can: ['giao_dich', 'hoa_don_ban'], chay: sucKhoeTaiChinhNL, mo_ta: 'Người dùng hỏi điểm tín dụng, điểm uy tín, sức khoẻ tài chính, hồ sơ có đủ đẹp để vay không: chấm sức khoẻ tài chính 0–100 từ dòng tiền kinh doanh đã làm sạch theo sáu yếu tố công khai (độ dài lịch sử, dòng tiền ròng, độ ổn định, thu nợ, phụ thuộc khách lớn, doanh thu đã xác nhận) kèm cách cải thiện. Nói rõ đây không phải điểm tín dụng của tổ chức tín dụng hay CIC.' },
+  da_co_so: { nhom: 'bao_cao', can: ['giao_dich', 'co_so'], chay: daCoSoNL, mo_ta: 'Doanh nghiệp có nhiều cơ sở, chi nhánh, cửa hàng hay cơ sở đào tạo — mỗi nơi một tài khoản, một kế toán: dòng tiền từng cơ sở, cơ sở nào tự nuôi được mình, cơ sở nào đang được cơ sở khác chuyển tiền bù, số hợp nhất toàn hệ thống không đếm hai lần tiền chuyển giữa các cơ sở, và VAT theo từng đơn vị khai thuế.' },
   phuong_an_tai_tro: { nhom: 'bao_cao', can: ['giao_dich', 'hoa_don_ban'], chay: phuongAnTaiTroNL, mo_ta: 'Người dùng hỏi có nên vay vốn, vay kiểu nào, vay được khoảng bao nhiêu, cần gì để đủ điều kiện: ghép các phương án (thu công nợ trước, hạn mức vốn lưu động, ứng vốn theo hoá đơn, vay thiết bị) với sức trả nợ tính trên dòng tiền kinh doanh đã làm sạch và nói điều còn thiếu. MIMI không cho vay và không hứa duyệt; số là ước tính theo giả định ghi rõ.' },
   doi_soat: { nhom: 'ngan_hang', can: ['giao_dich', 'hoa_don_ban', 'ket_noi_ngan_hang'], chay: doiSoat, mo_ta: 'Tiền về 30 ngày qua có thể khớp với hoá đơn bán ra nào đang chờ thu.' },
   ket_noi_ngan_hang: { nhom: 'ngan_hang', can: ['ket_noi_ngan_hang'], chay: ketNoiNganHang, mo_ta: 'Các kết nối ngân hàng, tài khoản nào cần đăng nhập lại; đề xuất đồng bộ sao kê.' },

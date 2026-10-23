@@ -35,6 +35,19 @@ Asked in English: "Set my agent: at most 2 million per payment, 20 million a mon
 - Nothing was saved. The only action is "Apply new policy to <agent>", which goes through `tac-tu → luu_chinh_sach` (role check on the server, before/after log). The save is refused with 409 if the policy changed after the preview.
 - Covered by 50 unit tests: Vietnamese/English/Chinese parsing; red lines (agent moving money, filing tax, signing, removing caps are refused); contradictory commands get no Apply button; viewer role sees no button; least-privilege role suggestion for people ("let my accountant draft tax forms but not approve payments" → Accountant).
 
+## Run 6 — AI that only proposes, on vague transfer text (`phan-loai/de-xuat-ai.ts`)
+MIMI-RevBench-VN showed the rule layer missing every loan, capital, family or refund inflow whose text was vague ("CK", "NHAN TIEN", empty), while frontier models caught them — and one model, deciding alone, removed 178 million VND of real revenue. The new layer sends only the lines the rules cannot read (transfer text, amount, date, how often the sender paid; no sender name or account number) and lets the model **point**, never subtract. Same 30 held-out statements, same labels:
+
+| System | Non-revenue lines caught | Non-revenue counted as revenue | Real revenue wrongly removed | Wrong side of 1-billion / 3-billion threshold | Stops to ask at threshold |
+|---|---|---|---|---|---|
+| MIMI rules only | 72.8% | 4,133 M | 0 | 3/30 | 7/30 |
+| Frontier model deciding alone (opus) | 100% | 0 | 178 M | 0/30 | 5/30 |
+| Frontier model deciding alone (sonnet) | 100% | 0 | 0 | 0/30 | 3/30 |
+| **MIMI rules + model that only proposes (sonnet)** | **100%** | **0** | **0** | **0/30** | 10/30 |
+| **MIMI rules + model that only proposes (opus)** | **100%** | **0** | **0** | **0/30** | 12/30 |
+
+Reading it honestly: the combination matches the best model on detection and keeps the rule layer's guarantee that no real revenue is removed by a machine — even when paired with the model that removed 178 M on its own. The price is more owner questions (10–12 of 30 statements stop at the threshold, against 3–5 for a model deciding alone). The benchmark data is synthetic; model answers were collected once from blind exports. In the product, each AI-flagged line gets a one-tap confirm button that goes through `to-khai → xac_nhan_tien_vao` and is recorded with source "model".
+
 ## Automated evidence
 - `npx vitest run`: 242 files, 2,445 tests passed (16/10/2026, after the delegation feature).
 - `npm run build`: passes. `npx tsc --noEmit -p tsconfig.app.json`: clean.

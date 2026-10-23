@@ -12,6 +12,7 @@
  *    trung vị). Đây là khoảng thô để thấy rủi ro, không phải mô hình thống kê và không có độ tin cậy 95%.
  *  - Tiền vào đã được làm sạch ở nơi gọi: khoản nghi là vay/góp vốn/người nhà/hoàn tiền không được coi là dòng tiền kinh doanh.
  */
+import { LOI_TC, type NgonTC } from './loi.ts';
 
 export interface ThangTien { khoa: string; vao: number; ra: number }
 export interface ThangDuBao { khoa: string; vao: number; ra: number; rong: number }
@@ -74,8 +75,9 @@ export function congThang(khoa: string, n: number): string {
 
 export function duBaoDongTien(
   thang: readonly ThangTien[],
-  o: { homNay: string; congNoQuaHan: number; khachTop?: KhachTop | null },
+  o: { homNay: string; congNoQuaHan: number; khachTop?: KhachTop | null; ngon?: NgonTC },
 ): KetQuaDuBao {
+  const L = LOI_TC[o.ngon ?? 'vi'];
   const khoaNay = o.homNay.slice(0, 7);
   const daKhep = [...thang].filter((t) => t.khoa < khoaNay).sort((a, b) => a.khoa.localeCompare(b.khoa)).slice(-SO_THANG_NHIN_LAI);
   const dangChay = thang.find((t) => t.khoa === khoaNay) ?? null;
@@ -83,7 +85,7 @@ export function duBaoDongTien(
   if (daKhep.length < SO_THANG_TOI_THIEU) {
     return {
       du_du_lieu: false,
-      ly_do_thieu: `Mới có ${daKhep.length} tháng sao kê đã khép sổ; cần ít nhất ${SO_THANG_TOI_THIEU} tháng để dự báo mà không phải đoán.`,
+      ly_do_thieu: L.thieuThang(daKhep.length, SO_THANG_TOI_THIEU),
       so_thang_da_khep: daKhep.length, trung_vi: null, he_so_bien_dong_vao: null, kich_ban: [], canh_bao: [],
     };
   }
@@ -106,21 +108,21 @@ export function duBaoDongTien(
   const rong = daKhep.map((t) => t.vao - t.ra);
   const bagGanNhat = rong.slice(-3);
   if (bagGanNhat.filter((x) => x < 0).length >= 2) {
-    canh.push({ ma: 'rong_am_lien_tiep', muc_do: 'cao', cau: `${bagGanNhat.filter((x) => x < 0).length}/${bagGanNhat.length} tháng gần nhất tiền ra nhiều hơn tiền vào (chênh lệch ròng ${bagGanNhat.map(vnd).join(', ')}).` });
+    canh.push({ ma: 'rong_am_lien_tiep', muc_do: 'cao', cau: L.rongAm(bagGanNhat.filter((x) => x < 0).length, bagGanNhat.length, bagGanNhat) });
   }
   const xau = kb[2];
   if (xau.tong_rong < 0) {
-    canh.push({ ma: 'kich_ban_xau_thieu_hut', muc_do: kb[1].tong_rong < 0 ? 'cao' : 'vua', cau: `Nếu ba tháng tới giống tháng yếu nhất vừa qua, dòng tiền ròng cộng dồn là ${vnd(xau.tong_rong)}. Kịch bản cơ sở: ${vnd(kb[1].tong_rong)}.` });
+    canh.push({ ma: 'kich_ban_xau_thieu_hut', muc_do: kb[1].tong_rong < 0 ? 'cao' : 'vua', cau: L.xauThieu(xau.tong_rong, kb[1].tong_rong) });
   }
   if (tvVao > 0 && o.congNoQuaHan >= NGUONG.cong_no_qua_han_tren_doanh_thu_thang * tvVao) {
-    canh.push({ ma: 'cong_no_qua_han_lon', muc_do: 'vua', cau: `Công nợ phải thu quá hạn ${vnd(o.congNoQuaHan)}, bằng ${Math.round((o.congNoQuaHan / tvVao) * 100)}% tiền vào một tháng điển hình. Thu được khoản này là cách rẻ nhất để lấp thiếu hụt.` });
+    canh.push({ ma: 'cong_no_qua_han_lon', muc_do: 'vua', cau: L.congNo(o.congNoQuaHan, o.congNoQuaHan / tvVao) });
   }
   if (o.khachTop && o.khachTop.so_khoan >= 3 && o.khachTop.ty_le >= NGUONG.khach_chiem_tren) {
-    canh.push({ ma: 'tap_trung_khach', muc_do: 'vua', cau: `${o.khachTop.ten} chiếm ${Math.round(o.khachTop.ty_le * 100)}% tiền vào kinh doanh (${o.khachTop.so_khoan} khoản). Mất khách này thì dòng tiền đổi hẳn.` });
+    canh.push({ ma: 'tap_trung_khach', muc_do: 'vua', cau: L.tapTrung(o.khachTop.ten, o.khachTop.ty_le, o.khachTop.so_khoan) });
   }
   const cv = heSoBienDong(vao);
   if (cv !== null && cv >= NGUONG.he_so_bien_dong) {
-    canh.push({ ma: 'doanh_thu_bien_dong', muc_do: 'vua', cau: `Tiền vào các tháng chênh nhau nhiều (hệ số biến động ${cv.toFixed(2)}), nên dự báo có khoảng rộng — đừng dựa vào một con số.` });
+    canh.push({ ma: 'doanh_thu_bien_dong', muc_do: 'vua', cau: L.bienDong(cv) });
   }
   if (dangChay) {
     const ngay = Number(o.homNay.slice(8, 10));
@@ -130,7 +132,7 @@ export function duBaoDongTien(
     if (phan >= NGUONG.phan_thang_toi_thieu && tvRa > 0) {
       const uocCaThang = dangChay.ra / phan;
       if (uocCaThang >= NGUONG.chi_vuot_trung_vi * tvRa) {
-        canh.push({ ma: 'chi_vuot_thuong_le', muc_do: 'vua', cau: `Tháng này đã chi ${vnd(dangChay.ra)} sau ${ngay}/${soNgay} ngày; giữ nhịp này cả tháng sẽ khoảng ${vnd(uocCaThang)}, cao hơn trung vị ${vnd(tvRa)}.` });
+        canh.push({ ma: 'chi_vuot_thuong_le', muc_do: 'vua', cau: L.chiVuot(dangChay.ra, ngay, soNgay, uocCaThang, tvRa) });
       }
     }
   }

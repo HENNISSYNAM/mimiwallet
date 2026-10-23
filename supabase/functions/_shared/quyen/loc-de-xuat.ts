@@ -21,6 +21,7 @@ export const QUYEN_DE_XUAT: Record<LoaiDeXuat, HanhDong> = {
   luu_chung_tu_quet: 'ghi_chung_tu',
   tao_tai_lieu: 'ghi_chung_tu',
   luu_chinh_sach_agent: 'quan_ly_agent',
+  xac_nhan_tien_vao: 'sua_ho_so_thue',
   mo_trang: 'xem',
 };
 

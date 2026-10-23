@@ -21,6 +21,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { laVaiTro, TEN_VAI_TRO, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { chuanEmail, kiemThaoTac, laEmail, type ThaoTacThanhVien } from "../_shared/quyen/thanh-vien.ts";
+import { duocLam } from "../_shared/quyen/vai-tro.ts";
+import { chuanSoTaiKhoan, docCoSoNhap, kiemMstCungCongTy, laSoTaiKhoan } from "../_shared/da-co-so/kiem.ts";
+import { biGioiHan } from "../_shared/da-co-so/pham-vi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,6 +37,11 @@ const loi = (ma: string, cau: string, status: number) => json({ error: cau, ma }
 type Db = any;
 
 const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
+  co_so: { cuaSoGiay: 60, toiDa: 60 },
+  co_so_luu: { cuaSoGiay: 60, toiDa: 30 },
+  co_so_xoa: { cuaSoGiay: 60, toiDa: 20 },
+  co_so_gan_tai_khoan: { cuaSoGiay: 60, toiDa: 60 },
+  co_so_gan_thanh_vien: { cuaSoGiay: 60, toiDa: 30 },
   thanh_vien: { cuaSoGiay: 60, toiDa: 60 },
   moi: { cuaSoGiay: 60, toiDa: 10 },
   doi_vai_tro: { cuaSoGiay: 60, toiDa: 30 },
@@ -69,7 +77,7 @@ async function emailCua(db: Db, userId: string): Promise<string | null> {
 }
 
 async function ghiNhatKy(db: Db, p: {
-  companyId: string; nguoiLam: string; vaiTro: VaiTro; thaoTac: ThaoTacThanhVien; doiTuong: string;
+  companyId: string; nguoiLam: string; vaiTro: VaiTro; thaoTac: ThaoTacThanhVien | `co_so${string}`; doiTuong: string;
   thamSo: Record<string, unknown>; moTa: string;
 }) {
   const { error } = await db.from("nhat_ky_quyet_dinh").insert({
@@ -114,7 +122,7 @@ Deno.serve(async (req) => {
     const gh = GIOI_HAN[hanhDong];
     if (!gh) return loi("THAM_SO", "Hành động không hợp lệ.", 400);
     // Bản demo dùng chung chỉ được xem danh sách: không mời, gỡ, đổi vai — tránh khách vãng lai dò email hay thêm người lạ.
-    if (hanhDong !== "thanh_vien") {
+    if (hanhDong !== "thanh_vien" && hanhDong !== "co_so") {
       const { data: hoSo } = await db.from("profiles").select("is_demo").eq("user_id", user.id).maybeSingle();
       if (hoSo?.is_demo) return loi("BAN_DEMO", "Bản demo dùng chung không đổi được thành viên. Liên hệ MIMI để dùng bản thật.", 403);
     }
@@ -159,6 +167,94 @@ Deno.serve(async (req) => {
         thamSo: { vai_tro: vaiTro }, moTa: `Thêm ${email} vào công ty với vai trò ${TEN_VAI_TRO[vaiTro]}.`,
       });
       return json({ ok: true, user_id: nguoi.id, vai_tro: vaiTro });
+    }
+
+    // ── ĐA CƠ SỞ (22/10/2026): mỗi cơ sở một tài khoản, một kế toán. Xem là mọi thành viên; sửa là chủ/quản trị. ──
+    if (hanhDong.startsWith("co_so")) {
+      if (hanhDong === "co_so") {
+        const [cs, tk, gd, ctMst] = await Promise.all([
+          db.from("co_so").select("id, ten, ma_so_thue, tinh, khai_thue").eq("company_id", companyId).order("tao_luc"),
+          db.from("co_so_tai_khoan").select("so_tai_khoan, co_so_id").eq("company_id", companyId),
+          // Tài khoản của chính công ty xuất hiện trên sao kê — để gán cho cơ sở mà không phải gõ tay.
+          db.from("transactions").select("account_number, is_synthetic").eq("company_id", companyId).not("account_number", "is", null).limit(5000),
+          db.from("companies").select("tax_id, la_demo").eq("id", companyId).maybeSingle(),
+        ]);
+        if (cs.error) throw new Error(cs.error.message);
+        // Tài khoản của dòng thử (sandbox) không phải tài khoản thật của công ty — trừ công ty demo, nơi mọi dòng là minh hoạ.
+        const tkCongTy = [...new Set(((gd.data ?? []) as { account_number: string | null; is_synthetic: boolean }[]).filter((r) => !r.is_synthetic || ctMst.data?.la_demo === true).map((r) => chuanSoTaiKhoan(r.account_number)).filter(laSoTaiKhoan))];
+        const { data: phuTrach } = await db.from("thanh_vien_cong_ty").select("user_id, co_so_id").eq("company_id", companyId);
+        const coSoCua = new Map(((phuTrach ?? []) as { user_id: string; co_so_id: string | null }[]).map((r) => [r.user_id, r.co_so_id]));
+        // 23/10/2026: kế toán của một cơ sở chỉ thấy cơ sở mình; người không quản lý không thấy danh sách tài khoản trên sao kê.
+        const quanLy = duocLam(ct.vai_tro, "quan_ly_thanh_vien");
+        const cuaToi = biGioiHan(ct.vai_tro, coSoCua.get(user.id) ?? null) ? coSoCua.get(user.id) as string : null;
+        const thanhVien = await Promise.all(ds.filter((r) => !cuaToi || r.user_id === user.id)
+          .map(async (r) => ({ user_id: r.user_id, vai_tro: r.vai_tro, email: await emailCua(db, r.user_id), co_so_id: coSoCua.get(r.user_id) ?? null })));
+        return json({
+          co_so: ((cs.data ?? []) as { id: string }[]).filter((c) => !cuaToi || c.id === cuaToi),
+          tai_khoan: ((tk.data ?? []) as { co_so_id: string }[]).filter((t) => !cuaToi || t.co_so_id === cuaToi),
+          tai_khoan_tren_sao_ke: quanLy ? tkCongTy : [],
+          thanh_vien: thanhVien,
+          mst_cong_ty: ctMst.data?.tax_id ?? null, duoc_sua: quanLy, pham_vi_co_so: cuaToi,
+        });
+      }
+      if (!duocLam(ct.vai_tro, "quan_ly_thanh_vien")) return loi("KHONG_DU_QUYEN", "Chỉ chủ doanh nghiệp hoặc quản trị sửa được cơ sở.", 403);
+      const coSoCuaCongTy = async (id: unknown) => {
+        if (typeof id !== "string") return null;
+        const { data } = await db.from("co_so").select("id, ten").eq("id", id).eq("company_id", companyId).maybeSingle();
+        return data as { id: string; ten: string } | null;
+      };
+      if (hanhDong === "co_so_luu") {
+        const x = docCoSoNhap(body);
+        if (!x.ok) return loi("THAM_SO", x.cau, 400);
+        const { data: ctMst } = await db.from("companies").select("tax_id").eq("id", companyId).maybeSingle();
+        const sai = kiemMstCungCongTy(x.v.ma_so_thue, ctMst?.tax_id ?? null);
+        if (sai) return loi("THAM_SO", sai, 400);
+        const cu = body.id ? await coSoCuaCongTy(body.id) : null;
+        if (body.id && !cu) return loi("KHONG_THAY", "Không có cơ sở này.", 404);
+        const q = cu
+          ? db.from("co_so").update({ ...x.v, sua_luc: new Date().toISOString() }).eq("id", cu.id).select("id").single()
+          : db.from("co_so").insert({ ...x.v, company_id: companyId }).select("id").single();
+        const { data, error } = await q;
+        if (error?.code === "23505") return loi("TRUNG", "Đã có cơ sở cùng tên.", 409);
+        if (error) throw new Error(error.message);
+        await ghiNhatKy(db, { companyId, nguoiLam: user.id, vaiTro: ct.vai_tro, thaoTac: "co_so_luu", doiTuong: data.id, thamSo: x.v, moTa: `${cu ? "Sửa" : "Thêm"} cơ sở "${x.v.ten}".` });
+        return json({ ok: true, id: data.id });
+      }
+      if (hanhDong === "co_so_xoa") {
+        const cu = await coSoCuaCongTy(body.id);
+        if (!cu) return loi("KHONG_THAY", "Không có cơ sở này.", 404);
+        const { error } = await db.from("co_so").delete().eq("id", cu.id);
+        if (error) throw new Error(error.message);
+        await ghiNhatKy(db, { companyId, nguoiLam: user.id, vaiTro: ct.vai_tro, thaoTac: "co_so_xoa", doiTuong: cu.id, thamSo: {}, moTa: `Xoá cơ sở "${cu.ten}" (tài khoản và kế toán của cơ sở này trở về "chưa gán").` });
+        return json({ ok: true });
+      }
+      if (hanhDong === "co_so_gan_tai_khoan") {
+        const stk = chuanSoTaiKhoan(body.so_tai_khoan);
+        if (!laSoTaiKhoan(stk)) return loi("THAM_SO", "Số tài khoản chỉ gồm chữ số, 6 đến 19 số.", 400);
+        if (body.co_so_id === null) {
+          await db.from("co_so_tai_khoan").delete().eq("company_id", companyId).eq("so_tai_khoan", stk);
+        } else {
+          const cs = await coSoCuaCongTy(body.co_so_id);
+          if (!cs) return loi("KHONG_THAY", "Không có cơ sở này.", 404);
+          const { error } = await db.from("co_so_tai_khoan").upsert({ company_id: companyId, so_tai_khoan: stk, co_so_id: cs.id }, { onConflict: "company_id,so_tai_khoan" });
+          if (error) throw new Error(error.message);
+        }
+        await ghiNhatKy(db, { companyId, nguoiLam: user.id, vaiTro: ct.vai_tro, thaoTac: "co_so_gan_tai_khoan", doiTuong: stk, thamSo: { co_so_id: body.co_so_id ?? null }, moTa: `Gán tài khoản •••${stk.slice(-4)} ${body.co_so_id === null ? "về chưa gán" : "cho một cơ sở"}.` });
+        return json({ ok: true });
+      }
+      if (hanhDong === "co_so_gan_thanh_vien") {
+        const tv = ds.find((r) => r.user_id === String(body.user_id ?? ""));
+        if (!tv) return loi("KHONG_THAY", "Không có thành viên này.", 404);
+        // Chủ và quản trị luôn thấy cả công ty: gán họ vào một cơ sở không giới hạn được gì, chỉ gây hiểu nhầm.
+        if (body.co_so_id !== null && !biGioiHan(tv.vai_tro, "x")) return loi("THAM_SO", "Chủ doanh nghiệp và quản trị luôn xem cả công ty; chỉ giao cơ sở cho người duyệt, kế toán hoặc người xem.", 409);
+        const cs = body.co_so_id === null ? null : await coSoCuaCongTy(body.co_so_id);
+        if (body.co_so_id !== null && !cs) return loi("KHONG_THAY", "Không có cơ sở này.", 404);
+        const { error } = await db.from("thanh_vien_cong_ty").update({ co_so_id: cs?.id ?? null, sua_luc: new Date().toISOString() }).eq("company_id", companyId).eq("user_id", tv.user_id);
+        if (error) throw new Error(error.message);
+        await ghiNhatKy(db, { companyId, nguoiLam: user.id, vaiTro: ct.vai_tro, thaoTac: "co_so_gan_thanh_vien", doiTuong: tv.user_id, thamSo: { co_so_id: cs?.id ?? null }, moTa: cs ? `Giao thành viên phụ trách cơ sở "${cs.ten}".` : "Thành viên phụ trách toàn công ty." });
+        return json({ ok: true });
+      }
+      return loi("THAM_SO", "Hành động không hợp lệ.", 400);
     }
 
     // Ba thao tác còn lại tác động lên một thành viên đã có.

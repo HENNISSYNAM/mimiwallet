@@ -31,6 +31,9 @@ const LUAT: ReadonlyArray<readonly [RegExp, string]> = [
   // 16/10/2026 (Chủ đề E, FinTechathon): dự báo dòng tiền có cảnh báo và ghép phương án tài trợ. Trước đây "dự báo" bị
   // trả "chưa làm" và "vay vốn" không có đường nào. Đứng trước các luật dòng tiền/báo cáo vì cùng chữ "dòng tiền", "doanh thu".
   [/\b(du bao|du doan|canh bao dong tien|thieu hut|se thieu tien|het tien|co du tien|du tien de)\b/, 'du_bao_dong_tien'],
+  // "cơ sở" trần trùng "cơ sở pháp lý", "cơ sở dữ liệu": chỉ nhận khi rõ là nhiều cơ sở của doanh nghiệp.
+  [/\b((cac|tung|nhieu|moi|giua cac|11|hai|ba) co so|co so (nao|so \d+|\d+|chinh)|chi nhanh|hop nhat dong tien|bu tru giua cac|campus|branches)\b/, 'da_co_so'],
+  [/\b(diem tin dung|diem uy tin|xep hang tin dung|credit score|suc khoe tai chinh|ho so (co )?dep|du dieu kien vay|financial health)\b/, 'suc_khoe_tai_chinh'],
   [/\b(vay von|co nen vay|nen vay|can vay|vay ngan hang|von luu dong|han muc (tin dung|von)|bao thanh toan|ung von|tai tro|dieu kien vay|vay (duoc )?bao nhieu)\b/, 'phuong_an_tai_tro'],
   [/\b(tra soat|chuyen nham|chuyen sai|chuyen trung)\b/, 'giay_to_tra_soat'],
   [/\b(giai trinh|cong van giai trinh)\b/, 'giay_to_giai_trinh'],

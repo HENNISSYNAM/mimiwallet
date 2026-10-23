@@ -12,6 +12,7 @@
  * CÁC GIẢ ĐỊNH ở `GIA_DINH` là ĐỀ XUẤT để minh hoạ sức chứa, KHÔNG phải điều kiện hay lãi suất của tổ chức nào. Mỗi con số xuất
  * ra mang nhãn "giả định" để người đọc thay bằng biểu thật của nơi họ định vay.
  */
+import { LOI_TC, type NgonTC } from './loi.ts';
 
 export const GIA_DINH = {
   /** Phần dòng tiền ròng trung bình mỗi tháng có thể dành trả nợ — ĐỀ XUẤT, thận trọng. */
@@ -60,15 +61,16 @@ export interface PhuongAn {
   con_thieu: string[];
 }
 
-export function ghepPhuongAn(h: HoSoTaiTro): PhuongAn[] {
+export function ghepPhuongAn(h: HoSoTaiTro, ngon: NgonTC = 'vi'): PhuongAn[] {
   const g = GIA_DINH;
+  const L = LOI_TC[ngon];
   const ra: PhuongAn[] = [];
 
   // 1. Không vay: thu nợ quá hạn.
   ra.push(h.cong_no_qua_han > 0
-    ? { khoa: 'thu_no_truoc', ten: 'Thu công nợ quá hạn trước khi vay', phu_hop: 'co_the', suc_chua: { thap: h.cong_no_qua_han, cao: h.cong_no_qua_han },
-      ly_do: ['Không tốn lãi, không cần hồ sơ, và nếu thu được thì có thể không phải vay.'], con_thieu: [] }
-    : { khoa: 'thu_no_truoc', ten: 'Thu công nợ quá hạn trước khi vay', phu_hop: 'khong_can', suc_chua: null, ly_do: ['Hiện không có hoá đơn bán ra nào quá hạn.'], con_thieu: [] });
+    ? { khoa: 'thu_no_truoc', ten: L.pa.thu_no_truoc, phu_hop: 'co_the', suc_chua: { thap: h.cong_no_qua_han, cao: h.cong_no_qua_han },
+      ly_do: [L.lyThuNo], con_thieu: [] }
+    : { khoa: 'thu_no_truoc', ten: L.pa.thu_no_truoc, phu_hop: 'khong_can', suc_chua: null, ly_do: [L.khongQuaHan], con_thieu: [] });
 
   const duDuLieu = h.so_thang >= g.so_thang_toi_thieu;
   const dongTienDuong = h.rong_tb > 0;
@@ -76,37 +78,37 @@ export function ghepPhuongAn(h: HoSoTaiTro): PhuongAn[] {
   const traThang = Math.max(0, h.rong_tb) * g.ty_le_tra_no_tren_dong_tien_rong;
 
   const conThieuChung: string[] = [];
-  if (!duDuLieu) conThieuChung.push(`Mới có ${h.so_thang} tháng sao kê; tổ chức tín dụng thường cần ${g.so_thang_toi_thieu} tháng trở lên để đánh giá.`);
-  if (!dongTienDuong) conThieuChung.push('Dòng tiền ròng trung bình đang không dương nên không có phần để trả nợ; vay lúc này làm hố sâu hơn.');
-  if (!onDinh) conThieuChung.push('Tiền vào biến động mạnh giữa các tháng; hồ sơ sẽ bị đánh giá thấp nếu không giải thích được.');
+  if (!duDuLieu) conThieuChung.push(L.thieuThangPa(h.so_thang, g.so_thang_toi_thieu));
+  if (!dongTienDuong) conThieuChung.push(L.rongKhongDuong);
+  if (!onDinh) conThieuChung.push(L.bienDongPa);
 
   // 2. Hạn mức vốn lưu động.
   const hm = (laiNam: number) => sucChuaGoc(traThang, g.ky_han_von_luu_dong_thang, laiNam);
   ra.push({
-    khoa: 'han_muc_von_luu_dong', ten: 'Hạn mức vốn lưu động',
+    khoa: 'han_muc_von_luu_dong', ten: L.pa.han_muc_von_luu_dong,
     phu_hop: conThieuChung.length === 0 ? 'co_the' : 'chua_du',
     suc_chua: dongTienDuong ? { thap: Math.round(hm(g.lai_nam_cao)), cao: Math.round(hm(g.lai_nam_thap)) } : null,
-    ly_do: ['Phù hợp khi thiếu tiền theo mùa hoặc chờ khách trả; trả lãi theo số đã rút.', `Tính trên dòng tiền kinh doanh đã làm sạch: bỏ ${h.tien_vao_bi_loai.so_khoan} khoản tiền vào nghi không phải doanh thu.`],
+    ly_do: [L.lyHanMuc, L.lyLamSach(h.tien_vao_bi_loai.so_khoan)],
     con_thieu: conThieuChung,
   });
 
   // 3. Ứng vốn theo hoá đơn.
   ra.push({
-    khoa: 'ung_von_hoa_don', ten: 'Ứng vốn theo hoá đơn chưa tới hạn',
+    khoa: 'ung_von_hoa_don', ten: L.pa.ung_von_hoa_don,
     phu_hop: h.hoa_don_cho_chua_han.so > 0 ? 'co_the' : 'chua_du',
     suc_chua: h.hoa_don_cho_chua_han.so > 0 ? (() => { const x = Math.round(h.hoa_don_cho_chua_han.tong * g.ty_le_ung_von_hoa_don); return { thap: x, cao: x }; })() : null,
-    ly_do: ['Tài trợ bằng chính khoản khách sắp trả, nên không đòi dòng tiền ròng dương; chi phí thường tính theo số ngày ứng.'],
-    con_thieu: h.hoa_don_cho_chua_han.so > 0 ? [] : ['Chưa có hoá đơn bán ra nào còn trong hạn thanh toán.'],
+    ly_do: [L.lyUngVon],
+    con_thieu: h.hoa_don_cho_chua_han.so > 0 ? [] : [L.khongHoaDonConHan],
   });
 
   // 4. Vay mua thiết bị / tài sản.
   const tb = (laiNam: number) => sucChuaGoc(traThang, g.ky_han_thiet_bi_thang, laiNam);
   ra.push({
-    khoa: 'vay_thiet_bi', ten: 'Vay trả góp mua thiết bị',
+    khoa: 'vay_thiet_bi', ten: L.pa.vay_thiet_bi,
     phu_hop: 'chua_du',
     suc_chua: dongTienDuong ? { thap: Math.round(tb(g.lai_nam_cao)), cao: Math.round(tb(g.lai_nam_thap)) } : null,
-    ly_do: ['Hợp khi mua một tài sản cụ thể sinh ra tiền; kỳ hạn dài hơn nên mỗi tháng trả nhẹ hơn.'],
-    con_thieu: ['Cần biết thiết bị gì, giá bao nhiêu và nó làm tăng thu hay giảm chi bao nhiêu — MIMI chưa có thông tin này.', ...conThieuChung],
+    ly_do: [L.lyThietBi],
+    con_thieu: [L.canThietBi, ...conThieuChung],
   });
   return ra;
 }
