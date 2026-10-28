@@ -53,6 +53,8 @@ DONG = [
     ('tt_moi', 'Hộ trả tiền trực tiếp mới — tháng 1', 'hộ/tháng', [10, 30, 80], '#,##0', 'Đề xuất', True),
     ('tt_tang', 'Tăng số hộ mới mỗi tháng', '%/tháng', [0.03, 0.05, 0.08], PCT, 'Đề xuất', True),
     ('tt_roi', 'Hộ trực tiếp bỏ mỗi tháng', '%/tháng', [0.06, 0.04, 0.03], PCT, 'Đề xuất', True),
+    ('hd_usd', 'Hợp đồng bán hàng đã ký', 'USD', [20000]*3, '#,##0', 'Người dùng xác nhận 28/10/2026: hợp đồng bán hàng ~20.000 USD đã ký. ĐIỀN số chính xác theo hợp đồng', False),
+    ('hd_thang', 'Số tháng ghi nhận doanh thu hợp đồng', 'tháng', [12]*3, '#,##0', 'Đề xuất: chia đều 12 tháng từ tháng 1 — sửa theo điều khoản thanh toán thật', True),
     ('h_cp', 'CHI PHÍ (ĐỀ XUẤT)', None, None, None, None, None),
     ('dung_xu', 'Phần hạn mức xu khách dùng thật', '%', [0.6, 0.5, 0.4], PCT, 'Đề xuất — đo từ lan_goi_mo_hinh khi có khách', True),
     ('ha_tang_co_dinh', 'Hạ tầng cố định (Supabase, Vercel, tên miền…)', 'đ/tháng', [6000000, 5000000, 5000000], VND, 'Đề xuất — thay bằng hoá đơn thật', True),
@@ -123,6 +125,7 @@ HANG = [  # (khoá, nhãn, định dạng)
     (None, 'DOANH THU', None),
     ('dt_kt', 'Doanh thu kênh kế toán', VND),
     ('dt_tt', 'Doanh thu trực tiếp', VND),
+    ('dt_hd', 'Doanh thu hợp đồng đã ký', VND),
     ('dt', 'TỔNG DOANH THU THÁNG (MRR)', VND),
     (None, 'CHI PHÍ', None),
     ('cp_ai', 'Token AI', VND),
@@ -136,6 +139,7 @@ HANG = [  # (khoá, nhãn, định dạng)
     ('ebitda', 'LÃI/LỖ HOẠT ĐỘNG (EBITDA)', VND),
     ('bien_gop', 'Biên lợi nhuận gộp (sau token, hạ tầng, phí)', PCT),
     ('hoa_von', 'Đã hoà vốn? (1 = có)', '0'),
+    ('con_am', 'Từ tháng này về sau còn tháng lỗ? (1 = còn)', '0'),
     (None, 'TIỀN MẶT', None),
     ('von', 'Vốn nhận', VND),
     ('tien', 'Tiền mặt cuối tháng', VND),
@@ -189,7 +193,8 @@ def dung_kb(kb):
         S('thi_phan', f'=IF({g("som", kb)}>0,{col}{R["ho"]}/{g("som", kb)},0)')
         S('dt_kt', f'={col}{R["ho_kt"]}*{g("gia_kt", kb)}')
         S('dt_tt', f'={col}{R["ho_tt"]}*({g("gia_starter", kb)}*(1-{g("ty_le_growth", kb)})+{g("gia_growth", kb)}*{g("ty_le_growth", kb)})')
-        S('dt', f'={col}{R["dt_kt"]}+{col}{R["dt_tt"]}')
+        S('dt_hd', f'=IF({t}<={g("hd_thang", kb)},{g("hd_usd", kb)}*{g("ty_gia", kb)}/{g("hd_thang", kb)},0)')
+        S('dt', f'={col}{R["dt_kt"]}+{col}{R["dt_tt"]}+{col}{R["dt_hd"]}')
         S('cp_ai', f'={col}{R["ho"]}*{g("xu_thang", kb)}*{g("usd_xu", kb)}*{g("ty_gia", kb)}*{g("dung_xu", kb)}')
         S('cp_ht', f'={g("ha_tang_co_dinh", kb)}+{col}{R["ho"]}*{g("ha_tang_moi_kh", kb)}')
         S('cp_bien', f'={col}{R["dt"]}*{g("phi_bien", kb)}')
@@ -201,6 +206,8 @@ def dung_kb(kb):
         S('ebitda', f'={col}{R["dt"]}-{col}{R["cp"]}')
         S('bien_gop', f'=IF({col}{R["dt"]}>0,({col}{R["dt"]}-{col}{R["cp_ai"]}-{col}{R["cp_ht"]}-{col}{R["cp_bien"]})/{col}{R["dt"]},0)')
         S('hoa_von', f'=IF({col}{R["ebitda"]}>=0,1,0)')
+        nxt = L(3 + i)
+        S('con_am', f'=IF({col}{R["ebitda"]}<0,1,0)' if i == N - 1 else f'=IF(OR({col}{R["ebitda"]}<0,{nxt}{R["con_am"]}=1),1,0)')
         S('von', f'=IF({t}={g("goi_von_thang", kb)},{g("goi_von", kb)},0)')
         S('tien', f'={g("tien_dau", kb)}+{col}{R["von"]}+{col}{R["ebitda"]}' if dau else f'={prv}{R["tien"]}+{col}{R["von"]}+{col}{R["ebitda"]}')
         S('tien_khong_von', f'={g("tien_dau", kb)}+{col}{R["ebitda"]}' if dau else f'={prv}{R["tien_khong_von"]}+{col}{R["ebitda"]}')
@@ -245,6 +252,7 @@ CHI = [
     ('Lãi/lỗ 36 tháng cộng dồn (đ)', lambda kb: f"=SUM('{kb}'!B{RS[kb]['ebitda']}:{last}{RS[kb]['ebitda']})", VND),
     ('Biên gộp tháng 36', lambda kb: f'={q(kb, "bien_gop", last)}', PCT),
     ('Tháng đầu tiên hoà vốn (tháng thứ)', lambda kb: f"=IFERROR(MATCH(1,'{kb}'!B{RS[kb]['hoa_von']}:{last}{RS[kb]['hoa_von']},0),\"Chưa trong 36 tháng\")", '#,##0'),
+    ('Hoà vốn bền vững từ tháng (không còn tháng lỗ)', lambda kb: f"=IFERROR(MATCH(0,'{kb}'!B{RS[kb]['con_am']}:{last}{RS[kb]['con_am']},0),\"Chưa trong 36 tháng\")", '#,##0'),
     ('VỐN CẦN = đáy tiền mặt nếu không gọi vốn (đ)', lambda kb: f"=MAX(0,-MIN('{kb}'!B{RS[kb]['tien_khong_von']}:{last}{RS[kb]['tien_khong_von']}))", VND),
     ('Nếu thắng 20k USD: tháng hết tiền (tháng thứ)', lambda kb: f"=IFERROR(MATCH(1,'{kb}'!B{RS[kb]['het_giai']}:{last}{RS[kb]['het_giai']},0),\"Đủ 36 tháng\")", '#,##0'),
     ('Nếu thắng 20k USD: còn cần gọi thêm (đ)', lambda kb: f"=MAX(0,-MIN('{kb}'!B{RS[kb]['tien_giai']}:{last}{RS[kb]['tien_giai']}))", VND),
