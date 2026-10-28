@@ -71,6 +71,7 @@ import type { HoSoThue } from '@/lib/heLuat';
 import { boDauSao, ChuDam } from '@/lib/chuDam';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { SucKhoeTaiChinh } from '@/components/tro-ly/SucKhoeTaiChinh';
+import { DauChanCarbon } from '@/components/tro-ly/DauChanCarbon';
 
 /** Việc đã có thẻ riêng ở màn đầu thì không lặp lại thành chip. */
 const VIEC_DA_CO_THE = new Set(['cho_duyet', 'ngan_sach_ai']);
@@ -564,6 +565,7 @@ export default function TroLyPage() {
               </Popover>
 
               <span className="ml-auto" />
+              <DauChanCarbon c={boiCanh?.carbon} />
               <SucKhoeTaiChinh sk={boiCanh?.suc_khoe} onHoi={(cau) => void hoi(cau)} />
               <button
                 type="button"

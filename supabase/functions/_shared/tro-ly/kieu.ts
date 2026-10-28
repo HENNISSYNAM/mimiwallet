@@ -10,6 +10,7 @@
  */
 
 import type { VaiTro } from '../quyen/vai-tro.ts';
+import type { ChiSoCarbon } from '../carbon/uoc-tinh.ts';
 
 export type NhomNangLuc = 'tro_ly' | 'chi_phi' | 'chung_tu' | 'ngan_hang' | 'ai_token' | 'bao_cao' | 'ket_noi';
 
@@ -246,6 +247,8 @@ export interface BoiCanh {
   do_day_chung?: TrangThaiDoDay;
   /** Sức khoẻ tài chính (bản máy chủ cũ không gửi). */
   suc_khoe?: SucKhoeTaiChinh;
+  /** Dấu chân carbon ước tính theo khoản chi (`carbon/uoc-tinh.ts`; bản máy chủ cũ không gửi). */
+  carbon?: ChiSoCarbon;
 }
 
 export interface KetQuaQuet {

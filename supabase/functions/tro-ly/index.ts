@@ -76,6 +76,7 @@ import { goiYTienVao } from "../_shared/phan-loai/tien-vao.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
 import { docXuTruocLuot, truXuSauLuot, type XuTruocLuot } from "../_shared/xu/so-xu.ts";
 import { docKeHoach, loiDanLapKeHoach } from "../_shared/tro-ly/lap-kich-ban.ts";
+import { chiSoCarbon } from "../_shared/carbon/uoc-tinh.ts";
 import { apPhamVi, biGioiHan, NGUON_CA_CONG_TY, trongPhamVi, type PhamViCoSo } from "../_shared/da-co-so/pham-vi.ts";
 
 const corsHeaders = {
@@ -894,6 +895,8 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         do_day_chung: trangThaiChung(Object.values(d.doDay) as DoDayNguon[]),
         // 16/10/2026: sức khoẻ tài chính (mức sẵn sàng vay vốn) — cùng dữ liệu đã đọc, không truy vấn thêm.
         suc_khoe: sucKhoeTaiChinh(d),
+        // 28/10/2026: dấu chân carbon ước tính theo khoản chi — chạy ngầm trên cùng giao dịch, bỏ khoản chi cá nhân.
+        carbon: chiSoCarbon(d.giaoDich, moc.homNay, new Set(d.chiCaNhan ?? [])),
         pham_vi_co_so: d.phamViCoSo ?? null,
       });
     }

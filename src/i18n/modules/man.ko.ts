@@ -65,6 +65,18 @@ const m = {
       quanLyKetNoi: '연동 관리',
       dungNhuUngDung: 'MIMI를 앱처럼 사용',
       dungNhuUngDungNgan: '앱처럼 사용',
+      co2: {
+        ten: '탄소 발자국',
+        nhanNut: '이번 달 추정 탄소 발자국: {{so}}',
+        phu: '이번 달 지출로 추정 — 은행 그린 카드처럼',
+        thangNay: '이번 달',
+        soVoiTruoc: '지난달 같은 지출 대비 {{x}}',
+        cuongDo: '백만 동당 {{so}} kg CO₂e',
+        phu_lieu: '이번 달 지출의 {{x}}가 계수가 있는 업종에 매칭되었습니다. 나머지(급여, 세금, 개인 송금 등)는 계산하지 않습니다.',
+        chuaCo: '이번 달 배출 업종으로 분류된 지출이 아직 없습니다.',
+        luuY: '지출액 × 업종 평균 계수로 추정합니다(전기: EVN 평균 요금 × 베트남 2024 전력망 계수, 기타: 미국 EPA v1.3 계수). 측정값이 아니며 온실가스 인벤토리에 사용할 수 없습니다.',
+        nhom: { dien: '전기', xang_dau: '연료', hang_khong: '항공권', an_uong: '식음료', taxi: '택시·차량 호출', van_chuyen_hang: '배송', vien_thong: '통신', dam_may: '클라우드·소프트웨어', khach_san: '호텔', thue_mat_bang: '임대료', sieu_thi: '슈퍼마켓', van_phong_pham: '사무용품' },
+      },
       sk: {
         ten: '재무 건강도',
         tenNgan: '건강도',

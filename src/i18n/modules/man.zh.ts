@@ -65,6 +65,18 @@ const m = {
       quanLyKetNoi: '管理连接',
       dungNhuUngDung: '把 MIMI 当应用使用',
       dungNhuUngDungNgan: '当应用使用',
+      co2: {
+        ten: '碳足迹',
+        nhanNut: '本月估算碳足迹：{{so}}',
+        phu: '根据本月支出估算——类似银行的绿色卡',
+        thangNay: '本月',
+        soVoiTruoc: '与上月同等支出相比 {{x}}',
+        cuongDo: '每百万越南盾 {{so}} kg CO₂e',
+        phu_lieu: '本月支出中有 {{x}} 匹配到有系数的行业；其余（工资、税款、转账给个人等）不计入。',
+        chuaCo: '本月暂无可识别排放行业的支出。',
+        luuY: '按支出金额 × 行业平均系数估算（电力：EVN 平均电价 × 越南 2024 年电网系数；其他：美国 EPA v1.3 系数）。并非实测，不可用于温室气体盘查。',
+        nhom: { dien: '电力', xang_dau: '燃油', hang_khong: '机票', an_uong: '餐饮', taxi: '出租车与网约车', van_chuyen_hang: '快递', vien_thong: '通信', dam_may: '云与软件', khach_san: '酒店', thue_mat_bang: '租金', sieu_thi: '超市', van_phong_pham: '办公用品' },
+      },
       sk: {
         ten: '财务健康度',
         tenNgan: '健康度',

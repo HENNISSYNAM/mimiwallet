@@ -76,6 +76,18 @@ const m = {
       quanLyKetNoi: 'Quản lý kết nối',
       dungNhuUngDung: 'Dùng MIMI như ứng dụng',
       dungNhuUngDungNgan: 'Dùng như ứng dụng',
+      co2: {
+        ten: 'Dấu chân carbon',
+        nhanNut: 'Dấu chân carbon ước tính tháng này: {{so}}',
+        phu: 'Ước tính từ các khoản chi tháng này — như thẻ xanh của ngân hàng',
+        thangNay: 'tháng này',
+        soVoiTruoc: '{{x}} so với cùng mức chi tháng trước',
+        cuongDo: '{{so}} kg CO₂e trên mỗi triệu đồng',
+        phu_lieu: 'Đã xếp được {{x}} tiền chi tháng này vào nhóm có hệ số; phần còn lại (lương, thuế, chuyển cho người…) không tính.',
+        chuaCo: 'Tháng này chưa có khoản chi nào nhận ra được nhóm phát thải.',
+        luuY: 'Ước tính theo số tiền chi × hệ số trung bình của ngành (điện: giá bình quân EVN × hệ số lưới điện Việt Nam 2024; còn lại: hệ số US EPA v1.3). Không phải số đo, không dùng cho báo cáo kiểm kê khí nhà kính.',
+        nhom: { dien: 'Điện', xang_dau: 'Xăng dầu', hang_khong: 'Vé máy bay', an_uong: 'Ăn uống', taxi: 'Taxi, xe công nghệ', van_chuyen_hang: 'Giao hàng', vien_thong: 'Viễn thông', dam_may: 'Đám mây, phần mềm', khach_san: 'Khách sạn', thue_mat_bang: 'Thuê mặt bằng', sieu_thi: 'Siêu thị', van_phong_pham: 'Văn phòng phẩm' },
+      },
       sk: {
         ten: 'Sức khoẻ tài chính',
         tenNgan: 'Sức khoẻ',
