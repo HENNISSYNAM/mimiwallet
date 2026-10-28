@@ -100,6 +100,29 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Trình duyệt đang giữ phiên Supabase (chưa kiểm hạn) — để người đã đăng nhập không thấy trang giới thiệu nháy qua. */
+function coPhienLuu(): boolean {
+  try {
+    return typeof window !== "undefined" && Object.keys(window.localStorage).some((k) => /^sb-.*-auth-token$/.test(k));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 28/10/2026: người đã có tài khoản mở mimiwallet.online là vào thẳng MIMI, không qua trang giới thiệu.
+ * Muốn xem lại trang giới thiệu khi đang đăng nhập: `/?gioi-thieu`.
+ */
+function TrangDau() {
+  const { isAuthenticated, loading } = useAuthStore();
+  const xemGioiThieu = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("gioi-thieu");
+  if (!xemGioiThieu) {
+    if (loading && coPhienLuu()) return <ManHinhCho />;
+    if (!loading && isAuthenticated) return <Navigate to="/dashboard" replace />;
+  }
+  return <Landing />;
+}
+
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const initialize = useAuthStore((s) => s.initialize);
   useEffect(() => { initialize(); }, [initialize]);
@@ -135,7 +158,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
         <AuthInitializer>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
-              <Route path="/" element={<Page path="/" title="MIMI WALLET — Trợ lý sổ sách và thuế cho hộ kinh doanh" description="MIMI đọc sao kê ngân hàng, chỉ ra khoản chi còn thiếu chứng từ, nhắc hạn thuế theo đúng hồ sơ của bạn và soạn sẵn bản nháp tờ khai có nguồn từng con số. Bạn tự kiểm và tự nộp. MIMI không giữ tiền, không chuyển tiền."><Landing /></Page>} />
+              <Route path="/" element={<Page path="/" title="MIMI WALLET — Trợ lý sổ sách và thuế cho hộ kinh doanh" description="MIMI đọc sao kê ngân hàng, chỉ ra khoản chi còn thiếu chứng từ, nhắc hạn thuế theo đúng hồ sơ của bạn và soạn sẵn bản nháp tờ khai có nguồn từng con số. Bạn tự kiểm và tự nộp. MIMI không giữ tiền, không chuyển tiền."><TrangDau /></Page>} />
               <Route path="/khach-hang" element={<Page path="/khach-hang" title="Khách hàng — MIMI WALLET" description="MIMI làm gì cho hộ kinh doanh, doanh nghiệp nhỏ và vừa, startup và văn phòng kế toán."><KhachHang /></Page>} />
               <Route path="/about" element={<Page path="/about" title="Về chúng tôi — MIMI WALLET" description="Câu chuyện và đội ngũ đứng sau MIMI Wallet: bớt cho chủ hộ kinh doanh những buổi tối dò sao kê, tìm hoá đơn và lo hạn thuế."><About /></Page>} />
               {/* Công khai, không nằm sau đăng nhập — App Store yêu cầu
