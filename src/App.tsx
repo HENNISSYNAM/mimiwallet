@@ -85,6 +85,8 @@ const KhaoSatGiaPage = lazy(() => import("./pages/KhaoSatGiaPage"));
 const DoanhThuXacMinhPage = lazy(() => import("./pages/DoanhThuXacMinhPage"));
 const XacMinhCongKhaiPage = lazy(() => import("./pages/XacMinhCongKhaiPage"));
 const VayVonPage = lazy(() => import("./pages/VayVonPage"));
+// Bán tại quầy (10/11/2026): toàn màn hình, ngoài DashboardLayout — máy POS 5–8 inch không có chỗ cho thanh bên.
+const PosPage = lazy(() => import("./pages/PosPage"));
 
 const queryClient = new QueryClient();
 
@@ -207,6 +209,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
               <Route path="/register" element={<Page path="/register" title="Dùng thử MIMI — MIMI WALLET" description="Xem ngay bản demo MIMI Wallet với cửa hàng mẫu, hoặc liên hệ để dùng MIMI cho sổ sách thật của doanh nghiệp."><DangKy /></Page>} />
               <Route path="/xac-minh/:token" element={<Page noIndex path="/xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Báo cáo doanh thu do chủ hộ chia sẻ qua MIMI, kèm mã kiểm tra và dấu thời gian công khai. Không phải điểm tín dụng."><XacMinhCongKhaiPage /></Page>} />
               <Route path="/admin" element={<Page noIndex path="/admin" title="Quản trị — MIMI WALLET" description="Bảng điều khiển quản trị nội bộ của MIMI Wallet dành riêng cho tài khoản có quyền admin."><AdminPage /></Page>} />
+              <Route path="/pos" element={<Page noIndex path="/pos" title="Bán tại quầy — MIMI WALLET" description="Thu tiền tại quầy bằng tiền mặt hoặc VietQR; mỗi lần bán vào thẳng sổ của MIMI."><ProtectedRoute><PosPage /></ProtectedRoute></Page>} />
               <Route
                 path="/dashboard"
                 element={
