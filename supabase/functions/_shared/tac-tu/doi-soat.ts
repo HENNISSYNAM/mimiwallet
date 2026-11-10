@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { khopChiTacTu, type GiaoDichRa, type YeuCauChoKhop } from "./khop-chi.ts";
 import { reconcileCompanyQr } from "../ledger/qr-reconciler.ts";
+import { doiSoatBanHangPos } from "../pos/ghi-so.ts";
 
 /**
  * Nối `khopChiTacTu` vào database. Quyết định nằm trong hàm thuần; file này chỉ
@@ -108,5 +109,10 @@ export async function doiSoatSauKhiGhi(supabase: SupabaseClient, companyId: stri
     console.error("đối soát chi agent:", e instanceof Error ? e.message : e);
     return { khop: 0, lech: 0 };
   });
-  return { ...qr, chi_agent: chi };
+  // Bán tại quầy (10/11/2026): lần bán chuyển khoản nào có tiền về thì đánh dấu đã thu. Bọc riêng như trên.
+  const pos = await doiSoatBanHangPos(supabase, companyId).catch((e) => {
+    console.error("đối soát POS:", e instanceof Error ? e.message : e);
+    return { khop: 0, lech: 0 };
+  });
+  return { ...qr, chi_agent: chi, pos };
 }

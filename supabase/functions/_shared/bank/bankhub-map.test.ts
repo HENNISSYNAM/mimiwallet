@@ -158,6 +158,17 @@ describe('mapBankhubTransactions', () => {
     expect(rows[0].type).toBe('income');
   });
 
+  it('đọc mã MIMI trong nội dung chuyển khoản khi Cas không có mã QR Pay (POS, hoá đơn VietQR)', () => {
+    const st = signedStatement();
+    st[0] = { ...st[0], description: 'NGUYEN VAN A chuyen tien MIMIK7P2QX FT26314' };
+    const { rows } = mapBankhubTransactions(wrap(st));
+    expect(rows[0].payment_reference).toBe('MIMIK7P2QX');
+    // Tên người chuyển vẫn là nhãn hiển thị.
+    expect(rows[0].merchant_name).toBe('CONG TY TNHH ABC');
+    // Không có mã thì vẫn null, không đoán.
+    expect(rows[1].payment_reference).toBeNull();
+  });
+
   it('derives a stable reference_id, so a re-sync deduplicates', () => {
     const a = mapBankhubTransactions(wrap(signedStatement()));
     const b = mapBankhubTransactions(wrap(signedStatement()));

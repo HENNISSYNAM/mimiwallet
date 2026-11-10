@@ -56,7 +56,7 @@ const BANG_CONG_TY = [
   'phien_ban_tai_lieu', 'duyet_tai_lieu', 'nhat_ky_thay_doi', 'yeu_cau_thuc_thi', 'xung_dot_hoa_don',
   'carbon_snapshots', 'credit_score_factors', 'credit_score_snapshots', 'device_rules', 'device_wallets', 'kyc_verifications',
   'learning_progress', 'loan_applications', 'm2m_transactions', 'p2p_commitments', 'p2p_listings',
-  'companies', 'hoi_thoai_tro_ly', 'thong_bao',
+  'companies', 'hoi_thoai_tro_ly', 'thong_bao', 'ban_hang_pos', 'pos_san_pham',
 ];
 
 describe('RLS: người bị gỡ khỏi công ty mất quyền', () => {
