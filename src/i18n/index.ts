@@ -35,9 +35,13 @@ import ui2Vi from './modules/ui2.vi';
 import ui2En from './modules/ui2.en';
 import ui2Ko from './modules/ui2.ko';
 import ui2Zh from './modules/ui2.zh';
+import vayVi from './modules/vay.vi';
+import vayEn from './modules/vay.en';
+import vayKo from './modules/vay.ko';
+import vayZh from './modules/vay.zh';
 
-const viAll = { ...vi, ...landingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi, ...ui1Vi, ...ui2Vi };
-const enAll = { ...en, ...landingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn, ...ui1En, ...ui2En };
+const viAll = { ...vi, ...landingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi, ...ui1Vi, ...ui2Vi, ...vayVi };
+const enAll = { ...en, ...landingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn, ...ui1En, ...ui2En, ...vayEn };
 
 /**
  * Bốn ngôn ngữ, cùng một bộ khoá. `NGON_NGU` là nguồn duy nhất cho menu chọn ngôn ngữ và cho
@@ -55,8 +59,8 @@ export const NGON_NGU = [
 
 export type MaNgonNgu = (typeof NGON_NGU)[number]['ma'];
 
-const koAll = { ...ko, ...manKo, ...kgKo, ...appKo, ...tbKo, ...ui1Ko, ...ui2Ko };
-const zhAll = { ...zh, ...manZh, ...kgZh, ...appZh, ...tbZh, ...ui1Zh, ...ui2Zh };
+const koAll = { ...ko, ...manKo, ...kgKo, ...appKo, ...tbKo, ...ui1Ko, ...ui2Ko, ...vayKo };
+const zhAll = { ...zh, ...manZh, ...kgZh, ...appZh, ...tbZh, ...ui1Zh, ...ui2Zh, ...vayZh };
 
 export const BO_DICH: Record<MaNgonNgu, Record<string, unknown>> = {
   vi: viAll, en: enAll, ko: koAll, zh: zhAll,

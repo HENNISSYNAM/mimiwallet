@@ -57,6 +57,8 @@ const BANG_CONG_TY = [
   'carbon_snapshots', 'credit_score_factors', 'credit_score_snapshots', 'device_rules', 'device_wallets', 'kyc_verifications',
   'learning_progress', 'loan_applications', 'm2m_transactions', 'p2p_commitments', 'p2p_listings',
   'companies', 'hoi_thoai_tro_ly', 'thong_bao',
+  // 10/11/2026: hồ sơ vay (chỉ chủ / quản trị đọc, chỉ máy chủ ghi).
+  'ho_so_vay',
 ];
 
 describe('RLS: người bị gỡ khỏi công ty mất quyền', () => {

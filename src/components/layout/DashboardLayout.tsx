@@ -109,6 +109,7 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/chung-tu': 'man.ten.chungTu',
   '/dashboard/to-khai': 'man.ten.toKhai',
   '/dashboard/clients': 'man.ten.khachHang',
+  '/dashboard/vay-von': 'vay.tieuDe',
 };
 
 export default function DashboardLayout() {
