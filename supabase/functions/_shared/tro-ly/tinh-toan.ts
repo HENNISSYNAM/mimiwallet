@@ -26,6 +26,8 @@ import { goiYTienVao, TEN_LOAI_TIEN_VAO, type GoiYTienVao, type LoaiTienVao } fr
 import { laChiRaKhongPhaiDoanhThu, type DeXuatAi } from '../phan-loai/de-xuat-ai.ts';
 import { duBaoDongTien, SO_THANG_DU_BAO, SO_THANG_TOI_THIEU, type KhachTop, type ThangTien } from '../tai-chinh/du-bao.ts';
 import { ghepPhuongAn, GIA_DINH, type HoSoTaiTro } from '../tai-chinh/phuong-an.ts';
+import { duBaoDongTienML } from '../dong-tien/du-bao.ts';
+import { LOI_DT } from '../dong-tien/loi.ts';
 import { THE_TC, type NgonTC } from '../tai-chinh/loi.ts';
 import { cauHoiVatLechChieu, chuanTaiKhoan, hopNhat, type CoSo, type VatCoSo } from '../da-co-so/hop-nhat.ts';
 import { LOI_KHONG_PHAI_DIEM_TIN_DUNG, TEN_MUC as TEN_MUC_SUC_KHOE, TEN_YEU_TO, tinhDiemSanSang, type KetQuaSanSang } from '../tai-chinh/diem-san-sang.ts';
@@ -734,6 +736,48 @@ const TEN_KICH_BAN = { tot: 'Tốt', co_so: 'Cơ sở', xau: 'Xấu' } as const;
 /** Ngôn ngữ thẻ kết quả theo câu hỏi; không có câu hỏi (màn đầu, test) thì tiếng Việt. */
 const ngonCauHoi = (d: DuLieu): NgonTC => (d.cauHoi ? nhanNgonNgu(d.cauHoi) : 'vi');
 
+/**
+ * 10/11/2026: dự báo 13 tuần bằng học máy (`dong-tien/`) trên chính các giao dịch trợ lý đã đọc — thêm SAU các thẻ ba
+ * kịch bản cũ, không đổi chúng. Màn trợ lý mở thêm biểu đồ đầy đủ (đọc toàn bộ sao kê) qua action `du_bao_dong_tien_ml`.
+ */
+function theDuBaoML(d: DuLieu, n: NgonTC): The[] {
+  const ngon = n === 'vi' ? 'vi' : 'en';
+  const L = LOI_DT[ngon];
+  const ml = duBaoDongTienML(d.giaoDich, {
+    homNay: d.homNay,
+    taiKhoanCuaMinh: d.ketNoiNganHang.map((k) => k.account_number),
+    quyetDinhChu: Object.fromEntries(Object.entries(d.phanLoaiTienVao ?? {}).map(([id, h]) => [id, { hieu_luc: h }])),
+  }, { ngon });
+  if (ml.che_do === 'khong_du') return [];
+  const vi = ngon === 'vi';
+  const ngan = (s: string) => `${s.slice(8, 10)}/${s.slice(5, 7)}`;
+  const the: The[] = [
+    { loai: 'ghi_chu', muc_do: ml.tuan_rui_ro.length ? 'can_chu_y' : 'thong_tin', cau: ml.tom_tat },
+    {
+      loai: 'bang', tieu_de: vi ? 'Dự báo 13 tuần — khoảng thấp / giữa / cao' : '13-week forecast — low / middle / high',
+      cot: [
+        { nhan: vi ? 'Tuần' : 'Week', don_vi: 'chu' }, { nhan: vi ? 'Ròng thấp' : 'Net low', don_vi: 'vnd' },
+        { nhan: vi ? 'Ròng giữa' : 'Net middle', don_vi: 'vnd' }, { nhan: vi ? 'Ròng cao' : 'Net high', don_vi: 'vnd' },
+      ],
+      dong: ml.tuan.map((t) => [`${ngan(t.tu)}–${ngan(t.den)}`, t.rong.p10, t.rong.p50, t.rong.p90] as O[]),
+    },
+  ];
+  const dk = ml.dinh_ky.filter((x) => x.dang_hoat_dong).slice(0, 6);
+  if (dk.length) {
+    the.push({
+      loai: 'bang', tieu_de: vi ? 'Khoản đều đặn MIMI nhận ra' : 'Regular flows MIMI found',
+      cot: [
+        { nhan: vi ? 'Đối tác' : 'Counterparty', don_vi: 'chu' }, { nhan: vi ? 'Loại' : 'Type', don_vi: 'chu' },
+        { nhan: vi ? 'Chu kỳ' : 'Cycle', don_vi: 'chu' }, { nhan: vi ? 'Số tiền' : 'Amount', don_vi: 'vnd' },
+        { nhan: vi ? 'Lần tới' : 'Next', don_vi: 'ngay' },
+      ],
+      dong: dk.map((x) => [x.ten, L.loaiDinhKy[x.loai], L.chuKy[x.chu_ky], x.chieu === 'ra' ? -x.so_tien_du_kien : x.so_tien_du_kien, x.ngay_ke_tiep] as O[]),
+    });
+  }
+  for (const c of ml.giai_thich.slice(0, 3)) the.push({ loai: 'ghi_chu', muc_do: 'thong_tin', cau: c });
+  return the;
+}
+
 export function duBaoDongTienNL(d: DuLieu): KetQuaNangLuc {
   const n = ngonCauHoi(d);
   const X = THE_TC[n];
@@ -778,6 +822,7 @@ export function duBaoDongTienNL(d: DuLieu): KetQuaNangLuc {
     },
     ...kqDb.canh_bao.map((c): The => ({ loai: 'ghi_chu', muc_do: c.muc_do === 'cao' ? 'can_chu_y' : 'thong_tin', cau: c.cau })),
     { loai: 'ghi_chu', muc_do: 'thong_tin', cau: X.giaiThich(SO_THANG_TOI_THIEU) },
+    ...theDuBaoML(d, n),
   ];
   const deXuat: DeXuat[] = congNo > 0
     ? [{ khoa: 'mo_trang:hoa_don_qua_han', loai: 'mo_trang', nhan: X.nhacKhach, mo_ta: X.nhacKhachMoTa, tham_so: { duong_dan: '/dashboard/invoices?filter=overdue' } }]
