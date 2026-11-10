@@ -41,6 +41,8 @@ export const HANH_DONG = [
   'quan_ly_thanh_vien',
   'thanh_toan_goi',
   'xoa_cong_ty',
+  // 10/11/2026: đánh giá sẵn sàng vay + lập hồ sơ vay (cả dòng tiền công ty, kèm lời đồng ý thay doanh nghiệp).
+  'lap_ho_so_vay',
 ] as const;
 export type HanhDong = (typeof HANH_DONG)[number];
 
@@ -63,6 +65,7 @@ export const MUC_DO: Record<HanhDong, MucDoHanhDong> = {
   quan_ly_thanh_vien: 'sensitive',
   thanh_toan_goi: 'sensitive',
   xoa_cong_ty: 'sensitive',
+  lap_ho_so_vay: 'sensitive',
 };
 
 /** Vai trò nào được làm hành động nào. Thiếu tên trong danh sách nghĩa là KHÔNG được. */
@@ -83,6 +86,7 @@ export const QUYEN: Record<HanhDong, readonly VaiTro[]> = {
   quan_ly_thanh_vien: ['chu_so_huu', 'quan_tri'],
   thanh_toan_goi: ['chu_so_huu', 'quan_tri'],
   xoa_cong_ty: ['chu_so_huu'],
+  lap_ho_so_vay: ['chu_so_huu', 'quan_tri'],
 };
 
 export const laVaiTro = (v: unknown): v is VaiTro => (VAI_TRO as readonly string[]).includes(String(v));

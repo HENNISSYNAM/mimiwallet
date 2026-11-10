@@ -84,6 +84,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const KhaoSatGiaPage = lazy(() => import("./pages/KhaoSatGiaPage"));
 const DoanhThuXacMinhPage = lazy(() => import("./pages/DoanhThuXacMinhPage"));
 const XacMinhCongKhaiPage = lazy(() => import("./pages/XacMinhCongKhaiPage"));
+const VayVonPage = lazy(() => import("./pages/VayVonPage"));
 
 const queryClient = new QueryClient();
 
@@ -239,6 +240,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route path="cashflow" element={<Page noIndex path="/dashboard/cashflow" title="Dòng tiền — MIMI WALLET" description="Phân tích dòng tiền vào ra theo ngày, tuần, tháng và dự báo thanh khoản 90 ngày cho doanh nghiệp bạn."><DashboardOverview /></Page>} />
                 <Route path="doanh-thu-xac-minh" element={<Page noIndex path="/dashboard/doanh-thu-xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Lập báo cáo doanh thu từ sổ MIMI, ghi dấu thời gian công khai và gửi cho người bạn chọn, có hạn, thu hồi được."><DoanhThuXacMinhPage /></Page>} />
                 <Route path="fintech" element={<Page noIndex path="/dashboard/fintech" title="Ngân hàng mở & eKYC — MIMI WALLET" description="Liên kết ngân hàng, xác thực eKYC, phương thức thanh toán và trạng thái tuân thủ trong một nơi duy nhất."><FintechPage /></Page>} />
+                <Route path="vay-von" element={<Page noIndex path="/dashboard/vay-von" title="Vay vốn — MIMI WALLET" description="Đánh giá sẵn sàng vay từ dòng tiền thật và hồ sơ vay để bạn tự in, tự mang đi. MIMI không cho vay và không gửi hồ sơ cho ai."><VayVonPage /></Page>} />
               </Route>
               <Route path="*" element={<Page noIndex path="/404" title="Không tìm thấy trang — MIMI WALLET" description="Đường dẫn bạn truy cập không tồn tại hoặc đã được chuyển đi. Quay lại trang chủ MIMI Wallet để tiếp tục."><NotFound /></Page>} />
 
