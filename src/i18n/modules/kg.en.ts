@@ -70,6 +70,7 @@ const m = {
       chinh_sach: 'Spending policy',
       fintech: 'Banking & payments',
       ket_noi: 'Apps & connections',
+      doanh_thu_xac_minh: 'Verified revenue',
     },
     hoiModule: {
       nhan: 'Ask MIMI about this page',

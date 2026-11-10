@@ -70,6 +70,7 @@ const m = {
       chinh_sach: '支出政策',
       fintech: '银行与支付',
       ket_noi: '应用与连接',
+      doanh_thu_xac_minh: '已核实收入',
     },
     hoiModule: {
       nhan: '就本页询问 MIMI',

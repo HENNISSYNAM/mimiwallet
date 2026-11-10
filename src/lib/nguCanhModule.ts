@@ -50,6 +50,7 @@ export const TRANG_THEM: readonly { ten: string; duong: string; khoa: string }[]
   { ten: 'Thư viện chứng từ', duong: '/dashboard/thu-vien', khoa: 'thu_vien' },
   { ten: 'Tách chi cá nhân', duong: '/dashboard/chi-ca-nhan', khoa: 'chi_ca_nhan' },
   { ten: 'Tờ khai thuế', duong: '/dashboard/to-khai', khoa: 'to_khai' },
+  { ten: 'Doanh thu đã xác minh', duong: '/dashboard/doanh-thu-xac-minh', khoa: 'doanh_thu_xac_minh' },
   { ten: 'Giấy tờ', duong: '/dashboard/giay-to', khoa: 'giay_to' },
   { ten: 'Đọc báo cáo tài chính', duong: '/dashboard/doc-bao-cao', khoa: 'doc_bao_cao' },
   { ten: 'Kiểm soát chi của agent', duong: '/dashboard/tac-tu', khoa: 'tac_tu' },
