@@ -72,6 +72,7 @@ import { boDauSao, ChuDam } from '@/lib/chuDam';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { SucKhoeTaiChinh } from '@/components/tro-ly/SucKhoeTaiChinh';
 import { DauChanCarbon } from '@/components/tro-ly/DauChanCarbon';
+import { DuBaoDongTien } from '@/components/tro-ly/DuBaoDongTien';
 
 /** Việc đã có thẻ riêng ở màn đầu thì không lặp lại thành chip. */
 const VIEC_DA_CO_THE = new Set(['cho_duyet', 'ngan_sach_ai']);
@@ -914,6 +915,8 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
       <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">{TEN_NHOM[r.nhom]}</p>
       <div className="flex flex-col gap-4">
         {r.the.map((t, i) => <TheKetQua key={i} the={t} />)}
+        {/* 10/11/2026: biểu đồ dự báo 13 tuần (học máy) — bấm mới tải. */}
+        {r.nang_luc === 'du_bao_dong_tien' && <DuBaoDongTien />}
       </div>
 
       {r.de_xuat.length > 0 && (

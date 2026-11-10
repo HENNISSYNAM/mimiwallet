@@ -78,6 +78,8 @@ import { docXuTruocLuot, truXuSauLuot, type XuTruocLuot } from "../_shared/xu/so
 import { docKeHoach, loiDanLapKeHoach } from "../_shared/tro-ly/lap-kich-ban.ts";
 import { chiSoCarbon } from "../_shared/carbon/uoc-tinh.ts";
 import { apPhamVi, biGioiHan, NGUON_CA_CONG_TY, trongPhamVi, type PhamViCoSo } from "../_shared/da-co-so/pham-vi.ts";
+import { duBaoDongTienTuCsdl } from "../_shared/dong-tien/doc-db.ts";
+import { LoiKhacCongTy } from "../_shared/dong-tien/tong-hop.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,6 +120,8 @@ const GIOI_HAN: Record<string, { cuaSoGiay: number; toiDa: number }> = {
   bat_thuong: { cuaSoGiay: 60, toiDa: 30 },
   kiem_truoc_khi_chuyen: { cuaSoGiay: 60, toiDa: 20 },
   gan_nhan_chi: { cuaSoGiay: 60, toiDa: 120 },
+  // 10/11/2026: dự báo dòng tiền học máy đọc toàn bộ sao kê (tới 300k dòng) — nặng hơn các action khác.
+  du_bao_dong_tien_ml: { cuaSoGiay: 60, toiDa: 6 },
 };
 
 const NGAY_LICH_SU = 180;
@@ -1511,6 +1515,31 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       // Id của công ty khác: không có dòng nào → 404, và KHÔNG nói id nào tồn tại ở đâu.
       if (!ds.length) return loi("KHONG_THAY", "Không có bản ghi này trong công ty của bạn.", 404);
       return json({ loai, ban_ghi: ds, thieu: ids.length - ds.length });
+    }
+
+    /*
+     * 10/11/2026: dự báo dòng tiền 13 tuần / 3 tháng bằng học máy (`_shared/dong-tien/`) cho công ty đang dùng (đã kiểm
+     * thành viên ở `resolveCompanyVaiTro`). Đọc giao dịch theo trang con trỏ; kế toán một cơ sở chỉ thấy tài khoản của cơ
+     * sở mình. Số dư hôm nay do chủ nhập (không lưu) — ngân hàng không trả số dư. Chỉ đọc + lưu tham số mô hình đề xuất.
+     */
+    case "du_bao_dong_tien_ml": {
+      const tho = body.so_du_hien_tai;
+      let soDu: number | null = null;
+      if (tho !== undefined && tho !== null && tho !== "") {
+        soDu = Number(tho);
+        if (!Number.isFinite(soDu) || Math.abs(soDu) > 1e13) return loi("THAM_SO", "Số dư chưa đúng.", 400);
+      }
+      const ngon = String(body.ngon_ngu ?? "vi").startsWith("vi") ? "vi" : "en";
+      try {
+        const kq = await duBaoDongTienTuCsdl(db, company.id, { homNay: moc.homNay, laDemo: company.la_demo === true, phamVi, soDuHienTai: soDu, ngon });
+        return json(kq);
+      } catch (e) {
+        if (e instanceof LoiKhacCongTy) {
+          console.error("du_bao_dong_tien_ml: dữ liệu khác công ty");
+          return loi("LOI_HE_THONG", "MIMI dừng dự báo vì phát hiện dữ liệu không thuộc công ty này.", 500);
+        }
+        throw e;
+      }
     }
 
     case "trang_thai": {
