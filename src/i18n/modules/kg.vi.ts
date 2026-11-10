@@ -74,6 +74,7 @@ const m = {
       chinh_sach: 'Chính sách chi',
       fintech: 'Ngân hàng & thanh toán',
       ket_noi: 'Ứng dụng & kết nối',
+      doanh_thu_xac_minh: 'Doanh thu đã xác minh',
     },
     hoiModule: {
       nhan: 'Hỏi MIMI về trang này',

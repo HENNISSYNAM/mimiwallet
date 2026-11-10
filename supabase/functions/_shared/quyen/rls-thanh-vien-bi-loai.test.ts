@@ -57,6 +57,7 @@ const BANG_CONG_TY = [
   'carbon_snapshots', 'credit_score_factors', 'credit_score_snapshots', 'device_rules', 'device_wallets', 'kyc_verifications',
   'learning_progress', 'loan_applications', 'm2m_transactions', 'p2p_commitments', 'p2p_listings',
   'companies', 'hoi_thoai_tro_ly', 'thong_bao',
+  'bao_cao_xac_minh', 'chia_se_xac_minh', 'nhat_ky_xem_xac_minh',
 ];
 
 describe('RLS: người bị gỡ khỏi công ty mất quyền', () => {

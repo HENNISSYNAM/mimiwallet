@@ -82,6 +82,8 @@ const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const KhaoSatGiaPage = lazy(() => import("./pages/KhaoSatGiaPage"));
+const DoanhThuXacMinhPage = lazy(() => import("./pages/DoanhThuXacMinhPage"));
+const XacMinhCongKhaiPage = lazy(() => import("./pages/XacMinhCongKhaiPage"));
 
 const queryClient = new QueryClient();
 
@@ -202,6 +204,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                   browser here directly, and it must resolve on its own. */}
               <Route path="/bank/callback" element={<Page noIndex path="/bank/callback" title="Đang liên kết ngân hàng — MIMI WALLET" description="Hoàn tất kết nối tài khoản ngân hàng của bạn với MIMI Wallet để đồng bộ sao kê tự động."><BankCallback /></Page>} />
               <Route path="/register" element={<Page path="/register" title="Dùng thử MIMI — MIMI WALLET" description="Xem ngay bản demo MIMI Wallet với cửa hàng mẫu, hoặc liên hệ để dùng MIMI cho sổ sách thật của doanh nghiệp."><DangKy /></Page>} />
+              <Route path="/xac-minh/:token" element={<Page noIndex path="/xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Báo cáo doanh thu do chủ hộ chia sẻ qua MIMI, kèm mã kiểm tra và dấu thời gian công khai. Không phải điểm tín dụng."><XacMinhCongKhaiPage /></Page>} />
               <Route path="/admin" element={<Page noIndex path="/admin" title="Quản trị — MIMI WALLET" description="Bảng điều khiển quản trị nội bộ của MIMI Wallet dành riêng cho tài khoản có quyền admin."><AdminPage /></Page>} />
               <Route
                 path="/dashboard"
@@ -234,6 +237,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route path="chung-tu" element={<Page noIndex path="/dashboard/chung-tu" title="Chứng từ chi phí — MIMI WALLET" description="Khoản chi nào đã có hoá đơn, khoản nào chưa, và còn thiếu bao nhiêu để tính thuế theo lợi nhuận."><ChungTuPage /></Page>} />
                 <Route path="settings" element={<Page noIndex path="/dashboard/settings" title="Cài đặt tài khoản — MIMI WALLET" description="Quản lý thông tin doanh nghiệp, bảo mật, gói dịch vụ và tuỳ chọn thông báo trong MIMI Wallet."><SettingsPage /></Page>} />
                 <Route path="cashflow" element={<Page noIndex path="/dashboard/cashflow" title="Dòng tiền — MIMI WALLET" description="Phân tích dòng tiền vào ra theo ngày, tuần, tháng và dự báo thanh khoản 90 ngày cho doanh nghiệp bạn."><DashboardOverview /></Page>} />
+                <Route path="doanh-thu-xac-minh" element={<Page noIndex path="/dashboard/doanh-thu-xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Lập báo cáo doanh thu từ sổ MIMI, ghi dấu thời gian công khai và gửi cho người bạn chọn, có hạn, thu hồi được."><DoanhThuXacMinhPage /></Page>} />
                 <Route path="fintech" element={<Page noIndex path="/dashboard/fintech" title="Ngân hàng mở & eKYC — MIMI WALLET" description="Liên kết ngân hàng, xác thực eKYC, phương thức thanh toán và trạng thái tuân thủ trong một nơi duy nhất."><FintechPage /></Page>} />
               </Route>
               <Route path="*" element={<Page noIndex path="/404" title="Không tìm thấy trang — MIMI WALLET" description="Đường dẫn bạn truy cập không tồn tại hoặc đã được chuyển đi. Quay lại trang chủ MIMI Wallet để tiếp tục."><NotFound /></Page>} />

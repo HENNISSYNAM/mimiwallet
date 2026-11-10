@@ -70,6 +70,7 @@ const m = {
       chinh_sach: '지출 정책',
       fintech: '은행 및 결제',
       ket_noi: '앱 및 연결',
+      doanh_thu_xac_minh: '검증된 매출',
     },
     hoiModule: {
       nhan: '이 페이지에 대해 MIMI에게 묻기',

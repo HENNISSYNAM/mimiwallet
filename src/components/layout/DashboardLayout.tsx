@@ -108,6 +108,7 @@ const pageTitleKeys: Record<string, string> = {
   '/dashboard/chi-phi-ai': 'man.ten.chiPhiAi',
   '/dashboard/chung-tu': 'man.ten.chungTu',
   '/dashboard/to-khai': 'man.ten.toKhai',
+  '/dashboard/doanh-thu-xac-minh': 'kg.trang.doanh_thu_xac_minh',
   '/dashboard/clients': 'man.ten.khachHang',
 };
 
