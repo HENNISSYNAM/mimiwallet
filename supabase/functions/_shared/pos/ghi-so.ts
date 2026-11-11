@@ -100,7 +100,7 @@ export async function ghiSoBan(db: Db, b: BanDeGhiSo, nguoi: string, vai: string
   if (e1) throw new Error(`ghi sổ lần bán: ${e1.message}`);
 
   const { data: gd, error: e2 } = await db.from('transactions').select('id')
-    .eq('company_id', b.company_id).eq('reference_id', referenceId).maybeSingle();
+    .eq('company_id', b.company_id).eq('reference_id', referenceId).eq('is_synthetic', b.la_demo === true).maybeSingle();
   if (e2 || !gd) throw new Error(`đọc lại dòng sổ: ${e2?.message ?? 'không thấy'}`);
 
   await phanLoaiDoanhThuPos(db, {
@@ -138,6 +138,7 @@ export async function doiSoatBanHangPos(db: Db, companyId: string, chiBan?: stri
       .select('id, amount, type, payment_reference, merchant_name')
       .eq('company_id', companyId)
       .eq('type', 'income')
+      .eq('is_synthetic', false) // chỉ tiền thật từ ngân hàng mới đóng được một lần bán
       .gte('transaction_date', tu)
       .or('payment_reference.ilike.MIMI%,merchant_name.ilike.%MIMI%')
       .limit(2000),

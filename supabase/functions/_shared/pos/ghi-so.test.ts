@@ -44,7 +44,7 @@ function dbGia(bang: Record<string, Row[]>) {
 
 const HOM_NAY = new Date().toISOString().slice(0, 10);
 const banCho = (o: Row = {}): Row => ({ id: 'b1', company_id: 'c1', reference: 'MIMIK7P2QX', amount: 150_000, status: 'pending', method: 'transfer', matched_transaction_id: null, book_transaction_id: null, created_at: new Date().toISOString(), ...o });
-const gdVao = (o: Row = {}): Row => ({ id: 't1', company_id: 'c1', amount: 150_000, type: 'income', payment_reference: null, merchant_name: 'NGUYEN VAN A chuyen tien MIMIK7P2QX', transaction_date: HOM_NAY, ...o });
+const gdVao = (o: Row = {}): Row => ({ id: 't1', company_id: 'c1', amount: 150_000, type: 'income', is_synthetic: false, payment_reference: null, merchant_name: 'NGUYEN VAN A chuyen tien MIMIK7P2QX', transaction_date: HOM_NAY, ...o });
 
 describe('ghi sổ tiền mặt', () => {
   it('một dòng transactions source=pos + phân loại tiền bán hàng; gọi lại không ghi thêm', async () => {
@@ -106,7 +106,7 @@ describe('đối soát chuyển khoản', () => {
   it('đã xác nhận tay rồi tiền mới về → gắn giao dịch, gỡ dòng sổ tạm khỏi doanh thu (không cộng hai lần)', async () => {
     const db = dbGia({
       ban_hang_pos: [banCho({ status: 'paid', paid_basis: 'manual', book_transaction_id: 'tam' })],
-      transactions: [gdVao(), { id: 'tam', company_id: 'c1', amount: 150_000, type: 'income', reference_id: 'pos:b1', transaction_date: HOM_NAY }],
+      transactions: [gdVao(), { id: 'tam', company_id: 'c1', amount: 150_000, type: 'income', is_synthetic: false, reference_id: 'pos:b1', transaction_date: HOM_NAY }],
       revenue_classifications: [{ transaction_id: 'tam', confirmed_by: 'u-1', confirmed_type: 'business_revenue', revenue_effect: 'include' }],
       revenue_classification_events: [],
     });

@@ -45,9 +45,10 @@ export async function docGiaoDichTheoTrang(
   let conTro: { d: string; id: string } | null = null;
   let soDong = 0, soTrang = 0;
   for (;;) {
+    // Cửa hàng thật không bao giờ thấy dòng thử; cửa hàng mẫu chỉ có dòng thử.
     let q = db.from('transactions').select(COT_GIAO_DICH).eq('company_id', companyId)
+      .in('is_synthetic', o.laDemo ? [true, false] : [false])
       .gte('transaction_date', o.tuNgay).lte('transaction_date', o.denNgay);
-    if (!o.laDemo) q = q.eq('is_synthetic', false);
     if (conTro) {
       if (!NGAY_RE.test(conTro.d) || !UUID_RE.test(conTro.id)) throw new LoiConTro('Con trỏ phân trang không hợp lệ.');
       q = q.or(`transaction_date.gt.${conTro.d},and(transaction_date.eq.${conTro.d},id.gt.${conTro.id})`);
@@ -110,7 +111,7 @@ async function hocMoHinh(db: Db, companyId: string): Promise<{ ts: ThamSoPhanLoa
   const gd: Row[] = [];
   for (let i = 0; i < ids.length; i += 200) {
     const { data, error } = await db.from('transactions').select('id, company_id, amount, merchant_name, payment_reference, counter_account_name, counter_account_number')
-      .eq('company_id', companyId).in('id', ids.slice(i, i + 200));
+      .eq('company_id', companyId).eq('is_synthetic', false).in('id', ids.slice(i, i + 200));
     if (error) throw new Error(`giao dịch có nhãn: ${error.message}`);
     for (const r of (data ?? []) as Row[]) { if (r.company_id !== companyId) throw new LoiKhacCongTy(); gd.push(r); }
   }
