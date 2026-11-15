@@ -28,7 +28,7 @@ const vi = {
    * this year.
    */
   hero: {
-    badge: 'Trợ lý chi tiêu cho shop và doanh nghiệp nhỏ',
+    badge: 'Thuế, bán hàng và hồ sơ vay cho hộ kinh doanh',
     titleLine1: 'Đóng thuế trên lợi nhuận,',
     titleLine2: 'không phải trên doanh thu',
     subtitle: 'Luật cho bạn chọn cách tính thuế — nhưng chỉ khi chứng minh được chi phí. MIMI đọc sao kê ngân hàng và dựng sẵn bộ chi phí đó cho bạn.',
@@ -162,7 +162,6 @@ const vi = {
     overview: 'Tổng quan',
     cashflow: 'Dòng tiền',
     invoices: 'Hóa đơn',
-    creditScore: 'Điểm tín dụng',
     fintechHub: 'Ngân hàng & thanh toán',
     reports: 'Báo cáo',
     settings: 'Cài đặt',
@@ -185,11 +184,9 @@ const vi = {
     totalBalance: 'Tổng số dư',
     monthlyRevenue: 'Tiền vào tháng này',
     pendingInvoices: 'Hóa đơn chờ thanh toán',
-    creditScoreLabel: 'Điểm tín dụng MIMI',
     progress: 'Tiến độ',
     invoicesActive: 'hóa đơn đang hoạt động',
     invoicesDue: 'hóa đơn sắp đến hạn',
-    rankA: 'Hạng B — ↑ +12 điểm',
     veryGood: 'Tốt',
     cashFlowTitle: 'Dòng tiền',
     aiInsights: 'MIMI nhắc bạn',

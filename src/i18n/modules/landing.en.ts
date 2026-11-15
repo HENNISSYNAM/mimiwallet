@@ -4,15 +4,15 @@ const m = {
     // See the note on the Vietnamese hero: the invoice-advance promise was
     // removed because MIMI cannot lend, and replaced with the 2026 tax change.
     hero: {
-      titleLine1: 'Let agents spend.',
-      titleLine2: 'Keep the final say.',
+      titleLine1: 'Tax returns right, sales in the books,',
+      titleLine2: 'a loan file ready.',
       subtitle:
-        'MIMI checks every spend request against your policy, builds a VietQR payment order, then matches bank statements and receipts so you know where the money actually went. MIMI never holds your money.',
+        'For household businesses and accounting firms. MIMI separates sales from loans and family transfers, then drafts your tax return with a source for every figure. Sell at the counter with VietQR and the payment matches the order by itself. Real revenue becomes a loan file you print yourself. MIMI never holds your money.',
       pills: [
-        'Approve before money moves',
-        'Unknown recipients blocked',
-        'Matched to statements and invoices',
-        'Quantum-resistant encryption',
+        'Tax returns with a source for every figure',
+        'VietQR payments recorded automatically',
+        'Loan file from real revenue',
+        'For household businesses and accounting firms',
       ],
     },
     agentAi: {

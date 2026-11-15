@@ -16,6 +16,8 @@ describe('tính năng đóng băng', () => {
   it('danh mục công cụ không còn công cụ đóng băng; trang đóng băng được nhận ra', () => {
     for (const k of CONG_CU_DONG_BANG) expect(DANH_MUC_CONG_CU.some((c) => c.khoa === k), k).toBe(false);
     expect(daDongBang('/dashboard/clients')).toBe(true);
+    expect(daDongBang('/dashboard/chi-phi-ai')).toBe(true);
+    for (const k of ['chi_phi_ai', 'model_re_hon']) expect(CONG_CU_DONG_BANG.has(k), k).toBe(true);
     expect(daDongBang('/dashboard/kiem-truoc-khi-chuyen')).toBe(false);
   });
 });

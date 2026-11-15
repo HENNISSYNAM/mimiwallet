@@ -18,6 +18,9 @@ describe('module đang mở', () => {
     expect(m('/dashboard/cashflow')).toBe('dong_tien');
     expect(m('/dashboard/to-khai')).toBe('thue');
     expect(m('/dashboard/thu-vien')).toBe('chung_tu');
+    expect(m('/dashboard/vay-von')).toBe('vay_von');
+    expect(m('/dashboard/doanh-thu-xac-minh')).toBe('vay_von');
+    expect(m('/pos')).toBe('ban_hang');
     expect(m('/dashboard')).toBeNull();
     expect(laKhongGianTroLy('/dashboard')).toBe(true);
     expect(laKhongGianTroLy('/dashboard/tro-ly')).toBe(true);
@@ -26,10 +29,11 @@ describe('module đang mở', () => {
 });
 
 describe('thanh công cụ ngữ cảnh', () => {
-  it('đủ bảy module theo thứ tự, module đang mở sáng lên', () => {
+  it('đủ chín module theo thứ tự — việc ra tiền đứng đầu — module đang mở sáng lên', () => {
     render(<MemoryRouter initialEntries={['/dashboard/invoices?filter=pending']}><ThanhCongCuNguCanh /></MemoryRouter>);
     const ten = screen.getAllByRole('link').map((a) => a.textContent?.trim());
-    expect(ten).toEqual(['Dòng tiền', 'Hoá đơn', 'Thuế & Tuân thủ', 'Công nợ', 'Chứng từ', 'Báo cáo', 'Doanh nghiệp']);
+    expect(ten).toEqual(['Thuế & Tuân thủ', 'Bán tại quầy', 'Vay vốn', 'Dòng tiền', 'Hoá đơn', 'Công nợ', 'Chứng từ', 'Báo cáo', 'Doanh nghiệp']);
+    expect(screen.getByRole('link', { name: /Bán tại quầy/ }).getAttribute('href')).toBe('/pos');
     expect(screen.getByRole('link', { name: /Công nợ/ }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('link', { name: /Hoá đơn/ }).getAttribute('aria-current')).toBeNull();
     expect(screen.getByRole('button', { name: 'Công cụ khác' })).toBeTruthy();

@@ -17,7 +17,7 @@ const en = {
   // because MIMI cannot lend, and replaced with the 2026 tax change it can
   // actually act on.
   hero: {
-    badge: 'A spending assistant for shops and small businesses',
+    badge: 'Tax, sales and loan files for household businesses',
     titleLine1: 'Pay tax on profit,',
     titleLine2: 'not on revenue',
     subtitle: 'The law lets you choose how your tax is calculated — but only if you can document your costs. MIMI reads your bank statements and builds that cost record for you.',
@@ -127,7 +127,6 @@ const en = {
     overview: 'Overview',
     cashflow: 'Cash Flow',
     invoices: 'Invoices',
-    creditScore: 'Credit Score',
     fintechHub: 'Banks & payments',
     reports: 'Reports',
     settings: 'Settings',
@@ -147,11 +146,9 @@ const en = {
     totalBalance: 'Total balance',
     monthlyRevenue: 'Money in this month',
     pendingInvoices: 'Pending invoices',
-    creditScoreLabel: 'MIMI Credit Score',
     progress: 'Progress',
     invoicesActive: 'active invoices',
     invoicesDue: 'invoices due soon',
-    rankA: 'Rank B — ↑ +12 points',
     veryGood: 'Good',
     cashFlowTitle: 'Cash Flow',
     aiInsights: 'Notes from MIMI',

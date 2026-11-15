@@ -1465,7 +1465,7 @@ const m = {
       "ngatAria": "Ngắt liên kết",
       "chuaHoanTat": "Liên kết chưa hoàn tất",
       "truoc": "Trước khi liên kết",
-      "c1": "Mimi đọc <b>lịch sử giao dịch 12 tháng</b> và tên chủ tài khoản, để chấm điểm tín dụng.",
+      "c1": "Mimi đọc <b>lịch sử giao dịch 12 tháng</b> và tên chủ tài khoản, để soạn tờ khai thuế, theo dõi dòng tiền và dựng hồ sơ vay khi bạn cần.",
       "c2": "Mimi <b>không thể chuyển tiền</b> — quyền truy cập chỉ ở mức đọc.",
       "c3": "Mimi <b>không xin quyền đọc CCCD</b>, ngày sinh hay địa chỉ của bạn — chỉ xin quyền giao dịch.",
       "c4": "Bạn nhập thông tin đăng nhập ngân hàng trên giao diện của Cas. <b>Mimi không nhìn thấy mật khẩu</b> của bạn.",

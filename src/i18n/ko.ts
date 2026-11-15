@@ -22,7 +22,7 @@ const ko = {
 
 
   hero: {
-    badge: '가게와 소규모 기업을 위한 지출 비서',
+    badge: '가계 사업자를 위한 세금, 판매, 대출 서류',
     titleLine1: '매출이 아니라',
     titleLine2: '이익에 대해 세금을 냅니다',
     subtitle: '법은 세금 계산 방식을 선택할 수 있게 해줍니다 — 비용을 증빙할 수 있을 때만. MIMI가 은행 거래내역을 읽어 그 비용 자료를 미리 만들어 둡니다.',
@@ -120,7 +120,6 @@ const ko = {
     overview: '개요',
     cashflow: '현금흐름',
     invoices: '세금계산서',
-    creditScore: '신용점수',
     fintechHub: '은행 & 결제',
     reports: '보고서',
     settings: '설정',
@@ -139,11 +138,9 @@ const ko = {
     totalBalance: '총 잔액',
     monthlyRevenue: '이번 달 입금',
     pendingInvoices: '미수금 세금계산서',
-    creditScoreLabel: 'MIMI 신용점수',
     progress: '진행률',
     invoicesActive: '건의 세금계산서가 진행 중',
     invoicesDue: '건의 세금계산서가 기한 임박',
-    rankA: 'B등급 — ↑ +12점',
     veryGood: '양호',
     cashFlowTitle: '현금흐름',
     aiInsights: 'MIMI의 알림',
@@ -209,15 +206,15 @@ const ko = {
   landing: {
     video: { dung: '영상 일시정지', phat: '영상 재생' },
     hero: {
-      titleLine1: '에이전트가 지출합니다.',
-      titleLine2: '결정권은 당신에게 있습니다.',
+      titleLine1: '세금 신고는 정확하게, 매출은 장부에 자동으로,',
+      titleLine2: '대출 서류는 준비 완료.',
       subtitle:
-        'MIMI는 귀사의 정책에 따라 지출 건마다 심사하고, VietQR 결제 지시를 만들고, 은행 거래내역과 전자세금계산서를 대조해 돈이 실제로 어디로 갔는지 알려줍니다. MIMI는 귀사의 돈을 보관하지 않습니다.',
+        '가계 사업자와 회계 사무소를 위해. MIMI는 판매 대금을 대출금·가족 송금과 구분하고, 모든 숫자의 출처가 있는 세금 신고서 초안을 만듭니다. 매장에서 VietQR로 받으면 입금이 주문과 자동으로 맞춰집니다. 실제 매출로 직접 인쇄할 대출 서류를 만듭니다. MIMI는 귀사의 돈을 보관하지 않습니다.',
       pills: [
-        '돈이 나가기 전에 승인',
-        '낯선 수취인 차단',
-        '거래내역과 세금계산서 대조',
-        '양자 저항 암호화',
+        '숫자마다 출처가 있는 세금 신고서',
+        'VietQR 입금 자동 기록',
+        '실제 매출 기반 대출 서류',
+        '가계 사업자와 회계 사무소용',
       ],
     },
     agentAi: {

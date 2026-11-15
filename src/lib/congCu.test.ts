@@ -13,6 +13,8 @@ const APP = readFileSync(join(__dirname, '..', 'App.tsx'), 'utf8');
 const TRANG_CO_THAT = new Set([
   '/dashboard',
   ...[...APP.matchAll(/<Route path="([a-z0-9-]+)"/g)].map((m) => `/dashboard/${m[1]}`),
+  // Route cấp đầu (vd. màn bán tại quầy `/pos` chạy ngoài khung trợ lý).
+  ...[...APP.matchAll(/<Route path="(\/[a-z0-9-]+)"/g)].map((m) => m[1]),
 ]);
 
 describe('danh mục công cụ', () => {
@@ -20,6 +22,7 @@ describe('danh mục công cụ', () => {
     // Chốt bộ đọc route: đọc hỏng thì mọi công cụ "trang" đều đỏ, không xanh giả.
     expect(TRANG_CO_THAT.has('/dashboard/tac-tu')).toBe(true);
     expect(TRANG_CO_THAT.has('/dashboard/khong-co-that')).toBe(false);
+    expect(TRANG_CO_THAT.has('/pos')).toBe(true);
     for (const c of DANH_MUC_CONG_CU) {
       expect(c.khoa).toMatch(/^[a-z0-9_]{2,40}$/);
       if (c.loai === 'trang') expect(TRANG_CO_THAT.has(c.dich), c.khoa).toBe(true);
@@ -39,6 +42,8 @@ describe('danh mục công cụ', () => {
      * phút thì phiền; công cụ này chậm vài phút thì mất tiền.
      */
     expect(CONG_CU_MAC_DINH[0]).toBe('kiem_truoc_khi_chuyen');
+    // 11/11/2026: ba việc ra tiền ngay (tờ khai, bán tại quầy, hồ sơ vay) ghim sẵn ngay sau đó.
+    expect(CONG_CU_MAC_DINH.slice(1, 4)).toEqual(['soan_to_khai', 'ban_tai_quay', 'vay_von']);
     expect(CONG_CU_MAC_DINH.length).toBeLessThanOrEqual(SO_CONG_CU_TOI_DA);
   });
 
@@ -48,10 +53,15 @@ describe('danh mục công cụ', () => {
     // tài chính & tờ khai" đọc tờ khai người dùng tải lên.
     expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['soan_to_khai', 'doc_bao_cao', 'soan_giay_to']);
     expect(timCongCu('bảng cân đối kế toán').map((c) => c.khoa)).toEqual(['doc_bao_cao']);
-    // Chi phí AI (06/10/2026): nhóm "Tuỳ chọn" — tìm được trong kho, nhưng không ghim sẵn, không gợi ý theo ngành.
-    expect(timCongCu('claude').map((c) => c.khoa)).toEqual(['chi_phi_ai']);
-    expect(CONG_CU_THEO_KHOA.chi_phi_ai.nhom).toBe('ai');
+    // Chi phí AI + Model AI rẻ hơn đóng băng 11/11/2026 (`lib/dongBang.ts`): không tìm thấy, không ghim, không gợi ý.
+    expect(timCongCu('claude')).toEqual([]);
+    expect(timCongCu('token')).toEqual([]);
+    expect(CONG_CU_THEO_KHOA.chi_phi_ai).toBeUndefined();
+    expect(CONG_CU_THEO_KHOA.model_re_hon).toBeUndefined();
     expect(CONG_CU_MAC_DINH).not.toContain('chi_phi_ai');
+    // Việc ra tiền tìm được bằng chữ thường ngày.
+    expect(timCongCu('bán hàng').map((c) => c.khoa)).toContain('ban_tai_quay');
+    expect(timCongCu('hồ sơ vay').map((c) => c.khoa)).toEqual(['vay_von', 'doanh_thu_xac_minh']);
     expect(DANH_MUC_CONG_CU.some((c) => c.khoa === 'khach_hang')).toBe(false);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
     expect(timCongCu('  ')).toHaveLength(DANH_MUC_CONG_CU.length);
@@ -77,10 +87,10 @@ describe('danh mục công cụ', () => {
 
   it('gợi ý công cụ theo khảo sát: đúng ngành, chỉ công cụ có thật, tối đa 6', () => {
     const ho = congCuGoiY({ loai_nguoi_nop: 'ho_kinh_doanh', nhom_nganh: ['noi_dung_so'], kenh: 'tmdt_khong_thanh_toan', nganh_dac_thu: 'khong' });
-    // Vòng chính đứng đầu; công cụ đóng băng (chi phí AI) không được gợi ý.
-    expect(ho).toEqual(['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu']);
+    // Vòng chính đứng đầu (tờ khai, bán tại quầy, hồ sơ vay); công cụ đóng băng (chi phí AI) không được gợi ý.
+    expect(ho).toEqual(['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'lien_ket_ngan_hang']);
     const dn = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['dich_vu'], kenh: null, nganh_dac_thu: null });
-    expect(dn).toEqual(['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu', 'hoa_don_ban', 'chinh_sach_chi']);
+    expect(dn).toEqual(['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban']);
     const nhieu = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['noi_dung_so', 'dich_vu', 'khac'], kenh: 'tmdt_co_thanh_toan', nganh_dac_thu: 'cho_thue_bat_dong_san' });
     expect(nhieu.length).toBe(6);
     for (const k of nhieu) expect(CONG_CU_THEO_KHOA[k], k).toBeTruthy();

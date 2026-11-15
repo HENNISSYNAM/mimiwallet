@@ -57,6 +57,8 @@ const m = {
       chung_tu: { ten: '凭证', hoi: '哪些支出还没有凭证？' },
       bao_cao: { ten: '报表', hoi: '6 个月收支报表' },
       doanh_nghiep: { ten: '企业', hoi: '我公司的税务资料还缺什么？' },
+      ban_hang: { ten: '门店收银', hoi: '本月到账的钱对应哪些发票？' },
+      vay_von: { ten: '经营贷款', hoi: '预测未来 3 个月的现金流' },
     },
     trang: {
       viec_can_lam: '待办事项',

@@ -11,12 +11,27 @@
  * Ai mở đường dẫn cũ thấy trang `TamDung` nói rõ vì sao, không bị chuyển hướng im lặng.
  */
 // 06/10/2026: Chi phí AI + Model AI rẻ hơn mở lại thành nhóm "Tuỳ chọn" trong kho công cụ (không ghim sẵn).
-export const CONG_CU_DONG_BANG = new Set(['khach_hang']);
+// 11/11/2026: MIMI gọn lại quanh việc kiếm ra tiền ngay — thuế, bán tại quầy, dòng tiền, hồ sơ vay. Chi phí AI và
+// "Model AI rẻ hơn" đóng băng lại (không phục vụ việc nào trong số đó); bảng `ngan_sach_ai`, máy chủ `chi-phi-ai` giữ nguyên.
+export const CONG_CU_DONG_BANG = new Set(['khach_hang', 'chi_phi_ai', 'model_re_hon']);
+
+/**
+ * Nhóm năng lực của trợ lý không còn hiện cho người dùng (11/11/2026): `ai_token` là chi phí AI / ngân sách AI.
+ * Máy chủ vẫn hiểu câu hỏi nhóm này — chỉ không mời người dùng chọn, không gợi ý, không đưa lên "việc cần chú ý".
+ */
+export const NHOM_NANG_LUC_DONG_BANG: ReadonlySet<string> = new Set(['ai_token']);
+
+/** Việc máy chủ đưa lên màn đầu nhưng thuộc tính năng đóng băng. */
+export const VIEC_DONG_BANG: ReadonlySet<string> = new Set(['ngan_sach_ai']);
 
 export const TRANG_DONG_BANG: Record<string, { ten: string; ly_do: string }> = {
   '/dashboard/clients': {
     ten: 'Khách hàng',
     ly_do: 'Danh sách khách hàng tạm dừng để MIMI tập trung vào kiểm tra khoản thanh toán trước khi chuyển tiền. Dữ liệu cũ vẫn được giữ nguyên.',
+  },
+  '/dashboard/chi-phi-ai': {
+    ten: 'Chi phí AI',
+    ly_do: 'Theo dõi chi phí AI tạm dừng để MIMI tập trung vào thuế, bán tại quầy, dòng tiền và hồ sơ vay. Dữ liệu cũ vẫn được giữ nguyên.',
   },
 };
 

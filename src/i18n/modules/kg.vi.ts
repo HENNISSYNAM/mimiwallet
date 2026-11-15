@@ -61,6 +61,8 @@ const m = {
       chung_tu: { ten: 'Chứng từ', hoi: 'Khoản chi nào chưa có chứng từ?' },
       bao_cao: { ten: 'Báo cáo', hoi: 'Báo cáo thu chi 6 tháng' },
       doanh_nghiep: { ten: 'Doanh nghiệp', hoi: 'Hồ sơ thuế của công ty tôi còn thiếu gì?' },
+      ban_hang: { ten: 'Bán tại quầy', hoi: 'Tiền về tháng này khớp hoá đơn nào?' },
+      vay_von: { ten: 'Vay vốn', hoi: 'Dự báo dòng tiền 3 tháng tới' },
     },
     trang: {
       viec_can_lam: 'Việc cần làm',

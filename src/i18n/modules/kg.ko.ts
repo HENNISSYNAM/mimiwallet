@@ -57,6 +57,8 @@ const m = {
       chung_tu: { ten: '증빙', hoi: '증빙이 없는 지출은 무엇인가요?' },
       bao_cao: { ten: '보고서', hoi: '6개월 수입·지출 보고서' },
       doanh_nghiep: { ten: '회사', hoi: '우리 회사 세무 정보에 무엇이 빠져 있나요?' },
+      ban_hang: { ten: '매장 판매', hoi: '이번 달 입금이 어떤 청구서와 맞나요?' },
+      vay_von: { ten: '사업 대출', hoi: '앞으로 3개월 현금흐름을 예측해 주세요' },
     },
     trang: {
       viec_can_lam: '할 일',

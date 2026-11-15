@@ -20,7 +20,7 @@ const zh = {
 
 
   hero: {
-    badge: '给小店和小企业的支出助手',
+    badge: '为个体工商户打理税务、销售和贷款材料',
     titleLine1: '按利润纳税，',
     titleLine2: '而不是按营业额',
     subtitle: '法律允许你选择计税方式 —— 但前提是能证明成本。MIMI 读取银行流水，替你把这套成本凭证准备好。',
@@ -118,7 +118,6 @@ const zh = {
     overview: '总览',
     cashflow: '现金流',
     invoices: '发票',
-    creditScore: '信用评分',
     fintechHub: '银行与支付',
     reports: '报告',
     settings: '设置',
@@ -137,11 +136,9 @@ const zh = {
     totalBalance: '总余额',
     monthlyRevenue: '本月入账',
     pendingInvoices: '待收款发票',
-    creditScoreLabel: 'MIMI 信用评分',
     progress: '进度',
     invoicesActive: '张发票正在进行',
     invoicesDue: '张发票即将到期',
-    rankA: 'B 级 —— ↑ +12 分',
     veryGood: '良好',
     cashFlowTitle: '现金流',
     aiInsights: 'MIMI 提醒',
@@ -207,15 +204,15 @@ const zh = {
   landing: {
     video: { dung: '暂停视频', phat: '播放视频' },
     hero: {
-      titleLine1: '智能体去花钱。',
-      titleLine2: '决定权在你手里。',
+      titleLine1: '报税准确，销售自动入账，',
+      titleLine2: '贷款材料随时备好。',
       subtitle:
-        'MIMI 按你的政策审核每一笔支出，生成 VietQR 付款指令，再把银行流水和电子发票核对一遍，让你知道钱到底去了哪里。MIMI 不保管你的钱。',
+        '为个体工商户和会计事务所打造。MIMI 把销售收入与借款、家人转账分开，再起草每个数字都有出处的纳税申报表。门店用 VietQR 收款，到账自动对上订单。真实营业额变成可自行打印的贷款材料。MIMI 不保管你的钱。',
       pills: [
-        '钱出去之前先审批',
-        '拦住陌生收款人',
-        '核对流水与发票',
-        '抗量子加密',
+        '每个数字都有出处的申报表',
+        'VietQR 到账自动入账',
+        '基于真实营业额的贷款材料',
+        '面向个体工商户和会计事务所',
       ],
     },
     agentAi: {

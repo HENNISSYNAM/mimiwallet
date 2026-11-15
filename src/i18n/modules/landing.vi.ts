@@ -17,16 +17,18 @@ const m = {
      */
     // 14/09/2026: đổi chữ phần đầu theo định vị mới (docs/CHIEN_LUOC_MIMI.md mục 2);
     // hình ảnh và hiệu ứng của trang giữ nguyên theo yêu cầu chủ dự án.
+    // 11/11/2026: đầu trang nói việc ra tiền cho hộ kinh doanh và văn phòng kế toán — tờ khai đúng, tiền bán tại quầy
+    // tự vào sổ, hồ sơ vay từ doanh thu thật. Bảo mật vẫn chạy ngầm, không quảng cáo ở đầu trang.
     hero: {
-      titleLine1: 'AI xin chi tiền.',
-      titleLine2: 'Bạn là người quyết.',
+      titleLine1: 'Khai thuế đúng, tiền bán tự vào sổ,',
+      titleLine2: 'hồ sơ vay có sẵn.',
       subtitle:
-        'MIMI kiểm từng khoản chi theo mức bạn đặt, soạn sẵn mã VietQR để bạn trả, rồi dò sao kê và hoá đơn xem tiền đã đi đâu. MIMI không giữ tiền của bạn.',
+        'Cho hộ kinh doanh và văn phòng kế toán. MIMI tách tiền bán hàng khỏi tiền vay, tiền người nhà, rồi soạn sẵn tờ khai có nguồn từng con số. Bán tại quầy bằng VietQR là tiền về tự khớp đơn. Doanh thu thật thành hồ sơ vay để bạn tự in. MIMI không giữ tiền của bạn.',
       pills: [
-        'Duyệt trước khi tiền đi',
-        'Chặn người nhận lạ',
-        'Khớp sao kê với hoá đơn',
-        'Mã hoá chống máy tính lượng tử',
+        'Tờ khai có nguồn từng con số',
+        'Tiền VietQR về tự vào sổ',
+        'Hồ sơ vay từ doanh thu thật',
+        'Cho hộ kinh doanh và văn phòng kế toán',
       ],
     },
     // Mục ba nguyên tắc agent — src/components/landing/AgentAiSection.tsx.

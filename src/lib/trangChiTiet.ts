@@ -11,6 +11,8 @@ export const TRANG_CHI_TIET: { nhom: NhomNangLuc; khoa: string; duong_dan: strin
   { nhom: 'chung_tu', khoa: 'man.ten.toKhai', duong_dan: '/dashboard/to-khai' },
   { nhom: 'chung_tu', khoa: 'sidebar.invoices', duong_dan: '/dashboard/invoices' },
   { nhom: 'ngan_hang', khoa: 'sidebar.fintechHub', duong_dan: '/dashboard/fintech' },
-  { nhom: 'ai_token', khoa: 'man.ten.chiPhiAi', duong_dan: '/dashboard/chi-phi-ai' },
+  // 11/11/2026: Chi phí AI đóng băng (`lib/dongBang.ts`); vay vốn và bán tại quầy lên thay.
+  { nhom: 'ngan_hang', khoa: 'vay.tieuDe', duong_dan: '/dashboard/vay-von' },
+  { nhom: 'ngan_hang', khoa: 'kg.module.ban_hang.ten', duong_dan: '/pos' },
   { nhom: 'bao_cao', khoa: 'sidebar.reports', duong_dan: '/dashboard/reports' },
 ];

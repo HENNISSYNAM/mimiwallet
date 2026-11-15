@@ -71,11 +71,14 @@ import type { HoSoThue } from '@/lib/heLuat';
 import { boDauSao, ChuDam } from '@/lib/chuDam';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { SucKhoeTaiChinh } from '@/components/tro-ly/SucKhoeTaiChinh';
-import { DauChanCarbon } from '@/components/tro-ly/DauChanCarbon';
+// Dấu chân carbon (`components/tro-ly/DauChanCarbon.tsx`) rời màn đầu 11/11/2026 — đóng băng; máy chủ vẫn tính.
+import { daDongBang, NHOM_NANG_LUC_DONG_BANG, VIEC_DONG_BANG } from '@/lib/dongBang';
 import { DuBaoDongTien } from '@/components/tro-ly/DuBaoDongTien';
 
 /** Việc đã có thẻ riêng ở màn đầu thì không lặp lại thành chip. */
-const VIEC_DA_CO_THE = new Set(['cho_duyet', 'ngan_sach_ai']);
+const VIEC_DA_CO_THE = new Set(['cho_duyet']);
+/** Nhóm việc người dùng chọn được: bỏ nhóm đóng băng (chi phí AI). */
+const NHOM_CHON_DUOC = NHOM_NANG_LUC.filter((n) => !NHOM_NANG_LUC_DONG_BANG.has(n));
 
 /** Lượt 0 là các nút trên thẻ màn đầu, không thuộc câu hỏi nào. */
 const LUOT_MAN_DAU = 0;
@@ -343,8 +346,11 @@ export default function TroLyPage() {
     }
   }, [navigate, taiBoiCanh, luot]);
 
-  const viecKhac = (boiCanh?.viec ?? []).filter((v) => !VIEC_DA_CO_THE.has(v.khoa));
-  const ketNoi = boiCanh?.ket_noi ?? [];
+  const viecKhac = (boiCanh?.viec ?? []).filter(
+    (v) => !VIEC_DA_CO_THE.has(v.khoa) && !VIEC_DONG_BANG.has(v.khoa) && !NHOM_NANG_LUC_DONG_BANG.has(v.nhom),
+  );
+  // Kết nối nhà cung cấp AI chỉ phục vụ Chi phí AI (đóng băng 11/11/2026) — không mời người dùng nối.
+  const ketNoi = (boiCanh?.ket_noi ?? []).filter((k) => k.loai !== 'ai' && !daDongBang(k.duong_dan));
   const soCanXuLy = ketNoi.filter((k) => k.trang_thai === 'can_xu_ly').length;
   const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
   const ketNoiLoc = ketNoi.filter((k) => boDau(k.ten).includes(boDau(timKetNoi.trim())));
@@ -423,7 +429,7 @@ export default function TroLyPage() {
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-60 rounded-2xl p-1.5">
                   <div role="group" aria-label={t('man.troLy.chonNhomViec')}>
-                    {([null, ...NHOM_NANG_LUC] as (NhomNangLuc | null)[]).map((n) => (
+                    {([null, ...NHOM_CHON_DUOC] as (NhomNangLuc | null)[]).map((n) => (
                       <button
                         key={n ?? 'tat_ca'}
                         type="button"
@@ -566,7 +572,6 @@ export default function TroLyPage() {
               </Popover>
 
               <span className="ml-auto" />
-              <DauChanCarbon c={boiCanh?.carbon} />
               <SucKhoeTaiChinh sk={boiCanh?.suc_khoe} onHoi={(cau) => void hoi(cau)} />
               <button
                 type="button"

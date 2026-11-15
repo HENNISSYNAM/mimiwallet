@@ -57,6 +57,8 @@ const m = {
       chung_tu: { ten: 'Documents', hoi: 'Which expenses have no supporting document?' },
       bao_cao: { ten: 'Reports', hoi: 'Income and expense report for 6 months' },
       doanh_nghiep: { ten: 'Company', hoi: 'What is missing from my company’s tax profile?' },
+      ban_hang: { ten: 'Point of sale', hoi: 'Which invoices match the money that came in this month?' },
+      vay_von: { ten: 'Business loan', hoi: 'Forecast my cash flow for the next 3 months' },
     },
     trang: {
       viec_can_lam: 'To-do',

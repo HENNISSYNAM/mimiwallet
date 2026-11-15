@@ -9,7 +9,6 @@ import DaiLogo from '@/components/landing/DaiLogo';
 import MoTaiKhoan from '@/components/landing/MoTaiKhoan';
 import VideoBaoMat from '@/components/landing/VideoBaoMat';
 import VideoMeoMimi from '@/components/landing/VideoMeoMimi';
-import HuongNghienCuu from '@/components/landing/HuongNghienCuu';
 import { ManHinhChoDemo } from '@/components/landing/ManHinhChoDemo';
 import AgentAiSection from '@/components/landing/AgentAiSection';
 import HeThongRoiRac from '@/components/landing/HeThongRoiRac';
@@ -18,10 +17,10 @@ import NhatKyAgent from '@/components/landing/NhatKyAgent';
 import CapNhatSanPham from '@/components/landing/CapNhatSanPham';
 import KhamPhaThem from '@/components/landing/KhamPhaThem';
 import {
-  ScoringBolt,
-  QuantumShield,
+  CapitalVault,
+  CashflowChart,
+  CredentialBadge,
   InvoiceDoc,
-  LearnCap,
 } from '@/components/illustrations/BrandIcons';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -528,8 +527,10 @@ export type KhoaKhoi =
   | 'cap_nhat' | 'nang_luc' | 'cong_nghe' | 'quy_trinh' | 'giai_phap' | 'minh_bach' | 'bang_gia'
   | 'kham_pha' | 'dang_ky' | 'huong_nghien_cuu';
 
+// 11/11/2026: bỏ "Hướng nghiên cứu" (blockchain, học liên bang, ZKP — chưa cái nào có trong sản phẩm) khỏi trang chủ;
+// trang chủ chỉ giữ những gì dẫn tới việc ra tiền. Khối vẫn còn trong mã (`HuongNghienCuu`), bật lại bằng cách gắn lại khối và thêm khoá.
 export const KHOI_TRANG_CHU: readonly KhoaKhoi[] = [
-  'hero', 'dai_logo', 'cong_nhan', 'he_thong_roi_rac', 'quy_trinh', 'bang_gia', 'huong_nghien_cuu', 'kham_pha', 'dang_ky',
+  'hero', 'dai_logo', 'cong_nhan', 'he_thong_roi_rac', 'quy_trinh', 'bang_gia', 'kham_pha', 'dang_ky',
 ];
 
 export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: readonly KhoaKhoi[]; dauTrang?: React.ReactNode } = {}) {
@@ -657,7 +658,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
             {...fadeUp(0.4)}
             className="mt-9 flex flex-wrap items-center justify-center lg:justify-start gap-x-7 gap-y-3 text-[13px] text-slate-700"
           >
-            {[ScoringBolt, QuantumShield, InvoiceDoc, LearnCap].map((Icon, i) => {
+            {[InvoiceDoc, CashflowChart, CapitalVault, CredentialBadge].map((Icon, i) => {
               const text = (t('landing.hero.pills', { returnObjects: true }) as string[])[i];
               return (
               <span key={text} className="flex items-center gap-2">
@@ -1075,7 +1076,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
       </section>
       </>)}
 
-      {hien('huong_nghien_cuu') && <HuongNghienCuu />}
+      {/* Hướng nghiên cứu (`components/landing/HuongNghienCuu.tsx`) đóng băng 11/11/2026: không phải tính năng, không bán được. */}
       {hien('kham_pha') && <KhamPhaThem />}
 
       {hien('dang_ky') && (<>

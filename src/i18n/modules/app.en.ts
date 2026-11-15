@@ -1465,7 +1465,7 @@ const m = {
       "ngatAria": "Disconnect",
       "chuaHoanTat": "Linking not completed",
       "truoc": "Before you link",
-      "c1": "MIMI reads <b>12 months of transaction history</b> and the account holder name, to score credit.",
+      "c1": "MIMI reads <b>12 months of transaction history</b> and the account holder name, to prepare your tax returns, track cash flow and build a loan file when you need one.",
       "c2": "MIMI <b>cannot move money</b> — access is read-only.",
       "c3": "MIMI <b>does not ask to read your ID number</b>, date of birth or address — only transaction access.",
       "c4": "You enter your bank login on Cas's own interface. <b>MIMI never sees your password.</b>",

@@ -121,7 +121,9 @@ describe('MIMI Assistant — màn đầu', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Kết nối/ }));
     const ketNoi = await screen.findByRole('list', { name: 'Các kết nối' });
     expect(within(ketNoi).getByRole('link', { name: /Ngân hàng/ }).textContent).toContain('Cần xử lý');
-    fireEvent.change(screen.getByLabelText('Tìm kết nối'), { target: { value: 'anthro' } });
+    // Nhà cung cấp AI (Anthropic) chỉ phục vụ Chi phí AI — đóng băng 11/11/2026, không còn trong danh sách.
+    expect(within(ketNoi).queryByRole('link', { name: /Anthropic/ })).toBeNull();
+    fireEvent.change(screen.getByLabelText('Tìm kết nối'), { target: { value: 'ngân' } });
     expect(within(screen.getByRole('list', { name: 'Các kết nối' })).getAllByRole('listitem')).toHaveLength(1);
     expect(screen.getByTestId('nen').getAttribute('aria-hidden')).toBe('true');
     // Chưa có mô hình thì nói thật cách MIMI đang hiểu câu hỏi.
@@ -136,6 +138,11 @@ describe('MIMI Assistant — màn đầu', () => {
     // Đóng băng 28/09/2026 (`lib/dongBang.ts`): máy chủ vẫn trả số, màn đầu không vẽ nữa.
     expect(screen.queryByRole('region', { name: 'Chi phí AI tháng này' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Đề xuất tối ưu' })).toBeNull();
+    // Đóng băng 11/11/2026: không còn mời chọn nhóm việc Chi phí AI.
+    fireEvent.click(screen.getByRole('button', { name: /Nhóm việc/ }));
+    const nhom = await screen.findByRole('group', { name: 'Chọn nhóm việc' });
+    expect(within(nhom).queryByRole('button', { name: 'AI & token' })).toBeNull();
+    expect(within(nhom).getByRole('button', { name: 'Hoá đơn & chứng từ' })).toBeTruthy();
     // Việc đã có thẻ riêng không lặp lại thành chip; việc khác vẫn hiện.
     // 29/09/2026: việc cần để ý là khung "Việc cần chú ý hôm nay" của Không gian Trợ lý.
     const deY = screen.getByRole('region', { name: 'Việc cần chú ý hôm nay' });
@@ -438,8 +445,8 @@ describe('MIMI Assistant — khảo sát đầu vào và thuế cá nhân hoá',
       }),
     }));
     // Người dùng chưa tự chọn công cụ nên MIMI chọn theo ngành.
-    // Vòng chính đứng đầu; Khách hàng (CRM) đã đóng băng nên không được gợi ý.
-    expect(gia.datLai).toHaveBeenCalledWith(['kiem_truoc_khi_chuyen', 'lien_ket_ngan_hang', 'soan_to_khai', 'thieu_chung_tu', 'hoa_don_ban']);
+    // Vòng chính đứng đầu (tờ khai, bán tại quầy, hồ sơ vay — 11/11/2026); Khách hàng (CRM) đã đóng băng nên không được gợi ý.
+    expect(gia.datLai).toHaveBeenCalledWith(['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban']);
     await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBeGreaterThanOrEqual(2));
   });
 

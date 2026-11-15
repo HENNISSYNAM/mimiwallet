@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Building2, FileText, HandCoins, MoreHorizontal, Receipt, Scale, Wallet, type LucideIcon } from 'lucide-react';
+import { BarChart3, Building2, FileText, HandCoins, Landmark, MoreHorizontal, Receipt, Scale, Store, Wallet, type LucideIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MODULE_TRO_LY, TRANG_THEM, moduleDangMo, type KhoaModule } from '@/lib/nguCanhModule';
 
 const ICON: Record<KhoaModule, LucideIcon> = {
   dong_tien: Wallet, hoa_don: FileText, thue: Scale, cong_no: HandCoins, chung_tu: Receipt, bao_cao: BarChart3, doanh_nghiep: Building2,
+  ban_hang: Store, vay_von: Landmark,
 };
 
 /**

@@ -9,7 +9,8 @@ import type { NhomNangLuc } from '@/lib/troLy';
  * còn). KHÔNG đổi route cũ — mọi đường dẫn đã chia sẻ vẫn chạy.
  */
 
-export type KhoaModule = 'dong_tien' | 'hoa_don' | 'thue' | 'cong_no' | 'chung_tu' | 'bao_cao' | 'doanh_nghiep';
+export type KhoaModule =
+  | 'dong_tien' | 'hoa_don' | 'thue' | 'cong_no' | 'chung_tu' | 'bao_cao' | 'doanh_nghiep' | 'ban_hang' | 'vay_von';
 
 export interface ModuleTroLy {
   khoa: KhoaModule;
@@ -26,13 +27,21 @@ export interface ModuleTroLy {
 
 const la = (...ds: string[]) => (d: string) => ds.includes(d);
 
+/*
+ * 11/11/2026: ba việc ra tiền ngay đứng đầu — Thuế (tờ khai), Bán tại quầy (POS, VietQR tự khớp), Vay vốn (hồ sơ vay
+ * + doanh thu đã xác minh). Bán tại quầy mở màn hình quầy riêng (`/pos`), ngoài khung trợ lý.
+ */
 export const MODULE_TRO_LY: readonly ModuleTroLy[] = [
+  { khoa: 'thue', ten: 'Thuế & Tuân thủ', duong: '/dashboard/nhac-thue', nhom: 'chung_tu', hoiGi: 'Năm nay tôi có phải nộp thuế không?',
+    khop: (d) => la('/dashboard/nhac-thue', '/dashboard/to-khai', '/dashboard/giay-to', '/dashboard/tai-lieu')(d) },
+  { khoa: 'ban_hang', ten: 'Bán tại quầy', duong: '/pos', nhom: 'ngan_hang', hoiGi: 'Tiền về tháng này khớp hoá đơn nào?',
+    khop: (d) => d === '/pos' },
+  { khoa: 'vay_von', ten: 'Vay vốn', duong: '/dashboard/vay-von', nhom: 'ngan_hang', hoiGi: 'Dự báo dòng tiền 3 tháng tới',
+    khop: (d) => la('/dashboard/vay-von', '/dashboard/doanh-thu-xac-minh')(d) },
   { khoa: 'dong_tien', ten: 'Dòng tiền', duong: '/dashboard/cashflow', nhom: 'ngan_hang', hoiGi: 'Vì sao tháng này tiền ra nhiều hơn tiền vào?',
     khop: (d) => la('/dashboard/cashflow', '/dashboard/fintech', '/dashboard/kiem-truoc-khi-chuyen')(d) },
   { khoa: 'hoa_don', ten: 'Hoá đơn', duong: '/dashboard/invoices', nhom: 'chung_tu', hoiGi: 'Tiền về tháng này khớp hoá đơn nào?',
     khop: (d, q) => d === '/dashboard/invoices' && q.get('filter') !== 'pending' },
-  { khoa: 'thue', ten: 'Thuế & Tuân thủ', duong: '/dashboard/nhac-thue', nhom: 'chung_tu', hoiGi: 'Năm nay tôi có phải nộp thuế không?',
-    khop: (d) => la('/dashboard/nhac-thue', '/dashboard/to-khai', '/dashboard/giay-to', '/dashboard/tai-lieu')(d) },
   { khoa: 'cong_no', ten: 'Công nợ', duong: '/dashboard/invoices?filter=pending', nhom: 'chung_tu', hoiGi: 'Khách nào đang nợ lâu nhất?',
     khop: (d, q) => d === '/dashboard/invoices' && q.get('filter') === 'pending' },
   { khoa: 'chung_tu', ten: 'Chứng từ', duong: '/dashboard/chung-tu', nhom: 'chung_tu', hoiGi: 'Khoản chi nào chưa có chứng từ?',
