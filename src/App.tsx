@@ -84,6 +84,8 @@ const KhaoSatGiaPage = lazy(() => import("./pages/KhaoSatGiaPage"));
 const DoanhThuXacMinhPage = lazy(() => import("./pages/DoanhThuXacMinhPage"));
 const XacMinhCongKhaiPage = lazy(() => import("./pages/XacMinhCongKhaiPage"));
 const VayVonPage = lazy(() => import("./pages/VayVonPage"));
+// Văn phòng kế toán (11/11/2026): danh mục khách + văn phòng 3D; cảnh 3D tự tải lười riêng.
+const VanPhongPage = lazy(() => import("./pages/VanPhongPage"));
 // Bán tại quầy (10/11/2026): toàn màn hình, ngoài DashboardLayout — máy POS 5–8 inch không có chỗ cho thanh bên.
 const PosPage = lazy(() => import("./pages/PosPage"));
 
@@ -244,6 +246,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route path="doanh-thu-xac-minh" element={<Page noIndex path="/dashboard/doanh-thu-xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Lập báo cáo doanh thu từ sổ MIMI, ghi dấu thời gian công khai và gửi cho người bạn chọn, có hạn, thu hồi được."><DoanhThuXacMinhPage /></Page>} />
                 <Route path="fintech" element={<Page noIndex path="/dashboard/fintech" title="Ngân hàng & thanh toán — MIMI WALLET" description="Liên kết ngân hàng để MIMI đọc tiền vào, tiền ra; nhận tiền bằng mã VietQR."><FintechPage /></Page>} />
                 <Route path="vay-von" element={<Page noIndex path="/dashboard/vay-von" title="Vay vốn — MIMI WALLET" description="Đánh giá sẵn sàng vay từ dòng tiền thật và hồ sơ vay để bạn tự in, tự mang đi. MIMI không cho vay và không gửi hồ sơ cho ai."><VayVonPage /></Page>} />
+                <Route path="van-phong" element={<Page noIndex path="/dashboard/van-phong" title="Văn phòng kế toán — MIMI WALLET" description="Mọi khách bạn làm sổ ở một chỗ: đèn trạng thái, hạn thuế, tiền vào chờ xác nhận và việc các agent MIMI đang làm."><VanPhongPage /></Page>} />
               </Route>
               <Route path="*" element={<Page noIndex path="/404" title="Không tìm thấy trang — MIMI WALLET" description="Đường dẫn bạn truy cập không tồn tại hoặc đã được chuyển đi. Quay lại trang chủ MIMI Wallet để tiếp tục."><NotFound /></Page>} />
 
