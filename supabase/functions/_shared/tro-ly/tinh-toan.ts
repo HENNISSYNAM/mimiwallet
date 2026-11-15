@@ -861,7 +861,7 @@ function sucKhoeTaiChinhNL(d: DuLieu): KetQuaNangLuc {
   if (!d.giaoDich.length) return kq('suc_khoe_tai_chinh', 'bao_cao', CHUA_CO_SAO_KE, { nguon: [N.giaoDich], trang: [T.ketNoi] });
   const r = sucKhoeTaiChinh(d);
   const ghi = { loai: 'ghi_chu' as const, muc_do: 'thong_tin' as const, cau: LOI_KHONG_PHAI_DIEM_TIN_DUNG };
-  if (!r.co_diem) return kq('suc_khoe_tai_chinh', 'bao_cao', r.ly_do, { the: [ghi], nguon: [N.giaoDich], trang: [T.ketNoi] });
+  if ('ly_do' in r) return kq('suc_khoe_tai_chinh', 'bao_cao', r.ly_do, { the: [ghi], nguon: [N.giaoDich], trang: [T.ketNoi] });
   const yeuNhat = [...r.yeu_to].sort((a, b) => (a.diem / a.toi_da) - (b.diem / b.toi_da))[0];
   return kq('suc_khoe_tai_chinh', 'bao_cao',
     `Sức khoẻ tài chính của bạn: ${r.diem}/100 — ${TEN_MUC_SUC_KHOE[r.muc]}. Tính trên ${r.so_thang} tháng dòng tiền kinh doanh đã làm sạch. Chỗ nên cải thiện trước: ${TEN_YEU_TO[yeuNhat.khoa].toLowerCase()} (${yeuNhat.gia_tri}).`, {
