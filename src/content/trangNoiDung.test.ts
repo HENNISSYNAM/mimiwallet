@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CAC_MENU } from '@/components/layout/MenuXo';
-import { TAT_CA_TRANG, TRANG_GIAI_PHAP, TRANG_SAN_PHAM, duongDanTrang, timTrang } from './trangNoiDung';
+import { TAT_CA_TRANG, TRANG_GIAI_PHAP, TRANG_NOI_DUNG_DONG_BANG, TRANG_SAN_PHAM, duongDanTrang, timTrang, trangTheoNgonNgu } from './trangNoiDung';
+import { daDongBang } from '@/lib/dongBang';
 
 /**
  * Menu hứa có trang thì phải có trang; trang nhắc tới trang khác thì trang đó phải
@@ -29,9 +30,10 @@ describe('trang sản phẩm và giải pháp', () => {
   });
 
   // 28/09/2026: gỡ trang Chi phí AI (đang xây) và Hoá đơn điện tử (Casso chưa bật trên production) → 10.
-  it('đủ 10 trang sản phẩm và 9 trang giải pháp, không trùng đường dẫn', () => {
-    expect(TRANG_SAN_PHAM).toHaveLength(10);
-    expect(TRANG_GIAI_PHAP).toHaveLength(9);
+  // 16/11/2026: đóng băng 4 trang sản phẩm + 5 trang giải pháp về agent chi tiền / danh bạ khách; thêm 3 trang bán được → 9 và 4.
+  it('đủ 9 trang sản phẩm và 4 trang giải pháp, không trùng đường dẫn', () => {
+    expect(TRANG_SAN_PHAM).toHaveLength(9);
+    expect(TRANG_GIAI_PHAP).toHaveLength(4);
     const duong = TAT_CA_TRANG.map(duongDanTrang);
     expect(new Set(duong).size).toBe(duong.length);
   });
@@ -68,6 +70,49 @@ describe('trang sản phẩm và giải pháp', () => {
       if (!t.vanDe.soLieu) continue;
       expect(t.vanDe.soLieu.url, duongDanTrang(t)).toMatch(/^https:\/\//);
       expect(t.vanDe.soLieu.nguon.length).toBeGreaterThan(5);
+    }
+  });
+});
+
+describe('đóng băng đợt 2 (16/11/2026) và bốn trang MIMI bán', () => {
+  const BON_TRANG = ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/ban-tai-quay', '/san-pham/ho-so-vay', '/giai-phap/van-phong-ke-toan'];
+
+  it('trang về agent chi tiền đã đóng băng: không còn trong danh sách, menu hay trang liên quan', () => {
+    const dongBang = TRANG_NOI_DUNG_DONG_BANG.map(duongDanTrang).sort();
+    expect(dongBang).toEqual([
+      '/giai-phap/agency-quang-cao', '/giai-phap/dich-vu-chuyen-mon', '/giai-phap/doanh-nghiep-nho-va-vua', '/giai-phap/phan-mem-ai',
+      '/giai-phap/startup-cong-nghe', '/san-pham/chong-chuyen-nham', '/san-pham/duyet-chi', '/san-pham/kiem-soat-agent', '/san-pham/mcp-api',
+    ]);
+    for (const d of dongBang) {
+      expect(daDongBang(d), d).toBe(true);
+      expect(timTrang(d), d).toBeUndefined();
+    }
+    expect(tatCaLienKetMenu().filter((h) => daDongBang(h.split('#')[0]))).toEqual([]);
+    for (const t of TAT_CA_TRANG) {
+      expect(t.trongApp && daDongBang(t.trongApp.duong), duongDanTrang(t)).toBeFalsy();
+    }
+  });
+
+  it('menu Sản phẩm mở đầu bằng bốn việc MIMI bán', () => {
+    const sp = CAC_MENU.find((m) => m.khoa === 'san-pham')!;
+    expect(sp.cot[0][0].muc.map((m) => m.href)).toEqual(BON_TRANG);
+  });
+
+  it('bốn trang có bản tiếng Anh đủ phần, cùng số mục với bản tiếng Việt, không lời hứa agent', () => {
+    for (const d of BON_TRANG) {
+      const t = timTrang(d)!;
+      expect(t, d).toBeDefined();
+      expect(t.trangThai, d).toBe('dang-chay');
+      expect(t.en, d).toBeDefined();
+      const en = trangTheoNgonNgu(t, 'en');
+      expect(en.ten, d).not.toBe(t.ten);
+      expect(en.cachHoatDong.length, d).toBe(t.cachHoatDong.length);
+      expect(en.lamDuoc.length, d).toBe(t.lamDuoc.length);
+      expect(en.ranhGioi.length, d).toBe(t.ranhGioi.length);
+      expect(en.hoiDap.length, d).toBe(t.hoiDap.length);
+      expect(trangTheoNgonNgu(t, 'vi')).toBe(t);
+      const chu = JSON.stringify(t);
+      expect(chu, d).not.toMatch(/agent|chấm điểm|scoring/i);
     }
   });
 });

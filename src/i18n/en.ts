@@ -24,10 +24,7 @@ const en = {
     subtitleBold: 'A few taps a day, and your books are ready when filing season arrives.',
     ctaPrimary: 'See the demo →',
     ctaSecondary: 'Watch 2-min demo',
-    trustGreen: 'Lump-sum tax ends 2026',
-    trustCarbon: 'Documented costs',
     trustAI: 'Reads tax-authority invoices',
-    trustNetZero: 'Green finance',
   },
 
   // Process
@@ -80,15 +77,6 @@ const en = {
     securityDesc: 'Bank tokens encrypted with ML-KEM-768 (NIST FIPS 203); each company’s data isolated by Row-Level Security',
     dashboard: 'Match payments to invoices',
     dashboardDesc: 'When a customer pays by QR, the matching sales invoice is marked paid — see at once who has paid and who still owes',
-    greenFinance: 'Green Finance',
-    greenFinanceDesc: 'An emissions record built from your own transactions, for use in green credit applications',
-    interestRate: 'Interest rate',
-    creditLimit: 'Credit limit',
-    carbonCredits: 'Carbon Credits',
-    carbonCreditsDesc: 'Trade, track and report carbon footprint',
-    offsetted: 'Offset',
-    netZero: 'Net Zero 2050',
-    sustainableFuture: 'Towards a sustainable future',
   },
 
   // Footer
@@ -132,7 +120,6 @@ const en = {
     settings: 'Settings',
     support: 'Support',
     logout: 'Sign Out',
-    greenPlan: 'Green Plan ⭐',
     groupAgent: 'Agents & spend',
     groupDocs: 'Invoices & documents',
     groupLedger: 'Ledger & reconciliation',

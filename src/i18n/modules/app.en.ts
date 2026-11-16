@@ -2058,7 +2058,7 @@ const m = {
         },
         {
           "school": "Computer Science (high-quality programme) · Ho Chi Minh City University of Technology",
-          "owns": "Scoring model and the post-quantum cryptography layer",
+          "owns": "Data models and the post-quantum cryptography layer",
         },
         {
           "school": "Business Administration (high-quality programme) · Foreign Trade University, Hanoi",

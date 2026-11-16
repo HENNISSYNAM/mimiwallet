@@ -16,11 +16,6 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://www.mimiwallet.online/tri-tue-nhan-tao</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://www.mimiwallet.online/khach-hang</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -56,17 +51,17 @@
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.mimiwallet.online/san-pham/kiem-soat-agent</loc>
+    <loc>https://www.mimiwallet.online/san-pham/khai-thue-ho-kinh-doanh</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.mimiwallet.online/san-pham/duyet-chi</loc>
+    <loc>https://www.mimiwallet.online/san-pham/ban-tai-quay</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.mimiwallet.online/san-pham/chong-chuyen-nham</loc>
+    <loc>https://www.mimiwallet.online/san-pham/ho-so-vay</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -91,27 +86,12 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.mimiwallet.online/san-pham/mcp-api</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://www.mimiwallet.online/san-pham/bao-mat</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.mimiwallet.online/san-pham/ket-noi</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.mimiwallet.online/giai-phap/startup-cong-nghe</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.mimiwallet.online/giai-phap/doanh-nghiep-nho-va-vua</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -126,22 +106,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.mimiwallet.online/giai-phap/agency-quang-cao</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://www.mimiwallet.online/giai-phap/thuong-mai-dien-tu</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.mimiwallet.online/giai-phap/phan-mem-ai</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.mimiwallet.online/giai-phap/dich-vu-chuyen-mon</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -152,11 +117,6 @@
   </url>
   <url>
     <loc>https://www.mimiwallet.online/kham-pha/demo</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.mimiwallet.online/kham-pha/agent-ai</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

@@ -4,8 +4,10 @@ import { ArrowRight, ChevronRight, X } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Seo from '@/components/Seo';
-import { duongDanTrang, timTrang, type TrangThai } from '@/content/trangNoiDung';
+import { duongDanTrang, timTrang, trangTheoNgonNgu, type TrangThai } from '@/content/trangNoiDung';
 import { useTranslation } from 'react-i18next';
+import { daDongBang } from '@/lib/dongBang';
+import { TamDungCongKhai } from '@/pages/TamDungPage';
 
 /**
  * Trang Sản phẩm (/san-pham/:slug) và Giải pháp (/giai-phap/:slug).
@@ -36,9 +38,11 @@ function TieuDeKhu({ children }: { children: React.ReactNode }) {
 
 export default function TrangNoiDungPage() {
   const { pathname } = useLocation();
-  const { t: dich } = useTranslation();
+  const { t: dich, i18n } = useTranslation();
   const navigate = useNavigate();
-  const trang = timTrang(pathname.replace(/\/+$/, ''));
+  const duong = pathname.replace(/\/+$/, '');
+  const goc = timTrang(duong);
+  const trang = goc && trangTheoNgonNgu(goc, i18n.language ?? 'vi');
 
   // Chuyển giữa các trang bằng router giữ nguyên vị trí cuộn; bấm menu từ cuối
   // trang chủ mà mở trang mới ở giữa chừng thì người đọc lỡ mất phần đầu.
@@ -46,10 +50,13 @@ export default function TrangNoiDungPage() {
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  // Trang đã đóng băng (`lib/dongBang.ts`): nói rõ là tạm dừng thay vì 404.
+  if (daDongBang(duong)) return <TamDungCongKhai />;
   if (!trang) return <Navigate to="/404" replace />;
 
   const trangThai = NHAN_TRANG_THAI[trang.trangThai];
-  const lienQuan = trang.lienQuan.map((d) => timTrang(d)).filter((t): t is NonNullable<typeof t> => Boolean(t));
+  const lienQuan = trang.lienQuan.map((d) => timTrang(d)).filter((t): t is NonNullable<typeof t> => Boolean(t))
+    .map((t) => trangTheoNgonNgu(t, i18n.language ?? 'vi'));
   const soCot = Math.min(trang.cachHoatDong.length, 4);
   const lopCot = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3', 4: 'md:grid-cols-4' }[soCot];
 

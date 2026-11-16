@@ -33,13 +33,13 @@ const la = (...ds: string[]) => (d: string) => ds.includes(d);
  */
 export const MODULE_TRO_LY: readonly ModuleTroLy[] = [
   { khoa: 'thue', ten: 'Thuế & Tuân thủ', duong: '/dashboard/nhac-thue', nhom: 'chung_tu', hoiGi: 'Năm nay tôi có phải nộp thuế không?',
-    khop: (d) => la('/dashboard/nhac-thue', '/dashboard/to-khai', '/dashboard/giay-to', '/dashboard/tai-lieu')(d) },
+    khop: (d) => la('/dashboard/nhac-thue', '/dashboard/to-khai', '/dashboard/tai-lieu')(d) },
   { khoa: 'ban_hang', ten: 'Bán tại quầy', duong: '/pos', nhom: 'ngan_hang', hoiGi: 'Tiền về tháng này khớp hoá đơn nào?',
     khop: (d) => d === '/pos' },
   { khoa: 'vay_von', ten: 'Vay vốn', duong: '/dashboard/vay-von', nhom: 'ngan_hang', hoiGi: 'Dự báo dòng tiền 3 tháng tới',
     khop: (d) => la('/dashboard/vay-von', '/dashboard/doanh-thu-xac-minh')(d) },
   { khoa: 'dong_tien', ten: 'Dòng tiền', duong: '/dashboard/cashflow', nhom: 'ngan_hang', hoiGi: 'Vì sao tháng này tiền ra nhiều hơn tiền vào?',
-    khop: (d) => la('/dashboard/cashflow', '/dashboard/fintech', '/dashboard/kiem-truoc-khi-chuyen')(d) },
+    khop: (d) => la('/dashboard/cashflow', '/dashboard/fintech')(d) },
   { khoa: 'hoa_don', ten: 'Hoá đơn', duong: '/dashboard/invoices', nhom: 'chung_tu', hoiGi: 'Tiền về tháng này khớp hoá đơn nào?',
     khop: (d, q) => d === '/dashboard/invoices' && q.get('filter') !== 'pending' },
   { khoa: 'cong_no', ten: 'Công nợ', duong: '/dashboard/invoices?filter=pending', nhom: 'chung_tu', hoiGi: 'Khách nào đang nợ lâu nhất?',
@@ -52,18 +52,17 @@ export const MODULE_TRO_LY: readonly ModuleTroLy[] = [
     khop: (d) => d === '/dashboard/settings' },
 ];
 
-/** Các trang còn lại, mở từ nút "…" — không trang nào bị gỡ, chỉ không chiếm chỗ trên thanh chính. */
+/**
+ * Các trang còn lại, mở từ nút "…" — chỉ không chiếm chỗ trên thanh chính.
+ * 16/11/2026: kiểm trước khi chuyển, giấy tờ, kiểm soát chi của agent, chính sách chi đóng băng (`lib/dongBang.ts`) nên rời danh sách.
+ */
 export const TRANG_THEM: readonly { ten: string; duong: string; khoa: string }[] = [
   { ten: 'Việc cần làm', duong: '/dashboard/viec-can-lam', khoa: 'viec_can_lam' },
-  { ten: 'Kiểm trước khi chuyển tiền', duong: '/dashboard/kiem-truoc-khi-chuyen', khoa: 'kiem_truoc_khi_chuyen' },
   { ten: 'Thư viện chứng từ', duong: '/dashboard/thu-vien', khoa: 'thu_vien' },
   { ten: 'Tách chi cá nhân', duong: '/dashboard/chi-ca-nhan', khoa: 'chi_ca_nhan' },
   { ten: 'Tờ khai thuế', duong: '/dashboard/to-khai', khoa: 'to_khai' },
   { ten: 'Doanh thu đã xác minh', duong: '/dashboard/doanh-thu-xac-minh', khoa: 'doanh_thu_xac_minh' },
-  { ten: 'Giấy tờ', duong: '/dashboard/giay-to', khoa: 'giay_to' },
   { ten: 'Đọc báo cáo tài chính', duong: '/dashboard/doc-bao-cao', khoa: 'doc_bao_cao' },
-  { ten: 'Kiểm soát chi của agent', duong: '/dashboard/tac-tu', khoa: 'tac_tu' },
-  { ten: 'Chính sách chi', duong: '/dashboard/chinh-sach', khoa: 'chinh_sach' },
   { ten: 'Ngân hàng & thanh toán', duong: '/dashboard/fintech', khoa: 'fintech' },
   { ten: 'Ứng dụng & kết nối', duong: '/dashboard/ket-noi', khoa: 'ket_noi' },
 ];

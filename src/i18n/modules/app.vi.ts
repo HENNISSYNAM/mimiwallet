@@ -2058,7 +2058,7 @@ const m = {
         },
         {
           "school": "Khoa học Máy tính CLC · ĐH Bách Khoa TP.HCM",
-          "owns": "Mô hình chấm điểm và lớp mật mã hậu lượng tử",
+          "owns": "Mô hình dữ liệu và lớp mật mã hậu lượng tử",
         },
         {
           "school": "Quản trị Kinh doanh CLC · ĐH Ngoại thương Hà Nội",

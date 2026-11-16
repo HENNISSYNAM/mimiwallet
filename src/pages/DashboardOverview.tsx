@@ -23,7 +23,6 @@ import { InsightSpark, InvoiceDoc, CapitalVault, CashflowChart, LearnCap } from 
 import { LoiTaiLai } from '@/components/chung/LoiTaiLai';
 import { KhoiDieuPhoi } from '@/components/nao/KhoiDieuPhoi';
 import { CauHoiSeanEllis } from '@/components/phan-hoi/CauHoiNhanh';
-import { KiemNhanh } from '@/components/thanh-toan/KiemNhanh';
 import { docHet } from '../../supabase/functions/_shared/doc-het';
 import { homNayVN } from '../../supabase/functions/_shared/viec/dong-co-viec';
 import { AreaChart, Area, ComposedChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
@@ -376,8 +375,8 @@ export default function DashboardOverview() {
       </motion.div>
 
       {/* Một cửa của bộ não dùng chung: thu nạp dữ liệu, chạy quy trình, báo cáo chung với pet và Trợ lý. */}
-      {/* Trọng tâm: kiểm một khoản TRƯỚC khi tiền đi — lối vào đầu tiên của Tổng quan. */}
-      <motion.div variants={fadeUp}><KiemNhanh /></motion.div>
+      {/* "Kiểm nhanh" (kiểm một khoản trước khi chuyển) rời Tổng quan 16/11/2026 — đóng băng, `lib/dongBang.ts`.
+          Thành phần `components/thanh-toan/KiemNhanh.tsx` và test của nó giữ nguyên. */}
       <motion.div variants={fadeUp}><CauHoiSeanEllis /></motion.div>
       <motion.div variants={fadeUp}><KhoiDieuPhoi /></motion.div>
 

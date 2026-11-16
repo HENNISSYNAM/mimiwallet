@@ -27,10 +27,7 @@ const zh = {
     subtitleBold: '每天点几下，到了申报期账就已经做完了。',
     ctaPrimary: '立即查看演示 →',
     ctaSecondary: '看 2 分钟演示',
-    trustGreen: '2026 年取消核定征收',
-    trustCarbon: '有凭证的成本',
     trustAI: '读取税务机关的电子发票',
-    trustNetZero: '绿色金融',
   },
 
   process: {
@@ -78,15 +75,6 @@ const zh = {
     securityDesc: '银行令牌用 ML-KEM-768（NIST FIPS 203）加密，数据通过 Row-Level Security 按公司隔离',
     dashboard: '到账与发票核对',
     dashboardDesc: '客户扫码付款后，对应的销售发票自动匹配——一眼看出谁已付款、谁仍欠款',
-    greenFinance: '绿色金融',
-    greenFinanceDesc: '用你自己的交易生成排放档案，用于绿色信贷申请',
-    interestRate: '利率',
-    creditLimit: '额度',
-    carbonCredits: '碳信用',
-    carbonCreditsDesc: '碳足迹的交易、跟踪与报告',
-    offsetted: '已抵消',
-    netZero: '净零 2050',
-    sustainableFuture: '迈向可持续的未来',
   },
 
   footer: {
@@ -123,7 +111,6 @@ const zh = {
     settings: '设置',
     support: '支持',
     logout: '退出登录',
-    greenPlan: 'Green 套餐 ⭐',
     groupAgent: '智能体与支出',
     groupDocs: '发票与凭证',
     groupLedger: '账簿与核对',

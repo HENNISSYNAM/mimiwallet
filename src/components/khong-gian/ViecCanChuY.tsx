@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { NhomNangLuc, ViecHomNay } from '@/lib/troLy';
+import { daDongBang } from '@/lib/dongBang';
 
 /**
  * VIỆC CẦN CHÚ Ý HÔM NAY (29/09/2026) — lấy nguyên danh sách máy chủ tính (`boi_canh.viec`, dữ liệu thật). Không
@@ -10,7 +11,8 @@ import type { NhomNangLuc, ViecHomNay } from '@/lib/troLy';
  */
 
 const CTA: Record<NhomNangLuc, { nut: string; duong: string | null }> = {
-  tro_ly: { nut: 'kiemTra', duong: '/dashboard/tac-tu' },
+  // Kiểm soát agent đóng băng 16/11/2026 (`lib/dongBang.ts`): việc nhóm này chỉ còn nút hỏi MIMI.
+  tro_ly: { nut: 'kiemTra', duong: null },
   chi_phi: { nut: 'xemNguyenNhan', duong: '/dashboard/cashflow' },
   chung_tu: { nut: 'hoanThien', duong: '/dashboard/chung-tu' },
   ngan_hang: { nut: 'kiemTra', duong: '/dashboard/cashflow' },
@@ -51,7 +53,9 @@ export function ViecCanChuY({ viec, soChoDuyet, onHoi, dangHoi }: {
         {viec.map((v) => {
           const c = CTA_THEO_VIEC[v.khoa] ?? CTA[v.nhom];
           // Mục thuế mang lối vào riêng (cùng đường dẫn với chuông và Việc cần làm).
-          const duong = CTA_THEO_VIEC[v.khoa]?.duong ?? v.duong_dan ?? c.duong;
+          const duongTho = CTA_THEO_VIEC[v.khoa]?.duong ?? v.duong_dan ?? c.duong;
+          // Trang đã đóng băng (`lib/dongBang.ts`) không mời mở; việc vẫn hỏi MIMI được.
+          const duong = duongTho && !daDongBang(duongTho) ? duongTho : null;
           return (
             <li key={v.khoa} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
               <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">

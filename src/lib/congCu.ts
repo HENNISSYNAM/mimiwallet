@@ -94,7 +94,9 @@ export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH
 // 28/09/2026: "Chi phí AI" đóng băng (`lib/dongBang.ts`); liên kết ngân hàng thay chỗ — vòng kiểm → đối soát cần sao kê.
 // 11/11/2026: tờ khai, bán tại quầy và hồ sơ vay — ba việc ra tiền ngay — ghim sẵn ngay sau kiểm trước khi chuyển.
 // Liên kết ngân hàng đã có lối cố định "Kết nối" trên thanh bên nên đứng cuối.
-export const CONG_CU_MAC_DINH = ['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'lien_ket_ngan_hang'];
+// 16/11/2026 (đóng băng đợt 2): "Kiểm trước khi chuyển" đóng băng cùng kiểm soát chi của agent (`lib/dongBang.ts`).
+// Tờ khai — việc ra tiền đầu tiên — đứng đầu; doanh thu đã xác minh vào thay chỗ (đi cùng hồ sơ vay).
+export const CONG_CU_MAC_DINH = ['soan_to_khai', 'ban_tai_quay', 'vay_von', 'doanh_thu_xac_minh', 'thieu_chung_tu', 'lien_ket_ngan_hang'];
 
 export const SO_CONG_CU_TOI_DA = 12;
 
@@ -124,7 +126,7 @@ export function duongDanCongCu(c: CongCu): string {
  *   Bán trên nền tảng số   → liên kết ngân hàng (thu tiền, tự khớp khi tiền về)
  *   Dịch vụ chuyên môn     → hoá đơn bán ra, khách hàng
  *   Bán lẻ, sản xuất       → báo cáo thu chi
- *   Doanh nghiệp           → chính sách chi, kiểm soát agent
+ *   (Doanh nghiệp → chính sách chi, kiểm soát agent: đóng băng 16/11/2026)
  *
  * Chỉ áp khi người dùng chưa tự chọn công cụ nào — không ghi đè lựa chọn của họ.
  */
@@ -136,7 +138,8 @@ export function congCuGoiY(h: {
 }): string[] {
   // 28/09/2026: vòng chính (kiểm trước khi chuyển + sao kê để đối soát) đứng đầu cho MỌI ngành; thuế theo sau.
   // 11/11/2026: tờ khai, bán tại quầy, hồ sơ vay lên trước; liên kết ngân hàng xuống cuối (đã có lối "Kết nối").
-  const ds = ['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu'];
+  // 16/11/2026: kiểm trước khi chuyển, chính sách chi, kiểm soát agent đóng băng — không gợi ý.
+  const ds = ['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu'];
   for (const n of h.nhom_nganh) {
     // Chi phí AI đóng băng 11/11/2026 (`lib/dongBang.ts`): không có trong kho, không gợi ý.
     if (n === 'dich_vu') ds.push('hoa_don_ban', 'khach_hang');
@@ -144,7 +147,6 @@ export function congCuGoiY(h: {
     if (n === 'phan_phoi_hang_hoa' || n === 'san_xuat_van_tai' || n === 'khac') ds.push('bao_cao');
   }
   if (h.nganh_dac_thu === 'cho_thue_bat_dong_san') ds.push('hoa_don_ban');
-  if (h.loai_nguoi_nop === 'doanh_nghiep') ds.push('chinh_sach_chi', 'kiem_soat_agent');
   ds.push('lien_ket_ngan_hang');
   return [...new Set(ds)].filter((k) => CONG_CU_THEO_KHOA[k]).slice(0, 6);
 }

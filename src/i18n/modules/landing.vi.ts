@@ -53,9 +53,9 @@ const m = {
     },
     metrics: {
       items: [
-        { prefix: '~', suffix: ' giây', label: 'Thời gian chấm điểm', sub: 'Đo trên máy chủ đang chạy' },
+        { prefix: '', suffix: ' mẫu', label: 'Mẫu tờ khai MIMI điền sẵn', sub: '01/TKN-CNKD và 01/CNKD' },
         { prefix: 'ML-KEM-', suffix: '', label: 'Mã hóa kháng lượng tử', sub: 'Chuẩn NIST FIPS 203' },
-        { prefix: '', suffix: ' tháng', label: 'Dữ liệu mỗi lần chấm', sub: 'Sao kê của chính doanh nghiệp' },
+        { prefix: '', suffix: ' tháng', label: 'Dòng tiền trong hồ sơ vay', sub: 'Từ sao kê của chính doanh nghiệp' },
         { prefix: '', suffix: '/52', label: 'Bài kiểm tra tự động', sub: 'Tự chạy lại mỗi lần cập nhật' },
       ],
     },

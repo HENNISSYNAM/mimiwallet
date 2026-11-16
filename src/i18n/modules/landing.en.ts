@@ -36,9 +36,9 @@ const m = {
     },
     metrics: {
       items: [
-        { prefix: '~', suffix: ' sec', label: 'Scoring time', sub: 'Runs on production infrastructure' },
+        { prefix: '', suffix: ' forms', label: 'Tax return forms MIMI pre-fills', sub: '01/TKN-CNKD and 01/CNKD' },
         { prefix: 'ML-KEM-', suffix: '', label: 'Quantum-resistant encryption', sub: 'NIST FIPS 203 standard' },
-        { prefix: '', suffix: ' months', label: 'Data per scoring run', sub: 'Real business transactions' },
+        { prefix: '', suffix: ' months', label: 'Cash flow in the loan file', sub: 'From the business’s own statements' },
         { prefix: '', suffix: '/52', label: 'Automated tests', sub: 'Re-run on every update' },
       ],
     },

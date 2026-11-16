@@ -23,9 +23,8 @@ const vi = {
    * business now self-declares on real revenue, and the 1 tỷ–3 tỷ band may
    * choose between 15% on profit and a percentage of revenue. That choice is
    * only available to someone who can document costs. MIMI holds their outflows.
-   * Green and carbon stay in the supporting line rather than the headline —
-   * those features exist, they are just not what the market is panicking about
-   * this year.
+   * 16/11/2026: the unused green-finance / carbon strings were deleted from all
+   * four languages — MIMI sells tax, POS, loan files and the accounting office.
    */
   hero: {
     badge: 'Thuế, bán hàng và hồ sơ vay cho hộ kinh doanh',
@@ -35,10 +34,7 @@ const vi = {
     subtitleBold: 'Mỗi ngày vài chạm, tới kỳ kê khai là đã xong sổ.',
     ctaPrimary: 'Xem demo ngay →',
     ctaSecondary: 'Xem demo 2 phút',
-    trustGreen: 'Hết thuế khoán 2026',
-    trustCarbon: 'Chi phí có chứng từ',
     trustAI: 'Đọc hoá đơn từ cơ quan thuế',
-    trustNetZero: 'Tài chính xanh',
   },
 
   // Process
@@ -113,15 +109,6 @@ const vi = {
     securityDesc: 'Khoá kết nối ngân hàng được mã hoá theo chuẩn NIST FIPS 203. Dữ liệu mỗi công ty để riêng, công ty khác không xem được.',
     dashboard: 'Khớp tiền về với hoá đơn',
     dashboardDesc: 'Khách trả qua mã QR là hoá đơn tự khớp. Biết ngay ai đã trả, ai còn nợ.',
-    greenFinance: 'Tài chính xanh',
-    greenFinanceDesc: 'Hồ sơ phát thải dựng từ chính giao dịch của bạn, dùng khi làm hồ sơ tín dụng xanh',
-    interestRate: 'Lãi suất',
-    creditLimit: 'Hạn mức',
-    carbonCredits: 'Tín chỉ Carbon',
-    carbonCreditsDesc: 'Giao dịch, theo dõi và báo cáo carbon footprint',
-    offsetted: 'Đã offset',
-    netZero: 'Net Zero 2050',
-    sustainableFuture: 'Hướng tới tương lai bền vững',
   },
 
   // Footer
@@ -167,7 +154,6 @@ const vi = {
     settings: 'Cài đặt',
     support: 'Hỗ trợ',
     logout: 'Đăng xuất',
-    greenPlan: 'Gói Green ⭐',
     // Nhóm điều hướng. Tên nhóm đặt theo việc người dùng đang muốn làm, không
     // theo tên module bên trong — "Tiền vào ra" chứ không phải "Giao dịch".
     // Ba khu từ 14/09/2026 — xem docs/KE_HOACH_MIMI_CHAU_A.md mục 4.3.
