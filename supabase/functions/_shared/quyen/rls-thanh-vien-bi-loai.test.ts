@@ -61,6 +61,8 @@ const BANG_CONG_TY = [
   // 10/11/2026: hồ sơ vay (chỉ chủ / quản trị đọc, chỉ máy chủ ghi).
   'ho_so_vay',
   'companies', 'hoi_thoai_tro_ly', 'thong_bao', 'ban_hang_pos', 'pos_san_pham', 'dong_tien_mo_hinh',
+  // 16/11/2026: cơ hội phát triển — đồng ý và gói giới thiệu ngân hàng (chỉ chủ / quản trị cả công ty đọc, chỉ máy chủ ghi).
+  'dong_y_gioi_thieu', 'gioi_thieu_ngan_hang',
 ];
 
 describe('RLS: người bị gỡ khỏi công ty mất quyền', () => {
