@@ -5,6 +5,10 @@ import {
 import { docSoLieuDoanhThu } from '../doanh-thu/so-lieu';
 import { docLichCongTy } from '../luat/doc-lich-thue';
 import { mocKeTiep } from '../luat/lich-thue';
+import { deXuatPhanLoai } from './hang-duyet';
+import type { VaiTro } from '../quyen/vai-tro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 /**
  * Văn phòng kế toán — nghiệm thu backend:
@@ -371,5 +375,101 @@ describe('so sánh và phân công', () => {
     expect(r).toEqual({ tu: '2026-10-13', tien_vao: 100, tien_ra: 50, rong: 50 });
     // Đầu năm: cửa sổ không lùi sang năm trước (dữ liệu đọc theo năm).
     expect(dongTien30Ngay([], new Set(), '2026-01-05').tu).toBe('2026-01-01');
+  });
+});
+
+// ── Hàng duyệt kiểu Cursor ──────────────────────────────────────────────────
+
+describe('hàng duyệt: đề xuất của agent trên mọi khách', () => {
+  /** Thêm: một khoản "mẹ gửi tiền" chưa ai quyết (Cường) và một khoản vay MIMI đã tự loại ra, chưa người ký (Bình). */
+  const duLieuHang = () => {
+    const du = duLieu();
+    du.transactions.push(
+      { ...gd('t-cuong-2', 'c-cuong', 30_000_000, 'income', '2026-07-01'), merchant_name: 'ME GUI TIEN' },
+      { ...gd('t-binh-3', 'c-binh', 20_000_000, 'income', '2026-08-01'), merchant_name: 'GIAI NGAN HDTD 0126' },
+    );
+    du.revenue_classifications.push({ company_id: 'c-binh', transaction_id: 't-binh-3', revenue_effect: 'exclude', confirmed_type: 'loan', confirmed_role: 'mimi_tu_dong' });
+    return du;
+  };
+  const deXuat = (kq: Awaited<ReturnType<typeof docDanhMucKhach>>, khoa: string) => kq.hang_duyet.find((d) => d.khoa === khoa);
+
+  it('dựng từ đề xuất có thật: khoản chưa ai quyết + khoản máy đã quyết chưa ký; khoản người đã quyết thì không', async () => {
+    const kq = await docDanhMucKhach(dbGia(duLieuHang()), 'u-kt', { bayGio: BAY_GIO });
+    const pl = kq.hang_duyet.filter((d) => d.loai === 'phan_loai').map((d) => d.phan_loai!.transaction_id).sort();
+    expect(pl).toEqual(['t-an-2', 't-binh-3', 't-cuong-2']);
+    // Không bao giờ có khoản của công ty lạ hay của cơ sở bị giới hạn.
+    expect(JSON.stringify(kq.hang_duyet)).not.toMatch(/c-la|c-co-so|t-la|t-cs/);
+
+    const nha = deXuat(kq, 'pl:c-cuong:t-cuong-2')!;
+    expect(nha.phan_loai).toMatchObject({ de_xuat: 'family_transfer', hien_tai: null, may_da_quyet: false, anh_huong: 'exclude' });
+    expect(nha.bang_chung).toMatchObject({ nguon: 'quy_tac_noi_dung', tin_cay: 'trung_binh' });
+    expect(nha.bang_chung.dong).toEqual([{ transaction_id: 't-cuong-2', ngay: '2026-07-01', so_tien: 30_000_000, noi_dung: 'ME GUI TIEN' }]);
+    expect(nha.tac_dong).toMatchObject({ truoc: { can_duoi: 10_000_000, can_tren: 40_000_000 }, sau: { can_duoi: 10_000_000, can_tren: 10_000_000 }, doi_phia: false });
+    // Làm giảm doanh thu: không bao giờ duyệt hàng loạt, không bao giờ "xanh".
+    expect(nha.duyet_hang_loat).toBe(false);
+    expect(nha.muc).toBe('vang');
+
+    const vay = deXuat(kq, 'pl:c-binh:t-binh-3')!;
+    expect(vay.phan_loai).toMatchObject({ de_xuat: 'loan', hien_tai: 'loan', may_da_quyet: true });
+    expect(vay.tac_dong!.truoc).toEqual(vay.tac_dong!.sau); // ký nhận đúng loại máy đã ghi: số không đổi
+    expect(vay.duyet_hang_loat).toBe(false);
+  });
+
+  it('tác động lên số: khoảng trước → sau và phía ngưỡng 01 tỷ khớp đúng lần tính lại sau khi xác nhận', async () => {
+    const kq = await docDanhMucKhach(dbGia(duLieuHang()), 'u-kt', { bayGio: BAY_GIO });
+    const an = deXuat(kq, 'pl:c-an:t-an-2')!;
+    expect(an.phan_loai).toMatchObject({ de_xuat: 'business_revenue', anh_huong: 'include' });
+    expect(an.bang_chung).toMatchObject({ nguon: 'than_trong', tin_cay: 'thap' });
+    // Cận trên còn gồm các tháng 04–09 thiếu sao kê (khoảng trống của `do-chac-chan`): xác nhận một khoản không đổi nó.
+    expect(an.tac_dong).toMatchObject({ truoc: { can_duoi: 950_000_000 }, sau: { can_duoi: 1_050_000_000 }, doi_phia: true });
+    expect(an.tac_dong!.sau.can_tren).toBe(an.tac_dong!.truoc.can_tren);
+    expect(an.tac_dong!.nguong.find((n) => n.ma === 'mien_thue_1_ty')).toMatchObject({ truoc: 'chua_chac', sau: 'tren' });
+    expect(an.muc).toBe('do');
+    // Không thể làm giảm doanh thu → được duyệt hàng loạt.
+    expect(an.duyet_hang_loat).toBe(true);
+
+    // Đối chiếu: ghi đúng quyết định đó rồi tính lại bằng nguồn chung.
+    const cap = [[an, 'include', 'business_revenue'], [deXuat(kq, 'pl:c-cuong:t-cuong-2')!, 'exclude', 'family_transfer']] as const;
+    for (const [d, effect, type] of cap) {
+      const sau = duLieuHang();
+      sau.revenue_classifications.push({ company_id: d.company_id, transaction_id: d.phan_loai!.transaction_id, revenue_effect: effect, confirmed_type: type, confirmed_role: 'ke_toan' });
+      const s = await docSoLieuDoanhThu(dbGia(sau), d.company_id, 2026, false);
+      expect({ can_duoi: Number(s.do_chac_chan.can_duoi), can_tren: Number(s.do_chac_chan.can_tren) }).toEqual(d.tac_dong!.sau);
+    }
+  });
+
+  it('việc chỉ dẫn đường (hạn, dòng tiền, hồ sơ) không duyệt được trên hàng; nặng đứng trước', async () => {
+    const kq = await docDanhMucKhach(dbGia(duLieuHang()), 'u-kt', { bayGio: BAY_GIO });
+    const dt = kq.hang_duyet.find((d) => d.loai === 'dong_tien' && d.company_id === 'c-binh')!;
+    expect(dt).toMatchObject({ co_the_duyet: false, duyet_hang_loat: false, agent: 'du_bao', so: 20_000_000, phan_loai: null });
+    expect(kq.hang_duyet.find((d) => d.loai === 'viec' && d.company_id === 'c-cuong')).toMatchObject({ muc: 'do', agent: 'tai_lieu' });
+    const hang = { do: 0, vang: 1, xanh: 2 };
+    for (let i = 1; i < kq.hang_duyet.length; i++) expect(hang[kq.hang_duyet[i - 1].muc]).toBeLessThanOrEqual(hang[kq.hang_duyet[i].muc]);
+    expect(kq.hang_duyet_tong).toBe(kq.hang_duyet.length);
+  });
+
+  it('quyền: chỉ vai trò được xác nhận tiền vào mới có nút chấp nhận; người xem / người duyệt chi thì không', () => {
+    const dc = { gia_tri: 30, can_duoi: 0, can_tren: 30, nguong: [] } as never;
+    const vao = [{ id: 'x1', amount: 30, type: 'income', transaction_date: '2026-05-01', merchant_name: null, counter_account_name: null, payment_reference: null }];
+    const chay = (vai_tro: VaiTro) => deXuatPhanLoai({ company_id: 'c', ten: 'C', vai_tro, nam: 2026, giaoDich: vao, xacNhan: [], noiBo: new Set(), s: { uoc_tinh: 30, chua_ro: 30, am_bat_thuong: 0 }, dc })[0];
+    for (const v of ['chu_so_huu', 'quan_tri', 'ke_toan'] as const) expect(chay(v)).toMatchObject({ co_the_duyet: true, duyet_hang_loat: true });
+    for (const v of ['nguoi_duyet', 'nguoi_xem'] as const) expect(chay(v)).toMatchObject({ co_the_duyet: false, duyet_hang_loat: false });
+    // Đúng cùng một quyền với hành động máy chủ ghi quyết định (to-khai · xac_nhan_tien_vao), có chặn kế toán một cơ sở.
+    const src = readFileSync(resolve(__dirname, '../../to-khai/index.ts'), 'utf8');
+    expect(src).toMatch(/xac_nhan_tien_vao:\s*"sua_ho_so_thue"/);
+    expect(src).toMatch(/biGioiHan\(vaiTro,/);
+  });
+
+  it('chuyển nội bộ, khoản năm trước và tiền ra không thành đề xuất', () => {
+    const dc = { gia_tri: 0, can_duoi: 0, can_tren: 0, nguong: [] } as never;
+    const ds = deXuatPhanLoai({
+      company_id: 'c', ten: 'C', vai_tro: 'ke_toan', nam: 2026, xacNhan: [], noiBo: new Set(['n1']), s: { uoc_tinh: 0, chua_ro: 0, am_bat_thuong: 0 }, dc,
+      giaoDich: [
+        { id: 'n1', amount: 5, type: 'income', transaction_date: '2026-05-01' },
+        { id: 'cu', amount: 5, type: 'income', transaction_date: '2025-12-31' },
+        { id: 'ra', amount: 5, type: 'expense', transaction_date: '2026-05-01' },
+      ],
+    });
+    expect(ds).toEqual([]);
   });
 });
