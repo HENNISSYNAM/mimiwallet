@@ -29,10 +29,7 @@ const ko = {
     subtitleBold: '매일 몇 번의 터치로, 신고 기한이 오면 장부는 이미 끝나 있습니다.',
     ctaPrimary: '데모 바로 보기 →',
     ctaSecondary: '2분 데모 보기',
-    trustGreen: '2026년 정액세 폐지',
-    trustCarbon: '증빙이 있는 비용',
     trustAI: '세무당국 전자세금계산서 읽기',
-    trustNetZero: '녹색 금융',
   },
 
   process: {
@@ -80,15 +77,6 @@ const ko = {
     securityDesc: '은행 토큰은 ML-KEM-768(NIST FIPS 203)로 암호화하고, 데이터는 Row-Level Security로 회사별로 분리합니다',
     dashboard: '입금과 청구서 대조',
     dashboardDesc: '고객이 QR로 결제하면 해당 판매 청구서가 자동으로 맞춰져, 누가 지불했고 누가 미납인지 바로 보입니다',
-    greenFinance: '녹색 금융',
-    greenFinanceDesc: '귀사의 거래에서 바로 만든 배출 자료, 녹색 신용 심사 서류에 사용합니다',
-    interestRate: '금리',
-    creditLimit: '한도',
-    carbonCredits: '탄소 배출권',
-    carbonCreditsDesc: '탄소 발자국 거래, 추적 및 보고',
-    offsetted: '상쇄 완료',
-    netZero: '넷제로 2050',
-    sustainableFuture: '지속 가능한 미래를 향해',
   },
 
   footer: {
@@ -125,7 +113,6 @@ const ko = {
     settings: '설정',
     support: '지원',
     logout: '로그아웃',
-    greenPlan: 'Green 요금제 ⭐',
     groupAgent: '에이전트 및 지출',
     groupDocs: '세금계산서 및 증빙',
     groupLedger: '장부 및 대조',

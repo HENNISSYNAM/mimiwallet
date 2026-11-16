@@ -86,7 +86,8 @@ const TRA_LOI: TraLoi = {
       { khoa: 'tu_choi:y1', loai: 'tu_choi_yeu_cau', nhan: 'Từ chối', mo_ta: 'Từ chối khoản 2.000.000 ₫.', tham_so: { yeu_cau_id: 'y1', ghi_chu: 'Từ chối qua MIMI Assistant.' } },
     ],
     nguon: [{ ten: 'Yêu cầu chi', mo_ta: 'Ghi ở máy chủ MIMI.' }],
-    trang: [{ nhan: 'Mở danh sách yêu cầu chi', duong_dan: '/dashboard/tac-tu?tab=yeu-cau' }],
+    // 16/11/2026: /dashboard/tac-tu đóng băng — máy chủ vẫn gợi ý, giao diện không mời mở; trang còn sống thì vẫn hiện.
+    trang: [{ nhan: 'Mở danh sách yêu cầu chi', duong_dan: '/dashboard/tac-tu?tab=yeu-cau' }, { nhan: 'Mở Dòng tiền', duong_dan: '/dashboard/cashflow' }],
   }],
 };
 
@@ -254,7 +255,8 @@ describe('MIMI Assistant — hỏi đáp', () => {
     expect(within(bang).getByText('14/09/2026')).toBeTruthy();
     expect(screen.getByLabelText('MIMI đã làm gì').textContent).toContain('Đã đọc: Yêu cầu chi.');
     expect(document.body.textContent).toContain('Nguồn: Yêu cầu chi');
-    expect(screen.getByRole('link', { name: 'Mở danh sách yêu cầu chi' }).getAttribute('href')).toBe('/dashboard/tac-tu?tab=yeu-cau');
+    expect(screen.queryByRole('link', { name: 'Mở danh sách yêu cầu chi' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Mở Dòng tiền' }).getAttribute('href')).toBe('/dashboard/cashflow');
   });
 
   it('P1-002: xác nhận ghi nhật ký trước khi chạy, chạy theo bản đề xuất máy chủ trả, rồi ghi kết quả', async () => {
@@ -445,8 +447,8 @@ describe('MIMI Assistant — khảo sát đầu vào và thuế cá nhân hoá',
       }),
     }));
     // Người dùng chưa tự chọn công cụ nên MIMI chọn theo ngành.
-    // Vòng chính đứng đầu (tờ khai, bán tại quầy, hồ sơ vay — 11/11/2026); Khách hàng (CRM) đã đóng băng nên không được gợi ý.
-    expect(gia.datLai).toHaveBeenCalledWith(['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban']);
+    // Việc ra tiền đứng đầu (tờ khai, bán tại quầy, hồ sơ vay); Khách hàng (CRM) và kiểm trước khi chuyển (16/11/2026) đã đóng băng nên không được gợi ý.
+    expect(gia.datLai).toHaveBeenCalledWith(['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban', 'lien_ket_ngan_hang']);
     await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBeGreaterThanOrEqual(2));
   });
 

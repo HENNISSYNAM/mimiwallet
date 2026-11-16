@@ -10,7 +10,7 @@ import { duongDanCongCu } from '@/lib/congCu';
 import { IconCongCu } from '@/components/cong-cu/IconCongCu';
 import { KhoCongCu } from '@/components/cong-cu/KhoCongCu';
 import {
-  AlertTriangle, ArrowRight, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2, Mic, Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, Square, Volume2, X,
+  AlertTriangle, ArrowUp, Check, ChevronDown, ChevronRight, FileText, LayoutGrid, Lightbulb, Loader2, Mic, Monitor, Pencil, Plus, Puzzle, RotateCcw, ScrollText, Square, Volume2, X,
 } from 'lucide-react';
 import { CAU_LOI_NGHE, luuNgonNguNghe, NGON_NGU_NGHE, ngonNguNghe, useNgheGiong, type MaNgonNguNghe } from '@/hooks/useNgheGiong';
 import { HopBatMic } from '@/components/giong/HopBatMic';
@@ -303,6 +303,7 @@ export default function TroLyPage() {
 
   const lamDeXuat = useCallback(async (luotId: number, dx: DeXuat, daXacMinh = false) => {
     if (dx.loai === 'mo_trang') {
+      // Trang đã đóng băng: route vẫn hiện trang "Tạm dừng" nói rõ vì sao.
       navigate(String(dx.tham_so.duong_dan ?? '/dashboard'));
       return;
     }
@@ -745,6 +746,12 @@ function TheCanXacNhan({ p, viec, onDuyet }: {
   onDuyet: (dx: DeXuat) => void;
 }) {
   const { t } = useTranslation();
+  /*
+   * 16/11/2026: kiểm soát chi của agent đóng băng (`lib/dongBang.ts`). Máy chủ vẫn nhận yêu cầu chi của agent cũ, nên
+   * khoản còn chờ vẫn hiện ở đây để chủ duyệt (qua hộp xác nhận + xác minh như cũ) — không có khoản nào thì không hiện thẻ.
+   * Bỏ lối "Xem" sang /dashboard/tac-tu: trang đó giờ là trang tạm dừng.
+   */
+  if (!p.so_khoan) return null;
   return (
     <section aria-labelledby="the-can-xac-nhan" className={THE}>
       <h3 id="the-can-xac-nhan" className="text-base font-semibold text-foreground">{t('man.troLy.the.canBanXacNhan')}</h3>
@@ -768,7 +775,6 @@ function TheCanXacNhan({ p, viec, onDuyet }: {
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <Link to="/dashboard/tac-tu?tab=yeu-cau" className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-sm text-foreground hover:bg-accent">Xem</Link>
                   {m.duyet && (
                     <button
                       type="button"
@@ -786,11 +792,6 @@ function TheCanXacNhan({ p, viec, onDuyet }: {
             );
           })}
         </ul>
-      )}
-      {p.so_khoan > p.muc.length && (
-        <Link to="/dashboard/tac-tu?tab=yeu-cau" className="mt-auto inline-flex items-center gap-1 pt-3 text-sm font-medium text-primary hover:underline">
-          {t('man.troLy.the.xemCa', { so: p.so_khoan })} <ArrowRight size={14} />
-        </Link>
       )}
     </section>
   );
@@ -914,7 +915,13 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
   onChon: (dx: DeXuat) => void;
 }) {
   const { t } = useTranslation();
-  if (!r.the.length && !r.de_xuat.length && !r.trang.length) return null;
+  /*
+   * 16/11/2026: trang đã đóng băng (`lib/dongBang.ts`) không được mời mở — máy chủ có thể vẫn gợi ý (vd. "Kiểm trước khi
+   * chuyển"), giao diện bỏ nút mở trang đó. Nút làm việc thật (duyệt, từ chối…) giữ nguyên.
+   */
+  const deXuat = r.de_xuat.filter((dx) => !(dx.loai === 'mo_trang' && daDongBang(String(dx.tham_so.duong_dan ?? ''))));
+  const trang = r.trang.filter((tr) => !daDongBang(tr.duong_dan));
+  if (!r.the.length && !deXuat.length && !trang.length) return null;
   return (
     <section aria-label={TEN_NHOM[r.nhom]} className="rounded-xl border border-border bg-card p-4">
       <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">{TEN_NHOM[r.nhom]}</p>
@@ -924,9 +931,9 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
         {r.nang_luc === 'du_bao_dong_tien' && <DuBaoDongTien />}
       </div>
 
-      {r.de_xuat.length > 0 && (
+      {deXuat.length > 0 && (
         <ul className="mt-4 flex flex-col gap-2 border-t border-border pt-4" aria-label={t('man.troLy.viecBanCoTheLam')}>
-          {r.de_xuat.map((dx) => {
+          {deXuat.map((dx) => {
             const tt = viec[`${luotId}:${dx.khoa}`];
             const hetNghia = !tt && dx.tham_so.yeu_cau_id && yeuCauDaXong.has(String(dx.tham_so.yeu_cau_id));
             return (
@@ -959,9 +966,9 @@ function KetQua({ luotId, r, viec, yeuCauDaXong, onChon }: {
 
       {!!r.do_day?.length && <DoDayKetQua ds={r.do_day} />}
 
-      {(r.trang.length > 0 || r.nguon.length > 0) && (
+      {(trang.length > 0 || r.nguon.length > 0) && (
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          {r.trang.map((tr) => (
+          {trang.map((tr) => (
             <Link key={tr.duong_dan} to={tr.duong_dan} className="font-medium text-foreground underline underline-offset-4 hover:text-foreground/80">
               {tr.nhan}
             </Link>

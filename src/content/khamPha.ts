@@ -1,4 +1,5 @@
 import type { KhoaKhoi } from '@/pages/Landing';
+import { daDongBang } from '@/lib/dongBang';
 
 /**
  * Trang "Khám phá" — nơi các khối trình diễn sâu dời ra khỏi trang chủ (26/09/2026).
@@ -11,12 +12,21 @@ export interface TrangKhamPha {
   khoi: KhoaKhoi[];
 }
 
-export const TRANG_KHAM_PHA: TrangKhamPha[] = [
+const TRANG_KHAM_PHA_DAY_DU: TrangKhamPha[] = [
   { slug: 'demo', ten: 'Xem MIMI làm việc', mo_ta: 'Khung demo tự chạy: từ tiền vào tới chứng từ và tờ khai.', khoi: ['demo', 'dang_ky'] },
   { slug: 'agent-ai', ten: 'AI chi tiêu theo luật của bạn', mo_ta: 'Ba nguyên tắc cho agent và nhật ký từng bước.', khoi: ['agent_ai', 'nhat_ky', 'dang_ky'] },
   { slug: 'bao-mat', ten: 'Bảo mật và minh bạch', mo_ta: 'Dừng khoản đáng ngờ, công nghệ bên dưới, xem được từng bước.', khoi: ['bao_mat_video', 'cong_nghe', 'minh_bach', 'dang_ky'] },
   { slug: 'giai-phap', ten: 'Sổ sách sạch trước kỳ kê khai', mo_ta: 'Các việc MIMI làm cho sổ sách, chứng từ và thuế.', khoi: ['nang_luc', 'giai_phap', 'dang_ky'] },
   { slug: 'cap-nhat', ten: 'Cập nhật sản phẩm', mo_ta: 'Những gì vừa chạy thật trên MIMI.', khoi: ['cap_nhat', 'dang_ky'] },
 ];
+
+/**
+ * Trang người đọc thấy (menu, sitemap, thanh chuyển trang). 16/11/2026: /kham-pha/agent-ai (agent chi tiền theo luật)
+ * đóng băng (`lib/dongBang.ts`) — giữ cấu hình ở trên, đường dẫn cũ hiện trang tạm dừng.
+ */
+export const TRANG_KHAM_PHA: TrangKhamPha[] = TRANG_KHAM_PHA_DAY_DU.filter((t) => !daDongBang(`/kham-pha/${t.slug}`));
+
+/** Trang Khám phá đã đóng băng — khối của chúng (agent_ai, nhat_ky) vẫn còn mã, chỉ không hiện ở đâu. */
+export const TRANG_KHAM_PHA_DONG_BANG: TrangKhamPha[] = TRANG_KHAM_PHA_DAY_DU.filter((t) => daDongBang(`/kham-pha/${t.slug}`));
 
 export const KHAM_PHA_THEO_SLUG: Record<string, TrangKhamPha> = Object.fromEntries(TRANG_KHAM_PHA.map((t) => [t.slug, t]));

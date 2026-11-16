@@ -632,26 +632,26 @@ const m = {
         "lam1": "Ước tính doanh thu từ sao kê ngân hàng",
         "lam2": "Soạn sẵn mẫu 01/TKN-CNKD hoặc 01/CNKD để bạn in và tự nộp"
       },
-      "sme": {
-        "ten": "Doanh nghiệp nhỏ và vừa",
-        "vanDe": "Chi tiêu đi qua nhiều người, chứng từ thất lạc, cuối kỳ mới biết khoản nào thiếu hoá đơn.",
-        "lam0": "Duyệt chi một chạm, tiền chỉ đi khi người có quyền trả",
-        "lam1": "Bắt khi số tài khoản người nhận bị đổi",
-        "lam2": "Khớp sao kê với hoá đơn, chỉ ra khoản còn thiếu chứng từ"
+      "cuaHang": {
+        "ten": "Cửa hàng bán tại quầy",
+        "vanDe": "Khách trả tiền mặt và chuyển khoản lẫn lộn; tiền mặt không có trong sao kê nên cuối quý khai thiếu hoặc lệch.",
+        "lam0": "Thu tiền mặt hoặc VietQR trên máy POS Android hoặc điện thoại",
+        "lam1": "Tiền VietQR về đúng mã là lần bán tự chuyển sang đã thu",
+        "lam2": "Mỗi lần bán vào thẳng sổ, đi vào tờ khai thuế"
       },
-      "startup": {
-        "ten": "Startup & công ty công nghệ",
-        "vanDe": "Agent AI bắt đầu tự tiêu tiền: gọi API, thuê máy chủ, mua công cụ.",
-        "lam0": "Đặt hạn mức và luật duyệt cho từng agent",
-        "lam1": "Nhật ký cho mọi bước agent làm",
-        "lam2": "Nối Claude, Cursor qua MCP trong một lệnh"
+      "canVon": {
+        "ten": "Hộ kinh doanh cần vốn",
+        "vanDe": "Bán được hàng nhưng không có giấy tờ cho bên cho vay thấy doanh thu.",
+        "lam0": "Dựng hồ sơ vay từ dòng tiền 12 tháng để bạn tự in, tự mang đi",
+        "lam1": "Báo cáo doanh thu có mã kiểm tra, không lộ từng giao dịch",
+        "lam2": "Bạn chọn gửi cho ai, có hạn, thu hồi được; MIMI không cho vay"
       },
       "keToan": {
         "ten": "Văn phòng kế toán",
         "vanDe": "Giữ sổ cho hàng chục hộ và doanh nghiệp, phần lớn vẫn gõ tay từ sao kê.",
         "lam0": "Sổ chi phí kèm nguồn từng dòng",
         "lam1": "Bản nháp tờ khai tính lại ở máy chủ từ số liệu gốc",
-        "lam2": "Liên hệ đội MIMI để dùng cho nhiều khách"
+        "lam2": "Màn Văn phòng: mọi khách ở một chỗ, xếp khách cần làm trước"
       },
       "xemGiaiPhap": "Xem giải pháp",
       "dauTien": "Trở thành khách hàng đầu tiên",
@@ -719,7 +719,8 @@ const m = {
       "tinhNangNay": "Tính năng này",
       "lyDoMacDinh": "Tính năng này đang tạm dừng.",
       "dangTamDung": "{{ten}} đang tạm dừng",
-      "kiemTra": "Kiểm tra một khoản trước khi chuyển"
+      "soanToKhai": "Soạn tờ khai thuế",
+      "xemSanPham": "Xem MIMI làm gì cho hộ kinh doanh"
     },
     "ksg": {
       "duoi500": "Dưới 500 triệu",

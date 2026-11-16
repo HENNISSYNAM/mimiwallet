@@ -632,26 +632,26 @@ const m = {
         "lam1": "Estimates revenue from bank statements",
         "lam2": "Prepares form 01/TKN-CNKD or 01/CNKD for you to print and file yourself"
       },
-      "sme": {
-        "ten": "Small & medium businesses",
-        "vanDe": "Spending passes through many hands, records go missing, and you only find out at period end which items lack invoices.",
-        "lam0": "One-tap spend approval; money only moves when someone authorised pays",
-        "lam1": "Catches changed payee account numbers",
-        "lam2": "Matches statements with invoices and flags items missing records"
+      "cuaHang": {
+        "ten": "Shops selling at the counter",
+        "vanDe": "Customers pay in cash and by transfer; cash never appears on a statement, so quarterly returns come out short or off.",
+        "lam0": "Take cash or VietQR on an Android POS terminal or a phone",
+        "lam1": "When VietQR money arrives with the right code, the sale turns paid by itself",
+        "lam2": "Every sale goes into the books and on to the tax return"
       },
-      "startup": {
-        "ten": "Startups & tech companies",
-        "vanDe": "AI agents are starting to spend money on their own: API calls, servers, tools.",
-        "lam0": "Set limits and approval rules for each agent",
-        "lam1": "A log of every step an agent takes",
-        "lam2": "Connect Claude, Cursor via MCP in one command"
+      "canVon": {
+        "ten": "Household businesses that need capital",
+        "vanDe": "They sell, but have no papers that show a lender their revenue.",
+        "lam0": "Build a loan file from 12 months of cash flow that you print and carry yourself",
+        "lam1": "A revenue report with a verification code that exposes no individual transactions",
+        "lam2": "You choose who receives it, with an expiry and revocable; MIMI does not lend"
       },
       "keToan": {
         "ten": "Accounting firms",
         "vanDe": "Keeping books for dozens of households and businesses, mostly still typed in by hand from statements.",
         "lam0": "An expense ledger with the source of every line",
         "lam1": "Draft returns recalculated on the server from source data",
-        "lam2": "Contact the MIMI team to use it for many clients"
+        "lam2": "The Office screen: every client in one place, most urgent first"
       },
       "xemGiaiPhap": "See the solution",
       "dauTien": "Become one of our first customers",
@@ -719,7 +719,8 @@ const m = {
       "tinhNangNay": "This feature",
       "lyDoMacDinh": "This feature is paused for now.",
       "dangTamDung": "{{ten}} is paused",
-      "kiemTra": "Check a payment before sending"
+      "soanToKhai": "Prepare a tax return",
+      "xemSanPham": "See what MIMI does for household businesses"
     },
     "ksg": {
       "duoi500": "Under 500 million ₫",

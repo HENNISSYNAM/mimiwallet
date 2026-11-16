@@ -729,7 +729,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
         <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
           {(() => {
             const items = t('landing.metrics.items', { returnObjects: true }) as { prefix?: string; suffix?: string; label: string; sub: string }[];
-            const values = [3, 768, 12, 52];
+            const values = [2, 768, 12, 52]; // 16/11/2026: bỏ "thời gian chấm điểm" — 2 mẫu tờ khai, 12 tháng dòng tiền trong hồ sơ vay.
             const delays = [0, 0.1, 0.2, 0.3];
             return items.map((it, i) => (
               <MetricItem

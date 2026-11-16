@@ -3,6 +3,8 @@ import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Landing from '@/pages/Landing';
 import { KHAM_PHA_THEO_SLUG, TRANG_KHAM_PHA } from '@/content/khamPha';
+import { daDongBang } from '@/lib/dongBang';
+import { TamDungCongKhai } from '@/pages/TamDungPage';
 
 /** /kham-pha/:trang — các khối trình diễn dời khỏi trang chủ (xem `content/khamPha.ts`). */
 export default function KhamPhaPage() {
@@ -18,6 +20,8 @@ export default function KhamPhaPage() {
     return () => clearTimeout(id);
   }, [trang, hash]);
 
+  // Trang đã đóng băng (vd. /kham-pha/agent-ai): nói rõ là tạm dừng, không chuyển về trang chủ im lặng.
+  if (daDongBang(`/kham-pha/${trang}`)) return <TamDungCongKhai />;
   if (!t) return <Navigate to="/" replace />;
   return (
     <Landing

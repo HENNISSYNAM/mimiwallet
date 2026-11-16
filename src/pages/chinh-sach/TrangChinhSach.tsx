@@ -453,7 +453,7 @@ function HoTro() {
 
       <Muc so={3} tieuDe="Tự tra cứu">
         <ul className="list-disc pl-5 space-y-1.5">
-          <li><LienKet to="/tri-tue-nhan-tao">MIMI dùng trí tuệ nhân tạo thế nào</LienKet></li>
+          <li><LienKet to="/san-pham/khai-thue-ho-kinh-doanh">MIMI làm gì khi bạn khai thuế</LienKet> (MIMI soạn, bạn tự nộp)</li>
           <li><LienKet to="/xoa-tai-khoan">Cách xoá tài khoản và dữ liệu</LienKet></li>
           <li><LienKet to="/chinh-sach/gia">Bảng giá</LienKet> và <LienKet to="/chinh-sach/thanh-toan">cách thanh toán</LienKet></li>
         </ul>

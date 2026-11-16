@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Briefcase, Building2, Rocket, Store } from 'lucide-react';
+import { ArrowRight, Briefcase, Landmark, ShoppingBag, Store } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import MimiCat from '@/components/brand/MimiCat';
@@ -29,29 +29,31 @@ export const NHOM_KHACH = [
     ],
     href: '/giai-phap/ho-kinh-doanh',
   },
+  // 16/11/2026: hai nhóm "Doanh nghiệp nhỏ và vừa" (duyệt chi, chống chuyển nhầm) và "Startup & công ty công nghệ"
+  // (agent chi tiền) thay bằng hai nhóm MIMI bán được: cửa hàng bán tại quầy và hộ cần vốn.
   {
-    icon: Building2,
-    ma: 'sme',
-    ten: 'Doanh nghiệp nhỏ và vừa',
-    van_de: 'Chi tiêu đi qua nhiều người, chứng từ thất lạc, cuối kỳ mới biết khoản nào thiếu hoá đơn.',
+    icon: ShoppingBag,
+    ma: 'cuaHang',
+    ten: 'Cửa hàng bán tại quầy',
+    van_de: 'Khách trả tiền mặt và chuyển khoản lẫn lộn; tiền mặt không có trong sao kê nên cuối quý khai thiếu hoặc lệch.',
     mimi_lam: [
-      'Duyệt chi một chạm, tiền chỉ đi khi người có quyền trả',
-      'Bắt khi số tài khoản người nhận bị đổi',
-      'Khớp sao kê với hoá đơn, chỉ ra khoản còn thiếu chứng từ',
+      'Thu tiền mặt hoặc VietQR trên máy POS Android hoặc điện thoại',
+      'Tiền VietQR về đúng mã là lần bán tự chuyển sang đã thu',
+      'Mỗi lần bán vào thẳng sổ, đi vào tờ khai thuế',
     ],
-    href: '/giai-phap/doanh-nghiep-nho-va-vua',
+    href: '/san-pham/ban-tai-quay',
   },
   {
-    icon: Rocket,
-    ma: 'startup',
-    ten: 'Startup & công ty công nghệ',
-    van_de: 'Agent AI bắt đầu tự tiêu tiền: gọi API, thuê máy chủ, mua công cụ.',
+    icon: Landmark,
+    ma: 'canVon',
+    ten: 'Hộ kinh doanh cần vốn',
+    van_de: 'Bán được hàng nhưng không có giấy tờ cho bên cho vay thấy doanh thu.',
     mimi_lam: [
-      'Đặt hạn mức và luật duyệt cho từng agent',
-      'Nhật ký cho mọi bước agent làm',
-      'Nối Claude, Cursor qua MCP trong một lệnh',
+      'Dựng hồ sơ vay từ dòng tiền 12 tháng để bạn tự in, tự mang đi',
+      'Báo cáo doanh thu có mã kiểm tra, không lộ từng giao dịch',
+      'Bạn chọn gửi cho ai, có hạn, thu hồi được; MIMI không cho vay',
     ],
-    href: '/giai-phap/startup-cong-nghe',
+    href: '/san-pham/ho-so-vay',
   },
   {
     icon: Briefcase,
@@ -61,7 +63,7 @@ export const NHOM_KHACH = [
     mimi_lam: [
       'Sổ chi phí kèm nguồn từng dòng',
       'Bản nháp tờ khai tính lại ở máy chủ từ số liệu gốc',
-      'Liên hệ đội MIMI để dùng cho nhiều khách',
+      'Màn Văn phòng: mọi khách ở một chỗ, xếp khách cần làm trước',
     ],
     href: '/giai-phap/van-phong-ke-toan',
   },

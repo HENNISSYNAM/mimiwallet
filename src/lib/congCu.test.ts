@@ -34,24 +34,26 @@ describe('danh mục công cụ', () => {
     expect(new Set(DANH_MUC_CONG_CU.map((c) => c.khoa)).size).toBe(DANH_MUC_CONG_CU.length);
     expect(CONG_CU_MAC_DINH.every((k) => CONG_CU_THEO_KHOA[k])).toBe(true);
     /*
-     * Kiểm tra trước khi chuyển tiền phải được ghim sẵn, và đứng đầu.
+     * Soạn tờ khai phải được ghim sẵn, và đứng đầu.
      *
-     * 23/09/2026: agent đóng vai một người 67 tuổi đang bị hối chuyển 180 triệu
-     * đi hết mọi menu mà không tìm ra trang này — nó có thật, có backend, có
-     * test, nhưng không ai vào được vì phải tự ghim. Các công cụ khác chậm vài
-     * phút thì phiền; công cụ này chậm vài phút thì mất tiền.
+     * 16/11/2026 (đóng băng đợt 2): "Kiểm tra trước khi chuyển tiền" (ghim đầu từ 23/09/2026) đóng băng cùng kiểm
+     * soát chi của agent; trang và backend giữ nguyên, test của chính trang đó vẫn chạy. Tờ khai — việc ra tiền
+     * đầu tiên — lên đầu; bán tại quầy và hồ sơ vay ngay sau.
      */
-    expect(CONG_CU_MAC_DINH[0]).toBe('kiem_truoc_khi_chuyen');
-    // 11/11/2026: ba việc ra tiền ngay (tờ khai, bán tại quầy, hồ sơ vay) ghim sẵn ngay sau đó.
-    expect(CONG_CU_MAC_DINH.slice(1, 4)).toEqual(['soan_to_khai', 'ban_tai_quay', 'vay_von']);
+    expect(CONG_CU_MAC_DINH[0]).toBe('soan_to_khai');
+    expect(CONG_CU_MAC_DINH.slice(1, 3)).toEqual(['ban_tai_quay', 'vay_von']);
+    // Công cụ đóng băng không được ghim sẵn (ghim thì người dùng mở ra trang "Tạm dừng").
+    for (const k of ['kiem_truoc_khi_chuyen', 'kiem_soat_agent', 'chinh_sach_chi', 'soan_giay_to', 'dang_ky_kinh_doanh']) {
+      expect(CONG_CU_MAC_DINH, k).not.toContain(k);
+      expect(CONG_CU_THEO_KHOA[k], k).toBeUndefined();
+    }
     expect(CONG_CU_MAC_DINH.length).toBeLessThanOrEqual(SO_CONG_CU_TOI_DA);
   });
 
   it('tìm không dấu, nhiều từ, theo cả từ khoá', () => {
     expect(timCongCu('hoá đơn').map((c) => c.khoa)).toContain('thieu_chung_tu');
-    // "Soạn giấy tờ" có mẫu công văn huỷ tờ khai nên cũng đúng là kết quả của "tờ khai"; "Đọc báo cáo
-    // tài chính & tờ khai" đọc tờ khai người dùng tải lên.
-    expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['soan_to_khai', 'doc_bao_cao', 'soan_giay_to']);
+    // "Đọc báo cáo tài chính & tờ khai" đọc tờ khai người dùng tải lên. "Soạn giấy tờ" đóng băng 16/11/2026.
+    expect(timCongCu('tờ khai').map((c) => c.khoa)).toEqual(['soan_to_khai', 'doc_bao_cao']);
     expect(timCongCu('bảng cân đối kế toán').map((c) => c.khoa)).toEqual(['doc_bao_cao']);
     // Chi phí AI + Model AI rẻ hơn đóng băng 11/11/2026 (`lib/dongBang.ts`): không tìm thấy, không ghim, không gợi ý.
     expect(timCongCu('claude')).toEqual([]);
@@ -87,12 +89,14 @@ describe('danh mục công cụ', () => {
 
   it('gợi ý công cụ theo khảo sát: đúng ngành, chỉ công cụ có thật, tối đa 6', () => {
     const ho = congCuGoiY({ loai_nguoi_nop: 'ho_kinh_doanh', nhom_nganh: ['noi_dung_so'], kenh: 'tmdt_khong_thanh_toan', nganh_dac_thu: 'khong' });
-    // Vòng chính đứng đầu (tờ khai, bán tại quầy, hồ sơ vay); công cụ đóng băng (chi phí AI) không được gợi ý.
-    expect(ho).toEqual(['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'lien_ket_ngan_hang']);
+    // Việc ra tiền đứng đầu (tờ khai, bán tại quầy, hồ sơ vay); công cụ đóng băng (chi phí AI, kiểm trước khi chuyển,
+    // chính sách chi, kiểm soát agent) không được gợi ý.
+    expect(ho).toEqual(['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'lien_ket_ngan_hang']);
     const dn = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['dich_vu'], kenh: null, nganh_dac_thu: null });
-    expect(dn).toEqual(['kiem_truoc_khi_chuyen', 'soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban']);
+    expect(dn).toEqual(['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban', 'lien_ket_ngan_hang']);
     const nhieu = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['noi_dung_so', 'dich_vu', 'khac'], kenh: 'tmdt_co_thanh_toan', nganh_dac_thu: 'cho_thue_bat_dong_san' });
     expect(nhieu.length).toBe(6);
+    for (const k of ['kiem_truoc_khi_chuyen', 'chinh_sach_chi', 'kiem_soat_agent']) expect(nhieu, k).not.toContain(k);
     for (const k of nhieu) expect(CONG_CU_THEO_KHOA[k], k).toBeTruthy();
   });
 });
