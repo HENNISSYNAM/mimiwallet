@@ -52,9 +52,10 @@ describe('Kho công cụ', () => {
     render(<KhoCongCu mo onDong={() => {}} />);
     await screen.findByRole('button', { name: 'Bỏ ghim Báo cáo thu chi' });
     fireEvent.change(screen.getByLabelText('Tìm công cụ'), { target: { value: 'to khai' } });
-    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByText('Soạn tờ khai thuế')).toBeTruthy();
     expect(screen.getByText('Đọc báo cáo tài chính & tờ khai')).toBeTruthy();
-    expect(screen.getByText('Soạn giấy tờ')).toBeTruthy();
+    // "Soạn giấy tờ" đóng băng 16/11/2026 (`lib/dongBang.ts`): không còn trong kho.
+    expect(screen.queryByText('Soạn giấy tờ')).toBeNull();
   });
 });
