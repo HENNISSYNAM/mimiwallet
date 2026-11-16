@@ -11,12 +11,21 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { goiDanhMucKhach, type DanhMucKhach } from '@/lib/goiVanPhong';
+import { chapNhanDeXuat, goiDanhMucKhach, type DanhMucKhach, type DeXuat } from '@/lib/goiVanPhong';
 import { chonCongTy } from '@/lib/congTyDangDung';
 import { AGENT, MAU_DEN, chu, ngonNguTu } from '@/components/van-phong/chu';
 import { coWebGL, giamChuyenDong } from '@/components/van-phong/kiemMay';
-import { BangKhach, DanhSach, HangDuyet, LuoiBan, MeoNho } from '@/components/van-phong/CacCheDo';
+import { BangKhach, DanhSach, LuoiBan, MeoNho } from '@/components/van-phong/CacCheDo';
 import { DUONG, type LoaiHanhDong } from '@/components/van-phong/hanhDong';
+import HangDuyetCursor from '@/components/van-phong/HangDuyetCursor';
+import { conLai, mauBan, viTriAgent } from '@/components/van-phong/hangDuyet';
+
+/** Việc đã "bỏ qua" chỉ nhớ trong phiên trình duyệt này: bỏ qua không ghi gì lên máy chủ. */
+const KHOA_BO_QUA = 'mimi:van-phong:bo-qua';
+const docBoQua = (): string[] => {
+  try { const v = JSON.parse(sessionStorage.getItem(KHOA_BO_QUA) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; }
+  catch { return []; }
+};
 
 const VanPhong3D = lazy(() => import('@/components/van-phong/VanPhong3D'));
 
@@ -44,12 +53,37 @@ export default function VanPhongPage() {
   const [dangTai, setDangTai] = useState(true);
   const [chon, setChon] = useState<string | null>(null);
 
-  const tai = useCallback(async (t: number) => {
-    setDangTai(true); setLoi(null);
+  const [daXong, setDaXong] = useState<Set<string>>(() => new Set(docBoQua()));
+  const [dangGhi, setDangGhi] = useState<Set<string>>(() => new Set());
+  const [loiDuyet, setLoiDuyet] = useState<Record<string, string>>({});
+
+  const tai = useCallback(async (t: number, im = false) => {
+    if (!im) { setDangTai(true); setLoi(null); }
     try { setDu(await goiDanhMucKhach({ trang: t, kich_thuoc: KICH_THUOC })); }
-    catch (e) { setLoi(e instanceof Error ? e.message : c.loi); }
-    finally { setDangTai(false); }
+    catch (e) { if (!im) setLoi(e instanceof Error ? e.message : c.loi); }
+    finally { if (!im) setDangTai(false); }
   }, [c.loi]);
+
+  /** Chấp nhận: máy chủ ghi quyết định của người (xem `chapNhanDeXuat`), rồi đọc lại số thật. */
+  const chapNhan = useCallback(async (ds: DeXuat[]) => {
+    const khoa = ds.map((d) => d.khoa);
+    setDangGhi((s) => new Set([...s, ...khoa]));
+    const kq = await chapNhanDeXuat(ds);
+    setDangGhi((s) => { const m = new Set(s); khoa.forEach((k) => m.delete(k)); return m; });
+    setDaXong((s) => new Set([...s, ...kq.xong]));
+    setLoiDuyet((l) => {
+      const m = { ...l };
+      kq.xong.forEach((k) => delete m[k]);
+      kq.loi.forEach((e) => e.khoa.forEach((k) => { m[k] = e.cau; }));
+      return m;
+    });
+    if (kq.xong.length) void tai(trang, true);
+  }, [tai, trang]);
+
+  const boQua = useCallback((d: DeXuat) => {
+    setDaXong((s) => new Set([...s, d.khoa]));
+    try { sessionStorage.setItem(KHOA_BO_QUA, JSON.stringify([...new Set([...docBoQua(), d.khoa])].slice(-500))); } catch { /* bỏ qua */ }
+  }, []);
   useEffect(() => { void tai(trang); }, [tai, trang]);
 
   const doiCheDo = (m: CheDo) => {
@@ -61,8 +95,18 @@ export default function VanPhongPage() {
     navigate(DUONG[viec]);
   }, [navigate]);
 
-  const khach = useMemo(() => du?.khach ?? [], [du]);
-  const agent = useMemo(() => du?.agent ?? [], [du]);
+  const hangGoc = useMemo(() => du?.hang_duyet ?? [], [du]);
+  const hang = useMemo(() => conLai(hangGoc, daXong), [hangGoc, daXong]);
+  // Đèn bàn theo hàng duyệt còn lại: hàng của khách sạch thì bàn xanh.
+  const khach = useMemo(() => (du?.khach ?? []).map((k) => ({ ...k, muc: mauBan(k, hangGoc, hang) })), [du, hangGoc, hang]);
+  // Mèo đứng ở bàn có đề xuất của nó đang chờ.
+  const agent = useMemo(() => viTriAgent(du?.agent ?? [], hang), [du, hang]);
+  const dem = useMemo(() => {
+    if (!du) return { do: 0, vang: 0, xanh: 0 };
+    const d = { ...du.dem };
+    for (const k of du.khach) { const m = khach.find((x) => x.id === k.id)!.muc; if (m !== k.muc) { d[k.muc]--; d[m]++; } }
+    return d;
+  }, [du, khach]);
   const kChon = khach.find((k) => k.id === chon) ?? null;
   const ten = (id: string | null) => khach.find((k) => k.id === id)?.ten ?? null;
   const hien3d = cheDo === '3d' && webgl;
@@ -93,7 +137,7 @@ export default function VanPhongPage() {
           <span className="font-medium text-foreground">{c.khachSo(du.tong)}</span>
           {(['do', 'vang', 'xanh'] as const).map((m) => (
             <span key={m} className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5" data-testid={`dem-${m}`}>
-              <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: MAU_DEN[m] }} />{c.den[m]} · {du.dem[m]}
+              <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: MAU_DEN[m] }} />{c.den[m]} · {dem[m]}
             </span>
           ))}
         </div>
@@ -138,7 +182,8 @@ export default function VanPhongPage() {
             <span className="sr-only">{Object.values(AGENT).map((m) => m.viec[n]).join('; ')}</span>
           </section>
 
-          <HangDuyet khach={khach} n={n} diToi={diToi} />
+          <HangDuyetCursor hang={hang} khach={khach} n={n} dangGhi={dangGhi} loi={loiDuyet}
+            onChapNhan={(ds) => void chapNhan(ds)} onBoQua={boQua} diToi={diToi} onChonKhach={setChon} />
 
           {du.so_trang > 1 && (
             <nav className="flex items-center justify-center gap-3 text-sm" aria-label={c.trang(du.trang, du.so_trang)}>

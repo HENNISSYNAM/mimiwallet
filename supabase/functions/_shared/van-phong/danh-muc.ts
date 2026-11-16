@@ -29,6 +29,7 @@ import { biGioiHan } from '../da-co-so/pham-vi.ts';
 import { laVaiTro, type VaiTro } from '../quyen/vai-tro.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import type { PhanLoaiHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
+import { deXuatDieuHuong, deXuatPhanLoai, soSanhDeXuat, TOI_DA_HANG_DUYET, type DeXuat } from './hang-duyet.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -130,6 +131,10 @@ export interface DanhMucKhach {
   dem: { do: number; vang: number; xanh: number };
   loai_tru: { gioi_han_co_so: number; vai_tro_khong_lam_so: number; vuot_tran: number };
   co_bang_ban_hang: boolean;
+  /** Hàng duyệt kiểu Cursor trên mọi khách đã tính (không chỉ trang này), nặng trước — xem `hang-duyet.ts`. */
+  hang_duyet: DeXuat[];
+  /** Tổng số đề xuất trước khi cắt ở `TOI_DA_HANG_DUYET`. */
+  hang_duyet_tong: number;
 }
 
 // ── Thời gian theo giờ Việt Nam ─────────────────────────────────────────────
@@ -178,7 +183,7 @@ async function docTheoTap(
   return ((data ?? []) as Row[]).filter((r) => ids.has(String(r.company_id)));
 }
 
-interface SoLieuMotKhach { s: SoLieuDoanhThu; lich: Awaited<ReturnType<typeof docLichCongTy>>; giaoDich: Row[]; noiBo: Set<string> }
+interface SoLieuMotKhach { s: SoLieuDoanhThu; lich: Awaited<ReturnType<typeof docLichCongTy>>; giaoDich: Row[]; noiBo: Set<string>; xacNhan: Row[] }
 
 async function docMotKhach(db: Db, tv: ThanhVien, nam: number, homNay: string): Promise<SoLieuMotKhach> {
   const [nguon, phanLoai] = await Promise.all([
@@ -189,7 +194,7 @@ async function docMotKhach(db: Db, tv: ThanhVien, nam: number, homNay: string): 
   ]);
   const s = dungSoLieuDoanhThu(nam, nguon, phanLoai as PhanLoaiHoatDong[]);
   const lich = await docLichCongTy(db, tv.company_id, { nam, homNay, laDemo: tv.la_demo, s });
-  return { s, lich, giaoDich: nguon.giao_dich, noiBo: nguon.noi_bo.internalIds };
+  return { s, lich, giaoDich: nguon.giao_dich, noiBo: nguon.noi_bo.internalIds, xacNhan: nguon.xac_nhan };
 }
 
 async function songSong<T, R>(ds: T[], n: number, f: (x: T) => Promise<R>): Promise<R[]> {
@@ -359,6 +364,7 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
   const plTheo = theoCty(phanLoai, (r) => String(r.at));
   const bhTheo = theoCty(banHang, (r) => ({ tien: so(r.amount), luc: String(r.sold_at) }));
 
+  const phanLoaiTheo = new Map<string, DeXuat[]>();
   const khach = await songSong(tinh, SONG_SONG, async (tv): Promise<KhachVanPhong> => {
     const id = tv.company_id;
     const vm = viecTheo.get(id) ?? [];
@@ -377,8 +383,9 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
       loi: null,
     };
     try {
-      const { s, lich, giaoDich, noiBo } = await docMotKhach(db, tv, nam, homNay);
+      const { s, lich, giaoDich, noiBo, xacNhan } = await docMotKhach(db, tv, nam, homNay);
       const dc = s.do_chac_chan;
+      phanLoaiTheo.set(id, deXuatPhanLoai({ company_id: id, ten: tv.ten, vai_tro: tv.vai_tro, nam, giaoDich, xacNhan, noiBo, s, dc }));
       const nguong = dc.nguong.map((n) => ({ ma: n.ma, gia_tri: n.gia_tri, phia: n.phia }));
       goc.doanh_thu = {
         nam, uoc_tinh: so(dc.gia_tri), can_duoi: so(dc.can_duoi), can_tren: so(dc.can_tren), trang_thai: dc.trang_thai, nguong,
@@ -401,6 +408,11 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
 
   khach.sort(soSanhKhach);
 
+  const hangDuyet = khach.flatMap((k) => {
+    const pl = phanLoaiTheo.get(k.id) ?? [];
+    return [...pl, ...deXuatDieuHuong(k, pl.length > 0)];
+  }).sort(soSanhDeXuat);
+
   const suKien: SuKienAgent[] = [
     ...(phanLoai ?? []).map((r) => ({ agent: 'phan_loai' as const, company_id: String(r.company_id), luc: String(r.at) })),
     ...(thongBao ?? []).flatMap((r) => AGENT_TU_THONG_BAO[r.loai] ? [{ agent: AGENT_TU_THONG_BAO[r.loai], company_id: String(r.company_id), luc: String(r.tao_luc) }] : []),
@@ -420,5 +432,7 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
     dem,
     loai_tru: { gioi_han_co_so: gioiHan, vai_tro_khong_lam_so: khongLamSo, vuot_tran: vuotTran },
     co_bang_ban_hang: banHang !== null,
+    hang_duyet: hangDuyet.slice(0, TOI_DA_HANG_DUYET),
+    hang_duyet_tong: hangDuyet.length,
   };
 }
