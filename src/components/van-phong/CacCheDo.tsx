@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import meoDi from '@/assets/mimi/walk.png';
 import type { AgentDangLam, KhachVanPhong } from '@/lib/goiVanPhong';
 import { AGENT, MAU_DEN, cauLyDo, cauNgan, chu, luc, ngayGon, tienGon, type NgonNgu } from './chu';
-import { HANH_DONG_CUA, NHAN_HANH_DONG, type LoaiHanhDong } from './hanhDong';
+import type { LoaiHanhDong } from './hanhDong';
 
 export type DiToi = (khachId: string, viec: LoaiHanhDong) => void;
 
@@ -81,40 +81,6 @@ export function DanhSach({ khach, n, onChon }: { khach: KhachVanPhong[]; n: Ngon
         </tbody>
       </table>
     </div>
-  );
-}
-
-/**
- * HÀNG DUYỆT — như hàng chờ "chấp nhận / bỏ qua" của trình soạn mã có AI: agent đã làm phần máy làm được và xếp
- * việc còn cần NGƯỜI quyết định thành một hàng, nặng trước. Mỗi dòng một khách + một việc + đúng một nút mở trang
- * làm việc đó. Không có nút nào tự quyết thay người: bấm là đi tới trang có xác nhận thật.
- */
-export function HangDuyet({ khach, n, diToi }: { khach: KhachVanPhong[]; n: NgonNgu; diToi: DiToi }) {
-  const dong = khach.flatMap((k) => k.ly_do.filter((l) => l.muc !== 'xanh').map((l) => ({ k, l })));
-  if (!dong.length) return null;
-  return (
-    <section aria-labelledby="hang-duyet" className="rounded-2xl border bg-card p-4">
-      <h2 id="hang-duyet" className="text-base font-semibold text-foreground">
-        {n === 'en' ? `Review queue · ${dong.length}` : `Hàng chờ bạn duyệt · ${dong.length}`}
-      </h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {n === 'en' ? 'MIMI did what a machine can; these need a person. Hardest first.' : 'MIMI đã làm phần máy làm được; các việc dưới đây cần người quyết. Việc nặng đứng trước.'}
-      </p>
-      <ol className="mt-3 divide-y" data-testid="hang-duyet">
-        {dong.slice(0, 30).map(({ k, l }, i) => {
-          const viec = HANH_DONG_CUA[l.ma];
-          return (
-            <li key={`${k.id}-${l.ma}-${i}`} className="flex flex-wrap items-center gap-3 py-2">
-              <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: MAU_DEN[l.muc] }} />
-              <span className="min-w-0 flex-1 text-sm"><span className="font-medium text-foreground">{k.ten}</span> — <span className="text-muted-foreground">{cauLyDo(l, n)}</span></span>
-              <button type="button" onClick={() => diToi(k.id, viec)} className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted">
-                {NHAN_HANH_DONG[viec][n]}
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
   );
 }
 
