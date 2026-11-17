@@ -7,7 +7,8 @@
  *     `congCu.test.ts` chạy từng câu qua `nhanYDinh` để câu nào trôi khỏi bộ luật là đỏ ngay.
  */
 
-import { CONG_CU_DONG_BANG } from './dongBang';
+import { CONG_CU_AN_TRONG_APP, CONG_CU_DONG_BANG } from './dongBang';
+import { laTrongApp } from './chayTrongApp';
 
 export type NhomCongCu = 'chung_tu' | 'thue' | 'ngan_hang' | 'chi_tieu' | 'ai' | 'ban_hang';
 
@@ -60,7 +61,10 @@ const DANH_MUC_DAY_DU: CongCu[] = [
 ];
 
 /** Danh mục người dùng thấy: bỏ công cụ đóng băng (`lib/dongBang.ts`) — mã và dữ liệu vẫn giữ. */
-export const DANH_MUC_CONG_CU: CongCu[] = DANH_MUC_DAY_DU.filter((c) => !CONG_CU_DONG_BANG.has(c.khoa));
+// 17/11/2026: trong app Android (Google Play) ẩn thêm vay vốn và cơ hội phát triển (`CONG_CU_AN_TRONG_APP`).
+export const DANH_MUC_CONG_CU: CongCu[] = DANH_MUC_DAY_DU.filter(
+  (c) => !CONG_CU_DONG_BANG.has(c.khoa) && !(CONG_CU_AN_TRONG_APP.has(c.khoa) && laTrongApp()),
+);
 
 export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH_MUC_CONG_CU.map((c) => [c.khoa, c]));
 

@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Seo from "@/components/Seo";
 import { layAnhDungSan } from "@/lib/anhDungSan";
+import { laTrongApp } from "@/lib/chayTrongApp";
 import { DANH_MUC_CHINH_SACH, TRANG_THONG_TIN } from "@/pages/chinh-sach/danhMuc";
 
 /** Gắn thẻ head riêng cho từng route mà không phải sửa từng trang. */
@@ -72,6 +73,8 @@ const DocBaoCaoPage = lazy(() => import("./pages/DocBaoCaoPage"));
 const TamDungPage = lazy(() => import("./pages/TamDungPage"));
 // Đợt 2 đóng băng (16/11/2026, `lib/dongBang.ts`): trang công khai tạm dừng có thanh điều hướng của trang chủ.
 const TamDungCongKhai = lazy(() => import("./pages/TamDungPage").then((m) => ({ default: m.TamDungCongKhai })));
+// 17/11/2026: trang ẩn riêng trong app Android (`TRANG_AN_TRONG_APP`, lib/dongBang.ts) — web vẫn mở bình thường.
+const TrongApp = ({ children }: { children: React.ReactNode }) => (laTrongApp() ? <TamDungPage /> : <>{children}</>);
 const ToKhaiPage = lazy(() => import("./pages/ToKhaiPage"));
 const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -241,9 +244,9 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route path="cashflow" element={<Page noIndex path="/dashboard/cashflow" title="Dòng tiền — MIMI WALLET" description="Phân tích dòng tiền vào ra theo ngày, tuần, tháng và dự báo thanh khoản 90 ngày cho doanh nghiệp bạn."><DashboardOverview /></Page>} />
                 <Route path="doanh-thu-xac-minh" element={<Page noIndex path="/dashboard/doanh-thu-xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Lập báo cáo doanh thu từ sổ MIMI, ghi dấu thời gian công khai và gửi cho người bạn chọn, có hạn, thu hồi được."><DoanhThuXacMinhPage /></Page>} />
                 <Route path="fintech" element={<Page noIndex path="/dashboard/fintech" title="Ngân hàng & thanh toán — MIMI WALLET" description="Liên kết ngân hàng để MIMI đọc tiền vào, tiền ra; nhận tiền bằng mã VietQR."><FintechPage /></Page>} />
-                <Route path="vay-von" element={<Page noIndex path="/dashboard/vay-von" title="Vay vốn — MIMI WALLET" description="Đánh giá sẵn sàng vay từ dòng tiền thật và hồ sơ vay để bạn tự in, tự mang đi. MIMI không cho vay và không gửi hồ sơ cho ai."><VayVonPage /></Page>} />
+                <Route path="vay-von" element={<Page noIndex path="/dashboard/vay-von" title="Vay vốn — MIMI WALLET" description="Đánh giá sẵn sàng vay từ dòng tiền thật và hồ sơ vay để bạn tự in, tự mang đi. MIMI không cho vay và không gửi hồ sơ cho ai."><TrongApp><VayVonPage /></TrongApp></Page>} />
                 <Route path="van-phong" element={<Page noIndex path="/dashboard/van-phong" title="Văn phòng kế toán — MIMI WALLET" description="Mọi khách bạn làm sổ ở một chỗ: đèn trạng thái, hạn thuế, tiền vào chờ xác nhận và việc các agent MIMI đang làm."><VanPhongPage /></Page>} />
-                <Route path="co-hoi" element={<Page noIndex path="/dashboard/co-hoi" title="Cơ hội phát triển — MIMI WALLET" description="Dấu hiệu tăng trưởng của doanh nghiệp bạn từ dòng tiền thật và gói ngân hàng phù hợp. Chỉ chia sẻ khi bạn đồng ý và bấm Gửi."><CoHoiPage /></Page>} />
+                <Route path="co-hoi" element={<Page noIndex path="/dashboard/co-hoi" title="Cơ hội phát triển — MIMI WALLET" description="Dấu hiệu tăng trưởng của doanh nghiệp bạn từ dòng tiền thật và gói ngân hàng phù hợp. Chỉ chia sẻ khi bạn đồng ý và bấm Gửi."><TrongApp><CoHoiPage /></TrongApp></Page>} />
               </Route>
               <Route path="*" element={<Page noIndex path="/404" title="Không tìm thấy trang — MIMI WALLET" description="Đường dẫn bạn truy cập không tồn tại hoặc đã được chuyển đi. Quay lại trang chủ MIMI Wallet để tiếp tục."><NotFound /></Page>} />
 

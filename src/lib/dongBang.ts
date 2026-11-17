@@ -67,6 +67,18 @@ export const TRANG_DONG_BANG: Record<string, { ten: string; ly_do: string }> = {
   '/giai-phap/dich-vu-chuyen-mon': { ten: 'Dịch vụ chuyên môn', ly_do: LY_DO_CONG_KHAI },
 };
 
+/**
+ * Ẩn RIÊNG trong ứng dụng Android (TWA trên Google Play), 17/11/2026. Bản web giữ nguyên.
+ * Lý do: Google xét app có chữ "vay" rất kỹ (chính sách Personal Loans / Financial features); bản Play đầu tiên chỉ giữ
+ * thuế, bán tại quầy, sổ tiền để duyệt nhanh. Bỏ khoá khỏi đây là mở lại ở bản cập nhật sau.
+ */
+const LY_DO_TRONG_APP = 'Trang này chưa có trong ứng dụng Android. Mở www.mimiwallet.online trên trình duyệt để dùng — tài khoản và dữ liệu là một.';
+export const TRANG_AN_TRONG_APP: Record<string, { ten: string; ly_do: string }> = {
+  '/dashboard/vay-von': { ten: 'Vay vốn', ly_do: LY_DO_TRONG_APP },
+  '/dashboard/co-hoi': { ten: 'Cơ hội phát triển', ly_do: LY_DO_TRONG_APP },
+};
+export const CONG_CU_AN_TRONG_APP: ReadonlySet<string> = new Set(['vay_von', 'co_hoi_phat_trien']);
+
 /** Đường dẫn công khai (ngoài /dashboard) đã đóng băng — trang tạm dừng có thanh điều hướng của trang chủ. */
 export const laTrangCongKhaiDongBang = (duong: string) => daDongBang(duong) && !duong.startsWith('/dashboard');
 

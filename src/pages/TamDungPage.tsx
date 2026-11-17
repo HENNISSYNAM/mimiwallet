@@ -3,7 +3,7 @@ import { ArrowRight, FileText, PauseCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { TRANG_DONG_BANG } from '@/lib/dongBang';
+import { TRANG_AN_TRONG_APP, TRANG_DONG_BANG } from '@/lib/dongBang';
 
 /**
  * Trang của tính năng đã đóng băng (`lib/dongBang.ts`): nói rõ vì sao, và chỉ lối tới việc chính.
@@ -15,7 +15,7 @@ function NoiDungTamDung({ congKhai }: { congKhai: boolean }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const duong = pathname.replace(/(.)\/+$/, '$1');
-  const tt = TRANG_DONG_BANG[duong] ?? { ten: t('ui2.tamDung.tinhNangNay'), ly_do: t('ui2.tamDung.lyDoMacDinh') };
+  const tt = TRANG_DONG_BANG[duong] ?? TRANG_AN_TRONG_APP[duong] ?? { ten: t('ui2.tamDung.tinhNangNay'), ly_do: t('ui2.tamDung.lyDoMacDinh') };
   return (
     <div className="mx-auto max-w-xl py-16 text-center">
       <PauseCircle size={32} className="mx-auto text-muted-foreground" />
