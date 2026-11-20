@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BO_DICH, NGON_NGU, type MaNgonNgu } from './index';
 
 /**
- * Bốn ngôn ngữ phải có ĐÚNG cùng một bộ khoá.
+ * Các ngôn ngữ (vi, en từ 20/11/2026) phải có ĐÚNG cùng một bộ khoá.
  *
  * Vì sao cần test này: thêm một chuỗi tiếng Việt rồi quên dịch thì i18next lặng lẽ trả về khoá
  * (`sidebar.overview`) hoặc rơi về tiếng Việt giữa màn tiếng Hàn — người dùng thấy giao diện
@@ -23,16 +23,16 @@ function duongKhoa(o: unknown, tien = ''): string[] {
 const khoaCua = (ma: MaNgonNgu) => new Set(duongKhoa(BO_DICH[ma]));
 const KHOA_VI = khoaCua('vi');
 
-describe('đồng bộ bốn ngôn ngữ', () => {
-  it('khai đủ bốn ngôn ngữ, mỗi ngôn ngữ có bộ dịch', () => {
-    expect(NGON_NGU.map((n) => n.ma)).toEqual(['vi', 'en', 'ko', 'zh']);
+describe('đồng bộ ngôn ngữ', () => {
+  it('khai đúng vi + en (đã bỏ ko, zh 20/11/2026), mỗi ngôn ngữ có bộ dịch', () => {
+    expect(NGON_NGU.map((n) => n.ma)).toEqual(['vi', 'en']);
     for (const n of NGON_NGU) {
       expect(BO_DICH[n.ma], n.ma).toBeTruthy();
       expect(n.ten.length, n.ma).toBeGreaterThan(1);
     }
   });
 
-  for (const ma of ['en', 'ko', 'zh'] as MaNgonNgu[]) {
+  for (const ma of ['en'] as MaNgonNgu[]) {
     it(`${ma} có đúng bộ khoá của tiếng Việt`, () => {
       const khoa = khoaCua(ma);
       const thieu = [...KHOA_VI].filter((k) => !khoa.has(k));

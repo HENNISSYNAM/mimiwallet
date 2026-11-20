@@ -80,6 +80,8 @@ const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DoanhThuXacMinhPage = lazy(() => import("./pages/DoanhThuXacMinhPage"));
+const QuayTinPage = lazy(() => import("./pages/QuayTinPage"));
+const KiemChuyenTienPage = lazy(() => import("./pages/KiemChuyenTienPage"));
 const XacMinhCongKhaiPage = lazy(() => import("./pages/XacMinhCongKhaiPage"));
 const VayVonPage = lazy(() => import("./pages/VayVonPage"));
 // Văn phòng kế toán (11/11/2026): danh mục khách + văn phòng 3D; cảnh 3D tự tải lười riêng.
@@ -222,7 +224,8 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route index element={<Page noIndex path="/dashboard" title="MIMI Trợ lý — MIMI WALLET" description="Hỏi MIMI về tiền, hoá đơn, thuế và chứng từ của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
                 <Route path="tro-ly" element={<ChuyenVeKhongGian />} />
                 <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
-                <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Tạm dừng — MIMI WALLET" description="Tính năng đang tạm dừng."><TamDungPage /></Page>} />
+                <Route path="quay-tin" element={<Page noIndex path="/dashboard/quay-tin" title="Quầy Tin — MIMI WALLET" description="Tiền thật mới giao hàng: chụp bill khách đưa, MIMI đối chiếu với tiền về thật trên mọi tài khoản của quán và đọc to kết quả."><QuayTinPage /></Page>} />
+                <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Soát trước khi chi — MIMI WALLET" description="Kiểm một khoản sắp chuyển: đổi số tài khoản, người nhận lạ, số tiền bất thường. MIMI không chuyển tiền thay bạn."><KiemChuyenTienPage /></Page>} />
                 <Route path="chi-ca-nhan" element={<Page noIndex path="/dashboard/chi-ca-nhan" title="Tách chi cá nhân — MIMI WALLET" description="Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi hộ kinh doanh dùng chung một tài khoản ngân hàng."><TachChiCaNhanPage /></Page>} />
                 <Route path="doc-bao-cao" element={<Page noIndex path="/dashboard/doc-bao-cao" title="Đọc báo cáo tài chính & tờ khai — MIMI WALLET" description="Tải báo cáo tài chính hoặc tờ khai thuế (Excel/CSV): MIMI nhận dạng, xếp từng chỉ tiêu và kiểm đẳng thức kế toán, ngay trên máy bạn."><DocBaoCaoPage /></Page>} />
                 <Route path="viec-can-lam" element={<Page noIndex path="/dashboard/viec-can-lam" title="Việc cần làm — MIMI WALLET" description="Việc nhiều bước: tạm ngừng, hoá đơn sai, trả lời giải trình — MIMI hỏi từng câu, chuẩn bị giấy tờ, bạn tự nộp."><ViecCanLamPage /></Page>} />
@@ -234,7 +237,6 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route path="ket-noi" element={<Page noIndex path="/dashboard/ket-noi" title="Kết nối — MIMI WALLET" description="Liên kết ngân hàng qua Cas hoặc tải tệp sao kê để MIMI đọc số liệu thật."><KetNoiPage /></Page>} />
                 <Route path="tac-tu" element={<Page noIndex path="/dashboard/tac-tu" title="Tạm dừng — MIMI WALLET" description="Tính năng đang tạm dừng."><TamDungPage /></Page>} />
                 <Route path="chinh-sach" element={<Page noIndex path="/dashboard/chinh-sach" title="Tạm dừng — MIMI WALLET" description="Tính năng đang tạm dừng."><TamDungPage /></Page>} />
-                {/* Đóng băng 11/11/2026 (`lib/dongBang.ts`): trang ChiPhiAiPage, bảng ngan_sach_ai và máy chủ chi-phi-ai giữ nguyên. */}
                 <Route path="chi-phi-ai" element={<Page noIndex path="/dashboard/chi-phi-ai" title="Tạm dừng — MIMI WALLET" description="Tính năng đang tạm dừng."><TamDungPage /></Page>} />
                 <Route path="invoices" element={<Page noIndex path="/dashboard/invoices" title="Hoá đơn — MIMI WALLET" description="Quản lý hoá đơn đầu ra, đối soát công nợ và theo dõi khoản phải thu của doanh nghiệp bạn theo thời gian thực."><InvoicesPage /></Page>} />
                 <Route path="clients" element={<Page noIndex path="/dashboard/clients" title="Tạm dừng — MIMI WALLET" description="Tính năng đang tạm dừng."><TamDungPage /></Page>} />

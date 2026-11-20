@@ -11,14 +11,15 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { chapNhanDeXuat, goiDanhMucKhach, type DanhMucKhach, type DeXuat } from '@/lib/goiVanPhong';
+import { chapNhanDeXuat, goiDanhMucKhach, type DanhMucKhach, type DeXuat, type TenAgentVP } from '@/lib/goiVanPhong';
 import { chonCongTy } from '@/lib/congTyDangDung';
 import { AGENT, MAU_DEN, chu, ngonNguTu } from '@/components/van-phong/chu';
 import { coWebGL, giamChuyenDong } from '@/components/van-phong/kiemMay';
 import { BangKhach, DanhSach, LuoiBan, MeoNho } from '@/components/van-phong/CacCheDo';
 import { DUONG, type LoaiHanhDong } from '@/components/van-phong/hanhDong';
 import HangDuyetCursor from '@/components/van-phong/HangDuyetCursor';
-import { conLai, mauBan, viTriAgent } from '@/components/van-phong/hangDuyet';
+import { useNangLuong } from '@/components/mimi/ThanhNangLuong';
+import { AGENT_CUA, conLai, mauBan, viTriAgent } from '@/components/van-phong/hangDuyet';
 
 /** Việc đã "bỏ qua" chỉ nhớ trong phiên trình duyệt này: bỏ qua không ghi gì lên máy chủ. */
 const KHOA_BO_QUA = 'mimi:van-phong:bo-qua';
@@ -56,6 +57,11 @@ export default function VanPhongPage() {
   const [daXong, setDaXong] = useState<Set<string>>(() => new Set(docBoQua()));
   const [dangGhi, setDangGhi] = useState<Set<string>>(() => new Set());
   const [loiDuyet, setLoiDuyet] = useState<Record<string, string>>({});
+  // Mèo của việc vừa được duyệt nhảy mừng 1,6 giây trong cảnh 3D.
+  const [vui, setVui] = useState<{ agent: TenAgentVP; den: number } | null>(null);
+  // Hết xu tháng này → agent AI tạm nghỉ: mèo ngủ trong cảnh 3D. Chưa đọc được số dư thì KHÔNG coi là hết.
+  const { nangLuong } = useNangLuong();
+  const hetXu = nangLuong?.muc === 'het';
 
   const tai = useCallback(async (t: number, im = false) => {
     if (!im) { setDangTai(true); setLoi(null); }
@@ -71,6 +77,8 @@ export default function VanPhongPage() {
     const kq = await chapNhanDeXuat(ds);
     setDangGhi((s) => { const m = new Set(s); khoa.forEach((k) => m.delete(k)); return m; });
     setDaXong((s) => new Set([...s, ...kq.xong]));
+    const xong = ds.find((d) => kq.xong.includes(d.khoa));
+    if (xong) setVui({ agent: AGENT_CUA[xong.loai], den: Date.now() + 1600 });
     setLoiDuyet((l) => {
       const m = { ...l };
       kq.xong.forEach((k) => delete m[k]);
@@ -146,6 +154,13 @@ export default function VanPhongPage() {
       {!webgl && cheDo !== 'ds' && <p className="rounded-xl bg-muted px-4 py-2 text-sm text-muted-foreground" role="status">{c.khongWebgl}</p>}
       {webgl && giam && cheDo === 'luoi' && <p className="rounded-xl bg-muted px-4 py-2 text-sm text-muted-foreground" role="status">{c.giamChuyenDong}</p>}
 
+      {hetXu && (
+        <p className="rounded-xl border border-border bg-muted px-4 py-2 text-sm text-foreground" role="status">
+          {n === 'en'
+            ? 'This month’s AI energy is used up, so the agents are asleep. Rule-based checks and the review queue keep working.'
+            : 'Năng lượng AI tháng này đã hết nên các agent đang ngủ. Các kiểm tra theo luật và hàng chờ duyệt vẫn chạy.'}
+        </p>
+      )}
       {dangTai && !du && <p className="text-sm text-muted-foreground" role="status">{c.dangTai}</p>}
       {loi && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm" role="alert">
@@ -157,9 +172,9 @@ export default function VanPhongPage() {
       {du && khach.length > 0 && (
         <>
           {hien3d && (
-            <div className="relative h-[520px] overflow-hidden rounded-2xl border bg-slate-100" role="img" aria-label={c.che3d}>
+            <div className="relative h-[520px] overflow-hidden rounded-2xl border bg-[#efe7dd]" role="img" aria-label={c.che3d}>
               <Suspense fallback={<p className="p-4 text-sm text-muted-foreground">{c.dangTai}</p>}>
-                <VanPhong3D khach={khach} agent={agent} chon={chon} onChon={setChon} />
+                <VanPhong3D khach={khach} agent={agent} chon={chon} onChon={setChon} vui={vui} hetXu={hetXu} />
               </Suspense>
             </div>
           )}

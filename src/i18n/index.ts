@@ -9,51 +9,32 @@ import financeVi from './modules/finance.vi';
 import financeEn from './modules/finance.en';
 import miscVi from './modules/misc.vi';
 import miscEn from './modules/misc.en';
-import ko from './ko';
-import zh from './zh';
 import manVi from './modules/man.vi';
 import manEn from './modules/man.en';
-import manKo from './modules/man.ko';
-import manZh from './modules/man.zh';
 import kgVi from './modules/kg.vi';
 import kgEn from './modules/kg.en';
-import kgKo from './modules/kg.ko';
-import kgZh from './modules/kg.zh';
 import appVi from './modules/app.vi';
 import appEn from './modules/app.en';
-import appKo from './modules/app.ko';
-import appZh from './modules/app.zh';
 import tbVi from './modules/tb.vi';
 import tbEn from './modules/tb.en';
-import tbKo from './modules/tb.ko';
-import tbZh from './modules/tb.zh';
 import ui1Vi from './modules/ui1.vi';
 import ui1En from './modules/ui1.en';
-import ui1Ko from './modules/ui1.ko';
-import ui1Zh from './modules/ui1.zh';
 import ui2Vi from './modules/ui2.vi';
 import ui2En from './modules/ui2.en';
-import ui2Ko from './modules/ui2.ko';
-import ui2Zh from './modules/ui2.zh';
 import vayVi from './modules/vay.vi';
 import vayEn from './modules/vay.en';
-import vayKo from './modules/vay.ko';
-import vayZh from './modules/vay.zh';
 import posVi from './modules/pos.vi';
 import posEn from './modules/pos.en';
-import posKo from './modules/pos.ko';
-import posZh from './modules/pos.zh';
 import coHoiVi from './modules/coHoi.vi';
 import coHoiEn from './modules/coHoi.en';
-import coHoiKo from './modules/coHoi.ko';
-import coHoiZh from './modules/coHoi.zh';
 
 
 const viAll = { ...vi, ...landingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi, ...ui1Vi, ...ui2Vi, ...vayVi, ...posVi, ...coHoiVi };
 const enAll = { ...en, ...landingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn, ...ui1En, ...ui2En, ...vayEn, ...posEn, ...coHoiEn };
 
 /**
- * Bốn ngôn ngữ, cùng một bộ khoá. `NGON_NGU` là nguồn duy nhất cho menu chọn ngôn ngữ và cho
+ * Hai ngôn ngữ, cùng một bộ khoá (20/11/2026: bỏ tiếng Hàn và tiếng Trung — khách là hộ kinh doanh Việt Nam; tiếng
+ * Anh giữ cho đối tác và hồ sơ quốc tế). `NGON_NGU` là nguồn duy nhất cho menu chọn ngôn ngữ và cho
  * test `dongBoNgonNgu.test.ts` — thêm ngôn ngữ ở đây là chỗ duy nhất phải sửa.
  *
  * Chữ tiếng Việt trong văn bản pháp luật (câu trích Nghị định, Thông tư ở trang Tờ khai thuế)
@@ -62,17 +43,12 @@ const enAll = { ...en, ...landingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn,
 export const NGON_NGU = [
   { ma: 'vi', ten: 'Tiếng Việt', ma_ngan: 'VI' },
   { ma: 'en', ten: 'English', ma_ngan: 'EN' },
-  { ma: 'ko', ten: '한국어', ma_ngan: 'KO' },
-  { ma: 'zh', ten: '中文', ma_ngan: 'ZH' },
 ] as const;
 
 export type MaNgonNgu = (typeof NGON_NGU)[number]['ma'];
 
-const koAll = { ...ko, ...manKo, ...kgKo, ...appKo, ...tbKo, ...ui1Ko, ...ui2Ko, ...vayKo, ...posKo, ...coHoiKo };
-const zhAll = { ...zh, ...manZh, ...kgZh, ...appZh, ...tbZh, ...ui1Zh, ...ui2Zh, ...vayZh, ...posZh, ...coHoiZh };
-
 export const BO_DICH: Record<MaNgonNgu, Record<string, unknown>> = {
-  vi: viAll, en: enAll, ko: koAll, zh: zhAll,
+  vi: viAll, en: enAll,
 };
 
 i18n
@@ -83,8 +59,6 @@ i18n
     resources: {
       vi: { translation: viAll },
       en: { translation: enAll },
-      ko: { translation: koAll },
-      zh: { translation: zhAll },
     },
     fallbackLng: 'vi',
     interpolation: { escapeValue: false },

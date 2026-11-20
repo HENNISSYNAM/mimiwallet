@@ -836,3 +836,61 @@
     0 0 0 0.5px hsla(var(--text-primary) / 0.07),
     var(--shadow-soft);
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * THANG MÀU CAM MIMI + LỚP `.mimi-cam` (20/11/2026, học cách MoMo dựng hệ màu —
+ * xem docs/thiet-ke/HOC_THIET_KE_MOMO.md; KHÔNG dùng màu/font của MoMo).
+ *
+ * Nguyên tắc: một màu thương hiệu (cam mèo #E07B24 = cam-500), dùng < 5% bề mặt
+ * (nút, chữ nhấn, nhãn); chữ và xám PHA CAM nhẹ cho cả trang ấm và đồng bộ;
+ * chia khối bằng nền trắng ↔ kem, không bằng đường kẻ.
+ * Độ tương phản đo trên nền trắng: cam-700 (nút, chữ trắng trên nền) 5,0:1;
+ * cam-800 (tiêu đề) 7,4:1; chữ phụ 4,8:1 — đều đạt WCAG AA.
+ * `.mimi-cam` hiện chỉ gắn ở trang công khai (Landing). Dashboard giữ màu cũ tới khi duyệt.
+ * ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --cam-50: 33 100% 97%;
+  --cam-100: 32 95% 93%;
+  --cam-200: 31 92% 85%;
+  --cam-300: 29 88% 74%;
+  --cam-400: 28 82% 62%;
+  --cam-500: 27 75% 51%;   /* #E07B24 — màu mèo MIMI */
+  --cam-600: 26 78% 44%;
+  --cam-700: 25 85% 38%;   /* nút, chữ trắng trên nền: 5,0:1 */
+  --cam-800: 24 82% 30%;   /* tiêu đề khối: 7,4:1 */
+  --cam-900: 23 75% 23%;
+}
+
+.mimi-cam {
+  --primary: var(--cam-700);
+  --primary-foreground: 0 0% 100%;
+  --ring: var(--cam-600);
+  --text-primary: 25 15% 10%;     /* đen pha cam */
+  --text-secondary: 25 8% 38%;    /* xám pha cam */
+  --text-muted: 25 6% 45%;        /* 4,8:1 */
+  --foreground: var(--text-primary);
+  --card-foreground: var(--text-primary);
+  --muted-foreground: var(--text-secondary);
+  --border-subtle: 30 18% 89%;
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --bg-base: 0 0% 100%;           /* khối trắng */
+  --background: var(--bg-base);
+  --secondary: 36 45% 97%;        /* khối kem xen kẽ */
+  --accent: 33 60% 95%;
+  --accent-foreground: var(--text-primary);
+  /* biến khai báo bằng var() ở :root đã "chốt" giá trị tại :root → phải khai lại ở đây */
+  --secondary-foreground: var(--text-primary);
+  --popover-foreground: var(--text-primary);
+}
+
+.dark .mimi-cam {
+  --primary: var(--cam-400);
+  --primary-foreground: 25 40% 9%;
+  --ring: var(--cam-400);
+}
+
+/* Tiêu đề khối mang màu thương hiệu (đậm, đủ tương phản); nút chính bo viên thuốc. */
+.mimi-cam section h2.font-display { color: hsl(var(--cam-800)); }
+.dark .mimi-cam section h2.font-display { color: hsl(var(--cam-300)); }
+.mimi-cam a.bg-primary, .mimi-cam button.bg-primary { border-radius: 9999px; }

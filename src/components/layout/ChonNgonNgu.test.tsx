@@ -4,7 +4,7 @@ import { ChonNgonNgu } from './ChonNgonNgu';
 import { NGON_NGU } from '@/i18n';
 
 /**
- * Trang công khai phải tới được ĐỦ bốn ngôn ngữ.
+ * Trang công khai phải tới được ĐỦ các ngôn ngữ (vi, en — bỏ ko, zh ngày 20/11/2026).
  *
  * Bản trước là nút hai chiều vi ⇄ en, nên người đang để tiếng Hàn hoặc tiếng
  * Trung ra trang công khai chỉ thấy một nút "VI" — bấm vào là sang tiếng Việt và
@@ -13,7 +13,7 @@ import { NGON_NGU } from '@/i18n';
  */
 
 const doiNgonNgu = vi.fn();
-let ngonNguHienTai = 'ko';
+let ngonNguHienTai = 'en';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -49,29 +49,29 @@ describe('Bộ chọn ngôn ngữ ở trang công khai', () => {
    */
   beforeAll(() => { render(<ChonNgonNgu />); cleanup(); }, 180_000);
 
-  beforeEach(() => { doiNgonNgu.mockClear(); ngonNguHienTai = 'ko'; });
+  beforeEach(() => { doiNgonNgu.mockClear(); ngonNguHienTai = 'en'; });
 
   it('nút hiện mã của ngôn ngữ đang dùng', () => {
     render(<ChonNgonNgu />);
-    expect(screen.getByRole('button', { name: 'man.chung.chonNgonNgu' }).textContent).toContain('KO');
+    expect(screen.getByRole('button', { name: 'man.chung.chonNgonNgu' }).textContent).toContain('EN');
   });
 
-  it('mở ra đủ bốn ngôn ngữ, không phải nút hai chiều', () => {
+  it('mở ra đủ các ngôn ngữ', () => {
     const hop = mo();
     for (const n of NGON_NGU) expect(within(hop).getByText(n.ten)).toBeTruthy();
-    expect(NGON_NGU.length).toBe(4);
-  });
-
-  it('đang ở tiếng Hàn vẫn chọn lại được tiếng Hàn và mọi thứ tiếng khác', () => {
-    const hop = mo();
-    fireEvent.click(within(hop).getByText('한국어'));
-    expect(doiNgonNgu).toHaveBeenCalledWith('ko');
+    expect(NGON_NGU.length).toBe(2);
   });
 
   it('chọn một thứ tiếng thì gọi đúng mã đó', () => {
     const hop = mo();
-    fireEvent.click(within(hop).getByText('中文'));
-    expect(doiNgonNgu).toHaveBeenCalledWith('zh');
+    fireEvent.click(within(hop).getByText('Tiếng Việt'));
+    expect(doiNgonNgu).toHaveBeenCalledWith('vi');
+  });
+
+  it('người từng chọn tiếng Hàn / Trung (đã bỏ) thì lùi về mục đầu, không vỡ', () => {
+    ngonNguHienTai = 'ko';
+    render(<ChonNgonNgu />);
+    expect(screen.getByRole('button', { name: 'man.chung.chonNgonNgu' }).textContent).toContain(NGON_NGU[0].ma_ngan);
   });
 
 

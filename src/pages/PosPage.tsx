@@ -19,6 +19,8 @@ import { dongBoHangDoi, docHangDoi, sinhClientId, themVaoHangDoi, type BanCho } 
 import { goiPos, type BanPos, type CauHinhPos, type SanPhamPos, type TaiKhoanNhan, type TongHop } from '@/lib/pos/goiPos';
 import { LoiGoiHam } from '@/lib/loiGoiHam';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
+import { noi } from '@/lib/loa';
+import { cauNoi } from '../../supabase/functions/_shared/soat-bill/cau-noi.ts';
 
 type Buoc = 'nhap' | 'chon' | 'qr' | 'xong';
 /** Lần bán vừa xong, để hiện màn thành công và in biên lai — kể cả lần còn nằm trong hàng đợi. */
@@ -140,8 +142,11 @@ export default function PosPage() {
       if (Date.now() - batDauCho > CHO_QUA_PHUT * 60_000) setLauQua(true);
       try {
         const r = await goiPos<{ ban: BanPos }>('trang_thai', { id: banCho.id });
-        if (r.ban?.status === 'paid') xongBan({ ban: r.ban, ngoaiTuyen: false });
-        else if (r.ban?.status === 'cancelled') { setBuoc('nhap'); setBanCho(null); setThongBao(t('pos.daHuy')); }
+        if (r.ban?.status === 'paid') {
+          // Quầy Tin: chỉ đọc "Đã nhận" khi tiền NGÂN HÀNG thật đóng đơn — xác nhận tay không có bằng chứng tiền về.
+          if (r.ban.paid_basis === 'bank_match') noi(cauNoi('khop_ma', { so_tien: r.ban.amount }));
+          xongBan({ ban: r.ban, ngoaiTuyen: false });
+        } else if (r.ban?.status === 'cancelled') { setBuoc('nhap'); setBanCho(null); setThongBao(t('pos.daHuy')); }
       } catch { /* mạng chập chờn: hỏi lại lần sau */ }
     }, HOI_MOI_MS);
     return () => window.clearInterval(hen);

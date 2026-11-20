@@ -15,7 +15,9 @@ describe('tính năng đóng băng', () => {
   });
 
   it('đóng băng đợt 2: kiểm soát chi của agent, giấy tờ, đăng ký kinh doanh, trang công khai về agent', () => {
-    for (const d of ['/dashboard/tac-tu', '/dashboard/chinh-sach', '/dashboard/kiem-truoc-khi-chuyen', '/dashboard/giay-to',
+    // 20/11/2026: /dashboard/kiem-truoc-khi-chuyen mở lại cho Quầy Tin ("Soát trước khi chi").
+    expect(daDongBang('/dashboard/kiem-truoc-khi-chuyen')).toBe(false);
+    for (const d of ['/dashboard/tac-tu', '/dashboard/chinh-sach', '/dashboard/giay-to',
       '/dashboard/dang-ky-kinh-doanh', '/tri-tue-nhan-tao', '/khao-sat-gia', '/kham-pha/agent-ai', '/san-pham/mcp-api',
       '/giai-phap/phan-mem-ai']) {
       expect(daDongBang(d), d).toBe(true);

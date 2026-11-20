@@ -21,6 +21,8 @@ export default {
         serif: ["Playfair Display", "Georgia", "Times New Roman", "serif"],
       },
       colors: {
+        // Thang cam MIMI (20/11/2026) — xem src/index.css, khối "THANG MÀU CAM MIMI".
+        cam: Object.fromEntries([50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map((b) => [b, `hsl(var(--cam-${b}))`])),
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

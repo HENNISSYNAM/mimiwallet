@@ -14,6 +14,8 @@ const gia = vi.hoisted(() => ({ goi: vi.fn(), toKhai: vi.fn(), chon: vi.fn(), ba
 vi.mock('@/lib/goiVanPhong', async (goc) => ({ ...(await goc<typeof import('@/lib/goiVanPhong')>()), goiDanhMucKhach: gia.goi }));
 vi.mock('@/lib/goiToKhai', () => ({ goiToKhai: gia.toKhai }));
 vi.mock('@/lib/congTyDangDung', () => ({ chonCongTy: gia.chon }));
+// Năng lượng AI (xu): test văn phòng không đọc sổ xu — coi như chưa đọc được (không ngủ).
+vi.mock('@/components/mimi/ThanhNangLuong', () => ({ useNangLuong: () => ({ nangLuong: null, taiLai: async () => {} }) }));
 // Không bao giờ được tải cảnh 3D khi máy không có WebGL.
 vi.mock('@/components/van-phong/VanPhong3D', () => { gia.ba(); return { default: () => null }; });
 

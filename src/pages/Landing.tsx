@@ -546,7 +546,7 @@ export default function Landing({ khoi = KHOI_TRANG_CHU, dauTrang }: { khoi?: re
   const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
   return (
-    <div className="min-h-screen landing-light">
+    <div className="min-h-screen landing-light mimi-cam">
       <Navbar />
       {dauTrang}
 

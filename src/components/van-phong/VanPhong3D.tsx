@@ -1,16 +1,23 @@
 /**
  * Cảnh 3D của Văn phòng kế toán (tải lười: chỉ chunk này kéo three.js về).
  *
- * Mỗi khách một bàn (bàn, màn hình, đèn trạng thái vẽ bằng InstancedMesh — 50 bàn vẫn là vài lệnh vẽ). Năm mèo agent
- * low-poly đi tới bàn của khách mà máy chủ nói chúng đang làm (`agent` trong danh mục, từ hoạt động THẬT 24 giờ hoặc
- * việc đang chờ). Không có việc → về góc nghỉ. Bấm bàn → mở bảng chi tiết khách.
+ * Mỗi khách một bàn (bàn, màn hình, đèn trạng thái vẽ bằng InstancedMesh — 50 bàn vẫn là vài lệnh vẽ). Năm mèo khối
+ * (`meoKhoi.ts`) đi tới bàn của khách mà máy chủ nói chúng đang làm (`agent` trong danh mục, từ hoạt động THẬT 24 giờ hoặc
+ * việc đang chờ). Biểu cảm theo việc thật: gấp ở bàn đỏ, mừng khi kế toán vừa duyệt việc của nó, rảnh thì về góc
+ * nghỉ cạnh bàn kế toán. HẾT XU (năng lượng AI tháng này = 0) thì mọi mèo về góc nghỉ và ngủ. Kế toán (mèo cam gõ laptop) ngồi bàn chính. Bấm bàn → mở bảng chi tiết khách.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { CanvasTexture, Color, Object3D, SRGBColorSpace, Vector3, type Group, type InstancedMesh } from 'three';
+import { CanvasTexture, Color, Object3D, SRGBColorSpace, Vector3, type InstancedMesh } from 'three';
 import type { AgentDangLam, KhachVanPhong, TenAgentVP } from '@/lib/goiVanPhong';
 import { AGENT, MAU_DEN } from './chu';
+import { capNhatKeToan, capNhatMeo, huyMeo, taoKeToan, taoMeo } from './meoKhoi';
+import { giamChuyenDong } from './kiemMay';
+
+/** Mèo khối dựng ở kích thước ~1,1; bàn khách rộng 2,2 → co mèo lại cho cân. */
+const TI_LE_MEO = 0.6;
+const GIAM_CHUYEN_DONG = giamChuyenDong();
 
 const KHOANG_X = 3.4;
 const KHOANG_Z = 3.2;
@@ -104,83 +111,80 @@ function CacBan({ khach, chon, onChon }: { khach: KhachVanPhong[]; chon: string 
   );
 }
 
-/** Mèo low-poly: thân, đầu, hai tai, đuôi — một màu cho mỗi agent. */
-function Meo({ ten, dich }: { ten: TenAgentVP; dich: Vector3 }) {
-  const g = useRef<Group>(null);
-  const mau = AGENT[ten].mau;
-  const tam = useMemo(() => new Vector3(), []);
+/** Mèo khối voxel (xem `meoKhoi.ts`): biểu cảm theo việc thật — gấp ở bàn đỏ, mừng khi được duyệt, ngủ khi hết việc. */
+function Meo({ ten, dich, coViec, banDo, hetXu, vuiDenMs }: { ten: TenAgentVP; dich: Vector3; coViec: boolean; banDo: boolean; hetXu: boolean; vuiDenMs: number }) {
+  const meo = useMemo(() => {
+    const m = taoMeo(ten, AGENT[ten].mau, TI_LE_MEO);
+    m.position.set(dich.x - 3, 0, dich.z + 3);
+    return m;
+    // Dựng một lần cho mỗi agent; vị trí sau đó do capNhatMeo dẫn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ten]);
+  useEffect(() => () => huyMeo(meo), [meo]);
   useFrame((s, dt) => {
-    const o = g.current;
-    if (!o) return;
-    tam.copy(dich).sub(o.position); tam.y = 0;
-    const xa = tam.length();
-    const buoc = Math.min(xa, 2.6 * Math.min(dt, 0.05));
-    if (xa > 0.05) {
-      tam.normalize();
-      o.position.addScaledVector(tam, buoc);
-      o.rotation.y = Math.atan2(tam.x, tam.z);
-      o.position.y = Math.abs(Math.sin(s.clock.elapsedTime * 10)) * 0.08;
-    } else {
-      o.position.y = 0;
-    }
+    capNhatMeo(meo, { dich, coViec, banDo, hetXu, vuiDenMs, t: s.clock.elapsedTime, dt, giam: GIAM_CHUYEN_DONG, tocDo: 2.6 });
   });
-  return (
-    <group ref={g} position={[dich.x - 3, 0, dich.z + 3]}>
-      <mesh position={[0, 0.35, 0]}><boxGeometry args={[0.45, 0.35, 0.7]} /><meshStandardMaterial color={mau} flatShading /></mesh>
-      <mesh position={[0, 0.65, 0.35]}><boxGeometry args={[0.4, 0.34, 0.34]} /><meshStandardMaterial color={mau} flatShading /></mesh>
-      <mesh position={[-0.12, 0.88, 0.38]}><coneGeometry args={[0.08, 0.16, 4]} /><meshStandardMaterial color={mau} flatShading /></mesh>
-      <mesh position={[0.12, 0.88, 0.38]}><coneGeometry args={[0.08, 0.16, 4]} /><meshStandardMaterial color={mau} flatShading /></mesh>
-      <mesh position={[-0.09, 0.68, 0.53]}><boxGeometry args={[0.06, 0.06, 0.02]} /><meshBasicMaterial color="#111827" /></mesh>
-      <mesh position={[0.09, 0.68, 0.53]}><boxGeometry args={[0.06, 0.06, 0.02]} /><meshBasicMaterial color="#111827" /></mesh>
-      <mesh position={[0, 0.55, -0.45]} rotation={[0.7, 0, 0]}><cylinderGeometry args={[0.04, 0.05, 0.5, 5]} /><meshStandardMaterial color={mau} flatShading /></mesh>
-      {[[-0.15, 0.25], [0.15, 0.25], [-0.15, -0.25], [0.15, -0.25]].map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.09, z]}><boxGeometry args={[0.1, 0.18, 0.1]} /><meshStandardMaterial color={mau} flatShading /></mesh>
-      ))}
-    </group>
-  );
+  return <primitive object={meo} />;
 }
 
-export default function VanPhong3D({ khach, agent, chon, onChon }: {
+function KeToan({ x, z }: { x: number; z: number }) {
+  const g = useMemo(() => taoKeToan('#e07b24', TI_LE_MEO * 1.25), []);
+  useEffect(() => () => huyMeo(g), [g]);
+  useFrame((s) => capNhatKeToan(g, s.clock.elapsedTime, GIAM_CHUYEN_DONG));
+  return <primitive object={g} position={[x, 0, z]} />;
+}
+
+export default function VanPhong3D({ khach, agent, chon, onChon, vui = null, hetXu = false }: {
   khach: KhachVanPhong[]; agent: AgentDangLam[]; chon: string | null; onChon: (id: string) => void;
+  /** Agent vừa được kế toán duyệt việc → nhảy mừng tới mốc Date.now() này. */
+  vui?: { agent: TenAgentVP; den: number } | null;
+  /** Hết xu tháng này: agent AI tạm nghỉ → mọi mèo về góc nghỉ ngủ. */
+  hetXu?: boolean;
 }) {
   const n = khach.length;
   const cot = Math.max(1, Math.ceil(Math.sqrt(Math.max(1, n) * 1.4)));
   const rongX = cot * KHOANG_X;
   const sauZ = Math.ceil(Math.max(1, n) / cot) * KHOANG_Z;
-  // Góc nghỉ của mèo: phía trước bên trái dãy bàn.
-  const goc = useMemo(() => new Vector3(-rongX / 2 - 0.5, 0, sauZ / 2 + 1.2), [rongX, sauZ]);
+  // Bàn kế toán: giữa phía trước dãy bàn khách, quay mặt về phía người xem.
+  const ke = useMemo(() => new Vector3(0, 0, sauZ / 2 + 2.6), [sauZ]);
   const dich = useMemo(() => {
     const theoBan = new Map<string, number>();
     return agent.map((a, i) => {
       const iBan = a.company_id ? khach.findIndex((k) => k.id === a.company_id) : -1;
-      if (iBan < 0) return new Vector3(goc.x + i * 0.9, 0, goc.z);
+      if (iBan < 0 || hetXu) return new Vector3(ke.x - 2.4 - i * 0.9, 0, ke.z + 0.2);
       const thu = theoBan.get(a.company_id!) ?? 0;
       theoBan.set(a.company_id!, thu + 1);
       const [x, z] = viTriBan(iBan, n);
       // Đứng cạnh trái bàn, mèo thứ hai đứng sau mèo thứ nhất.
       return new Vector3(x - 1.45, 0, z + 0.1 + thu * 0.75);
     });
-  }, [agent, khach, n, goc]);
+  }, [agent, khach, n, ke, hetXu]);
+  const mucCua = (id: string | null) => (id ? khach.find((k) => k.id === id)?.muc ?? null : null);
   // Máy ảnh vừa khít dãy bàn: xa theo bề rộng (hoặc bề sâu) lớn hơn.
-  const xa = Math.max(7, Math.max(rongX, sauZ * 1.3) * 0.62 + 2.5);
+  const xa = Math.max(8, Math.max(rongX, (sauZ + 4) * 1.3) * 0.62 + 2.5);
   const rong = Math.max(rongX, sauZ) + 8;
   return (
     <Canvas dpr={[1, 1.5]} camera={{ position: [0, xa * 0.8, xa * 0.85], fov: 45 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
-      <color attach="background" args={['#f1f5f9']} />
-      <hemisphereLight args={['#ffffff', '#cbd5e1', 1.1]} />
+      <color attach="background" args={['#efe7dd']} />
+      <hemisphereLight args={['#ffffff', '#b9a894', 1.0]} />
       <directionalLight position={[6, 12, 8]} intensity={1.2} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[rong, rong]} />
-        <meshStandardMaterial color="#e2e8f0" />
+        <planeGeometry args={[rong + 6, rong + 6]} />
+        <meshStandardMaterial color="#efe7dd" />
       </mesh>
-      <mesh position={[goc.x + 1.8, 0.01, goc.z]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[1.2, 24]} />
-        <meshStandardMaterial color="#fde68a" />
+      {/* Góc nghỉ: thảm cạnh bàn kế toán, mèo hết việc về đây ngủ. */}
+      <mesh position={[ke.x - 3.3, 0.01, ke.z + 0.2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[4.4, 1.4]} />
+        <meshStandardMaterial color="#fbeee2" />
       </mesh>
+      <KeToan x={ke.x} z={ke.z} />
       {/* Đổi số bàn (sang trang khác) thì dựng lại: InstancedMesh giữ sức chứa lúc tạo. */}
       <CacBan key={n} khach={khach} chon={chon} onChon={onChon} />
-      {agent.map((a, i) => <Meo key={a.agent} ten={a.agent} dich={dich[i]} />)}
-      <OrbitControls makeDefault enablePan={false} minDistance={5} maxDistance={xa * 2} maxPolarAngle={Math.PI / 2.3} />
+      {agent.map((a, i) => (
+        <Meo key={a.agent} ten={a.agent} dich={dich[i]} coViec={a.company_id !== null} banDo={mucCua(a.company_id) === 'do'} hetXu={hetXu}
+          vuiDenMs={vui?.agent === a.agent ? vui.den : 0} />
+      ))}
+      <OrbitControls makeDefault enablePan={false} minDistance={5} maxDistance={xa * 2.2} maxPolarAngle={Math.PI / 2.3} />
     </Canvas>
   );
 }
