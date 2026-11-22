@@ -61,7 +61,6 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ChungTuPage = lazy(() => import("./pages/ChungTuPage"));
 const FintechPage = lazy(() => import("./pages/FintechPage"));
 const TroLyPage = lazy(() => import("./pages/TroLyPage"));
-const ChuyenVeKhongGian = lazy(() => import("./components/khong-gian/ChuyenVeKhongGian"));
 const ThuVienChungTuPage = lazy(() => import("./pages/ThuVienChungTuPage"));
 const NhacThuePage = lazy(() => import("./pages/NhacThuePage"));
 const ViecCanLamPage = lazy(() => import("./pages/ViecCanLamPage"));
@@ -85,6 +84,7 @@ const VayVonPage = lazy(() => import("./pages/VayVonPage"));
 // Văn phòng kế toán (11/11/2026): danh mục khách + văn phòng 3D; cảnh 3D tự tải lười riêng.
 const VanPhongPage = lazy(() => import("./pages/VanPhongPage"));
 const AgenticSpacePage = lazy(() => import("./pages/AgenticSpacePage"));
+const TongQuanPage = lazy(() => import("./pages/TongQuanPage"));
 const CoHoiPage = lazy(() => import("./pages/CoHoiPage"));
 // Bán tại quầy (10/11/2026): toàn màn hình, ngoài DashboardLayout — máy POS 5–8 inch không có chỗ cho thanh bên.
 
@@ -217,8 +217,9 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 }
               >
                 {/* 29/09/2026: sau đăng nhập vào thẳng Không gian MIMI Trợ lý. Tổng quan cũ = module Dòng tiền (/dashboard/cashflow). */}
-                <Route index element={<Page noIndex path="/dashboard" title="MIMI Trợ lý — MIMI WALLET" description="Hỏi MIMI về tiền, hoá đơn, thuế và chứng từ của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
-                <Route path="tro-ly" element={<ChuyenVeKhongGian />} />
+                {/* 22/11/2026: Home = Tổng quan tài chính; trợ lý chat chuyển sang /dashboard/tro-ly. */}
+                <Route index element={<Page noIndex path="/dashboard" title="Tổng quan tài chính — MIMI WALLET" description="Dòng tiền, doanh thu so với ngưỡng, hạn thuế và việc đang chờ bạn quyết — của công ty đang dùng."><TongQuanPage /></Page>} />
+                <Route path="tro-ly" element={<Page noIndex path="/dashboard/tro-ly" title="MIMI Trợ lý — MIMI WALLET" description="Hỏi MIMI về tiền, hoá đơn, thuế và chứng từ của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
                 <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
                 <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Soát trước khi chi — MIMI WALLET" description="Kiểm một khoản sắp chuyển: đổi số tài khoản, người nhận lạ, số tiền bất thường. MIMI không chuyển tiền thay bạn."><KiemChuyenTienPage /></Page>} />
                 <Route path="chi-ca-nhan" element={<Page noIndex path="/dashboard/chi-ca-nhan" title="Tách chi cá nhân — MIMI WALLET" description="Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi hộ kinh doanh dùng chung một tài khoản ngân hàng."><TachChiCaNhanPage /></Page>} />

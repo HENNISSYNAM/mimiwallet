@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { laKhongGianTroLy, moduleDangMo } from '@/lib/nguCanhModule';
 import { ThanhCongCuNguCanh } from './ThanhCongCuNguCanh';
-import ChuyenVeKhongGian from './ChuyenVeKhongGian';
 
 /** Không gian MIMI Trợ lý (29/09/2026): trợ lý là trang chính, module mở trong cùng khung, link cũ không vỡ. */
 describe('module đang mở', () => {
@@ -22,7 +21,8 @@ describe('module đang mở', () => {
     expect(m('/dashboard/doanh-thu-xac-minh')).toBe('vay_von');
     expect(m('/pos')).toBeNull(); // 21/11/2026: bỏ bán tại quầy (POS) và các trang đóng băng — xoá hẳn, không còn đóng băng.
     expect(m('/dashboard')).toBeNull();
-    expect(laKhongGianTroLy('/dashboard')).toBe(true);
+    // 22/11/2026: /dashboard là Tổng quan tài chính; trợ lý ở /dashboard/tro-ly.
+    expect(laKhongGianTroLy('/dashboard')).toBe(false);
     expect(laKhongGianTroLy('/dashboard/tro-ly')).toBe(true);
     expect(laKhongGianTroLy('/dashboard/invoices')).toBe(false);
   });
@@ -37,23 +37,5 @@ describe('thanh công cụ ngữ cảnh', () => {
     expect(screen.getByRole('link', { name: /Công nợ/ }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('link', { name: /Hoá đơn/ }).getAttribute('aria-current')).toBeNull();
     expect(screen.getByRole('button', { name: 'Công cụ khác' })).toBeTruthy();
-  });
-});
-
-describe('đường dẫn cũ /dashboard/tro-ly', () => {
-  it('chuyển về /dashboard, giữ câu hỏi ?hoi=', () => {
-    function Dich() {
-      const l = useLocation();
-      return <p data-testid="dich">{l.pathname}{l.search}</p>;
-    }
-    render(
-      <MemoryRouter initialEntries={['/dashboard/tro-ly?hoi=Kho%E1%BA%A3n%20n%C3%A0o']}>
-        <Routes>
-          <Route path="/dashboard/tro-ly" element={<ChuyenVeKhongGian />} />
-          <Route path="/dashboard" element={<Dich />} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    expect(screen.getByTestId('dich').textContent).toBe('/dashboard?hoi=Kho%E1%BA%A3n%20n%C3%A0o');
   });
 });

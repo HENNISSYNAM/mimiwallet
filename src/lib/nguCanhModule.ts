@@ -66,9 +66,10 @@ export const TRANG_THEM: readonly { ten: string; duong: string; khoa: string }[]
 ];
 
 /** Đường dẫn của không gian Trợ lý (trang chính sau đăng nhập). */
-export const DUONG_TRO_LY = '/dashboard';
+// 22/11/2026: Home là Tổng quan tài chính (/dashboard); trợ lý chat ở /dashboard/tro-ly.
+export const DUONG_TRO_LY = '/dashboard/tro-ly';
 
-export const laKhongGianTroLy = (duong: string) => duong === DUONG_TRO_LY || duong === `${DUONG_TRO_LY}/` || duong === '/dashboard/tro-ly';
+export const laKhongGianTroLy = (duong: string) => duong === DUONG_TRO_LY || duong === `${DUONG_TRO_LY}/`;
 
 export function moduleDangMo(duong: string, truyVan: URLSearchParams): ModuleTroLy | null {
   return MODULE_TRO_LY.find((m) => m.khop(duong, truyVan)) ?? null;
