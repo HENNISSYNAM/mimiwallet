@@ -55,7 +55,7 @@ export interface DuLieuKhach { khach: KhachVanPhong | null; hang: DeXuat[] }
 
 export interface CongCuAgent {
   /** Hỏi mô hình về các khoản không có dấu hiệu. Không có mô hình / hết xu → trả `ly_do_khong`. */
-  aiPhanLoai?: (ds: DeXuat[]) => Promise<{ y: YKienAi[]; ly_do_khong?: string }>;
+  aiPhanLoai?: (ds: DeXuat[]) => Promise<{ y: YKienAi[]; ly_do_khong?: string; cong?: string; loi_cong?: string[] }>;
 }
 
 export interface KetQuaChay { viec: Viec; tin: Tin[]; tao: ViecMoi[]; y_kien: YKienAi[] }
@@ -153,7 +153,8 @@ export async function chayViec(v0: Viec, du: DuLieuKhach, cc: CongCuAgent, conDa
         yKien.push(...y);
         tin.push({ tu: a, den: null, loai: 'tien_do', noi_dung: r.ly_do_khong
           ? `Chưa gọi được AI (${r.ly_do_khong}); ${can.length} khoản giữ đề xuất thận trọng "tính là doanh thu".`
-          : `AI đã đọc ${can.length} khoản không có dấu hiệu rõ và đề xuất loại cho ${y.length} khoản, kèm lý do. Đề xuất nằm trong hàng duyệt.` });
+          : `AI đã đọc ${can.length} khoản không có dấu hiệu rõ và đề xuất loại cho ${y.length} khoản, kèm lý do. Đề xuất nằm trong hàng duyệt.`
+            + (r.cong ? ` (Mô hình chạy trên ${r.cong}${r.loi_cong?.length ? ` — cổng ưu tiên lỗi: ${r.loi_cong.join('; ')}` : ''}.)` : '') });
       }
       xongBuoc(1);
     }

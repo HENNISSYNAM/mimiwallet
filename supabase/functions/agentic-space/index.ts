@@ -15,6 +15,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { duocGoi, qua429 } from "../_shared/an-ninh/gioi-han.ts";
 import { chonCongMoHinh, coDo, nhaCungCapCua, type LanGoi } from "../_shared/ai/nha-cung-cap.ts";
+import { chonBedrock, congBedrock, goiCoDuPhong, type CongThu } from "../_shared/ai/bedrock.ts";
 import { docXuTruocLuot, truXuSauLuot } from "../_shared/xu/so-xu.ts";
 import { homNayVN } from "../_shared/van-phong/danh-muc.ts";
 import { cauHoiAi, docTraLoiAi, LOI_DAN_AI } from "../_shared/space/ai-phan-loai.ts";
@@ -38,24 +39,28 @@ function taoCongCu(db: Db): (companyId: string) => CongCuAgent {
     lovable: Deno.env.get("LOVABLE_API_KEY"),
     openrouter: Deno.env.get("OPENROUTER_API_KEY"), moHinhOpenRouter: Deno.env.get("OPENROUTER_MODEL"),
   });
+  // Amazon Bedrock ưu tiên (nhà tài trợ AWS); khoá sandbox chỉ sống ≤ 12 giờ nên luôn có cổng dự phòng phía sau.
+  const bedrock = chonBedrock({ khoa: Deno.env.get("BEDROCK_API_KEY"), vung: Deno.env.get("BEDROCK_REGION"), mo_hinh: Deno.env.get("BEDROCK_MODEL") });
+  const coCong = !!bedrock || !!cong;
   return (companyId) => ({
-    aiPhanLoai: cong ? async (ds) => {
+    aiPhanLoai: coCong ? async (ds) => {
       const xu = await docXuTruocLuot(db, companyId, homNayVN(Date.now())).catch(() => null);
       if (!xu) return { y: [], ly_do_khong: "chưa đọc được số xu" };
       if (xu.so_du < 1) return { y: [], ly_do_khong: "hết xu tháng này" };
       const lanGoi: LanGoi[] = [];
-      const ncc = coDo(nhaCungCapCua(cong), "phan_loai", (l) => {
+      const ghi = (l: LanGoi) => {
         lanGoi.push(l);
         void db.from("lan_goi_mo_hinh").insert({ company_id: companyId, ...l }).then(({ error }: { error: { message: string } | null }) => {
           if (error) console.error("ghi lần gọi mô hình:", error.message);
         });
-      });
+      };
+      const dsCong: CongThu[] = [
+        ...(bedrock ? [{ ten_hien_thi: `Amazon Bedrock (${bedrock.mo_hinh})`, ncc: coDo(congBedrock(bedrock), "phan_loai", ghi), mo_hinh: bedrock.mo_hinh }] : []),
+        ...(cong ? [{ ten_hien_thi: `cổng dự phòng ${cong.ten}`, ncc: coDo(nhaCungCapCua(cong), "phan_loai", ghi), mo_hinh: cong.mo_hinh }] : []),
+      ];
       try {
-        const r = await ncc.hoi({
-          mo_hinh: cong.mo_hinh, han_ms: 20_000,
-          tin: [{ vai: "he_thong", noi_dung: LOI_DAN_AI }, { vai: "nguoi_dung", noi_dung: cauHoiAi(ds) }],
-        });
-        return { y: docTraLoiAi(r.noi_dung, new Set(ds.map((d) => d.phan_loai!.transaction_id))) };
+        const r = await goiCoDuPhong(dsCong, [{ vai: "he_thong", noi_dung: LOI_DAN_AI }, { vai: "nguoi_dung", noi_dung: cauHoiAi(ds) }], 20_000);
+        return { y: docTraLoiAi(r.phan_hoi.noi_dung, new Set(ds.map((d) => d.phan_loai!.transaction_id))), cong: r.cong, loi_cong: r.loi_truoc };
       } catch (e) {
         console.error("agentic-space ai:", e instanceof Error ? e.message : e);
         return { y: [], ly_do_khong: "mô hình không phản hồi" };
