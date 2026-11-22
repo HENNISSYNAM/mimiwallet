@@ -7,12 +7,14 @@
  * CÔNG TY ĐANG DÙNG — trang chỉ hiện, không tính lại kiểu khác.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CalendarClock, Landmark, Orbit, Scale, Sparkles, Wallet } from 'lucide-react';
+import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
+import { Link } from 'react-router-dom';
+import { ArrowRight, CalendarClock, Landmark, Orbit, Scale, Wallet } from 'lucide-react';
 import { goiDanhMucKhach, type DeXuat, type KhachVanPhong } from '@/lib/goiVanPhong';
 import { docBang, type BangViec } from '@/lib/goiSpace';
 import { idCongTyDangDung, SU_KIEN_DOI_CONG_TY } from '@/lib/congTyDangDung';
-import { DUONG_TRO_LY } from '@/lib/nguCanhModule';
+import { useSoLieuHome } from '@/lib/soLieuHome';
+import { BangKhoanLon, BieuDoDongTien } from '@/components/tong-quan/BieuDoDongTien';
 
 export const tienGon = (n: number) => {
   const a = Math.abs(n);
@@ -27,6 +29,9 @@ const SAN_SANG: Record<string, string> = {
   san_sang: 'Đủ dữ liệu để soạn', bi_chan: 'Đang bị chặn', thieu_du_lieu: 'Còn thiếu dữ liệu',
   can_xac_minh: 'Cần xác minh nghĩa vụ', khong_co_viec: 'Chưa có kỳ phải khai',
 };
+
+/** Khoảng doanh thu: hai đầu bằng nhau thì chỉ ghi một số. */
+export const khoangTien = (duoi: number, tren: number) => (Math.round(duoi) === Math.round(tren) ? tienGon(duoi) : `${tienGon(duoi)} – ${tienGon(tren)}`);
 
 export interface ViecCanBan { khoa: string; chu: string; den: string; nut: string }
 
@@ -61,7 +66,6 @@ function O({ icon: Icon, ten, chinh, phu, den, canhBao }: { icon: typeof Wallet;
 }
 
 export default function TongQuanPage() {
-  const navigate = useNavigate();
   const [id, setId] = useState<string | null>(null);
   const [khach, setKhach] = useState<KhachVanPhong | null>(null);
   const [hang, setHang] = useState<DeXuat[]>([]);
@@ -69,7 +73,6 @@ export default function TongQuanPage() {
   const [bang, setBang] = useState<BangViec | null>(null);
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState<string | null>(null);
-  const [hoi, setHoi] = useState('');
   const [lan, setLan] = useState(0);
 
   useEffect(() => {
@@ -100,6 +103,7 @@ export default function TongQuanPage() {
     return () => { huy = true; };
   }, [lan]);
 
+  const bieuDo = useSoLieuHome(lan);
   const can = useMemo(() => viecCanBan(khach, hang, bang, id), [khach, hang, bang, id]);
   const agentCty = useMemo(() => (bang?.viec ?? []).filter((v) => v.company_id === id && v.trang_thai !== 'xong'), [bang, id]);
 
@@ -111,6 +115,7 @@ export default function TongQuanPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
+      <ThanhTabHome />
       <header className="space-y-1">
         <p className="text-sm text-muted-foreground">Tổng quan tài chính</p>
         <h1 className="text-2xl font-bold text-foreground">{khach?.ten ?? (dangTai ? '…' : 'Công ty của bạn')}</h1>
@@ -135,7 +140,7 @@ export default function TongQuanPage() {
             chinh={dong ? tienGon(dong.rong) : 'Chưa có giao dịch'}
             phu={dong ? `Vào ${tienGon(dong.tien_vao)} · Ra ${tienGon(dong.tien_ra)}` : 'Liên kết ngân hàng để thấy tiền thật'} canhBao={!!dong && dong.rong < 0} />
           <O icon={Scale} ten={`Doanh thu ${dt?.nam ?? ''}`} den="/dashboard/van-phong"
-            chinh={dt ? `${tienGon(dt.can_duoi)} – ${tienGon(dt.can_tren)}` : '—'}
+            chinh={dt ? khoangTien(dt.can_duoi, dt.can_tren) : '—'}
             phu={nguong ? `${PHIA[nguong.phia] ?? nguong.phia} ngưỡng 1 tỷ${dt?.can_xem ? ' — nên xem lại khoản lớn' : ''}` : 'Khoảng ước tính từ sao kê'} canhBao={!!dt?.can_xem} />
           <O icon={CalendarClock} ten="Hạn thuế kế tiếp" den="/dashboard/to-khai"
             chinh={thue?.moc_ke_tiep ? `Còn ${thue.moc_ke_tiep.con_lai} ngày` : '—'}
@@ -161,7 +166,20 @@ export default function TongQuanPage() {
         </section>
       )}
 
-      <section className="grid gap-3 lg:grid-cols-2">
+      <section className="grid gap-3 lg:grid-cols-5" aria-label="Biểu đồ">
+        <div className="space-y-2 rounded-2xl border bg-card p-4 lg:col-span-3">
+          <h2 className="text-sm font-semibold text-foreground">Dòng tiền 6 tháng</h2>
+          {bieuDo === null ? <p className="py-10 text-center text-sm text-muted-foreground">Đang đọc sao kê…</p>
+            : bieuDo === 'loi' ? <p className="py-10 text-center text-sm text-muted-foreground">Chưa đọc được giao dịch. Thử tải lại trang.</p>
+              : <BieuDoDongTien thang={bieuDo.thang} />}
+        </div>
+        <div className="space-y-2 rounded-2xl border bg-card p-4 lg:col-span-2">
+          <h2 className="text-sm font-semibold text-foreground">Khoản lớn 30 ngày</h2>
+          {bieuDo && bieuDo !== 'loi' ? <BangKhoanLon ds={bieuDo.khoanLon} /> : <p className="py-6 text-center text-sm text-muted-foreground">—</p>}
+        </div>
+      </section>
+
+      <section>
         <div className="space-y-2 rounded-2xl border bg-card p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground"><Orbit size={16} className="text-primary" /> Agent đang làm cho công ty này</h2>
           {agentCty.length ? (
@@ -175,12 +193,6 @@ export default function TongQuanPage() {
           {soKhach > 1 && <p className="text-xs text-muted-foreground">Bạn làm sổ cho {soKhach} khách — <Link to="/dashboard/van-phong" className="underline">mở Văn phòng</Link>.</p>}
         </div>
 
-        <form className="space-y-2 rounded-2xl border bg-card p-4" onSubmit={(e) => { e.preventDefault(); if (hoi.trim()) navigate(`${DUONG_TRO_LY}?hoi=${encodeURIComponent(hoi.trim())}`); }}>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground"><Sparkles size={16} className="text-primary" /> Hỏi MIMI</h2>
-          <input value={hoi} onChange={(e) => setHoi(e.target.value)} maxLength={500} aria-label="Câu hỏi cho MIMI"
-            placeholder="Vì sao tháng này tiền ra nhiều hơn tiền vào?" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
-          <button type="submit" disabled={!hoi.trim()} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Hỏi</button>
-        </form>
       </section>
     </div>
   );

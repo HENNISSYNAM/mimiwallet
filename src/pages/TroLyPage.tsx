@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ThanhCongCuNguCanh } from '@/components/khong-gian/ThanhCongCuNguCanh';
-import { TongQuanNhanh } from '@/components/khong-gian/TongQuanNhanh';
 import { ViecCanChuY } from '@/components/khong-gian/ViecCanChuY';
 import { ThuYeuCau } from '@/components/khong-gian/ThuYeuCau';
 import { CauHoiSeanEllis } from '@/components/phan-hoi/CauHoiNhanh';
@@ -28,6 +26,10 @@ import { TheNhiemVuAgent } from '@/components/tro-ly/TheNhiemVuAgent';
 import { useMimiLamHoNeuCo } from '@/components/mimi/MimiLamHo';
 import { useTranslation } from 'react-i18next';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
+import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
+import { ViecAgentGanDay } from '@/components/khong-gian/ViecAgentGanDay';
+import { giaoViec } from '@/lib/goiSpace';
+import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -121,6 +123,27 @@ export default function TroLyPage() {
     id: l.id, cau: l.cau, phamVi: l.phamVi, traLoi: l.traLoi ?? undefined, loi: l.loi ?? undefined, dang: l.trangThai === 'dang',
   })), [luotNao]);
   const [nhap, setNhap] = useState('');
+  // 22/11/2026 (học tab Ask / Agents của ClickUp): cùng một ô, hai chế độ — hỏi MIMI, hoặc giao việc cho agent.
+  const [cheDoO, setCheDoO] = useState<'hoi' | 'agent'>('hoi');
+  const [dangGiao, setDangGiao] = useState(false);
+  const [loiGiao, setLoiGiao] = useState<string | null>(null);
+  const giaoChoAgent = async (cau: string) => {
+    const c = cau.trim();
+    if (!c || dangGiao) return;
+    setDangGiao(true); setLoiGiao(null);
+    try {
+      const id = await idCongTyDangDung();
+      if (!id) throw new Error('Chưa chọn công ty.');
+      await giaoViec({ company_id: id, cau: c });
+      setNhap('');
+      navigate('/dashboard/space');
+    } catch (e) {
+      setLoiGiao(e instanceof Error ? e.message : 'Chưa giao được việc.');
+    } finally {
+      setDangGiao(false);
+    }
+  };
+  const guiO = (cau: string) => { if (cheDoO === 'agent') void giaoChoAgent(cau); else void hoi(cau); };
   const [phamVi, setPhamVi] = useState<NhomNangLuc | null>(null);
   const dangHoi = luotNao.some((l) => l.trangThai === 'dang' && l.nguon === 'tro_ly');
   /** Chốt chống bấm hai lần một đề xuất — state React cập nhật trễ, ref thì không. */
@@ -375,6 +398,7 @@ export default function TroLyPage() {
       >
         <NenVongHat />
         <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
+          <ThanhTabHome className="mb-6 justify-center" />
           <h2 className={`font-display font-semibold tracking-tight text-foreground ${coHoiThoai ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-5xl'}`}>
             {t('man.troLy.tieuDe')}
           </h2>
@@ -386,9 +410,19 @@ export default function TroLyPage() {
 
           {/* Ô hỏi, chip nhóm việc nằm bên trong như mẫu. Dải năng lượng ngay trên ô, kiểu Claude (13/10/2026). */}
           <div className="mt-6 text-left"><DaiNangLuong /></div>
+          <div role="tablist" aria-label="Chế độ ô nhập" className="mx-auto mt-6 flex max-w-3xl justify-center gap-1 text-sm">
+            {([['hoi', 'Hỏi MIMI'], ['agent', 'Giao việc cho agent']] as const).map(([k, ten]) => (
+              <button key={k} type="button" role="tab" aria-selected={cheDoO === k} onClick={() => setCheDoO(k)}
+                className={`rounded-t-xl px-4 py-1.5 transition ${cheDoO === k ? 'bg-card font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                {ten}
+              </button>
+            ))}
+          </div>
+          {loiGiao && <p role="alert" className="mx-auto mb-2 max-w-3xl text-left text-sm text-destructive">{loiGiao}</p>}
+          {dangGiao && <p className="mx-auto mb-2 max-w-3xl text-left text-sm text-muted-foreground">Agent đang lập kế hoạch…</p>}
           <form
-            onSubmit={(e) => { e.preventDefault(); void hoi(nhap); }}
-            className="mx-auto mt-7 max-w-3xl rounded-2xl border border-border bg-card text-left shadow-[0_8px_30px_hsla(220,30%,20%,0.08)]"
+            onSubmit={(e) => { e.preventDefault(); guiO(nhap); }}
+            className="mx-auto mt-0 max-w-3xl rounded-2xl border border-border bg-card text-left shadow-[0_8px_30px_hsla(220,30%,20%,0.08)]"
           >
             <label htmlFor="o-hoi-mimi" className="sr-only">{t('man.troLy.nhanOHoi')}</label>
             <textarea
@@ -398,12 +432,12 @@ export default function TroLyPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
-                  void hoi(nhap);
+                  guiO(nhap);
                 }
               }}
               rows={coHoiThoai ? 1 : 2}
               maxLength={1000}
-              placeholder={t('man.troLy.oHoiPlaceholder')}
+              placeholder={cheDoO === 'agent' ? 'Giao việc cho agent… ví dụ: Chốt quý 4, phân loại tiền vào tháng này' : t('man.troLy.oHoiPlaceholder')}
               className="block w-full resize-none rounded-t-2xl bg-transparent px-5 pt-4 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
             <div className="flex items-end gap-2 px-3 pb-3 pt-2">
@@ -583,11 +617,8 @@ export default function TroLyPage() {
               </button>
             </nav>
           </div>
-          {/* Các module của MIMI (29/09/2026): mở ngay trong cùng khung, ô hỏi vẫn còn. */}
-          <div className="mx-auto mt-4 max-w-4xl text-left">
-            {/* Màn rộng: đủ tám chip trên một-hai hàng, căn giữa; điện thoại: một hàng cuộn ngang. */}
-            <ThanhCongCuNguCanh className="sm:flex-wrap sm:justify-center sm:overflow-visible" />
-          </div>
+          {/* 22/11/2026: bỏ hàng chip module ở Home — trùng nút "Công cụ" và nút chọn nhóm việc trong ô hỏi.
+              Chip vẫn ở đầu mỗi trang module (DashboardLayout). */}
           <KhoCongCu mo={moKhoCongCu} onDong={() => setMoKhoCongCu(false)} />
           <HopTaiUngDung mo={moTaiApp} onDong={() => setMoTaiApp(false)} />
 
@@ -607,8 +638,9 @@ export default function TroLyPage() {
             Không gian Trợ lý là trang chính sau đăng nhập (29/09/2026): việc cần chú ý (máy chủ tính, dữ liệu
             thật) rồi bốn con số nhanh. Trang Tổng quan cũ vẫn nguyên ở module Dòng tiền (/dashboard/cashflow).
           */}
+          <ViecAgentGanDay />
           <ViecCanChuY viec={viecKhac} soChoDuyet={0} dangHoi={dangHoi} onHoi={(v) => void hoi(v.hoi, v.nhom)} />
-          <TongQuanNhanh thue={boiCanh ? boiCanh.thue : undefined} />
+          {/* 22/11/2026: bốn ô số chuyển sang tab Tổng quan (có biểu đồ) — không lặp ở đây. */}
           <div className="mt-6" />
           {/*
             Cá nhân hoá từ khảo sát đầu vào: chưa trả lời thì hỏi (ngành quyết định mẫu tờ khai),

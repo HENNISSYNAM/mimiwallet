@@ -8,6 +8,7 @@
  * Mọi số và trạng thái do edge function `agentic-space` tính; trang chỉ hiện.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
 import { Link } from 'react-router-dom';
 import { Orbit, ArrowRight, Check, X, Loader2, RotateCw } from 'lucide-react';
 import { danhDauXong, docBang, docTin, giaoViec, huyViec, tiepTuc, type BangViec, type DongViec, type TinSpace } from '@/lib/goiSpace';
@@ -165,6 +166,7 @@ export default function AgenticSpacePage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
+      <ThanhTabHome />
       <header className="space-y-1">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground"><Orbit className="text-primary" /> Agentic AI Space</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">Bạn giao việc bằng một câu. Agent lập kế hoạch, dùng công cụ, giao việc cho nhau — và dừng lại hỏi bạn ở chỗ cần người quyết. Agent không ghi sổ, không nộp tờ khai thay bạn.</p>

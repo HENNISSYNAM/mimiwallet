@@ -77,6 +77,10 @@
 
     /* Chấm của vòng hạt sau ô hỏi MIMI Assistant (HSL, đọc bằng JS trong NenVongHat). */
     --vong-hat: 216 62% 56%;
+    /* Biểu đồ dòng tiền (22/11/2026): cặp vào/ra đã qua kiểm mù màu (dataviz validator, nền sáng). */
+    --bieu-do-vao: #2563EB;
+    --bieu-do-ra: #D82D8B;
+    --vong-hat-hong: 327 69% 51%;
 
     /* Many near-invisible layers rather than one dark drop — the surface reads
        as lifted without a visible grey smear under it. */
@@ -133,6 +137,9 @@
     --shadow-card: 0 0 0 1px hsl(var(--border-subtle));
     --shadow-soft: 0 0 0 1px hsl(var(--border-subtle));
     --vong-hat: 214 70% 70%;
+    --bieu-do-vao: #3B82F6;
+    --bieu-do-ra: #E0479E;
+    --vong-hat-hong: 327 75% 66%;
   }
 
   /* Tên cũ giữ lại làm bí danh — nếu còn chỗ nào ngoài mã nguồn đang gọi nó. */
@@ -142,11 +149,13 @@
 @layer components {
   /* Nền màn MIMI Assistant: xanh nhạt ở trên tan dần vào nền trang, để ô hỏi trắng nổi lên
      mà không cần đổ bóng đậm. Bản tối dùng than chì ngả xanh, cùng hướng chuyển. */
+  /* 22/11/2026: nền hồng kiểu MoMo; vòng hạt (NenVongHat đọc --vong-hat) đổi theo. */
   .mimi-tro-ly-nen {
-    background: linear-gradient(180deg, hsl(215 60% 89%) 15%, hsl(216 40% 95%) 70%, hsl(var(--background)) 100%);
+    --vong-hat: var(--vong-hat-hong);
+    background: linear-gradient(180deg, hsl(327 85% 93%) 10%, hsl(330 70% 97%) 65%, hsl(var(--background)) 100%);
   }
   .dark .mimi-tro-ly-nen {
-    background: linear-gradient(180deg, hsl(215 25% 14%) 10%, hsl(var(--background)) 95%);
+    background: linear-gradient(180deg, hsl(327 35% 15%) 10%, hsl(var(--background)) 95%);
   }
 }
 

@@ -2,12 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
+// jsdom không có ResizeObserver (Recharts ResponsiveContainer cần).
+globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
+
 const gia = vi.hoisted(() => ({ dm: vi.fn(), bang: vi.fn(), id: vi.fn() }));
 vi.mock('@/lib/goiVanPhong', () => ({ goiDanhMucKhach: gia.dm }));
 vi.mock('@/lib/goiSpace', () => ({ docBang: gia.bang }));
+vi.mock('@/lib/soLieuHome', () => ({ useSoLieuHome: () => ({ thang: [{ khoa: '2026-11', nhan: 'T11', vao: 5e6, ra: 2e6, rong: 3e6 }], khoanLon: [{ id: 'g1', ngay: '2026-11-20', noi_dung: 'NGUYEN VAN A — tien hang', chieu: 'vao', so_tien: 5e6 }] }) }));
 vi.mock('@/lib/congTyDangDung', () => ({ idCongTyDangDung: gia.id, SU_KIEN_DOI_CONG_TY: 'mimi:cong-ty-doi' }));
 
-import TongQuanPage, { tienGon, viecCanBan } from './TongQuanPage';
+import TongQuanPage, { khoangTien, tienGon, viecCanBan } from './TongQuanPage';
 
 const CTY = 'c1';
 const KHACH = {
@@ -28,8 +32,8 @@ const BANG = { viec: [
 
 function Dich() { const l = useLocation(); return <p data-testid="dich">{l.pathname}{l.search}</p>; }
 const ve = () => render(
-  <MemoryRouter initialEntries={['/dashboard']}>
-    <Routes><Route path="/dashboard" element={<TongQuanPage />} /><Route path="/dashboard/tro-ly" element={<Dich />} /></Routes>
+  <MemoryRouter initialEntries={['/dashboard/tong-quan']}>
+    <Routes><Route path="/dashboard/tong-quan" element={<TongQuanPage />} /><Route path="/dashboard" element={<Dich />} /></Routes>
   </MemoryRouter>,
 );
 
@@ -54,14 +58,6 @@ describe('Home = Tổng quan tài chính', () => {
     expect(within(can).getByText(/2 khoản tiền vào \(7,5 triệu\)/)).toBeTruthy();
   });
 
-  it('Hỏi MIMI chuyển sang trợ lý kèm câu hỏi', async () => {
-    ve();
-    await screen.findByTestId('cau-dau');
-    fireEvent.change(screen.getByLabelText('Câu hỏi cho MIMI'), { target: { value: 'Vì sao tiền ra nhiều?' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Hỏi' }));
-    expect(screen.getByTestId('dich').textContent).toBe(`/dashboard/tro-ly?hoi=${encodeURIComponent('Vì sao tiền ra nhiều?')}`);
-  });
-
   it('vai trò không xem được số cả công ty: nói rõ, không hiện số giả', async () => {
     gia.dm.mockResolvedValue({ khach: [], hang_duyet: [], tong: 0 });
     gia.bang.mockResolvedValue(null);
@@ -80,5 +76,18 @@ describe('Home = Tổng quan tài chính', () => {
   it('tiền gọn và việc cần bạn (thuần)', () => {
     expect([tienGon(1.04e9), tienGon(7_500_000), tienGon(-15e6), tienGon(900)]).toEqual(['1,04 tỷ', '7,5 triệu', '−15 triệu', '900 ₫']);
     expect(viecCanBan(null, [], null, CTY)).toEqual([]);
+    expect(khoangTien(6200, 6200)).toBe('6.200 ₫');
+    expect(khoangTien(8.8e8, 1.04e9)).toBe('880 triệu – 1,04 tỷ');
+  });
+
+  it('có thanh tab Home, bảng khoản lớn', async () => {
+    ve();
+    await screen.findByTestId('cau-dau');
+    const tab = screen.getByRole('navigation', { name: 'Home' });
+    expect(within(tab).getAllByRole('link').map((a) => a.textContent)).toEqual(['Hỏi MIMI', 'Tổng quan', 'Agentic AI Space']);
+    expect(within(tab).getByRole('link', { name: 'Tổng quan' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByText('NGUYEN VAN A — tien hang')).toBeTruthy();
+    // Không lặp ô Hỏi MIMI (đã có tab Hỏi MIMI).
+    expect(screen.queryByLabelText('Câu hỏi cho MIMI')).toBeNull();
   });
 });

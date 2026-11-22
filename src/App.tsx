@@ -61,6 +61,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ChungTuPage = lazy(() => import("./pages/ChungTuPage"));
 const FintechPage = lazy(() => import("./pages/FintechPage"));
 const TroLyPage = lazy(() => import("./pages/TroLyPage"));
+const ChuyenVeKhongGian = lazy(() => import("./components/khong-gian/ChuyenVeKhongGian"));
 const ThuVienChungTuPage = lazy(() => import("./pages/ThuVienChungTuPage"));
 const NhacThuePage = lazy(() => import("./pages/NhacThuePage"));
 const ViecCanLamPage = lazy(() => import("./pages/ViecCanLamPage"));
@@ -217,9 +218,8 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 }
               >
                 {/* 29/09/2026: sau đăng nhập vào thẳng Không gian MIMI Trợ lý. Tổng quan cũ = module Dòng tiền (/dashboard/cashflow). */}
-                {/* 22/11/2026: Home = Tổng quan tài chính; trợ lý chat chuyển sang /dashboard/tro-ly. */}
-                <Route index element={<Page noIndex path="/dashboard" title="Tổng quan tài chính — MIMI WALLET" description="Dòng tiền, doanh thu so với ngưỡng, hạn thuế và việc đang chờ bạn quyết — của công ty đang dùng."><TongQuanPage /></Page>} />
-                <Route path="tro-ly" element={<Page noIndex path="/dashboard/tro-ly" title="MIMI Trợ lý — MIMI WALLET" description="Hỏi MIMI về tiền, hoá đơn, thuế và chứng từ của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
+                <Route index element={<Page noIndex path="/dashboard" title="MIMI Trợ lý — MIMI WALLET" description="Hỏi MIMI về tiền, hoá đơn, thuế và chứng từ của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
+                <Route path="tro-ly" element={<ChuyenVeKhongGian />} />
                 <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
                 <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Soát trước khi chi — MIMI WALLET" description="Kiểm một khoản sắp chuyển: đổi số tài khoản, người nhận lạ, số tiền bất thường. MIMI không chuyển tiền thay bạn."><KiemChuyenTienPage /></Page>} />
                 <Route path="chi-ca-nhan" element={<Page noIndex path="/dashboard/chi-ca-nhan" title="Tách chi cá nhân — MIMI WALLET" description="Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi hộ kinh doanh dùng chung một tài khoản ngân hàng."><TachChiCaNhanPage /></Page>} />
@@ -243,6 +243,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route path="doanh-thu-xac-minh" element={<Page noIndex path="/dashboard/doanh-thu-xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Lập báo cáo doanh thu từ sổ MIMI, ghi dấu thời gian công khai và gửi cho người bạn chọn, có hạn, thu hồi được."><DoanhThuXacMinhPage /></Page>} />
                 <Route path="fintech" element={<Page noIndex path="/dashboard/fintech" title="Ngân hàng & thanh toán — MIMI WALLET" description="Liên kết ngân hàng để MIMI đọc tiền vào, tiền ra; nhận tiền bằng mã VietQR."><FintechPage /></Page>} />
                 <Route path="vay-von" element={<Page noIndex path="/dashboard/vay-von" title="Vay vốn — MIMI WALLET" description="Đánh giá sẵn sàng vay từ dòng tiền thật và hồ sơ vay để bạn tự in, tự mang đi. MIMI không cho vay và không gửi hồ sơ cho ai."><TrongApp><VayVonPage /></TrongApp></Page>} />
+                <Route path="tong-quan" element={<Page noIndex path="/dashboard/tong-quan" title="Tổng quan tài chính — MIMI WALLET" description="Dòng tiền 6 tháng, doanh thu so với ngưỡng, hạn thuế, khoản lớn và việc đang chờ bạn quyết — của công ty đang dùng."><TongQuanPage /></Page>} />
                 <Route path="space" element={<Page noIndex path="/dashboard/space" title="Agentic AI Space — MIMI WALLET" description="Giao việc cho agent bằng một câu: agent lập kế hoạch, dùng công cụ, giao việc cho nhau và dừng lại hỏi bạn ở chỗ cần người quyết."><AgenticSpacePage /></Page>} />
                 <Route path="van-phong" element={<Page noIndex path="/dashboard/van-phong" title="Văn phòng kế toán — MIMI WALLET" description="Mọi khách bạn làm sổ ở một chỗ: đèn trạng thái, hạn thuế, tiền vào chờ xác nhận và việc các agent MIMI đang làm."><VanPhongPage /></Page>} />
                 <Route path="co-hoi" element={<Page noIndex path="/dashboard/co-hoi" title="Cơ hội phát triển — MIMI WALLET" description="Dấu hiệu tăng trưởng của doanh nghiệp bạn từ dòng tiền thật và gói ngân hàng phù hợp. Chỉ chia sẻ khi bạn đồng ý và bấm Gửi."><TrongApp><CoHoiPage /></TrongApp></Page>} />

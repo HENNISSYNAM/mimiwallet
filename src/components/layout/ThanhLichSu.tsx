@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { CalendarClock, HelpCircle, MessageCircle, Orbit, History, House, LibraryBig, SlidersHorizontal, Loader2, MoreHorizontal, PanelLeftClose, Puzzle, ScanLine, Search, SquarePen, Trash2, type LucideIcon } from 'lucide-react';
+import { CalendarClock, HelpCircle, Orbit, History, House, LibraryBig, SlidersHorizontal, Loader2, MoreHorizontal, PanelLeftClose, Puzzle, ScanLine, Search, SquarePen, Trash2, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -279,17 +279,16 @@ export default function ThanhBen({ tenCongTy, anhDaiDien }: { tenCongTy: string 
   const [moKho, setMoKho] = useState(false);
   const congCu = useCongCuGhim();
   // Công cụ người dùng tự ghim (Tùy chỉnh) — bỏ những cái đã có sẵn ở nhóm cố định để không lặp biểu tượng.
-  const CO_DINH = new Set(['/dashboard', DUONG_TRO_LY, '/dashboard/space', '/dashboard/thu-vien', '/dashboard/nhac-thue', '/dashboard/ket-noi']);
+  const CO_DINH = new Set([DUONG_TRO_LY, '/dashboard/space', '/dashboard/thu-vien', '/dashboard/nhac-thue', '/dashboard/ket-noi']);
   const daGhim = congCu.ds.map((c) => ({ c, to: duongDanCongCu(c) })).filter((x) => !CO_DINH.has(x.to.split('?')[0]));
   const duongDay = `${pathname}${search}`;
-  const trongThem = !laKhongGianTroLy(pathname) && pathname !== '/dashboard' && pathname !== '/dashboard/space' && pathname !== '/dashboard/thu-vien' && pathname !== '/dashboard/ket-noi';
+  const trongThem = !laKhongGianTroLy(pathname) && pathname !== '/dashboard/space' && pathname !== '/dashboard/thu-vien' && pathname !== '/dashboard/ket-noi';
 
   return (
     <div className="sticky top-0 hidden h-screen shrink-0 lg:flex">
       <nav aria-label={t('kg.ben.thanhCongCu')} className="mimi-thanh-kinh flex w-16 flex-col items-center py-3">
         <div className="flex flex-col items-center gap-1">
-          <NutDi to="/dashboard" ten={t('kg.ben.trangChu')} icon={House} dangMo={pathname === '/dashboard' || pathname === '/dashboard/'} />
-          <NutDi to={DUONG_TRO_LY} ten="Trợ lý MIMI" icon={MessageCircle} dangMo={laKhongGianTroLy(pathname)} />
+          <NutDi to={DUONG_TRO_LY} ten={t('kg.ben.trangChu')} icon={House} dangMo={laKhongGianTroLy(pathname)} />
           <NutDi to="/dashboard/space" ten="Agentic AI Space" icon={Orbit} dangMo={pathname === '/dashboard/space'} />
           <GoiY ten={moLichSu ? t('kg.ben.dongLichSu') : t('kg.ben.lichSu')}>
             <button type="button" onClick={() => doiLichSu(!moLichSu)} aria-label={t('kg.ben.lichSu')} aria-expanded={moLichSu}

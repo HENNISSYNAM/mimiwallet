@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import TroLyPage from './TroLyPage';
 import { datLaiNaoChoTest } from '@/store/naoMimi';
 import type { BoiCanh, TraLoi } from '@/lib/troLy';
@@ -19,6 +19,9 @@ vi.mock('@/lib/goiTacTu', () => ({ goiTacTu: gia.tacTu }));
 const dieuPhoi = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/goiDieuPhoi', () => ({ goiDieuPhoi: dieuPhoi, khoaChongTrungMoi: () => 'nv-khoa-thu-0001' }));
 vi.mock('@/lib/goiChiPhiAi', () => ({ goiChiPhiAi: gia.chiPhiAi }));
+const space = vi.hoisted(() => ({ giao: vi.fn(), bang: vi.fn(async () => ({ viec: [] })), id: vi.fn(async () => 'cty-1') }));
+vi.mock('@/lib/goiSpace', () => ({ giaoViec: space.giao, docBang: space.bang }));
+vi.mock('@/lib/congTyDangDung', async (goc) => ({ ...(await goc<Record<string, unknown>>()), idCongTyDangDung: space.id }));
 vi.mock('@/lib/goiToKhai', () => ({ goiToKhai: gia.toKhai, DUONG_DAN_NOP_TO_KHAI: 'https://dichvucong.gdt.gov.vn/tthc/homelogin' }));
 // Canvas và ảnh động không chạy trong jsdom; cả hai chỉ trang trí.
 vi.mock('@/components/tro-ly/NenVongHat', () => ({ NenVongHat: () => <canvas aria-hidden="true" data-testid="nen" /> }));
@@ -631,4 +634,21 @@ describe('nhiệm vụ web → agent cloud (13/10/2026)', () => {
     const the = await screen.findByRole('region', { name: 'Nhiệm vụ agent: mở trang vanban.chinhphu.vn' });
     await within(the).findByText(/Runtime chưa cấu hình/);
   }, 30_000);
+});
+
+describe('Home kiểu ClickUp (22/11/2026)', () => {
+  it('có thanh tab Home; chế độ "Giao việc cho agent" gửi sang Agentic AI Space, không gọi trợ lý', async () => {
+    space.giao.mockResolvedValue('v-moi');
+    render(<MemoryRouter initialEntries={['/dashboard']}><Routes>
+      <Route path="/dashboard" element={<TroLyPage />} />
+      <Route path="/dashboard/space" element={<p>trang space</p>} />
+    </Routes></MemoryRouter>);
+    expect(screen.getAllByRole('navigation', { name: 'Home' }).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('tab', { name: 'Giao việc cho agent' }));
+    const o = screen.getByPlaceholderText(/Giao việc cho agent/);
+    fireEvent.change(o, { target: { value: 'Chốt quý 4' } });
+    fireEvent.keyDown(o, { key: 'Enter' });
+    await waitFor(() => expect(space.giao).toHaveBeenCalledWith({ company_id: 'cty-1', cau: 'Chốt quý 4' }));
+    expect(await screen.findByText('trang space')).toBeTruthy();
+  });
 });

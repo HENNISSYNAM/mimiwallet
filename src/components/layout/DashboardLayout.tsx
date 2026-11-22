@@ -343,7 +343,7 @@ export default function DashboardLayout() {
             Module mở ngay trong khung của MIMI Trợ lý (29/09/2026): thanh công cụ và ô hỏi MIMI luôn ở đầu trang,
             nên người dùng không phải quay lại trang chính để hỏi hay đổi module.
           */}
-          {!laKhongGianTroLy(location.pathname) && (
+          {!laKhongGianTroLy(location.pathname) && !['/dashboard/tong-quan', '/dashboard/space'].includes(location.pathname) && (
             <div className="mx-auto mb-5 max-w-6xl space-y-2">
               <ThanhCongCuNguCanh />
               <HoiMimiTrongModule />
