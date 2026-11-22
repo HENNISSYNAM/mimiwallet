@@ -44,7 +44,7 @@ const T = {
     dongTien: (t: string) => `30 ngày qua tiền ra nhiều hơn tiền vào ${t}`,
     viec: (n: number) => `${n} hồ sơ việc còn mở`,
     nguong: (t: string) => `Doanh thu có thể trên hoặc dưới ${t} — cần xem tiền vào`,
-    bangChung: 'Bằng chứng', nguon: { quy_tac_noi_dung: 'Quy tắc đọc nội dung chuyển khoản', than_trong: 'Không có dấu hiệu nào — nguyên tắc thận trọng', lich_thue: 'Lịch thuế của khách', so_lieu: 'Số liệu sổ của khách' } as Record<string, string>,
+    bangChung: 'Bằng chứng', nguon: { quy_tac_noi_dung: 'Quy tắc đọc nội dung chuyển khoản', than_trong: 'Không có dấu hiệu nào — nguyên tắc thận trọng', lich_thue: 'Lịch thuế của khách', so_lieu: 'Số liệu sổ của khách', agent_ngoai: 'Agent nối qua MCP' } as Record<string, string>,
     tinCay: { cao: 'tin cậy cao', trung_binh: 'tin cậy trung bình', thap: 'tin cậy thấp' } as Record<string, string>,
     tacDong: 'Tác động lên doanh thu năm', truoc: 'trước', sau: 'sau',
     phia: { tren: 'trên', duoi: 'dưới', chua_chac: 'chưa chắc' } as Record<string, string>,
@@ -69,7 +69,7 @@ const T = {
     dongTien: (t: string) => `${t} more went out than came in over 30 days`,
     viec: (n: number) => `${n} open case file${n === 1 ? '' : 's'}`,
     nguong: (t: string) => `Sales may be above or below ${t} — review incoming money`,
-    bangChung: 'Evidence', nguon: { quy_tac_noi_dung: 'Bank-memo reading rule', than_trong: 'No sign of anything else — prudence rule', lich_thue: 'Client tax calendar', so_lieu: 'Client ledger numbers' } as Record<string, string>,
+    bangChung: 'Evidence', nguon: { quy_tac_noi_dung: 'Bank-memo reading rule', than_trong: 'No sign of anything else — prudence rule', lich_thue: 'Client tax calendar', so_lieu: 'Client ledger numbers', agent_ngoai: 'Agent connected via MCP' } as Record<string, string>,
     tinCay: { cao: 'high confidence', trung_binh: 'medium confidence', thap: 'low confidence' } as Record<string, string>,
     tacDong: 'Effect on this year’s sales', truoc: 'before', sau: 'after',
     phia: { tren: 'above', duoi: 'below', chua_chac: 'unclear' } as Record<string, string>,
@@ -213,7 +213,7 @@ export default function HangDuyetCursor({ hang, khach, n, dangGhi, loi, onChapNh
                       {d.bang_chung.dong.map((b) => (
                         <p key={b.transaction_id} className="font-mono text-[11px] text-foreground">{ngayGon(b.ngay, n)} · {tienGon(b.so_tien, n)} · {b.noi_dung}</p>
                       ))}
-                      <p className="text-muted-foreground">{t.nguon[d.bang_chung.nguon]} · {t.tinCay[d.bang_chung.tin_cay]}{d.bang_chung.ly_do ? ` — “${d.bang_chung.ly_do}”` : ''}</p>
+                      <p className="text-muted-foreground">{t.nguon[d.bang_chung.nguon]}{d.bang_chung.agent_ngoai ? ` (${d.bang_chung.agent_ngoai})` : ''} · {t.tinCay[d.bang_chung.tin_cay]}{d.bang_chung.ly_do ? ` — “${d.bang_chung.ly_do}”` : ''}</p>
                     </div>
                     {d.tac_dong && (
                       <div data-testid="tac-dong">

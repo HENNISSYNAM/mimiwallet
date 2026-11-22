@@ -6,10 +6,11 @@ import type {
 } from '../../supabase/functions/_shared/van-phong/danh-muc.ts';
 
 import type { DeXuat } from '../../supabase/functions/_shared/van-phong/hang-duyet.ts';
+import type { KhoaHien } from '../../supabase/functions/_shared/mcp/ban-ke-toan.ts';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { nhomChapNhan } from '@/components/van-phong/hangDuyet';
 
-export type { AgentDangLam, DanhMucKhach, DeXuat, KhachVanPhong, LyDo, MaLyDo, MucKhach, TenAgentVP };
+export type { AgentDangLam, DanhMucKhach, DeXuat, KhachVanPhong, KhoaHien, LyDo, MaLyDo, MucKhach, TenAgentVP };
 
 /**
  * CHẤP NHẬN đề xuất phân loại tiền vào — qua ĐÚNG đường ghi quyết định của người đã có: edge function `to-khai`, hành động
@@ -38,6 +39,10 @@ export async function chapNhanDeXuat(ds: DeXuat[]): Promise<{ xong: string[]; lo
  * `company_id`; máy chủ tự kiểm thành viên từng công ty. Mọi con số do máy chủ tính, giao diện chỉ hiện.
  */
 export async function goiDanhMucKhach(o: { trang?: number; kich_thuoc?: number } = {}): Promise<DanhMucKhach> {
+  return (await goiVanPhong('danh_muc_khach', o)) as unknown as DanhMucKhach;
+}
+
+async function goiVanPhong(hanhDong: string, o: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new LoiGoiHam('Phiên đăng nhập đã hết. Đăng nhập lại.', 401, {});
   const res = await fetch(`${SUPABASE_URL}/functions/v1/van-phong`, {
@@ -47,11 +52,27 @@ export async function goiDanhMucKhach(o: { trang?: number; kich_thuoc?: number }
       apikey: SUPABASE_PUBLISHABLE_KEY,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ hanh_dong: 'danh_muc_khach', ...o }),
+    body: JSON.stringify({ hanh_dong: hanhDong, ...o }),
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok || body?.error) {
     throw new LoiGoiHam(typeof body.error === 'string' ? body.error : `Lỗi ${res.status}`, res.status, body);
   }
-  return body as unknown as DanhMucKhach;
+  return body;
+}
+
+// ── Khoá MCP (22/11/2026): agent ngoài đọc văn phòng + gửi đề xuất; kế toán vẫn duyệt ──────────────────────────────
+
+/** Địa chỉ MCP server của MIMI. */
+export const DIA_CHI_MCP = `${SUPABASE_URL}/functions/v1/mcp`;
+
+export const dsKhoaMcp = async (): Promise<KhoaHien[]> => ((await goiVanPhong('khoa_mcp_ds')).khoa ?? []) as KhoaHien[];
+
+/** Trả khoá thô ĐÚNG MỘT LẦN — giao diện hiện cho người dùng chép, không lưu. */
+export async function taoKhoaMcp(ten: string): Promise<{ khoa_moi: string; khoa: KhoaHien }> {
+  return (await goiVanPhong('khoa_mcp_tao', { ten })) as unknown as { khoa_moi: string; khoa: KhoaHien };
+}
+
+export async function thuHoiKhoaMcp(id: string): Promise<void> {
+  await goiVanPhong('khoa_mcp_thu_hoi', { id });
 }

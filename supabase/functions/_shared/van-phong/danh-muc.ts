@@ -29,7 +29,8 @@ import { biGioiHan } from '../da-co-so/pham-vi.ts';
 import { laVaiTro, type VaiTro } from '../quyen/vai-tro.ts';
 import { chieuTien, doLonTien } from '../tien/chieu-tien.ts';
 import type { PhanLoaiHoatDong } from '../doanh-thu/theo-hoat-dong.ts';
-import { deXuatDieuHuong, deXuatPhanLoai, soSanhDeXuat, TOI_DA_HANG_DUYET, type DeXuat } from './hang-duyet.ts';
+import { deXuatDieuHuong, deXuatPhanLoai, soSanhDeXuat, TOI_DA_HANG_DUYET, type DeXuat, type YKienNgoai } from './hang-duyet.ts';
+import { LOAI_PHAN_LOAI, type LoaiPhanLoai } from '../doanh-thu/phan-loai.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -147,9 +148,9 @@ const dauNgayVN = (ymd: string) => new Date(Date.parse(`${ymd}T00:00:00Z`) - GMT
 
 // ── Đọc ─────────────────────────────────────────────────────────────────────
 
-interface ThanhVien { company_id: string; ten: string; vai_tro: VaiTro; co_so_id: string | null; la_demo: boolean }
+export interface ThanhVien { company_id: string; ten: string; vai_tro: VaiTro; co_so_id: string | null; la_demo: boolean }
 
-async function docThanhVien(db: Db, userId: string): Promise<{ duoc: ThanhVien[]; gioiHan: number; khongLamSo: number }> {
+export async function docThanhVien(db: Db, userId: string): Promise<{ duoc: ThanhVien[]; gioiHan: number; khongLamSo: number }> {
   const { data, error } = await db.from('thanh_vien_cong_ty')
     .select('company_id, vai_tro, co_so_id, tao_luc, companies!inner(id, name, la_demo)')
     .eq('user_id', userId).order('tao_luc', { ascending: true }).limit(TOI_DA_THANH_VIEN);
@@ -318,6 +319,22 @@ export function phanCongAgent(khach: KhachVanPhong[], suKien: SuKienAgent[]): Ag
 
 // ── Cửa chính ─────────────────────────────────────────────────────────────
 
+/** Gom ý kiến agent ngoài theo công ty → transaction_id; dòng đầu (mới nhất) thắng. Thuần. */
+export function yKienTheoCongTy(ds: Row[] | null): Map<string, Map<string, YKienNgoai>> {
+  const ra = new Map<string, Map<string, YKienNgoai>>();
+  for (const r of ds ?? []) {
+    if (!(LOAI_PHAN_LOAI as readonly string[]).includes(r.loai)) continue;
+    const k = Array.isArray(r.khoa_mcp) ? r.khoa_mcp[0] : r.khoa_mcp;
+    // Ý kiến từ khoá MCP đã thu hồi không còn giá trị.
+    if (r.nguon !== 'agent_mimi' && (!k || k.thu_hoi_luc)) continue;
+    const cty = String(r.company_id), gd = String(r.transaction_id);
+    const m = ra.get(cty) ?? new Map<string, YKienNgoai>();
+    if (!m.has(gd)) m.set(gd, { loai: r.loai as LoaiPhanLoai, ly_do: String(r.ly_do ?? ''), ten_agent: String((r.nguon === 'agent_mimi' ? r.ten_agent : k?.ten) ?? 'Agent') });
+    ra.set(cty, m);
+  }
+  return ra;
+}
+
 export interface TuyChonDanhMuc { trang?: number; kichThuoc?: number; bayGio?: number }
 
 export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc = {}): Promise<DanhMucKhach> {
@@ -334,7 +351,7 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
   const dsId = [...ids];
 
   const truoc24h = new Date(bayGio - 86_400_000).toISOString();
-  const [viec, nhiemVu, thongBao, phanLoai, banHang] = dsId.length ? await Promise.all([
+  const [viec, nhiemVu, thongBao, phanLoai, banHang, yKienNgoai] = dsId.length ? await Promise.all([
     docTheoTap('hồ sơ việc', ids, db.from('ho_so_viec').select('id, company_id, trang_thai, muc_do')
       .in('company_id', dsId).in('trang_thai', ['mo', 'dang_xu_ly', 'cho_ben_ngoai'])
       .order('id', { ascending: true }).limit(TRAN_HOAT_DONG)),
@@ -351,7 +368,12 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
     docTheoTap('bán tại quầy', ids, db.from('ban_hang_pos').select('id, company_id, amount, status, sold_at')
       .in('company_id', dsId).eq('status', 'paid').gte('sold_at', dauNgayVN(homNay))
       .order('sold_at', { ascending: false }).limit(TRAN_HOAT_DONG), true),
-  ]) : [[], [], [], [], [] as Row[]];
+    // Ý kiến của agent ngoài (MCP), mới trước. Bảng chưa có (chưa chạy migration) thì bỏ qua.
+    docTheoTap('đề xuất của agent ngoài', ids, db.from('de_xuat_agent_ngoai')
+      .select('company_id, transaction_id, loai, ly_do, tao_luc, nguon, ten_agent, khoa_mcp(ten, thu_hoi_luc)')
+      .in('company_id', dsId)
+      .order('tao_luc', { ascending: false }).limit(TRAN_HOAT_DONG), true),
+  ]) : [[], [], [], [], [] as Row[], [] as Row[]];
 
   const theoCty = <T>(ds: Row[] | null, f: (r: Row) => T) => {
     const m = new Map<string, T[]>();
@@ -363,6 +385,7 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
   const tbTheo = theoCty(thongBao, (r) => String(r.tao_luc));
   const plTheo = theoCty(phanLoai, (r) => String(r.at));
   const bhTheo = theoCty(banHang, (r) => ({ tien: so(r.amount), luc: String(r.sold_at) }));
+  const ngoaiTheo = yKienTheoCongTy(yKienNgoai);
 
   const phanLoaiTheo = new Map<string, DeXuat[]>();
   const khach = await songSong(tinh, SONG_SONG, async (tv): Promise<KhachVanPhong> => {
@@ -385,7 +408,7 @@ export async function docDanhMucKhach(db: Db, userId: string, o: TuyChonDanhMuc 
     try {
       const { s, lich, giaoDich, noiBo, xacNhan } = await docMotKhach(db, tv, nam, homNay);
       const dc = s.do_chac_chan;
-      phanLoaiTheo.set(id, deXuatPhanLoai({ company_id: id, ten: tv.ten, vai_tro: tv.vai_tro, nam, giaoDich, xacNhan, noiBo, s, dc }));
+      phanLoaiTheo.set(id, deXuatPhanLoai({ company_id: id, ten: tv.ten, vai_tro: tv.vai_tro, nam, giaoDich, xacNhan, noiBo, s, dc, ngoai: ngoaiTheo.get(id) }));
       const nguong = dc.nguong.map((n) => ({ ma: n.ma, gia_tri: n.gia_tri, phia: n.phia }));
       goc.doanh_thu = {
         nam, uoc_tinh: so(dc.gia_tri), can_duoi: so(dc.can_duoi), can_tren: so(dc.can_tren), trang_thai: dc.trang_thai, nguong,

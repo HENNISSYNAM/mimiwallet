@@ -84,6 +84,7 @@ const XacMinhCongKhaiPage = lazy(() => import("./pages/XacMinhCongKhaiPage"));
 const VayVonPage = lazy(() => import("./pages/VayVonPage"));
 // Văn phòng kế toán (11/11/2026): danh mục khách + văn phòng 3D; cảnh 3D tự tải lười riêng.
 const VanPhongPage = lazy(() => import("./pages/VanPhongPage"));
+const AgenticSpacePage = lazy(() => import("./pages/AgenticSpacePage"));
 const CoHoiPage = lazy(() => import("./pages/CoHoiPage"));
 // Bán tại quầy (10/11/2026): toàn màn hình, ngoài DashboardLayout — máy POS 5–8 inch không có chỗ cho thanh bên.
 
@@ -241,6 +242,7 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route path="doanh-thu-xac-minh" element={<Page noIndex path="/dashboard/doanh-thu-xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Lập báo cáo doanh thu từ sổ MIMI, ghi dấu thời gian công khai và gửi cho người bạn chọn, có hạn, thu hồi được."><DoanhThuXacMinhPage /></Page>} />
                 <Route path="fintech" element={<Page noIndex path="/dashboard/fintech" title="Ngân hàng & thanh toán — MIMI WALLET" description="Liên kết ngân hàng để MIMI đọc tiền vào, tiền ra; nhận tiền bằng mã VietQR."><FintechPage /></Page>} />
                 <Route path="vay-von" element={<Page noIndex path="/dashboard/vay-von" title="Vay vốn — MIMI WALLET" description="Đánh giá sẵn sàng vay từ dòng tiền thật và hồ sơ vay để bạn tự in, tự mang đi. MIMI không cho vay và không gửi hồ sơ cho ai."><TrongApp><VayVonPage /></TrongApp></Page>} />
+                <Route path="space" element={<Page noIndex path="/dashboard/space" title="Agentic AI Space — MIMI WALLET" description="Giao việc cho agent bằng một câu: agent lập kế hoạch, dùng công cụ, giao việc cho nhau và dừng lại hỏi bạn ở chỗ cần người quyết."><AgenticSpacePage /></Page>} />
                 <Route path="van-phong" element={<Page noIndex path="/dashboard/van-phong" title="Văn phòng kế toán — MIMI WALLET" description="Mọi khách bạn làm sổ ở một chỗ: đèn trạng thái, hạn thuế, tiền vào chờ xác nhận và việc các agent MIMI đang làm."><VanPhongPage /></Page>} />
                 <Route path="co-hoi" element={<Page noIndex path="/dashboard/co-hoi" title="Cơ hội phát triển — MIMI WALLET" description="Dấu hiệu tăng trưởng của doanh nghiệp bạn từ dòng tiền thật và gói ngân hàng phù hợp. Chỉ chia sẻ khi bạn đồng ý và bấm Gửi."><TrongApp><CoHoiPage /></TrongApp></Page>} />
               </Route>

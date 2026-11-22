@@ -18,6 +18,7 @@ import { coWebGL, giamChuyenDong } from '@/components/van-phong/kiemMay';
 import { BangKhach, DanhSach, LuoiBan, MeoNho } from '@/components/van-phong/CacCheDo';
 import { DUONG, type LoaiHanhDong } from '@/components/van-phong/hanhDong';
 import HangDuyetCursor from '@/components/van-phong/HangDuyetCursor';
+import KetNoiMcp from '@/components/van-phong/KetNoiMcp';
 import { useNangLuong } from '@/components/mimi/ThanhNangLuong';
 import { AGENT_CUA, conLai, mauBan, viTriAgent } from '@/components/van-phong/hangDuyet';
 
@@ -213,6 +214,8 @@ export default function VanPhongPage() {
 
       {du && du.loai_tru.gioi_han_co_so > 0 && <p className="text-xs text-muted-foreground">{c.loaiTruCoSo(du.loai_tru.gioi_han_co_so)}</p>}
       {du && du.loai_tru.vuot_tran > 0 && <p className="text-xs text-muted-foreground">{c.vuotTran(du.loai_tru.vuot_tran)}</p>}
+
+      <KetNoiMcp n={n} />
 
       {kChon && <BangKhach k={kChon} agent={agent} n={n} onDong={() => setChon(null)} diToi={diToi} />}
     </div>

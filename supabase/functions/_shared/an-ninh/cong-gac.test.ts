@@ -19,6 +19,7 @@ const CO_CHE: Record<string, RegExp> = {
   bi_mat_cron: /x-cron-secret/,
   khoa_webhook: /safeEqual\(presented/,
   khoa_agent: /goiTacTu\(/,
+  khoa_mcp: /xacThucKhoaMcp\(/,
   ma_nap: /x-nap-token/,
   chuyen_tiep_phien: /Authorization: auth/,
   /*
@@ -34,7 +35,7 @@ const TAT_JWT_DUOC_PHEP: Record<string, string> = {
   'bank-webhook': 'SePay gửi khoá riêng (Apikey), không có JWT',
   'cas-webhook': 'Cas gửi khoá trong URL, không có JWT',
   'tac-tu': 'agent gọi bằng khoá agent',
-  mcp: 'client MCP gọi bằng khoá agent',
+  mcp: 'client MCP gọi bằng khoá MCP của kế toán (22/11/2026: bàn kế toán)',
   'nap-kho-luat': 'bộ nạp kho dùng mã nạp riêng',
   'ai-trung-gian': 'máy chủ MIMI gọi sang dự án Lovable Cloud bằng mã bí mật chung',
 };
@@ -55,7 +56,7 @@ describe('cổng gác: edge function', () => {
   });
 
   it('chỗ nhận khoá từ bên ngoài đều có chống dò khoá', () => {
-    for (const ten of ['cas-webhook', 'bank-webhook', 'tac-tu', 'nap-kho-luat']) {
+    for (const ten of ['cas-webhook', 'bank-webhook', 'tac-tu', 'nap-kho-luat', 'mcp']) {
       const ma = readFileSync(join(FN, ten, 'index.ts'), 'utf8');
       expect(ma, ten).toMatch(/daBiKhoaViSai\(/);
       expect(ma, ten).toMatch(/ghiLanSai\(/);

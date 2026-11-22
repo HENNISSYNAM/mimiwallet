@@ -12,6 +12,9 @@
  *     khoản MIMI đã tự phân loại (`confirmed_role = mimi_tu_dong`) mà chưa người nào ký nhận.
  *   - HẠN THUẾ, TỜ KHAI SẴN SÀNG, DÒNG TIỀN, HỒ SƠ VIỆC, NGƯỠNG — chỉ dẫn đường tới trang làm việc đó.
  *
+ * AGENT NGOÀI (22/11/2026): agent của kế toán nối qua MCP gửi ý kiến (`de_xuat_agent_ngoai`). Ý kiến đó thay gợi ý của
+ * quy tắc cho khoản chưa người nào quyết, ghi rõ nguồn `agent_ngoai` + tên agent — vẫn chỉ là đề xuất, người duyệt.
+ *
  * Duyệt hàng loạt CHỈ cho đề xuất không thể làm giảm doanh thu (xác nhận là tiền bán hàng). Mọi đề xuất loại khỏi
  * doanh thu phải duyệt từng cái. Hàm thuần, tất định.
  */
@@ -57,8 +60,10 @@ export interface DeXuat {
   } | null;
   bang_chung: {
     dong: DongBangChung[];
-    nguon: 'quy_tac_noi_dung' | 'than_trong' | 'lich_thue' | 'so_lieu';
+    nguon: 'quy_tac_noi_dung' | 'than_trong' | 'lich_thue' | 'so_lieu' | 'agent_ngoai';
     ly_do: string | null;
+    /** Tên khoá MCP của agent đã gửi ý kiến (chỉ khi nguon = agent_ngoai). */
+    agent_ngoai?: string;
     tin_cay: 'cao' | 'trung_binh' | 'thap';
   };
   tac_dong: {
@@ -104,7 +109,11 @@ export interface DauVaoPhanLoai {
   noiBo: Set<string>;
   s: Pick<SoLieuDoanhThu, 'uoc_tinh' | 'chua_ro' | 'am_bat_thuong'>;
   dc: KetQuaDoChacChan;
+  /** Ý kiến mới nhất của agent ngoài theo transaction_id. */
+  ngoai?: Map<string, YKienNgoai>;
 }
+
+export interface YKienNgoai { loai: LoaiPhanLoai; ly_do: string; ten_agent: string }
 
 /** Đề xuất phân loại tiền vào của MỘT khách, nặng trước, tối đa `TOI_DA_PHAN_LOAI_MOI_KHACH`. */
 export function deXuatPhanLoai(d: DauVaoPhanLoai): DeXuat[] {
@@ -126,7 +135,8 @@ export function deXuatPhanLoai(d: DauVaoPhanLoai): DeXuat[] {
     const nguoiQuyet = !!x && !mayQuyet && (x.revenue_effect === 'include' || x.revenue_effect === 'exclude');
     if (nguoiQuyet) continue;
     const g = goiYPhanLoai({ merchant_name: t.merchant_name ?? null, counter_account_name: t.counter_account_name ?? null, payment_reference: t.payment_reference ?? null });
-    const deXuat: LoaiPhanLoai = mayQuyet ? (x!.confirmed_type as LoaiPhanLoai) : (g?.loai ?? 'business_revenue');
+    const yk = d.ngoai?.get(id);
+    const deXuat: LoaiPhanLoai = yk ? yk.loai : mayQuyet ? (x!.confirmed_type as LoaiPhanLoai) : (g?.loai ?? 'business_revenue');
     const hl = anhHuong(deXuat);
     const chuaRo = !x || x.revenue_effect === 'pending';
     const sau = khoangSau(d.s, d.dc, a, hl, chuaRo);
@@ -144,13 +154,19 @@ export function deXuatPhanLoai(d: DauVaoPhanLoai): DeXuat[] {
       co_the_duyet: duyet,
       duyet_hang_loat: duyet && hl === 'include',
       phan_loai: { transaction_id: id, de_xuat: deXuat, hien_tai: x ? (x.confirmed_type as LoaiPhanLoai) ?? null : null, may_da_quyet: mayQuyet, anh_huong: hl },
-      bang_chung: {
-        dong: [{ transaction_id: id, ngay: ngayVN(t.transaction_date), so_tien: a, noi_dung: noiDung(t) }],
-        nguon: g ? 'quy_tac_noi_dung' : 'than_trong',
-        ly_do: g?.ly_do ?? LY_DO_THAN_TRONG,
-        // Quy tắc đọc thấy dấu hiệu rõ trong nội dung: trung bình (máy đọc chữ, có thể nhầm). Không dấu hiệu: thấp.
-        tin_cay: g ? 'trung_binh' : 'thap',
-      },
+      bang_chung: yk
+        ? {
+          dong: [{ transaction_id: id, ngay: ngayVN(t.transaction_date), so_tien: a, noi_dung: noiDung(t) }],
+          // Agent ngoài là mô hình đọc cùng bằng chứng: không bao giờ "cao" — kế toán vẫn phải xem.
+          nguon: 'agent_ngoai', ly_do: yk.ly_do, tin_cay: 'trung_binh', agent_ngoai: yk.ten_agent,
+        }
+        : {
+          dong: [{ transaction_id: id, ngay: ngayVN(t.transaction_date), so_tien: a, noi_dung: noiDung(t) }],
+          nguon: g ? 'quy_tac_noi_dung' : 'than_trong',
+          ly_do: g?.ly_do ?? LY_DO_THAN_TRONG,
+          // Quy tắc đọc thấy dấu hiệu rõ trong nội dung: trung bình (máy đọc chữ, có thể nhầm). Không dấu hiệu: thấp.
+          tin_cay: g ? 'trung_binh' : 'thap',
+        },
       tac_dong: { truoc, sau, nguong: ng, doi_phia: doiPhia },
       so: a, ngay: ngayVN(t.transaction_date), ten_viec: null,
     });
