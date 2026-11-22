@@ -7,6 +7,7 @@ import { docDanhMucKhach, type KhachVanPhong } from '../van-phong/danh-muc.ts';
 import type { DeXuat } from '../van-phong/hang-duyet.ts';
 import type { NutHien } from './do-thi.ts';
 import type { ThucThi } from './chay.ts';
+import { goiKetNoi, type KetNoi } from './ket-noi.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
@@ -18,7 +19,8 @@ const SAN_SANG: Record<string, string> = {
   can_xac_minh: 'cần xác minh nghĩa vụ', khong_co_viec: 'chưa có kỳ phải khai',
 };
 
-export function taoThucThi(db: Db, userId: string, companyId: string, cauGoc: string, hoi?: HoiMoHinh): ThucThi {
+export function taoThucThi(db: Db, userId: string, companyId: string, cauGoc: string, hoi?: HoiMoHinh,
+  ketNoi: Map<string, KetNoi> = new Map(), khoaRieng?: string): ThucThi {
   let du: Promise<{ k: KhachVanPhong | null; hang: DeXuat[] }> | null = null;
   const doc = () => (du ??= (async () => {
     const dm = await docDanhMucKhach(db, userId, { kichThuoc: 50 });
@@ -64,8 +66,12 @@ export function taoThucThi(db: Db, userId: string, companyId: string, cauGoc: st
         if (!r.text) throw new Error('mô hình không trả lời');
         return `${r.text.trim().slice(0, 520)}\n(Soạn bởi ${r.cong})`;
       }
-      default:
-        throw new Error(`công cụ "${n.cong_cu}" chưa nối vào workflow`);
+      default: {
+        // Công cụ người dùng đã dán endpoint / API key / MCP ngay tại bước → gọi thật.
+        const k = n.cong_cu ? ketNoi.get(n.cong_cu) : undefined;
+        if (k) return await goiKetNoi(k, n, cauGoc, khoaRieng);
+        throw new Error(`công cụ "${n.cong_cu}" chưa kết nối`);
+      }
     }
   };
 }

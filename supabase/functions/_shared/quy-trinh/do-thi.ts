@@ -47,13 +47,69 @@ export interface Nut {
   ai_duoc: boolean;
   tac_dong: TacDong;
   cong_cu: string | null;
+  // Trường kỹ thuật chuẩn nghề (22/11/2026) — có thì hiện và kiểm, thiếu thì `kiemChuan` nhắc.
+  vai_tro?: string;
+  dau_vao?: string;
+  dau_ra?: string;
+  kiem_soat?: 'phong_ngua' | 'phat_hien' | null;
+  bang_chung?: string;
+  sla_gio?: number | null;
+  /** Mèo người dùng tự chọn cho bước agent (để trống: MIMI chọn theo việc). */
+  meo_chon?: Meo;
 }
-export interface Canh { tu: string; den: string }
+/** Nhãn nhánh sau bước duyệt: "dat" (duyệt) / "can_sua" (từ chối → trả lại sửa). Không nhãn: luôn đi. */
+export type NhanhCanh = 'dat' | 'can_sua';
+export interface Canh { tu: string; den: string; nhanh?: NhanhCanh }
 export interface DoThi { nut: Nut[]; canh: Canh[] }
+
+// ── Đội mèo agent (22/11/2026): mỗi bước agent do MỘT con mèo cụ thể đảm nhận; người dùng chọn được ──────────
+export const MEO = [
+  'phan_loai', 'thue', 'dong_tien', 'ho_so', 'bao_ve', 'doi_soat', 'cong_no', 'mua_hang', 'luong', 'tuan_thu', 'bao_cao', 'thu_ky',
+] as const;
+export type Meo = (typeof MEO)[number];
+export const laMeo = (v: unknown): v is Meo => (MEO as readonly string[]).includes(String(v));
+export const TEN_MEO: Record<Meo, string> = {
+  phan_loai: 'Mèo Phân loại', thue: 'Mèo Thuế', dong_tien: 'Mèo Dòng tiền', ho_so: 'Mèo Hồ sơ', bao_ve: 'Mèo Bảo vệ',
+  doi_soat: 'Mèo Đối soát', cong_no: 'Mèo Công nợ', mua_hang: 'Mèo Mua hàng', luong: 'Mèo Lương', tuan_thu: 'Mèo Tuân thủ',
+  bao_cao: 'Mèo Báo cáo', thu_ky: 'Mèo Thư ký',
+};
+export const VIEC_MEO: Record<Meo, string> = {
+  phan_loai: 'Tách tiền vào: doanh thu hay không', thue: 'Lịch thuế, tờ khai, quyết toán', dong_tien: 'Lệnh chi, ngân quỹ, dòng tiền',
+  ho_so: 'Giấy tờ, văn bản, hồ sơ', bao_ve: 'An ninh, chống giả mạo, sự cố', doi_soat: 'Đối chiếu ngân hàng, khớp sổ',
+  cong_no: 'Phải thu, nhắc nợ, đối chiếu công nợ', mua_hang: 'Đơn mua hàng, nhà cung cấp, khớp 3 bên', luong: 'Chấm công, bảng lương, bảo hiểm',
+  tuan_thu: 'KYC, phòng chống rửa tiền, kiểm soát nội bộ', bao_cao: 'Báo cáo tài chính, phân tích biến động', thu_ky: 'Kế hoạch, nhắc hạn, biên bản',
+};
+const MEO_THEO_CONG_CU: Record<string, Meo> = {
+  doc_sao_ke: 'doi_soat', phan_loai_tien_vao: 'phan_loai', hang_duyet: 'phan_loai',
+  lich_thue: 'thue', kiem_to_khai: 'thue', tra_cuu_mst: 'tuan_thu',
+  soan_lenh_chi_vietqr: 'dong_tien', doi_soat_sao_ke: 'doi_soat', core_banking: 'dong_tien',
+  soan_van_ban: 'ho_so', doc_chung_tu: 'ho_so', tim_khoan_thieu_chung_tu: 'ho_so', thu_vien: 'ho_so',
+  erp: 'mua_hang', hoa_don: 'cong_no', gmail: 'thu_ky', hrm: 'luong', siem: 'bao_ve', quan_tri_tai_khoan: 'bao_ve',
+};
+const MEO_THEO_TU: [RegExp, Meo][] = [
+  [/bao mat|lua dao|xac minh|kiem nguoi nhan|bat thuong|su co|quyen truy cap/, 'bao_ve'],
+  [/doi soat|doi chieu|khop/, 'doi_soat'], [/cong no|nhac no|phai thu|thu no/, 'cong_no'],
+  [/mua hang|nha cung cap|don hang/, 'mua_hang'], [/luong|cham cong|bao hiem/, 'luong'],
+  [/kyc|tham dinh|rua tien|tuan thu|rui ro/, 'tuan_thu'], [/bao cao|bien dong|phan tich/, 'bao_cao'],
+  [/ke hoach|nhac han|bien ban|theo doi/, 'thu_ky'], [/thue|to khai|quyet toan/, 'thue'], [/lenh chi|chuyen tien|ngan quy/, 'dong_tien'],
+  [/phan loai|tien vao/, 'phan_loai'],
+];
+const MEO_THEO_LINH_VUC: Record<LinhVuc, Meo> = {
+  tai_chinh: 'phan_loai', thanh_toan: 'dong_tien', bao_mat: 'bao_ve', ho_so: 'ho_so', nhan_su: 'luong', cong_viec: 'thu_ky',
+};
+const boDauMeo = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+/** Con mèo đảm nhận một bước agent: người dùng chọn → theo tên việc → theo công cụ → theo lĩnh vực. */
+export function meoCua(n: Pick<Nut, 'cong_cu' | 'ten'> & { meo_chon?: Meo }, lv: LinhVuc): Meo {
+  if (n.meo_chon && laMeo(n.meo_chon)) return n.meo_chon;
+  const t = boDauMeo(n.ten);
+  for (const [re, m] of MEO_THEO_TU) if (re.test(t)) return m;
+  if (n.cong_cu && MEO_THEO_CONG_CU[n.cong_cu]) return MEO_THEO_CONG_CU[n.cong_cu];
+  return MEO_THEO_LINH_VUC[lv];
+}
 
 export type NguoiLam = 'agent' | 'nguoi';
 export type Nhan = 'tu_dong' | 'can_ket_noi' | 'nguoi_lam';
-export interface NutHien extends Nut { lam: NguoiLam; nhan: Nhan; them_boi_luat?: boolean }
+export interface NutHien extends Nut { lam: NguoiLam; nhan: Nhan; them_boi_luat?: boolean; meo?: Meo }
 export interface DoThiHien { nut: NutHien[]; canh: Canh[] }
 
 export const TOI_DA_NUT = 16;
@@ -83,6 +139,7 @@ export function chuanHoa(tho: unknown): DoThi {
       id, loai, ten, mo_ta: String(r.mo_ta ?? '').replace(/\s+/g, ' ').trim().slice(0, 200), tac_dong: tac, cong_cu: cc,
       // Chuyển tiền: MIMI không bao giờ làm → không phải việc của agent, ở mọi phương án.
       ai_duoc: tac === 'chuyen_tien' ? false : loai === 'duyet' ? false : r.ai_duoc !== false && loai !== 'nguoi',
+      ...truongKyThuat(r),
     });
   }
   if (!nut.length) throw new LoiDoThi('Đồ thị không có bước hợp lệ.');
@@ -93,8 +150,14 @@ export function chuanHoa(tho: unknown): DoThi {
 
   const ids = new Set(nut.map((n) => n.id));
   let canh: Canh[] = (Array.isArray(d.canh) ? d.canh : [])
-    .map((c) => ({ tu: String((c as Canh).tu ?? ''), den: String((c as Canh).den ?? '') }))
+    .map((c) => {
+      const x = c as Canh;
+      const nh = x.nhanh === 'dat' || x.nhanh === 'can_sua' ? x.nhanh : undefined;
+      return { tu: String(x.tu ?? ''), den: String(x.den ?? ''), ...(nh ? { nhanh: nh } : {}) };
+    })
     .filter((c) => ids.has(c.tu) && ids.has(c.den) && c.tu !== c.den);
+  // Nhãn nhánh chỉ có nghĩa sau bước duyệt.
+  for (const c of canh) if (c.nhanh && nut.find((n) => n.id === c.tu)?.loai !== 'duyet') delete c.nhanh;
   canh = [...new Map(canh.map((c) => [`${c.tu}>${c.den}`, c])).values()];
   // Thiếu cạnh → nối thẳng theo thứ tự.
   if (!canh.length) canh = nut.slice(1).map((n, i) => ({ tu: nut[i].id, den: n.id }));
@@ -103,6 +166,21 @@ export function chuanHoa(tho: unknown): DoThi {
   const dau = nut.find((n) => n.loai === 'kich_hoat')!.id;
   for (const n of nut) if (n.id !== dau && !canh.some((c) => c.den === n.id)) canh.push({ tu: dau, den: n.id });
   return { nut, canh };
+}
+
+const chu = (v: unknown, n: number) => { const s = String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n); return s || undefined; };
+function truongKyThuat(r: Record<string, unknown>): Partial<Nut> {
+  const o: Partial<Nut> = {};
+  const vt = chu(r.vai_tro, 60), vao = chu(r.dau_vao, 160), ra = chu(r.dau_ra, 160), bc = chu(r.bang_chung, 160);
+  if (vt) o.vai_tro = vt;
+  if (vao) o.dau_vao = vao;
+  if (ra) o.dau_ra = ra;
+  if (bc) o.bang_chung = bc;
+  if (r.kiem_soat === 'phong_ngua' || r.kiem_soat === 'phat_hien') o.kiem_soat = r.kiem_soat;
+  const sla = Number(r.sla_gio);
+  if (Number.isFinite(sla) && sla > 0 && sla <= 720) o.sla_gio = Math.round(sla);
+  if (laMeo(r.meo_chon)) o.meo_chon = r.meo_chon;
+  return o;
 }
 
 function coChuTrinh(nut: Nut[], canh: Canh[]): boolean {
@@ -151,14 +229,15 @@ function chenDuyet(d: { nut: NutHien[]; canh: Canh[] }, id: string, ten: string)
 }
 
 /** Đồ thị hiển thị cho một phương án: ai làm từng bước, nhãn, và cổng duyệt luật bắt buộc. */
-export function apPhuongAn(goc: DoThi, pa: PhuongAn): DoThiHien {
+export function apPhuongAn(goc: DoThi, pa: PhuongAn, o: { daKetNoi?: Set<string>; linhVuc?: LinhVuc } = {}): DoThiHien {
+  const coSan = (cc: string) => CO_SAN.has(cc) || !!o.daKetNoi?.has(cc);
   const d: { nut: NutHien[]; canh: Canh[] } = {
     nut: goc.nut.map((n) => {
       // "Người làm": không agent nào. Hai phương án còn lại: agent làm mọi bước làm được; khác nhau ở cổng duyệt (dưới).
       const agentLam = n.ai_duoc && n.loai !== 'kich_hoat' && pa !== 'nguoi';
       const lam: NguoiLam = n.loai === 'kich_hoat' ? 'agent' : agentLam ? 'agent' : 'nguoi';
-      const nhan: Nhan = lam === 'nguoi' ? 'nguoi_lam' : n.cong_cu && !CO_SAN.has(n.cong_cu) ? 'can_ket_noi' : 'tu_dong';
-      return { ...n, lam, nhan };
+      const nhan: Nhan = lam === 'nguoi' ? 'nguoi_lam' : n.cong_cu && !coSan(n.cong_cu) ? 'can_ket_noi' : 'tu_dong';
+      return { ...n, lam, nhan, ...(lam === 'agent' && n.loai !== 'kich_hoat' ? { meo: meoCua(n, o.linhVuc ?? 'cong_viec') } : {}) };
     }),
     canh: goc.canh.map((c) => ({ ...c })),
   };
@@ -196,7 +275,7 @@ export interface GanTaiNguyen { email?: string }
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,24}$/i;
 export const laEmail = (s: unknown): s is string => typeof s === 'string' && s.length <= 254 && EMAIL_RE.test(s.trim());
 
-export function taiNguyenCan(d: DoThiHien, gan: Record<string, GanTaiNguyen> = {}): TaiNguyenCan[] {
+export function taiNguyenCan(d: DoThiHien, gan: Record<string, GanTaiNguyen> = {}, daKetNoi: Set<string> = new Set()): TaiNguyenCan[] {
   const ra: TaiNguyenCan[] = [];
   for (const n of d.nut) {
     if (n.loai === 'kich_hoat') continue;
@@ -205,7 +284,7 @@ export function taiNguyenCan(d: DoThiHien, gan: Record<string, GanTaiNguyen> = {
       ra.push({ nut_id: n.id, kieu: 'gmail', ten_buoc: n.ten, can: e ? e : 'Gmail người phụ trách', co_san: laEmail(e) });
     } else if (n.cong_cu) {
       const kieu: KieuTaiNguyen = n.loai === 'mcp' ? 'mcp' : 'api';
-      ra.push({ nut_id: n.id, kieu, ten_buoc: n.ten, can: n.cong_cu, co_san: n.loai !== 'mcp' && CO_SAN.has(n.cong_cu) });
+      ra.push({ nut_id: n.id, kieu, ten_buoc: n.ten, can: n.cong_cu, co_san: daKetNoi.has(n.cong_cu) || (n.loai !== 'mcp' && CO_SAN.has(n.cong_cu)) });
     }
   }
   return ra;

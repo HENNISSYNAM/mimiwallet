@@ -22,8 +22,9 @@ import { cauHoiAi, docTraLoiAi, LOI_DAN_AI } from "../_shared/space/ai-phan-loai
 import type { CongCuAgent } from "../_shared/space/dong-co.ts";
 import { danhDauXong, docBangViec, docTinViec, huyViec, LoiSpace, taoViecSpace, tiepTucViec } from "../_shared/space/kho.ts";
 import {
-  chayQuyTrinh, doiPhuongAn, dsQuyTrinh, ganEmail, LoiQuyTrinh, suaQuyTrinh, taoQuyTrinh, xemQuyTrinh, xuLyBuoc,
+  chayQuyTrinh, doiPhuongAn, dsQuyTrinh, ganEmail, ganKetNoi, LoiQuyTrinh, suaQuyTrinh, suaTay, taoQuyTrinh, THU_VIEN_GON, xemQuyTrinh, xuLyBuoc,
 } from "../_shared/quy-trinh/kho.ts";
+import type { KetNoi } from "../_shared/quy-trinh/ket-noi.ts";
 import { taoThucThi, type HoiMoHinh } from "../_shared/quy-trinh/thuc-thi.ts";
 
 const corsHeaders = {
@@ -126,7 +127,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
     const hanhDong = String(body.hanh_dong ?? "");
-    const ghi = ["tao", "tiep_tuc", "xong", "huy", "qt_tao", "qt_sua", "qt_pa", "qt_gan", "qt_chay", "qt_buoc"].includes(hanhDong);
+    const ghi = ["tao", "tiep_tuc", "xong", "huy", "qt_tao", "qt_sua", "qt_pa", "qt_gan", "qt_chay", "qt_buoc", "qt_sua_tay", "qt_ket_noi"].includes(hanhDong);
     if (!(await duocGoi(db, user.id, ghi
       ? [{ hanh_dong: "space_ghi_phut", cua_so_giay: 60, toi_da: 12 }, { hanh_dong: "space_ghi_gio", cua_so_giay: 3600, toi_da: 200 }]
       : [{ hanh_dong: "space_doc_phut", cua_so_giay: 60, toi_da: 30 }]))) return qua429(corsHeaders);
@@ -135,7 +136,8 @@ Deno.serve(async (req) => {
     const cc = taoCongCu(db);
     const hoiCho = taoHoi(db);
     // deno-lint-ignore no-explicit-any
-    const thucThiCho = (r: Record<string, any>) => taoThucThi(db, user.id, String(r.company_id), String(r.cau_goc ?? ""), hoiCho(String(r.company_id)));
+    const thucThiCho = (r: Record<string, any>, kn: Map<string, KetNoi>) =>
+      taoThucThi(db, user.id, String(r.company_id), String(r.cau_goc ?? ""), hoiCho(String(r.company_id)), kn, Deno.env.get("PQC_KYC_PRIVATE_KEY"));
     switch (hanhDong) {
       case "bang": return json(await docBangViec(db, user.id));
       case "tin": return json(await docTinViec(db, user.id, id));
@@ -151,7 +153,7 @@ Deno.serve(async (req) => {
       case "qt_xem": return json(await xemQuyTrinh(db, user.id, id));
       case "qt_tao": {
         const cid = String(body.company_id ?? "").toLowerCase();
-        return json({ id: await taoQuyTrinh(db, user.id, { company_id: cid, cau: body.cau }, hoiCho(cid)) });
+        return json({ id: await taoQuyTrinh(db, user.id, { company_id: cid, cau: body.cau, mau: body.mau }, hoiCho(cid)) });
       }
       case "qt_sua": {
         const x = await xemQuyTrinh(db, user.id, id);
@@ -159,6 +161,9 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
       case "qt_pa": await doiPhuongAn(db, user.id, id, body.phuong_an); return json({ ok: true });
+      case "qt_thu_vien": return json({ ds: THU_VIEN_GON });
+      case "qt_sua_tay": await suaTay(db, user.id, id, body); return json({ ok: true });
+      case "qt_ket_noi": await ganKetNoi(db, user.id, id, body, Deno.env.get("PQC_KYC_PUBLIC_KEY")); return json({ ok: true });
       case "qt_gan": await ganEmail(db, user.id, id, body.nut_id, body.email); return json({ ok: true });
       case "qt_chay": await chayQuyTrinh(db, user.id, id, user.email ?? null, thucThiCho); return json({ ok: true });
       case "qt_buoc": await xuLyBuoc(db, user.id, id, body.nut_id, body.quyet, body.ghi_chu, thucThiCho); return json({ ok: true });

@@ -29,6 +29,7 @@ import { NenVongHat } from '@/components/tro-ly/NenVongHat';
 import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
 import { ViecAgentGanDay } from '@/components/khong-gian/ViecAgentGanDay';
 import { taoQuyTrinh } from '@/lib/goiQuyTrinh';
+import KhongGianQuyTrinh from '@/components/quy-trinh/KhongGianQuyTrinh';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -137,7 +138,8 @@ export default function TroLyPage() {
       // 22/11/2026: gõ ở chat chính → MIMI dựng WORKFLOW rồi mở nó trong Space (chat thu thành cột phải để sửa).
       const qt = await taoQuyTrinh(id, c);
       setNhap('');
-      navigate(`/dashboard/space/${qt}`);
+      // Mở NGAY TẠI CHỖ (22/11/2026): không chuyển trang — chat thu thành cột phải của không gian workflow.
+      datThamSo({ qt });
     } catch (e) {
       setLoiGiao(e instanceof Error ? e.message : 'Chưa giao được việc.');
     } finally {
@@ -379,6 +381,12 @@ export default function TroLyPage() {
   const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
   const ketNoiLoc = ketNoi.filter((k) => boDau(k.ten).includes(boDau(timKetNoi.trim())));
   const coHoiThoai = luot.length > 0 || nhiemVuWeb.length > 0;
+
+  // Workflow đang mở (?qt=…): cùng trang, cùng địa chỉ gốc — đóng là về đúng chat cũ.
+  const qtMo = thamSo.get('qt');
+  if (qtMo && /^[0-9a-f-]{36}$/i.test(qtMo)) {
+    return <KhongGianQuyTrinh id={qtMo} onDong={() => datThamSo({}, { replace: true })} />;
+  }
 
   return (
     <div className="pb-10">

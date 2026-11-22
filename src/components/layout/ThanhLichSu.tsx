@@ -229,8 +229,8 @@ export function DanhSachLichSu({ onDaChon, luonHienXoa = false }: { onDaChon?: (
 
 const NUT = 'relative flex h-11 w-11 items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
 const NUT_THUONG = 'text-slate-600 hover:bg-white/70 hover:text-foreground dark:text-muted-foreground dark:hover:bg-white/10';
-// 22/11/2026: nút đang chọn có quầng neon tím (học thanh bên ClickUp).
-const NUT_MO = 'bg-violet-600 text-white shadow-[0_0_0_1px_rgba(167,139,250,0.6),0_0_18px_rgba(139,92,246,0.75)] dark:bg-violet-500';
+// 22/11/2026: bỏ quầng neon (người dùng thấy rối, chậm) — nút đang chọn chỉ nền trắng nhẹ, không đổi màu chói.
+const NUT_MO = 'bg-white text-foreground shadow-[0_1px_2px_hsla(215,25%,20%,0.08)] ring-1 ring-black/[0.04] dark:bg-white/10 dark:ring-white/10';
 
 function GoiY({ ten, children }: { ten: string; children: ReactNode }) {
   return (

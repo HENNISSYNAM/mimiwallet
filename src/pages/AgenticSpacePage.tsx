@@ -1,122 +1,146 @@
 /**
- * AGENTIC AI SPACE (/dashboard/space, 22/11/2026) — nơi các WORKFLOW người + agent sống.
- * Học ClickUp Workflows: ô mô tả việc, hàng mẫu theo lĩnh vực ("blueprint"), bảng workflow. Bỏ cái dở: không menu 14 mục,
- * không mục "Coming soon", không khoá tín dụng. Gõ một câu → MIMI dựng workflow → mở khung vẽ + chat sửa ở cột phải.
+ * AGENTIC AI SPACE (/dashboard/space, 22/11/2026, bản 2) — một nơi duy nhất cho workflow người + mèo agent.
+ * Mô tả việc → MIMI dựng (theo kho kiến thức nghề + thư viện chu trình chuẩn). Hoặc chọn mẫu trong THƯ VIỆN. Workflow mở
+ * NGAY TRONG TRANG (?qt=…), không chuyển lớp. Đội 12 mèo hiện con nào đang có mặt ở bao nhiêu workflow — không còn
+ * danh sách agent riêng rời rạc.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Banknote, Briefcase, FileStack, Loader2, Orbit, ShieldAlert, Users, Calculator } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ArrowRight, Loader2, Orbit } from 'lucide-react';
 import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
-import { AvatarMeo, HINH_AGENT, netTuTrangThai } from '@/components/agent/AvatarMeo';
-import { docBang, type BangViec } from '@/lib/goiSpace';
-import { dsQuyTrinh, taoQuyTrinh, type DongQuyTrinh } from '@/lib/goiQuyTrinh';
+import { Meo } from '@/components/agent/AvatarMeo';
+import KhongGianQuyTrinh, { TEN_PA } from '@/components/quy-trinh/KhongGianQuyTrinh';
+import { tenMeo } from '@/components/quy-trinh/KhungVe';
+import { docBang } from '@/lib/goiSpace';
+import { dsQuyTrinh, taoQuyTrinh, taoTuMau, thuVien, type DongQuyTrinh, type MauThuVien } from '@/lib/goiQuyTrinh';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 
-export const MAU_LINH_VUC = [
-  { lv: 'tai_chinh', ten: 'Tài chính & thuế', icon: Calculator, cau: 'Chốt quý 4 và chuẩn bị tờ khai cho công ty này' },
-  { lv: 'thanh_toan', ten: 'Thanh toán qua agent', icon: Banknote, cau: 'Thanh toán các hoá đơn nhà cung cấp đến hạn tuần này' },
-  { lv: 'bao_mat', ten: 'Bảo mật', icon: ShieldAlert, cau: 'Đối tác vừa báo đổi số tài khoản nhận tiền, xử lý an toàn' },
-  { lv: 'ho_so', ten: 'Hồ sơ', icon: FileStack, cau: 'Chuẩn bị hồ sơ vay vốn ngân hàng' },
-  { lv: 'nhan_su', ten: 'Nhân sự', icon: Users, cau: 'Đón nhân viên kế toán mới vào làm thứ Hai tuần sau' },
-  { lv: 'cong_viec', ten: 'Công việc', icon: Briefcase, cau: 'Lên kế hoạch và theo dõi việc đóng sổ cuối năm' },
-] as const;
-const TEN_LV = Object.fromEntries(MAU_LINH_VUC.map((m) => [m.lv, m.ten])) as Record<string, string>;
-const TEN_PA: Record<string, string> = { nguoi: 'Người làm', nguoi_ai: 'Người + AI', ai: 'AI tối đa' };
+export const TEN_LV: Record<string, string> = {
+  tai_chinh: 'Tài chính & thuế', thanh_toan: 'Thanh toán', bao_mat: 'Bảo mật', ho_so: 'Hồ sơ', nhan_su: 'Nhân sự', cong_viec: 'Công việc',
+};
+export const MEO_KHOA = ['phan_loai', 'thue', 'dong_tien', 'ho_so', 'bao_ve', 'doi_soat', 'cong_no', 'mua_hang', 'luong', 'tuan_thu', 'bao_cao', 'thu_ky'];
 const TEN_TT: Record<string, string> = { nhap: 'Bản nháp', dang_chay: 'Đang chạy', xong: 'Xong', dung: 'Đã dừng' };
 
 export default function AgenticSpacePage() {
-  const navigate = useNavigate();
+  const [thamSo, datThamSo] = useSearchParams();
   const [ds, setDs] = useState<DongQuyTrinh[] | null>(null);
-  const [bang, setBang] = useState<BangViec | null>(null);
+  const [mau, setMau] = useState<MauThuVien[]>([]);
+  const [khachDs, setKhachDs] = useState<{ id: string; ten: string }[]>([]);
   const [cau, setCau] = useState('');
   const [khach, setKhach] = useState('');
-  const [dang, setDang] = useState(false);
+  const [lv, setLv] = useState<string>('');
+  const [dang, setDang] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
+  const qtMo = thamSo.get('qt');
 
   const tai = useCallback(async () => {
     try {
-      const [q, b, id] = await Promise.all([dsQuyTrinh(), docBang().catch(() => null), idCongTyDangDung().catch(() => null)]);
-      setDs(q); setBang(b);
-      setKhach((k) => k || (b?.khach.some((x) => x.id === id) ? id! : b?.khach[0]?.id ?? ''));
+      const [q, m, b, id] = await Promise.all([dsQuyTrinh(), thuVien().catch(() => []), docBang().catch(() => null), idCongTyDangDung().catch(() => null)]);
+      setDs(q); setMau(m);
+      const kd = b?.khach ?? [];
+      setKhachDs(kd);
+      setKhach((k) => k || (kd.some((x) => x.id === id) ? id! : kd[0]?.id ?? ''));
     } catch (e) { setLoi(e instanceof Error ? e.message : 'Chưa đọc được Agentic AI Space.'); }
   }, []);
-  useEffect(() => { void tai(); }, [tai]);
+  useEffect(() => { if (!qtMo) void tai(); }, [tai, qtMo]);
 
-  const dung = async () => {
-    const c = cau.trim();
-    if (!c || !khach) return;
-    setDang(true); setLoi(null);
-    try { navigate(`/dashboard/space/${await taoQuyTrinh(khach, c)}`); }
-    catch (e) { setLoi(e instanceof Error ? e.message : 'Chưa dựng được workflow.'); }
-    finally { setDang(false); }
+  const mo = (id: string) => datThamSo({ qt: id });
+  const tao = async (f: () => Promise<string>, ten: string) => {
+    if (!khach) return;
+    setDang(ten); setLoi(null);
+    try { mo(await f()); } catch (e) { setLoi(e instanceof Error ? e.message : 'Chưa dựng được workflow.'); } finally { setDang(null); }
   };
+  const soMeo = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const q of ds ?? []) for (const k of q.meo ?? []) m.set(k, (m.get(k) ?? 0) + 1);
+    return m;
+  }, [ds]);
+  const mauLoc = mau.filter((m) => !lv || m.linh_vuc === lv);
+
+  if (qtMo && /^[0-9a-f-]{36}$/i.test(qtMo)) return <KhongGianQuyTrinh id={qtMo} onDong={() => datThamSo({}, { replace: true })} />;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
       <ThanhTabHome />
       <header className="space-y-1">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground"><Orbit className="text-primary" /> Agentic AI Space</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">Mô tả việc bằng một câu. MIMI dựng workflow người + agent, bạn sửa bằng chat, chốt rồi mới chạy. Bước chuyển tiền, nộp, gửi ra ngoài luôn có người duyệt.</p>
+        <p className="max-w-2xl text-sm text-muted-foreground">Mô tả việc — MIMI dựng workflow người + mèo agent theo chuẩn nghề. Sửa ngay trên khung, chốt rồi chạy.</p>
       </header>
 
-      <form className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm" onSubmit={(e) => { e.preventDefault(); void dung(); }}>
+      <form className="space-y-3 rounded-2xl border bg-card p-4" onSubmit={(e) => { e.preventDefault(); const c = cau.trim(); if (c) void tao(() => taoQuyTrinh(khach, c), 'dung'); }}>
         <textarea value={cau} onChange={(e) => setCau(e.target.value)} rows={2} maxLength={1000} aria-label="Mô tả việc"
-          placeholder="Ví dụ: thanh toán hoá đơn nhà cung cấp đến hạn, kiểm người nhận trước khi trả"
+          placeholder="Ví dụ: hoàn ứng công tác phí cho nhân viên, quản lý duyệt, kế toán chi"
           className="w-full resize-none bg-transparent text-base outline-none placeholder:text-muted-foreground" />
         <div className="flex flex-wrap items-center gap-2">
           <select value={khach} onChange={(e) => setKhach(e.target.value)} aria-label="Công ty" className="min-w-[200px] rounded-lg border bg-background px-2 py-1.5 text-sm">
-            {(bang?.khach ?? []).map((k) => <option key={k.id} value={k.id}>{k.ten}</option>)}
+            {khachDs.map((k) => <option key={k.id} value={k.id}>{k.ten}</option>)}
           </select>
-          <button type="submit" disabled={dang || !cau.trim() || !khach}
-            className="ml-auto inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
-            {dang ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />} {dang ? 'Đang dựng…' : 'Dựng workflow'}
+          <button type="submit" disabled={!!dang || !cau.trim() || !khach}
+            className="ml-auto inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-slate-900">
+            {dang === 'dung' ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />} {dang === 'dung' ? 'Đang dựng…' : 'Dựng workflow'}
           </button>
         </div>
       </form>
       {loi && <p role="alert" className="text-sm text-destructive">{loi}</p>}
 
-      <section aria-label="Mẫu theo lĩnh vực" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {MAU_LINH_VUC.map(({ lv, ten, icon: Icon, cau: vd }) => (
-          <button key={lv} type="button" onClick={() => setCau(vd)} className="flex gap-3 rounded-2xl border bg-card p-4 text-left transition hover:shadow">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon size={18} /></span>
-            <span><span className="block text-sm font-medium text-foreground">{ten}</span><span className="block text-xs text-muted-foreground">{vd}</span></span>
-          </button>
-        ))}
+      <section aria-label="Thư viện workflow" className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="mr-2 text-sm font-semibold text-foreground">Thư viện workflow</h2>
+          {['', ...Object.keys(TEN_LV)].map((k) => (
+            <button key={k || 'tat_ca'} type="button" aria-pressed={lv === k} onClick={() => setLv(k)}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${lv === k ? 'border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900' : 'text-muted-foreground hover:bg-muted'}`}>
+              {k ? TEN_LV[k] : 'Tất cả'}
+            </button>
+          ))}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {mauLoc.map((m) => (
+            <article key={m.khoa} className="flex flex-col rounded-2xl border bg-card p-4">
+              <p className="text-[11px] text-muted-foreground">{TEN_LV[m.linh_vuc]} · {m.khung}</p>
+              <p className="mt-1 font-medium text-foreground">{m.tieu_de}</p>
+              <p className="mt-0.5 flex-1 text-xs text-muted-foreground">{m.mo_ta} · {m.so_buoc} bước</p>
+              <button type="button" disabled={!!dang || !khach} onClick={() => void tao(() => taoTuMau(khach, m.khoa), m.khoa)}
+                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
+                {dang === m.khoa ? <Loader2 size={14} className="animate-spin" /> : '+'} Dùng mẫu
+              </button>
+            </article>
+          ))}
+        </div>
       </section>
 
-      {bang && (
-        <section aria-label="Đội agent" className="flex flex-wrap gap-3">
-          {bang.agent.map((a) => (
-            <span key={a.agent} className="inline-flex items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3 text-xs text-muted-foreground">
-              <AvatarMeo mau={HINH_AGENT[a.agent].mau} kinh={HINH_AGENT[a.agent].kinh} net={netTuTrangThai(a)} co={28} ten={a.ten} />{a.ten}
-            </span>
-          ))}
-        </section>
-      )}
+      <section aria-label="Đội mèo agent" className="space-y-2">
+        <h2 className="text-sm font-semibold text-foreground">Đội mèo agent</h2>
+        <div className="flex flex-wrap gap-2">
+          {MEO_KHOA.map((k) => {
+            const n = soMeo.get(k) ?? 0;
+            return (
+              <span key={k} className="inline-flex items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3 text-xs text-muted-foreground">
+                <Meo khoa={k} net={n ? 'lam' : 'ngu'} co={26} ten={tenMeo(k)} />{tenMeo(k)}{n ? ` · ${n} workflow` : ''}
+              </span>
+            );
+          })}
+        </div>
+      </section>
 
       <section aria-label="Workflow" className="rounded-2xl border bg-card">
         <h2 className="border-b px-4 py-3 text-sm font-semibold text-foreground">Workflow của bạn</h2>
         {ds === null ? <p className="p-4 text-sm text-muted-foreground">Đang đọc…</p> : ds.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">Chưa có workflow nào. Mô tả một việc ở trên, hoặc bấm một mẫu.</p>
+          <p className="p-4 text-sm text-muted-foreground">Chưa có workflow nào. Mô tả một việc ở trên, hoặc dùng một mẫu.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead><tr className="border-b text-left text-xs text-muted-foreground">
-              <th className="px-4 py-2 font-medium">Tên</th><th className="px-2 py-2 font-medium">Lĩnh vực</th>
-              <th className="px-2 py-2 font-medium">Phương án</th><th className="px-2 py-2 font-medium">Bước</th><th className="px-4 py-2 font-medium">Trạng thái</th>
-            </tr></thead>
-            <tbody>
-              {ds.map((q) => (
-                <tr key={q.id} className="border-b last:border-0 hover:bg-muted/40">
-                  <td className="px-4 py-2"><Link to={`/dashboard/space/${q.id}`} className="font-medium text-foreground hover:underline">{q.tieu_de}</Link>
-                    <span className="block text-xs text-muted-foreground">{q.ten_khach}</span></td>
-                  <td className="px-2 py-2 text-xs">{TEN_LV[q.linh_vuc] ?? q.linh_vuc}</td>
-                  <td className="px-2 py-2 text-xs">{TEN_PA[q.phuong_an]}</td>
-                  <td className="px-2 py-2 text-xs text-muted-foreground">{q.dem ? `agent ${q.dem.agent} · người ${q.dem.nguoi} · duyệt ${q.dem.duyet}` : '—'}</td>
-                  <td className="px-4 py-2 text-xs">{TEN_TT[q.trang_thai]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="divide-y">
+            {ds.map((q) => (
+              <li key={q.id}>
+                <button type="button" onClick={() => mo(q.id)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/50">
+                  <span className="flex -space-x-1.5">{(q.meo ?? []).slice(0, 3).map((k) => <Meo key={k} khoa={k} co={22} ten={tenMeo(k)} />)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-foreground">{q.tieu_de}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{q.ten_khach} · {TEN_LV[q.linh_vuc] ?? q.linh_vuc} · {TEN_PA[q.phuong_an]}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{TEN_TT[q.trang_thai]}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>

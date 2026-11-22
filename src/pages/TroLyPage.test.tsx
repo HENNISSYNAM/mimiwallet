@@ -21,6 +21,7 @@ vi.mock('@/lib/goiDieuPhoi', () => ({ goiDieuPhoi: dieuPhoi, khoaChongTrungMoi: 
 vi.mock('@/lib/goiChiPhiAi', () => ({ goiChiPhiAi: gia.chiPhiAi }));
 const space = vi.hoisted(() => ({ giao: vi.fn(), ds: vi.fn(async () => []), id: vi.fn(async () => 'cty-1') }));
 vi.mock('@/lib/goiQuyTrinh', () => ({ taoQuyTrinh: space.giao, dsQuyTrinh: space.ds }));
+vi.mock('@/components/quy-trinh/KhongGianQuyTrinh', () => ({ default: ({ id }: { id: string }) => <p>trang workflow {id}</p> }));
 vi.mock('@/lib/congTyDangDung', async (goc) => ({ ...(await goc<Record<string, unknown>>()), idCongTyDangDung: space.id }));
 vi.mock('@/lib/goiToKhai', () => ({ goiToKhai: gia.toKhai, DUONG_DAN_NOP_TO_KHAI: 'https://dichvucong.gdt.gov.vn/tthc/homelogin' }));
 // Canvas và ảnh động không chạy trong jsdom; cả hai chỉ trang trí.
@@ -637,11 +638,10 @@ describe('nhiệm vụ web → agent cloud (13/10/2026)', () => {
 });
 
 describe('Home kiểu ClickUp (22/11/2026)', () => {
-  it('có thanh tab Home; chế độ "Dựng workflow" dựng workflow rồi mở nó trong Space', async () => {
-    space.giao.mockResolvedValue('qt-moi');
+  it('có thanh tab Home; chế độ "Dựng workflow" dựng rồi mở workflow NGAY TẠI CHỖ (không đổi trang)', async () => {
+    space.giao.mockResolvedValue('33333333-3333-4333-8333-333333333333');
     render(<MemoryRouter initialEntries={['/dashboard']}><Routes>
       <Route path="/dashboard" element={<TroLyPage />} />
-      <Route path="/dashboard/space/:id" element={<p>trang workflow</p>} />
     </Routes></MemoryRouter>);
     expect(screen.getAllByRole('navigation', { name: 'Home' }).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('tab', { name: 'Dựng workflow' }));
@@ -649,6 +649,6 @@ describe('Home kiểu ClickUp (22/11/2026)', () => {
     fireEvent.change(o, { target: { value: 'Chốt quý 4' } });
     fireEvent.keyDown(o, { key: 'Enter' });
     await waitFor(() => expect(space.giao).toHaveBeenCalledWith('cty-1', 'Chốt quý 4'));
-    expect(await screen.findByText('trang workflow')).toBeTruthy();
+    expect(await screen.findByText('trang workflow 33333333-3333-4333-8333-333333333333')).toBeTruthy();
   });
 });
