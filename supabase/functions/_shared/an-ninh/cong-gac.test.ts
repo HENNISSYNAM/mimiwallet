@@ -55,7 +55,7 @@ describe('cổng gác: edge function', () => {
   });
 
   it('chỗ nhận khoá từ bên ngoài đều có chống dò khoá', () => {
-    for (const ten of ['cas-webhook', 'bank-webhook', 'tac-tu', 'mcp', 'nap-kho-luat']) {
+    for (const ten of ['cas-webhook', 'bank-webhook', 'tac-tu', 'nap-kho-luat']) {
       const ma = readFileSync(join(FN, ten, 'index.ts'), 'utf8');
       expect(ma, ten).toMatch(/daBiKhoaViSai\(/);
       expect(ma, ten).toMatch(/ghiLanSai\(/);

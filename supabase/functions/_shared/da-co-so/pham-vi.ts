@@ -30,6 +30,12 @@ export const NGUON_CA_CONG_TY = [
   'hoa_don_vao', 'chung_tu_quet', 'yeu_cau', 'chi_phi_ai', 'token_ai', 'thue', 'lich_thue', 'bat_thuong', 'thuc_thi',
 ] as const;
 
+/** Nguồn được đọc cho người này: kế toán một cơ sở không đọc nguồn của cả công ty (phần còn lại lọc bằng apPhamVi). */
+export function nguonTheoPhamVi<T extends string>(can: Iterable<T>, p: PhamViCoSo | null): Set<T> {
+  const tat = [...can];
+  return new Set(p ? tat.filter((n) => !(NGUON_CA_CONG_TY as readonly string[]).includes(n)) : tat);
+}
+
 export function apPhamVi(d: DuLieu, p: PhamViCoSo | null): DuLieu {
   if (!p) return d;
   const tk = new Set(p.tai_khoan.map(chuanSoTaiKhoan).filter(Boolean));

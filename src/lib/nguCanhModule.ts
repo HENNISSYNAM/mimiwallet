@@ -34,8 +34,6 @@ const la = (...ds: string[]) => (d: string) => ds.includes(d);
 export const MODULE_TRO_LY: readonly ModuleTroLy[] = [
   { khoa: 'thue', ten: 'Thuế & Tuân thủ', duong: '/dashboard/nhac-thue', nhom: 'chung_tu', hoiGi: 'Năm nay tôi có phải nộp thuế không?',
     khop: (d) => la('/dashboard/nhac-thue', '/dashboard/to-khai', '/dashboard/tai-lieu')(d) },
-  { khoa: 'ban_hang', ten: 'Bán tại quầy', duong: '/pos', nhom: 'ngan_hang', hoiGi: 'Tiền về tháng này khớp hoá đơn nào?',
-    khop: (d) => d === '/pos' },
   { khoa: 'vay_von', ten: 'Vay vốn', duong: '/dashboard/vay-von', nhom: 'ngan_hang', hoiGi: 'Dự báo dòng tiền 3 tháng tới',
     khop: (d) => la('/dashboard/vay-von', '/dashboard/doanh-thu-xac-minh')(d) },
   { khoa: 'dong_tien', ten: 'Dòng tiền', duong: '/dashboard/cashflow', nhom: 'ngan_hang', hoiGi: 'Vì sao tháng này tiền ra nhiều hơn tiền vào?',

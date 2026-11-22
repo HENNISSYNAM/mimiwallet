@@ -23,14 +23,12 @@ import ui2Vi from './modules/ui2.vi';
 import ui2En from './modules/ui2.en';
 import vayVi from './modules/vay.vi';
 import vayEn from './modules/vay.en';
-import posVi from './modules/pos.vi';
-import posEn from './modules/pos.en';
 import coHoiVi from './modules/coHoi.vi';
 import coHoiEn from './modules/coHoi.en';
 
 
-const viAll = { ...vi, ...landingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi, ...ui1Vi, ...ui2Vi, ...vayVi, ...posVi, ...coHoiVi };
-const enAll = { ...en, ...landingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn, ...ui1En, ...ui2En, ...vayEn, ...posEn, ...coHoiEn };
+const viAll = { ...vi, ...landingVi, ...financeVi, ...miscVi, ...manVi, ...kgVi, ...appVi, ...tbVi, ...ui1Vi, ...ui2Vi, ...vayVi, ...coHoiVi };
+const enAll = { ...en, ...landingEn, ...financeEn, ...miscEn, ...manEn, ...kgEn, ...appEn, ...tbEn, ...ui1En, ...ui2En, ...vayEn, ...coHoiEn };
 
 /**
  * Hai ngôn ngữ, cùng một bộ khoá (20/11/2026: bỏ tiếng Hàn và tiếng Trung — khách là hộ kinh doanh Việt Nam; tiếng

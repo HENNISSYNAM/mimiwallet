@@ -448,7 +448,7 @@ describe('MIMI Assistant — khảo sát đầu vào và thuế cá nhân hoá',
     }));
     // Người dùng chưa tự chọn công cụ nên MIMI chọn theo ngành.
     // Việc ra tiền đứng đầu (tờ khai, bán tại quầy, hồ sơ vay); Khách hàng (CRM) và kiểm trước khi chuyển (16/11/2026) đã đóng băng nên không được gợi ý.
-    expect(gia.datLai).toHaveBeenCalledWith(['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban', 'lien_ket_ngan_hang']);
+    expect(gia.datLai).toHaveBeenCalledWith(['soan_to_khai', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban', 'lien_ket_ngan_hang']);
     await waitFor(() => expect(gia.troLy.mock.calls.filter((c) => c[0] === 'boi_canh').length).toBeGreaterThanOrEqual(2));
   });
 

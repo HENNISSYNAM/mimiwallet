@@ -44,7 +44,6 @@ const TrangNoiDungPage = lazy(() => import("./pages/TrangNoiDungPage"));
 const KhamPhaPage = lazy(() => import("./pages/KhamPhaPage"));
 const KhachHang = lazy(() => import("./pages/KhachHang"));
 const Login = lazy(() => import("./pages/Login"));
-const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const BankCallback = lazy(() => import("./pages/BankCallback"));
 const DangKy = lazy(() => import("./pages/LienHeDungThat"));
 const DashboardOverview = lazy(() => import("./pages/DashboardOverview"));
@@ -80,7 +79,6 @@ const KetNoiPage = lazy(() => import("./pages/KetNoiPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DoanhThuXacMinhPage = lazy(() => import("./pages/DoanhThuXacMinhPage"));
-const QuayTinPage = lazy(() => import("./pages/QuayTinPage"));
 const KiemChuyenTienPage = lazy(() => import("./pages/KiemChuyenTienPage"));
 const XacMinhCongKhaiPage = lazy(() => import("./pages/XacMinhCongKhaiPage"));
 const VayVonPage = lazy(() => import("./pages/VayVonPage"));
@@ -88,7 +86,6 @@ const VayVonPage = lazy(() => import("./pages/VayVonPage"));
 const VanPhongPage = lazy(() => import("./pages/VanPhongPage"));
 const CoHoiPage = lazy(() => import("./pages/CoHoiPage"));
 // Bán tại quầy (10/11/2026): toàn màn hình, ngoài DashboardLayout — máy POS 5–8 inch không có chỗ cho thanh bên.
-const PosPage = lazy(() => import("./pages/PosPage"));
 
 const queryClient = new QueryClient();
 
@@ -197,7 +194,6 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
               {DANH_MUC_CHINH_SACH.map((m) => (
                 <Route key={m.duong} path={m.duong} element={<Page path={m.duong} title={`${m.tieuDe} — MIMI WALLET`} description={m.moTa}>{m.slug === "bao-mat" ? <Privacy /> : <TrangChinhSach slug={m.slug} />}</Page>} />
               ))}
-              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/login" element={<Page path="/login" title="Đăng nhập — MIMI WALLET" description="Đăng nhập vào MIMI Wallet để xem dòng tiền, hoá đơn, thuế và bộ chứng từ chi phí của doanh nghiệp bạn."><Login /></Page>} />
               {/* Khôi phục mật khẩu. Trước đây KHÔNG có đường nào: chỉ có "Đổi
                   mật khẩu" trong Cài đặt, mà muốn vào Cài đặt thì phải đăng
@@ -211,7 +207,6 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
               <Route path="/register" element={<Page path="/register" title="Dùng thử MIMI — MIMI WALLET" description="Xem ngay bản demo MIMI Wallet với cửa hàng mẫu, hoặc liên hệ để dùng MIMI cho sổ sách thật của doanh nghiệp."><DangKy /></Page>} />
               <Route path="/xac-minh/:token" element={<Page noIndex path="/xac-minh" title="Doanh thu đã xác minh — MIMI WALLET" description="Báo cáo doanh thu do chủ hộ chia sẻ qua MIMI, kèm mã kiểm tra và dấu thời gian công khai. Không phải điểm tín dụng."><XacMinhCongKhaiPage /></Page>} />
               <Route path="/admin" element={<Page noIndex path="/admin" title="Quản trị — MIMI WALLET" description="Bảng điều khiển quản trị nội bộ của MIMI Wallet dành riêng cho tài khoản có quyền admin."><AdminPage /></Page>} />
-              <Route path="/pos" element={<Page noIndex path="/pos" title="Bán tại quầy — MIMI WALLET" description="Thu tiền tại quầy bằng tiền mặt hoặc VietQR; mỗi lần bán vào thẳng sổ của MIMI."><ProtectedRoute><PosPage /></ProtectedRoute></Page>} />
               <Route
                 path="/dashboard"
                 element={
@@ -224,7 +219,6 @@ const App = ({ router: BoDinhTuyen }: { router?: (p: { children: React.ReactNode
                 <Route index element={<Page noIndex path="/dashboard" title="MIMI Trợ lý — MIMI WALLET" description="Hỏi MIMI về tiền, hoá đơn, thuế và chứng từ của công ty; MIMI đọc dữ liệu thật, đề xuất việc và chỉ làm khi bạn xác nhận."><TroLyPage /></Page>} />
                 <Route path="tro-ly" element={<ChuyenVeKhongGian />} />
                 <Route path="thu-vien" element={<Page noIndex path="/dashboard/thu-vien" title="Thư viện chứng từ — MIMI WALLET" description="Chứng từ chụp của công ty ở một chỗ, gắn với khoản chi, xuất cho kế toán."><ThuVienChungTuPage /></Page>} />
-                <Route path="quay-tin" element={<Page noIndex path="/dashboard/quay-tin" title="Quầy Tin — MIMI WALLET" description="Tiền thật mới giao hàng: chụp bill khách đưa, MIMI đối chiếu với tiền về thật trên mọi tài khoản của quán và đọc to kết quả."><QuayTinPage /></Page>} />
                 <Route path="kiem-truoc-khi-chuyen" element={<Page noIndex path="/dashboard/kiem-truoc-khi-chuyen" title="Soát trước khi chi — MIMI WALLET" description="Kiểm một khoản sắp chuyển: đổi số tài khoản, người nhận lạ, số tiền bất thường. MIMI không chuyển tiền thay bạn."><KiemChuyenTienPage /></Page>} />
                 <Route path="chi-ca-nhan" element={<Page noIndex path="/dashboard/chi-ca-nhan" title="Tách chi cá nhân — MIMI WALLET" description="Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi hộ kinh doanh dùng chung một tài khoản ngân hàng."><TachChiCaNhanPage /></Page>} />
                 <Route path="doc-bao-cao" element={<Page noIndex path="/dashboard/doc-bao-cao" title="Đọc báo cáo tài chính & tờ khai — MIMI WALLET" description="Tải báo cáo tài chính hoặc tờ khai thuế (Excel/CSV): MIMI nhận dạng, xếp từng chỉ tiêu và kiểm đẳng thức kế toán, ngay trên máy bạn."><DocBaoCaoPage /></Page>} />

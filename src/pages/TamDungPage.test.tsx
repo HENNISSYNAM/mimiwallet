@@ -26,7 +26,7 @@ describe('tính năng đóng băng', () => {
     expect(daDongBang('/dashboard/tac-tu?tab=yeu-cau')).toBe(true);
     expect(daDongBang('/dashboard/chinh-sach/')).toBe(true);
     // Việc ra tiền vẫn mở.
-    for (const d of ['/dashboard/to-khai', '/pos', '/dashboard/vay-von', '/dashboard/doanh-thu-xac-minh', '/dashboard/van-phong',
+    for (const d of ['/dashboard/to-khai', '/dashboard/vay-von', '/dashboard/doanh-thu-xac-minh', '/dashboard/van-phong',
       '/dashboard/fintech', '/dashboard/doc-bao-cao', '/san-pham/khai-thue-ho-kinh-doanh']) {
       expect(daDongBang(d), d).toBe(false);
     }

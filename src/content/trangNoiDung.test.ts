@@ -31,8 +31,9 @@ describe('trang sản phẩm và giải pháp', () => {
 
   // 28/09/2026: gỡ trang Chi phí AI (đang xây) và Hoá đơn điện tử (Casso chưa bật trên production) → 10.
   // 16/11/2026: đóng băng 4 trang sản phẩm + 5 trang giải pháp về agent chi tiền / danh bạ khách; thêm 3 trang bán được → 9 và 4.
-  it('đủ 9 trang sản phẩm và 4 trang giải pháp, không trùng đường dẫn', () => {
-    expect(TRANG_SAN_PHAM).toHaveLength(9);
+  // 21/11/2026: bỏ bán tại quầy (POS) và các trang đóng băng — xoá hẳn, không còn đóng băng.
+  it('đủ 8 trang sản phẩm và 4 trang giải pháp, không trùng đường dẫn', () => {
+    expect(TRANG_SAN_PHAM).toHaveLength(8);
     expect(TRANG_GIAI_PHAP).toHaveLength(4);
     const duong = TAT_CA_TRANG.map(duongDanTrang);
     expect(new Set(duong).size).toBe(duong.length);
@@ -75,14 +76,13 @@ describe('trang sản phẩm và giải pháp', () => {
 });
 
 describe('đóng băng đợt 2 (16/11/2026) và bốn trang MIMI bán', () => {
-  const BON_TRANG = ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/ban-tai-quay', '/san-pham/ho-so-vay', '/giai-phap/van-phong-ke-toan'];
+  const BON_TRANG = ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/ho-so-vay', '/giai-phap/van-phong-ke-toan'];
 
   it('trang về agent chi tiền đã đóng băng: không còn trong danh sách, menu hay trang liên quan', () => {
     const dongBang = TRANG_NOI_DUNG_DONG_BANG.map(duongDanTrang).sort();
-    expect(dongBang).toEqual([
-      '/giai-phap/agency-quang-cao', '/giai-phap/dich-vu-chuyen-mon', '/giai-phap/doanh-nghiep-nho-va-vua', '/giai-phap/phan-mem-ai',
-      '/giai-phap/startup-cong-nghe', '/san-pham/chong-chuyen-nham', '/san-pham/duyet-chi', '/san-pham/kiem-soat-agent', '/san-pham/mcp-api',
-    ]);
+    // 21/11/2026: bỏ bán tại quầy (POS) và các trang đóng băng — xoá hẳn, không còn đóng băng.
+    expect(dongBang).toEqual([]);
+    for (const d of ['/san-pham/kiem-soat-agent', '/san-pham/ban-tai-quay', '/giai-phap/phan-mem-ai']) expect(timTrang(d), d).toBeUndefined();
     for (const d of dongBang) {
       expect(daDongBang(d), d).toBe(true);
       expect(timTrang(d), d).toBeUndefined();

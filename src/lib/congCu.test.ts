@@ -22,7 +22,7 @@ describe('danh mục công cụ', () => {
     // Chốt bộ đọc route: đọc hỏng thì mọi công cụ "trang" đều đỏ, không xanh giả.
     expect(TRANG_CO_THAT.has('/dashboard/tac-tu')).toBe(true);
     expect(TRANG_CO_THAT.has('/dashboard/khong-co-that')).toBe(false);
-    expect(TRANG_CO_THAT.has('/pos')).toBe(true);
+    expect(TRANG_CO_THAT.has('/pos')).toBe(false); // 21/11/2026: bỏ bán tại quầy (POS) và các trang đóng băng — xoá hẳn, không còn đóng băng.
     for (const c of DANH_MUC_CONG_CU) {
       expect(c.khoa).toMatch(/^[a-z0-9_]{2,40}$/);
       if (c.loai === 'trang') expect(TRANG_CO_THAT.has(c.dich), c.khoa).toBe(true);
@@ -41,7 +41,7 @@ describe('danh mục công cụ', () => {
      * đầu tiên — lên đầu; bán tại quầy và hồ sơ vay ngay sau.
      */
     expect(CONG_CU_MAC_DINH[0]).toBe('soan_to_khai');
-    expect(CONG_CU_MAC_DINH.slice(1, 3)).toEqual(['ban_tai_quay', 'vay_von']);
+    expect(CONG_CU_MAC_DINH.slice(1, 3)).toEqual(['vay_von', 'doanh_thu_xac_minh']);
     // Công cụ đóng băng không được ghim sẵn (ghim thì người dùng mở ra trang "Tạm dừng").
     for (const k of ['kiem_truoc_khi_chuyen', 'kiem_soat_agent', 'chinh_sach_chi', 'soan_giay_to', 'dang_ky_kinh_doanh']) {
       expect(CONG_CU_MAC_DINH, k).not.toContain(k);
@@ -62,7 +62,7 @@ describe('danh mục công cụ', () => {
     expect(CONG_CU_THEO_KHOA.model_re_hon).toBeUndefined();
     expect(CONG_CU_MAC_DINH).not.toContain('chi_phi_ai');
     // Việc ra tiền tìm được bằng chữ thường ngày.
-    expect(timCongCu('bán hàng').map((c) => c.khoa)).toContain('ban_tai_quay');
+    expect(timCongCu('bán hàng').map((c) => c.khoa)).not.toContain('ban_tai_quay');
     expect(timCongCu('hồ sơ vay').map((c) => c.khoa)).toEqual(['vay_von', 'doanh_thu_xac_minh']);
     expect(DANH_MUC_CONG_CU.some((c) => c.khoa === 'khach_hang')).toBe(false);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
@@ -91,9 +91,9 @@ describe('danh mục công cụ', () => {
     const ho = congCuGoiY({ loai_nguoi_nop: 'ho_kinh_doanh', nhom_nganh: ['noi_dung_so'], kenh: 'tmdt_khong_thanh_toan', nganh_dac_thu: 'khong' });
     // Việc ra tiền đứng đầu (tờ khai, bán tại quầy, hồ sơ vay); công cụ đóng băng (chi phí AI, kiểm trước khi chuyển,
     // chính sách chi, kiểm soát agent) không được gợi ý.
-    expect(ho).toEqual(['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'lien_ket_ngan_hang']);
+    expect(ho).toEqual(['soan_to_khai', 'vay_von', 'thieu_chung_tu', 'lien_ket_ngan_hang']);
     const dn = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['dich_vu'], kenh: null, nganh_dac_thu: null });
-    expect(dn).toEqual(['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban', 'lien_ket_ngan_hang']);
+    expect(dn).toEqual(['soan_to_khai', 'vay_von', 'thieu_chung_tu', 'hoa_don_ban', 'lien_ket_ngan_hang']);
     const nhieu = congCuGoiY({ loai_nguoi_nop: 'doanh_nghiep', nhom_nganh: ['noi_dung_so', 'dich_vu', 'khac'], kenh: 'tmdt_co_thanh_toan', nganh_dac_thu: 'cho_thue_bat_dong_san' });
     expect(nhieu.length).toBe(6);
     for (const k of ['kiem_truoc_khi_chuyen', 'chinh_sach_chi', 'kiem_soat_agent']) expect(nhieu, k).not.toContain(k);

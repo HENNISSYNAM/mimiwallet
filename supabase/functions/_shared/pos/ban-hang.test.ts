@@ -64,8 +64,10 @@ describe('ngày Việt Nam', () => {
 });
 
 describe('mã tham chiếu', () => {
-  it('10.000 mã liên tiếp không trùng và đều đọc lại được', () => {
-    const ds = Array.from({ length: 10_000 }, sinhMaThamChieu);
+  // 1.000 chứ không 10.000: mã có 30^6 ≈ 729 triệu khả năng; 10.000 mã ngẫu nhiên trùng nhau ~6,6% số lần chạy
+  // (bài toán ngày sinh) → test chập chờn. 1.000 mã: ~0,07%. Máy chủ vẫn bắt trùng bằng ràng buộc UNIQUE + sinh lại.
+  it('1.000 mã liên tiếp không trùng và đều đọc lại được', () => {
+    const ds = Array.from({ length: 1_000 }, sinhMaThamChieu);
     expect(new Set(ds).size).toBe(ds.length);
     for (const m of ds.slice(0, 200)) expect(laMaThamChieu(m)).toBe(true);
   });

@@ -65,18 +65,6 @@ const m = {
       quanLyKetNoi: 'Manage connections',
       dungNhuUngDung: 'Use MIMI as an app',
       dungNhuUngDungNgan: 'Use as an app',
-      co2: {
-        ten: 'Carbon footprint',
-        nhanNut: 'Estimated carbon footprint this month: {{so}}',
-        phu: 'Estimated from this month’s spending — like a bank’s green card',
-        thangNay: 'this month',
-        soVoiTruoc: '{{x}} vs. last month at the same spend',
-        cuongDo: '{{so}} kg CO₂e per million VND',
-        phu_lieu: '{{x}} of this month’s spending matched a sector with a factor; the rest (payroll, tax, transfers to people…) is not counted.',
-        chuaCo: 'No spending this month matched an emissions sector yet.',
-        luuY: 'Estimated as amount spent × sector-average factor (electricity: EVN average price × Vietnam 2024 grid factor; other sectors: US EPA v1.3 factors). Not a measurement and not for a GHG inventory.',
-        nhom: { dien: 'Electricity', xang_dau: 'Fuel', hang_khong: 'Flights', an_uong: 'Food & drink', taxi: 'Taxi & ride-hailing', van_chuyen_hang: 'Delivery', vien_thong: 'Telecom', dam_may: 'Cloud & software', khach_san: 'Hotels', thue_mat_bang: 'Rent', sieu_thi: 'Supermarkets', van_phong_pham: 'Office supplies' },
-      },
       sk: {
         ten: 'Financial health',
         tenNgan: 'Health',

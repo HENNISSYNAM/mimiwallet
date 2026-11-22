@@ -20,7 +20,7 @@ describe('module đang mở', () => {
     expect(m('/dashboard/thu-vien')).toBe('chung_tu');
     expect(m('/dashboard/vay-von')).toBe('vay_von');
     expect(m('/dashboard/doanh-thu-xac-minh')).toBe('vay_von');
-    expect(m('/pos')).toBe('ban_hang');
+    expect(m('/pos')).toBeNull(); // 21/11/2026: bỏ bán tại quầy (POS) và các trang đóng băng — xoá hẳn, không còn đóng băng.
     expect(m('/dashboard')).toBeNull();
     expect(laKhongGianTroLy('/dashboard')).toBe(true);
     expect(laKhongGianTroLy('/dashboard/tro-ly')).toBe(true);
@@ -29,11 +29,11 @@ describe('module đang mở', () => {
 });
 
 describe('thanh công cụ ngữ cảnh', () => {
-  it('đủ chín module theo thứ tự — việc ra tiền đứng đầu — module đang mở sáng lên', () => {
+  it('đủ tám module theo thứ tự — việc ra tiền đứng đầu — module đang mở sáng lên', () => {
     render(<MemoryRouter initialEntries={['/dashboard/invoices?filter=pending']}><ThanhCongCuNguCanh /></MemoryRouter>);
     const ten = screen.getAllByRole('link').map((a) => a.textContent?.trim());
-    expect(ten).toEqual(['Thuế & Tuân thủ', 'Bán tại quầy', 'Vay vốn', 'Dòng tiền', 'Hoá đơn', 'Công nợ', 'Chứng từ', 'Báo cáo', 'Doanh nghiệp']);
-    expect(screen.getByRole('link', { name: /Bán tại quầy/ }).getAttribute('href')).toBe('/pos');
+    expect(ten).toEqual(['Thuế & Tuân thủ', 'Vay vốn', 'Dòng tiền', 'Hoá đơn', 'Công nợ', 'Chứng từ', 'Báo cáo', 'Doanh nghiệp']);
+    expect(screen.queryByRole('link', { name: /Bán tại quầy/ })).toBeNull();
     expect(screen.getByRole('link', { name: /Công nợ/ }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('link', { name: /Hoá đơn/ }).getAttribute('aria-current')).toBeNull();
     expect(screen.getByRole('button', { name: 'Công cụ khác' })).toBeTruthy();

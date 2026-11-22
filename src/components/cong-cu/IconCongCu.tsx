@@ -19,7 +19,6 @@ const ICON: Record<string, typeof Images> = {
   model_re_hon: Sparkles,
   hoa_don_ban: FileText,
   khach_hang: Users,
-  ban_tai_quay: Store,
   vay_von: HandCoins,
   doanh_thu_xac_minh: BadgeCheck,
 };

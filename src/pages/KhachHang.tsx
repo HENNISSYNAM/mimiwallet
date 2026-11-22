@@ -32,18 +32,6 @@ export const NHOM_KHACH = [
   // 16/11/2026: hai nhóm "Doanh nghiệp nhỏ và vừa" (duyệt chi, chống chuyển nhầm) và "Startup & công ty công nghệ"
   // (agent chi tiền) thay bằng hai nhóm MIMI bán được: cửa hàng bán tại quầy và hộ cần vốn.
   {
-    icon: ShoppingBag,
-    ma: 'cuaHang',
-    ten: 'Cửa hàng bán tại quầy',
-    van_de: 'Khách trả tiền mặt và chuyển khoản lẫn lộn; tiền mặt không có trong sao kê nên cuối quý khai thiếu hoặc lệch.',
-    mimi_lam: [
-      'Thu tiền mặt hoặc VietQR trên máy POS Android hoặc điện thoại',
-      'Tiền VietQR về đúng mã là lần bán tự chuyển sang đã thu',
-      'Mỗi lần bán vào thẳng sổ, đi vào tờ khai thuế',
-    ],
-    href: '/san-pham/ban-tai-quay',
-  },
-  {
     icon: Landmark,
     ma: 'canVon',
     ten: 'Hộ kinh doanh cần vốn',

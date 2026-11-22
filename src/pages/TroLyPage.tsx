@@ -71,7 +71,6 @@ import type { HoSoThue } from '@/lib/heLuat';
 import { boDauSao, ChuDam } from '@/lib/chuDam';
 import { goiToKhai } from '@/lib/goiToKhai';
 import { SucKhoeTaiChinh } from '@/components/tro-ly/SucKhoeTaiChinh';
-// Dấu chân carbon (`components/tro-ly/DauChanCarbon.tsx`) rời màn đầu 11/11/2026 — đóng băng; máy chủ vẫn tính.
 import { daDongBang, NHOM_NANG_LUC_DONG_BANG, VIEC_DONG_BANG } from '@/lib/dongBang';
 import { DuBaoDongTien } from '@/components/tro-ly/DuBaoDongTien';
 

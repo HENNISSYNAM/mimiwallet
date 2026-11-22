@@ -43,7 +43,6 @@ const DANH_MUC_DAY_DU: CongCu[] = [
   { khoa: 'vay_von', ten: 'Vay vốn', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/vay-von', mo_ta: 'Đánh giá sẵn sàng vay từ dòng tiền thật, có lý do và gợi ý; soạn hồ sơ vay để bạn tự in. MIMI không cho vay.', tu_khoa: ['vay', 'vay von', 'ho so vay', 'tin dung', 'ngan hang'] },
   { khoa: 'doanh_thu_xac_minh', ten: 'Doanh thu đã xác minh', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/doanh-thu-xac-minh', mo_ta: 'Báo cáo doanh thu từ sao kê, có mã kiểm tra; bạn chọn gửi cho ai để kèm hồ sơ vay.', tu_khoa: ['doanh thu', 'xac minh', 'ho so vay', 'chung minh thu nhap'] },
   { khoa: 'co_hoi_phat_trien', ten: 'Cơ hội phát triển', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/co-hoi', mo_ta: 'Dấu hiệu tăng trưởng của doanh nghiệp bạn từ dòng tiền thật, nhu cầu có thể có và gói ngân hàng phù hợp; chỉ chia sẻ khi bạn đồng ý.', tu_khoa: ['co hoi', 'tang truong', 'goi ngan hang', 'khach hang uu tien'] },
-  { khoa: 'ban_tai_quay', ten: 'Bán tại quầy', nhom: 'ban_hang', loai: 'trang', dich: '/pos', mo_ta: 'Thu tiền mặt hoặc VietQR tại quầy; tiền QR về là tự khớp đơn, tự vào sổ.', tu_khoa: ['pos', 'ban hang', 'thu ngan', 'vietqr', 'quay', 'bien lai'] },
   { khoa: 'van_phong', ten: 'Văn phòng kế toán', nhom: 'thue', loai: 'trang', dich: '/dashboard/van-phong', mo_ta: 'Mọi khách bạn làm sổ ở một chỗ: đèn trạng thái, hạn thuế, tiền vào chờ xác nhận và việc các agent MIMI đang làm.', tu_khoa: ['van phong', 'nhieu khach', 'danh muc khach', 'dich vu ke toan'] },
   { khoa: 'tach_chi_ca_nhan', ten: 'Tách chi cá nhân', nhom: 'thue', loai: 'trang', dich: '/dashboard/chi-ca-nhan', mo_ta: 'Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi dùng chung một tài khoản.', tu_khoa: ['ca nhan', 'gia dinh', 'chi phi kinh doanh', 'chung tai khoan'] },
   { khoa: 'viec_can_lam', ten: 'Việc cần làm', nhom: 'thue', loai: 'trang', dich: '/dashboard/viec-can-lam', mo_ta: 'Tạm ngừng, kinh doanh lại, đóng mã số thuế, hoá đơn sai, trả lời giải trình — hỏi từng câu, làm từng bước.', tu_khoa: ['tam ngung', 'giai trinh', 'hoa don sai', 'dong ma so thue', 'giai the', 'mo ho kinh doanh'] },
@@ -101,7 +100,7 @@ export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH
 // Liên kết ngân hàng đã có lối cố định "Kết nối" trên thanh bên nên đứng cuối.
 // 16/11/2026 (đóng băng đợt 2): "Kiểm trước khi chuyển" đóng băng cùng kiểm soát chi của agent (`lib/dongBang.ts`).
 // Tờ khai — việc ra tiền đầu tiên — đứng đầu; doanh thu đã xác minh vào thay chỗ (đi cùng hồ sơ vay).
-export const CONG_CU_MAC_DINH = ['soan_to_khai', 'ban_tai_quay', 'vay_von', 'doanh_thu_xac_minh', 'thieu_chung_tu', 'lien_ket_ngan_hang'];
+export const CONG_CU_MAC_DINH = ['soan_to_khai', 'vay_von', 'doanh_thu_xac_minh', 'thieu_chung_tu', 'lien_ket_ngan_hang'];
 
 export const SO_CONG_CU_TOI_DA = 12;
 
@@ -144,7 +143,7 @@ export function congCuGoiY(h: {
   // 28/09/2026: vòng chính (kiểm trước khi chuyển + sao kê để đối soát) đứng đầu cho MỌI ngành; thuế theo sau.
   // 11/11/2026: tờ khai, bán tại quầy, hồ sơ vay lên trước; liên kết ngân hàng xuống cuối (đã có lối "Kết nối").
   // 16/11/2026: kiểm trước khi chuyển, chính sách chi, kiểm soát agent đóng băng — không gợi ý.
-  const ds = ['soan_to_khai', 'ban_tai_quay', 'vay_von', 'thieu_chung_tu'];
+  const ds = ['soan_to_khai', 'vay_von', 'thieu_chung_tu'];
   for (const n of h.nhom_nganh) {
     // Chi phí AI đóng băng 11/11/2026 (`lib/dongBang.ts`): không có trong kho, không gợi ý.
     if (n === 'dich_vu') ds.push('hoa_don_ban', 'khach_hang');

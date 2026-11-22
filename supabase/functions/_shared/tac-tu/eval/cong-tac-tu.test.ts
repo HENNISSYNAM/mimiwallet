@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { goiTacTu, HAN_LENH_TRA_MS, xinChi, type Db } from '../cong-tac-tu';
 import { bamKhoa, sinhKhoa } from '../khoa';
-import { xuLyMcp } from '../../mcp/may-chu';
 import { DbGia, type Dong } from './db-gia';
 
 /**
@@ -201,19 +200,8 @@ describe('đọc', () => {
     expect((await m.goi('xem_yeu_cau', {})).status).toBe(400);
   });
 });
+// 21/11/2026: bỏ cửa MCP (không khách nào nối) — test cửa MCP xoá theo.
 
-describe('qua cửa MCP', () => {
-  it('tools/call xin_chi đi đúng bộ xử lý chung và không phải lỗi công cụ', async () => {
-    const m = await moiTruong();
-    const tra = await xuLyMcp(
-      { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'xin_chi', arguments: xin() } },
-      { coKhoa: true, chay: (ten: string, doiSo: Dong) => m.goi(ten, doiSo) },
-    ) as Dong;
-    expect(tra.result.isError).not.toBe(true);
-    expect(m.db.bang.yeu_cau_chi).toHaveLength(1);
-    expect(m.db.bang.yeu_cau_chi[0].trang_thai).toBe('da_duyet');
-  });
-});
 
 describe('chủ doanh nghiệp tạo yêu cầu chi (hành động tao_yeu_cau)', () => {
   const chu = { nguoi: 'nguoi_dung' as const, user_id: 'user-chu' };

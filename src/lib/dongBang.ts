@@ -48,7 +48,7 @@ export const TRANG_DONG_BANG: Record<string, { ten: string; ly_do: string }> = {
   '/dashboard/tac-tu': { ten: 'Kiểm soát agent', ly_do: LY_DO_AGENT },
   '/dashboard/chinh-sach': { ten: 'Chính sách chi', ly_do: LY_DO_AGENT },
   // 20/11/2026: '/dashboard/kiem-truoc-khi-chuyen' MỞ LẠI làm "Soát trước khi chi" của Quầy Tin (MoMo TechDay).
-  // Chỉ mở trang (vào từ /dashboard/quay-tin); khoá công cụ `kiem_truoc_khi_chuyen` vẫn nằm trong CONG_CU_DONG_BANG
+  // Chỉ mở trang; khoá công cụ `kiem_truoc_khi_chuyen` vẫn nằm trong CONG_CU_DONG_BANG
   // nên kho công cụ chung không ghim/gợi ý nó.
   // ── Đợt 2: trang không ra tiền ──
   '/dashboard/giay-to': { ten: 'Soạn giấy tờ', ly_do: LY_DO_GON },

@@ -22,8 +22,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { danhSachCongTy, kiemQuyen, LoiQuyen, resolveCompanyVaiTro } from "../_shared/company.ts";
 import { cauTuChoi, type HanhDong, type VaiTro } from "../_shared/quyen/vai-tro.ts";
 import { deXuatDuocPhep, locDeXuat, locPhanTich } from "../_shared/quyen/loc-de-xuat.ts";
-import { NHOM_NANG_LUC } from "../_shared/tro-ly/kieu.ts";
-import type { BangChung, DeXuat, DoDayNguon, KetQuaNangLuc, LoaiBangChung, NhomNangLuc, TraLoi } from "../_shared/tro-ly/kieu.ts";
+import { docNhomNangLuc } from "../_shared/tro-ly/kieu.ts";
+import type { BangChung, DeXuat, DoDayNguon, KetQuaNangLuc, LoaiBangChung, TraLoi } from "../_shared/tro-ly/kieu.ts";
 import { apDoDay, danhGiaDoDay, trangThaiChung } from "../_shared/tro-ly/do-day.ts";
 import { docLichSu as docLichSuChi, quetCongTy, TRAN_DONG as TRAN_DONG_BAT_THUONG } from "../_shared/bat-thuong/doc-db.ts";
 import { chuanSoTaiKhoan, dauHieuHoanCanh, kiemKhoan, mucDoChung } from "../_shared/bat-thuong/phat-hien.ts";
@@ -76,8 +76,7 @@ import { goiYTienVao } from "../_shared/phan-loai/tien-vao.ts";
 import { LECH_TIEN } from "../_shared/chung-tu/khop-chung-tu.ts";
 import { docXuTruocLuot, truXuSauLuot, type XuTruocLuot } from "../_shared/xu/so-xu.ts";
 import { docKeHoach, loiDanLapKeHoach } from "../_shared/tro-ly/lap-kich-ban.ts";
-import { chiSoCarbon } from "../_shared/carbon/uoc-tinh.ts";
-import { apPhamVi, biGioiHan, NGUON_CA_CONG_TY, trongPhamVi, type PhamViCoSo } from "../_shared/da-co-so/pham-vi.ts";
+import { apPhamVi, biGioiHan, nguonTheoPhamVi, trongPhamVi, type PhamViCoSo } from "../_shared/da-co-so/pham-vi.ts";
 import { duBaoDongTienTuCsdl } from "../_shared/dong-tien/doc-db.ts";
 import { LoiKhacCongTy } from "../_shared/dong-tien/tong-hop.ts";
 
@@ -419,7 +418,7 @@ async function docDuLieu(
   tuyChon: { soThangAi?: number; cauHoi?: string; hanhTrinh?: DuLieu["hanhTrinh"]; vaiTro?: VaiTro; phamVi?: PhamViCoSo | null } = {},
 ): Promise<DuLieu> {
   // Kế toán một cơ sở: không đọc nguồn của cả công ty; phần còn lại lọc sau khi đọc (apPhamVi).
-  if (tuyChon.phamVi) can = new Set([...can].filter((n) => !(NGUON_CA_CONG_TY as readonly string[]).includes(n)));
+  can = nguonTheoPhamVi(can, tuyChon.phamVi ?? null);
   const d = duLieuTrong(moc.homNay, moc.ky);
   d.cauHoi = tuyChon.cauHoi;
   d.vaiTro = tuyChon.vaiTro;
@@ -899,8 +898,6 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
         do_day_chung: trangThaiChung(Object.values(d.doDay) as DoDayNguon[]),
         // 16/10/2026: sức khoẻ tài chính (mức sẵn sàng vay vốn) — cùng dữ liệu đã đọc, không truy vấn thêm.
         suc_khoe: sucKhoeTaiChinh(d),
-        // 28/10/2026: dấu chân carbon ước tính theo khoản chi — chạy ngầm trên cùng giao dịch, bỏ khoản chi cá nhân.
-        carbon: chiSoCarbon(d.giaoDich, moc.homNay, new Set(d.chiCaNhan ?? [])),
         pham_vi_co_so: d.phamViCoSo ?? null,
       });
     }
@@ -936,8 +933,11 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
       const cau = String(body.cau ?? "").trim();
       if (!cau) return loi("CAU_HOI", "Bạn chưa nhập câu hỏi.", 400);
       if (cau.length > DO_DAI_CAU_HOI) return loi("CAU_HOI", `Câu hỏi dài tối đa ${DO_DAI_CAU_HOI} ký tự.`, 400);
-      const phamVi = (NHOM_NANG_LUC as readonly string[]).includes(String(body.pham_vi)) ? (body.pham_vi as NhomNangLuc) : null;
-      const yDinh = nhanYDinh(cau, phamVi);
+      // `body.pham_vi` là NHÓM NĂNG LỰC người dùng chọn, không phải phạm vi cơ sở. Phạm vi cơ sở (`phamVi`, đọc từ
+      // docPhamVi đầu xuLy) vẫn đi vào docDuLieu bên dưới — trước 21/11/2026 biến này che mất nó, câu hỏi của kế toán
+      // một cơ sở đọc số của cả công ty.
+      const nhomNangLuc = docNhomNangLuc(body.pham_vi);
+      const yDinh = nhanYDinh(cau, nhomNangLuc);
 
       /*
        * Prompt 4: câu nói về một việc nhiều bước mở (hoặc mở tiếp) hành trình NGAY, trước khi trả lời —
@@ -1265,7 +1265,7 @@ async function xuLy(db: Db, userId: string, company: { id: string; name: string 
 
       let giaoDichId: string | null = null;
       if (typeof body.giao_dich_id === "string" && body.giao_dich_id) {
-        const t = kiem(
+        const t = kiem<Row | null>(
           // Chỉ gắn chứng từ vào giao dịch thật: dòng thử của sandbox không cần giấy tờ (trừ demo).
           await locMinhHoa(db.from("transactions").select("id, is_synthetic, account_number").eq("id", body.giao_dich_id).eq("company_id", company.id), company.la_demo === true).maybeSingle(),
           "giao dịch",

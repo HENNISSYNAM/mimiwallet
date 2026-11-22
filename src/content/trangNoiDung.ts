@@ -145,66 +145,6 @@ const SAN_PHAM_DAY_DU: TrangNoiDung[] = [
     },
   },
   {
-    loai: 'san-pham', slug: 'ban-tai-quay', nhom: 'Bán hàng', trangThai: 'dang-chay',
-    ten: 'Bán tại quầy (POS)',
-    motCau: 'Thu tiền mặt hoặc VietQR ngay tại quầy, trên máy POS Android hoặc điện thoại. Mỗi lần bán vào thẳng sổ của MIMI, nên doanh thu trên tờ khai có nguồn.',
-    vanDe: {
-      tieuDe: 'Tiền mặt không có trong sao kê',
-      doan: 'Tiền khách trả mặt không đi qua ngân hàng, còn tiền chuyển khoản thì mang nội dung tuỳ ý. Cuối quý gom lại để khai thuế là lúc thiếu và lệch.',
-    },
-    cachHoatDong: [
-      { tieuDe: 'Nhập số tiền hoặc chọn món', mo: 'Bàn phím số lớn và danh sách món bán nhanh, có tên và giá.' },
-      { tieuDe: 'Tiền mặt', mo: 'Ghi là đã thu ngay và vào sổ như tiền bán hàng.' },
-      { tieuDe: 'VietQR', mo: 'Khách quét mã có mã tham chiếu MIMI. Khi sao kê về có khoản tiền vào đúng mã và đúng số tiền, lần bán tự chuyển sang đã thu.' },
-      { tieuDe: 'Biên lai', mo: 'Màn thành công sau mỗi lần bán, in được biên lai.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Mất mạng vẫn bán tiền mặt', mo: 'Lần bán tiền mặt xếp hàng trên máy rồi gửi lên khi có mạng. Gửi lại bao nhiêu lần cũng chỉ ghi một lần.' },
-      { tieuDe: 'Phân quyền ở máy chủ', mo: 'Người chỉ có quyền xem thì không thu tiền được. Xác nhận tay "đã nhận tiền" khi máy chưa thấy tiền về chỉ dành cho chủ và quản trị.' },
-      { tieuDe: 'Sửa danh sách món', mo: 'Chủ và quản trị sửa tên, giá món bán nhanh.' },
-    ],
-    ranhGioi: [
-      'MIMI không giữ tiền: tiền VietQR vào thẳng tài khoản ngân hàng của bạn.',
-      'Chuyển khoản cần mạng để tạo mã và để thấy tiền về; chỉ tiền mặt bán được khi mất mạng.',
-      'Chưa quản lý tồn kho và chưa xuất hoá đơn điện tử từ quầy.',
-    ],
-    trongApp: { ten: 'Bán tại quầy', duong: '/pos' },
-    hoiDap: [
-      { hoi: 'Cần mua máy riêng không?', dap: 'Không bắt buộc. Màn bán chạy trên trình duyệt của máy POS Android và trên điện thoại.' },
-      { hoi: 'Khách sửa nội dung chuyển khoản thì sao?', dap: 'Khoản đó không tự khớp được. Lần bán vẫn chờ, và chủ hoặc quản trị xác nhận tay.' },
-    ],
-    lienQuan: ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/doi-soat-sao-ke', '/giai-phap/ban-le-dich-vu'],
-    en: {
-      nhom: 'Sales', ten: 'Point of sale (POS)',
-      motCau: 'Take cash or VietQR payments at the counter, on an Android POS terminal or a phone. Every sale goes straight into MIMI’s books, so the revenue on your tax return has a source.',
-      vanDe: {
-        tieuDe: 'Cash never shows up on a bank statement',
-        doan: 'Cash does not pass through the bank, and transfers arrive with whatever note the customer typed. Gathering it all at the end of the quarter is where things go missing.',
-      },
-      cachHoatDong: [
-        { tieuDe: 'Enter an amount or pick items', mo: 'A large keypad and a quick list of items with names and prices.' },
-        { tieuDe: 'Cash', mo: 'Recorded as paid at once and booked as sales revenue.' },
-        { tieuDe: 'VietQR', mo: 'The customer scans a code carrying a MIMI reference. When the statement shows incoming money with that reference and the exact amount, the sale turns paid.' },
-        { tieuDe: 'Receipt', mo: 'A confirmation screen after each sale, with a printable receipt.' },
-      ],
-      lamDuoc: [
-        { tieuDe: 'Cash sales keep working offline', mo: 'Cash sales queue on the device and upload when the connection returns. Re-sending never records a sale twice.' },
-        { tieuDe: 'Permissions enforced on the server', mo: 'View-only members cannot take payments. Manually confirming "money received" before the bank shows it is limited to owners and admins.' },
-        { tieuDe: 'Edit quick items', mo: 'Owners and admins edit item names and prices.' },
-      ],
-      ranhGioi: [
-        'MIMI never holds money: VietQR payments go straight to your bank account.',
-        'Transfers need a connection to create the code and see the money arrive; only cash works offline.',
-        'No inventory management, and no e-invoices issued from the counter yet.',
-      ],
-      trongAppTen: 'Point of sale',
-      hoiDap: [
-        { hoi: 'Do I need special hardware?', dap: 'No. The sales screen runs in the browser of Android POS terminals and on phones.' },
-        { hoi: 'What if the customer edits the transfer note?', dap: 'That payment cannot match automatically. The sale stays pending until an owner or admin confirms it by hand.' },
-      ],
-    },
-  },
-  {
     loai: 'san-pham', slug: 'ho-so-vay', nhom: 'Hồ sơ vay', trangThai: 'dang-chay',
     ten: 'Hồ sơ vay & doanh thu đã xác minh',
     motCau: 'Từ sổ MIMI, dựng hồ sơ vay để bạn tự in, tự mang đi, và báo cáo doanh thu có mã kiểm tra để gửi cho đúng người bạn chọn. MIMI không cho vay.',
@@ -232,7 +172,7 @@ const SAN_PHAM_DAY_DU: TrangNoiDung[] = [
       { hoi: 'Doanh thu ghi thành khoảng là sao?', dap: 'Một phần tiền vào chưa rõ có phải doanh thu hay không, nên doanh thu ghi từ cận dưới tới cận trên. Khi khoảng đó cắt ngưỡng 01 tỷ hoặc 3 tỷ, báo cáo nói rõ kết luận còn phụ thuộc phần chưa rõ.' },
       { hoi: 'Tôi đổi ý sau khi gửi thì sao?', dap: 'Thu hồi đường dẫn; người nhận mở lại sẽ không xem được nữa.' },
     ],
-    lienQuan: ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/ban-tai-quay', '/san-pham/bao-mat'],
+    lienQuan: ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/bao-mat'],
     en: {
       nhom: 'Loan file', ten: 'Loan file & verified revenue',
       motCau: 'From MIMI’s books, build a loan file you print and carry yourself, plus a revenue report with a verification code that you send only to people you choose. MIMI does not lend.',
@@ -264,108 +204,6 @@ const SAN_PHAM_DAY_DU: TrangNoiDung[] = [
   },
 
   /* ── Chi tiêu & duyệt (đóng băng 16/11/2026, `lib/dongBang.ts`) ─────────────────────────────────────────── */
-  {
-    loai: 'san-pham', slug: 'kiem-soat-agent', nhom: 'Chi tiêu & duyệt', trangThai: 'dang-chay',
-    ten: 'Kiểm soát agent',
-    motCau: 'Mỗi agent AI một khoá riêng, một chính sách riêng. Agent xin chi; MIMI xét theo luật bạn đặt, hỏi bạn khi cần, và ghi mọi bước vào nhật ký không sửa được.',
-    vanDe: {
-      tieuDe: 'Agent làm việc nhanh — cũng chi tiền nhanh',
-      doan: 'Khi agent được phép trả tiền cho API, quảng cáo hay nhà cung cấp, một lỗi cấu hình hay một vòng lặp có thể biến thành hàng trăm khoản chi trước khi có người nhìn thấy. Kiểm soát phải nằm trước lúc tiền đi, không phải trong báo cáo cuối tháng.',
-      soLieu: AWS_AI,
-    },
-    cachHoatDong: [
-      { tieuDe: 'Tạo agent', mo: 'Đặt tên, nhận khoá dạng mimi_ak_… Khoá chỉ hiện một lần; MIMI chỉ lưu bản băm SHA-256.' },
-      { tieuDe: 'Đặt chính sách', mo: 'Trần mỗi lần, mỗi ngày, mỗi tháng (tính theo giờ Việt Nam), ngưỡng phải duyệt, nhóm chi được phép, người nhận lạ bị chặn hay phải hỏi, số yêu cầu tối đa mỗi giờ.' },
-      { tieuDe: 'Agent xin chi', mo: 'Qua MCP hoặc API. Yêu cầu được ghi trước để giữ chỗ hạn mức, rồi mới xét — hai yêu cầu đồng thời không cùng lọt trần.' },
-      { tieuDe: 'MIMI quyết', mo: 'Tự duyệt, chờ bạn duyệt, hoặc từ chối — luôn kèm mã lý do cho agent đọc và câu giải thích cho bạn đọc.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Mặc định chặt', mo: 'Agent mới phải xin duyệt mọi khoản và chỉ được chi cho người nhận trong danh sách. Bạn nới dần khi đã tin nó.' },
-      { tieuDe: 'Sáu nhóm chi', mo: 'Hạ tầng AI, phần mềm, quảng cáo, nhà cung cấp hàng hoá, vận chuyển, khác — chọn nhóm nào agent được chi.' },
-      { tieuDe: 'Tạm dừng và thu hồi', mo: 'Tạm dừng để chặn tạm. Thu hồi là vĩnh viễn và huỷ mọi khoản đã duyệt mà chưa trả của agent đó.' },
-      { tieuDe: 'Chính sách có hạn', mo: 'Đặt ngày hết hạn; qua ngày đó agent không xin chi được cho tới khi bạn gia hạn.' },
-      { tieuDe: 'Nhật ký chỉ thêm', mo: 'Tạo agent, đổi chính sách, xin chi, duyệt, từ chối, đã chi — mỗi sự kiện một dòng, CSDL chặn sửa.' },
-      { tieuDe: 'Chống trùng', mo: 'Agent gửi lại cùng mã yêu cầu (mất mạng, thử lại) thì nhận lại yêu cầu cũ, không sinh khoản thứ hai.' },
-    ],
-    ranhGioi: [
-      'MIMI không chuyển tiền. "Đã duyệt" nghĩa là có lệnh trả để bạn trả trong app ngân hàng.',
-      'Luật xét khoản chi là luật tất định, không có mô hình ngôn ngữ nào quyết thay bạn.',
-      'Khoá bị lộ thì kẻ lấy khoá cũng chỉ xin được trong trần, tới người nhận đã được phép, và vẫn cần người trả.',
-    ],
-    trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Agent của tôi viết bằng gì cũng dùng được?', dap: 'Được. Agent nào gọi được HTTP hoặc hỗ trợ MCP (Claude, Cursor…) đều nối được bằng khoá agent.' },
-      { hoi: 'Tôi quên lưu khoá thì sao?', dap: 'MIMI không lưu khoá gốc nên không xem lại được. Cấp khoá mới cho agent đó; khoá cũ hết hiệu lực.' },
-      { hoi: 'Bộ luật có được kiểm thử không?', dap: 'Có. Bộ 49 tình huống chuẩn phủ đủ mọi mã lý do, chạy lại mỗi lần sửa mã, kèm test cả vòng xin chi.' },
-    ],
-    lienQuan: ['/san-pham/duyet-chi', '/san-pham/chong-chuyen-nham', '/san-pham/mcp-api'],
-  },
-  {
-    loai: 'san-pham', slug: 'duyet-chi', nhom: 'Chi tiêu & duyệt', trangThai: 'dang-chay',
-    ten: 'Duyệt chi',
-    motCau: 'Khoản trên ngưỡng hoặc tới người nhận mới dừng lại chờ bạn. Bạn đọc số tiền bằng chữ và lý do, bấm Duyệt — tiền chỉ đi khi bạn trả trong app ngân hàng.',
-    vanDe: {
-      tieuDe: 'Duyệt qua tin nhắn là duyệt mù',
-      doan: 'Một tin "anh duyệt giúp em khoản này" không kèm người nhận, lý do hay lịch sử. Tiền Việt nhiều số 0, duyệt vội trên điện thoại rất dễ nhìn nhầm một chữ số.',
-    },
-    cachHoatDong: [
-      { tieuDe: 'Khoản chờ duyệt đứng đầu trang', mo: 'Mở Kiểm soát agent là thấy ngay khoản đang chờ, trước mọi phần cấu hình.' },
-      { tieuDe: 'Đọc đủ ngữ cảnh', mo: 'Số tiền, số tiền bằng chữ, người nhận, ngân hàng, nhóm chi, số hoá đơn nếu có, và lý do vì sao chờ bạn.' },
-      { tieuDe: 'Duyệt hoặc từ chối', mo: 'Từ chối kèm lý do — agent đọc được để không gửi lại y nguyên.' },
-      { tieuDe: 'Trả bằng lệnh trả VietQR', mo: 'Khoản đã duyệt có mã QR và nội dung chuyển khoản mang mã tham chiếu MIMI. Sao kê khớp mã thì tự thành "Đã chi".' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Số tiền bằng chữ', mo: '"Bốn triệu năm trăm nghìn đồng" ngay dưới con số — thừa một số 0 là đọc ra khác hẳn.' },
-      { tieuDe: 'Người nhận mới', mo: 'Cảnh báo riêng kèm cách gọi xác nhận; tick để thêm tài khoản vào danh sách được phép sau khi đã kiểm.' },
-      { tieuDe: 'Trả ngay trên điện thoại', mo: 'Lưu ảnh mã QR để mở trong app ngân hàng, hoặc chép từng dòng: số tài khoản, số tiền, nội dung.' },
-      { tieuDe: 'Lệnh trả có hạn 72 giờ', mo: 'Quá hạn thì trang nhắc kiểm lại trước khi trả. Bạn huỷ lệnh được bất cứ lúc nào trước khi trả.' },
-      { tieuDe: 'Không có nút "đánh dấu đã chi"', mo: '"Đã chi" chỉ xuất hiện khi sao kê xác nhận — không ai tự khai được.' },
-      { tieuDe: 'Khoản nhỏ tự duyệt', mo: 'Dưới ngưỡng, đúng nhóm, người nhận quen thì tự duyệt, bạn chỉ còn việc trả.' },
-    ],
-    ranhGioi: [
-      'MIMI không trả tiền thay bạn và không giữ số dư nào.',
-      'Duyệt hai người cho khoản lớn và thông báo đẩy tới điện thoại chưa có — nằm trong lộ trình.',
-    ],
-    trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Tôi trả sai nội dung chuyển khoản thì sao?', dap: 'Sao kê không khớp được mã tham chiếu nên khoản đó chưa tự thành "Đã chi". Giữ nguyên nội dung MIMI đưa để tự khớp.' },
-      { hoi: 'Khoản đã duyệt có tự chuyển tiền không?', dap: 'Không. Tiền chỉ đi khi bạn trả trong app ngân hàng của mình.' },
-    ],
-    lienQuan: ['/san-pham/kiem-soat-agent', '/san-pham/chong-chuyen-nham', '/san-pham/doi-soat-sao-ke'],
-  },
-  {
-    loai: 'san-pham', slug: 'chong-chuyen-nham', nhom: 'Chi tiêu & duyệt', trangThai: 'dang-chay',
-    ten: 'Chống chuyển nhầm',
-    motCau: 'Chặn người nhận lạ, giữ người nhận mới 24 giờ, cảnh báo đỏ khi cùng người nhận mà đổi số tài khoản, và chặn agent chạy vòng lặp.',
-    vanDe: {
-      tieuDe: 'Chuyển khoản nhanh, và khó lấy lại',
-      doan: 'Kiểu lừa đảo hay gặp nhất với doanh nghiệp: giả làm nhà cung cấp quen, báo "đã đổi số tài khoản". Tên giữ nguyên, số tài khoản đổi. Kẻ gian thắng bằng sự vội — hai phần ba vụ diễn ra trong 24 giờ kể từ lần liên lạc đầu.',
-      soLieu: GASA,
-    },
-    cachHoatDong: [
-      { tieuDe: 'Người nhận lạ', mo: 'Tuỳ chính sách: từ chối thẳng, hoặc dừng lại chờ bạn xác nhận đúng tài khoản.' },
-      { tieuDe: 'Người nhận vừa thêm', mo: 'Tài khoản thêm vào danh sách chưa đủ 24 giờ thì chưa được tự duyệt — mọi khoản phải có người bấm.' },
-      { tieuDe: 'Đổi số tài khoản', mo: 'Cùng tên người nhận (so bỏ dấu, không phân biệt hoa thường) nhưng khác tài khoản đã trả trong 180 ngày qua → chờ duyệt, cảnh báo đỏ.' },
-      { tieuDe: 'Vòng lặp', mo: 'Agent gửi quá số yêu cầu mỗi giờ (mặc định 30) thì bị từ chối — bắt được kiểu hỏng mà trần tiền bỏ lọt.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Từ chối thắng chờ duyệt', mo: 'Vượt trần hay vòng lặp là từ chối, không bị đẩy sang người duyệt như một cách lách.' },
-      { tieuDe: 'Cách kiểm không qua kênh kẻ gian', mo: 'Cảnh báo hướng dẫn gọi xác nhận qua số điện thoại đã lưu từ trước, không dùng số trong tin nhắn đề nghị chuyển tiền.' },
-      { tieuDe: 'Mã lý do rõ ràng', mo: 'NGUOI_NHAN_MOI_THEM, DOI_SO_TAI_KHOAN, VUOT_TAN_SUAT — agent và kế toán cùng đọc được.' },
-      { tieuDe: 'Được kiểm thử bằng ca biên', mo: 'Thêm đúng 24 giờ, thiếu 1 phút, tên viết không dấu, tên quá ngắn — đều có tình huống chuẩn.' },
-    ],
-    ranhGioi: [
-      'MIMI chưa tra được tên chủ tài khoản từ ngân hàng. Luôn đọc tên app ngân hàng hiện ra trước khi xác nhận.',
-      'Tên quá ngắn (dưới 4 ký tự sau khi bỏ dấu) không được so, để tránh báo nhầm.',
-      'Cảnh báo không thay được việc gọi xác nhận — nó chỉ làm bạn chậm lại đúng lúc.',
-    ],
-    trongApp: { ten: 'Kiểm soát agent → chính sách từng agent', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Nhà cung cấp đổi tài khoản thật thì sao?', dap: 'Gọi xác nhận, rồi thêm tài khoản mới vào danh sách được phép. Sau 24 giờ khoản chi tới tài khoản đó chạy bình thường.' },
-      { hoi: 'Tôi muốn bỏ giới hạn số yêu cầu mỗi giờ?', dap: 'Để trống ô "Tối đa yêu cầu mỗi giờ" trong chính sách của agent đó.' },
-    ],
-    lienQuan: ['/san-pham/duyet-chi', '/san-pham/kiem-soat-agent', '/giai-phap/doanh-nghiep-nho-va-vua'],
-  },
 
   /* ── Hoá đơn & chứng từ ───────────────────────────────────────── */
   {
@@ -459,7 +297,7 @@ const SAN_PHAM_DAY_DU: TrangNoiDung[] = [
       { hoi: 'Có bắt buộc liên kết ngân hàng không?', dap: 'Không. Tải tệp sao kê là đủ; liên kết Cas giúp giao dịch tự về, khỏi tải tay.' },
       { hoi: 'Tiền vào không có mã thì sao?', dap: 'Vẫn được ghi vào sổ; chỉ là không tự khớp với hoá đơn nào.' },
     ],
-    lienQuan: ['/san-pham/hoa-don-qr', '/san-pham/ket-noi', '/san-pham/ban-tai-quay'],
+    lienQuan: ['/san-pham/hoa-don-qr', '/san-pham/ket-noi'],
   },
   {
     loai: 'san-pham', slug: 'hai-cach-tinh-thue', nhom: 'Sổ & thuế', trangThai: 'dang-chay',
@@ -494,39 +332,6 @@ const SAN_PHAM_DAY_DU: TrangNoiDung[] = [
   },
 
   /* ── Nền tảng ─────────────────────────────────────────────────── */
-  {
-    loai: 'san-pham', slug: 'mcp-api', nhom: 'Nền tảng', trangThai: 'dang-chay',
-    ten: 'MCP & API cho agent',
-    motCau: 'Nối agent vào MIMI bằng một lệnh. Bốn công cụ qua MCP, cùng một bộ xử lý với API HTTP — hai cửa không bao giờ kiểm khác nhau.',
-    vanDe: {
-      tieuDe: 'Mỗi agent một kiểu tích hợp là mỗi chỗ một lỗ hổng',
-      doan: 'Nếu mỗi cửa vào tự viết lại cách xin chi, sẽ có ngày một cửa quên kiểm hạn mức — và agent sẽ đi đúng cửa đó.',
-    },
-    cachHoatDong: [
-      { tieuDe: 'Tạo khoá', mo: 'Trong Kiểm soát agent, tạo agent và lấy khoá mimi_ak_…' },
-      { tieuDe: 'Nối', mo: 'Claude Code: claude mcp add --transport http mimi …/functions/v1/mcp --header "x-mimi-agent-key: mimi_ak_…". Cursor: thêm vào mcp.json. Client chỉ đặt được Bearer thì dùng Authorization: Bearer.' },
-      { tieuDe: 'Gọi', mo: 'xem_chinh_sach → xin_chi → xem_yeu_cau cho tới khi sao kê xác nhận đã chi.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'xem_chinh_sach', mo: 'Hạn mức còn lại mỗi lần, ngày, tháng và nhóm chi — hỏi trước thay vì thử rồi bị từ chối.' },
-      { tieuDe: 'xin_chi', mo: 'Gửi yêu cầu; nhận quyết định kèm lý do. Đã duyệt thì có lệnh trả với nội dung chuyển khoản.' },
-      { tieuDe: 'xem_yeu_cau', mo: 'Theo dõi trạng thái; "da_chi" kèm giao dịch sao kê là bằng chứng.' },
-      { tieuDe: 'tra_ma_ngan_hang', mo: 'Tra mã BIN ngân hàng từ tên thường gọi.' },
-      { tieuDe: 'Chống trùng', mo: 'ma_yeu_cau giống nhau thì nhận lại yêu cầu cũ, trung_lap: true.' },
-      { tieuDe: 'Liệt kê không cần khoá', mo: 'tools/list trả danh sách công cụ khi chưa có khoá; gọi công cụ thì bắt buộc khoá.' },
-    ],
-    ranhGioi: [
-      'Bị từ chối theo chính sách (HTTP 422) không phải lỗi công cụ — agent đọc lý do và sửa yêu cầu.',
-      'Agent chỉ đọc được yêu cầu của chính nó, không thấy của agent khác.',
-      'Không có công cụ chuyển tiền.',
-    ],
-    trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Có SDK không?', dap: 'Chưa. MCP và một endpoint HTTP JSON là đủ cho phần lớn agent; tài liệu đầy đủ đi kèm khi bạn tạo khoá.' },
-      { hoi: 'Có môi trường thử không?', dap: 'Tạo một agent riêng với trần thấp và chính sách phải duyệt mọi khoản để thử an toàn.' },
-    ],
-    lienQuan: ['/san-pham/kiem-soat-agent', '/giai-phap/phan-mem-ai', '/giai-phap/startup-cong-nghe'],
-  },
   {
     loai: 'san-pham', slug: 'bao-mat', nhom: 'Nền tảng', trangThai: 'dang-chay',
     ten: 'Bảo mật',
@@ -589,61 +394,6 @@ const SAN_PHAM_DAY_DU: TrangNoiDung[] = [
 const GIAI_PHAP_DAY_DU: TrangNoiDung[] = [
   /* ── Theo quy mô ──────────────────────────────────────────────── */
   {
-    loai: 'giai-phap', slug: 'startup-cong-nghe', nhom: 'Theo quy mô', trangThai: 'dang-chay',
-    ten: 'Startup & công ty công nghệ',
-    motCau: 'Bạn đã dùng AI và bắt đầu giao việc cho agent. MIMI là lớp kiểm soát để agent chi được tiền mà bạn vẫn giữ quyền quyết.',
-    vanDe: {
-      tieuDe: 'Nhóm dùng AI sớm nhất cũng chịu rủi ro sớm nhất',
-      doan: 'Agent gọi API, mua phần mềm, nạp quảng cáo. Khi số khoản chi nhỏ tăng lên, duyệt tay từng khoản không kịp, còn để agent tự chi thì không yên tâm.',
-      soLieu: AWS_AI,
-    },
-    cachHoatDong: [
-      { tieuDe: 'Tạo agent và đặt trần', mo: 'Nhóm "Hạ tầng AI" và "Phần mềm" với trần riêng mỗi lần, ngày, tháng.' },
-      { tieuDe: 'Nối qua MCP', mo: 'Một lệnh trong Claude Code hoặc một dòng trong mcp.json của Cursor.' },
-      { tieuDe: 'Để khoản nhỏ tự chạy', mo: 'Dưới ngưỡng, người nhận quen thì tự duyệt; khoản lớn chờ bạn.' },
-      { tieuDe: 'Xem bằng chứng', mo: 'Sao kê khớp mã tham chiếu thì khoản đó thành "Đã chi".' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Kiểm soát agent', mo: 'Khoá riêng, chính sách riêng, tạm dừng và thu hồi.' },
-      { tieuDe: 'Chặn vòng lặp', mo: 'Trần số yêu cầu mỗi giờ bắt được agent hỏng gửi đi gửi lại.' },
-      { tieuDe: 'Chống chuyển nhầm', mo: 'Người nhận mới giữ 24 giờ, cảnh báo đổi số tài khoản.' },
-    ],
-    ranhGioi: ['MIMI không cầm tiền và không cấp thẻ cho agent — tiền đi bằng chuyển khoản khi bạn trả.'],
-    trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Tôi có nhiều agent cho nhiều việc?', dap: 'Tạo mỗi agent một khoá và một chính sách; khoá này lộ không ảnh hưởng agent kia.' },
-    ],
-    lienQuan: ['/san-pham/kiem-soat-agent', '/san-pham/mcp-api'],
-  },
-  {
-    loai: 'giai-phap', slug: 'doanh-nghiep-nho-va-vua', nhom: 'Theo quy mô', trangThai: 'dang-chay',
-    ten: 'Doanh nghiệp nhỏ và vừa',
-    motCau: 'Duyệt chi có lý do, chặn chuyển nhầm và đối soát sao kê — trên đường chuyển khoản mà doanh nghiệp Việt đang dùng hằng ngày.',
-    vanDe: {
-      tieuDe: 'Chuyển khoản là mặc định, và cũng là chỗ mất tiền',
-      doan: 'Nhân viên xin chi qua tin nhắn, giám đốc duyệt vội, kế toán dò sao kê cuối tháng. Mỗi khâu rời rạc là một chỗ để chuyển nhầm hoặc bị lừa.',
-      soLieu: GASA,
-    },
-    cachHoatDong: [
-      { tieuDe: 'Nối nguồn tiền', mo: 'Liên kết qua Cas để đọc giao dịch, hoặc tải tệp sao kê lên.' },
-      { tieuDe: 'Lập danh sách người nhận được phép', mo: 'Nhà cung cấp quen, số tài khoản đã kiểm.' },
-      { tieuDe: 'Duyệt chi', mo: 'Khoản trên ngưỡng hoặc người nhận mới chờ bạn, kèm số tiền bằng chữ.' },
-      { tieuDe: 'Đối soát', mo: 'Lệnh trả và hoá đơn QR tự khớp khi sao kê về.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Duyệt chi', mo: 'Một chạm, có lý do, tiền đi khi bạn trả.' },
-      { tieuDe: 'Chống chuyển nhầm', mo: 'Người nhận lạ, người nhận mới, đổi số tài khoản.' },
-      { tieuDe: 'Hoá đơn kèm mã QR', mo: 'Thu tiền và tự khớp.' },
-      { tieuDe: 'Chứng từ chi phí', mo: 'Khoản nào đã có hoá đơn, khoản nào còn thiếu.' },
-    ],
-    ranhGioi: ['Duyệt hai người cho khoản lớn chưa có — nằm trong lộ trình.'],
-    trongApp: { ten: 'Kiểm soát agent · Fintech Hub', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Không dùng agent AI thì MIMI có ích không?', dap: 'Có. Duyệt chi, chống chuyển nhầm, hoá đơn QR và đối soát đều dùng được mà không cần agent.' },
-    ],
-    lienQuan: ['/san-pham/duyet-chi', '/san-pham/chong-chuyen-nham', '/san-pham/doi-soat-sao-ke'],
-  },
-  {
     loai: 'giai-phap', slug: 'ho-kinh-doanh', nhom: 'Theo quy mô', trangThai: 'dang-chay',
     ten: 'Hộ kinh doanh',
     motCau: 'Từ 2026 hết thuế khoán. MIMI dựng sổ chi phí có chứng từ và so hai cách tính thuế, để bạn chọn cách có lợi với số liệu thật.',
@@ -666,7 +416,7 @@ const GIAI_PHAP_DAY_DU: TrangNoiDung[] = [
     hoiDap: [
       { hoi: 'Doanh thu dưới 01 tỷ có cần MIMI?', dap: 'Vẫn cần thông báo doanh thu; sổ thu chi và theo dõi ngưỡng giúp biết lúc nào sắp vượt.' },
     ],
-    lienQuan: ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/hai-cach-tinh-thue', '/san-pham/ban-tai-quay'],
+    lienQuan: ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/hai-cach-tinh-thue'],
   },
   {
     // 16/11/2026: trang "Cho văn phòng kế toán" — viết lại theo màn /dashboard/van-phong đã chạy
@@ -698,7 +448,7 @@ const GIAI_PHAP_DAY_DU: TrangNoiDung[] = [
       { hoi: 'Giá bao nhiêu?', dap: 'Gói cho văn phòng báo giá khi liên hệ, tuỳ số khách và nhu cầu.' },
       { hoi: 'Khách của tôi có phải dùng MIMI không?', dap: 'Mỗi khách cần một công ty trong MIMI có bạn là thành viên với vai chủ, quản trị hoặc kế toán.' },
     ],
-    lienQuan: ['/san-pham/khai-thue-ho-kinh-doanh', '/san-pham/ban-tai-quay', '/giai-phap/ho-kinh-doanh'],
+    lienQuan: ['/san-pham/khai-thue-ho-kinh-doanh', '/giai-phap/ho-kinh-doanh'],
     en: {
       nhom: 'By size', ten: 'For accounting firms',
       motCau: 'You keep the books for many household businesses. The Office screen puts every client in one place: annual revenue against the thresholds, the next tax deadline, incoming money awaiting the owner’s confirmation, and open work.',
@@ -731,32 +481,6 @@ const GIAI_PHAP_DAY_DU: TrangNoiDung[] = [
 
   /* ── Theo ngành ───────────────────────────────────────────────── */
   {
-    loai: 'giai-phap', slug: 'agency-quang-cao', nhom: 'Theo ngành', trangThai: 'dang-chay',
-    ten: 'Agency & quảng cáo',
-    motCau: 'Duyệt ngân sách quảng cáo trước khi nạp, giới hạn theo nhóm chi, và giữ chứng từ cho từng khoản.',
-    vanDe: {
-      tieuDe: 'Ngân sách quảng cáo nạp nhiều lần, nhiều người',
-      doan: 'Nạp quảng cáo là khoản chi lặp lại, số tiền lớn, nhiều người đề xuất. Không có trần và người duyệt, ngân sách tháng dễ vượt trước giữa tháng.',
-    },
-    cachHoatDong: [
-      { tieuDe: 'Agent hoặc nhân viên xin nạp', mo: 'Nhóm chi "Quảng cáo", kèm mục đích.' },
-      { tieuDe: 'Chính sách xét', mo: 'Trần ngày, trần tháng, ngưỡng phải duyệt.' },
-      { tieuDe: 'Bạn duyệt', mo: 'Khoản trên ngưỡng dừng lại; bạn thấy số tiền bằng chữ và lý do.' },
-      { tieuDe: 'Trả và khớp', mo: 'Lệnh trả VietQR, sao kê xác nhận đã chi.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Trần tháng cho quảng cáo', mo: 'Vượt trần là từ chối, không phải cảnh báo.' },
-      { tieuDe: 'Chứng từ', mo: 'Ghép hoá đơn mua vào với khoản đã nạp.' },
-      { tieuDe: 'Nhật ký', mo: 'Ai đề xuất, ai duyệt, lúc nào.' },
-    ],
-    ranhGioi: ['MIMI không nối trực tiếp tài khoản quảng cáo; kiểm soát nằm ở khoản chi trả tiền.'],
-    trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Nạp quảng cáo bằng thẻ thì sao?', dap: 'MIMI kiểm soát khoản chi bằng chuyển khoản. Khoản trả bằng thẻ chưa đi qua luật duyệt của MIMI.' },
-    ],
-    lienQuan: ['/san-pham/duyet-chi', '/san-pham/kiem-soat-agent', '/san-pham/chung-tu-chi-phi'],
-  },
-  {
     loai: 'giai-phap', slug: 'thuong-mai-dien-tu', nhom: 'Theo ngành', trangThai: 'dang-chay',
     ten: 'Thương mại điện tử',
     motCau: 'Thu tiền bằng mã QR có mã tham chiếu, tự khớp khi tiền về, và đưa doanh thu đã khớp vào tờ khai thuế.',
@@ -783,58 +507,6 @@ const GIAI_PHAP_DAY_DU: TrangNoiDung[] = [
     lienQuan: ['/san-pham/hoa-don-qr', '/san-pham/doi-soat-sao-ke', '/san-pham/khai-thue-ho-kinh-doanh'],
   },
   {
-    loai: 'giai-phap', slug: 'phan-mem-ai', nhom: 'Theo ngành', trangThai: 'dang-chay',
-    ten: 'Phần mềm & AI',
-    motCau: 'Giới hạn chi cho API, máy chủ và công cụ AI theo từng agent, chặn vòng lặp, và nối vào quy trình qua MCP.',
-    vanDe: {
-      tieuDe: 'Chi phí hạ tầng tăng theo mỗi lần gọi',
-      doan: 'Một thay đổi cấu hình hay một agent chạy vòng lặp có thể nhân chi phí trong vài giờ. Trần phải chặn trước khi tiền đi.',
-    },
-    cachHoatDong: [
-      { tieuDe: 'Agent cho từng việc', mo: 'Agent nạp API, agent gia hạn máy chủ — mỗi cái một chính sách.' },
-      { tieuDe: 'Nhóm "Hạ tầng AI"', mo: 'Trần mỗi lần, ngày, tháng; trần số yêu cầu mỗi giờ.' },
-      { tieuDe: 'Nối MCP', mo: 'Agent hỏi hạn mức còn lại trước khi xin.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Chặn vòng lặp', mo: 'Quá số yêu cầu mỗi giờ là từ chối.' },
-      { tieuDe: 'Kiểm soát agent', mo: 'Tạm dừng, thu hồi, chính sách có hạn.' },
-      { tieuDe: 'Kiểm trước khi chuyển', mo: 'Người nhận mới giữ 24 giờ, cảnh báo khi nhà cung cấp đổi số tài khoản.' },
-    ],
-    ranhGioi: ['Khoản trả bằng thẻ quốc tế cho nhà cung cấp AI chưa đi qua luật duyệt của MIMI.'],
-    trongApp: { ten: 'Kiểm soát agent', duong: '/dashboard/tac-tu' },
-    hoiDap: [
-      { hoi: 'Agent CI/CD của tôi gọi được không?', dap: 'Được, bằng API HTTP với header x-mimi-agent-key.' },
-    ],
-    lienQuan: ['/san-pham/mcp-api', '/san-pham/kiem-soat-agent'],
-  },
-  {
-    loai: 'giai-phap', slug: 'dich-vu-chuyen-mon', nhom: 'Theo ngành', trangThai: 'dang-chay',
-    ten: 'Dịch vụ chuyên môn',
-    motCau: 'Hoá đơn, chứng từ và công nợ khách hàng ở một chỗ; tra mã số thuế đối tác để thấy rủi ro trước khi giao việc chịu.',
-    vanDe: {
-      tieuDe: 'Làm trước, thu tiền sau',
-      doan: 'Công ty tư vấn, thiết kế, luật, kế toán thường xuất hoá đơn rồi chờ khách trả. Công nợ trễ hạn và đối tác ngừng hoạt động là hai rủi ro âm thầm.',
-      soLieu: ATRADIUS,
-    },
-    cachHoatDong: [
-      { tieuDe: 'Danh bạ khách hàng', mo: 'Một nơi duy nhất cho tên và mã số thuế từng khách.' },
-      { tieuDe: 'Tra trạng thái người nộp thuế', mo: 'Thấy khách đã ngừng hoạt động trước khi giao việc chịu.' },
-      { tieuDe: 'Hoá đơn kèm mã QR', mo: 'Khách trả, tự khớp.' },
-      { tieuDe: 'Đối soát công nợ', mo: 'Không có số hoá đơn trong nội dung thì khớp theo tên khách trong danh bạ.' },
-    ],
-    lamDuoc: [
-      { tieuDe: 'Khách hàng', mo: 'Danh bạ có mã số thuế.' },
-      { tieuDe: 'Hoá đơn', mo: 'Trạng thái chờ, quá hạn, đã thu.' },
-      { tieuDe: 'Chứng từ chi phí', mo: 'Chi phí có giấy tờ theo quý.' },
-    ],
-    ranhGioi: ['MIMI không đòi nợ thay bạn; nhắc nợ tự động nằm trong lộ trình.'],
-    trongApp: { ten: 'Hoá đơn', duong: '/dashboard/invoices' },
-    hoiDap: [
-      { hoi: 'Một khách viết tên nhiều kiểu thì sao?', dap: 'Danh bạ là nơi duy nhất để tra tên, để cùng một khách không thành ba người trong công nợ.' },
-    ],
-    lienQuan: ['/san-pham/hoa-don-qr', '/san-pham/chung-tu-chi-phi', '/san-pham/doi-soat-sao-ke'],
-  },
-  {
     loai: 'giai-phap', slug: 'ban-le-dich-vu', nhom: 'Theo ngành', trangThai: 'dang-chay',
     ten: 'Bán lẻ & dịch vụ',
     motCau: 'Thu tiền mặt và VietQR tại quầy, sổ chi phí có chứng từ sẵn cho kỳ kê khai, và đếm ngày tới hạn.',
@@ -853,11 +525,10 @@ const GIAI_PHAP_DAY_DU: TrangNoiDung[] = [
       { tieuDe: 'Đối soát sao kê', mo: 'Tiền về khớp mã tham chiếu.' },
     ],
     ranhGioi: ['Bán tại quầy của MIMI thu tiền và ghi sổ; chưa quản lý tồn kho.'],
-    trongApp: { ten: 'Bán tại quầy', duong: '/pos' },
     hoiDap: [
       { hoi: 'Khách trả tiền mặt thì sao?', dap: 'Tiền mặt không có trong sao kê; bán bằng màn Bán tại quầy thì lần bán tiền mặt vào thẳng sổ của MIMI.' },
     ],
-    lienQuan: ['/san-pham/ban-tai-quay', '/san-pham/hai-cach-tinh-thue', '/san-pham/chung-tu-chi-phi'],
+    lienQuan: ['/san-pham/hai-cach-tinh-thue', '/san-pham/chung-tu-chi-phi'],
   },
 ];
 

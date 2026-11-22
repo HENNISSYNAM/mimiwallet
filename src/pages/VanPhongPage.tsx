@@ -108,7 +108,8 @@ export default function VanPhongPage() {
   // Đèn bàn theo hàng duyệt còn lại: hàng của khách sạch thì bàn xanh.
   const khach = useMemo(() => (du?.khach ?? []).map((k) => ({ ...k, muc: mauBan(k, hangGoc, hang) })), [du, hangGoc, hang]);
   // Mèo đứng ở bàn có đề xuất của nó đang chờ.
-  const agent = useMemo(() => viTriAgent(du?.agent ?? [], hang), [du, hang]);
+  // 21/11/2026: bỏ bán tại quầy → Mèo Bán hàng không còn việc; máy chủ vẫn trả về, ở đây lọc đi.
+  const agent = useMemo(() => viTriAgent((du?.agent ?? []).filter((a) => a.agent !== 'ban_hang'), hang), [du, hang]);
   const dem = useMemo(() => {
     if (!du) return { do: 0, vang: 0, xanh: 0 };
     const d = { ...du.dem };

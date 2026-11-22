@@ -20,7 +20,6 @@ describe('ẩn trang vay trong app Android', () => {
     expect(CONG_CU_THEO_KHOA.vay_von).toBeUndefined();
     expect(CONG_CU_THEO_KHOA.co_hoi_phat_trien).toBeUndefined();
     expect(CONG_CU_THEO_KHOA.soan_to_khai).toBeTruthy();
-    expect(CONG_CU_THEO_KHOA.ban_tai_quay).toBeTruthy();
   });
 
   it('trang tạm dừng có lời giải thích cho hai đường dẫn', async () => {

@@ -77,7 +77,6 @@ const MENU_SAN_PHAM: CauHinhMenu = {
       tieuDe: { vi: 'MIMI làm gì cho bạn', en: 'What MIMI does for you', ko: 'MIMI가 하는 일', zh: 'MIMI 为您做什么' },
       muc: [
         { icon: FileText, ten: { vi: 'Khai thuế cho hộ kinh doanh', en: 'Tax returns for household businesses', ko: '가구 사업자 세금 신고', zh: '个体工商户报税' }, mo: { vi: 'Tờ khai điền sẵn, bạn tự nộp', en: 'Pre-filled return, you file it', ko: '미리 채운 신고서, 직접 제출', zh: '预填申报表，您自行提交' }, href: '/san-pham/khai-thue-ho-kinh-doanh' },
-        { icon: Store, ten: { vi: 'Bán tại quầy (POS)', en: 'Point of sale (POS)', ko: '매장 판매 (POS)', zh: '柜台收银 (POS)' }, mo: { vi: 'Tiền mặt và VietQR, tự vào sổ', en: 'Cash and VietQR, booked automatically', ko: '현금과 VietQR, 장부에 자동 기록', zh: '现金与 VietQR，自动入账' }, href: '/san-pham/ban-tai-quay' },
         { icon: Landmark, ten: { vi: 'Hồ sơ vay & doanh thu xác minh', en: 'Loan file & verified revenue', ko: '대출 서류 및 검증된 매출', zh: '贷款材料与已验证收入' }, mo: { vi: 'Bạn chọn gửi cho ai; MIMI không cho vay', en: 'You choose who sees it; MIMI does not lend', ko: '누구에게 보낼지 직접 선택, MIMI는 대출하지 않음', zh: '由您决定发给谁；MIMI 不放贷' }, href: '/san-pham/ho-so-vay' },
         { icon: Building2, ten: { vi: 'Cho văn phòng kế toán', en: 'For accounting firms', ko: '회계 사무소용', zh: '面向会计事务所' }, mo: { vi: 'Mọi khách ở một chỗ: ngưỡng, hạn thuế', en: 'Every client in one place: thresholds, deadlines', ko: '모든 고객을 한곳에서: 기준선, 신고 기한', zh: '所有客户集中一处：门槛与申报期限' }, href: '/giai-phap/van-phong-ke-toan' },
       ],
@@ -128,11 +127,16 @@ const MENU_GIAI_PHAP: CauHinhMenu = {
   ],
   noiBat: {
     kieu: 'moi',
-    tieuDe: { vi: 'Mới: Bán tại quầy', en: 'New: point of sale', ko: '신규: 매장 판매', zh: '新增：柜台收银' },
-    mo: { vi: 'Tiền mặt vào sổ ngay, VietQR tự khớp, mất mạng vẫn bán tiền mặt.', en: 'Cash booked at once, VietQR matched automatically, cash sales work offline.', ko: '현금은 즉시 기록, VietQR 자동 대조, 오프라인에서도 현금 판매.', zh: '现金即时入账，VietQR 自动对账，断网也能收现金。' },
-    href: '/san-pham/ban-tai-quay',
+    tieuDe: { vi: 'Mới: Bàn kế toán AI', en: 'New: the AI accounting desk', ko: 'New: the AI accounting desk', zh: 'New: the AI accounting desk' },
+    mo: {
+      vi: 'Một kế toán, nhiều hộ kinh doanh, một đội agent: agent soạn sẵn kèm bằng chứng, kế toán duyệt.',
+      en: 'One accountant, many household businesses, a team of agents: agents prepare with evidence, the accountant approves.',
+      ko: 'One accountant, many household businesses, a team of agents: agents prepare with evidence, the accountant approves.',
+      zh: 'One accountant, many household businesses, a team of agents: agents prepare with evidence, the accountant approves.',
+    },
+    href: '/giai-phap/van-phong-ke-toan',
     ngay: '11/2026',
-    dong: ['TIEN_MAT', 'VIETQR', 'BAN_KHI_MAT_MANG'],
+    dong: ['AGENT_DE_XUAT', 'KE_TOAN_DUYET', 'CO_BANG_CHUNG'],
   },
 };
 
