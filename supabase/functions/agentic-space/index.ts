@@ -21,6 +21,10 @@ import { homNayVN } from "../_shared/van-phong/danh-muc.ts";
 import { cauHoiAi, docTraLoiAi, LOI_DAN_AI } from "../_shared/space/ai-phan-loai.ts";
 import type { CongCuAgent } from "../_shared/space/dong-co.ts";
 import { danhDauXong, docBangViec, docTinViec, huyViec, LoiSpace, taoViecSpace, tiepTucViec } from "../_shared/space/kho.ts";
+import {
+  chayQuyTrinh, doiPhuongAn, dsQuyTrinh, ganEmail, LoiQuyTrinh, suaQuyTrinh, taoQuyTrinh, xemQuyTrinh, xuLyBuoc,
+} from "../_shared/quy-trinh/kho.ts";
+import { taoThucThi, type HoiMoHinh } from "../_shared/quy-trinh/thuc-thi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +36,41 @@ const loi = (ma: string, cau: string, status: number) => json({ error: cau, ma }
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
+
+/**
+ * Hỏi mô hình cho một công ty: Bedrock trước, cổng dự phòng sau; đọc xu trước, trừ xu theo chi phí thật sau.
+ * Không có cổng nào → undefined (người gọi rơi về mẫu / làm tay). Hết xu → ném lỗi (người gọi xử lý như không có mô hình).
+ */
+function taoHoi(db: Db): (companyId: string) => HoiMoHinh | undefined {
+  const cong = chonCongMoHinh({
+    stali: Deno.env.get("STALI_API_KEY"), moHinhStali: Deno.env.get("STALI_MODEL"),
+    lovable: Deno.env.get("LOVABLE_API_KEY"),
+    openrouter: Deno.env.get("OPENROUTER_API_KEY"), moHinhOpenRouter: Deno.env.get("OPENROUTER_MODEL"),
+  });
+  const bedrock = chonBedrock({ khoa: Deno.env.get("BEDROCK_API_KEY"), vung: Deno.env.get("BEDROCK_REGION"), mo_hinh: Deno.env.get("BEDROCK_MODEL") });
+  if (!bedrock && !cong) return () => undefined;
+  return (companyId) => async (heThong, nguoiDung) => {
+    const xu = await docXuTruocLuot(db, companyId, homNayVN(Date.now())).catch(() => null);
+    if (!xu || xu.so_du < 1) throw new Error(xu ? "hết xu tháng này" : "chưa đọc được số xu");
+    const lanGoi: LanGoi[] = [];
+    const ghi = (l: LanGoi) => {
+      lanGoi.push(l);
+      void db.from("lan_goi_mo_hinh").insert({ company_id: companyId, ...l }).then(({ error }: { error: { message: string } | null }) => {
+        if (error) console.error("ghi lần gọi mô hình:", error.message);
+      });
+    };
+    const dsCong: CongThu[] = [
+      ...(bedrock ? [{ ten_hien_thi: `Amazon Bedrock (${bedrock.mo_hinh})`, ncc: coDo(congBedrock(bedrock), "phan_tich", ghi), mo_hinh: bedrock.mo_hinh }] : []),
+      ...(cong ? [{ ten_hien_thi: `cổng dự phòng ${cong.ten}`, ncc: coDo(nhaCungCapCua(cong), "phan_tich", ghi), mo_hinh: cong.mo_hinh }] : []),
+    ];
+    try {
+      const r = await goiCoDuPhong(dsCong, [{ vai: "he_thong", noi_dung: heThong }, { vai: "nguoi_dung", noi_dung: nguoiDung }], 25_000);
+      return { text: r.phan_hoi.noi_dung, cong: r.cong };
+    } finally {
+      if (lanGoi.length) await truXuSauLuot(db, companyId, xu, lanGoi, "agentic_space_qt").catch((e) => console.error("space xu:", e instanceof Error ? e.message : e));
+    }
+  };
+}
 
 function taoCongCu(db: Db): (companyId: string) => CongCuAgent {
   const cong = chonCongMoHinh({
@@ -87,13 +126,16 @@ Deno.serve(async (req) => {
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
     const hanhDong = String(body.hanh_dong ?? "");
-    const ghi = ["tao", "tiep_tuc", "xong", "huy"].includes(hanhDong);
+    const ghi = ["tao", "tiep_tuc", "xong", "huy", "qt_tao", "qt_sua", "qt_pa", "qt_gan", "qt_chay", "qt_buoc"].includes(hanhDong);
     if (!(await duocGoi(db, user.id, ghi
       ? [{ hanh_dong: "space_ghi_phut", cua_so_giay: 60, toi_da: 12 }, { hanh_dong: "space_ghi_gio", cua_so_giay: 3600, toi_da: 200 }]
       : [{ hanh_dong: "space_doc_phut", cua_so_giay: 60, toi_da: 30 }]))) return qua429(corsHeaders);
 
     const id = String(body.id ?? "");
     const cc = taoCongCu(db);
+    const hoiCho = taoHoi(db);
+    // deno-lint-ignore no-explicit-any
+    const thucThiCho = (r: Record<string, any>) => taoThucThi(db, user.id, String(r.company_id), String(r.cau_goc ?? ""), hoiCho(String(r.company_id)));
     switch (hanhDong) {
       case "bang": return json(await docBangViec(db, user.id));
       case "tin": return json(await docTinViec(db, user.id, id));
@@ -104,10 +146,26 @@ Deno.serve(async (req) => {
       case "tiep_tuc": await tiepTucViec(db, user.id, id, cc); return json({ ok: true });
       case "xong": await danhDauXong(db, user.id, id, cc); return json({ ok: true });
       case "huy": await huyViec(db, user.id, id); return json({ ok: true });
+      // ── Workflow (22/11/2026) ──
+      case "qt_ds": return json({ ds: await dsQuyTrinh(db, user.id) });
+      case "qt_xem": return json(await xemQuyTrinh(db, user.id, id));
+      case "qt_tao": {
+        const cid = String(body.company_id ?? "").toLowerCase();
+        return json({ id: await taoQuyTrinh(db, user.id, { company_id: cid, cau: body.cau }, hoiCho(cid)) });
+      }
+      case "qt_sua": {
+        const x = await xemQuyTrinh(db, user.id, id);
+        await suaQuyTrinh(db, user.id, id, body.loi, hoiCho(String(x.company_id)));
+        return json({ ok: true });
+      }
+      case "qt_pa": await doiPhuongAn(db, user.id, id, body.phuong_an); return json({ ok: true });
+      case "qt_gan": await ganEmail(db, user.id, id, body.nut_id, body.email); return json({ ok: true });
+      case "qt_chay": await chayQuyTrinh(db, user.id, id, user.email ?? null, thucThiCho); return json({ ok: true });
+      case "qt_buoc": await xuLyBuoc(db, user.id, id, body.nut_id, body.quyet, body.ghi_chu, thucThiCho); return json({ ok: true });
       default: return loi("THAM_SO", "Hành động không hợp lệ.", 400);
     }
   } catch (e) {
-    if (e instanceof LoiSpace) return loi(e.ma, e.message, e.status);
+    if (e instanceof LoiSpace || e instanceof LoiQuyTrinh) return loi(e.ma, e.message, e.status);
     console.error("agentic-space:", e instanceof Error ? e.message : String(e));
     return loi("LOI_MAY_CHU", "Agentic AI Space chưa xử lý được. Thử lại sau ít phút.", 500);
   }

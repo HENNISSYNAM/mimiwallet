@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {} }));
 import { cacThang, dungSoLieuHome } from './soLieuHome';
-import { chonViecHome } from '@/components/khong-gian/ViecAgentGanDay';
+import { chonQuyTrinhHome } from '@/components/khong-gian/ViecAgentGanDay';
 
 const gd = (id: string, ngay: string, amount: number, type: 'income' | 'expense', ten = 'A') => ({
   id, transaction_date: ngay, amount, type, category: null, is_synthetic: false, counter_account_name: ten, merchant_name: null, payment_reference: 'ck',
@@ -24,10 +24,10 @@ describe('số liệu biểu đồ Home', () => {
   });
 });
 
-describe('việc của agent ở Home', () => {
+describe('workflow gần đây ở Home', () => {
   const v = (id: string, company_id: string, trang_thai: string, cap = '2026-11-22T01:00:00Z') => ({ id, company_id, trang_thai, cap_nhat_luc: cap }) as never;
-  it('chỉ công ty đang dùng; chờ bạn đứng đầu; bỏ việc huỷ', () => {
-    const ds = chonViecHome([v('1', 'c', 'xong'), v('2', 'c', 'can_ban'), v('3', 'khac', 'can_ban'), v('4', 'c', 'huy'), v('5', 'c', 'dang_lam')], 'c');
-    expect(ds.map((x) => x.id)).toEqual(['2', '5', '1']);
+  it('chỉ công ty đang dùng; đang chạy trước, rồi bản nháp, rồi xong', () => {
+    const ds = chonQuyTrinhHome([v('1', 'c', 'xong'), v('2', 'c', 'nhap'), v('3', 'khac', 'dang_chay'), v('5', 'c', 'dang_chay')], 'c');
+    expect(ds.map((x) => x.id)).toEqual(['5', '2', '1']);
   });
 });

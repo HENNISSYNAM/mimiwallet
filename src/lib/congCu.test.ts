@@ -41,7 +41,8 @@ describe('danh mục công cụ', () => {
      * đầu tiên — lên đầu; bán tại quầy và hồ sơ vay ngay sau.
      */
     expect(CONG_CU_MAC_DINH[0]).toBe('soan_to_khai');
-    expect(CONG_CU_MAC_DINH.slice(1, 3)).toEqual(['vay_von', 'doanh_thu_xac_minh']);
+    // 22/11/2026: gộp danh mục — doanh thu xác minh và cơ hội phát triển vào Vay vốn; bỏ Báo cáo thu chi (trùng tab Tổng quan).
+    expect(CONG_CU_MAC_DINH.slice(1, 3)).toEqual(['vay_von', 'thieu_chung_tu']);
     // Công cụ đóng băng không được ghim sẵn (ghim thì người dùng mở ra trang "Tạm dừng").
     for (const k of ['kiem_truoc_khi_chuyen', 'kiem_soat_agent', 'chinh_sach_chi', 'soan_giay_to', 'dang_ky_kinh_doanh']) {
       expect(CONG_CU_MAC_DINH, k).not.toContain(k);
@@ -63,7 +64,8 @@ describe('danh mục công cụ', () => {
     expect(CONG_CU_MAC_DINH).not.toContain('chi_phi_ai');
     // Việc ra tiền tìm được bằng chữ thường ngày.
     expect(timCongCu('bán hàng').map((c) => c.khoa)).not.toContain('ban_tai_quay');
-    expect(timCongCu('hồ sơ vay').map((c) => c.khoa)).toEqual(['vay_von', 'doanh_thu_xac_minh']);
+    expect(timCongCu('hồ sơ vay').map((c) => c.khoa)).toEqual(['vay_von']);
+    expect(timCongCu('doanh thu xác minh').map((c) => c.khoa)).toEqual(['vay_von']);
     expect(DANH_MUC_CONG_CU.some((c) => c.khoa === 'khach_hang')).toBe(false);
     expect(timCongCu('không có gì như vầy')).toEqual([]);
     expect(timCongCu('  ')).toHaveLength(DANH_MUC_CONG_CU.length);
@@ -98,5 +100,15 @@ describe('danh mục công cụ', () => {
     expect(nhieu.length).toBe(6);
     for (const k of ['kiem_truoc_khi_chuyen', 'chinh_sach_chi', 'kiem_soat_agent']) expect(nhieu, k).not.toContain(k);
     for (const k of nhieu) expect(CONG_CU_THEO_KHOA[k], k).toBeTruthy();
+  });
+});
+
+describe('danh mục gọn (22/11/2026)', () => {
+  it('mỗi công cụ một icon riêng, không công cụ nào rơi về icon mặc định', async () => {
+    const { ICON_CONG_CU } = await import('@/components/cong-cu/IconCongCu');
+    const { DANH_MUC_CONG_CU } = await import('./congCu');
+    const icon = DANH_MUC_CONG_CU.map((c) => ICON_CONG_CU[c.khoa]);
+    expect(icon.every(Boolean)).toBe(true);
+    expect(new Set(icon).size).toBe(icon.length);
   });
 });

@@ -19,8 +19,8 @@ vi.mock('@/lib/goiTacTu', () => ({ goiTacTu: gia.tacTu }));
 const dieuPhoi = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/goiDieuPhoi', () => ({ goiDieuPhoi: dieuPhoi, khoaChongTrungMoi: () => 'nv-khoa-thu-0001' }));
 vi.mock('@/lib/goiChiPhiAi', () => ({ goiChiPhiAi: gia.chiPhiAi }));
-const space = vi.hoisted(() => ({ giao: vi.fn(), bang: vi.fn(async () => ({ viec: [] })), id: vi.fn(async () => 'cty-1') }));
-vi.mock('@/lib/goiSpace', () => ({ giaoViec: space.giao, docBang: space.bang }));
+const space = vi.hoisted(() => ({ giao: vi.fn(), ds: vi.fn(async () => []), id: vi.fn(async () => 'cty-1') }));
+vi.mock('@/lib/goiQuyTrinh', () => ({ taoQuyTrinh: space.giao, dsQuyTrinh: space.ds }));
 vi.mock('@/lib/congTyDangDung', async (goc) => ({ ...(await goc<Record<string, unknown>>()), idCongTyDangDung: space.id }));
 vi.mock('@/lib/goiToKhai', () => ({ goiToKhai: gia.toKhai, DUONG_DAN_NOP_TO_KHAI: 'https://dichvucong.gdt.gov.vn/tthc/homelogin' }));
 // Canvas và ảnh động không chạy trong jsdom; cả hai chỉ trang trí.
@@ -637,18 +637,18 @@ describe('nhiệm vụ web → agent cloud (13/10/2026)', () => {
 });
 
 describe('Home kiểu ClickUp (22/11/2026)', () => {
-  it('có thanh tab Home; chế độ "Giao việc cho agent" gửi sang Agentic AI Space, không gọi trợ lý', async () => {
-    space.giao.mockResolvedValue('v-moi');
+  it('có thanh tab Home; chế độ "Dựng workflow" dựng workflow rồi mở nó trong Space', async () => {
+    space.giao.mockResolvedValue('qt-moi');
     render(<MemoryRouter initialEntries={['/dashboard']}><Routes>
       <Route path="/dashboard" element={<TroLyPage />} />
-      <Route path="/dashboard/space" element={<p>trang space</p>} />
+      <Route path="/dashboard/space/:id" element={<p>trang workflow</p>} />
     </Routes></MemoryRouter>);
     expect(screen.getAllByRole('navigation', { name: 'Home' }).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('tab', { name: 'Giao việc cho agent' }));
-    const o = screen.getByPlaceholderText(/Giao việc cho agent/);
+    fireEvent.click(screen.getByRole('tab', { name: 'Dựng workflow' }));
+    const o = screen.getByPlaceholderText(/MIMI dựng workflow/);
     fireEvent.change(o, { target: { value: 'Chốt quý 4' } });
     fireEvent.keyDown(o, { key: 'Enter' });
-    await waitFor(() => expect(space.giao).toHaveBeenCalledWith({ company_id: 'cty-1', cau: 'Chốt quý 4' }));
-    expect(await screen.findByText('trang space')).toBeTruthy();
+    await waitFor(() => expect(space.giao).toHaveBeenCalledWith('cty-1', 'Chốt quý 4'));
+    expect(await screen.findByText('trang workflow')).toBeTruthy();
   });
 });

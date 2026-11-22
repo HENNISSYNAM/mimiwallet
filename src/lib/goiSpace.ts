@@ -9,7 +9,7 @@ export type { BangViec, DongViec, TenAgentSpace, TrangThaiAgent, Viec };
 export interface TinSpace { id: number; tu: string; den: string | null; loai: string; noi_dung: string; lien_ket: string | null; luc: string }
 
 /** Gọi edge function `agentic-space` bằng phiên đăng nhập. Mọi quyền kiểm ở máy chủ. */
-async function goi(hanhDong: string, o: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+export async function goi(hanhDong: string, o: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new LoiGoiHam('Phiên đăng nhập đã hết. Đăng nhập lại.', 401, {});
   const res = await fetch(`${SUPABASE_URL}/functions/v1/agentic-space`, {

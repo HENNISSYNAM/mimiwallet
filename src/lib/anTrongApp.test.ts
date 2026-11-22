@@ -8,10 +8,10 @@ describe('ẩn trang vay trong app Android', () => {
     vi.resetModules();
   });
 
-  it('web: còn vay vốn và cơ hội phát triển', async () => {
+  it('web: còn vay vốn (cơ hội phát triển nằm trong trang Vay vốn)', async () => {
     const { CONG_CU_THEO_KHOA } = await import('./congCu');
     expect(CONG_CU_THEO_KHOA.vay_von).toBeTruthy();
-    expect(CONG_CU_THEO_KHOA.co_hoi_phat_trien).toBeTruthy();
+    // 22/11/2026: gộp danh mục — doanh thu xác minh và cơ hội phát triển vào Vay vốn; bỏ Báo cáo thu chi (trùng tab Tổng quan).
   });
 
   it('app Android: bỏ khỏi kho công cụ, các công cụ khác giữ nguyên', async () => {

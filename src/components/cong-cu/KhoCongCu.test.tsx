@@ -35,22 +35,22 @@ describe('Kho công cụ', () => {
   it('chưa chọn gì: hiện bộ mặc định đã ghim; ghim thêm thì lưu cả danh sách theo thứ tự', async () => {
     render(<KhoCongCu mo onDong={() => {}} />);
     expect(await screen.findByRole('button', { name: 'Bỏ ghim Soạn tờ khai thuế' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Ghim Báo cáo thu chi' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ghim Hoá đơn bán ra' }));
     await waitFor(() => expect(gia.chen).toHaveBeenCalled());
     expect(gia.xoa).toHaveBeenCalledWith('user_id', 'u1');
     const rows = gia.chen.mock.calls[0][0] as { khoa: string; thu_tu: number; user_id: string }[];
     // Suy từ CONG_CU_MAC_DINH thay vì chép cứng: phép kiểm ở đây là "bộ mặc định
     // giữ nguyên thứ tự rồi nối cái vừa ghim vào cuối", không phải danh sách cụ
     // thể — chép cứng thì mỗi lần đổi bộ mặc định lại đỏ một cách vô nghĩa.
-    expect(rows.map((r) => r.khoa)).toEqual([...CONG_CU_MAC_DINH, 'bao_cao']);
+    expect(rows.map((r) => r.khoa)).toEqual([...CONG_CU_MAC_DINH, 'hoa_don_ban']);
     expect(rows.every((r) => r.user_id === 'u1')).toBe(true);
     expect(rows.at(-1)?.thu_tu).toBe(CONG_CU_MAC_DINH.length);
   });
 
   it('tìm không dấu thu hẹp danh mục', async () => {
-    gia.dong = [{ khoa: 'bao_cao', thu_tu: 0 }];
+    gia.dong = [{ khoa: 'hoa_don_ban', thu_tu: 0 }];
     render(<KhoCongCu mo onDong={() => {}} />);
-    await screen.findByRole('button', { name: 'Bỏ ghim Báo cáo thu chi' });
+    await screen.findByRole('button', { name: 'Bỏ ghim Hoá đơn bán ra' });
     fireEvent.change(screen.getByLabelText('Tìm công cụ'), { target: { value: 'to khai' } });
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByText('Soạn tờ khai thuế')).toBeTruthy();

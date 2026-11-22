@@ -38,15 +38,12 @@ const DANH_MUC_DAY_DU: CongCu[] = [
   { khoa: 'thieu_chung_tu', ten: 'Khoản chi thiếu chứng từ', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/chung-tu', mo_ta: 'Khoản chi trong kỳ kê khai chưa có hoá đơn, chứng từ.', tu_khoa: ['chi phi', 'hoa don dau vao', 'khau tru'] },
   { khoa: 'soan_to_khai', ten: 'Soạn tờ khai thuế', nhom: 'thue', loai: 'trang', dich: '/dashboard/to-khai', mo_ta: 'MIMI điền mẫu tờ khai từ hoá đơn, sao kê và quy định trong kho văn bản.', tu_khoa: ['to khai', 'khai thue', 'thong bao doanh thu', 'gtgt', 'tncn'] },
   { khoa: 'doc_bao_cao', ten: 'Đọc báo cáo tài chính & tờ khai', nhom: 'thue', loai: 'trang', dich: '/dashboard/doc-bao-cao', mo_ta: 'Tải báo cáo tài chính hoặc tờ khai (Excel/CSV): xếp từng chỉ tiêu, kiểm đẳng thức kế toán, cảnh báo mẫu hết hiệu lực.', tu_khoa: ['bao cao tai chinh', 'bang can doi ke toan', 'tinh hinh tai chinh', 'ket qua kinh doanh', 'luu chuyen tien te', 'quyet toan', 'b01', 'b02'] },
-  { khoa: 'bao_cao', ten: 'Báo cáo thu chi', nhom: 'thue', loai: 'trang', dich: '/dashboard/reports', mo_ta: 'Thu, chi, chênh lệch theo tháng từ sao kê ngân hàng.', tu_khoa: ['loi nhuan', 'lai lo', 'bao cao'] },
   { khoa: 'lien_ket_ngan_hang', ten: 'Liên kết ngân hàng', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/fintech', mo_ta: 'Liên kết tài khoản để MIMI đọc tiền vào, tiền ra; nhận tiền bằng mã QR.', tu_khoa: ['casso', 'sepay', 'qr', 'sao ke'] },
-  { khoa: 'vay_von', ten: 'Vay vốn', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/vay-von', mo_ta: 'Đánh giá sẵn sàng vay từ dòng tiền thật, có lý do và gợi ý; soạn hồ sơ vay để bạn tự in. MIMI không cho vay.', tu_khoa: ['vay', 'vay von', 'ho so vay', 'tin dung', 'ngan hang'] },
-  { khoa: 'doanh_thu_xac_minh', ten: 'Doanh thu đã xác minh', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/doanh-thu-xac-minh', mo_ta: 'Báo cáo doanh thu từ sao kê, có mã kiểm tra; bạn chọn gửi cho ai để kèm hồ sơ vay.', tu_khoa: ['doanh thu', 'xac minh', 'ho so vay', 'chung minh thu nhap'] },
-  { khoa: 'co_hoi_phat_trien', ten: 'Cơ hội phát triển', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/co-hoi', mo_ta: 'Dấu hiệu tăng trưởng của doanh nghiệp bạn từ dòng tiền thật, nhu cầu có thể có và gói ngân hàng phù hợp; chỉ chia sẻ khi bạn đồng ý.', tu_khoa: ['co hoi', 'tang truong', 'goi ngan hang', 'khach hang uu tien'] },
+  { khoa: 'vay_von', ten: 'Vay vốn', nhom: 'ngan_hang', loai: 'trang', dich: '/dashboard/vay-von', mo_ta: 'Đánh giá sẵn sàng vay từ dòng tiền thật; soạn hồ sơ vay, doanh thu đã xác minh và cơ hội phát triển. MIMI không cho vay.', tu_khoa: ['vay', 'vay von', 'ho so vay', 'tin dung', 'ngan hang', 'doanh thu', 'xac minh', 'chung minh thu nhap', 'co hoi', 'tang truong'] },
   { khoa: 'van_phong', ten: 'Văn phòng kế toán', nhom: 'thue', loai: 'trang', dich: '/dashboard/van-phong', mo_ta: 'Mọi khách bạn làm sổ ở một chỗ: đèn trạng thái, hạn thuế, tiền vào chờ xác nhận và việc các agent MIMI đang làm.', tu_khoa: ['van phong', 'nhieu khach', 'danh muc khach', 'dich vu ke toan'] },
-  { khoa: 'tach_chi_ca_nhan', ten: 'Tách chi cá nhân', nhom: 'thue', loai: 'trang', dich: '/dashboard/chi-ca-nhan', mo_ta: 'Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi dùng chung một tài khoản.', tu_khoa: ['ca nhan', 'gia dinh', 'chi phi kinh doanh', 'chung tai khoan'] },
-  { khoa: 'viec_can_lam', ten: 'Việc cần làm', nhom: 'thue', loai: 'trang', dich: '/dashboard/viec-can-lam', mo_ta: 'Tạm ngừng, kinh doanh lại, đóng mã số thuế, hoá đơn sai, trả lời giải trình — hỏi từng câu, làm từng bước.', tu_khoa: ['tam ngung', 'giai trinh', 'hoa don sai', 'dong ma so thue', 'giai the', 'mo ho kinh doanh'] },
-  { khoa: 'tai_lieu', ten: 'Tài liệu & Chứng từ', nhom: 'thue', loai: 'trang', dich: '/dashboard/tai-lieu', mo_ta: 'Báo cáo phân tích, gói sẵn sàng khai thuế, gói bằng chứng, công văn MIMI soạn.', tu_khoa: ['bao cao', 'goi bang chung', 'tai lieu', 'cong van'] },
+  { khoa: 'tach_chi_ca_nhan', ten: 'Tách chi cá nhân', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/chi-ca-nhan', mo_ta: 'Tách chi tiêu cá nhân khỏi chi phí kinh doanh khi dùng chung một tài khoản.', tu_khoa: ['ca nhan', 'gia dinh', 'chi phi kinh doanh', 'chung tai khoan'] },
+  { khoa: 'viec_can_lam', ten: 'Thủ tục thuế', nhom: 'thue', loai: 'trang', dich: '/dashboard/viec-can-lam', mo_ta: 'Tạm ngừng, kinh doanh lại, đóng mã số thuế, hoá đơn sai, trả lời giải trình — hỏi từng câu, làm từng bước.', tu_khoa: ['tam ngung', 'giai trinh', 'hoa don sai', 'dong ma so thue', 'giai the', 'mo ho kinh doanh'] },
+  { khoa: 'tai_lieu', ten: 'Tài liệu MIMI soạn', nhom: 'chung_tu', loai: 'trang', dich: '/dashboard/tai-lieu', mo_ta: 'Báo cáo phân tích, gói sẵn sàng khai thuế, gói bằng chứng, công văn MIMI soạn.', tu_khoa: ['bao cao', 'goi bang chung', 'tai lieu', 'cong van'] },
   { khoa: 'soan_giay_to', ten: 'Soạn giấy tờ', nhom: 'thue', loai: 'trang', dich: '/dashboard/giay-to', mo_ta: 'Đơn tra soát chuyển nhầm, công văn giải trình, công văn đề nghị huỷ tờ khai.', tu_khoa: ['cong van', 'giai trinh', 'huy to khai', 'tra soat', 'chuyen nham'] },
   { khoa: 'dang_ky_kinh_doanh', ten: 'Đăng ký kinh doanh', nhom: 'thue', loai: 'trang', dich: '/dashboard/dang-ky-kinh-doanh', mo_ta: 'Chọn loại hình, hồ sơ và các bước nộp có căn cứ; điền sẵn Giấy đề nghị theo mẫu gốc để in.', tu_khoa: ['thanh lap cong ty', 'dang ky doanh nghiep', 'ho kinh doanh', 'cong ty co phan', 'tnhh', 'dieu le'] },
   { khoa: 'kiem_truoc_khi_chuyen', ten: 'Kiểm tra trước khi chuyển tiền', nhom: 'chi_tieu', loai: 'trang', dich: '/dashboard/kiem-truoc-khi-chuyen', mo_ta: 'So khoản sắp chuyển với lịch sử chi: đổi số tài khoản, người nhận lạ, kịch bản lừa đảo.', tu_khoa: ['lua dao', 'doi so tai khoan', 'chuyen khoan', 'an toan'] },
@@ -100,7 +97,8 @@ export const CONG_CU_THEO_KHOA: Record<string, CongCu> = Object.fromEntries(DANH
 // Liên kết ngân hàng đã có lối cố định "Kết nối" trên thanh bên nên đứng cuối.
 // 16/11/2026 (đóng băng đợt 2): "Kiểm trước khi chuyển" đóng băng cùng kiểm soát chi của agent (`lib/dongBang.ts`).
 // Tờ khai — việc ra tiền đầu tiên — đứng đầu; doanh thu đã xác minh vào thay chỗ (đi cùng hồ sơ vay).
-export const CONG_CU_MAC_DINH = ['soan_to_khai', 'vay_von', 'doanh_thu_xac_minh', 'thieu_chung_tu', 'lien_ket_ngan_hang'];
+// 22/11/2026: doanh thu đã xác minh gộp vào Vay vốn; tách chi cá nhân vào thay (tách tiền nhà khỏi tiền kinh doanh).
+export const CONG_CU_MAC_DINH = ['soan_to_khai', 'vay_von', 'thieu_chung_tu', 'tach_chi_ca_nhan', 'lien_ket_ngan_hang'];
 
 export const SO_CONG_CU_TOI_DA = 12;
 
@@ -148,7 +146,8 @@ export function congCuGoiY(h: {
     // Chi phí AI đóng băng 11/11/2026 (`lib/dongBang.ts`): không có trong kho, không gợi ý.
     if (n === 'dich_vu') ds.push('hoa_don_ban', 'khach_hang');
     if (n === 'cho_thue_tai_san') ds.push('hoa_don_ban');
-    if (n === 'phan_phoi_hang_hoa' || n === 'san_xuat_van_tai' || n === 'khac') ds.push('bao_cao');
+    // 22/11/2026: "Báo cáo thu chi" bỏ khỏi danh mục — trùng biểu đồ dòng tiền ở tab Tổng quan.
+    if (n === 'phan_phoi_hang_hoa' || n === 'san_xuat_van_tai' || n === 'khac') ds.push('tach_chi_ca_nhan');
   }
   if (h.nganh_dac_thu === 'cho_thue_bat_dong_san') ds.push('hoa_don_ban');
   ds.push('lien_ket_ngan_hang');

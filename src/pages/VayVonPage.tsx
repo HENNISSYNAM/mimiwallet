@@ -278,6 +278,11 @@ export default function VayVonPage() {
         <h1 className="text-2xl font-semibold">{t('vay.tieuDe')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('vay.moTa')}</p>
         <p className="mt-2 text-xs text-muted-foreground">{t('vay.khongChoVay')}</p>
+        {/* 22/11/2026: hai công cụ cùng luồng vay gộp vào đây (bỏ khỏi danh mục Công cụ để không lặp ba nút). */}
+        <nav aria-label="Cùng hồ sơ vay" className="mt-3 flex flex-wrap gap-2 text-sm">
+          <a href="/dashboard/doanh-thu-xac-minh" className="rounded-lg border px-3 py-1.5 hover:bg-muted">Doanh thu đã xác minh</a>
+          <a href="/dashboard/co-hoi" className="rounded-lg border px-3 py-1.5 hover:bg-muted">Cơ hội phát triển</a>
+        </nav>
       </header>
 
       <section className="no-print grid gap-3 rounded-xl border p-4 sm:grid-cols-3">

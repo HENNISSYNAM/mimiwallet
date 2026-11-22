@@ -28,7 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { NenVongHat } from '@/components/tro-ly/NenVongHat';
 import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
 import { ViecAgentGanDay } from '@/components/khong-gian/ViecAgentGanDay';
-import { giaoViec } from '@/lib/goiSpace';
+import { taoQuyTrinh } from '@/lib/goiQuyTrinh';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -134,9 +134,10 @@ export default function TroLyPage() {
     try {
       const id = await idCongTyDangDung();
       if (!id) throw new Error('Chưa chọn công ty.');
-      await giaoViec({ company_id: id, cau: c });
+      // 22/11/2026: gõ ở chat chính → MIMI dựng WORKFLOW rồi mở nó trong Space (chat thu thành cột phải để sửa).
+      const qt = await taoQuyTrinh(id, c);
       setNhap('');
-      navigate('/dashboard/space');
+      navigate(`/dashboard/space/${qt}`);
     } catch (e) {
       setLoiGiao(e instanceof Error ? e.message : 'Chưa giao được việc.');
     } finally {
@@ -411,7 +412,7 @@ export default function TroLyPage() {
           {/* Ô hỏi, chip nhóm việc nằm bên trong như mẫu. Dải năng lượng ngay trên ô, kiểu Claude (13/10/2026). */}
           <div className="mt-6 text-left"><DaiNangLuong /></div>
           <div role="tablist" aria-label="Chế độ ô nhập" className="mx-auto mt-6 flex max-w-3xl justify-center gap-1 text-sm">
-            {([['hoi', 'Hỏi MIMI'], ['agent', 'Giao việc cho agent']] as const).map(([k, ten]) => (
+            {([['hoi', 'Hỏi MIMI'], ['agent', 'Dựng workflow']] as const).map(([k, ten]) => (
               <button key={k} type="button" role="tab" aria-selected={cheDoO === k} onClick={() => setCheDoO(k)}
                 className={`rounded-t-xl px-4 py-1.5 transition ${cheDoO === k ? 'bg-card font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {ten}
@@ -419,7 +420,7 @@ export default function TroLyPage() {
             ))}
           </div>
           {loiGiao && <p role="alert" className="mx-auto mb-2 max-w-3xl text-left text-sm text-destructive">{loiGiao}</p>}
-          {dangGiao && <p className="mx-auto mb-2 max-w-3xl text-left text-sm text-muted-foreground">Agent đang lập kế hoạch…</p>}
+          {dangGiao && <p className="mx-auto mb-2 max-w-3xl text-left text-sm text-muted-foreground">MIMI đang dựng workflow…</p>}
           <form
             onSubmit={(e) => { e.preventDefault(); guiO(nhap); }}
             className="mx-auto mt-0 max-w-3xl rounded-2xl border border-border bg-card text-left shadow-[0_8px_30px_hsla(220,30%,20%,0.08)]"
@@ -437,7 +438,7 @@ export default function TroLyPage() {
               }}
               rows={coHoiThoai ? 1 : 2}
               maxLength={1000}
-              placeholder={cheDoO === 'agent' ? 'Giao việc cho agent… ví dụ: Chốt quý 4, phân loại tiền vào tháng này' : t('man.troLy.oHoiPlaceholder')}
+              placeholder={cheDoO === 'agent' ? 'Mô tả việc… MIMI dựng workflow người + agent. Ví dụ: thanh toán hoá đơn nhà cung cấp đến hạn' : t('man.troLy.oHoiPlaceholder')}
               className="block w-full resize-none rounded-t-2xl bg-transparent px-5 pt-4 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
             <div className="flex items-end gap-2 px-3 pb-3 pt-2">
