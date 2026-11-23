@@ -130,7 +130,8 @@ export function chuanHoa(tho: unknown): DoThi {
     const id = String(r.id ?? '').toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 24);
     if (!ID_RE.test(id) || daCo.has(id)) continue;
     const loai = (LOAI_NUT as readonly string[]).includes(String(r.loai)) ? (r.loai as LoaiNut) : 'nguoi';
-    const tac = (TAC_DONG as readonly string[]).includes(String(r.tac_dong)) ? (r.tac_dong as TacDong) : 'doc';
+    // Giá trị lạ / thiếu → 'ghi' (chặt hơn 'doc'): không để AI hạ cấp một bước có tác động xuống "chỉ đọc".
+    const tac = (TAC_DONG as readonly string[]).includes(String(r.tac_dong)) ? (r.tac_dong as TacDong) : 'ghi';
     const ten = String(r.ten ?? '').replace(/\s+/g, ' ').trim().slice(0, 60);
     if (!ten) continue;
     daCo.add(id);
@@ -216,6 +217,9 @@ export function thuTu(d: { nut: { id: string }[]; canh: Canh[] }): string[] {
 const coDuyetTruoc = (id: string, nut: Nut[], canh: Canh[]) =>
   canh.filter((c) => c.den === id).some((c) => nut.find((n) => n.id === c.tu)?.loai === 'duyet');
 
+const ngoaiMuonDuyet = (n: { lam: NguoiLam; cong_cu: string | null; tac_dong: TacDong }) =>
+  n.lam === 'agent' && !!n.cong_cu && !CO_SAN.has(n.cong_cu) && n.tac_dong !== 'doc';
+
 /** Chèn nút duyệt ngay trước `id` (mọi cạnh vào `id` đi qua nút duyệt). */
 function chenDuyet(d: { nut: NutHien[]; canh: Canh[] }, id: string, ten: string) {
   const n = d.nut.find((x) => x.id === id)!;
@@ -246,7 +250,9 @@ export function apPhuongAn(goc: DoThi, pa: PhuongAn, o: { daKetNoi?: Set<string>
     const batBuoc = TAC_DONG_PHAI_DUYET.includes(n.tac_dong);
     // Người + AI: bước GHI do agent soạn → người duyệt trước khi ghi.
     const muonDuyet = pa === 'nguoi_ai' && n.lam === 'agent' && n.tac_dong === 'ghi';
-    if ((batBuoc || muonDuyet) && !coDuyetTruoc(n.id, d.nut, d.canh)) chenDuyet(d, n.id, batBuoc ? 'Người duyệt (bắt buộc)' : 'Người duyệt');
+    // Công cụ NGOÀI MIMI (API / MCP người dùng nối) mà ghi hoặc đề xuất → luôn có người duyệt, kể cả "AI tối đa".
+    const ngoai = ngoaiMuonDuyet(n);
+    if ((batBuoc || muonDuyet || ngoai) && !coDuyetTruoc(n.id, d.nut, d.canh)) chenDuyet(d, n.id, batBuoc || ngoai ? 'Người duyệt (bắt buộc)' : 'Người duyệt');
   }
   return d;
 }
@@ -296,6 +302,7 @@ export function viPhamLuat(d: DoThiHien): string[] {
   for (const n of d.nut) {
     if (TAC_DONG_PHAI_DUYET.includes(n.tac_dong) && !coDuyetTruoc(n.id, d.nut, d.canh)) loi.push(`${n.ten}: thiếu người duyệt trước`);
     if (n.tac_dong === 'chuyen_tien' && n.lam !== 'nguoi') loi.push(`${n.ten}: chuyển tiền phải do người`);
+    if (ngoaiMuonDuyet(n) && !coDuyetTruoc(n.id, d.nut, d.canh)) loi.push(`${n.ten}: công cụ ngoài MIMI cần người duyệt trước`);
   }
   return loi;
 }

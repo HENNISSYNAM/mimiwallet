@@ -102,6 +102,20 @@ describe('không gian workflow một trang', () => {
     await waitFor(() => expect(gia.buoc).toHaveBeenCalledWith('q1', 'duyet_chuyen', 'duyet'));
   });
 
+  it('nhóm chat workflow: mèo nào nói thì hiện đúng mèo đó, kèm tên', async () => {
+    gia.xem.mockResolvedValue(qt({ tin: [
+      { id: 1, vai: 'nguoi', noi_dung: 'trả NCC', luc: '' },
+      { id: 2, vai: 'mimi', noi_dung: '✓ Kiểm người nhận — không thấy đổi tài khoản', luc: '', meo: 'bao_ve' },
+      { id: 3, vai: 'mimi', noi_dung: 'Đến lượt người phụ trách: "Chuyển tiền"', luc: '', meo: 'thu_ky' },
+    ] }));
+    ve();
+    const chat = await screen.findByRole('complementary', { name: 'Chat sửa workflow' });
+    expect(within(chat).getByText('✓ Kiểm người nhận — không thấy đổi tài khoản')).toBeTruthy();
+    expect(within(chat).getByText('Mèo Bảo vệ')).toBeTruthy();
+    expect(within(chat).getByText('Mèo Thư ký')).toBeTruthy();
+    expect(within(chat).getAllByRole('img', { name: /Mèo Bảo vệ/ }).length).toBeGreaterThan(0);
+  });
+
   it('bố cục từ trên xuống; số đo (thuần)', () => {
     const { vi_tri } = boCuc(apPhuongAn(goc, 'nguoi'));
     expect(vi_tri.doc_hd.y - vi_tri.bat_dau.y).toBe(CACH_Y);

@@ -10,7 +10,7 @@
 import { thuTu, type DoThiHien, type NutHien } from './do-thi.ts';
 
 export type TrangThaiNut = 'cho' | 'can_nguoi' | 'chan' | 'xong' | 'tu_choi' | 'bo_qua';
-export interface BuocChay { tt: TrangThaiNut; bat_dau?: string; ket_thuc?: string; ket_qua?: string; ai_lam?: 'agent' | 'nguoi'; nhanh?: 'dat' | 'can_sua' }
+export interface BuocChay { tt: TrangThaiNut; bat_dau?: string; ket_thuc?: string; ket_qua?: string; ai_lam?: 'agent' | 'nguoi'; nhanh?: 'dat' | 'can_sua'; nguoi?: string }
 export type TrangThaiChay = 'dang' | 'can_ban' | 'chan' | 'xong' | 'dung';
 export interface LanChay { buoc: Record<string, BuocChay>; bat_dau: string; ket_thuc?: string }
 
@@ -61,7 +61,7 @@ export async function diTiep(d: DoThiHien, l0: LanChay, thucThi: ThucThi, gio: (
 }
 
 /** Người xử lý một bước: xong (bước người hoặc làm tay bước bị chặn), duyệt, hoặc từ chối. */
-export function nguoiXuLy(d: DoThiHien, l0: LanChay, id: string, quyet: 'xong' | 'duyet' | 'tu_choi', ghiChu: string | null, gio: string): LanChay {
+export function nguoiXuLy(d: DoThiHien, l0: LanChay, id: string, quyet: 'xong' | 'duyet' | 'tu_choi', ghiChu: string | null, gio: string, nguoiId?: string): LanChay {
   const n = d.nut.find((x) => x.id === id);
   const b0 = l0.buoc[id];
   if (!n || !b0) throw new Error('Không có bước này.');
@@ -70,11 +70,11 @@ export function nguoiXuLy(d: DoThiHien, l0: LanChay, id: string, quyet: 'xong' |
   // Từ chối mà bước duyệt có nhánh "Cần sửa" → không dừng, đi nhánh đó.
   const coNhanhSua = d.canh.some((c) => c.tu === id && c.nhanh === 'can_sua');
   if (quyet === 'tu_choi' && coNhanhSua) {
-    const b: BuocChay = { ...b0, tt: 'xong', nhanh: 'can_sua', ket_thuc: gio, ai_lam: 'nguoi', ket_qua: ghiChu?.trim().slice(0, 300) || 'Cần sửa — trả lại người lập.' };
+    const b: BuocChay = { ...b0, tt: 'xong', nhanh: 'can_sua', ket_thuc: gio, ai_lam: 'nguoi', ...(nguoiId ? { nguoi: nguoiId } : {}), ket_qua: ghiChu?.trim().slice(0, 300) || 'Cần sửa — trả lại người lập.' };
     return { ...l0, buoc: { ...l0.buoc, [id]: b } };
   }
   if (quyet === 'duyet' && n.loai !== 'duyet') throw new Error('Bước này không phải bước duyệt.');
-  const b: BuocChay = { ...b0, tt: quyet === 'tu_choi' ? 'tu_choi' : 'xong', ket_thuc: gio, ai_lam: 'nguoi', ...(n.loai === 'duyet' && quyet === 'duyet' ? { nhanh: 'dat' as const } : {}),
+  const b: BuocChay = { ...b0, tt: quyet === 'tu_choi' ? 'tu_choi' : 'xong', ket_thuc: gio, ai_lam: 'nguoi', ...(nguoiId ? { nguoi: nguoiId } : {}), ...(n.loai === 'duyet' && quyet === 'duyet' ? { nhanh: 'dat' as const } : {}),
     ket_qua: ghiChu?.trim().slice(0, 300) || (quyet === 'tu_choi' ? 'Người duyệt từ chối.' : b0.tt === 'chan' ? 'Người làm tay.' : 'Người đã làm.') };
   const l: LanChay = { ...l0, buoc: { ...l0.buoc, [id]: b } };
   if (quyet === 'tu_choi') l.ket_thuc = gio;

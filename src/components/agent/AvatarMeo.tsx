@@ -5,7 +5,7 @@
  */
 
 export type NetMat = 'ngu' | 'lam' | 'hoi' | 'vui';
-export type PhuKien = 'kinh' | 'mu' | 'tai_nghe' | 'no' | 'khan' | null;
+export type PhuKien = 'kinh' | 'mu' | 'tai_nghe' | 'no' | 'khan' | 'phu_thuy' | 'dau_bep' | 'mu_luoi_trai' | 'vuong_mien' | 'ca_vat' | 'hoa' | null;
 
 // Lưới 16×13. D viền · B lông · P hồng (tai, má) · W mõm · E mắt · M miệng · H phụ kiện · .
 const DAU = [
@@ -48,25 +48,44 @@ export function luoiMeo(net: NetMat, phuKien: PhuKien | boolean = null): string[
   if (pk === 'tai_nghe') { g[3] = datO(g[3], [5, 6, 7, 8, 9, 10], 'H'); for (const y of [6, 7, 8]) g[y] = datO(g[y], [0, 15], 'H'); }
   if (pk === 'no') g[11] = datO(g[11], [5, 6, 9, 10], 'H');
   if (pk === 'khan') g[11] = datO(g[11], [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 'H');
-  return g;
+  // Thêm 2 hàng trống phía trên cho mũ cao (phù thủy, đầu bếp, vương miện). Chỉ số hàng dưới đây là của lưới 15 hàng.
+  const t: string[] = ['................', '................', ...g];
+  const dat = (y: number, cot: number[], k: string) => { t[y] = datO(t[y], cot, k); };
+  const dai = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  if (pk === 'phu_thuy') {
+    dat(0, [7, 8], 'H'); dat(1, dai(6, 9), 'H'); dat(2, dai(5, 10), 'H'); dat(3, dai(4, 11), 'H'); dat(4, dai(3, 12), 'H');
+    dat(3, [7, 8], 'V');
+  }
+  if (pk === 'dau_bep') {
+    dat(0, dai(4, 11), 'D'); dat(1, [3, 12], 'D'); dat(1, dai(4, 11), 'H'); dat(2, [3, 12], 'D'); dat(2, dai(4, 11), 'H'); dat(3, [4, 11], 'D'); dat(3, dai(5, 10), 'H');
+  }
+  if (pk === 'mu_luoi_trai') {
+    dat(2, dai(4, 11), 'H'); dat(3, dai(3, 12), 'H'); dat(4, dai(10, 13), 'H'); dat(3, [7, 8], 'V');
+  }
+  if (pk === 'vuong_mien') {
+    dat(1, [5, 7, 8, 10], 'V'); dat(2, dai(5, 10), 'V'); dat(3, dai(5, 10), 'V');
+  }
+  if (pk === 'ca_vat') { dat(13, [7, 8], 'H'); dat(14, [7, 8], 'H'); }
+  if (pk === 'hoa') { dat(3, [11, 13], 'H'); dat(2, [12], 'H'); dat(4, [12], 'H'); dat(3, [12], 'V'); }
+  return t;
 }
 
-const MAU_CO_DINH: Record<string, string> = { D: '#1f2937', P: '#f9a8d4', W: '#fff7ed', E: '#111827', M: '#7f1d1d' };
+const MAU_CO_DINH: Record<string, string> = { V: '#facc15', D: '#1f2937', P: '#f9a8d4', W: '#fff7ed', E: '#111827', M: '#7f1d1d' };
 
 /** Màu + phụ kiện của 12 mèo (cùng khoá với `MEO` ở máy chủ). Hai mèo cũ giữ màu như Văn phòng. */
 export const HINH_MEO: Record<string, { mau: string; phu_kien: PhuKien; mau_pk: string }> = {
-  phan_loai: { mau: '#f59e0b', phu_kien: null, mau_pk: '#111827' },
-  thue: { mau: '#6366f1', phu_kien: 'kinh', mau_pk: '#111827' },
-  dong_tien: { mau: '#0ea5e9', phu_kien: 'no', mau_pk: '#facc15' },
+  phan_loai: { mau: '#f59e0b', phu_kien: null, mau_pk: '#111827' },                 // mèo MIMI gốc
+  thue: { mau: '#6366f1', phu_kien: 'phu_thuy', mau_pk: '#4c1d95' },                // phù thủy thuế
+  dong_tien: { mau: '#0ea5e9', phu_kien: 'mu_luoi_trai', mau_pk: '#1d4ed8' },
   ho_so: { mau: '#ec4899', phu_kien: 'kinh', mau_pk: '#111827' },
   bao_ve: { mau: '#64748b', phu_kien: 'mu', mau_pk: '#1e3a8a' },
-  doi_soat: { mau: '#14b8a6', phu_kien: 'tai_nghe', mau_pk: '#111827' },
+  doi_soat: { mau: '#14b8a6', phu_kien: 'tai_nghe', mau_pk: '#f1f5f9' },  // tai nghe sáng: cùng màu viền thì không thấy
   cong_no: { mau: '#ef4444', phu_kien: 'khan', mau_pk: '#fde68a' },
-  mua_hang: { mau: '#84cc16', phu_kien: 'mu', mau_pk: '#78350f' },
+  mua_hang: { mau: '#84cc16', phu_kien: 'dau_bep', mau_pk: '#f8fafc' },               // đầu bếp
   luong: { mau: '#a855f7', phu_kien: 'no', mau_pk: '#f472b6' },
-  tuan_thu: { mau: '#0f766e', phu_kien: 'kinh', mau_pk: '#111827' },
-  bao_cao: { mau: '#f97316', phu_kien: 'tai_nghe', mau_pk: '#1f2937' },
-  thu_ky: { mau: '#d946ef', phu_kien: 'khan', mau_pk: '#ffffff' },
+  tuan_thu: { mau: '#0f766e', phu_kien: 'vuong_mien', mau_pk: '#facc15' },
+  bao_cao: { mau: '#f97316', phu_kien: 'ca_vat', mau_pk: '#1e3a8a' },
+  thu_ky: { mau: '#d946ef', phu_kien: 'hoa', mau_pk: '#fb7185' },
 };
 /** Tương thích: hai agent cũ của Space. */
 export const HINH_AGENT: Record<string, { mau: string; kinh: boolean }> = {
@@ -83,7 +102,7 @@ export function AvatarMeo({ mau, net = 'lam', kinh = false, phuKien, mauPk = '#1
   const o: JSX.Element[] = [];
   g.forEach((dong, y) => dong.split('').forEach((c, x) => {
     if (c === '.') return;
-    o.push(<rect key={`${x}-${y}`} x={x} y={y + 2} width={1.02} height={1.02} fill={c === 'B' ? mau : c === 'H' ? mauPk : MAU_CO_DINH[c]} />);
+    o.push(<rect key={`${x}-${y}`} x={x} y={y + 1} width={1.02} height={1.02} fill={c === 'B' ? mau : c === 'H' ? mauPk : MAU_CO_DINH[c]} />);
   }));
   return (
     <span className="relative inline-block shrink-0" style={{ width: co, height: co }} data-net={net}>

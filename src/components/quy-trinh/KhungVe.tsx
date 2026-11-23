@@ -112,7 +112,7 @@ export function KhungVe({ d, chay, chon, onChon, onThem, choSua = true }: {
               </button>
               {choSua && onThem && !n.them_boi_luat && (
                 <button type="button" onClick={() => onThem(n.id)} aria-label={`Thêm bước sau "${n.ten}"`}
-                  className="absolute left-1/2 top-full mt-5 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border bg-white text-slate-500 opacity-0 transition-opacity hover:text-blue-600 focus:opacity-100 group-hover:opacity-100 dark:bg-neutral-900">
+                  className="absolute left-1/2 top-full mt-5 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border bg-white text-slate-500 opacity-70 transition-opacity hover:text-blue-600 focus:opacity-100 md:opacity-0 md:group-hover:opacity-100 dark:bg-neutral-900">
                   <Plus size={12} />
                 </button>
               )}

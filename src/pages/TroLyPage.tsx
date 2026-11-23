@@ -128,22 +128,26 @@ export default function TroLyPage() {
   const [cheDoO, setCheDoO] = useState<'hoi' | 'agent'>('hoi');
   const [dangGiao, setDangGiao] = useState(false);
   const [loiGiao, setLoiGiao] = useState<string | null>(null);
+  // Nút "dừng": ngừng CHỜ dựng workflow (yêu cầu đã gửi thì máy chủ vẫn có thể tạo xong — nói rõ cho người dùng).
+  const huyGiao = useRef(false);
   const giaoChoAgent = async (cau: string) => {
     const c = cau.trim();
     if (!c || dangGiao) return;
+    huyGiao.current = false;
     setDangGiao(true); setLoiGiao(null);
     try {
       const id = await idCongTyDangDung();
       if (!id) throw new Error('Chưa chọn công ty.');
       // 22/11/2026: gõ ở chat chính → MIMI dựng WORKFLOW rồi mở nó trong Space (chat thu thành cột phải để sửa).
       const qt = await taoQuyTrinh(id, c);
+      if (huyGiao.current) { setLoiGiao('Đã dừng chờ. Workflow có thể vẫn được tạo xong — xem trong Agentic AI Space.'); return; }
       setNhap('');
       // Mở NGAY TẠI CHỖ (22/11/2026): không chuyển trang — chat thu thành cột phải của không gian workflow.
       datThamSo({ qt });
     } catch (e) {
       setLoiGiao(e instanceof Error ? e.message : 'Chưa giao được việc.');
     } finally {
-      setDangGiao(false);
+      if (!huyGiao.current) setDangGiao(false);
     }
   };
   const guiO = (cau: string) => { if (cheDoO === 'agent') void giaoChoAgent(cau); else void hoi(cau); };
@@ -528,14 +532,26 @@ export default function TroLyPage() {
                   </PopoverContent>
                 </Popover>
               )}
-              <button
-                type="submit"
-                disabled={!nhap.trim() || dangHoi}
-                aria-label={t('man.troLy.guiCauHoi')}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-opacity disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                {dangHoi ? <Loader2 size={17} className="animate-spin" /> : <ArrowUp size={18} />}
-              </button>
+              {/* 22/11/2026: lúc AI đang làm, mũi tên đổi thành biểu tượng dừng (ô vuông trong vòng tròn). */}
+              {dangGiao ? (
+                <button type="button" aria-label="Dừng chờ" onClick={() => { huyGiao.current = true; setDangGiao(false); }}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-white dark:text-slate-900">
+                  <Square size={13} className="fill-current" />
+                </button>
+              ) : dangHoi ? (
+                <span role="status" aria-label="MIMI đang làm" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+                  <Square size={13} className="fill-current" />
+                </span>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!nhap.trim()}
+                  aria-label={t('man.troLy.guiCauHoi')}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-opacity disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <ArrowUp size={18} />
+                </button>
+              )}
             </div>
           </form>
 

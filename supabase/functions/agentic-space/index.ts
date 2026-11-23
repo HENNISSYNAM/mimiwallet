@@ -25,6 +25,7 @@ import {
   chayQuyTrinh, doiPhuongAn, dsQuyTrinh, ganEmail, ganKetNoi, LoiQuyTrinh, suaQuyTrinh, suaTay, taoQuyTrinh, THU_VIEN_GON, xemQuyTrinh, xuLyBuoc,
 } from "../_shared/quy-trinh/kho.ts";
 import type { KetNoi } from "../_shared/quy-trinh/ket-noi.ts";
+import { dsLienHe, guiMeo, tinMeo } from "../_shared/quy-trinh/chat-meo.ts";
 import { taoThucThi, type HoiMoHinh } from "../_shared/quy-trinh/thuc-thi.ts";
 
 const corsHeaders = {
@@ -127,7 +128,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return loi("CHUA_DANG_NHAP", "Phiên đăng nhập không hợp lệ.", 401);
 
     const hanhDong = String(body.hanh_dong ?? "");
-    const ghi = ["tao", "tiep_tuc", "xong", "huy", "qt_tao", "qt_sua", "qt_pa", "qt_gan", "qt_chay", "qt_buoc", "qt_sua_tay", "qt_ket_noi"].includes(hanhDong);
+    const ghi = ["tao", "tiep_tuc", "xong", "huy", "qt_tao", "qt_sua", "qt_pa", "qt_gan", "qt_chay", "qt_buoc", "qt_sua_tay", "qt_ket_noi", "meo_gui"].includes(hanhDong);
     if (!(await duocGoi(db, user.id, ghi
       ? [{ hanh_dong: "space_ghi_phut", cua_so_giay: 60, toi_da: 12 }, { hanh_dong: "space_ghi_gio", cua_so_giay: 3600, toi_da: 200 }]
       : [{ hanh_dong: "space_doc_phut", cua_so_giay: 60, toi_da: 30 }]))) return qua429(corsHeaders);
@@ -162,6 +163,10 @@ Deno.serve(async (req) => {
       }
       case "qt_pa": await doiPhuongAn(db, user.id, id, body.phuong_an); return json({ ok: true });
       case "qt_thu_vien": return json({ ds: THU_VIEN_GON });
+      // ── Trò chuyện với mèo (kiểu Zalo) ──
+      case "meo_ds": return json({ ds: await dsLienHe(db, user.id, body.company_id) });
+      case "meo_tin": return json({ tin: await tinMeo(db, user.id, body.company_id, body.meo) });
+      case "meo_gui": return json(await guiMeo(db, user.id, body.company_id, body.meo, body.noi_dung, hoiCho(String(body.company_id ?? "").toLowerCase())));
       case "qt_sua_tay": await suaTay(db, user.id, id, body); return json({ ok: true });
       case "qt_ket_noi": await ganKetNoi(db, user.id, id, body, Deno.env.get("PQC_KYC_PUBLIC_KEY")); return json({ ok: true });
       case "qt_gan": await ganEmail(db, user.id, id, body.nut_id, body.email); return json({ ok: true });

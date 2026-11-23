@@ -60,6 +60,8 @@ export default function KhongGianQuyTrinh({ id, onDong }: { id: string; onDong: 
   const [nhan, setNhan] = useState('');
   const [dang, setDang] = useState<string | null>(null);
   const [moChat, setMoChat] = useState(true);
+  // Điện thoại: một cột, chuyển giữa Khung / Bước / Chat (từ md trở lên hiện cả ba, bỏ qua trạng thái này).
+  const [man, setMan] = useState<'khung' | 'buoc' | 'chat'>('khung');
   const cuoi = useRef<HTMLDivElement>(null);
 
   const tai = useCallback(async () => {
@@ -90,7 +92,7 @@ export default function KhongGianQuyTrinh({ id, onDong }: { id: string; onDong: 
   };
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] min-h-[560px] flex-col gap-3" data-testid="khong-gian-qt">
+    <div className="flex h-[calc(100dvh-9.5rem)] min-h-[480px] flex-col gap-3 md:h-[calc(100vh-5rem)] md:min-h-[560px]" data-testid="khong-gian-qt">
       <header className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={onDong} aria-label="Đóng workflow" className="rounded-lg p-1.5 hover:bg-muted"><ArrowLeft size={18} /></button>
         <div className="min-w-0 flex-1">
@@ -98,7 +100,7 @@ export default function KhongGianQuyTrinh({ id, onDong }: { id: string; onDong: 
           <p className="truncate text-xs text-muted-foreground">{qt.ten_khach} · {qt.nguon === 'ai' ? 'AI dựng' : 'Từ thư viện'}</p>
         </div>
         {(canCauHinh > 0 || loiChuan > 0) && (
-          <button type="button" onClick={() => { setTab(canCauHinh ? 'buoc' : 'chuan'); const t = qt.tai_nguyen.find((x) => !x.co_san && x.kieu !== 'gmail'); if (t) setChon(t.nut_id); }}
+          <button type="button" onClick={() => { setTab(canCauHinh ? 'buoc' : 'chuan'); const t = qt.tai_nguyen.find((x) => !x.co_san && x.kieu !== 'gmail'); if (t) setChon(t.nut_id); setMan('buoc'); }}
             className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">!</span>
             {canCauHinh ? `${canCauHinh} bước cần cấu hình` : `${loiChuan} lỗi chuẩn nghề`}
@@ -119,12 +121,19 @@ export default function KhongGianQuyTrinh({ id, onDong }: { id: string; onDong: 
             {qt.trang_thai === 'nhap' ? 'Chốt & chạy' : 'Chạy lại'}
           </button>
         )}
-        <button type="button" onClick={() => setMoChat((x) => !x)} className={NUT} aria-pressed={moChat}>{moChat ? 'Ẩn chat' : 'Chat'}</button>
+        <button type="button" onClick={() => setMoChat((x) => !x)} className={`${NUT} max-md:hidden`} aria-pressed={moChat}>{moChat ? 'Ẩn chat' : 'Chat'}</button>
       </header>
       {loi && <p role="alert" className="text-sm text-destructive">{loi}</p>}
 
+      <div role="tablist" aria-label="Chọn khung nhìn" className="flex gap-0.5 rounded-lg bg-muted p-0.5 md:hidden">
+        {([['khung', 'Khung'], ['buoc', 'Bước'], ['chat', 'Chat']] as const).map(([k, t]) => (
+          <button key={k} type="button" role="tab" aria-selected={man === k} onClick={() => setMan(k)}
+            className={`flex-1 rounded-md py-1.5 text-sm transition-colors ${man === k ? 'bg-background font-medium text-foreground shadow-sm' : 'text-muted-foreground'}`}>{t}</button>
+        ))}
+      </div>
+
       <div className="flex min-h-0 flex-1 gap-3">
-        <aside aria-label="Bảng bước" className="flex w-80 shrink-0 flex-col overflow-hidden rounded-2xl border bg-card">
+        <aside aria-label="Bảng bước" className={`${man === 'buoc' ? 'flex' : 'hidden md:flex'} w-full shrink-0 flex-col overflow-hidden rounded-2xl border bg-card md:w-80`}>
           <div role="tablist" className="flex gap-0.5 border-b p-1.5">
             {([['buoc', 'Bước'], ['chuan', `Kiểm chuẩn${qt.chuan.length ? ` (${qt.chuan.length})` : ''}`], ['hieu_suat', 'Hiệu suất']] as const).map(([k, t]) => (
               <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
@@ -171,15 +180,23 @@ export default function KhongGianQuyTrinh({ id, onDong }: { id: string; onDong: 
           </div>
         </aside>
 
-        <div className="min-w-0 flex-1">
+        <div className={`${man === 'khung' ? 'block' : 'hidden md:block'} min-w-0 flex-1`}>
           <KhungVe d={qt.do_thi} chay={qt.trang_thai === 'nhap' ? null : qt.lan_chay} chon={chon}
-            onChon={(x) => { setChon(x); setTab('buoc'); }} onThem={dangChay ? undefined : (x) => void themSau(x)} choSua={!dangChay} />
+            onChon={(x) => { setChon(x); setTab('buoc'); setMan('buoc'); }} onThem={dangChay ? undefined : (x) => void themSau(x)} choSua={!dangChay} />
         </div>
 
-        {moChat && (
-          <aside aria-label="Chat sửa workflow" className="flex w-80 shrink-0 flex-col overflow-hidden rounded-2xl border bg-card">
+        {(moChat || man === 'chat') && (
+          <aside aria-label="Chat sửa workflow" className={`${man === 'chat' ? 'flex' : 'hidden md:flex'} w-full shrink-0 flex-col overflow-hidden rounded-2xl border bg-card md:w-80`}>
             <ol className="flex-1 space-y-2.5 overflow-y-auto p-3 text-sm">
-              {qt.tin.map((t) => (
+              {qt.tin.map((t) => t.vai === 'mimi' && t.meo ? (
+                <li key={t.id} className="flex max-w-[92%] gap-2">
+                  <Meo khoa={t.meo} co={28} ten={tenMeo(t.meo)} />
+                  <div className="rounded-xl bg-muted px-3 py-2 text-foreground">
+                    <p className="text-[11px] font-medium text-muted-foreground">{tenMeo(t.meo)}</p>
+                    <p>{t.noi_dung}</p>
+                  </div>
+                </li>
+              ) : (
                 <li key={t.id} className={`max-w-[92%] rounded-xl px-3 py-2 ${t.vai === 'nguoi' ? 'ml-auto bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-muted text-foreground'}`}>{t.noi_dung}</li>
               ))}
               <div ref={cuoi} />

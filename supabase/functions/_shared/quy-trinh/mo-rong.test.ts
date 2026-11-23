@@ -4,7 +4,7 @@ import { apThaoTac, docThaoTac } from './sua-tay';
 import { chonMau, THU_VIEN } from './thu-vien';
 import { KIEN_THUC, kienThucChoLoiNhac, kiemChuan } from './kien-thuc';
 import { goiYDieuChinh } from './goi-y';
-import { goiKetNoi, urlAnToan } from './ket-noi';
+import { chanDnsRieng, goiKetNoi, laIpRieng, luuKetNoi, urlAnToan } from './ket-noi';
 import { diTiep, lanChayMoi, nguoiXuLy, trangThai } from './chay';
 
 describe('thư viện workflow theo chu trình chuẩn', () => {
@@ -17,6 +17,11 @@ describe('thư viện workflow theo chu trình chuẩn', () => {
     expect(chonMau('trả tiền nhà cung cấp tuần này')?.khoa).toBe('tra_ncc');
     expect(chonMau('nhân viên nghỉ việc thứ sáu')?.khoa).toBe('nghi_viec');
     expect(chonMau('bị hack tài khoản email')?.khoa).toBe('su_co');
+    expect(chonMau('tìm nhà cung cấp, so báo giá, mua giá tốt nhất')?.khoa).toBe('rfq');
+    expect(chonMau('chiết khấu thanh toán sớm 2/10 net 30')?.khoa).toBe('chiet_khau_som');
+    expect(chonMau('hoá đơn trùng, thanh toán trùng')?.khoa).toBe('chong_tra_trung');
+    expect(chonMau('đề nghị mua hàng cần phê duyệt')?.khoa).toBe('pr_po');
+    expect(THU_VIEN.length).toBeGreaterThanOrEqual(20);
     expect(chonMau('xyz')).toBeNull();
   });
 });
@@ -123,5 +128,53 @@ describe('kết nối tại bước', () => {
     const kq = await goiKetNoi({ cong_cu: 'doc_chung_tu', kieu: 'api', url: 'https://api.x.vn/doc', khoa: null, khoa_hien: null, cong_cu_mcp: null }, d.nut.find((n) => n.id === 'doc_hd')!, 'trả NCC', undefined, goi);
     expect(kq).toMatch(/so_tien/);
     expect((goi.mock.calls[0] as unknown as [string, RequestInit])[1].method).toBe('GET');
+  });
+});
+
+describe('sửa lỗi bảo mật (rà soát 22/11)', () => {
+  it('đổi endpoint mà không dán khoá mới → bỏ khoá cũ; giữ endpoint thì giữ khoá', async () => {
+    const ghi: Record<string, unknown>[] = [];
+    const db = (urlCu: string | null) => ({ from: () => {
+      const q: Record<string, unknown> = {};
+      Object.assign(q, { select: () => q, eq: () => q, maybeSingle: async () => ({ data: urlCu ? { url: urlCu } : null, error: null }),
+        upsert: async (d: Record<string, unknown>) => { ghi.push(d); return { error: null }; } });
+      return q;
+    } });
+    await luuKetNoi(db('https://goc.vn/api'), 'c', 'u', { cong_cu: 'core_banking', kieu: 'api', url: 'https://ke-xau.vn/thu' }, undefined);
+    expect(ghi[0]).toMatchObject({ khoa: null, khoa_hien: null });
+    await luuKetNoi(db('https://goc.vn/api'), 'c', 'u', { cong_cu: 'core_banking', kieu: 'api', url: 'https://goc.vn/api' }, undefined);
+    expect('khoa' in ghi[1]).toBe(false);
+  });
+  it('IP riêng bị chặn; tên miền trỏ về IP riêng bị chặn bằng DNS', async () => {
+    for (const ip of ['10.1.2.3', '127.0.0.1', '169.254.169.254', '172.20.0.1', '192.168.0.9', '100.64.1.1', '::1', 'fd00::1', '::ffff:10.0.0.1']) expect(laIpRieng(ip), ip).toBe(true);
+    for (const ip of ['8.8.8.8', '1.1.1.1', '172.32.0.1', '2606:4700::1111']) expect(laIpRieng(ip), ip).toBe(false);
+    await expect(chanDnsRieng('https://x.vn/a', async () => ['169.254.169.254'])).rejects.toThrow(/nội bộ/);
+    await expect(chanDnsRieng('https://x.vn/a', async () => ['8.8.8.8'])).resolves.toBeUndefined();
+    const k = { cong_cu: 'erp', kieu: 'api' as const, url: 'https://x.vn/a', khoa: null, khoa_hien: null, cong_cu_mcp: null };
+    const goi = vi.fn();
+    await expect(goiKetNoi(k, apPhuongAn(chuanHoa(MAU.thanh_toan.do_thi), 'ai').nut[1], 'q', undefined, goi, async () => ['10.0.0.5'])).rejects.toThrow(/nội bộ/);
+    expect(goi).not.toHaveBeenCalled();
+  });
+  it('công cụ ngoài ghi / đề xuất → luôn có người duyệt, kể cả "AI tối đa"; tác động lạ → chặt', () => {
+    const d = chuanHoa({ nut: [
+      { id: 'a', loai: 'kich_hoat', ten: 'Bắt đầu' },
+      { id: 'b', loai: 'agent', ten: 'Ghi vào core banking', tac_dong: 'ghi', cong_cu: 'core_banking' },
+      { id: 'c', loai: 'agent', ten: 'Việc lạ', tac_dong: 'khong-biet' },
+    ] });
+    expect(d.nut.find((n) => n.id === 'c')!.tac_dong).toBe('ghi');
+    for (const pa of PHUONG_AN) {
+      const h = apPhuongAn(d, pa);
+      expect(viPhamLuat(h)).toEqual([]);
+      const truocB = h.canh.filter((e) => e.den === 'b').map((e) => h.nut.find((n) => n.id === e.tu)!);
+      // "Người làm": không agent nào gọi công cụ ngoài nên không cần cổng; hai phương án có agent thì bắt buộc.
+      expect(truocB.some((n) => n.loai === 'duyet')).toBe(pa !== 'nguoi');
+    }
+  });
+  it('ghi lại NGƯỜI duyệt', () => {
+    const d = apPhuongAn(chuanHoa(MAU.thanh_toan.do_thi), 'nguoi_ai');
+    const duyet = d.nut.find((n) => n.loai === 'duyet')!;
+    const l = lanChayMoi(d, '2026-11-22T00:00:00Z');
+    l.buoc[duyet.id] = { tt: 'can_nguoi' };
+    expect(nguoiXuLy(d, l, duyet.id, 'duyet', null, '2026-11-22T00:01:00Z', 'user-123').buoc[duyet.id].nguoi).toBe('user-123');
   });
 });

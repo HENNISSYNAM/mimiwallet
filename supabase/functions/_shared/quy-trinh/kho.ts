@@ -42,8 +42,8 @@ async function docRow(db: Db, userId: string, id: string): Promise<{ r: Row; ten
 const hienCua = (r: Row, pa: PhuongAn, kn: Map<string, KetNoi>) =>
   apPhuongAn(chuanHoa(r.do_thi), pa, { daKetNoi: new Set(kn.keys()), linhVuc: r.linh_vuc as LinhVuc });
 
-const ghiTin = async (db: Db, r: Row, vai: 'nguoi' | 'mimi', noi_dung: string) => {
-  const { error } = await db.from('tin_quy_trinh').insert({ quy_trinh_id: r.id, company_id: r.company_id, vai, noi_dung: noi_dung.slice(0, 1200) });
+const ghiTin = async (db: Db, r: Row, vai: 'nguoi' | 'mimi', noi_dung: string, meo?: string) => {
+  const { error } = await db.from('tin_quy_trinh').insert({ quy_trinh_id: r.id, company_id: r.company_id, vai, noi_dung: noi_dung.slice(0, 1200), ...(meo ? { meo } : {}) });
   if (error) throw new Error(`Không ghi được tin: ${error.message}`);
 };
 
@@ -189,6 +189,24 @@ async function luuLanChay(db: Db, r: Row, l: LanChay, kn: Map<string, KetNoi>) {
   }
 }
 
+/**
+ * Nhóm chat của workflow (kiểu Zalo): mèo nào làm xong việc thì tự lên tiếng trong nhóm; bước bị chặn thì báo; đến lượt
+ * người thì Mèo Thư ký nhắc. Chỉ báo CHUYỂN TRẠNG THÁI so với lần trước, nên bấm lại không lặp tin.
+ */
+export async function baoTienDo(db: Db, r: Row, truoc: LanChay | null, sau: LanChay, hien: ReturnType<typeof apPhuongAn>): Promise<void> {
+  const tin: { meo: string; noi: string }[] = [];
+  for (const n of hien.nut) {
+    if (n.loai === 'kich_hoat') continue;
+    const b = sau.buoc[n.id];
+    if (!b || truoc?.buoc[n.id]?.tt === b.tt) continue;
+    const meo = n.meo ?? 'thu_ky';
+    if (b.tt === 'xong' && b.ai_lam === 'agent') tin.push({ meo, noi: `✓ ${n.ten}${b.ket_qua ? ` — ${b.ket_qua}` : ''}` });
+    else if (b.tt === 'chan') tin.push({ meo, noi: `⚠ ${n.ten}: ${b.ket_qua ?? 'đang bị chặn'}` });
+    else if (b.tt === 'can_nguoi') tin.push({ meo: 'thu_ky', noi: `Đến lượt ${n.vai_tro ? `anh/chị (${n.vai_tro})` : 'người phụ trách'}: "${n.ten}"${n.loai === 'duyet' ? ' — cần duyệt' : ''}.` });
+  }
+  for (const t of tin) await ghiTin(db, r, 'mimi', t.noi, t.meo);
+}
+
 export type TaoThucThi = (r: Row, kn: Map<string, KetNoi>) => ThucThi;
 
 /** Chốt & chạy (hoặc chạy lại sau khi xong / dừng). Bước người chưa gán Gmail → gán người tạo. */
@@ -204,6 +222,7 @@ export async function chayQuyTrinh(db: Db, userId: string, id: string, emailNguo
   const l = await diTiep(hien, lanChayMoi(hien, new Date().toISOString()), thucThi(r, kn));
   await capNhat(db, r.id, { tai_nguyen: tn });
   await luuLanChay(db, { ...r, tai_nguyen: tn }, l, kn);
+  await baoTienDo(db, r, null, l, hien);
 }
 
 export async function xuLyBuoc(db: Db, userId: string, id: string, nutId: unknown, quyet: unknown, ghiChu: unknown, thucThi: TaoThucThi): Promise<void> {
@@ -214,10 +233,11 @@ export async function xuLyBuoc(db: Db, userId: string, id: string, nutId: unknow
   const kn = await docKetNoi(db, String(r.company_id));
   const hien = hienCua(r, r.phuong_an, kn);
   let l: LanChay;
-  try { l = nguoiXuLy(hien, r.lan_chay, String(nutId ?? ''), q as 'xong', ghiChu == null ? null : String(ghiChu), new Date().toISOString()); }
+  try { l = nguoiXuLy(hien, r.lan_chay, String(nutId ?? ''), q as 'xong', ghiChu == null ? null : String(ghiChu), new Date().toISOString(), userId); }
   catch (e) { throw new LoiQuyTrinh(409, 'BUOC', e instanceof Error ? e.message : 'Không xử lý được bước này.'); }
   if (q !== 'tu_choi') l = await diTiep(hien, l, thucThi(r, kn));
   await luuLanChay(db, r, l, kn);
+  await baoTienDo(db, r, r.lan_chay, l, hien);
 }
 
 // ── Đọc ─────────────────────────────────────────────────────────────────────
@@ -248,7 +268,7 @@ export async function xemQuyTrinh(db: Db, userId: string, id: string): Promise<R
   const goc = chuanHoa(r.do_thi);
   const hien = hienCua(r, r.phuong_an, kn);
   const [{ data: tin, error: e1 }, { data: lich, error: e2 }] = await Promise.all([
-    db.from('tin_quy_trinh').select('id, vai, noi_dung, luc').eq('quy_trinh_id', r.id).order('id', { ascending: true }).limit(300),
+    db.from('tin_quy_trinh').select('id, vai, noi_dung, luc, meo').eq('quy_trinh_id', r.id).order('id', { ascending: true }).limit(300),
     db.from('lan_chay_quy_trinh').select('phuong_an, trang_thai, bat_dau, ket_thuc, hieu_suat').eq('quy_trinh_id', r.id).order('ket_thuc', { ascending: false }).limit(30),
   ]);
   if (e1 || e2) throw new Error(`Không đọc được workflow: ${(e1 ?? e2).message}`);

@@ -10,6 +10,7 @@ import { ArrowRight, Loader2, Orbit } from 'lucide-react';
 import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
 import { Meo } from '@/components/agent/AvatarMeo';
 import KhongGianQuyTrinh, { TEN_PA } from '@/components/quy-trinh/KhongGianQuyTrinh';
+import PhongChatMeo from '@/components/quy-trinh/PhongChatMeo';
 import { tenMeo } from '@/components/quy-trinh/KhungVe';
 import { docBang } from '@/lib/goiSpace';
 import { dsQuyTrinh, taoQuyTrinh, taoTuMau, thuVien, type DongQuyTrinh, type MauThuVien } from '@/lib/goiQuyTrinh';
@@ -32,6 +33,9 @@ export default function AgenticSpacePage() {
   const [dang, setDang] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const qtMo = thamSo.get('qt');
+  // Điện thoại: mở Space ra là danh bạ trò chuyện (như Zalo); máy tính: workflow. Người dùng chọn tab thì theo lựa chọn.
+  const laDienThoai = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 767px)').matches;
+  const tabChat = (thamSo.get('tab') ?? (laDienThoai ? 'chat' : 'wf')) === 'chat';
 
   const tai = useCallback(async () => {
     try {
@@ -64,8 +68,18 @@ export default function AgenticSpacePage() {
       <ThanhTabHome />
       <header className="space-y-1">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground"><Orbit className="text-primary" /> Agentic AI Space</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">Mô tả việc — MIMI dựng workflow người + mèo agent theo chuẩn nghề. Sửa ngay trên khung, chốt rồi chạy.</p>
+        <p className="max-w-2xl text-sm text-muted-foreground">Mô tả việc — MIMI dựng workflow người + mèo agent theo chuẩn nghề. Sửa ngay trên khung, chốt rồi chạy. Hoặc nhắn tin trực tiếp cho từng mèo.</p>
+        <div role="tablist" aria-label="Chế độ" className="mt-2 inline-flex gap-0.5 rounded-lg bg-muted p-0.5">
+          {([['wf', 'Workflow'], ['chat', 'Trò chuyện']] as const).map(([k, t]) => (
+            <button key={k} type="button" role="tab" aria-selected={(k === 'chat') === tabChat} onClick={() => datThamSo({ tab: k }, { replace: true })}
+              className={`rounded-md px-3 py-1 text-sm transition-colors ${(k === 'chat') === tabChat ? 'bg-background font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{t}</button>
+          ))}
+        </div>
       </header>
+
+      {tabChat && khach && <PhongChatMeo companyId={khach} nhom={(ds ?? []).filter((q) => q.company_id === khach).map((q) => ({ id: q.id, tieu_de: q.tieu_de }))} onMoNhom={mo} />}
+      {tabChat && !khach && <p className="text-sm text-muted-foreground">Chưa có công ty để trò chuyện.</p>}
+      {!tabChat && (<>
 
       <form className="space-y-3 rounded-2xl border bg-card p-4" onSubmit={(e) => { e.preventDefault(); const c = cau.trim(); if (c) void tao(() => taoQuyTrinh(khach, c), 'dung'); }}>
         <textarea value={cau} onChange={(e) => setCau(e.target.value)} rows={2} maxLength={1000} aria-label="Mô tả việc"
@@ -143,6 +157,7 @@ export default function AgenticSpacePage() {
           </ul>
         )}
       </section>
+      </>)}
     </div>
   );
 }

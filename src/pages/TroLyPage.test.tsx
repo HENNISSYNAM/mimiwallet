@@ -651,4 +651,21 @@ describe('Home kiểu ClickUp (22/11/2026)', () => {
     await waitFor(() => expect(space.giao).toHaveBeenCalledWith('cty-1', 'Chốt quý 4'));
     expect(await screen.findByText('trang workflow 33333333-3333-4333-8333-333333333333')).toBeTruthy();
   });
+
+  it('lúc đang dựng workflow, mũi tên đổi thành nút dừng; bấm dừng thì không mở workflow và báo rõ', async () => {
+    let xong: (id: string) => void = () => {};
+    space.giao.mockImplementation(() => new Promise<string>((res) => { xong = res; }));
+    render(<MemoryRouter initialEntries={['/dashboard']}><Routes><Route path="/dashboard" element={<TroLyPage />} /></Routes></MemoryRouter>);
+    fireEvent.click(screen.getByRole('tab', { name: 'Dựng workflow' }));
+    const o = screen.getByPlaceholderText(/MIMI dựng workflow/);
+    fireEvent.change(o, { target: { value: 'Trả tiền NCC' } });
+    fireEvent.keyDown(o, { key: 'Enter' });
+    const dung = await screen.findByRole('button', { name: 'Dừng chờ' });
+    expect(screen.queryByRole('button', { name: /Gửi/ })).toBeNull();
+    fireEvent.click(dung);
+    xong('33333333-3333-4333-8333-333333333333');
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Đã dừng chờ/);
+    expect(screen.queryByText(/trang workflow/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Dừng chờ' })).toBeNull();
+  });
 });

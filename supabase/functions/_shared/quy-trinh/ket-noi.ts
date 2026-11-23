@@ -32,6 +32,35 @@ export function urlAnToan(s: unknown): string | null {
   return u.toString();
 }
 
+/** IP thuộc dải riêng / nội bộ / đặc biệt (IPv4 và IPv6). */
+export function laIpRieng(ip: string): boolean {
+  const s = ip.trim().toLowerCase();
+  const m4 = s.match(/^(?:::ffff:)?(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m4) {
+    const [a, b] = [Number(m4[1]), Number(m4[2])];
+    return a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
+      || (a === 192 && b === 168) || (a === 192 && b === 0) || (a === 100 && b >= 64 && b <= 127) || (a === 198 && (b === 18 || b === 19));
+  }
+  if (s.includes(':')) return s === '::' || s === '::1' || s.startsWith('fc') || s.startsWith('fd') || s.startsWith('fe8') || s.startsWith('fe9') || s.startsWith('fea') || s.startsWith('feb') || s.startsWith('ff');
+  return false;
+}
+
+export type PhanGiaiDns = (host: string) => Promise<string[]>;
+const phanGiaiMacDinh: PhanGiaiDns = async (host) => {
+  // deno-lint-ignore no-explicit-any
+  const d = (globalThis as any).Deno;
+  if (!d?.resolveDns) return [];
+  const ra: string[] = [];
+  for (const loai of ['A', 'AAAA']) { try { ra.push(...(await d.resolveDns(host, loai))); } catch { /* không có bản ghi loại này */ } }
+  return ra;
+};
+
+/** Chặn tên miền công khai nhưng trỏ về IP riêng (DNS rebinding / SSRF qua tên miền). */
+export async function chanDnsRieng(url: string, phanGiai: PhanGiaiDns = phanGiaiMacDinh): Promise<void> {
+  const host = new URL(url).hostname;
+  for (const ip of await phanGiai(host)) if (laIpRieng(ip)) throw new Error('endpoint trỏ về địa chỉ nội bộ');
+}
+
 export const tenCongCuHopLe = (s: unknown) => /^[a-z0-9_]{2,40}$/.test(String(s ?? ''));
 
 export async function luuKetNoi(db: Db, companyId: string, userId: string, d: Record<string, unknown>, khoaCongKhai: string | undefined): Promise<void> {
@@ -51,6 +80,9 @@ export async function luuKetNoi(db: Db, companyId: string, userId: string, d: Re
   const dong: Record<string, unknown> = { company_id: companyId, cong_cu, kieu, url, cong_cu_mcp: mcp, tao_boi: userId, cap_nhat_luc: new Date().toISOString() };
   // Không gửi khoá mới → giữ khoá cũ (chỉ đổi endpoint).
   if (khoaTho) { dong.khoa = khoa; dong.khoa_hien = `••••${khoaTho.slice(-4)}`; }
+  // Đổi endpoint mà không dán khoá mới → BỎ khoá cũ (không gửi khoá đã lưu tới địa chỉ lạ).
+  const { data: cu } = await db.from('ket_noi_quy_trinh').select('url').eq('company_id', companyId).eq('cong_cu', cong_cu).maybeSingle();
+  if (cu && cu.url !== url && !khoaTho) { dong.khoa = null; dong.khoa_hien = null; }
   const { error } = await db.from('ket_noi_quy_trinh').upsert(dong, { onConflict: 'company_id,cong_cu' });
   if (error) throw new Error(`Không lưu được kết nối: ${error.message}`);
 }
@@ -65,9 +97,10 @@ export async function docKetNoi(db: Db, companyId: string): Promise<Map<string, 
 }
 
 /** Gọi công cụ đã kết nối cho một bước. Trả câu kết quả ngắn cho người đọc. */
-export async function goiKetNoi(k: KetNoi, n: NutHien, cauGoc: string, khoaRieng: string | undefined, goi: Goi = (u, i) => fetch(u, i)): Promise<string> {
+export async function goiKetNoi(k: KetNoi, n: NutHien, cauGoc: string, khoaRieng: string | undefined, goi: Goi = (u, i) => fetch(u, i), phanGiai?: PhanGiaiDns): Promise<string> {
   const url = urlAnToan(k.url);
   if (!url) throw new Error('endpoint không còn hợp lệ');
+  await chanDnsRieng(url, phanGiai);
   const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' };
   if (k.khoa) {
     if (!khoaRieng) throw new Error('máy chủ chưa cấu hình giải mã');

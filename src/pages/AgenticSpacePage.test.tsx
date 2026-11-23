@@ -10,6 +10,7 @@ vi.mock('@/components/quy-trinh/KhongGianQuyTrinh', () => ({
   default: ({ id }: { id: string }) => <p>khung {id}</p>, TEN_PA: { nguoi: 'Người làm', nguoi_ai: 'Người + AI', ai: 'AI tối đa' },
 }));
 
+vi.mock('@/components/quy-trinh/PhongChatMeo', () => ({ default: ({ companyId }: { companyId: string }) => <p>phong chat {companyId}</p> }));
 import AgenticSpacePage, { MEO_KHOA } from './AgenticSpacePage';
 
 const CTY = '11111111-1111-4111-8111-111111111111';
@@ -67,5 +68,28 @@ describe('Agentic AI Space', () => {
     gia.ds.mockRejectedValue(new Error('Phiên đăng nhập đã hết. Đăng nhập lại.'));
     ve();
     expect((await screen.findByRole('alert')).textContent).toMatch(/Đăng nhập lại/);
+  });
+
+  it('tab Trò chuyện mở phòng chat NGAY TRONG TRANG (?tab=chat), không đổi đường dẫn', async () => {
+    ve();
+    await screen.findByText('Trả NCC tuần này');
+    fireEvent.click(screen.getByRole('tab', { name: 'Trò chuyện' }));
+    expect(await screen.findByText(`phong chat ${CTY}`)).toBeTruthy();
+    expect(screen.getByTestId('dia').textContent).toBe('/dashboard/space?tab=chat');
+    expect(screen.queryByRole('region', { name: 'Thư viện workflow' })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Workflow' }));
+    expect(await screen.findByRole('region', { name: 'Thư viện workflow' })).toBeTruthy();
+    expect(screen.getByTestId('dia').textContent).toBe('/dashboard/space?tab=wf');
+  });
+
+  it('điện thoại: mở Space ra là danh bạ trò chuyện (như Zalo); chọn Workflow thì theo lựa chọn', async () => {
+    const cu = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ matches: q.includes('max-width: 767px'), media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => false, onchange: null })) as typeof window.matchMedia;
+    try {
+      ve();
+      expect(await screen.findByText(`phong chat ${CTY}`)).toBeTruthy();
+      fireEvent.click(screen.getByRole('tab', { name: 'Workflow' }));
+      expect(await screen.findByRole('region', { name: 'Thư viện workflow' })).toBeTruthy();
+    } finally { window.matchMedia = cu; }
   });
 });
