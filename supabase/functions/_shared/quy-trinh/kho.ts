@@ -13,6 +13,7 @@ import { diTiep, hieuSuat, lanChayMoi, nguoiXuLy, trangThai, type LanChay, type 
 import { apThaoTac, docThaoTac } from './sua-tay.ts';
 import { chonMau, THU_VIEN } from './thu-vien.ts';
 import { goiYDieuChinh } from './goi-y.ts';
+import { ketThuc, sauBuoc, sauNguoi, type DongNghiep } from './dong-nghiep.ts';
 import { docKetNoi, luuKetNoi, type KetNoi } from './ket-noi.ts';
 import type { HoiMoHinh } from './thuc-thi.ts';
 import { KIEN_THUC, kienThucChoLoiNhac, kiemChuan } from './kien-thuc.ts';
@@ -42,8 +43,8 @@ async function docRow(db: Db, userId: string, id: string): Promise<{ r: Row; ten
 const hienCua = (r: Row, pa: PhuongAn, kn: Map<string, KetNoi>) =>
   apPhuongAn(chuanHoa(r.do_thi), pa, { daKetNoi: new Set(kn.keys()), linhVuc: r.linh_vuc as LinhVuc });
 
-const ghiTin = async (db: Db, r: Row, vai: 'nguoi' | 'mimi', noi_dung: string, meo?: string) => {
-  const { error } = await db.from('tin_quy_trinh').insert({ quy_trinh_id: r.id, company_id: r.company_id, vai, noi_dung: noi_dung.slice(0, 1200), ...(meo ? { meo } : {}) });
+const ghiTin = async (db: Db, r: Row, vai: 'nguoi' | 'mimi', noi_dung: string, meo?: string, phan_ung?: { meo: string; emoji: string }[]) => {
+  const { error } = await db.from('tin_quy_trinh').insert({ quy_trinh_id: r.id, company_id: r.company_id, vai, noi_dung: noi_dung.slice(0, 1200), ...(meo ? { meo } : {}), ...(phan_ung?.length ? { phan_ung } : {}) });
   if (error) throw new Error(`Không ghi được tin: ${error.message}`);
 };
 
@@ -194,17 +195,25 @@ async function luuLanChay(db: Db, r: Row, l: LanChay, kn: Map<string, KetNoi>) {
  * người thì Mèo Thư ký nhắc. Chỉ báo CHUYỂN TRẠNG THÁI so với lần trước, nên bấm lại không lặp tin.
  */
 export async function baoTienDo(db: Db, r: Row, truoc: LanChay | null, sau: LanChay, hien: ReturnType<typeof apPhuongAn>): Promise<void> {
-  const tin: { meo: string; noi: string }[] = [];
+  const tin: { meo: string; noi: string; dn?: DongNghiep }[] = [];
   for (const n of hien.nut) {
     if (n.loai === 'kich_hoat') continue;
     const b = sau.buoc[n.id];
     if (!b || truoc?.buoc[n.id]?.tt === b.tt) continue;
     const meo = n.meo ?? 'thu_ky';
-    if (b.tt === 'xong' && b.ai_lam === 'agent') tin.push({ meo, noi: `✓ ${n.ten}${b.ket_qua ? ` — ${b.ket_qua}` : ''}` });
-    else if (b.tt === 'chan') tin.push({ meo, noi: `⚠ ${n.ten}: ${b.ket_qua ?? 'đang bị chặn'}` });
+    if (b.tt === 'xong' && b.ai_lam === 'agent') tin.push({ meo, noi: `✓ ${n.ten}${b.ket_qua ? ` — ${b.ket_qua}` : ''}`, dn: sauBuoc(hien, n, 'xong') });
+    else if (b.tt === 'chan') tin.push({ meo, noi: `⚠ ${n.ten}: ${b.ket_qua ?? 'đang bị chặn'}`, dn: sauBuoc(hien, n, 'chan') });
     else if (b.tt === 'can_nguoi') tin.push({ meo: 'thu_ky', noi: `Đến lượt ${n.vai_tro ? `anh/chị (${n.vai_tro})` : 'người phụ trách'}: "${n.ten}"${n.loai === 'duyet' ? ' — cần duyệt' : ''}.` });
   }
-  for (const t of tin) await ghiTin(db, r, 'mimi', t.noi, t.meo);
+  for (const t of tin) {
+    await ghiTin(db, r, 'mimi', t.noi, t.meo, t.dn?.phan_ung);
+    if (t.dn?.tra) await ghiTin(db, r, 'mimi', t.dn.tra.noi, t.dn.tra.meo);
+  }
+  // Cả quy trình vừa xong (lần trước chưa xong) → ăn mừng.
+  if (trangThai(hien, sau) === 'xong' && (!truoc || trangThai(hien, truoc) !== 'xong')) {
+    const kt = ketThuc(hien);
+    if (kt.tra) await ghiTin(db, r, 'mimi', kt.tra.noi, kt.tra.meo, kt.phan_ung);
+  }
 }
 
 export type TaoThucThi = (r: Row, kn: Map<string, KetNoi>) => ThucThi;
@@ -237,6 +246,12 @@ export async function xuLyBuoc(db: Db, userId: string, id: string, nutId: unknow
   catch (e) { throw new LoiQuyTrinh(409, 'BUOC', e instanceof Error ? e.message : 'Không xử lý được bước này.'); }
   if (q !== 'tu_choi') l = await diTiep(hien, l, thucThi(r, kn));
   await luuLanChay(db, r, l, kn);
+  // Người quyết → hiện trong nhóm như một người thật, Mèo Thư ký ghi nhận (không gọi AI).
+  const nut = hien.nut.find((n) => n.id === String(nutId ?? ''));
+  const dn = sauNguoi(q as 'xong' | 'duyet' | 'tu_choi');
+  const ghi = ghiChu == null || String(ghiChu).trim() === '' ? '' : ` — ${String(ghiChu).slice(0, 200)}`;
+  await ghiTin(db, r, 'nguoi', `${q === 'duyet' ? '✓ Đã duyệt' : q === 'tu_choi' ? '↩ Cần sửa' : '✓ Đã làm xong'}: ${nut?.ten ?? 'bước'}${ghi}`, undefined, dn.phan_ung);
+  if (dn.tra) await ghiTin(db, r, 'mimi', dn.tra.noi, dn.tra.meo);
   await baoTienDo(db, r, r.lan_chay, l, hien);
 }
 
@@ -268,7 +283,7 @@ export async function xemQuyTrinh(db: Db, userId: string, id: string): Promise<R
   const goc = chuanHoa(r.do_thi);
   const hien = hienCua(r, r.phuong_an, kn);
   const [{ data: tin, error: e1 }, { data: lich, error: e2 }] = await Promise.all([
-    db.from('tin_quy_trinh').select('id, vai, noi_dung, luc, meo').eq('quy_trinh_id', r.id).order('id', { ascending: true }).limit(300),
+    db.from('tin_quy_trinh').select('id, vai, noi_dung, luc, meo, phan_ung').eq('quy_trinh_id', r.id).order('id', { ascending: true }).limit(300),
     db.from('lan_chay_quy_trinh').select('phuong_an, trang_thai, bat_dau, ket_thuc, hieu_suat').eq('quy_trinh_id', r.id).order('ket_thuc', { ascending: false }).limit(30),
   ]);
   if (e1 || e2) throw new Error(`Không đọc được workflow: ${(e1 ?? e2).message}`);

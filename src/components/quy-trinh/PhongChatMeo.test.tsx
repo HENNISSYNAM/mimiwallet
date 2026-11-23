@@ -12,7 +12,7 @@ const TEN: Record<string, string> = { phan_loai: 'Mèo Phân loại', thue: 'Mè
   cong_no: 'Mèo Công nợ', mua_hang: 'Mèo Mua hàng', luong: 'Mèo Lương', tuan_thu: 'Mèo Tuân thủ', bao_cao: 'Mèo Báo cáo', thu_ky: 'Mèo Thư ký' };
 const NL = (m: string) => (m === 'luong' ? { loai: 'tu_van', that: 'Tư vấn lương, bảo hiểm.', thieu: 'Chưa có dữ liệu chấm công: cần kết nối HRM.', mau: ['tra_luong'] } : { loai: 'du_lieu', that: 'Đọc dữ liệu thật.', thieu: null, mau: ['dong_so_thang'] });
 const ds = MEO.map((m) => ({ meo: m, ten: TEN[m], viec: `việc của ${m}`, nang_luc: NL(m), tin_cuoi: m === 'thue' ? { vai: 'meo', noi_dung: 'Hạn khai quý 4 còn 70 ngày ạ', luc: '2026-11-23T03:00:00Z' } : null }));
-const ve = (onMo = vi.fn()) => render(<PhongChatMeo companyId="c1" nhom={[{ id: 'q1', tieu_de: 'Thanh toán nhà cung cấp (P2P)' }]} onMoNhom={onMo} />);
+const ve = (onChon = vi.fn(), nhomMo: string | null = null) => render(<PhongChatMeo companyId="c1" nhom={[{ id: 'q1', tieu_de: 'Thanh toán nhà cung cấp (P2P)' }]} nhomMo={nhomMo} onChonNhom={onChon} onMoKhung={vi.fn()} moi={<p>khung moi</p>} />);
 
 describe('phòng trò chuyện kiểu Zalo', () => {
   beforeEach(() => { Object.values(gia).forEach((f) => f.mockReset()); gia.ds.mockResolvedValue(ds); gia.tin.mockResolvedValue([]); gia.tv.mockResolvedValue([{ khoa: 'tra_luong', tieu_de: 'Trả lương tháng' }, { khoa: 'dong_so_thang', tieu_de: 'Đóng sổ cuối tháng' }]); });
@@ -109,5 +109,39 @@ describe('phòng trò chuyện kiểu Zalo', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Giao việc: Trả lương tháng' }));
     await waitFor(() => expect(gia.mau).toHaveBeenCalledWith('c1', 'tra_luong'));
     await waitFor(() => expect(mo).toHaveBeenCalledWith('q-moi'));
+  });
+
+  it('màn chào hiện khung "Nhóm mới"; nút Nhóm mới đưa về màn chào', async () => {
+    ve();
+    expect(await screen.findByText('khung moi')).toBeTruthy();
+  });
+
+  it('kiểu Zalo: tab Chưa đọc + chấm đỏ cho tin mèo mới; mở mèo là đã đọc', async () => {
+    localStorage.clear();
+    ve();
+    fireEvent.click(await screen.findByRole('tab', { name: /Chưa đọc \(1\)/ }));
+    const dm = screen.getByRole('region', { name: 'Mèo agent' });
+    expect(within(dm).getAllByRole('button')).toHaveLength(1);
+    expect(within(dm).getByLabelText('Chưa đọc')).toBeTruthy();
+    fireEvent.click(within(dm).getByRole('button', { name: /Mèo Thuế/ }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^Chưa đọc$/ })).toBeTruthy());
+  });
+
+  it('ghim tin hiện banner "Tin ghim"; tìm trong cuộc trò chuyện lọc tin; có ngăn cách ngày', async () => {
+    localStorage.clear();
+    gia.tin.mockResolvedValue([
+      { id: 1, vai: 'nguoi', noi_dung: 'Hạn thuế khi nào?', luc: '2026-11-20T03:00:00Z' },
+      { id: 2, vai: 'meo', noi_dung: 'Còn 70 ngày ạ.', luc: '2026-11-20T03:00:05Z' },
+    ]);
+    ve();
+    fireEvent.click(await screen.findByRole('button', { name: /Mèo Thuế/ }));
+    const cuocTro = screen.getByRole('region', { name: 'Cuộc trò chuyện' });
+    expect(await within(cuocTro).findByText('20/11/2026')).toBeTruthy();
+    fireEvent.click(within(cuocTro).getAllByRole('button', { name: 'Ghim tin này' })[1]);
+    expect(within(cuocTro).getByTestId('tin-ghim').textContent).toMatch(/Còn 70 ngày ạ/);
+    fireEvent.click(within(cuocTro).getByRole('button', { name: 'Tìm trong cuộc trò chuyện' }));
+    fireEvent.change(within(cuocTro).getByLabelText('Từ cần tìm trong cuộc trò chuyện'), { target: { value: 'hạn thuế' } });
+    expect(within(cuocTro).queryByText('Còn 70 ngày ạ.', { selector: 'p' })).toBeNull();
+    expect(within(cuocTro).getByText('Hạn thuế khi nào?')).toBeTruthy();
   });
 });

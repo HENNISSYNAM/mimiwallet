@@ -8,7 +8,7 @@ export interface KetNoiHien { cong_cu: string; kieu: 'api' | 'mcp'; url: string;
 export interface MauThuVien { khoa: string; linh_vuc: LinhVuc; tieu_de: string; mo_ta: string; khung: string; so_buoc: number }
 export type { DoThiHien, HieuSuat, LanChay, LinhVuc, NutHien, PhuongAn, SoBuoc, TaiNguyenCan, TrangThaiChay };
 
-export interface TinQuyTrinh { id: number; vai: 'nguoi' | 'mimi'; noi_dung: string; luc: string; meo?: string | null }
+export interface TinQuyTrinh { id: number; vai: 'nguoi' | 'mimi'; noi_dung: string; luc: string; meo?: string | null; phan_ung?: { meo: string; emoji: string }[] }
 export interface LichSuChay { phuong_an: PhuongAn; trang_thai: 'xong' | 'dung'; bat_dau: string; ket_thuc: string; hieu_suat: HieuSuat }
 
 export interface ChiTietQuyTrinh {

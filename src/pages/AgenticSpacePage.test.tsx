@@ -10,7 +10,12 @@ vi.mock('@/components/quy-trinh/KhongGianQuyTrinh', () => ({
   default: ({ id }: { id: string }) => <p>khung {id}</p>, TEN_PA: { nguoi: 'Người làm', nguoi_ai: 'Người + AI', ai: 'AI tối đa' },
 }));
 
-vi.mock('@/components/quy-trinh/PhongChatMeo', () => ({ default: ({ companyId }: { companyId: string }) => <p>phong chat {companyId}</p> }));
+vi.mock('@/components/quy-trinh/PhongChatMeo', () => ({
+  default: ({ companyId, nhom, nhomMo, onChonNhom, moi }: { companyId: string; nhom: { id: string; tieu_de: string }[]; nhomMo: string | null; onChonNhom: (id: string) => void; moi: React.ReactNode }) => (
+    <div><p>phong chat {companyId}</p><p data-testid="nhom-mo">{nhomMo ?? 'khong'}</p>
+      {nhom.map((g) => <button key={g.id} type="button" onClick={() => onChonNhom(g.id)}>{g.tieu_de}</button>)}{moi}</div>
+  ),
+}));
 import AgenticSpacePage, { MEO_KHOA } from './AgenticSpacePage';
 
 const CTY = '11111111-1111-4111-8111-111111111111';
@@ -32,36 +37,36 @@ describe('Agentic AI Space', () => {
     gia.ds.mockResolvedValue([{ id: QID, company_id: CTY, ten_khach: 'Tạp hoá Hồng', tieu_de: 'Trả NCC tuần này', linh_vuc: 'thanh_toan', nguon: 'mau', phuong_an: 'nguoi_ai', trang_thai: 'nhap', cap_nhat_luc: '', dem: null, meo: ['dong_tien', 'bao_ve'] }]);
   });
 
-  it('thư viện lọc theo lĩnh vực; đội 12 mèo có số workflow; danh sách có mèo', async () => {
+  it('một phòng duy nhất: không còn tab; thư viện lọc theo lĩnh vực; danh sách nhóm của công ty', async () => {
     ve();
     expect(await screen.findByText('Thanh toán nhà cung cấp (P2P)')).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Workflow' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Bảo mật' }));
     expect(screen.queryByText('Thanh toán nhà cung cấp (P2P)')).toBeNull();
     expect(screen.getByText('Ứng phó sự cố bảo mật')).toBeTruthy();
-    const doi = screen.getByRole('region', { name: 'Đội mèo agent' });
-    expect(within(doi).getAllByRole('img')).toHaveLength(MEO_KHOA.length);
-    expect(within(doi).getByText(/Mèo Dòng tiền · 1 workflow/)).toBeTruthy();
+    expect(screen.getByText(`phong chat ${CTY}`)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Trả NCC tuần này' })).toBeTruthy();
   });
 
-  it('dùng mẫu → mở workflow NGAY TRONG TRANG (?qt=), không đổi đường dẫn', async () => {
+  it('dùng mẫu → mở NHÓM CHAT ngay trong phòng (?nhom=), không đổi đường dẫn', async () => {
     gia.mau.mockResolvedValue(QID);
     ve();
     await screen.findByText('Thanh toán nhà cung cấp (P2P)');
     await waitFor(() => expect(screen.getAllByRole('button', { name: /Dùng mẫu/ })[0].hasAttribute('disabled')).toBe(false));
     fireEvent.click(screen.getAllByRole('button', { name: /Dùng mẫu/ })[0]);
     await waitFor(() => expect(gia.mau).toHaveBeenCalledWith(CTY, 'tra_ncc'));
-    expect(await screen.findByText(`khung ${QID}`)).toBeTruthy();
-    expect(screen.getByTestId('dia').textContent).toBe(`/dashboard/space?qt=${QID}`);
+    await waitFor(() => expect(screen.getByTestId('dia').textContent).toBe(`/dashboard/space?nhom=${QID}`));
+    expect(screen.getByTestId('nhom-mo').textContent).toBe(QID);
   });
 
-  it('mô tả việc → dựng → mở tại chỗ; bấm workflow trong danh sách cũng mở tại chỗ', async () => {
+  it('mô tả việc → dựng → mở nhóm tại chỗ', async () => {
     gia.tao.mockResolvedValue(QID);
     ve();
     await screen.findByText('Trả NCC tuần này');
     fireEvent.change(screen.getByLabelText('Mô tả việc'), { target: { value: 'Hoàn ứng công tác phí' } });
     fireEvent.click(screen.getByRole('button', { name: /Dựng workflow/ }));
     await waitFor(() => expect(gia.tao).toHaveBeenCalledWith(CTY, 'Hoàn ứng công tác phí'));
-    expect(await screen.findByText(`khung ${QID}`)).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId('nhom-mo').textContent).toBe(QID));
   });
 
   it('lỗi máy chủ hiện ra', async () => {
@@ -70,26 +75,8 @@ describe('Agentic AI Space', () => {
     expect((await screen.findByRole('alert')).textContent).toMatch(/Đăng nhập lại/);
   });
 
-  it('tab Trò chuyện mở phòng chat NGAY TRONG TRANG (?tab=chat), không đổi đường dẫn', async () => {
-    ve();
-    await screen.findByText('Trả NCC tuần này');
-    fireEvent.click(screen.getByRole('tab', { name: 'Trò chuyện' }));
-    expect(await screen.findByText(`phong chat ${CTY}`)).toBeTruthy();
-    expect(screen.getByTestId('dia').textContent).toBe('/dashboard/space?tab=chat');
-    expect(screen.queryByRole('region', { name: 'Thư viện workflow' })).toBeNull();
-    fireEvent.click(screen.getByRole('tab', { name: 'Workflow' }));
-    expect(await screen.findByRole('region', { name: 'Thư viện workflow' })).toBeTruthy();
-    expect(screen.getByTestId('dia').textContent).toBe('/dashboard/space?tab=wf');
-  });
-
-  it('điện thoại: mở Space ra là danh bạ trò chuyện (như Zalo); chọn Workflow thì theo lựa chọn', async () => {
-    const cu = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ matches: q.includes('max-width: 767px'), media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => false, onchange: null })) as typeof window.matchMedia;
-    try {
-      ve();
-      expect(await screen.findByText(`phong chat ${CTY}`)).toBeTruthy();
-      fireEvent.click(screen.getByRole('tab', { name: 'Workflow' }));
-      expect(await screen.findByRole('region', { name: 'Thư viện workflow' })).toBeTruthy();
-    } finally { window.matchMedia = cu; }
+  it('?qt= mở sơ đồ đầy đủ (Mở khung)', async () => {
+    render(<MemoryRouter initialEntries={[`/dashboard/space?qt=${QID}`]}><Routes><Route path="/dashboard/space" element={<AgenticSpacePage />} /></Routes></MemoryRouter>);
+    expect(await screen.findByText(`khung ${QID}`)).toBeTruthy();
   });
 });

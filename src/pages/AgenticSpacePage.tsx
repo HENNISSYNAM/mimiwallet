@@ -1,17 +1,14 @@
 /**
- * AGENTIC AI SPACE (/dashboard/space, 22/11/2026, bản 2) — một nơi duy nhất cho workflow người + mèo agent.
- * Mô tả việc → MIMI dựng (theo kho kiến thức nghề + thư viện chu trình chuẩn). Hoặc chọn mẫu trong THƯ VIỆN. Workflow mở
- * NGAY TRONG TRANG (?qt=…), không chuyển lớp. Đội 12 mèo hiện con nào đang có mặt ở bao nhiêu workflow — không còn
- * danh sách agent riêng rời rạc.
+ * AGENTIC AI SPACE (/dashboard/space, bản 3 — 24/11/2026): MỘT phòng trò chuyện duy nhất, không còn tab Workflow | Trò chuyện.
+ * Mỗi workflow là một NHÓM CHAT (?nhom=…) nơi các mèo làm việc và phản ứng như người; chat riêng từng mèo nằm cùng danh bạ.
+ * "Nhóm mới" = mô tả việc → MIMI dựng (kho kiến thức nghề + thư viện chu trình chuẩn). "Mở khung" (?qt=…) xem sơ đồ đầy đủ.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, Loader2, Orbit } from 'lucide-react';
 import { ThanhTabHome } from '@/components/khong-gian/ThanhTabHome';
-import { Meo } from '@/components/agent/AvatarMeo';
-import KhongGianQuyTrinh, { TEN_PA } from '@/components/quy-trinh/KhongGianQuyTrinh';
+import KhongGianQuyTrinh from '@/components/quy-trinh/KhongGianQuyTrinh';
 import PhongChatMeo from '@/components/quy-trinh/PhongChatMeo';
-import { tenMeo } from '@/components/quy-trinh/KhungVe';
 import { docBang } from '@/lib/goiSpace';
 import { dsQuyTrinh, taoQuyTrinh, taoTuMau, thuVien, type DongQuyTrinh, type MauThuVien } from '@/lib/goiQuyTrinh';
 import { idCongTyDangDung } from '@/lib/congTyDangDung';
@@ -20,7 +17,7 @@ export const TEN_LV: Record<string, string> = {
   tai_chinh: 'Tài chính & thuế', thanh_toan: 'Thanh toán', bao_mat: 'Bảo mật', ho_so: 'Hồ sơ', nhan_su: 'Nhân sự', cong_viec: 'Công việc',
 };
 export const MEO_KHOA = ['phan_loai', 'thue', 'dong_tien', 'ho_so', 'bao_ve', 'doi_soat', 'cong_no', 'mua_hang', 'luong', 'tuan_thu', 'bao_cao', 'thu_ky'];
-const TEN_TT: Record<string, string> = { nhap: 'Bản nháp', dang_chay: 'Đang chạy', xong: 'Xong', dung: 'Đã dừng' };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function AgenticSpacePage() {
   const [thamSo, datThamSo] = useSearchParams();
@@ -33,9 +30,7 @@ export default function AgenticSpacePage() {
   const [dang, setDang] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const qtMo = thamSo.get('qt');
-  // Điện thoại: mở Space ra là danh bạ trò chuyện (như Zalo); máy tính: workflow. Người dùng chọn tab thì theo lựa chọn.
-  const laDienThoai = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 767px)').matches;
-  const tabChat = (thamSo.get('tab') ?? (laDienThoai ? 'chat' : 'wf')) === 'chat';
+  const nhomMo = UUID_RE.test(thamSo.get('nhom') ?? '') ? thamSo.get('nhom') : null;
 
   const tai = useCallback(async () => {
     try {
@@ -48,39 +43,19 @@ export default function AgenticSpacePage() {
   }, []);
   useEffect(() => { if (!qtMo) void tai(); }, [tai, qtMo]);
 
-  const mo = (id: string) => datThamSo({ qt: id });
+  const moKhung = (id: string) => datThamSo({ qt: id });
+  const chonNhom = (id: string | null) => datThamSo(id ? { nhom: id } : {}, { replace: true });
   const tao = async (f: () => Promise<string>, ten: string) => {
     if (!khach) return;
     setDang(ten); setLoi(null);
-    try { mo(await f()); } catch (e) { setLoi(e instanceof Error ? e.message : 'Chưa dựng được workflow.'); } finally { setDang(null); }
+    try { const id = await f(); await tai(); chonNhom(id); setCau(''); } catch (e) { setLoi(e instanceof Error ? e.message : 'Chưa dựng được workflow.'); } finally { setDang(null); }
   };
-  const soMeo = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const q of ds ?? []) for (const k of q.meo ?? []) m.set(k, (m.get(k) ?? 0) + 1);
-    return m;
-  }, [ds]);
   const mauLoc = mau.filter((m) => !lv || m.linh_vuc === lv);
 
-  if (qtMo && /^[0-9a-f-]{36}$/i.test(qtMo)) return <KhongGianQuyTrinh id={qtMo} onDong={() => datThamSo({}, { replace: true })} />;
+  if (qtMo && UUID_RE.test(qtMo)) return <KhongGianQuyTrinh id={qtMo} onDong={() => datThamSo(nhomMo ? { nhom: nhomMo } : {}, { replace: true })} />;
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
-      <ThanhTabHome />
-      <header className="space-y-1">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground"><Orbit className="text-primary" /> Agentic AI Space</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">Mô tả việc — MIMI dựng workflow người + mèo agent theo chuẩn nghề. Sửa ngay trên khung, chốt rồi chạy. Hoặc nhắn tin trực tiếp cho từng mèo.</p>
-        <div role="tablist" aria-label="Chế độ" className="mt-2 inline-flex gap-0.5 rounded-lg bg-muted p-0.5">
-          {([['wf', 'Workflow'], ['chat', 'Trò chuyện']] as const).map(([k, t]) => (
-            <button key={k} type="button" role="tab" aria-selected={(k === 'chat') === tabChat} onClick={() => datThamSo({ tab: k }, { replace: true })}
-              className={`rounded-md px-3 py-1 text-sm transition-colors ${(k === 'chat') === tabChat ? 'bg-background font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{t}</button>
-          ))}
-        </div>
-      </header>
-
-      {tabChat && khach && <PhongChatMeo companyId={khach} nhom={(ds ?? []).filter((q) => q.company_id === khach).map((q) => ({ id: q.id, tieu_de: q.tieu_de }))} onMoNhom={mo} />}
-      {tabChat && !khach && <p className="text-sm text-muted-foreground">Chưa có công ty để trò chuyện.</p>}
-      {!tabChat && (<>
-
+  const moi = (
+    <div className="mx-auto w-full max-w-2xl space-y-4">
       <form className="space-y-3 rounded-2xl border bg-card p-4" onSubmit={(e) => { e.preventDefault(); const c = cau.trim(); if (c) void tao(() => taoQuyTrinh(khach, c), 'dung'); }}>
         <textarea value={cau} onChange={(e) => setCau(e.target.value)} rows={2} maxLength={1000} aria-label="Mô tả việc"
           placeholder="Ví dụ: hoàn ứng công tác phí cho nhân viên, quản lý duyệt, kế toán chi"
@@ -107,7 +82,7 @@ export default function AgenticSpacePage() {
             </button>
           ))}
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {mauLoc.map((m) => (
             <article key={m.khoa} className="flex flex-col rounded-2xl border bg-card p-4">
               <p className="text-[11px] text-muted-foreground">{TEN_LV[m.linh_vuc]} · {m.khung}</p>
@@ -121,43 +96,20 @@ export default function AgenticSpacePage() {
           ))}
         </div>
       </section>
+    </div>
+  );
 
-      <section aria-label="Đội mèo agent" className="space-y-2">
-        <h2 className="text-sm font-semibold text-foreground">Đội mèo agent</h2>
-        <div className="flex flex-wrap gap-2">
-          {MEO_KHOA.map((k) => {
-            const n = soMeo.get(k) ?? 0;
-            return (
-              <span key={k} className="inline-flex items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3 text-xs text-muted-foreground">
-                <Meo khoa={k} net={n ? 'lam' : 'ngu'} co={26} ten={tenMeo(k)} />{tenMeo(k)}{n ? ` · ${n} workflow` : ''}
-              </span>
-            );
-          })}
-        </div>
-      </section>
-
-      <section aria-label="Workflow" className="rounded-2xl border bg-card">
-        <h2 className="border-b px-4 py-3 text-sm font-semibold text-foreground">Workflow của bạn</h2>
-        {ds === null ? <p className="p-4 text-sm text-muted-foreground">Đang đọc…</p> : ds.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">Chưa có workflow nào. Mô tả một việc ở trên, hoặc dùng một mẫu.</p>
-        ) : (
-          <ul className="divide-y">
-            {ds.map((q) => (
-              <li key={q.id}>
-                <button type="button" onClick={() => mo(q.id)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/50">
-                  <span className="flex -space-x-1.5">{(q.meo ?? []).slice(0, 3).map((k) => <Meo key={k} khoa={k} co={22} ten={tenMeo(k)} />)}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground">{q.tieu_de}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{q.ten_khach} · {TEN_LV[q.linh_vuc] ?? q.linh_vuc} · {TEN_PA[q.phuong_an]}</span>
-                  </span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{TEN_TT[q.trang_thai]}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      </>)}
+  return (
+    <div className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
+      <ThanhTabHome />
+      <header className="space-y-1">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground"><Orbit className="text-primary" /> Agentic AI Space</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">Mỗi workflow là một nhóm chat: các mèo làm việc, phản ứng với nhau và dừng lại hỏi bạn ở chỗ cần người quyết. Hoặc nhắn riêng từng mèo.</p>
+      </header>
+      {khach
+        ? <PhongChatMeo companyId={khach} nhom={(ds ?? []).filter((q) => q.company_id === khach).map((q) => ({ id: q.id, tieu_de: q.tieu_de }))}
+            nhomMo={nhomMo} onChonNhom={chonNhom} onMoKhung={moKhung} moi={moi} />
+        : loi ? <p role="alert" className="text-sm text-destructive">{loi}</p> : <p className="text-sm text-muted-foreground">{ds === null ? 'Đang đọc…' : 'Chưa có công ty để trò chuyện.'}</p>}
     </div>
   );
 }
